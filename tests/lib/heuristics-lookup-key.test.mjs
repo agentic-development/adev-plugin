@@ -46,18 +46,18 @@ describe("deriveValidateFailureSignature", () => {
     );
   });
 
-  it("returns null when no check has a non-PASS outcome", () => {
+  it("returns null when no check has a non-PASS outcome (+1 more contract assertions)", () => {
+    // returns null when no check has a non-PASS outcome
     assert.equal(deriveValidateFailureSignature([]), null);
     assert.equal(
-      deriveValidateFailureSignature([
-        { id: "gate-1", outcome: "PASS" },
-        { id: "adr-3", outcome: "PASS" },
-      ]),
-      null,
+    deriveValidateFailureSignature([
+    { id: "gate-1", outcome: "PASS" },
+    { id: "adr-3", outcome: "PASS" },
+    ]),
+    null,
     );
-  });
 
-  it("returns null for a missing or non-array checks value", () => {
+    // returns null for a missing or non-array checks value
     assert.equal(deriveValidateFailureSignature(undefined), null);
     assert.equal(deriveValidateFailureSignature(null), null);
     assert.equal(deriveValidateFailureSignature({}), null);

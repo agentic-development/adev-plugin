@@ -15,27 +15,27 @@ import {
   isAllowedSchema,
 } from "../../lib/partial-artifact.mjs";
 
-test("validateSchemaMarker accepts canonical markers", () => {
+test("validateSchemaMarker accepts canonical markers (+1 more contract assertions)", () => {
+  // validateSchemaMarker accepts canonical markers
   assert.deepEqual(validateSchemaMarker("plan@1"), { skill: "plan", version: 1 });
   assert.deepEqual(validateSchemaMarker("spec@1"), { skill: "spec", version: 1 });
   assert.deepEqual(validateSchemaMarker("validate@1"), {
-    skill: "validate",
-    version: 1,
+  skill: "validate",
+  version: 1,
   });
   assert.deepEqual(validateSchemaMarker("implement@1"), {
-    skill: "implement",
-    version: 1,
+  skill: "implement",
+  version: 1,
   });
-});
 
-test("validateSchemaMarker accepts hyphenated skill names", () => {
+  // validateSchemaMarker accepts hyphenated skill names
   assert.deepEqual(validateSchemaMarker("write-test@1"), {
-    skill: "write-test",
-    version: 1,
+  skill: "write-test",
+  version: 1,
   });
   assert.deepEqual(validateSchemaMarker("review-specs@2"), {
-    skill: "review-specs",
-    version: 2,
+  skill: "review-specs",
+  version: 2,
   });
 });
 

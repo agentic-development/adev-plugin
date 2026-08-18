@@ -36,12 +36,12 @@ test('MODIFIED names every file the implementation touches', () => {
   }
 });
 
-test('decisions A and B are recorded with rationale', () => {
+test("decisions A and B are recorded with rationale (+1 more contract assertions)", () => {
+  // decisions A and B are recorded with rationale
   assert.match(text, /\.context-index\/extensions\/<extension-name>\//);
   assert.match(text, /`dispatch: triggered`[^.]*refused|refused[^.]*`dispatch: triggered`/);
   assert.match(text, /`package\.args`[^.]*refused|refused[^.]*`package\.args`/);
-});
 
-test('revision is 5', () => {
+  // revision is 5
   assert.match(text, /^revision: 5$/m);
 });

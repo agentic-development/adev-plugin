@@ -379,12 +379,12 @@ export function findPrefixDerivationSites() {
 }
 
 describe("validate harness — outcome-derived title prefix", () => {
-  it("derives its prefix from the outcome, like the hook", () => {
+  it("derives its prefix from the outcome, like the hook (+1 more contract assertions)", () => {
+    // derives its prefix from the outcome, like the hook
     assert.equal(deriveTitle("PASS", "Foo"), "First-run PASS: Foo");
     assert.equal(deriveTitle("FAIL", "Foo"), "Validate FAIL: Foo");
-  });
 
-  it("defaults the outcome to PASS so single-argument callers keep working", () => {
+    // defaults the outcome to PASS so single-argument callers keep working
     assert.equal(deriveTitle("Foo"), "First-run PASS: Foo");
     assert.equal(deriveTitle(), "First-run PASS: ");
   });

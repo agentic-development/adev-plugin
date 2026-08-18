@@ -296,25 +296,22 @@ describe('matchStrategy', () => {
 // ---------------------------------------------------------------------------
 
 describe('matchGlob', () => {
-  it('matches ** across multiple path segments', () => {
+  it("matches ** across multiple path segments (+4 more contract assertions)", () => {
+    // matches ** across multiple path segments
     assert.ok(matchGlob('src/**/*.mjs', 'src/lib/issues/registry.mjs'));
-  });
 
-  it('matches * within a single segment', () => {
+    // matches * within a single segment
     assert.ok(matchGlob('src/*.mjs', 'src/index.mjs'));
     assert.ok(!matchGlob('src/*.mjs', 'src/lib/index.mjs'));
-  });
 
-  it('matches exact path', () => {
+    // matches exact path
     assert.ok(matchGlob('hooks/merge-guard.sh', 'hooks/merge-guard.sh'));
     assert.ok(!matchGlob('hooks/merge-guard.sh', 'hooks/other.sh'));
-  });
 
-  it('does not match partial paths without glob', () => {
+    // does not match partial paths without glob
     assert.ok(!matchGlob('src/foo.mjs', 'src/foo.mjs.bak'));
-  });
 
-  it('matches top-level wildcard', () => {
+    // matches top-level wildcard
     assert.ok(matchGlob('*.mjs', 'index.mjs'));
     assert.ok(!matchGlob('*.mjs', 'src/index.mjs'));
   });

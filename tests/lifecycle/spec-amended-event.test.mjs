@@ -31,12 +31,12 @@ import { reportSpecAmended } from '../../lib/lifecycle-state.mjs';
 
 const BASE_SPEC = '.context-index/specs/cross-cutting/base.spec.md';
 
-test('CANONICAL_EVENTS includes spec_amended', () => {
+test("CANONICAL_EVENTS includes spec_amended (+1 more contract assertions)", () => {
+  // CANONICAL_EVENTS includes spec_amended
   assert.ok(CANONICAL_EVENTS.has('spec_amended'),
-    'spec_amended must be registered as a canonical event discriminator');
-});
+  'spec_amended must be registered as a canonical event discriminator');
 
-test('isKnownEventType("spec_amended") returns true', () => {
+  // isKnownEventType("spec_amended") returns true
   assert.equal(isKnownEventType('spec_amended'), true);
   assert.ok(KNOWN_EVENT_TYPES.includes('spec_amended'));
 });

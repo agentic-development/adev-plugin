@@ -79,7 +79,7 @@ CHARTER
 # ===========================================================================
 # Spec: login (fully traced — has source manifest, plan, issues)
 # ===========================================================================
-cat > .context-index/specs/features/auth/login.md << 'SPEC'
+cat > .context-index/specs/features/auth/login.spec.md << 'SPEC'
 ---
 type: live-spec
 title: Password Login
@@ -109,7 +109,7 @@ SPEC
 cat > .context-index/specs/features/auth/login.plan.md << 'PLAN'
 ---
 type: plan
-spec: auth/login.md
+spec: auth/login.spec.md
 tasks: 3
 ---
 
@@ -128,7 +128,7 @@ PLAN
 # ===========================================================================
 # Spec: session-mgmt (review-passed, no plan — unplanned spec)
 # ===========================================================================
-cat > .context-index/specs/features/auth/session-mgmt.md << 'SPEC'
+cat > .context-index/specs/features/auth/session-mgmt.spec.md << 'SPEC'
 ---
 type: live-spec
 title: Session Management
@@ -186,7 +186,7 @@ CHARTER
 # ===========================================================================
 # Spec: metrics (draft — no review, no plan)
 # ===========================================================================
-cat > .context-index/specs/features/dashboard/metrics.md << 'SPEC'
+cat > .context-index/specs/features/dashboard/metrics.spec.md << 'SPEC'
 ---
 type: live-spec
 title: Metrics Overview
@@ -334,14 +334,14 @@ CODE
 
 # Commit 1: fully traced (all trailers)
 git add lib/login.mjs tests/login.test.mjs
-git add .context-index/specs/features/auth/login.md
+git add .context-index/specs/features/auth/login.spec.md
 git add .context-index/specs/features/auth/login.plan.md
 export GIT_AUTHOR_DATE="2026-04-01T11:00:00+00:00"
 export GIT_COMMITTER_DATE="2026-04-01T11:00:00+00:00"
 git commit -m "$(cat <<'EOF'
 feat(auth): implement password login
 
-Spec: .context-index/specs/features/auth/login.md
+Spec: .context-index/specs/features/auth/login.spec.md
 Plan-task: 1
 Session: sess-001
 Issue: issue-1
@@ -357,7 +357,7 @@ export GIT_COMMITTER_DATE="2026-04-01T11:30:00+00:00"
 git commit -m "$(cat <<'EOF'
 feat(auth): add auth logic
 
-Spec: .context-index/specs/features/auth/login.md
+Spec: .context-index/specs/features/auth/login.spec.md
 Plan-task: 2
 Session: sess-001
 Issue: issue-2
@@ -373,7 +373,7 @@ export function computeMetrics(data) {
 CODE
 
 # Add a spec that claims drifted.mjs via source manifest
-cat > .context-index/specs/features/dashboard/widgets.md << 'SPEC'
+cat > .context-index/specs/features/dashboard/widgets.spec.md << 'SPEC'
 ---
 type: live-spec
 title: Chart Widgets
@@ -392,13 +392,13 @@ source-manifest:
 - Render bar, line, and pie charts from metric data
 SPEC
 
-git add lib/drifted.mjs .context-index/specs/features/dashboard/widgets.md
+git add lib/drifted.mjs .context-index/specs/features/dashboard/widgets.spec.md
 export GIT_AUTHOR_DATE="2026-04-02T10:00:00+00:00"
 export GIT_COMMITTER_DATE="2026-04-02T10:00:00+00:00"
 git commit -m "$(cat <<'EOF'
 feat(dashboard): implement chart widgets
 
-Spec: .context-index/specs/features/dashboard/widgets.md
+Spec: .context-index/specs/features/dashboard/widgets.spec.md
 Plan-task: 1
 Session: sess-002
 Author-type: agent/claude-code
@@ -442,9 +442,9 @@ Lifecycle: untracked"
 
 # --- Add remaining context files ---
 git add .context-index/specs/features/auth/charter.md
-git add .context-index/specs/features/auth/session-mgmt.md
+git add .context-index/specs/features/auth/session-mgmt.spec.md
 git add .context-index/specs/features/dashboard/charter.md
-git add .context-index/specs/features/dashboard/metrics.md
+git add .context-index/specs/features/dashboard/metrics.spec.md
 git add .context-index/tasks/tasks.md
 git add .context-index/.session-tracking.jsonl
 export GIT_AUTHOR_DATE="2026-04-10T10:00:00+00:00"

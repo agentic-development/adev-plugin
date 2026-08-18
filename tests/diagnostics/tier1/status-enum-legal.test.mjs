@@ -77,11 +77,11 @@ test('returns { fired: false } when frontmatter is absent (defers to frontmatter
   } finally { cleanup(dir); }
 });
 
-test('returns { fired: false } when ctx.spec is absent', () => {
+test("returns { fired: false } when ctx.spec is absent (+1 more contract assertions)", () => {
+  // returns { fired: false } when ctx.spec is absent
   assert.deepEqual(run({}), { fired: false });
-});
 
-test('returns { fired: false } when spec file does not exist', () => {
+  // returns { fired: false } when spec file does not exist
   assert.deepEqual(run({ spec: '/nope/not/here.spec.md' }), { fired: false });
 });
 

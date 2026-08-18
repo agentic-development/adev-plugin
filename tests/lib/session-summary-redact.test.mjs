@@ -19,10 +19,14 @@ test("redactSecrets returns input unchanged when no secret present", () => {
   assert.strictEqual(redactSecrets(text), text);
 });
 
-test("redactSecrets handles empty / non-string input gracefully", () => {
+test("redactSecrets handles empty / non-string input gracefully (+1 more contract assertions)", () => {
+  // redactSecrets handles empty / non-string input gracefully
   assert.strictEqual(redactSecrets(""), "");
   assert.strictEqual(redactSecrets(null), "");
   assert.strictEqual(redactSecrets(undefined), "");
+
+  // redactSecrets does NOT redact the project root itself
+  assert.strictEqual(redactSecrets(ROOT, OPTS), ROOT);
 });
 
 test("redactSecrets handles PEM private-key block (multiline)", () => {
@@ -180,9 +184,6 @@ test("redactSecrets does NOT redact an in-repo absolute path", () => {
   assert.strictEqual(redactSecrets(text, OPTS), text);
 });
 
-test("redactSecrets does NOT redact the project root itself", () => {
-  assert.strictEqual(redactSecrets(ROOT, OPTS), ROOT);
-});
 
 test("redactSecrets does NOT redact in-repo relative paths", () => {
   const text =

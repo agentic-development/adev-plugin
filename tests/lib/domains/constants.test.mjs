@@ -23,7 +23,8 @@ describe('domains/constants', () => {
     assert.ok(!DOMAIN_CONFIG_TYPES.has('spec-overlay'), 'spec-overlay should not be in DOMAIN_CONFIG_TYPES');
   });
 
-  it('maps each overlay type to its filename', () => {
+  it("maps each overlay type to its filename (+6 more contract assertions)", () => {
+    // maps each overlay type to its filename
     assert.equal(DOMAIN_CONFIG_FILENAMES.get('charter-template'), 'charter-template.md');
     assert.equal(DOMAIN_CONFIG_FILENAMES.get('spec-template'), 'spec-template.md');
     assert.equal(DOMAIN_CONFIG_FILENAMES.get('reviewers'), 'reviewers.yaml');
@@ -32,16 +33,14 @@ describe('domains/constants', () => {
     assert.equal(DOMAIN_CONFIG_FILENAMES.get('gate-config'), 'gate-config.yaml');
     assert.equal(DOMAIN_CONFIG_FILENAMES.get('test-config'), 'test-config.yaml');
     assert.equal(DOMAIN_CONFIG_FILENAMES.get('validate'), 'validate.yaml');
-  });
 
-  it('exports only software as bundled domain name', () => {
+    // exports only software as bundled domain name
     assert.equal(BUNDLED_DOMAIN_NAMES.size, 1);
     assert.ok(BUNDLED_DOMAIN_NAMES.has('software'));
     assert.ok(!BUNDLED_DOMAIN_NAMES.has('data-engineering'), 'data-engineering should not be bundled');
     assert.ok(!BUNDLED_DOMAIN_NAMES.has('process-automation'), 'process-automation should not be bundled');
-  });
 
-  it('exports domain name validation pattern', () => {
+    // exports domain name validation pattern
     assert.ok(DOMAIN_NAME_PATTERN instanceof RegExp);
     assert.ok(DOMAIN_NAME_PATTERN.test('software'));
     assert.ok(DOMAIN_NAME_PATTERN.test('my-custom-domain'));
@@ -50,9 +49,8 @@ describe('domains/constants', () => {
     assert.ok(!DOMAIN_NAME_PATTERN.test('has/slash'));
     assert.ok(!DOMAIN_NAME_PATTERN.test(''));
     assert.ok(!DOMAIN_NAME_PATTERN.test('Has-Upper'));
-  });
 
-  it('exports structured overlay types set', () => {
+    // exports structured overlay types set
     assert.ok(STRUCTURED_CONFIG_TYPES instanceof Set);
     assert.equal(STRUCTURED_CONFIG_TYPES.size, 6);
     assert.ok(STRUCTURED_CONFIG_TYPES.has('validate'));
@@ -63,20 +61,17 @@ describe('domains/constants', () => {
     assert.ok(STRUCTURED_CONFIG_TYPES.has('test-config'));
     assert.ok(!STRUCTURED_CONFIG_TYPES.has('charter-template'));
     assert.ok(!STRUCTURED_CONFIG_TYPES.has('spec-template'));
-  });
 
-  it('exports deprecated overlay types map', () => {
+    // exports deprecated overlay types map
     assert.ok(DEPRECATED_CONFIG_TYPES instanceof Map);
     assert.equal(DEPRECATED_CONFIG_TYPES.size, 2);
     assert.equal(DEPRECATED_CONFIG_TYPES.get('charter-overlay'), 'charter-template');
     assert.equal(DEPRECATED_CONFIG_TYPES.get('spec-overlay'), 'spec-template');
-  });
 
-  it('exports default domain as software', () => {
+    // exports default domain as software
     assert.equal(DEFAULT_DOMAIN, 'software');
-  });
 
-  it('exports max overlay size as 512KB', () => {
+    // exports max overlay size as 512KB
     assert.equal(MAX_DOMAIN_CONFIG_SIZE, 512 * 1024);
   });
 

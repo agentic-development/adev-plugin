@@ -4,19 +4,21 @@ import assert from "node:assert/strict";
 import { testSetDivergence, surfaceDivergence, judge } from "../../../../lib/parallel/eval/divergence.mjs";
 
 describe("testSetDivergence", () => {
-  it("is empty when the pass/fail sets match", () => {
+  it("is empty when the pass/fail sets match (+1 more contract assertions)", () => {
+    // is empty when the pass/fail sets match
     assert.deepEqual(testSetDivergence({ a: "pass", b: "fail" }, { a: "pass", b: "fail" }), []);
-  });
-  it("names tests whose status differs or are present in one only", () => {
+
+    // names tests whose status differs or are present in one only
     assert.deepEqual(testSetDivergence({ a: "pass", b: "fail" }, { a: "fail", c: "pass" }).sort(), ["a", "b", "c"]);
   });
 });
 
 describe("surfaceDivergence", () => {
-  it("is empty for the same surface regardless of order", () => {
+  it("is empty for the same surface regardless of order (+1 more contract assertions)", () => {
+    // is empty for the same surface regardless of order
     assert.deepEqual(surfaceDivergence(["x", "y"], ["y", "x"]), []);
-  });
-  it("returns the symmetric difference", () => {
+
+    // returns the symmetric difference
     assert.deepEqual(surfaceDivergence(["x", "y"], ["y", "z"]).sort(), ["x", "z"]);
   });
 });

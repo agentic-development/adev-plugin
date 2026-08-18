@@ -22,17 +22,16 @@ describe("workspace-brownfield fixture — existing repos, no adev", () => {
     }
   });
 
-  it("has existing source code in each repo", () => {
+  it("has existing source code in each repo (+2 more contract assertions)", () => {
+    // has existing source code in each repo
     assert.ok(existsSync(join(BROWNFIELD, "repos", "dbt-models", "models", "customer_ltv.sql")));
     assert.ok(existsSync(join(BROWNFIELD, "repos", "data-api", "src", "routes", "ltv.js")));
     assert.ok(existsSync(join(BROWNFIELD, "repos", "airflow-dags", "dags", "customer_ltv_dag.py")));
-  });
 
-  it("detectWorkspace returns null at the root", () => {
+    // detectWorkspace returns null at the root
     assert.equal(detectWorkspace(BROWNFIELD), null);
-  });
 
-  it("detectWorkspace returns null from inside a repo", () => {
+    // detectWorkspace returns null from inside a repo
     assert.equal(detectWorkspace(join(BROWNFIELD, "repos", "dbt-models")), null);
     assert.equal(detectWorkspace(join(BROWNFIELD, "repos", "data-api", "src")), null);
   });

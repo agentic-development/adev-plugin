@@ -25,46 +25,42 @@ describe("adev:build SKILL.md — workspace-mode build orchestration", () => {
       "Must reference dependencyGraph from workspace context");
   });
 
-  it("workspace-mode build sorts repos topologically (upstream first)", () => {
+  it("workspace-mode build sorts repos topologically (upstream first) (+5 more contract assertions)", () => {
+    // workspace-mode build sorts repos topologically (upstream first)
     assert.match(skill, /topologic/i,
-      "Must reference topological sorting");
+    "Must reference topological sorting");
     assert.match(skill, /upstream.*first/i,
-      "Must specify upstream repos are built first");
-  });
+    "Must specify upstream repos are built first");
 
-  it("workspace-mode build delegates to /adev:plan --milestone and /adev:implement per repo", () => {
+    // workspace-mode build delegates to /adev:plan --milestone and /adev:implement per repo
     assert.match(skill, /\/adev:plan --milestone/,
-      "Must delegate to /adev:plan --milestone per repo");
+    "Must delegate to /adev:plan --milestone per repo");
     assert.match(skill, /\/adev:implement/,
-      "Must delegate to /adev:implement per repo");
-  });
+    "Must delegate to /adev:implement per repo");
 
-  it("circular dependencies fall back to declaration order with a warning", () => {
+    // circular dependencies fall back to declaration order with a warning
     assert.match(skill, /circular dep/i,
-      "Must handle circular dependencies");
+    "Must handle circular dependencies");
     assert.match(skill, /declaration order/i,
-      "Must fall back to declaration order on cycles");
+    "Must fall back to declaration order on cycles");
     assert.match(skill, /[Ww]arning.*circular/i,
-      "Must emit a warning on circular dependencies");
-  });
+    "Must emit a warning on circular dependencies");
 
-  it("failed upstream repos cause dependent downstream repos to be skipped", () => {
+    // failed upstream repos cause dependent downstream repos to be skipped
     assert.match(skill, /upstream.*fail|failed.*upstream/i,
-      "Must handle upstream repo failures");
+    "Must handle upstream repo failures");
     assert.match(skill, /downstream.*skip|skip.*downstream|dependent.*skip/i,
-      "Must skip dependent downstream repos on upstream failure");
-  });
+    "Must skip dependent downstream repos on upstream failure");
 
-  it("cross-repo summary is printed after all repos are processed", () => {
+    // cross-repo summary is printed after all repos are processed
     assert.match(skill, /repos attempted.*passed.*failed.*skipped/i,
-      "Must print cross-repo summary with attempt/pass/fail/skip counts");
-  });
+    "Must print cross-repo summary with attempt/pass/fail/skip counts");
 
-  it("build progress reports across repos with current/total header", () => {
+    // build progress reports across repos with current/total header
     assert.match(skill, /\[<current>\/<total>\]/,
-      "Must print progress header with [current/total] format");
+    "Must print progress header with [current/total] format");
     assert.match(skill, /Building repo/,
-      "Must print 'Building repo' progress header");
+    "Must print 'Building repo' progress header");
   });
 });
 

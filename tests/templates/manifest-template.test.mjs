@@ -10,11 +10,11 @@ const TEMPLATE_DIR = join(__dirname, "..", "..", "templates");
 describe("manifest-template.yaml", () => {
   const content = readFileSync(join(TEMPLATE_DIR, "manifest-template.yaml"), "utf8");
 
-  it("includes reminder_interval under tasks section", () => {
+  it("includes reminder_interval under tasks section (+1 more contract assertions)", () => {
+    // includes reminder_interval under tasks section
     assert.match(content, /reminder_interval:\s*25/);
-  });
 
-  it("has a comment explaining the reminder_interval field", () => {
+    // has a comment explaining the reminder_interval field
     assert.match(content, /# .*reminder/i);
   });
 

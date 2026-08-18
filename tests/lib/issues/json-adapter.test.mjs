@@ -1,3 +1,12 @@
+import { after, afterEach, before, beforeEach, describe, it } from "node:test";
+import assert from "node:assert/strict";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, renameSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import { tmpdir } from "node:os";
+import { JsonAdapter, UNSUPPORTED_VERSION_FALLBACK } from "../../../lib/issues/json-adapter.mjs";
+import { spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
+
 /**
  * Tests for lib/issues/json-adapter.mjs.
  *
@@ -9,22 +18,13 @@
  * detection (Task 14); walkTree (Task 15); legacy markdown read fallback (Task 16).
  */
 
-import { describe, it, beforeEach, afterEach } from "node:test";
-import assert from "node:assert/strict";
-import {
-  mkdtempSync,
-  mkdirSync,
-  rmSync,
-  writeFileSync,
-  readFileSync,
-  existsSync,
-  readdirSync,
-  symlinkSync,
-} from "node:fs";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
 
-import { JsonAdapter } from "../../../lib/issues/json-adapter.mjs";
+
+
+
+
+
+
 
 // ---------------------------------------------------------------------------
 // helpers
@@ -896,3 +896,751 @@ describe("JsonAdapter — legacy markdown read fallback", () => {
     );
   });
 });
+
+// ─── merged from tests/lib/issues/json-adapter.atomic.test.mjs ──────────────────────────────────────────────
+{
+  /**
+   * Atomic-write fault injection for `JsonAdapter._write()`.
+   *
+   * Verifies the CON-6 commitment: a failure between temp-file write and rename
+   * leaves the prior `tasks.json` content unchanged and best-effort cleans up
+   * the orphan temp file.
+   *
+   * Strategy: ES-module bindings are read-only, so we can't patch `fs` directly.
+   * Instead we provoke a real renameSync failure by making the destination
+   * directory non-writable on POSIX, and we provoke a writeFile failure by
+   * occupying the temp filename with a directory (so writeFileSync EISDIR).
+   *
+   * On platforms where chmod-based read-only does not actually block writes for
+   * the test user (e.g. running as root, Windows), the tests are skipped with a
+   * note rather than failing.
+   */
+
+
+
+
+
+
+
+
+
+  function makeProject() {
+    const dir = mkdtempSync(join(tmpdir(), "json-adapter-atomic-test-"));
+    mkdirSync(join(dir, ".context-index"), { recursive: true });
+    writeFileSync(join(dir, ".context-index", "manifest.yaml"), "tasks:\n  backend: json\n");
+    return dir;
+  }
+
+  /** Check whether we can effectively chmod-block writes on this platform/user. */
+  function canBlockWithChmod(dir) {
+    if (process.platform === "win32") return false;
+    if (typeof process.getuid === "function" && process.getuid() === 0) return false;
+    const probe = join(dir, ".probe");
+    mkdirSync(probe);
+    chmodSync(probe, 0o500);
+    try {
+      writeFileSync(join(probe, "x"), "x");
+      return false;
+    } catch {
+      return true;
+    } finally {
+      chmodSync(probe, 0o700);
+      rmSync(probe, { recursive: true, force: true });
+    }
+  }
+
+  describe("JsonAdapter — atomic-write fault injection (CON-6)", () => {
+    it("leaves tasks.json unchanged when writeFile fails before rename", async () => {
+      const dir = makeProject();
+      let supported = false;
+      try {
+        supported = canBlockWithChmod(dir);
+        if (!supported) {
+          // Skip on platforms where the test infrastructure can't enforce a
+          // write failure (root user, Windows). Surface as a TODO instead.
+          return;
+        }
+
+        const adapter = new JsonAdapter(dir);
+        await adapter.init();
+        await adapter.create({ title: "Baseline", type: "task" });
+        const baseline = readFileSync(adapter.filePath, "utf8");
+
+        // Make the tasks directory read-only — both temp-file creation and the
+        // subsequent rename will fail with EACCES.
+        const tasksDir = join(dir, ".context-index", "tasks");
+        chmodSync(tasksDir, 0o500);
+
+        try {
+          await assert.rejects(
+            adapter.create({ title: "Will-fail", type: "task" }),
+            (err) => err && (err.code === "EACCES" || err.code === "EPERM")
+          );
+        } finally {
+          // Restore so the after-cleanup can remove the directory.
+          chmodSync(tasksDir, 0o700);
+        }
+
+        // Baseline unchanged.
+        const after = readFileSync(adapter.filePath, "utf8");
+        assert.equal(after, baseline);
+
+        // Temp file cleaned up.
+        const files = readdirSync(tasksDir);
+        const tmps = files.filter((f) => f.endsWith(".tmp"));
+        assert.equal(tmps.length, 0, `unexpected temp files: ${tmps.join(", ")}`);
+
+        // Re-instantiate and verify state still reads cleanly.
+        const adapter2 = new JsonAdapter(dir);
+        const issues = await adapter2.list({});
+        assert.equal(issues.length, 1);
+        assert.equal(issues[0].title, "Baseline");
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    });
+
+    it("an orphan temp file present at start of write does not corrupt the result", async () => {
+      // Hand-craft an orphan temp file matching the adapter's naming convention.
+      // The adapter's `_write()` uses a random suffix, so this orphan should
+      // coexist with the next successful write. It is left as evidence of an
+      // earlier crash; the next successful write does NOT clean it up
+      // (cleanup happens only on failure paths). The point of this assertion is
+      // to prove that an orphan does not interfere with subsequent writes.
+      const dir = makeProject();
+      try {
+        const adapter = new JsonAdapter(dir);
+        await adapter.init();
+
+        const tasksDir = join(dir, ".context-index", "tasks");
+        const orphan = join(tasksDir, "tasks.json.deadbeef.tmp");
+        writeFileSync(orphan, "{ partial");
+
+        await adapter.create({ title: "After-orphan", type: "task" });
+
+        // The new write succeeded and is parseable.
+        const board = JSON.parse(readFileSync(adapter.filePath, "utf8"));
+        assert.equal(board.issues.length, 1);
+        assert.equal(board.issues[0].title, "After-orphan");
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    });
+  });
+}
+
+// ─── merged from tests/lib/issues/json-adapter.concurrent.test.mjs ──────────────────────────────────────────────
+{
+  /**
+   * Concurrent multi-update test for `JsonAdapter`.
+   *
+   * Verifies the CAS (compare-and-swap) semantics from the
+   * concurrent-write-protection spec: N concurrent appenders each spawn an
+   * independent process that creates a single issue with a unique title.
+   * Every mutation runs through `_withCas`, which re-reads a fresh snapshot
+   * on seq conflict and retries up to `casMaxRetries` times before throwing
+   * `STALE_BOARD_WRITE`.
+   *
+   * Under contention the guarantees are therefore:
+   *
+   *   1. The final `tasks.json` is always a complete, parseable document.
+   *   2. Every ACKNOWLEDGED write (child exited 0) is present in the final
+   *      board — CAS never silently drops a write it confirmed.
+   *   3. A child may legitimately fail, but only with `STALE_BOARD_WRITE`
+   *      (retry budget exhausted) — never any other error class.
+   *   4. At least one child succeeds (the winner of the first CAS race).
+   *
+   * (This file originally asserted pre-CAS last-writer-wins semantics —
+   * "all children exit 0, at least one write survives" — which is exactly
+   * backwards under CAS: exit codes may be non-zero under contention, but
+   * acknowledged writes can never be lost.)
+   *
+   * Strategy is integration (Task 21): we spawn N child processes via
+   * `node:child_process` so each gets its own fs state, then wait on all and
+   * inspect the final file. Strictly local-filesystem; no external systems.
+   */
+
+
+
+
+
+
+
+
+
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = dirname(__filename);
+  const ADAPTER_PATH = resolve(__dirname, "../../../lib/issues/json-adapter.mjs");
+
+  // Distinct exit code a child uses to report a CAS retry-budget exhaustion
+  // (STALE_BOARD_WRITE) as opposed to an unexpected crash (exit 1).
+  const EXIT_STALE = 42;
+
+  function makeProject() {
+    const dir = mkdtempSync(join(tmpdir(), "json-adapter-concurrent-test-"));
+    mkdirSync(join(dir, ".context-index"), { recursive: true });
+    writeFileSync(join(dir, ".context-index", "manifest.yaml"), "tasks:\n  backend: json\n");
+    return dir;
+  }
+
+  /** Spawn a child that performs one `create()`. Resolves with stderr/code. */
+  function spawnAppender(projectRoot, title) {
+    return new Promise((resolveP) => {
+      const script = `
+        const { JsonAdapter } = await import(${JSON.stringify(ADAPTER_PATH)});
+        const adapter = new JsonAdapter(${JSON.stringify(projectRoot)});
+        await adapter.init();
+        try {
+          await adapter.create({ title: ${JSON.stringify(title)}, type: "task" });
+        } catch (err) {
+          if (err && err.code === "STALE_BOARD_WRITE") process.exit(${EXIT_STALE});
+          throw err;
+        }
+      `;
+      const child = spawn(process.execPath, ["--input-type=module", "-e", script], {
+        stdio: ["ignore", "ignore", "pipe"],
+      });
+      let stderr = "";
+      child.stderr.on("data", (d) => { stderr += d.toString(); });
+      child.on("close", (code) => resolveP({ code, stderr }));
+    });
+  }
+
+  describe("JsonAdapter — concurrent multi-update (integration)", () => {
+    it("survives N concurrent appenders without corrupting tasks.json", async () => {
+      const N = 8;
+      const dir = makeProject();
+      try {
+        // Bootstrap empty board so concurrent appenders skip init() race.
+        const { JsonAdapter } = await import(ADAPTER_PATH);
+        const seed = new JsonAdapter(dir);
+        await seed.init();
+
+        const titles = Array.from({ length: N }, (_, i) => `concurrent-${i + 1}`);
+        const results = await Promise.all(titles.map((t) => spawnAppender(dir, t)));
+
+        // Children may only exit 0 (write acknowledged) or EXIT_STALE
+        // (CAS retry budget exhausted) — anything else is a crash.
+        for (const r of results) {
+          assert.ok(
+            r.code === 0 || r.code === EXIT_STALE,
+            `child crashed (code ${r.code}, expected 0 or ${EXIT_STALE}):\n${r.stderr}`
+          );
+        }
+
+        // Final file must be parseable.
+        const raw = readFileSync(join(dir, ".context-index", "tasks", "tasks.json"), "utf8");
+        const board = JSON.parse(raw);
+        assert.equal(board.version, 2);
+        assert.ok(Array.isArray(board.epics));
+        assert.ok(Array.isArray(board.issues));
+
+        // The CAS guarantee: every ACKNOWLEDGED write is present. No silent loss.
+        const titlesFound = new Set(board.issues.map((i) => i.title));
+        const acknowledged = titles.filter((_, i) => results[i].code === 0);
+        for (const t of acknowledged) {
+          assert.ok(titlesFound.has(t), `acknowledged write lost: ${t}`);
+        }
+
+        // At least one child must win the race outright.
+        assert.ok(acknowledged.length >= 1, "no concurrent writes succeeded at all");
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    });
+  });
+}
+
+// ─── merged from tests/lib/issues/json-adapter.parity.test.mjs ──────────────────────────────────────────────
+{
+  /**
+   * Parameterized parity suite for `JsonAdapter` vs the historical
+   * `FileAdapter` write semantics.
+   *
+   * After CON-5, `FileAdapter` is read-only-deprecated, so this suite asserts
+   * that the new `JsonAdapter` exhibits the same operational semantics that the
+   * old `FileAdapter` did for the standard read/write flow:
+   *
+   *   - CRUD round-trip
+   *   - dependency cycle detection
+   *   - cascade-aware close on tiered IDs
+   *   - filter parity on list()
+   *
+   * The legacy-issue read tolerance (CON-3) and the new granularity-invariant
+   * rejection (SA-2) are both covered by `json-adapter.test.mjs` — they are
+   * intentionally NOT replayed here because the FileAdapter equivalents have
+   * been removed.
+   */
+
+
+
+
+
+
+
+
+
+  function makeProject() {
+    const dir = mkdtempSync(join(tmpdir(), "json-adapter-parity-test-"));
+    mkdirSync(join(dir, ".context-index"), { recursive: true });
+    writeFileSync(join(dir, ".context-index", "manifest.yaml"), "tasks:\n  backend: json\n");
+    return dir;
+  }
+
+  // ---------------------------------------------------------------------------
+  // CRUD round-trip parity (used to live in FileAdapter test suite)
+  // ---------------------------------------------------------------------------
+
+  describe("parity — CRUD round-trip", () => {
+    let dir, adapter;
+    // issue-613 made flat ids random rather than sequential, so these are
+    // captured at creation instead of assumed. The subject of these tests is the
+    // CRUD contract, not the id scheme.
+    let firstId, secondId;
+    before(async () => {
+      dir = makeProject();
+      adapter = new JsonAdapter(dir);
+      await adapter.init();
+    });
+    after(() => rmSync(dir, { recursive: true, force: true }));
+
+    it("creates issues with distinct, merge-safe flat IDs", async () => {
+      const a = await adapter.create({ title: "First", type: "bug" });
+      const b = await adapter.create({ title: "Second", type: "task", priority: 1 });
+      firstId = a.id;
+      secondId = b.id;
+      assert.match(a.id, /^issue-[a-z0-9]{6}$/);
+      assert.match(b.id, /^issue-[a-z0-9]{6}$/);
+      assert.notEqual(a.id, b.id);
+    });
+
+    it("retrieves by ID", async () => {
+      const got = await adapter.get(firstId);
+      assert.equal(got.title, "First");
+      assert.equal(got.type, "bug");
+    });
+
+    it("returns null for missing ID", async () => {
+      assert.equal(await adapter.get("issue-999"), null);
+    });
+
+    it("lists all issues", async () => {
+      const all = await adapter.list({});
+      assert.equal(all.length, 2);
+    });
+
+    it("filters by status", async () => {
+      const open = await adapter.list({ status: "open" });
+      assert.ok(open.length >= 2);
+    });
+
+    it("filters by type", async () => {
+      const bugs = await adapter.list({ type: "bug" });
+      assert.equal(bugs.length, 1);
+      assert.equal(bugs[0].title, "First");
+    });
+
+    it("sorts by priority then creation date", async () => {
+      const all = await adapter.list({});
+      // "Second" has priority 1, "First" has priority 2 (default).
+      assert.equal(all[0].id, secondId);
+      assert.equal(all[1].id, firstId);
+    });
+
+    it("updates fields and preserves untouched ones", async () => {
+      const updated = await adapter.update(firstId, { priority: 0 });
+      assert.equal(updated.priority, 0);
+      assert.equal(updated.title, "First");
+      assert.equal(updated.type, "bug");
+    });
+
+    it("rejects USE_CLOSE_METHOD when status: closed is passed to update", async () => {
+      await assert.rejects(
+        adapter.update(secondId, { status: "closed" }),
+        (err) => err.code === "USE_CLOSE_METHOD"
+      );
+    });
+
+    it("close() advances status to closed and appends to notes", async () => {
+      const closed = await adapter.close(secondId, "done");
+      assert.equal(closed.status, "closed");
+      assert.match(closed.notes, /Closed: done/);
+    });
+
+    it("rejects update on a closed issue (ISSUE_CLOSED)", async () => {
+      await assert.rejects(
+        adapter.update(secondId, { priority: 0 }),
+        (err) => err.code === "ISSUE_CLOSED"
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Dependency parity
+  // ---------------------------------------------------------------------------
+
+  describe("parity — dependencies", () => {
+    let dir, adapter;
+    before(async () => {
+      dir = makeProject();
+      adapter = new JsonAdapter(dir);
+      await adapter.init();
+    });
+    after(() => rmSync(dir, { recursive: true, force: true }));
+
+    it("adds a dependency", async () => {
+      const a = await adapter.create({ title: "Dep A", type: "task" });
+      const b = await adapter.create({ title: "Dep B", type: "task" });
+      await adapter.addDependency(b.id, a.id);
+      const got = await adapter.get(b.id);
+      assert.ok(got.dependencies.includes(a.id));
+    });
+
+    it("blocks close when dependency is open (BLOCKED_BY_DEPENDENCIES)", async () => {
+      const all = await adapter.list({});
+      const depB = all.find((i) => i.title === "Dep B");
+      await assert.rejects(
+        adapter.close(depB.id, "done"),
+        (err) => err.code === "BLOCKED_BY_DEPENDENCIES"
+      );
+    });
+
+    it("detects circular dependency", async () => {
+      const all = await adapter.list({});
+      const depA = all.find((i) => i.title === "Dep A");
+      const depB = all.find((i) => i.title === "Dep B");
+      await assert.rejects(
+        adapter.addDependency(depA.id, depB.id),
+        (err) => err.code === "CIRCULAR_DEPENDENCY"
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Cascade-close parity (tiered IDs)
+  // ---------------------------------------------------------------------------
+
+  describe("parity — cascade close on tiered IDs", () => {
+    let dir, adapter;
+    before(async () => {
+      dir = makeProject();
+      adapter = new JsonAdapter(dir);
+      await adapter.init();
+    });
+    after(() => rmSync(dir, { recursive: true, force: true }));
+
+    it("blocks close of tiered parent with unclosed child (CASCADE_BLOCKED)", async () => {
+      const root = await adapter.create({ title: "Root", type: "task", tier_prefix: "e" });
+      await adapter.create({ title: "Child", type: "task", parent_id: root.id });
+      await assert.rejects(
+        adapter.close(root.id, "done"),
+        (err) => err.code === "CASCADE_BLOCKED"
+      );
+    });
+
+    it("allows close once all children are closed", async () => {
+      const root = await adapter.create({ title: "Root B", type: "task", tier_prefix: "e" });
+      const child = await adapter.create({ title: "Child B", type: "task", parent_id: root.id });
+      await adapter.close(child.id, "done");
+      const closed = await adapter.close(root.id, "done");
+      assert.equal(closed.status, "closed");
+    });
+
+    it("does not apply cascade guard to legacy flat IDs", async () => {
+      const legacy = await adapter.create({ title: "Legacy", type: "task" });
+      const closed = await adapter.close(legacy.id, "done");
+      assert.equal(closed.status, "closed");
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Round-trip persistence (re-instantiate adapter, verify state)
+  // ---------------------------------------------------------------------------
+
+  describe("parity — persistence round-trip", () => {
+    let dir;
+    before(() => { dir = makeProject(); });
+    after(() => rmSync(dir, { recursive: true, force: true }));
+
+    it("survives an adapter restart", async () => {
+      const adapter1 = new JsonAdapter(dir);
+      await adapter1.init();
+      await adapter1.create({ title: "Persisted", type: "task" });
+
+      const adapter2 = new JsonAdapter(dir);
+      const all = await adapter2.list({});
+      assert.equal(all.length, 1);
+      assert.equal(all[0].title, "Persisted");
+    });
+  });
+}
+
+// ─── merged from tests/lib/issues/json-adapter.perf.test.mjs ──────────────────────────────────────────────
+{
+  /**
+   * Performance baseline for `JsonAdapter` on a 1000-issue board.
+   *
+   * Goal: prove that `list()`, `create()`, and `update()` complete within
+   * one order of magnitude of the historical `FileAdapter` baseline. Concrete
+   * thresholds are intentionally generous; this is a regression guard, not a
+   * benchmark.
+   */
+
+
+
+
+
+
+
+
+
+  function makeProject() {
+    const dir = mkdtempSync(join(tmpdir(), "json-adapter-perf-test-"));
+    mkdirSync(join(dir, ".context-index"), { recursive: true });
+    writeFileSync(join(dir, ".context-index", "manifest.yaml"), "tasks:\n  backend: json\n");
+    return dir;
+  }
+
+  /** Bootstrap a board with N issues. */
+  async function seed(adapter, n) {
+    await adapter.init();
+    // Seed by writing the board directly to avoid N writes (each is O(N)
+    // because the adapter rewrites the whole file). Direct write keeps setup
+    // bounded.
+    const now = new Date().toISOString();
+    const issues = [];
+    for (let i = 1; i <= n; i++) {
+      issues.push({
+        id: `issue-${i}`,
+        title: `Issue ${i}`,
+        status: "open",
+        priority: 2,
+        type: "task",
+        dependencies: [],
+        notes: "",
+        created: now,
+        updated: now,
+      });
+    }
+    adapter._write({ version: 2, epics: [], issues });
+  }
+
+  describe("JsonAdapter — 1000-issue performance baseline", () => {
+    it("list() completes in under 1500ms on a 1000-issue board", async () => {
+      const dir = makeProject();
+      try {
+        const adapter = new JsonAdapter(dir);
+        await seed(adapter, 1000);
+
+        const start = performance.now();
+        const result = await adapter.list({});
+        const elapsed = performance.now() - start;
+
+        assert.equal(result.length, 1000);
+        assert.ok(elapsed < 1500, `list() took ${elapsed.toFixed(1)}ms (threshold 1500ms)`);
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    });
+
+    it("create() on a 1000-issue board completes in under 1500ms", async () => {
+      const dir = makeProject();
+      try {
+        const adapter = new JsonAdapter(dir);
+        await seed(adapter, 1000);
+
+        const start = performance.now();
+        await adapter.create({ title: "New one", type: "task" });
+        const elapsed = performance.now() - start;
+
+        assert.ok(elapsed < 1500, `create() took ${elapsed.toFixed(1)}ms (threshold 1500ms)`);
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    });
+
+    it("update() on a 1000-issue board completes in under 1500ms", async () => {
+      const dir = makeProject();
+      try {
+        const adapter = new JsonAdapter(dir);
+        await seed(adapter, 1000);
+
+        const start = performance.now();
+        await adapter.update("issue-500", { priority: 0 });
+        const elapsed = performance.now() - start;
+
+        assert.ok(elapsed < 1500, `update() took ${elapsed.toFixed(1)}ms (threshold 1500ms)`);
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    });
+
+    it("get() on a 1000-issue board completes in under 1500ms", async () => {
+      const dir = makeProject();
+      try {
+        const adapter = new JsonAdapter(dir);
+        await seed(adapter, 1000);
+
+        const start = performance.now();
+        await adapter.get("issue-750");
+        const elapsed = performance.now() - start;
+
+        assert.ok(elapsed < 1500, `get() took ${elapsed.toFixed(1)}ms (threshold 1500ms)`);
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    });
+  });
+}
+
+// ─── merged from tests/lib/issues/json-adapter.schema-version.test.mjs ──────────────────────────────────────────────
+{
+  /**
+   * Schema-version test surface for lib/issues/json-adapter.mjs.
+   *
+   * Spec: .context-index/specs/features/agent-reliable-state-artifacts/test-migration.spec.md
+   * Sibling spec: .context-index/specs/features/agent-reliable-state-artifacts/json-issue-board-adapter.spec.md
+   *
+   * Coverage:
+   *   - version: 2 happy path (Behaviors row 2 / AC #2)
+   *   - version: 3 forward-compat: unknown fields on epics/issues survive a
+   *     round-trip; top-level unknown keys are DROPPED on write
+   *     (Behaviors row 3 / AC #3 / SA-3 / CON-1 contract gap)
+   *   - version: 1, version: 0 rejection with UNSUPPORTED_BOARD_VERSION
+   *     (Behaviors row 4 / Error Cases row 1 / AC #2)
+   *   - non-numeric version: canonical fixed-string fallback (no raw-value
+   *     interpolation — SEC-4 / SA-2 / Error Cases row 2)
+   */
+
+
+
+
+
+
+
+
+
+  /**
+   * Create a temp project root with a pre-seeded `tasks.json` of the given
+   * content and a minimal manifest. Cleans up after the test.
+   */
+  function setupBoard(t, boardContent) {
+    const storageRoot = mkdtempSync(join(tmpdir(), "json-adapter-schema-version-"));
+    t.after(() => rmSync(storageRoot, { recursive: true, force: true }));
+    mkdirSync(join(storageRoot, ".context-index", "tasks"), { recursive: true });
+    writeFileSync(
+      join(storageRoot, ".context-index", "tasks", "tasks.json"),
+      JSON.stringify(boardContent, null, 2),
+    );
+    writeFileSync(
+      join(storageRoot, ".context-index", "manifest.yaml"),
+      "tasks:\n  backend: json\n",
+    );
+    return { adapter: new JsonAdapter(storageRoot), storageRoot };
+  }
+
+  describe("JsonAdapter — schema version", () => {
+    it("reads version: 2 happy path", async (t) => {
+      const { adapter } = setupBoard(t, { version: 2, epics: [], issues: [] });
+      assert.deepEqual(await adapter.listEpics(), []);
+      assert.deepEqual(await adapter.list(), []);
+    });
+
+    it("reads version: 3 forward-compat: preserves unknown fields on epics and issues; DROPS unknown top-level keys on write", async (t) => {
+      // SA-3 / CON-1: cover unknown fields on epics, issues, AND top-level.
+      // Behavior verified against lib/issues/json-adapter.mjs:_write:
+      // _write reconstructs { version: 2, epics, issues } only — top-level
+      // unknown keys are dropped. This is a CON-1 contract gap recorded as a
+      // follow-up against json-issue-board-adapter.spec.md.
+      const original = {
+        version: 3,
+        epics: [
+          { id: "epic-1", title: "E", status: "open", futureField: "epicX" },
+        ],
+        issues: [
+          {
+            id: "issue-1",
+            title: "I",
+            status: "open",
+            priority: 2,
+            type: "task",
+            futureField: "issueX",
+          },
+        ],
+        futureTopLevel: { schema: "v3-metadata" },
+      };
+      const { adapter, storageRoot } = setupBoard(t, original);
+
+      const epics = await adapter.listEpics();
+      const issues = await adapter.list();
+      assert.equal(epics[0].futureField, "epicX", "unknown epic field read");
+      assert.equal(issues[0].futureField, "issueX", "unknown issue field read");
+
+      await adapter.update("issue-1", { title: "I2" });
+      const reread = JSON.parse(
+        readFileSync(
+          join(storageRoot, ".context-index", "tasks", "tasks.json"),
+          "utf8",
+        ),
+      );
+      assert.equal(reread.version, 2, "writers always emit version: 2");
+      assert.equal(
+        reread.epics[0].futureField,
+        "epicX",
+        "unknown epic field preserved on round-trip",
+      );
+      assert.equal(
+        reread.issues[0].futureField,
+        "issueX",
+        "unknown issue field preserved on round-trip",
+      );
+      // SA-3: assert the deterministic dropped-on-write behavior. Documented
+      // contract gap (CON-1): top-level unknown keys are NOT preserved.
+      assert.equal(
+        reread.futureTopLevel,
+        undefined,
+        "top-level unknown keys are dropped on write (documented contract gap)",
+      );
+    });
+
+    it("rejects version: 1 with UNSUPPORTED_BOARD_VERSION", async (t) => {
+      const { adapter } = setupBoard(t, { version: 1, epics: [], issues: [] });
+      await assert.rejects(
+        () => adapter.list(),
+        (err) => err.code === "UNSUPPORTED_BOARD_VERSION",
+      );
+    });
+
+    it("rejects version: 0 with UNSUPPORTED_BOARD_VERSION", async (t) => {
+      const { adapter } = setupBoard(t, { version: 0, epics: [], issues: [] });
+      await assert.rejects(
+        () => adapter.list(),
+        (err) => err.code === "UNSUPPORTED_BOARD_VERSION",
+      );
+    });
+
+    it("rejects non-numeric version using the canonical fixed-string fallback (SA-2 / SEC-4)", async (t) => {
+      const { adapter } = setupBoard(t, {
+        version: "v2",
+        epics: [],
+        issues: [],
+      });
+      await assert.rejects(
+        () => adapter.list(),
+        (err) => {
+          assert.equal(err.code, "UNSUPPORTED_BOARD_VERSION");
+          assert.equal(
+            err.message,
+            UNSUPPORTED_VERSION_FALLBACK,
+            "fallback constant is used verbatim",
+          );
+          assert.ok(
+            !err.message.includes("v2"),
+            "raw value must not be interpolated (SEC-4)",
+          );
+          return true;
+        },
+      );
+    });
+  });
+}

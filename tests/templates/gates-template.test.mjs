@@ -107,12 +107,20 @@ describe("gates-template.yaml", () => {
     }
   });
 
-  it("transitions is live and empty", () => {
+  it("transitions is live and empty (+1 more contract assertions)", () => {
+    // transitions is live and empty
     assert.ok(doc.transitions !== undefined, "transitions must be a live key");
     assert.equal(typeof doc.transitions, "object");
     assert.notEqual(doc.transitions, null);
     assert.equal(Array.isArray(doc.transitions), false);
     assert.deepEqual(Object.keys(doc.transitions), [], "transitions must ship unpopulated");
+
+    // documents all three tiers and both severity values
+    assert.ok(content.includes("fast"), "Template should show fast tier");
+    assert.ok(content.includes("integration"), "Template should show integration tier");
+    assert.ok(content.includes("e2e"), "Template should show e2e tier");
+    assert.ok(content.includes("error"), "Template should show error severity");
+    assert.ok(content.includes("warning"), "Template should show warning severity");
   });
 
   it("no command value anywhere in the file is a non-empty quoted string", () => {
@@ -130,13 +138,6 @@ describe("gates-template.yaml", () => {
     );
   });
 
-  it("documents all three tiers and both severity values", () => {
-    assert.ok(content.includes("fast"), "Template should show fast tier");
-    assert.ok(content.includes("integration"), "Template should show integration tier");
-    assert.ok(content.includes("e2e"), "Template should show e2e tier");
-    assert.ok(content.includes("error"), "Template should show error severity");
-    assert.ok(content.includes("warning"), "Template should show warning severity");
-  });
 
   it("documents the e2e-only group field and the transitions section", () => {
     assert.ok(content.includes("group"), "Template should include group field for e2e gates");

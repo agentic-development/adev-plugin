@@ -4,9 +4,14 @@ import { readFileSync } from "node:fs";
 
 const skill = readFileSync(new URL("../../skills/hygiene/SKILL.md", import.meta.url), "utf8");
 
-test("hygiene SKILL.md adds an Audit Pass reporting floor_inputs: unavailable tasks", () => {
+test("hygiene SKILL.md adds an Audit Pass reporting floor_inputs: unavailable tasks (+1 more contract assertions)", () => {
+  // hygiene SKILL.md adds an Audit Pass reporting floor_inputs: unavailable tasks
   assert.match(skill, /## Audit Pass 22/);
   assert.match(skill, /floor_inputs.*unavailable/s);
+
+  // no stale pass-count strings remain
+  assert.doesNotMatch(skill, /\btwenty audit passes\b/i);
+  assert.doesNotMatch(skill, /\beighteen passes\b/i);
 });
 
 test("new pass names the plan and task id for each flagged task", () => {
@@ -42,7 +47,4 @@ test("pass-count prose matches the actual number of Audit Pass headings", () => 
   assert.match(skill, new RegExp(`each of the ${word} passes`));
 });
 
-test("no stale pass-count strings remain", () => {
-  assert.doesNotMatch(skill, /\btwenty audit passes\b/i);
-  assert.doesNotMatch(skill, /\beighteen passes\b/i);
-});
+

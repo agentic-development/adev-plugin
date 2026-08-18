@@ -10,27 +10,29 @@ import {
 } from "../../../lib/test-strategies/gaming-gate.mjs";
 
 describe("isTestFile", () => {
-  it("matches files under tests/", () => {
+  it("matches files under tests/ (+3 more contract assertions)", () => {
+    // matches files under tests/
     assert.equal(isTestFile("tests/cli/context.test.mjs"), true);
-  });
-  it("matches provider-mirror tests dirs", () => {
+
+    // matches provider-mirror tests dirs
     assert.equal(isTestFile("providers/codex/tests/foo.test.mjs"), true);
-  });
-  it("matches .spec.mjs suffix outside tests/", () => {
+
+    // matches .spec.mjs suffix outside tests/
     assert.equal(isTestFile("src/widget.spec.mjs"), true);
-  });
-  it("rejects non-test source files", () => {
+
+    // rejects non-test source files
     assert.equal(isTestFile("lib/test-strategies/gaming.mjs"), false);
   });
 });
 
 describe("isDetectorFixtureFile", () => {
-  it("matches the three known gaming-detector fixture files", () => {
+  it("matches the three known gaming-detector fixture files (+1 more contract assertions)", () => {
+    // matches the three known gaming-detector fixture files
     assert.equal(isDetectorFixtureFile("tests/lib/test-strategies/gaming.test.mjs"), true);
     assert.equal(isDetectorFixtureFile("tests/lib/test-strategies/integration-gaming.test.mjs"), true);
     assert.equal(isDetectorFixtureFile("tests/test-strategies/gaming-agent-skip.test.mjs"), true);
-  });
-  it("does not match an unrelated test file", () => {
+
+    // does not match an unrelated test file
     assert.equal(isDetectorFixtureFile("tests/cli/context.test.mjs"), false);
   });
   it("exemption is glob-shaped, not a fixed 3-file list — pins the intended breadth", () => {
@@ -46,14 +48,15 @@ describe("isDetectorFixtureFile", () => {
 });
 
 describe("isIntegrationTestFile", () => {
-  it("matches a path with an integration/ segment", () => {
+  it("matches a path with an integration/ segment (+2 more contract assertions)", () => {
+    // matches a path with an integration/ segment
     assert.equal(isIntegrationTestFile("tests/integration/adapter.test.mjs"), true);
-  });
-  it("matches a filename containing the integration token", () => {
+
+    // matches a filename containing the integration token
     assert.equal(isIntegrationTestFile("tests/lib/test-strategies/integration-gaming.test.mjs"), true);
     assert.equal(isIntegrationTestFile("tests/hooks/lifecycle-gate-integration.test.mjs"), true);
-  });
-  it("does not match an ordinary unit test path", () => {
+
+    // does not match an ordinary unit test path
     assert.equal(isIntegrationTestFile("tests/cli/context.test.mjs"), false);
   });
 });

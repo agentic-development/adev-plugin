@@ -1,3 +1,10 @@
+import { test } from "node:test";
+import assert from "node:assert";
+import { mkdirSync, mkdtempSync, realpathSync, symlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { emitDiagnostic, formatDiagnostic, validateCwd, validateSessionId, validateTranscriptPath } from "../../lib/session-capture.mjs";
+
 /**
  * Tests for the three validators in `lib/session-capture.mjs`:
  *   - validateSessionId(id)    — SEC-2 charset check
@@ -5,38 +12,33 @@
  *   - validateTranscriptPath(path, cwd) — SEC-3, SEC-10 containment + extension
  */
 
-import { test } from "node:test";
-import assert from "node:assert";
-import { mkdtempSync, mkdirSync, writeFileSync, symlinkSync, realpathSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 
-import {
-  validateSessionId,
-  validateCwd,
-  validateTranscriptPath,
-} from "../../lib/session-capture.mjs";
+
+
+
+
+
+
 
 // ────────────────────────────────────────────────────────────────────────────
 // validateSessionId — SEC-2: ^[A-Za-z0-9_-]+$
 // ────────────────────────────────────────────────────────────────────────────
 
-test("validateSessionId accepts uuid-like ids", () => {
+test("validateSessionId accepts uuid-like ids (+2 more contract assertions)", () => {
+  // validateSessionId accepts uuid-like ids
   assert.strictEqual(validateSessionId("0bd909e-1a2b-3c4d"), true);
   assert.strictEqual(validateSessionId("abc-123_DEF"), true);
   assert.strictEqual(validateSessionId("a"), true);
   assert.strictEqual(validateSessionId("0123456789ABCDEFabcdef-_"), true);
-});
 
-test("validateSessionId rejects path-injection attempts", () => {
+  // validateSessionId rejects path-injection attempts
   assert.strictEqual(validateSessionId("../../etc/passwd"), false);
   assert.strictEqual(validateSessionId("a/b"), false);
   assert.strictEqual(validateSessionId("a b"), false);
   assert.strictEqual(validateSessionId("a.b"), false);
   assert.strictEqual(validateSessionId(""), false);
-});
 
-test("validateSessionId rejects non-string input", () => {
+  // validateSessionId rejects non-string input
   assert.strictEqual(validateSessionId(null), false);
   assert.strictEqual(validateSessionId(undefined), false);
   assert.strictEqual(validateSessionId(42), false);
@@ -183,3 +185,152 @@ test("validateTranscriptPath compares realpath-vs-realpath (symlink escape)", ()
     process.env.HOME = prevHome;
   }
 });
+
+// ────────────────────────────────────────────────────────────────────────────
+// validateTranscriptPath — dot-directory cwd (adev-plugin-882a.1)
+//
+// Claude Code encodes the cwd by replacing `/` AND `.` with `-`. adev replaced
+// only `/`, so for any cwd under `.claude/worktrees/` the transcripts root never
+// resolved and every transcript was rejected — token-cost logging went silently
+// inert in exactly the worktree workflow adev steers users toward.
+// ────────────────────────────────────────────────────────────────────────────
+
+test("validateTranscriptPath accepts a transcript for a worktree cwd (dot -> dash)", () => {
+  const fakeHome = mkdtempSync(join(tmpdir(), "adev-home-"));
+  const base = mkdtempSync(join(tmpdir(), "adev-wt-"));
+  const cwd = join(base, ".claude", "worktrees", "wt-1");
+  mkdirSync(cwd, { recursive: true });
+  const cwdReal = realpathSync(cwd);
+
+  // Current Claude Code encoding: both `/` and `.` become `-`.
+  const encoded = cwdReal.replace(/[/.]/g, "-");
+  const projectDir = join(fakeHome, ".claude", "projects", encoded);
+  mkdirSync(projectDir, { recursive: true });
+  const txPath = join(projectDir, "session.jsonl");
+  writeFileSync(txPath, "{}\n");
+
+  const prevHome = process.env.HOME;
+  process.env.HOME = fakeHome;
+  try {
+    assert.strictEqual(validateTranscriptPath(txPath, cwd), true);
+  } finally {
+    process.env.HOME = prevHome;
+  }
+});
+
+test("validateTranscriptPath still accepts the legacy dot-preserving root", () => {
+  const fakeHome = mkdtempSync(join(tmpdir(), "adev-home-"));
+  const base = mkdtempSync(join(tmpdir(), "adev-wt-"));
+  const cwd = join(base, ".claude", "worktrees", "wt-legacy");
+  mkdirSync(cwd, { recursive: true });
+  const cwdReal = realpathSync(cwd);
+
+  // Legacy encoding: only `/` becomes `-`, the dot survives.
+  const encoded = cwdReal.replace(/\//g, "-");
+  const projectDir = join(fakeHome, ".claude", "projects", encoded);
+  mkdirSync(projectDir, { recursive: true });
+  const txPath = join(projectDir, "session.jsonl");
+  writeFileSync(txPath, "{}\n");
+
+  const prevHome = process.env.HOME;
+  process.env.HOME = fakeHome;
+  try {
+    assert.strictEqual(validateTranscriptPath(txPath, cwd), true);
+  } finally {
+    process.env.HOME = prevHome;
+  }
+});
+
+test("validateTranscriptPath still rejects a transcript outside every candidate root", () => {
+  const fakeHome = mkdtempSync(join(tmpdir(), "adev-home-"));
+  const base = mkdtempSync(join(tmpdir(), "adev-wt-"));
+  const cwd = join(base, ".claude", "worktrees", "wt-2");
+  mkdirSync(cwd, { recursive: true });
+  const cwdReal = realpathSync(cwd);
+
+  mkdirSync(join(fakeHome, ".claude", "projects", cwdReal.replace(/[/.]/g, "-")), {
+    recursive: true,
+  });
+
+  // A transcript that exists, ends in .jsonl, but lives outside both roots.
+  const outside = mkdtempSync(join(tmpdir(), "adev-outside-"));
+  const txPath = join(outside, "session.jsonl");
+  writeFileSync(txPath, "{}\n");
+
+  const prevHome = process.env.HOME;
+  process.env.HOME = fakeHome;
+  try {
+    assert.strictEqual(validateTranscriptPath(txPath, cwd), false);
+  } finally {
+    process.env.HOME = prevHome;
+  }
+});
+
+// ─── merged from tests/lib/session-capture-diagnostic.test.mjs ──────────────────────────────────────────────
+{
+  /**
+   * Tests for the stderr diagnostic helper (SEC-7 + CON-10).
+   * Confirms the documented format `[adev:session-capture] <reason>[ <subject>][ <path>]`.
+   */
+
+
+
+
+
+
+  test("formatDiagnostic emits prefix + reason-code only (+3 more contract assertions)", () => {
+    // formatDiagnostic emits prefix + reason-code only
+    assert.strictEqual(
+    formatDiagnostic("disabled"),
+    "[adev:session-capture] disabled",
+    );
+
+    // formatDiagnostic appends subject when provided
+    assert.strictEqual(
+    formatDiagnostic("validation-error", { subject: "session-id" }),
+    "[adev:session-capture] validation-error session-id",
+    );
+
+    // formatDiagnostic appends subject and path
+    assert.strictEqual(
+    formatDiagnostic("path-error", {
+    subject: "transcript",
+    path: ".context-index/sessions/2024.md",
+    }),
+    "[adev:session-capture] path-error transcript .context-index/sessions/2024.md",
+    );
+
+    // formatDiagnostic appends path without subject
+    assert.strictEqual(
+    formatDiagnostic("disabled", { path: ".githooks/post-commit" }),
+    "[adev:session-capture] disabled .githooks/post-commit",
+    );
+  });
+
+  test("emitDiagnostic writes a newline-terminated line via the sink", () => {
+    let captured = "";
+    emitDiagnostic("validation-error", {
+      subject: "cwd",
+      sink: (line) => {
+        captured = line;
+      },
+    });
+    assert.strictEqual(captured, "[adev:session-capture] validation-error cwd\n");
+  });
+
+  test("formatDiagnostic accepts SEC-12/SEC-13 subjects (cost-usd, model, issue-id, etc.)", () => {
+    for (const subject of [
+      "cost-usd",
+      "input-tokens",
+      "output-tokens",
+      "model",
+      "issue-id",
+      "epic-id",
+    ]) {
+      assert.strictEqual(
+        formatDiagnostic("validation-error", { subject }),
+        `[adev:session-capture] validation-error ${subject}`,
+      );
+    }
+  });
+}

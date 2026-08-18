@@ -107,11 +107,11 @@ describe('validateSourcePath', () => {
 // ─── slugifyDescription ───────────────────────────────────────────────────────
 
 describe('slugifyDescription', () => {
-  it('lowercases and replaces spaces with hyphens', () => {
+  it("lowercases and replaces spaces with hyphens (+1 more contract assertions)", () => {
+    // lowercases and replaces spaces with hyphens
     assert.equal(slugifyDescription('Homepage Hero Layout'), 'homepage-hero-layout');
-  });
 
-  it('strips special characters', () => {
+    // strips special characters
     assert.equal(slugifyDescription('my image!!! @#$'), 'my-image');
   });
 
@@ -122,15 +122,14 @@ describe('slugifyDescription', () => {
     assert.ok(!result.endsWith('-'));
   });
 
-  it('returns empty string for all-emoji input', () => {
+  it("returns empty string for all-emoji input (+2 more contract assertions)", () => {
+    // returns empty string for all-emoji input
     assert.equal(slugifyDescription('\u{1F389}\u{1F38A}'), '');
-  });
 
-  it('handles consecutive special characters', () => {
+    // handles consecutive special characters
     assert.equal(slugifyDescription('a---b___c'), 'a-b-c');
-  });
 
-  it('handles leading/trailing whitespace', () => {
+    // handles leading/trailing whitespace
     assert.equal(slugifyDescription('  hello world  '), 'hello-world');
   });
 

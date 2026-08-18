@@ -237,11 +237,11 @@ test('falls back to the absolute path in the message when projectRoot is absent'
 
 // ── validationReportPathFor (the exported convention owner, SA-13) ──────────
 
-test('validationReportPathFor maps a spec path to its co-located report', () => {
+test("validationReportPathFor maps a spec path to its co-located report (+1 more contract assertions)", () => {
+  // validationReportPathFor maps a spec path to its co-located report
   assert.equal(validationReportPathFor('/a/b/c.spec.md'), '/a/b/c.validate.md');
-});
 
-test('validationReportPathFor returns null for non-spec inputs', () => {
+  // validationReportPathFor returns null for non-spec inputs
   assert.equal(validationReportPathFor('/a/b/c.md'), null);
   assert.equal(validationReportPathFor('/a/b/c.validate.md'), null);
   assert.equal(validationReportPathFor(null), null);

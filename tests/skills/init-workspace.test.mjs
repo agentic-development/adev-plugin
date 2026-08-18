@@ -9,22 +9,20 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 describe("init SKILL.md — workspace support", () => {
   const content = readFileSync(join(__dirname, "..", "..", "skills", "init", "SKILL.md"), "utf8");
 
-  it("documents --workspace flag", () => {
+  it("documents --workspace flag (+3 more contract assertions)", () => {
+    // documents --workspace flag
     assert.ok(content.includes("--workspace"), "Should document --workspace flag");
-  });
 
-  it("scaffolds adev-workspace.yaml from template", () => {
+    // scaffolds adev-workspace.yaml from template
     assert.ok(content.includes("adev-workspace.yaml") && content.includes("workspace-template"),
-      "Should scaffold from workspace template");
-  });
+    "Should scaffold from workspace template");
 
-  it("auto-discovers repos with manifest.yaml", () => {
+    // auto-discovers repos with manifest.yaml
     assert.ok(content.includes("auto-discover") || content.includes("Auto-discover"),
-      "Should auto-discover child repos");
-  });
+    "Should auto-discover child repos");
 
-  it("does not create workspace CLAUDE.md", () => {
+    // does not create workspace CLAUDE.md
     assert.ok(content.includes("No workspace-level CLAUDE.md") || content.includes("no workspace-level CLAUDE.md"),
-      "Should not create workspace CLAUDE.md");
+    "Should not create workspace CLAUDE.md");
   });
 });

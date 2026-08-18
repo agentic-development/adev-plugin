@@ -7,28 +7,29 @@ const skillContent = readFileSync(
 );
 
 describe("hygiene SKILL.md Pass 16", () => {
-  it("defines Pass 16: Heuristic Index Health", () => {
+  it("defines Pass 16: Heuristic Index Health (+7 more contract assertions)", () => {
+    // defines Pass 16: Heuristic Index Health
     assert.ok(skillContent.includes("Pass 16") || skillContent.includes("Audit Pass 16"));
-  });
-  it("defines STALE_INDEX check", () => {
+
+    // defines STALE_INDEX check
     assert.ok(skillContent.includes("STALE_INDEX"));
-  });
-  it("defines ORPHAN_TAG check", () => {
+
+    // defines ORPHAN_TAG check
     assert.ok(skillContent.includes("ORPHAN_TAG"));
-  });
-  it("supports --check heuristics flag", () => {
+
+    // supports --check heuristics flag
     assert.ok(skillContent.includes("heuristics") && skillContent.includes("--check"));
-  });
-  it("supports --fix auto-sync for STALE_INDEX", () => {
+
+    // supports --fix auto-sync for STALE_INDEX
     assert.ok(skillContent.includes("--fix") && skillContent.includes("sync"));
-  });
-  it("reports SKIP when store directory missing", () => {
+
+    // reports SKIP when store directory missing
     assert.ok(skillContent.includes("SKIP") || skillContent.includes("No heuristic store"));
-  });
-  it("references retrieveHeuristics or readHeuristics", () => {
+
+    // references retrieveHeuristics or readHeuristics
     assert.ok(skillContent.includes("retrieveHeuristics") || skillContent.includes("readHeuristics"));
-  });
-  it("references Learned Lessons section in sync targets", () => {
+
+    // references Learned Lessons section in sync targets
     assert.ok(skillContent.includes("Learned Lessons"));
   });
 });

@@ -16,28 +16,25 @@ describe('debug-playbook-template', () => {
     assert.ok(content.length > 0);
   });
 
-  it('has YAML frontmatter with last-verified field', () => {
+  it("has YAML frontmatter with last-verified field (+4 more contract assertions)", () => {
+    // has YAML frontmatter with last-verified field
     assert.match(content, /^---\n/);
     assert.match(content, /last-verified:/);
-  });
 
-  it('has at least one failure mode section with required fields', () => {
+    // has at least one failure mode section with required fields
     assert.match(content, /## Failure Mode:/i);
     assert.match(content, /id:/i);
     assert.match(content, /triggers:/i);
     assert.match(content, /escalation:/i);
-  });
 
-  it('has ordered diagnostic steps', () => {
+    // has ordered diagnostic steps
     assert.match(content, /### Steps/i);
     assert.match(content, /1\./);
-  });
 
-  it('diagnostic steps include description field', () => {
+    // diagnostic steps include description field
     assert.match(content, /description:/i);
-  });
 
-  it('has command and expected fields documented', () => {
+    // has command and expected fields documented
     assert.match(content, /command:/i);
     assert.match(content, /expected:/i);
   });
@@ -52,12 +49,12 @@ describe('debug-playbook-template', () => {
     }
   });
 
-  it('escalation includes condition and target', () => {
+  it("escalation includes condition and target (+1 more contract assertions)", () => {
+    // escalation includes condition and target
     assert.match(content, /condition:/i);
     assert.match(content, /target:/i);
-  });
 
-  it('template has HTML comments explaining sections', () => {
+    // template has HTML comments explaining sections
     assert.match(content, /<!--/);
   });
 });

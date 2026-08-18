@@ -32,9 +32,15 @@ const skill = parallelPointer
   : skillBody;
 
 describe("implement --parallel documentation contract", () => {
-  it("documents the --parallel mode", () => {
+  it("documents the --parallel mode (+1 more contract assertions)", () => {
+    // documents the --parallel mode
     assert.match(skill, /--parallel/);
     assert.match(skill, /adev parallel groups/);
+
+    // documents all serial-fallback reasons
+    assert.match(skill, /serial: single group/);
+    assert.match(skill, /serial: nested/);
+    assert.match(skill, /malformed/);
   });
 
   it("preserves the anti-isolation:\"worktree\" guardrail", () => {
@@ -44,11 +50,11 @@ describe("implement --parallel documentation contract", () => {
     assert.match(skill, /concurrently in a single message/);
   });
 
-  it("documents the worktree-binding prompt contract (absolute / git -C)", () => {
+  it("documents the worktree-binding prompt contract (absolute / git -C) (+1 more contract assertions)", () => {
+    // documents the worktree-binding prompt contract (absolute / git -C)
     assert.match(skill, /git -C/);
-  });
 
-  it("documents the join-time verifications by error code", () => {
+    // documents the join-time verifications by error code
     assert.match(skill, /ORCHESTRATOR_POLLUTED/);
     assert.match(skill, /COMMITS_NOT_VERIFIED/);
     assert.match(skill, /adev parallel assert-clean/);
@@ -63,11 +69,6 @@ describe("implement --parallel documentation contract", () => {
     assert.match(skill, /adev worktree remove --slug <…> --force/);
   });
 
-  it("documents all serial-fallback reasons", () => {
-    assert.match(skill, /serial: single group/);
-    assert.match(skill, /serial: nested/);
-    assert.match(skill, /malformed/);
-  });
 
   it("contains no inline-Node execution directive in the parallel prose", () => {
     // Guard the constitution rule: the --parallel section names verbs, not node -e.

@@ -338,19 +338,17 @@ describe("validateTargetDate (Task 7)", () => {
 // ---------------------------------------------------------------------------
 
 describe("resolveStrategy", () => {
-  it("returns 'manual' for null release", () => {
+  it("returns 'manual' for null release (+3 more contract assertions)", () => {
+    // returns 'manual' for null release
     assert.equal(resolveStrategy({ release: null }), "manual");
-  });
 
-  it("returns 'manual' for undefined release", () => {
+    // returns 'manual' for undefined release
     assert.equal(resolveStrategy({}), "manual");
-  });
 
-  it("returns 'manual' for release without strategy", () => {
+    // returns 'manual' for release without strategy
     assert.equal(resolveStrategy({ release: {} }), "manual");
-  });
 
-  it("returns configured strategy for valid values", () => {
+    // returns configured strategy for valid values
     assert.equal(resolveStrategy({ release: { strategy: "tag-only" } }), "tag-only");
     assert.equal(resolveStrategy({ release: { strategy: "release-please" } }), "release-please");
     assert.equal(resolveStrategy({ release: { strategy: "manual" } }), "manual");

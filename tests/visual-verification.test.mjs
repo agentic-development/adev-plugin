@@ -35,24 +35,22 @@ describe("visual verification in live-spec template", () => {
 describe("visual verification in adev:implement", () => {
   const skill = readSkill("implement");
 
-  it("has a Visual Verification step", () => {
+  it("has a Visual Verification step (+3 more contract assertions)", () => {
+    // has a Visual Verification step
     assert.ok(skill.includes("#### 2e. Visual Verification"));
-  });
 
-  it("requires Playwright MCP — blocks, does not skip", () => {
+    // requires Playwright MCP — blocks, does not skip
     assert.ok(skill.includes("BLOCKED"), "should use BLOCKED language");
     assert.ok(skill.includes("Do not proceed"), "should not allow proceeding without Playwright");
     assert.ok(skill.includes("Do not skip"), "should not allow skipping");
-  });
 
-  it("triggers on UI file patterns", () => {
+    // triggers on UI file patterns
     assert.ok(skill.includes("*.tsx"), "should match .tsx files");
     assert.ok(skill.includes("*.css"), "should match .css files");
     assert.ok(skill.includes("components/**"), "should match components dir");
     assert.ok(skill.includes("app/**/page.*"), "should match page files");
-  });
 
-  it("includes a fix loop with max cycles", () => {
+    // includes a fix loop with max cycles
     assert.ok(skill.includes("Maximum 3 visual fix cycles"), "should cap fix iterations");
   });
 
@@ -91,13 +89,13 @@ describe("visual verification in adev:validate", () => {
     assert.ok(/SKIP/.test(check11), "should permit SKIP for the no-UI-files case after the trigger-guard restructure");
   });
 
-  it("tests three responsive breakpoints", () => {
+  it("tests three responsive breakpoints (+1 more contract assertions)", () => {
+    // tests three responsive breakpoints
     assert.ok(skill.includes("375px"), "should test mobile breakpoint");
     assert.ok(skill.includes("768px"), "should test tablet breakpoint");
     assert.ok(skill.includes("1280px"), "should test desktop breakpoint");
-  });
 
-  it("checks dark mode", () => {
+    // checks dark mode
     assert.ok(skill.includes("dark mode") || skill.includes("Dark mode"));
   });
 

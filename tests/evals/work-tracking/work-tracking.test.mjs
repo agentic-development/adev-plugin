@@ -94,14 +94,14 @@ describe("Work Tracking Eval: Fixture Setup", () => {
   // Scenario A: Full lifecycle trailer flow
   // =========================================================================
   describe("Scenario A: Full Lifecycle Trailers", () => {
-    it("lib/login.mjs is fully traced (all commits have Spec + Plan-task + Issue)", () => {
+    it("lib/login.mjs is fully traced (all commits have Spec + Plan-task + Issue) (+1 more contract assertions)", () => {
+      // lib/login.mjs is fully traced (all commits have Spec + Plan-task + Issue)
       assert.ok(allCommitsHaveTrailer("lib/login.mjs", "Spec"));
       assert.ok(allCommitsHaveTrailer("lib/login.mjs", "Plan-task"));
       assert.ok(allCommitsHaveTrailer("lib/login.mjs", "Issue"));
       assert.ok(allCommitsHaveTrailer("lib/login.mjs", "Author-type"));
-    });
 
-    it("tests/login.test.mjs is fully traced", () => {
+      // tests/login.test.mjs is fully traced
       assert.ok(allCommitsHaveTrailer("tests/login.test.mjs", "Spec"));
       assert.ok(allCommitsHaveTrailer("tests/login.test.mjs", "Author-type"));
     });
@@ -142,7 +142,7 @@ describe("Work Tracking Eval: Fixture Setup", () => {
   // =========================================================================
   describe("Scenario B: Lifecycle Bypass Detection", () => {
     it("detects manifest-claimed file with untracked commit (drift)", () => {
-      // lib/drifted.mjs is claimed by widgets.md but has a post-impl commit without Spec:
+      // lib/drifted.mjs is claimed by widgets.spec.md but has a post-impl commit without Spec:
       const commits = commitsForFile("lib/drifted.mjs");
       const newestSha = commits[0].split(" ")[0];
       const trailers = getTrailers(newestSha);
@@ -155,7 +155,7 @@ describe("Work Tracking Eval: Fixture Setup", () => {
       const index = await buildReverseIndex(specsDir, FIXTURE_DIR);
       assert.equal(
         index.get("lib/drifted.mjs"),
-        ".context-index/specs/features/dashboard/widgets.md"
+        ".context-index/specs/features/dashboard/widgets.spec.md"
       );
     });
 
@@ -172,7 +172,7 @@ describe("Work Tracking Eval: Fixture Setup", () => {
       // login.mjs is claimed AND all commits have Spec:
       assert.equal(
         index.get("lib/login.mjs"),
-        ".context-index/specs/features/auth/login.md"
+        ".context-index/specs/features/auth/login.spec.md"
       );
       assert.ok(allCommitsHaveTrailer("lib/login.mjs", "Spec"));
     });
@@ -188,9 +188,9 @@ describe("Work Tracking Eval: Fixture Setup", () => {
 
       // 3 claimed files total
       assert.equal(index.size, 3);
-      assert.equal(index.get("lib/login.mjs"), ".context-index/specs/features/auth/login.md");
-      assert.equal(index.get("tests/login.test.mjs"), ".context-index/specs/features/auth/login.md");
-      assert.equal(index.get("lib/drifted.mjs"), ".context-index/specs/features/dashboard/widgets.md");
+      assert.equal(index.get("lib/login.mjs"), ".context-index/specs/features/auth/login.spec.md");
+      assert.equal(index.get("tests/login.test.mjs"), ".context-index/specs/features/auth/login.spec.md");
+      assert.equal(index.get("lib/drifted.mjs"), ".context-index/specs/features/dashboard/widgets.spec.md");
     });
 
     it("unclaimed file count matches expected", async () => {
@@ -237,13 +237,13 @@ describe("Work Tracking Eval: Fixture Setup", () => {
     });
 
     it("session-mgmt spec is review-passed with no plan (unplanned)", () => {
-      const spec = readFileSync(join(FIXTURE_DIR, ".context-index/specs/features/auth/session-mgmt.md"), "utf-8");
+      const spec = readFileSync(join(FIXTURE_DIR, ".context-index/specs/features/auth/session-mgmt.spec.md"), "utf-8");
       assert.ok(spec.includes("status: review-passed"));
       assert.ok(!existsSync(join(FIXTURE_DIR, ".context-index/specs/features/auth/session-mgmt.plan.md")));
     });
 
     it("metrics spec is draft (lowest priority backlog)", () => {
-      const spec = readFileSync(join(FIXTURE_DIR, ".context-index/specs/features/dashboard/metrics.md"), "utf-8");
+      const spec = readFileSync(join(FIXTURE_DIR, ".context-index/specs/features/dashboard/metrics.spec.md"), "utf-8");
       assert.ok(spec.includes("status: draft"));
     });
 
@@ -308,11 +308,11 @@ describe("Work Tracking Eval: Fixture Setup", () => {
       assert.ok(trailers.includes("Plan-task: 2"));
     });
 
-    it("issue-2 links to auth/login.md spec via trailers", () => {
+    it("issue-2 links to auth/login.spec.md spec via trailers", () => {
       const log = git("log --format='%H' --all --grep='Issue: issue-2'");
       const sha = log.split("\n")[0]?.trim();
       const trailers = getTrailers(sha);
-      assert.ok(trailers.includes("Spec: .context-index/specs/features/auth/login.md"));
+      assert.ok(trailers.includes("Spec: .context-index/specs/features/auth/login.spec.md"));
     });
 
     it("epic-1 all 3 issues are closed in board", () => {
@@ -324,12 +324,12 @@ describe("Work Tracking Eval: Fixture Setup", () => {
       }
     });
 
-    it("drifted.mjs maps back to widgets.md via reverse index", async () => {
+    it("drifted.mjs maps back to widgets.spec.md via reverse index", async () => {
       const specsDir = join(FIXTURE_DIR, ".context-index/specs/features");
       const index = await buildReverseIndex(specsDir, FIXTURE_DIR);
       assert.equal(
         index.get("lib/drifted.mjs"),
-        ".context-index/specs/features/dashboard/widgets.md"
+        ".context-index/specs/features/dashboard/widgets.spec.md"
       );
     });
 

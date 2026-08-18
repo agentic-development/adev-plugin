@@ -66,19 +66,19 @@ describe("adev:build SKILL.md — Dispatch optimism (orchestrator must not intro
     );
   });
 
-  it("explicitly forbids recording the 'Agent tool not available' error without an actual failed Agent() call", () => {
+  it("explicitly forbids recording the 'Agent tool not available' error without an actual failed Agent() call (+1 more contract assertions)", () => {
+    // explicitly forbids recording the 'Agent tool not available' error without an actual failed Agent() call
     assert.match(
-      skill,
-      /must not record.*not available|never record.*unavailable.*without.*attempt|do not.*self.abort.*tool|must attempt.*Agent.*before.*recording/i,
-      "Skill must forbid recording a tool-unavailability failure without first attempting an Agent() call"
+    skill,
+    /must not record.*not available|never record.*unavailable.*without.*attempt|do not.*self.abort.*tool|must attempt.*Agent.*before.*recording/i,
+    "Skill must forbid recording a tool-unavailability failure without first attempting an Agent() call"
     );
-  });
 
-  it("clarifies 'Task' is not the dispatcher name in this CLI (Agent is the only dispatcher)", () => {
+    // clarifies 'Task' is not the dispatcher name in this CLI (Agent is the only dispatcher)
     assert.match(
-      skill,
-      /Agent.*only.*dispatcher|no.*Task.*tool|Task.*not.*dispatcher|dispatcher.*named.*Agent/i,
-      "Skill must clarify that 'Task' (used elsewhere in Anthropic docs) is not a tool name in Claude Code — Agent is the only dispatcher"
+    skill,
+    /Agent.*only.*dispatcher|no.*Task.*tool|Task.*not.*dispatcher|dispatcher.*named.*Agent/i,
+    "Skill must clarify that 'Task' (used elsewhere in Anthropic docs) is not a tool name in Claude Code — Agent is the only dispatcher"
     );
   });
 });

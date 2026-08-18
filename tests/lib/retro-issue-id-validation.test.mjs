@@ -20,11 +20,11 @@ test('validateIssueId: tiered dotted id accepted', () => {
   assert.equal(result.normalized, 'e1.f2.t3');
 });
 
-test('validateIssueId: epic id accepted', () => {
+test("validateIssueId: epic id accepted (+1 more contract assertions)", () => {
+  // validateIssueId: epic id accepted
   assert.equal(validateIssueId('epic-12').ok, true);
-});
 
-test('validateIssueId: bd id accepted', () => {
+  // validateIssueId: bd id accepted
   assert.equal(validateIssueId('bd-abc123').ok, true);
 });
 

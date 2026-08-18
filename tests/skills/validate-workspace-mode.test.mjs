@@ -18,9 +18,16 @@ describe("adev:validate SKILL.md — workspace-aware cross-repo validation", () 
       "Must reference resolveRef() for resolving cross-repo depends-on references");
   });
 
-  it("describes cross-repo depends-on pattern @repo-slug/spec-slug", () => {
+  it("describes cross-repo depends-on pattern @repo-slug/spec-slug (+1 more contract assertions)", () => {
+    // describes cross-repo depends-on pattern @repo-slug/spec-slug
     assert.match(skill, /@.*repo-slug.*\/.*spec-slug|@<repo-slug>\/<spec-slug>/,
-      "Must describe the @repo-slug/spec-slug cross-repo reference pattern");
+    "Must describe the @repo-slug/spec-slug cross-repo reference pattern");
+
+    // workspace-aware validation mode is entered only when cross-repo refs exist
+    assert.match(skill, /workspace-aware validation mode/i,
+    "Must name the workspace-aware validation mode");
+    assert.match(skill, /depends-on/,
+    "Must reference depends-on frontmatter field");
   });
 
   it("unresolvable cross-repo references produce warnings not errors", () => {
@@ -30,29 +37,26 @@ describe("adev:validate SKILL.md — workspace-aware cross-repo validation", () 
       "Must state unresolvable references are non-blocking");
   });
 
-  it("Check 2 (Spec Compliance) gains cross-repo interface verification", () => {
+  it("Check 2 (Spec Compliance) gains cross-repo interface verification (+4 more contract assertions)", () => {
+    // Check 2 (Spec Compliance) gains cross-repo interface verification
     assert.match(skill, /cross-repo.*interface|interface.*contract.*cross-repo|cross-repo.*dependenc/i,
-      "Check 2 must reference cross-repo interface verification");
-  });
+    "Check 2 must reference cross-repo interface verification");
 
-  it("Check 3 (Charter Consistency) includes cross-repo dependency context", () => {
+    // Check 3 (Charter Consistency) includes cross-repo dependency context
     assert.match(skill, /cross-repo.*scope|cross-repo.*charter|dependency.*context/i,
-      "Check 3 must include cross-repo dependency context");
-  });
+    "Check 3 must include cross-repo dependency context");
 
-  it("sibling repo content is read-only", () => {
+    // sibling repo content is read-only
     assert.match(skill, /read-only|read.only/i,
-      "Must state sibling repo content is read-only reference");
-  });
+    "Must state sibling repo content is read-only reference");
 
-  it("includes a cross-repo validation report section", () => {
+    // includes a cross-repo validation report section
     assert.match(skill, /Cross-Repo Dependency Validation/,
-      "Must include a Cross-Repo Dependency Validation report section");
-  });
+    "Must include a Cross-Repo Dependency Validation report section");
 
-  it("single-repo backward compatibility is preserved", () => {
+    // single-repo backward compatibility is preserved
     assert.match(skill, /detectWorkspace.*null|null.*detectWorkspace|no workspace/i,
-      "Must describe single-repo fallback when detectWorkspace returns null");
+    "Must describe single-repo fallback when detectWorkspace returns null");
   });
 
   it("applies assertPathInWorkspace for input hardening", () => {
@@ -65,12 +69,7 @@ describe("adev:validate SKILL.md — workspace-aware cross-repo validation", () 
       "Must reference readCappedText or 512 KB cap for sibling spec file reads");
   });
 
-  it("workspace-aware validation mode is entered only when cross-repo refs exist", () => {
-    assert.match(skill, /workspace-aware validation mode/i,
-      "Must name the workspace-aware validation mode");
-    assert.match(skill, /depends-on/,
-      "Must reference depends-on frontmatter field");
-  });
+
 });
 
 describe("adev:validate SKILL.md — repo-mode-inside-workspace advisory", () => {
