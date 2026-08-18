@@ -11,3 +11,7 @@
 {"event":"lifecycle_step","step":"review","status":"started","ts":"2026-08-18T14:21:18.911Z"}
 {"event":"reviewer_report","step":"review","reviewer":"quick-synthesized-reviewer","severity":"warning","verdict":"PASS_WITH_NOTES","notes":"0 blockers, 2 warnings, 1 suggestion. All seven rev-3 mechanism claims source-verified true. Warnings: run project root unpinned in Step 4.4; INCONCLUSIVE has no named successor.","ts":"2026-08-18T14:25:57.524Z"}
 {"event":"step_completed","step":"review","verdict":"PASS_WITH_NOTES","ts":"2026-08-18T14:25:57.649Z"}
+{"event":"lifecycle_step","step":"review","status":"started","ts":"2026-08-18T14:31:14.584Z"}
+{"event":"reviewer_report","step":"review","reviewer":"quick-synthesized-reviewer","severity":"warning","verdict":"FAIL","notes":"1 blocker: adev --version does not exist — it prints a constant usage banner, so the plugin-currency pin passes trivially in the exact scenario it exists to catch.","ts":"2026-08-18T14:34:50.605Z"}
+{"event":"step_completed","step":"review","verdict":"BLOCK","ts":"2026-08-18T14:34:50.713Z"}
+{"event":"spec_revised","from_revision":4,"to_revision":5,"addressed_blocker_ids":["quick-synthesized-reviewer:false-verification-command:f5e61ff2"],"unresolved_blocker_ids":[],"ts":"2026-08-18T14:35:08.541Z"}

@@ -4,7 +4,7 @@ kind: action
 status: review-pending
 risk_level: medium
 milestone:
-revision: 4
+revision: 5
 charter-revision: 2
 created: 2026-08-18
 updated: 2026-08-18
@@ -33,7 +33,8 @@ tracker-ref: adev-plugin-j7pq.5
    defective behaviour, the pre-fix commit SHA at which that spec still contained the defect, and
    the fixing commit. Any id that cannot be mapped is recorded as `UNMAPPED` with the reason.
 
-3. **Five review runs are recorded, each with a verdict and a citation judgement.** For each
+3. **One review run is recorded per MAPPED id, each with a verdict and a citation judgement.**
+   (Not necessarily five — PC2 admits `UNMAPPED` ids and PC4 a reduced denominator.) For each
    mapped spec, the run records: whether `referent-integrity` emitted a `blocker`-severity finding
    naming the known defect, and whether that finding's citation resolves — the file, symbol or line
    it names actually exists at the reviewed commit. A finding that names the right defect with an
@@ -150,8 +151,8 @@ For each row:
 3. Run `adev governance reviewers --json` inside the worktree and confirm `referent-integrity`
    appears with an empty `errors` array. A run that skips this check is void.
 4. **From inside the scratch worktree** — its directory is the run's project root — run
-   `/adev:review-specs --spec <path> --tier full`, and record the resolved project root and
-   `adev --version` (or the resolved plugin root) alongside the run.
+   `/adev:review-specs --spec <path> --tier full`, and record the resolved project root and the
+   resolved plugin root alongside the run.
 
    Both pins are load-bearing. The tier pin: in `quick` the skill "skip[s] the registry loop below"
    and dispatches only the bundled synthesized reviewer (`skills/review-specs/SKILL.md` Step 4), so
@@ -161,8 +162,15 @@ For each row:
    main checkout with only `--spec` pointing into the worktree would load the current registry but
    render the pack from CURRENT sources against a historical spec — silently, with an empty `errors`
    array, and defeating Step 3's in-worktree glob check. Recording the plugin root closes the same
-   hole one level up: `getPluginRoot()` resolves from the library's own location, so invoking the
-   worktree's own `cli/index.mjs` instead of the `adev` on PATH would make `templates/` historical.
+   hole one level up: `getPluginRoot()` derives from `lib/profiles/index.mjs`'s own location two
+   levels up, so invoking the worktree's own `cli/index.mjs` instead of the `adev` on PATH would
+   make `templates/` historical — and the resolved root distinguishes the two.
+
+   Record the resolved plugin root, NOT `adev --version`. That verb does not exist: the dispatcher
+   reads `argv[2]` as a verb name and has no `--version` entry, so both invocations print
+   `unknown verb: --version` plus the usage banner and exit 0 — byte-identical output emitted by the
+   same code in every checkout. A constant cannot distinguish the two plugins, so recording it would
+   pass trivially in exactly the case this pin exists to catch.
 5. Confirm the resulting `.review.md` names `referent-integrity` among its dispatched reviewers
    before scoring it. A `.review.md` that does not is a void run, not a miss.
 
@@ -245,7 +253,7 @@ discarded with it; nothing on the working branch requires cleanup.
 - [ ] Every run was dispatched with `--tier full`; a run at any other tier is VOID
 - [ ] Every run records its resolved project root, and that root is the scratch worktree; a run
       whose project root was the main checkout is VOID, not a miss
-- [ ] Every run records `adev --version` or the resolved plugin root, and all runs share one value
+- [ ] Every run records its resolved plugin root, and all runs share one value
 - [ ] If the result is INCONCLUSIVE, the finding names which of the two follow-ups applies
 - [ ] A run whose pack rendered empty is recorded VOID, not scored as a miss
 - [ ] Unresolvable VOIDs reduce scorable runs without re-deriving the committed denominator; below
@@ -261,9 +269,9 @@ discarded with it; nothing on the working branch requires cleanup.
 - [ ] The resolution table records all five ids, each either mapped to a spec path with a pre-fix
       commit SHA and a fixing commit, or marked `UNMAPPED` with a reason
 - [ ] The denominator and the derived bar are written down BEFORE any run is scored
-- [ ] Each of the five runs has a preserved `.review.md` under
+- [ ] Each scorable run has a preserved `.review.md` under
       `.context-index/research/referent-integrity-falsification/`
-- [ ] Each run carries two recorded judgements — defect named, citation resolves — and a finding
+- [ ] Each scorable run carries two recorded judgements — defect named, citation resolves — and a finding
       whose citation does not resolve is scored as NOT caught
 - [ ] The finding at `.context-index/research/referent-integrity-falsification-2026-08.md` states
       the tally, the bar, the verdict, and the consequence for the initiative's evidence track
