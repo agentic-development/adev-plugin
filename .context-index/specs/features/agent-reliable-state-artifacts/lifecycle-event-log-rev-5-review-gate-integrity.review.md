@@ -4,8 +4,8 @@ charter: .context-index/specs/features/agent-reliable-state-artifacts/charter.md
 date: 2026-08-17
 verdict: BLOCK
 rigor-tier: full
-last-reviewed-revision: 3
-file-sha: 70ea8f267930b1544d6046dd22409816ee9f5533a5e3f14ba5f0bfbd3297f36a
+last-reviewed-revision: 4
+file-sha: c6f1d90c606925eec5b4fd648c3b2d38554cc2bc05cacf64c41c01895a7e5f0c
 ---
 
 # Architecture Review: lifecycle-event-log-rev-5-review-gate-integrity
@@ -15,6 +15,7 @@ file-sha: 70ea8f267930b1544d6046dd22409816ee9f5533a5e3f14ba5f0bfbd3297f36a
 > **Charter:** `.context-index/specs/features/agent-reliable-state-artifacts/charter.md`
 > **Verdict:** BLOCK
 > **Rigor tier:** full (`risk_level: high` → `review_mode: full`; no `--tier` override)
+> **Spec revision reviewed:** 4
 
 ## Registry Notes
 
@@ -35,9 +36,11 @@ Cross-repo `depends-on` validation: skipped — the spec declares no `depends-on
 
 ## Aggregator Advisories
 
-| Code | Detail |
-|------|--------|
-| LEGACY_REVIEWER_OUTPUT | `SEC-1` (security-reviewer, severity `blocker`) was emitted **without** `blocker_id` and **without** `section_anchor`. Per the aggregator contract it is **excluded from the `.blockers.md` sidecar** and carries no canonical identity. It still counts toward the consolidated verdict and is recorded in full below. Because a legacy-output marker is present, the calling build skill MUST fall through to the pre-loop sidecar + fail-loud path — **no `/adev:specify --revise` auto-retry dispatch.** SEC-1 must be carried into any revision by hand. |
+None. All four `blocker`-severity findings carry a well-formed `blocker_id` and a
+`section_anchor`; `parseBlockerId` accepted every id and `writeBlockers` reported
+0 collisions. The `.blockers.md` sidecar is therefore **complete** — unlike the
+revision-3 round, no finding was excluded under `LEGACY_REVIEWER_OUTPUT`, and the
+auto-retry path is not suppressed by this report.
 
 ## Reviewers Dispatched
 
@@ -55,65 +58,121 @@ No reviewers are disabled in `.context-index/governance/review.yaml`.
 
 **Verdict:** FAIL
 
-### SA-1 — `blocker` — contradictory contract
+The amendment is disciplined about mechanism (optional per-variant field + fail-soft
+fold, no new `CANONICAL_EVENTS` variant, ADR-0009 boundary respected, ADR-0011
+correctly cited as the reason for the `source-manifest` denylist entry). Its code
+claims verify: `lib/cli/gate.mjs:144` is the sole `requireGate` enforcement caller
+and passes no sha; `GateError.code === "GATE_BLOCKED"` is what `cli/index.mjs:2005`
+keys exit 2 on; `requireGate` performs no I/O; `adev report --type reviewer` exposes
+no `--revision` flag; `lib/source-manifest.mjs:83` uses
+`createHash("sha256").update(content)`; every skill emits `--status started` before
+a terminal, so BEH-7/BEH-8 break no existing call site. Three structural defects block.
 
-- **blocker_id:** `structural-architect:contradictory-contract:72233b01`
-- **section_anchor:** `behaviors-1`
-- **Location:** Behavioral Delta → BEH-1; Acceptance Criteria (first AC, and the `risk_level` AC)
+### SA-1 — `blocker` — gate-bypass
 
-**Finding:** BEH-1 defines the digest input twice, incompatibly. First it defines a **canonical attested region**: "the spec's frontmatter with an explicit denylist … the surviving keys serialized `key: value` one per line sorted by key name … then the literal byte `\n`, then the body". Then, in the same bullet, it says "The digest input is the exact byte range following the second `---` line, taken from the `Buffer` returned by `readFile` with no decode step". The second sentence is the body-only definition that revision 3 was supposed to replace, and it is unsatisfiable alongside the first — a derived, sorted, key-filtered serialization cannot simultaneously be "the exact byte range following the second `---` line … with no decode step". The Acceptance Criteria inherit the split: the first AC gates on "current **body** bytes", while a later AC requires mutating `risk_level` (a frontmatter key) to change the digest. An implementer has no single contract to build against, and the two readings differ in exactly the security property (BEH-1's own CWE-345 argument) the amendment exists to add.
-
-**Recommendation:** Delete or rewrite the `readFile`-buffer sentence so it describes only the *primitive* (`createHash("sha256")`, matching `lib/source-manifest.mjs:83`) and not the *input range*. State the canonical region once, and re-word the first AC from "body bytes" to "attested-region bytes".
-
-### SA-2 — `blocker` — unenforceable invariant
-
-- **blocker_id:** `structural-architect:unenforceable-invariant:8efa0bef`
+- **blocker_id:** `structural-architect:gate-bypass:9bf7dc55`
 - **section_anchor:** `behaviors-3a`
-- **Location:** Behavioral Delta → BEH-3a; the two `"divergent"` Acceptance Criteria
+- **Location:** BEH-3a, interacting with BEH-4/BEH-5
 
-**Finding:** BEH-3a's correctness rests entirely on `reviewer_report` events carrying `revision`, but nothing in this amendment or the base contract requires that, and no shipping emitter supplies it. The base spec makes it explicitly optional ("Emitters that do not know the spec's revision MAY omit the field"); `reportReviewer` in `lib/lifecycle-state.mjs` accepts `revision` only when passed; `lib/cli/report.mjs` exposes **no** `--revision` flag on `--type reviewer` (verified: zero occurrences of `revision` in that file); and `skills/review-specs/SKILL.md`'s reviewer-report emission — the sole emission site — omits it. With `effectiveRevision()` folding those events into `byRevision[1]`, "the latest revision of that step" resolves to the entire history, and BEH-3a degenerates into precisely the history-wide reconciliation it declares unacceptable: the first BLOCK→revise→re-review cycle latches `"divergent"` permanently, making the spec un-plannable under `gate_mode: strict`. The AC "a rev-1 review and a rev-2 review whose reports carry different digests do NOT project `divergent`" cannot pass as written.
+**Finding:** BEH-3a scopes reconciliation to "reports appended after the most recent
+`spec_revised` event" but never defines the **empty-window** case.
+`lib/specify-revise.mjs` rewrites the spec bytes, emits `spec_revised`, and emits
+**no** step event resetting `review` (verified: it only flips frontmatter `status`
+and clears `.blockers.md`; line 252 shows it proceeds even when the spec is not
+`review-blocked`). So the sequence *review PASS → `adev specify revise` → plan*
+leaves a window containing zero `reviewer_report`s. Under BEH-3 ("reports without
+the field leave the projection key absent") the only defined outcome is `specSha`
+absent, which BEH-5 routes to `SPEC_SHA_UNVERIFIABLE` — explicitly non-blocking —
+while the append-only log still projects `steps.review.status: completed,
+verdict: PASS` from the pre-revision review. Defect 1 of the Rationale is therefore
+reachable through a documented, supported path, on the exact revision boundary the
+amendment was built around.
 
-**Recommendation:** Make `revision` a *paired* mandatory field: any `reviewer_report` carrying `spec_sha` MUST also carry `revision`, with the emitter surface (`adev report --type reviewer`) widened to accept it. Alternatively, specify a reconciliation key derivable from data the emitter already has.
+**Recommendation:** Define the empty-window outcome explicitly in BEH-3a and give it
+a blocking disposition distinct from "never stamped" (BEH-5's soft path must remain
+reserved for pre-amendment history). Add an AC covering revise-without-re-review.
 
-### SA-3 — `warning`
+### SA-2 — `blocker` — contradictory-projection-rule
 
-- **Location:** BEH-1, BEH-9, the shared-helper Acceptance Criterion
+- **blocker_id:** `structural-architect:contradictory-projection-rule:0cb97b9d`
+- **section_anchor:** `behaviors-3`
+- **Location:** BEH-3 / BEH-3a vs. Acceptance Criteria (the rev-1/rev-2 AC)
 
-**Finding:** Three places mandate that the emitter and the gate caller use "one shared exported helper", and an AC asserts that identity by test, but the helper is never given a name, signature, or home module. The spec's central anti-divergence guarantee names no contract.
+**Finding:** BEH-3 projects `spec_sha` onto `byRevision[N]` "for the revision that
+event folds into," and BEH-3a states `byRevision[N].specSha` "independently carries
+each revision's own reconciled value." But BEH-3a itself establishes — correctly —
+that no emitter stamps `revision` on `reviewer_report`. Confirmed in code:
+`effectiveRevision()` returns `1` for any event lacking the field, and the CLI has
+no `--revision` flag, so **every** reviewer report folds into `byRevision[1]`. The
+AC "a rev-1 review and a rev-2 review whose reports carry different digests …
+`byRevision["1"].specSha` retains the rev-1 value" is therefore unimplementable:
+both digests land in bucket 1, and BEH-3a's own within-set rule reconciles differing
+values to `"divergent"`. The bucket-level contract contradicts the premise the window
+rule was built on.
 
-**Recommendation:** Name the exported symbol and its module in BEH-1, with its parameter and return shape.
+**Recommendation:** Either drop `byRevision[N].specSha` from BEH-3 (keeping the audit
+trail in the window-scoped top-level projection only), or specify how per-revision
+bucketing is obtained given no emitter supplies `revision`. Correct or remove the
+dependent AC.
+
+### SA-3 — `blocker` — unsatisfiable-precondition
+
+- **blocker_id:** `structural-architect:unsatisfiable-precondition:baac30d3`
+- **section_anchor:** `behaviors-1b`
+- **Location:** BEH-1 / BEH-1b and the multi-line-collision AC
+
+**Finding:** BEH-1b requires serializing `JSON.stringify(value)` over "the PARSED
+value," and argues at length that raw-line concatenation is a CWE-436 hazard. It
+names no parser, and the repo has none capable of this:
+`lib/frontmatter.mjs::parseFrontmatter` matches indent-0 `key: value` lines with a
+regex and stores **raw trimmed strings**; nested keys are not captured at all
+(`source-manifest`'s children are simply invisible). Two consequences: (a) the AC
+"a quoted multi-line value versus two separate keys produce DIFFERENT `spec_sha`"
+cannot hold — the parser cannot distinguish them; (b) any nested (non-scalar)
+frontmatter key other than the denylisted `source-manifest` is silently unattested,
+which is the same CWE-345 hole BEH-1b argues must not exist, one nesting level down.
+BEH-1b's own aside that "this repo carries no YAML library" states the obstacle
+without resolving it, and the constitution gates a new dependency behind an ADR +
+human approval.
+
+**Recommendation:** Either name the parser as a deliverable of this amendment with an
+explicit fidelity contract (which keys it can represent, what happens to values it
+cannot), or narrow the digest to an explicitly enumerated **allowlist** of indent-0
+scalar governance keys and retract the multi-line-collision AC.
 
 ### SA-4 — `warning`
 
-- **Location:** BEH-1 / BEH-1a
+- **Location:** BEH-9
 
-**Finding:** A whole-file spec digest already exists: `skills/review-specs/SKILL.md` Step 6c computes `createHash('sha256')` over the spec `Buffer` and writes it as `file-sha` in `.review.md`, explicitly ordered *after* the Step 7 status write for the same staleness reason BEH-1's denylist addresses. The amendment introduces a second digest over the same artifact with a different scope, a different storage location, and a different capture point, and never mentions the first. Two competing content identities for one spec is an ownership ambiguity that will drift.
+**Finding:** BEH-9 says `adev gate require` MUST "compute the BEH-1 **body** digest."
+BEH-1 defines the input as the *canonical attested region* (denylisted frontmatter +
+body) and asserts it is "the sole definition." "Body digest" is a competing
+description of the input at the amendment's single mandatory enforcement point, and
+the spec's own second AC exists precisely to forbid that.
 
-**Recommendation:** State the relationship explicitly — whether `file-sha` is superseded, retained as a distinct drift signal, or should be re-derived from the shared helper.
+**Recommendation:** Replace with "canonical attested region (BEH-1)."
 
 ### SA-5 — `warning`
 
-- **Location:** BEH-1 (canonical serialization rule)
+- **Location:** BEH-1 (shared-helper invariant)
 
-**Finding:** "the surviving keys serialized `key: value` one per line sorted by key name" is undefined for non-scalar frontmatter values, and such keys exist in this very charter: `json-issue-board-adapter.spec.md` carries a `revision-history:` array-of-maps, which is not denylisted. It is also unstated whether `value` is the raw post-colon source text or a re-serialization of the parsed value — these differ for quoted, folded, or commented values.
+**Finding:** The "one shared exported helper" invariant has a test AC but no owning
+module. The emitter lives in `lib/lifecycle-state.mjs`, the enforcing caller in
+`lib/cli/gate.mjs`; leaving ownership unstated invites the duplication the invariant
+forbids, and placing it in `lifecycle-state.mjs` newly makes that module a reader of
+spec *content* (today it only validates spec *paths*).
 
-**Recommendation:** Define the serialization for non-scalar values (or denylist/flatten them) and fix whether the input is raw source text or parsed-and-re-emitted.
+**Recommendation:** Name the module, and state the direction of the dependency.
 
-### SA-6 — `warning`
+### SA-6 — `suggestion`
 
-- **Location:** BEH-9, BEH-5
+- **Location:** BEH-7 / BEH-8
 
-**Finding:** BEH-9 mandates that *every* `adev gate require` invocation compute and pass `currentSpecSha`, but BEH-3 projects `specSha` only from `reviewer_report` events. Only a `review` predecessor can therefore ever carry one; `adev gate require --skill review` (prior step `specify`), and every gate whose predecessor is `plan`/`implement`, will take the BEH-5 `SPEC_SHA_UNVERIFIABLE` path unconditionally and forever. The enforcement surface is far narrower than BEH-9's blanket phrasing implies.
-
-**Recommendation:** Scope BEH-9 to gates whose predecessor step can carry a `specSha`, or state the permanent-advisory outcome for the others so it is not read as a defect later.
-
-### SA-7 — `suggestion`
-
-- **Location:** BEH-7 / Amendment Rationale ("Bounding the claim")
-
-**Finding:** BEH-7's orphan check lives on the `adev report --type step` CLI surface, so `reportStep`/`appendEvent` library callers bypass it entirely. The Rationale bounds the claim only against the `--status started` two-call path and does not mention the library bypass.
-
-**Recommendation:** Add the library-caller bypass to the bounding paragraph.
+**Finding:** "Reads the projection only" is satisfiable — `steps.<step>.startedAt` is
+set solely by a `lifecycle_step` `started` event — but `steps.<step>.status` is not a
+valid signal: the aggregation pass synthesizes `completed` from reviewer reports
+alone, with no `started` ever recorded. Naming the field the check reads would remove
+an easy misimplementation.
 
 ---
 
@@ -121,45 +180,159 @@ No reviewers are disabled in `.context-index/governance/review.yaml`.
 
 **Verdict:** FAIL
 
-The reviewer confirmed, against the text on disk, that revision 2's four blockers read as closed: BEH-1's denylist now retains `risk_level` / `charter` / `amends` / `target-revision` in the digest; BEH-3a scopes reconciliation to the latest revision; BEH-4 keeps `code: "GATE_BLOCKED"` with the new `reason` discriminator, matching `cli/index.mjs`'s exit-2 dispatch on `err.code`. `lib/cli/gate.mjs:144` and `lib/source-manifest.mjs:83` were read and match the spec's factual claims. The finding below is **new to revision 3** — it is a defect in the canonicalization scheme revision 3 introduced.
+Verified against source: `lib/lifecycle-state.mjs` (`requireGate` L1980–2004 — no I/O,
+`GateError.code = "GATE_BLOCKED"` L1892; `reportReviewer` L908–939), `lib/cli/gate.mjs`
+L144 (sole enforcement caller, passes no sha — claim accurate), `cli/index.mjs` L2005
+(`GATE_BLOCKED` → exit 2 — claim accurate), `lib/source-manifest.mjs` L83
+(`createHash("sha256").update(content)` — claim accurate), `lib/cli/report.mjs` L252
+(`--status` validated against enum only — defect-2 claim accurate; no `--revision`
+flag exists anywhere in `report.mjs` — BEH-3a's premise accurate), `risk-policies.yaml`
+(`high` → `require_hitl_approval: true` / `full` / `thorough`; `low` → `quick` /
+`minimal` — BEH-1b's escalation claim accurate).
 
 ### SEC-1 — `blocker` — input-validation
 
-> **Advisory:** emitted without `blocker_id` / `section_anchor` → `LEGACY_REVIEWER_OUTPUT`. Excluded from the `.blockers.md` sidecar; must be carried into any revision by hand. Implicated section is BEH-1 (`behaviors-1`).
+- **blocker_id:** `security-reviewer:input-validation:9de26d8a`
+- **section_anchor:** `behavioral-delta-beh-1b`
+- **Location:** BEH-1 / BEH-1b (canonical frontmatter serialization); Acceptance Criterion 3
 
-**Finding:** BEH-1 defines the attested-frontmatter digest as "the surviving keys serialized `key: value` one per line sorted by key name" — a text-concatenation scheme, not a digest over a re-parsed and re-canonicalized structure. This codebase has no YAML library (`lib/source-manifest.mjs`'s `extractManifestFromFrontmatter` parses frontmatter by regex line-splitting, consistent with the constitution's zero-dependency rule), so an implementer following this prose will split on top-level `key:` lines and concatenate raw values. Any frontmatter value containing an embedded newline plus a line that *looks* like `otherkey: x` — a YAML block scalar, or a quoted multi-line string — can serialize identically to two separate keys. Two semantically different frontmatter states therefore hash identically (CWE-436 interpretation conflict, feeding directly into the CWE-345 tamper-evidence goal this amendment exists to deliver). The spec's own "Bounding the claim" paragraph does not name or scope out this ambiguity, so it does not qualify for the already-bounded carve-out.
+**Finding:** BEH-1/BEH-1b define the frontmatter half of the attested region as
+`JSON.stringify` over "the PARSED value" but never name the parser, and the repo's
+shared parser cannot deliver the property BEH-1b claims.
+`lib/frontmatter.mjs::parseFrontmatter` captures **only indent-0 scalars** matching
+`/^([a-zA-Z][a-zA-Z0-9_-]*):\s*(.*)$/`, with last-wins on duplicate keys; its own
+docblock states "nested/indented keys and list items are ignored". Consequences:
+(a) every nested key, list item, and continuation line in frontmatter is
+**unattested** — real specs in this corpus carry such blocks
+(`json-issue-board-adapter.spec.md` has a `revision-history:` list with nested
+`date:`/`change:` provenance) and can be rewritten post-review with an unchanged
+`spec_sha`; (b) duplicate keys collapse, so two governance states alias onto one
+digest; (c) Acceptance Criterion 3 ("a quoted multi-line value versus two separate
+keys produce DIFFERENT `spec_sha`") is **unsatisfiable** with this parser — the
+continuation line is silently dropped — so the implementer must either fail the AC or
+invent a fourth parser. Divergent parsers already exist in-tree
+(`lib/test-strategies/profiles.mjs` L57 supports arrays and uses a key regex without
+`-`; `lib/meta-tools.mjs` L18; `lib/session-summary.mjs` L948), so an invented parser
+reproduces exactly the CWE-436 interpretation conflict BEH-1b exists to close, one
+layer down.
 
-**Failure scenario:** An author adds a frontmatter field with a block-scalar value (e.g. a free-text `notes: |`) whose content contains a line shaped like `risk_level: low`. The naive per-line serializer includes that literal line in the canonical string, and the reviewer stamps `spec_sha` over it. Post-review the author restructures the same visible content into an actual top-level `risk_level: low` key, deleting the block-scalar wrapper. Governance now reads `risk_level: low` (`require_hitl_approval: false`, `test_depth: minimal` per `risk-policies.yaml`) while the canonical serialization is byte-unchanged, so `spec_sha` does not change and the strict gate passes on a spec whose real governance posture silently downgraded. This is the same class of hole revision 3 was authored to close, one level down.
+**Recommendation:** In BEH-1, (1) name `lib/frontmatter.mjs::parseFrontmatter` as the
+sole parser and require the emitter and every enforcing caller to reach it through the
+one shared helper; (2) change the frontmatter half of the region from parsed-field
+serialization to **raw frontmatter source lines with only the four denylisted keys'
+lines (and their indented continuations) removed**, preserving byte order — this
+attests nested and multi-line content without reintroducing aliasing, because removal
+is line-anchored rather than value-derived; (3) if the parsed-value form is kept, add
+a fail-closed round-trip rule: any frontmatter line the parser does not capture, and
+any duplicate key, causes `SPEC_SHA_UNCANONICAL` and the digest is omitted (BEH-5 path)
+rather than silently attesting a partial view. Rewrite AC 3 to assert the chosen rule.
+(CWE-345 / CWE-436; OWASP ASVS V1.2 canonicalization-before-verification.)
 
-**Recommendation:** Specify the digest input over the **parsed** frontmatter object, not raw per-line text: for each surviving key (after the denylist), serialize as `key + ": " + JSON.stringify(value)` — JSON escaping closes the embedded-newline/colon/quote smuggling channel — sort by key, join with `\n`. Because this project avoids YAML libraries, the parser used to extract per-key values must itself be specified precisely enough to be deterministic (line-continuation rules for block scalars and lists). Add an AC exercising a multi-line / non-scalar frontmatter key (e.g. `revision-history`) to prove the scheme does not collide.
+### SEC-2 — `warning` — authentication
 
-### SEC-2 — `suggestion` — data-exposure
+**Finding:** The "Bounding the claim" paragraph limits the authenticity claim for BEH-7
+(`started`/`completed`) only. It is never extended to `reviewer_report`, yet
+`adev report --type reviewer --step review --verdict PASS` is a documented,
+unauthenticated CLI path and BEH-1 computes `spec_sha` from the file **as it stands at
+emit time**. An agent that rewrites a spec can therefore satisfy the strict gate with
+one command carrying a digest that matches the rewritten bytes. BEH-4 detects
+*unaccompanied drift*, not adversarial or shortcut-driven laundering.
 
-**Finding:** BEH-9a / BEH-6 fail open (skip the sha comparison) whenever the spec cannot be read, per the base spec's never-block-on-missing-provenance doctrine — explicitly named and justified in the spec text, so this is hardening only. An actor able to transiently make the spec file unreadable at exactly `adev gate require` time forces the no-digest path even when a prior reviewed digest exists.
+**Recommendation:** Add one sentence to the Rationale stating that `spec_sha` is a
+drift detector, not an attestation, and that `reviewer_report` remains unauthenticated
+for the same reason `completed` is; add an AC forbidding downstream consumers from
+treating a sha-matching gate pass as attested review. If stronger coupling is wanted
+later, sequence reviewer reports behind an open `review` step the way BEH-7 sequences
+terminals.
 
-**Recommendation:** When falling back under BEH-9a for a step that *does* carry a projected `specSha` — provenance existed but became unreadable at gate time, as opposed to genuinely never-stamped history — use a distinct warning code (e.g. `SPEC_SHA_READ_RACE`) rather than reusing `SPEC_SHA_UNVERIFIABLE`, so operators can distinguish "no history to check" from "history existed, read raced".
+### SEC-3 — `warning` — authorization
 
-### SEC-3 — `suggestion` — input-validation
+**Finding:** BEH-9a fails open on an unreadable spec, and
+`lib/cli/gate.mjs::resolveSpecOrExit` already exits 1 on ENOENT — so BEH-9a's only
+reachable trigger is a spec that **exists but cannot be read** (EACCES, or a race).
+Making the file unreadable therefore silently disables the control while the gate still
+reports success, and nothing distinguishes a verified pass from a skipped one in the log
+or exit code.
 
-**Finding:** The BEH-1 denylist is a fixed 4-key hardcoded list. It is fail-secure by construction (unknown and future keys default to *attested*, not excluded), so it is not a bypass today, but any future lifecycle-machine-written key not added to the denylist causes false gate blocks rather than false passes — a robustness gap, not a security one.
+**Recommendation:** Split the cases: ENOENT/race keeps the BEH-6 advisory; EACCES on an
+existing, contained spec blocks under `mode === "strict"` with
+`reason: "GATE_SPEC_SHA_UNREADABLE"` (fail-secure, CWE-636). Independently, make the
+verification outcome observable — carry `specShaVerified: false` on the gate result so
+audits can separate "checked and matched" from "never checked".
 
-**Recommendation:** No change required for security. Consider a test asserting that the denylist and the set of keys the lifecycle machine actually rewrites (the `status` / `updated` / `drift_detected` / `source-manifest` write sites) stay in sync.
+### SEC-4 — `warning` — input-validation
+
+**Finding:** BEH-3 defines projection only for a well-formed `spec_sha`. No rule covers
+a value that is non-string, `null`, or not 64-lowercase-hex, and the log is append-only
+with no write-time shape check specified. The two plausible readings diverge in security
+direction: "treat as absent" is fail-open (BEH-5 skip), "treat as present" is
+fail-closed. The sentinel `"divergent"` is also injectable by an emitter.
+
+**Recommendation:** In BEH-1, reject at write time with `EVENT_SCHEMA_INVALID` unless
+the value matches `/^[0-9a-f]{64}$/` (this also makes the sentinel uninjectable, since
+it is not 64-hex). In BEH-3, state that any folded value failing that shape projects
+`"divergent"`, so legacy or corrupted records fail closed rather than skipping. Add an
+AC for a fixture log carrying `spec_sha: "divergent"` and `spec_sha: 42`.
+
+### SEC-5 — `suggestion` — data-exposure
+
+**Finding:** Denylisting the whole `source-manifest` key leaves the spec's declared
+implementation-file set unattested; re-pointing `source-manifest.files` after review
+changes what `/adev:validate` drift-checks and what `adev gate transitions` treats as
+fresh, with an unchanged `spec_sha`. This is defensible — the file list legitimately
+grows during implementation, after review — but the spec presents the denylist as purely
+machine-written keys, which the `files` array is not.
+
+**Recommendation:** Either narrow the denylist to the machine-written `sha`/`computed-at`
+subkeys and attest nothing else under that key, or add one sentence to BEH-1b stating
+that `files[]` is deliberately unattested because implementation legitimately mutates it
+post-review, and naming `adev gate transitions` as the control that covers it.
 
 ---
 
 ## Consistency Analyzer (consistency-analyzer)
 
-**Verdict:** PASS
+**Verdict:** PASS_WITH_NOTES
 
-No findings. The spec was checked against the base spec, sibling specs, and the cross-cutting corpus and found consistent on every axis:
+The amendment's factual claims were verified against the codebase and sibling specs —
+all checked out:
 
-- **Naming:** event field `spec_sha` is `snake_case`, projection field `specSha` is camelCase — correct per the base spec's Naming Conventions / CON-1. New error codes (`GATE_SPEC_SHA_MISMATCH`, `SPEC_SHA_UNVERIFIABLE`, `SPEC_SHA_UNAVAILABLE`, `ORPHAN_STEP_TERMINAL`) match the existing shouty-snake-case taxonomy.
-- **Contract:** `GateError` widens from the 3-field to the 5-field form additively; `code` stays `"GATE_BLOCKED"`, preserving `cli/index.mjs`'s exit-2 mapping. Implementation claims verified — `lib/source-manifest.mjs:83` uses `createHash("sha256")`; `cli/index.mjs` tests `err.code === "GATE_BLOCKED"`.
-- **Pattern:** follows the established optional-field-plus-fail-soft-fold pattern; no new `CANONICAL_EVENTS` variant.
-- **Cross-cutting:** BEH-3a's revision scoping is correctly justified against `review-block-auto-retry.spec.md`'s retry loop; `lifecycle-gate.spec.md` is unaffected (the predicate is extended, not the mechanism); `graduated-rigor-tiers.spec.md`'s "quick never skips" invariant is not weakened.
-- **Backward compatibility:** BEH-5 / BEH-6 keep missing-provenance paths non-blocking; legacy events without `revision:` fold as revision 1.
+- `lib/cli/gate.mjs:144` (`requireGate(currentState(...), step, { mode })`) confirmed to
+  omit `currentSpecSha` today, exactly as BEH-9's rationale claims.
+- `lib/lifecycle-state.mjs:1888-1896` confirms `GateError`'s constructor destructures
+  exactly `{ requiredStep, currentStatus, mode }` — matching BEH-4's "widens from the
+  three-field form" claim precisely.
+- `cli/index.mjs:2005` confirms `err.code === "GATE_BLOCKED"` is the actual exit-2
+  discriminator, unchanged by this amendment as required.
+- `lib/source-manifest.mjs:83` confirms `createHash("sha256").update(content).digest("hex")`
+  is the actual existing primitive BEH-1 cites for shared encoding.
+- `templates/risk-policies-template.yaml` confirms `require_hitl_approval`, `review_mode`,
+  `test_depth` are real field names (BEH-1b's rationale is accurate, not invented).
+- `graduated-rigor-tiers.spec.md:62` confirms the Rationale's claim that
+  `review_mode: quick` replaced `require_review: false`, correctly bounding what this
+  amendment does *not* re-litigate.
+- `review-block-auto-retry.spec.md` Behavior 2 confirms
+  `spec_revised{from_revision,to_revision,…}` is the real event shape BEH-3a's
+  reconciliation window relies on.
+- CON-1 naming (base spec) is respected throughout: new event field `spec_sha` is
+  snake_case, new projection field `specSha` is camelCase — no violations.
+- Error-code naming (`GATE_SPEC_SHA_MISMATCH`, `ORPHAN_STEP_TERMINAL`,
+  `SPEC_SHA_UNAVAILABLE`, `SPEC_SHA_UNVERIFIABLE`) follows the base spec's
+  SCREAMING_SNAKE_CASE convention.
 
-> Note: the Structural Architect reached the opposite conclusion on the *enforceability* of the revision scoping (SA-2) after reading `lib/cli/report.mjs` and confirming no `--revision` flag exists on `--type reviewer`. The consistency reviewer assessed the contract as written; SA-2 assesses whether any emitter can satisfy it. SA-2 stands.
+### CON-1 — `suggestion` — terminology
+
+- **This spec:** introduces `BEH-1a`, `BEH-1b`, `BEH-3a`, `BEH-9a` — letter-suffixed sub-IDs.
+- **Conflicts with:** `spec-behavior-ids.spec.md` (BEH-1/BEH-2, lines 60/104-105) defines
+  the canonical form as `BEH-<n>` where `<n>` is a positive integer, with no letter-suffix
+  grammar.
+
+**Recommendation:** No fix required — `spec-behavior-ids.spec.md`'s own Out of Scope
+section explicitly excludes `--amend` artifacts (hardcoded renderer in
+`lib/specify-amend.mjs`), so this amendment is not in that spec's contract. Flagged only
+because the lettered-suffix scheme is self-invented and not documented anywhere as the
+amendment convention; if amendments recur, worth a one-line convention note (e.g. in
+`spec-amendment-artifacts.spec.md`) so future amendment authors do not diverge further.
 
 ---
 
@@ -171,20 +344,61 @@ No findings. The spec was checked against the base spec, sibling specs, and the 
 
 ---
 
+## Heuristics — prior occurrences of this blocker
+
+The following heuristics are lessons learned from past work in this module. Use them as
+guidance, not as hard rules.
+
+> Note: `adev heuristics retrieve --signature review-specs-<hash>` returned no
+> signature-scoped entry for any of the four `blocker_id`s; the store degraded to the
+> module-scoped set, reproduced once below rather than four times. None of these four
+> blockers has a recorded prior occurrence.
+
+### Heuristic: Use session JSONL for token measurement, not file-size estimates (confidence: medium)
+- **Pattern:** When evaluating token consumption or cost of adev skills, parse real session JSONL files from ~/.claude/projects/ (message.usage fields: input_tokens, output_tokens, cache_creation_input_tokens, cache_read_input_tokens). Dispatch paired A/B subagents and compare their JSONL data for controlled experiments.
+- **Anti-pattern:** Estimate tokens using bytes/4 or hardcoded assumptions about thinking budgets and cache hit rates. These overstate savings by 2-2.5x vs real measurements.
+- **Evidence:** 1 observations
+
+---
+
 ## Summary
 
-**Total findings:** 10 (3 blockers, 4 warnings, 3 suggestions)
+**Total findings:** 12 (4 blockers, 5 warnings, 3 suggestions)
 
 **Blockers:**
 
 | ID | Reviewer | blocker_id | Section |
 |----|----------|-----------|---------|
-| SA-1 | structural-architect | `structural-architect:contradictory-contract:72233b01` | `behaviors-1` |
-| SA-2 | structural-architect | `structural-architect:unenforceable-invariant:8efa0bef` | `behaviors-3a` |
-| SEC-1 | security-reviewer | *(none — `LEGACY_REVIEWER_OUTPUT`)* | BEH-1 |
+| SA-1 | structural-architect | `structural-architect:gate-bypass:9bf7dc55` | `behaviors-3a` |
+| SA-2 | structural-architect | `structural-architect:contradictory-projection-rule:0cb97b9d` | `behaviors-3` |
+| SA-3 | structural-architect | `structural-architect:unsatisfiable-precondition:baac30d3` | `behaviors-1b` |
+| SEC-1 | security-reviewer | `security-reviewer:input-validation:9de26d8a` | `behavioral-delta-beh-1b` |
 
-**Action required:** Revise the spec to rev 4. Two of the three blockers converge on BEH-1: SA-1 says the digest input is defined twice incompatibly, and SEC-1 says the frontmatter half of that definition is not canonical enough to be tamper-evident. Fixing BEH-1 once, by stating a single parsed-and-JSON-escaped canonical serialization, addresses both. SA-2 is independent and requires either widening `adev report --type reviewer` with `--revision` (and making it mandatory alongside `spec_sha`), or choosing a reconciliation key the emitter can already supply.
+**Revision-3 blockers, re-checked on their own merits:** the contradictory-contract
+defect (BEH-1's duplicate digest definition) is gone — BEH-1 now carries a single
+definition and says so. The unenforceable-invariant defect is *partially* addressed:
+BEH-3a's window is now keyed on `spec_revised` rather than on an unstamped `revision`
+field, which is enforceable, but BEH-3's `byRevision[N].specSha` clause and its dependent
+AC were not updated to match, so the same unstamped-`revision` premise resurfaces there
+(SA-2). The rev-3 frontmatter-canonicalization blocker was carried across as BEH-1b, and
+`JSON.stringify` does close the value-aliasing channel — but the new text specifies a
+*parsed*-value input without naming a parser that can produce it, which is what SA-3 and
+SEC-1 independently land on.
 
-**Auto-retry:** suppressed. The `LEGACY_REVIEWER_OUTPUT` advisory on SEC-1 means the calling build skill must take the pre-loop sidecar + fail-loud path. SEC-1 is **not** in the `.blockers.md` sidecar and must be carried into the revision from this report by hand.
+**Action required:** Revise the spec to rev 5. Two of the four blockers (SA-3, SEC-1)
+converge on BEH-1/BEH-1b and are fixed by one decision: either name
+`lib/frontmatter.mjs::parseFrontmatter` as the sole parser and accept an explicitly
+stated fidelity limit (with a fail-closed rule for anything it cannot represent), or
+switch the frontmatter half to line-anchored raw-source removal of the four denylisted
+keys. SA-2 is fixed by dropping or re-specifying `byRevision[N].specSha`. SA-1 needs a
+new clause defining the empty reconciliation window.
 
-**Governance footer:** `spec-to-plan` is not declared in `.context-index/governance/gates.yaml:transitions` (the entry is commented out), so no `approver_role` applies to this transition. `risk_level: high` sets `require_hitl_approval: true` for downstream steps per `risk-policies.yaml`.
+**Auto-retry:** not suppressed. All four blockers carry valid `blocker_id` +
+`section_anchor` and are present in
+`lifecycle-event-log-rev-5-review-gate-integrity.blockers.md`, so
+`/adev:specify --revise` can consume the sidecar without hand-carrying any finding.
+
+**Governance footer:** `spec-to-plan` is not declared in
+`.context-index/governance/gates.yaml:transitions` (the entry is commented out), so no
+`approver_role` applies to this transition. `risk_level: high` sets
+`require_hitl_approval: true` for downstream steps per `risk-policies.yaml`.
