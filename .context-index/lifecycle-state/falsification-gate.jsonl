@@ -22,3 +22,13 @@
 {"event":"spec_revised","from_revision":5,"to_revision":6,"addressed_blocker_ids":["quick-synthesized-reviewer:false-mechanism-claim:3708f075"],"unresolved_blocker_ids":[],"ts":"2026-08-18T14:50:48.044Z"}
 {"event":"lifecycle_step","step":"review","status":"started","ts":"2026-08-18T15:03:00.155Z"}
 {"event":"step_completed","step":"review","verdict":"PASS_WITH_NOTES","ts":"2026-08-18T15:03:00.320Z"}
+{"event":"lifecycle_step","step":"plan","status":"started","ts":"2026-08-18T15:03:28.890Z"}
+{"event":"lifecycle_step","step":"plan","status":"started","ts":"2026-08-18T15:04:27.772Z"}
+{"event":"plan_task","plan":".context-index/specs/features/reviewer-domain-fit/falsification-gate.plan.md","task_id":"1","status":"pending","notes":"Resolve five issues to specs and pre-fix commits","ts":"2026-08-18T15:24:52.901Z"}
+{"event":"plan_task","plan":".context-index/specs/features/reviewer-domain-fit/falsification-gate.plan.md","task_id":"2","status":"pending","notes":"Author the referent-integrity prompt","ts":"2026-08-18T15:24:52.904Z"}
+{"event":"plan_task","plan":".context-index/specs/features/reviewer-domain-fit/falsification-gate.plan.md","task_id":"3","status":"pending","notes":"Declare referent-integrity and its context pack in review.yaml","ts":"2026-08-18T15:24:52.905Z"}
+{"event":"plan_task","plan":".context-index/specs/features/reviewer-domain-fit/falsification-gate.plan.md","task_id":"4","status":"pending","notes":"Run pre-fix reviews in scratch worktrees","ts":"2026-08-18T15:24:52.906Z"}
+{"event":"plan_task","plan":".context-index/specs/features/reviewer-domain-fit/falsification-gate.plan.md","task_id":"5","status":"pending","notes":"Score each run","ts":"2026-08-18T15:24:52.907Z"}
+{"event":"plan_task","plan":".context-index/specs/features/reviewer-domain-fit/falsification-gate.plan.md","task_id":"6","status":"pending","notes":"Evaluate the threshold and write the finding","ts":"2026-08-18T15:24:52.908Z"}
+{"event":"step_completed","step":"plan","verdict":"PASS","ts":"2026-08-18T15:24:59.311Z"}
+{"event":"step_completed","step":"plan","verdict":"PASS","ts":"2026-08-18T15:25:57.988Z"}
