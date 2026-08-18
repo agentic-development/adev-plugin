@@ -4,7 +4,7 @@ kind: action
 status: review-pending
 risk_level: medium
 milestone:
-revision: 1
+revision: 2
 charter-revision: 2
 created: 2026-08-18
 updated: 2026-08-18
@@ -24,8 +24,9 @@ tracker-ref: adev-plugin-j7pq.5
 1. **A `referent-integrity` reviewer exists and dispatches.** It is declared in this repo's
    `.context-index/governance/review.yaml` with a hand-written context pack, and
    `adev governance reviewers --json` returns it with zero `errors`. No file under
-   `templates/`, `lib/`, `skills/` or `extensions/` has changed — `mergeReviewers` honours
-   governance-over-domain on matching `id`, so the experiment needs no plugin change.
+   `templates/`, `lib/`, `skills/` or `extensions/` has changed: `review.yaml` IS the whole
+   effective reviewer set, and a relative `prompt:` path resolves under `.context-index/`, so a
+   project-scoped reviewer needs no plugin file.
 
 2. **A resolution table maps each of the five issues to a reviewable artifact.** For every id in
    `{he2, r5sc, zx5, rftq, ysqd}` the table records: the issue id, the spec path that governed the
@@ -38,9 +39,15 @@ tracker-ref: adev-plugin-j7pq.5
    it names actually exists at the reviewed commit. A finding that names the right defect with an
    unresolvable citation counts as NOT caught.
 
-4. **The threshold is evaluated against a denominator fixed before scoring.** The bar is 3 of 5. If
-   fewer than five ids map to a reviewable artifact, the denominator is the number that mapped and
-   the bar is `ceil(0.6 × denominator)`, recorded explicitly before any run is scored.
+4. **The threshold is evaluated against a denominator fixed before scoring, subject to a floor.**
+   The bar is 3 of 5. If fewer than five ids map to a reviewable artifact, the denominator is the
+   number that mapped and the bar is `ceil(0.6 × denominator)`, recorded explicitly before any run
+   is scored. **Below a denominator of 3 the experiment is INCONCLUSIVE** — it neither unblocks nor
+   stops Phase 2, and the finding says so. Without that floor a single mapped id yields a bar of 1,
+   so the gate could be "met" on one run; and because Step 1's `UNMAPPED` classification is what
+   sets the denominator, the weakening would happen upstream of the fix-the-denominator guard rather
+   than after it. The mapping table is committed before Step 4 begins, so the denominator is on
+   record independently of any result.
 
 5. **A written finding exists either way, and the initiative's next step follows from it.** The
    finding is committed at
@@ -79,7 +86,15 @@ cannot run SHA-256, so any `blocker_id` it invents is typed hex. Use
 ### Step 3: Declare the reviewer in `review.yaml`
 
 Add one entry — `id: referent-integrity`, `dispatch: always`, `profile: reviewer-reasoning`,
-`prompt: prompts/referent-integrity.md`, `severity_cap: blocker` — plus a hand-written context pack.
+`prompt: prompts/referent-integrity.md`, `severity_cap: blocker`, and
+**`context_pack: referent-integrity-pack`** — plus that pack's body, declared under the
+`context_packs:` map in the same `review.yaml`.
+
+Naming the pack is not optional bookkeeping. An entry that omits `context_pack` silently inherits
+`base`, whose globs resolve only under `.context-index/` — and context reachability is the exact
+hypothesis this experiment falsifies, so an accidental fall-through would confound the result.
+An entry naming a pack absent from `context_packs:` produces a load error instead, which aborts the
+whole panel.
 The prompt path is relative, so it resolves under `.context-index/` and needs no plugin file.
 
 Confirm with `adev governance reviewers --json`: the entry appears, `errors` is empty. A non-empty
@@ -87,8 +102,29 @@ Confirm with `adev governance reviewers --json`: the entry appears, `errors` is 
 
 ### Step 4: Run the review against each mapped spec at its pre-fix revision
 
-For each row, materialise the pre-fix spec text into a scratch worktree at that commit and run
-`/adev:review-specs --spec <path>`. Reviewing the current spec proves nothing: the defect is fixed.
+**Exactly one thing is historical: the spec text under review.** Everything the experiment measures
+WITH — the reviewer registry, the `referent-integrity` prompt, its context pack, and the installed
+plugin — must be the CURRENT versions. Reviewing the current spec proves nothing (the defect is
+fixed), but reviewing with a historical registry proves less than nothing: it produces a null result
+that reads as a negative gate.
+
+This is not hypothetical. `loadReviewConfig` reads `review.yaml` from the project root of the run
+(`lib/governance/review-config.mjs:79,108`). A worktree checked out at a pre-fix commit therefore
+carries that commit's `review.yaml`, which has no `referent-integrity` entry and no
+`prompts/referent-integrity.md` — every pre-fix commit predates `a25971e2` (2026-08-16), the most
+recent change to that file. A run there would dispatch the old three-reviewer panel, find nothing,
+and record a false negative.
+
+For each row:
+
+1. Create a scratch worktree at the pre-fix commit.
+2. **Copy the CURRENT `.context-index/governance/review.yaml` and
+   `.context-index/prompts/referent-integrity.md` into it, overwriting the historical versions.**
+3. Run `adev governance reviewers --json` inside the worktree and confirm `referent-integrity`
+   appears with an empty `errors` array. A run that skips this check is void.
+4. Run `/adev:review-specs --spec <path>`.
+5. Confirm the resulting `.review.md` names `referent-integrity` among its dispatched reviewers
+   before scoring it. A `.review.md` that does not is a void run, not a miss.
 
 Record the full `.review.md` for each run under
 `.context-index/research/referent-integrity-falsification/`.
@@ -160,6 +196,15 @@ discarded with it; nothing on the working branch requires cleanup.
 
 - [ ] `adev governance reviewers --json` lists `referent-integrity` with an empty `errors` array,
       and the three bundled reviewers still load alongside it
+- [ ] The `referent-integrity` entry names a `context_pack`, and that pack is declared under
+      `context_packs:` in the same `review.yaml` — it does NOT fall through to `base`
+- [ ] Each preserved `.review.md` names `referent-integrity` among its dispatched reviewers; a run
+      whose report does not is recorded VOID and rescheduled, never scored as a miss
+- [ ] Each run's worktree carried the CURRENT `review.yaml` and `prompts/referent-integrity.md`,
+      verified by an in-worktree `adev governance reviewers --json` before the review was dispatched
+- [ ] If fewer than 3 ids map, the finding records INCONCLUSIVE and Phase 2 is neither unblocked
+      nor stopped
+- [ ] The mapping table is committed before the first run of Step 4
 - [ ] `git diff --stat` against the branch point shows changes confined to `.context-index/`
 - [ ] The resolution table records all five ids, each either mapped to a spec path with a pre-fix
       commit SHA and a fixing commit, or marked `UNMAPPED` with a reason

@@ -1,2 +1,6 @@
 {"event":"lifecycle_step","step":"specify","status":"started","ts":"2026-08-18T13:51:42.749Z"}
 {"event":"step_completed","step":"specify","verdict":"PASS","ts":"2026-08-18T13:51:42.805Z"}
+{"event":"lifecycle_step","step":"review","status":"started","ts":"2026-08-18T13:57:46.604Z"}
+{"event":"reviewer_report","step":"review","reviewer":"quick-synthesized-reviewer","severity":"warning","verdict":"FAIL","notes":"1 blocker: Step 4's scratch worktree at a pre-fix commit carries the HISTORICAL review.yaml, so referent-integrity would never dispatch and the gate would self-falsify.","ts":"2026-08-18T14:01:18.258Z"}
+{"event":"step_completed","step":"review","verdict":"BLOCK","ts":"2026-08-18T14:01:41.157Z"}
+{"event":"spec_revised","from_revision":1,"to_revision":2,"addressed_blocker_ids":["quick-synthesized-reviewer:procedure-contradiction:7e350d4b"],"unresolved_blocker_ids":[],"ts":"2026-08-18T14:03:42.122Z"}
