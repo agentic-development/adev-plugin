@@ -16,6 +16,8 @@ Execute an implementation plan by dispatching a fresh subagent per task, routing
 - `--verbose`: disable silent execution for per-task subagents. Includes `VERBOSE: true` in subagent prompts so they narrate each step. Useful for debugging task failures.
 - `--parallel`: run file-disjoint task groups concurrently in adev-managed worktrees instead of strictly serially (see Step 2.5). Falls back to serial when the plan has no usable `## Parallelization` section.
 - `--fresh`: with `--parallel`, on a re-run collision auto-remove the retained worktree (`adev worktree remove --force`) and proceed, instead of aborting the group with `RERUN_COLLISION`. No effect without `--parallel`.
+- `--no-batch`: force solo dispatch for every task, restoring today's strict one-subagent-per-task behavior. Rejected with `CONFLICTING_BATCH_FLAGS` when combined with `--parallel` (`--parallel`'s unit of dispatch is already the group — the two flags would disagree about what "batching off" means).
+- `--max-batch <n>`: per-run override of `implement.max_batch_size` (default 4). `1` is equivalent to `--no-batch`.
 
 ## Prerequisites
 
@@ -288,6 +290,11 @@ This creates a visual task list in the Claude Code UI that the user can monitor 
 ### Step 2: Per-Task Execution Loop
 
 For each task in dependency order:
+
+Before the loop begins, `adev implement batches --plan <plan-path> [--max-batch <n>] [--no-batch]` resolves which tasks form a batch and which dispatch solo.
+
+> **Conditional loading:** Read `skills/implement/batched-mode.md` for the full Batched Task Dispatch instructions.
+> Load it only when at least one batch forms; a plan with no eligible `(sequential)` group runs the loop below exactly as written, per task.
 
 #### 2.pre: Implementation Probe
 

@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const skill = readFileSync(join(ROOT, "skills", "implement", "batched-mode.md"), "utf8");
+const skillBody = readFileSync(join(ROOT, "skills", "implement", "SKILL.md"), "utf8");
 
 describe("implement batched-mode companion", () => {
   it("names the resolving CLI verb, not inline grouping logic", () => {
@@ -42,5 +43,27 @@ describe("implement batched-mode companion", () => {
 
   it("preserves the anti-isolation guardrail inside a batch, same as parallel mode", () => {
     assert.match(skill, /Do not pass `isolation: "worktree"`|run_in_background: false/);
+  });
+});
+
+describe("SKILL.md batched-dispatch wiring", () => {
+  it("documents --no-batch and --max-batch in Arguments", () => {
+    assert.match(skillBody, /--no-batch/);
+    assert.match(skillBody, /--max-batch <n>/);
+  });
+
+  it("rejects --no-batch combined with --parallel via CONFLICTING_BATCH_FLAGS", () => {
+    assert.match(skillBody, /CONFLICTING_BATCH_FLAGS/);
+  });
+
+  it("points to batched-mode.md before the per-task loop begins", () => {
+    assert.match(skillBody, /Read `skills\/implement\/batched-mode\.md`/);
+  });
+
+  it("documents all three batch advisories in the base skill or its companion", () => {
+    const combined = skillBody + "\n" + readFileSync(join(ROOT, "skills", "implement", "batched-mode.md"), "utf8");
+    for (const advisory of ["BATCH_DISPATCHED", "BATCH_SOLO_FORCED", "BATCH_ABORTED"]) {
+      assert.match(combined, new RegExp(advisory));
+    }
   });
 });
