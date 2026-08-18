@@ -6,9 +6,9 @@ verdict: BLOCK
 rigor-tier: full
 last-reviewed-revision: 1
 file-sha: c40c67183fc7b8f9d06e2558c893688d88559819f1b438e168c83981f842f0ec
-findings-total: 11
+findings-total: 14
 blockers: 5
-warnings: 5
+warnings: 6
 suggestions: 3
 ---
 
@@ -83,4 +83,4 @@ All other consistency checks passed (naming conventions, pattern conformance to 
 > from post-cap findings across all reviewers (`adev report --type step --status completed
 > --verdict BLOCK --from-summary`, run for real inside this worktree): PASS (zero
 > warnings/blockers), PASS_WITH_NOTES (>=1 warning, zero blockers), BLOCK (>=1 blocker, default
-> `blocker_threshold`). 5 blockers, 5 warnings, 3 suggestions across the four reviewers.
+> `blocker_threshold`). 5 blockers, 6 warnings, 3 suggestions across the four reviewers.

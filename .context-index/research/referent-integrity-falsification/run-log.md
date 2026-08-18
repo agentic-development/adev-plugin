@@ -47,7 +47,7 @@ already had a verdict-stamped `specify` completion.
 
 | id | resolved project root | resolved plugin root | tier | gate check (strict mode) | pack-glob-match | dispatched-reviewer | consolidated verdict | status |
 |----|------------------------|-----------------------|------|---------------------------|------------------|----------------------|----------------------|--------|
-| he2 | `/tmp/rif-he2` | `/Users/dpavancini/.claude/plugins/cache/agentic-development/adev/0.28.0-next.2` | full | PASS (exit 0; specify step-completed with verdict PASS) | PASS | PASS (referent-integrity appears 8x; findings RI-1..RI-4) | BLOCK (5 blockers, 5 warnings, 3 suggestions) | RECORDED |
+| he2 | `/tmp/rif-he2` | `/Users/dpavancini/.claude/plugins/cache/agentic-development/adev/0.28.0-next.2` | full | PASS (exit 0; specify step-completed with verdict PASS) | PASS | PASS (referent-integrity appears 8x; findings RI-1..RI-4) | BLOCK (5 blockers, 6 warnings, 3 suggestions) | RECORDED |
 | r5sc | `/tmp/rif-r5sc` | `/Users/dpavancini/.claude/plugins/cache/agentic-development/adev/0.28.0-next.2` | full | BLOCKED in strict mode (exit 2; specify step never recorded — reproduces on current main tree); bypassed via worktree-local `gate_mode: advisory` | PASS | PASS (referent-integrity appears 5x; findings RI-1..RI-6) | BLOCK (6 blockers, 7 warnings, 2 suggestions) | RECORDED |
 | zx5 | `/tmp/rif-zx5` | `/Users/dpavancini/.claude/plugins/cache/agentic-development/adev/0.28.0-next.2` | full | BLOCKED in strict mode (exit 2; specify step_completed has verdict:null — reproduces on current main tree); bypassed via worktree-local `gate_mode: advisory` | PASS | PASS (referent-integrity appears 5x; findings RI-1..RI-3) | BLOCK (2 blockers, 7 warnings, 4 suggestions) | RECORDED |
 
