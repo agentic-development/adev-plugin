@@ -9,6 +9,8 @@
 
 import { test } from 'node:test';
 import { strict as assert } from 'node:assert';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import {
   KNOWN_EVENT_TYPES,
   REQUIRED_FIELDS_BY_EVENT,
@@ -16,6 +18,7 @@ import {
   isKnownEventType,
 } from '../../lib/diagnostics/event-schemas.mjs';
 import { CANONICAL_EVENTS } from '../../lib/lifecycle-state.mjs';
+import { PLUGIN_ROOT } from '../helpers.mjs';
 
 test('KNOWN_EVENT_TYPES is frozen', () => {
   assert.ok(Object.isFrozen(KNOWN_EVENT_TYPES), 'must be frozen');
@@ -144,4 +147,25 @@ test('REQUIRED_FIELDS_BY_EVENT and its arrays are frozen (immutable)', () => {
       `required-field array for "${type}" must be frozen`,
     );
   }
+});
+
+test('review_round is a known event type', () => {
+  assert.equal(isKnownEventType('review_round'), true);
+});
+
+test('review_round requires event, ts, plan, task_id, stage, cycles', () => {
+  const fields = getRequiredFields('review_round');
+  assert.deepEqual([...fields], ['event', 'ts', 'plan', 'task_id', 'stage', 'cycles']);
+  assert.ok(!fields.includes('findings'), 'findings is optional, never required');
+});
+
+test('registering review_round adds no diagnostics.yaml entry and no write-time runner', () => {
+  // review-provenance.spec.md forbids both: the variant reuses the existing
+  // `adev/event-schema-valid` producer and adds no write-time budget.
+  const yaml = readFileSync(join(PLUGIN_ROOT, '.context-index/governance/diagnostics.yaml'), 'utf8');
+  assert.ok(!/review[-_]round/.test(yaml), 'diagnostics.yaml must gain no review-round entry');
+  const state = readFileSync(join(PLUGIN_ROOT, 'lib/lifecycle-state.mjs'), 'utf8');
+  const start = state.indexOf('const TIER1_WRITE_TIME_RUNNERS');
+  const block = state.slice(start, state.indexOf('}', start) + 1);
+  assert.ok(!/review[-_]round/.test(block), 'TIER1_WRITE_TIME_RUNNERS must gain no runner');
 });
