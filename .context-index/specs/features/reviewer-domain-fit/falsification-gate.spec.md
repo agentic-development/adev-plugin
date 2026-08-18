@@ -2,7 +2,7 @@
 # partial_schema: implement@1
 charter: reviewer-domain-fit
 kind: action
-status: implemented
+status: validated
 risk_level: medium
 milestone:
 revision: 6
