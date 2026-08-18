@@ -3,6 +3,7 @@ import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { execSync } from "child_process";
 import { readJson } from "../../lib/provider/json-io.mjs";
+import { installCopyFilter } from "../../lib/provider/ship-filter.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -107,10 +108,7 @@ export const ClaudeCodeAdapter = {
     ensureDir(dirname(cacheDir));
     cpSync(PLUGIN_ROOT, cacheDir, {
       recursive: true,
-      filter: (src) => {
-        const name = src.split("/").pop();
-        return name !== ".git" && name !== "node_modules" && name !== ".DS_Store";
-      },
+      filter: installCopyFilter(PLUGIN_ROOT),
     });
 
     const hooksDir = join(cacheDir, "hooks");
