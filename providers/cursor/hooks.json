@@ -38,6 +38,12 @@
         "failClosed": true,
         "timeout": 30,
         "matcher": "Write|Edit"
+      },
+      {
+        "command": "./hooks/artifact-frontmatter-guard.sh",
+        "failClosed": true,
+        "timeout": 30,
+        "matcher": "Write|Edit"
       }
     ],
     "beforeShellExecution": [
