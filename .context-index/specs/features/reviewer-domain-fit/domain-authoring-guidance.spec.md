@@ -1,5 +1,3 @@
-<!-- partial_schema: spec@1 -->
-
 ---
 charter: reviewer-domain-fit
 status: review-passed
