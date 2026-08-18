@@ -628,7 +628,28 @@ After both reviews pass:
 1. Emit a `plan_task` `done` event: `reportPlanTask(projectRoot, specPath, { plan: planFilePath, task_id, status: "done", notes: <optional 1-line summary or null> })`. This is the **only** task-completion signal — the plan file itself is not modified.
 2. **Do NOT mutate plan file checkboxes.** The `- [ ]` markers in the plan file are authoring guides for human reviewers; they are not authoritative state and are never flipped by skills. Authoritative status lives in `currentState(spec).planTasks` (folded from `plan_task` events in the lifecycle log).
 3. **Commit-per-task is MANDATORY.** Per `incremental-artifact-writes.spec.md` Integration Point 2, every plan task MUST produce exactly one git commit before the orchestrator moves on. The commit IS the checkpoint — if a later task fails or a session crashes mid-pipeline, the prior task's work is preserved in git history. Multi-task implementations with a single combined commit are forbidden; they defeat the recovery guarantee.
-4. Record: specialist used (or "generic"), review cycles needed, concerns noted.
+4. **Record review-round provenance on both channels** (`review-provenance.spec.md`
+   Output Contract A and B). For each review stage that ran on this task — always at least `spec-compliance` and
+   `code-quality`, since 2h is reached only after both pass:
+   - **Trailer.** Add one `Review-round: <stage>=<cycles>` line to this task's single
+     commit, built by `buildReviewRoundTrailer(stage, cycles)` in
+     `lib/lifecycle-state.mjs`. That helper is the **only** sanctioned producer of the
+     line — never compose the text as prose. `cycles` counts reviewer dispatches
+     **including the initial review**, so a stage that passed on first look records
+     `=1`. Repeated `Review-round:` keys are legal, so two stages produce two lines. The helper
+     rejects CR/LF, control/ANSI escapes, over-cap length, an out-of-enum stage, and any
+     `cycles` that is not an integer >= 1; a rejection is never coerced into a written line.
+   - **Event.** Emit one event per stage:
+     `adev report --type review-round --spec <spec> --plan <plan> --task-id <id> --stage <s> --cycles <n> [--findings <m>]`.
+     Supply `--findings` only for `code-quality` (and `synthesized`), never for
+     `spec-compliance` — step 2f mandates no stable finding-id convention, so distinct
+     findings are not countable there. If a stage's cycle count is genuinely unknown
+     (for example the run resumed mid-task after a crash), **omit the event for that
+     stage** rather than guessing: absence reads as "not recorded", and a fabricated
+     count would corrupt the corpus this record exists to create.
+   Still record the specialist used (or "generic") and any concerns noted in the
+   task report as before. Neither channel gates task completion: a failed
+   observability write is a warning naming the task, not a task failure.
 5. Move to the next task.
 
 ### Step 2.5: Parallel Group Execution
