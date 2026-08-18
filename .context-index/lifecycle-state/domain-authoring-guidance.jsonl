@@ -17,3 +17,5 @@
 {"event":"plan_task","plan":".context-index/specs/features/reviewer-domain-fit/domain-authoring-guidance.plan.md","task_id":"6","status":"pending","notes":"Update spec-template Error Cases headers","ts":"2026-08-18T21:32:08.527Z"}
 {"event":"step_completed","step":"plan","verdict":"PASS","ts":"2026-08-18T21:32:36.061Z"}
 {"event":"step_completed","step":"plan","verdict":"PASS","ts":"2026-08-18T21:33:37.173Z"}
+{"event":"lifecycle_step","step":"route","status":"started","ts":"2026-08-18T21:33:45.350Z"}
+{"event":"step_completed","step":"route","ts":"2026-08-18T21:36:05.841Z"}
