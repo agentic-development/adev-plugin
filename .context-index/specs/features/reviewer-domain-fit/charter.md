@@ -262,9 +262,9 @@ panel.
 
 ### Phase 1 — gate
 
-- [ ] `referent-integrity` is declared in this repo's `review.yaml` with a hand-written pack and dispatches with no plugin change
-- [ ] All five specs are reviewed at their pre-fix git revisions; each result records whether the known defect was flagged as blocker **with a citation resolving to a real file or symbol**
-- [ ] The 3-of-5 threshold is evaluated and recorded BEFORE any Phase 2 work begins
+- [x] `referent-integrity` is declared in this repo's `review.yaml` with a hand-written pack and dispatches with no plugin change
+- [x] All MAPPED specs (3 of 5; `rftq` and `ysqd` UNMAPPED, see mapping-table.md) are reviewed at their pre-fix git revisions; each result records whether the known defect was flagged as blocker with a citation resolving to a real file or symbol
+- [x] The threshold (bar = ceil(0.6 × denominator); 2 of 3 here, since denominator dropped to 3) is evaluated and recorded before any Phase 2 work begins
 
 ### Phase 2 — panel and prompts
 
