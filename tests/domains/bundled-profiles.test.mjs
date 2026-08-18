@@ -24,6 +24,7 @@ const SW_DIR = join(DOMAINS_DIR, 'software');
 const EXPECTED_FILES = [
   'charter-template.md',
   'spec-template.md',
+  'specify-guidance.md',
   'reviewers.yaml',
   'gates.yaml',
   'verification.yaml',
@@ -35,10 +36,10 @@ const EXPECTED_FILES = [
 // ── Software Profile ──────────────────────────────────────────────────
 
 describe('software profile', () => {
-  it('contains exactly 8 overlay files', () => {
+  it('contains exactly 9 overlay files', () => {
     const files = readdirSync(SW_DIR).sort();
     assert.deepStrictEqual(files, EXPECTED_FILES.slice().sort());
-    assert.equal(files.length, 8);
+    assert.equal(files.length, 9);
   });
 
   it('YAML files are parseable', () => {
@@ -125,9 +126,9 @@ describe('cross-profile validation', () => {
     assert.deepStrictEqual(entries.sort(), ['software'], 'only software should be bundled');
   });
 
-  it('software profile contains exactly 8 files', () => {
+  it('software profile contains exactly 9 files', () => {
     const files = readdirSync(SW_DIR).sort();
-    assert.equal(files.length, 8, 'software should have 8 files');
+    assert.equal(files.length, 9, 'software should have 9 files');
     assert.deepStrictEqual(files, EXPECTED_FILES.slice().sort(), 'software files should match expected');
   });
 
