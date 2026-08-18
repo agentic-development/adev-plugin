@@ -10,9 +10,14 @@ describe("build SKILL.md — unified dry-run gates", () => {
   const skillPath = join(__dirname, "..", "..", "skills", "build", "SKILL.md");
   const content = readFileSync(skillPath, "utf8");
 
-  it("should read gate display from governance/gates.yaml in dry-run", () => {
+  it("should read gate display from governance/gates.yaml in dry-run (+1 more contract assertions)", () => {
+    // should read gate display from governance/gates.yaml in dry-run
     assert.ok(content.includes("governance/gates.yaml"),
-      "Dry-run should read from governance/gates.yaml");
+    "Dry-run should read from governance/gates.yaml");
+
+    // should delegate gate execution to implement and validate
+    assert.ok(content.includes("delegate") || content.includes("Delegation"),
+    "Build should delegate gate execution to consuming skills");
   });
 
   it("should NOT read gates from manifest.yaml for display", () => {
@@ -25,8 +30,5 @@ describe("build SKILL.md — unified dry-run gates", () => {
       "Dry-run gate display section should not reference manifest.yaml");
   });
 
-  it("should delegate gate execution to implement and validate", () => {
-    assert.ok(content.includes("delegate") || content.includes("Delegation"),
-      "Build should delegate gate execution to consuming skills");
-  });
+
 });

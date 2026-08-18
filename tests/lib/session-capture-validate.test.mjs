@@ -1,3 +1,10 @@
+import { test } from "node:test";
+import assert from "node:assert";
+import { mkdirSync, mkdtempSync, realpathSync, symlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { emitDiagnostic, formatDiagnostic, validateCwd, validateSessionId, validateTranscriptPath } from "../../lib/session-capture.mjs";
+
 /**
  * Tests for the three validators in `lib/session-capture.mjs`:
  *   - validateSessionId(id)    — SEC-2 charset check
@@ -5,17 +12,13 @@
  *   - validateTranscriptPath(path, cwd) — SEC-3, SEC-10 containment + extension
  */
 
-import { test } from "node:test";
-import assert from "node:assert";
-import { mkdtempSync, mkdirSync, writeFileSync, symlinkSync, realpathSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 
-import {
-  validateSessionId,
-  validateCwd,
-  validateTranscriptPath,
-} from "../../lib/session-capture.mjs";
+
+
+
+
+
+
 
 // ────────────────────────────────────────────────────────────────────────────
 // validateSessionId — SEC-2: ^[A-Za-z0-9_-]+$
@@ -262,3 +265,72 @@ test("validateTranscriptPath still rejects a transcript outside every candidate 
     process.env.HOME = prevHome;
   }
 });
+
+// ─── merged from tests/lib/session-capture-diagnostic.test.mjs ──────────────────────────────────────────────
+{
+  /**
+   * Tests for the stderr diagnostic helper (SEC-7 + CON-10).
+   * Confirms the documented format `[adev:session-capture] <reason>[ <subject>][ <path>]`.
+   */
+
+
+
+
+
+
+  test("formatDiagnostic emits prefix + reason-code only (+3 more contract assertions)", () => {
+    // formatDiagnostic emits prefix + reason-code only
+    assert.strictEqual(
+    formatDiagnostic("disabled"),
+    "[adev:session-capture] disabled",
+    );
+
+    // formatDiagnostic appends subject when provided
+    assert.strictEqual(
+    formatDiagnostic("validation-error", { subject: "session-id" }),
+    "[adev:session-capture] validation-error session-id",
+    );
+
+    // formatDiagnostic appends subject and path
+    assert.strictEqual(
+    formatDiagnostic("path-error", {
+    subject: "transcript",
+    path: ".context-index/sessions/2024.md",
+    }),
+    "[adev:session-capture] path-error transcript .context-index/sessions/2024.md",
+    );
+
+    // formatDiagnostic appends path without subject
+    assert.strictEqual(
+    formatDiagnostic("disabled", { path: ".githooks/post-commit" }),
+    "[adev:session-capture] disabled .githooks/post-commit",
+    );
+  });
+
+  test("emitDiagnostic writes a newline-terminated line via the sink", () => {
+    let captured = "";
+    emitDiagnostic("validation-error", {
+      subject: "cwd",
+      sink: (line) => {
+        captured = line;
+      },
+    });
+    assert.strictEqual(captured, "[adev:session-capture] validation-error cwd\n");
+  });
+
+  test("formatDiagnostic accepts SEC-12/SEC-13 subjects (cost-usd, model, issue-id, etc.)", () => {
+    for (const subject of [
+      "cost-usd",
+      "input-tokens",
+      "output-tokens",
+      "model",
+      "issue-id",
+      "epic-id",
+    ]) {
+      assert.strictEqual(
+        formatDiagnostic("validation-error", { subject }),
+        `[adev:session-capture] validation-error ${subject}`,
+      );
+    }
+  });
+}

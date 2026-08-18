@@ -10,24 +10,35 @@ import { cleanupTempDir, createTempDir, writeFixture } from "../helpers.mjs";
 // Spec: .context-index/specs/cross-cutting/graduated-rigor-tiers.spec.md
 
 
-
-
-
-
-
-
 const POLICIES = {
   high: { review_mode: "full", validate_mode: "full" },
   medium: { review_mode: "full", validate_mode: "full" },
   low: { review_mode: "quick", validate_mode: "quick" },
 };
 
-test("isValidTier accepts full/quick, rejects others", () => {
+test("isValidTier accepts full/quick, rejects others (+2 more contract assertions)", () => {
+  // isValidTier accepts full/quick, rejects others
   assert.equal(isValidTier("full"), true);
   assert.equal(isValidTier("quick"), true);
   assert.equal(isValidTier("fast"), false);
   assert.equal(isValidTier(undefined), false);
   assert.deepEqual([...RIGOR_MODES], ["full", "quick"]);
+
+  // precedence 3: risk policy maps low → quick (review)
+  assert.equal(
+  resolveRigorMode({ skill: "review", riskLevel: "low", policies: POLICIES }),
+  "quick",
+  );
+  assert.equal(
+  resolveRigorMode({ skill: "review", riskLevel: "high", policies: POLICIES }),
+  "full",
+  );
+
+  // empty-string tierOverride is ignored (falls through)
+  assert.equal(
+  resolveRigorMode({ skill: "review", riskLevel: "low", policies: POLICIES, tierOverride: "" }),
+  "quick",
+  );
 });
 
 test("precedence 1: explicit tierOverride wins over everything", () => {
@@ -51,16 +62,6 @@ test("precedence 2: routingEasy → quick when no override", () => {
   assert.equal(mode, "quick");
 });
 
-test("precedence 3: risk policy maps low → quick (review)", () => {
-  assert.equal(
-    resolveRigorMode({ skill: "review", riskLevel: "low", policies: POLICIES }),
-    "quick",
-  );
-  assert.equal(
-    resolveRigorMode({ skill: "review", riskLevel: "high", policies: POLICIES }),
-    "full",
-  );
-});
 
 test("validate skill reads validate_mode, not review_mode", () => {
   const policies = {
@@ -96,12 +97,6 @@ test("invalid tierOverride throws InvalidTierError with code", () => {
   );
 });
 
-test("empty-string tierOverride is ignored (falls through)", () => {
-  assert.equal(
-    resolveRigorMode({ skill: "review", riskLevel: "low", policies: POLICIES, tierOverride: "" }),
-    "quick",
-  );
-});
 
 test("loadRigorPolicies reads risk-policies.yaml, null when absent", () => {
   const dir = mkdtempSync(join(tmpdir(), "rigor-"));
@@ -128,10 +123,6 @@ test("loadRigorPolicies reads risk-policies.yaml, null when absent", () => {
 {
   // Unit tests for the test_depth extension to loadRigorPolicies.
   // Spec: .context-index/specs/features/test-strategies/test-depth-policy.spec.md
-
-
-
-
 
 
   test("loadRigorPolicies surfaces test_depth per risk level", () => {

@@ -18,9 +18,16 @@ describe("adev:validate SKILL.md — workspace-aware cross-repo validation", () 
       "Must reference resolveRef() for resolving cross-repo depends-on references");
   });
 
-  it("describes cross-repo depends-on pattern @repo-slug/spec-slug", () => {
+  it("describes cross-repo depends-on pattern @repo-slug/spec-slug (+1 more contract assertions)", () => {
+    // describes cross-repo depends-on pattern @repo-slug/spec-slug
     assert.match(skill, /@.*repo-slug.*\/.*spec-slug|@<repo-slug>\/<spec-slug>/,
-      "Must describe the @repo-slug/spec-slug cross-repo reference pattern");
+    "Must describe the @repo-slug/spec-slug cross-repo reference pattern");
+
+    // workspace-aware validation mode is entered only when cross-repo refs exist
+    assert.match(skill, /workspace-aware validation mode/i,
+    "Must name the workspace-aware validation mode");
+    assert.match(skill, /depends-on/,
+    "Must reference depends-on frontmatter field");
   });
 
   it("unresolvable cross-repo references produce warnings not errors", () => {
@@ -62,12 +69,7 @@ describe("adev:validate SKILL.md — workspace-aware cross-repo validation", () 
       "Must reference readCappedText or 512 KB cap for sibling spec file reads");
   });
 
-  it("workspace-aware validation mode is entered only when cross-repo refs exist", () => {
-    assert.match(skill, /workspace-aware validation mode/i,
-      "Must name the workspace-aware validation mode");
-    assert.match(skill, /depends-on/,
-      "Must reference depends-on frontmatter field");
-  });
+
 });
 
 describe("adev:validate SKILL.md — repo-mode-inside-workspace advisory", () => {

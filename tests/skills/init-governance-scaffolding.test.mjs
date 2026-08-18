@@ -63,13 +63,20 @@ describe("init SKILL.md — Step 7a seeds both gate tiers in argv form", () => {
       "Step 7a must show the argv-form integration example");
   });
 
-  it("states that an unseeded gate keeps the empty-string sentinel and warns at load", () => {
+  it("states that an unseeded gate keeps the empty-string sentinel and warns at load (+1 more contract assertions)", () => {
+    // states that an unseeded gate keeps the empty-string sentinel and warns at load
     assert.ok(section.includes('command: ""'),
-      "Step 7a must state that an unseeded gate keeps command: \"\"");
+    "Step 7a must state that an unseeded gate keeps command: \"\"");
     assert.ok(section.includes("INVALID_GATE"),
-      "Step 7a must name the INVALID_GATE warning emitted at load");
+    "Step 7a must name the INVALID_GATE warning emitted at load");
     assert.ok(section.includes("merge-gates.mjs"),
-      "Step 7a must name the loader that enforces the argv-only rule");
+    "Step 7a must name the loader that enforces the argv-only rule");
+
+    // contains no inline-Node directive (constitution guard)
+    assert.ok(!/node\s+-e/.test(section), "no `node -e` in Step 7a");
+    assert.ok(!/node --input-type=module -e/.test(section),
+    "no `node --input-type=module -e` in Step 7a");
+    assert.ok(!/Run inline Node/i.test(section), "no `Run inline Node` heading in Step 7a");
   });
 
   it("does not emit a placeholder into a command value", () => {
@@ -77,10 +84,5 @@ describe("init SKILL.md — Step 7a seeds both gate tiers in argv form", () => {
       "Step 7a must not seed a {{ }} placeholder into a command value");
   });
 
-  it("contains no inline-Node directive (constitution guard)", () => {
-    assert.ok(!/node\s+-e/.test(section), "no `node -e` in Step 7a");
-    assert.ok(!/node --input-type=module -e/.test(section),
-      "no `node --input-type=module -e` in Step 7a");
-    assert.ok(!/Run inline Node/i.test(section), "no `Run inline Node` heading in Step 7a");
-  });
+
 });

@@ -32,9 +32,15 @@ const skill = parallelPointer
   : skillBody;
 
 describe("implement --parallel documentation contract", () => {
-  it("documents the --parallel mode", () => {
+  it("documents the --parallel mode (+1 more contract assertions)", () => {
+    // documents the --parallel mode
     assert.match(skill, /--parallel/);
     assert.match(skill, /adev parallel groups/);
+
+    // documents all serial-fallback reasons
+    assert.match(skill, /serial: single group/);
+    assert.match(skill, /serial: nested/);
+    assert.match(skill, /malformed/);
   });
 
   it("preserves the anti-isolation:\"worktree\" guardrail", () => {
@@ -63,11 +69,6 @@ describe("implement --parallel documentation contract", () => {
     assert.match(skill, /adev worktree remove --slug <…> --force/);
   });
 
-  it("documents all serial-fallback reasons", () => {
-    assert.match(skill, /serial: single group/);
-    assert.match(skill, /serial: nested/);
-    assert.match(skill, /malformed/);
-  });
 
   it("contains no inline-Node execution directive in the parallel prose", () => {
     // Guard the constitution rule: the --parallel section names verbs, not node -e.

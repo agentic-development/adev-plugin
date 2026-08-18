@@ -163,10 +163,17 @@ describe("deriveSignature", () => {
 });
 
 describe("deriveHeuristicId", () => {
-  it("composes <prefix>-<8hex> over `<path>|<pattern>` under normalizeIdInput", () => {
+  it("composes <prefix>-<8hex> over <path>|<pattern> under normalizeIdInput (+1 more contract assertions)", () => {
+    // composes <prefix>-<8hex> over `<path>|<pattern>` under normalizeIdInput
     assert.equal(
-      deriveHeuristicId("foo", "specs/features/a/foo.spec.md", "Some Pattern"),
-      `foo-${sha8("specs/features/a/foo.spec.md|some pattern")}`,
+    deriveHeuristicId("foo", "specs/features/a/foo.spec.md", "Some Pattern"),
+    `foo-${sha8("specs/features/a/foo.spec.md|some pattern")}`,
+    );
+
+    // folds backslash path separators so two worktree spellings agree
+    assert.equal(
+    deriveHeuristicId("x", "specs\\features\\a\\foo.spec.md", "P"),
+    deriveHeuristicId("x", "specs/features/a/foo.spec.md", "P"),
     );
   });
 
@@ -182,12 +189,6 @@ describe("deriveHeuristicId", () => {
     assert.notEqual(a, b);
   });
 
-  it("folds backslash path separators so two worktree spellings agree", () => {
-    assert.equal(
-      deriveHeuristicId("x", "specs\\features\\a\\foo.spec.md", "P"),
-      deriveHeuristicId("x", "specs/features/a/foo.spec.md", "P"),
-    );
-  });
 
   it("the prefix is caller-supplied and never derived from the origin", () => {
     const asSpecSlug = deriveHeuristicId("foo", "specs/a.spec.md", "P");

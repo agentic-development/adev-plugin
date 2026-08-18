@@ -27,8 +27,13 @@ const ALL_IDS = [
   'visual',
 ];
 
-test('registry has exactly 9 strategies', () => {
+test("registry has exactly 9 strategies (+1 more contract assertions)", () => {
+  // registry has exactly 9 strategies
   assert.equal(listStrategies().length, 9);
+
+  // getStrategy returns null for unknown id
+  assert.equal(getStrategy('unknown'), null);
+  assert.equal(getStrategy('e2e'), null);
 });
 
 test('each strategy has all required fields', () => {
@@ -59,10 +64,6 @@ test('getStrategy returns correct object for each of the 8 ids', () => {
   }
 });
 
-test('getStrategy returns null for unknown id', () => {
-  assert.equal(getStrategy('unknown'), null);
-  assert.equal(getStrategy('e2e'), null);
-});
 
 test('getStrategy returns valid object for integration', () => {
   const s = getStrategy('integration');

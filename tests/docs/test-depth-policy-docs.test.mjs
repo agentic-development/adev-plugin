@@ -6,8 +6,12 @@ function read(p) {
   return readFileSync(new URL(`../../${p}`, import.meta.url), "utf8");
 }
 
-test("docs/test-strategies.md states plainly that the floor is advisory", () => {
+test("docs/test-strategies.md states plainly that the floor is advisory (+1 more contract assertions)", () => {
+  // docs/test-strategies.md states plainly that the floor is advisory
   assert.match(read("docs/test-strategies.md"), /floor is advisory/i);
+
+  // docs/getting-started.md explains what init asks about test_policy
+  assert.match(read("docs/getting-started.md"), /test_policy|granularity/);
 });
 
 test("docs/governance.md documents test_depth and the advisory-floor statement", () => {
@@ -29,9 +33,6 @@ test("docs/cli-reference.md documents all five adev test-policy subcommands", ()
   }
 });
 
-test("docs/getting-started.md explains what init asks about test_policy", () => {
-  assert.match(read("docs/getting-started.md"), /test_policy|granularity/);
-});
 
 test("docs/README.md indexes the updated pages", () => {
   const readme = read("docs/README.md");

@@ -10,9 +10,14 @@ const skill = readFileSync(SKILL_PATH, "utf8");
 // === Task 1: Workspace-mode detection ===
 
 describe("adev:specify SKILL.md — workspace-mode detection", () => {
-  it("references detectWorkspace for workspace-mode branching", () => {
+  it("references detectWorkspace for workspace-mode branching (+1 more contract assertions)", () => {
+    // references detectWorkspace for workspace-mode branching
     assert.match(skill, /detectWorkspace/,
-      "Must reference detectWorkspace()");
+    "Must reference detectWorkspace()");
+
+    // preserves single-repo behaviour when detectWorkspace returns null
+    assert.match(skill, /detectWorkspace.*returns.*null|null.*no workspace/i,
+    "Must state single-repo behaviour when no workspace detected");
   });
 
   it("branches on currentRepoSlug === null for workspace root detection", () => {
@@ -20,10 +25,6 @@ describe("adev:specify SKILL.md — workspace-mode detection", () => {
       "Must check currentRepoSlug === null for workspace root");
   });
 
-  it("preserves single-repo behaviour when detectWorkspace returns null", () => {
-    assert.match(skill, /detectWorkspace.*returns.*null|null.*no workspace/i,
-      "Must state single-repo behaviour when no workspace detected");
-  });
 
   it("documents that currentRepoSlug comes from detectWorkspace return value", () => {
     assert.match(skill, /detectWorkspace.*return|return.*currentRepoSlug/i,
@@ -34,9 +35,14 @@ describe("adev:specify SKILL.md — workspace-mode detection", () => {
 // === Task 2: target-repo prompt and validation ===
 
 describe("adev:specify SKILL.md — workspace-mode target-repo prompt", () => {
-  it("prompts for target-repo in workspace mode", () => {
+  it("prompts for target-repo in workspace mode (+1 more contract assertions)", () => {
+    // prompts for target-repo in workspace mode
     assert.match(skill, /target-repo/,
-      "Must reference target-repo frontmatter field");
+    "Must reference target-repo frontmatter field");
+
+    // rejects unknown repo slugs with re-prompt
+    assert.match(skill, /[Uu]nknown repo slug|INVALID_TARGET_REPO/,
+    "Must handle unknown repo slug rejection");
   });
 
   it("lists registered repo slugs from adev-workspace.yaml", () => {
@@ -54,10 +60,6 @@ describe("adev:specify SKILL.md — workspace-mode target-repo prompt", () => {
       "Must reference validateModuleName for slug validation");
   });
 
-  it("rejects unknown repo slugs with re-prompt", () => {
-    assert.match(skill, /[Uu]nknown repo slug|INVALID_TARGET_REPO/,
-      "Must handle unknown repo slug rejection");
-  });
 
   it("error codes are for human/agent reference only", () => {
     assert.match(skill, /human.*reference|agent.*reference|reference only/i,

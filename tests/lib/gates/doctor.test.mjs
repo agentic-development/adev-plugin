@@ -119,10 +119,20 @@ test("the doctor never writes to the project (read-only postcondition)", async (
 
 // ── Task 2: family (d) placeholders ─────────────────────────────────────────
 
-test("extractPlaceholders finds every mustache occurrence", () => {
+test("extractPlaceholders finds every mustache occurrence (+2 more contract assertions)", () => {
+  // extractPlaceholders finds every mustache occurrence
   assert.deepEqual(extractPlaceholders("{{ test_command }}"), ["{{ test_command }}"]);
   assert.deepEqual(extractPlaceholders("npm test"), []);
   assert.equal(extractPlaceholders("{{a}} && {{ b }}").length, 2);
+
+  // resolveBinary treats shell builtins as resolved
+  assert.equal(resolveBinary("cd build && npm test", process.cwd()).resolved, true);
+  assert.equal(resolveBinary("echo hi", process.cwd()).resolved, true);
+
+  // extractReferencedPaths recognises cd arguments and separator-bearing tokens
+  assert.ok(extractReferencedPaths("cd build && npm test").includes("build"));
+  assert.ok(extractReferencedPaths("pytest tests/unit").includes("tests/unit"));
+  assert.equal(extractReferencedPaths("npm test").length, 0);
 });
 
 test("unsubstituted placeholder in a gate command is an error finding", async () => {
@@ -153,10 +163,6 @@ test("resolveBinary reports an unresolvable binary", () => {
   assert.equal(r.token, "definitely-not-a-real-binary-xyz");
 });
 
-test("resolveBinary treats shell builtins as resolved", () => {
-  assert.equal(resolveBinary("cd build && npm test", process.cwd()).resolved, true);
-  assert.equal(resolveBinary("echo hi", process.cwd()).resolved, true);
-});
 
 test("resolveBinary skips leading VAR=value assignments", () => {
   const r = resolveBinary("CI=1 NODE_ENV=test node --test", process.cwd());
@@ -218,11 +224,6 @@ test("deterministic gate with an empty command warns; probabilistic gate does no
 
 // ── Task 4: family (e) referenced paths ─────────────────────────────────────
 
-test("extractReferencedPaths recognises cd arguments and separator-bearing tokens", () => {
-  assert.ok(extractReferencedPaths("cd build && npm test").includes("build"));
-  assert.ok(extractReferencedPaths("pytest tests/unit").includes("tests/unit"));
-  assert.equal(extractReferencedPaths("npm test").length, 0);
-});
 
 test("extractReferencedPaths ignores option flags", () => {
   const paths = extractReferencedPaths("jest --config=a/b.json --ci");
