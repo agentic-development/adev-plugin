@@ -106,8 +106,11 @@ Verify the pack POSITIVELY, by two checks that do not depend on `errors`:
 
 1. The key named by `context_pack` is literally present under `context_packs:` in the same
    `review.yaml`.
-2. The rendered pack is non-empty — the dispatch record or preserved `.review.md` shows pack
-   sections under the render nonce.
+2. The pack's declared include globs match at least one file in the worktree being reviewed,
+   checked directly against the filesystem and recorded per run in the mapping table. Do NOT try to
+   verify this from the preserved `.review.md`: that artifact is the reviewer's findings report and
+   carries no `ADEV-PACK` sections — the rendered pack exists only in the dispatch prompt, which is
+   not preserved.
 
 A run whose pack rendered empty is VOID, exactly like a run that did not dispatch the reviewer.
 The prompt path is relative, so it resolves under `.context-index/` and needs no plugin file.
@@ -217,8 +220,9 @@ discarded with it; nothing on the working branch requires cleanup.
 - [ ] `adev governance reviewers --json` lists `referent-integrity` with an empty `errors` array,
       and the three bundled reviewers still load alongside it
 - [ ] The `referent-integrity` entry names a `context_pack`, that key is literally present under
-      `context_packs:` in the same `review.yaml`, and the RENDERED pack is non-empty — verified
-      positively, NOT by an empty `errors` array, which does not prove a pack resolved
+      `context_packs:` in the same `review.yaml`, and the pack's include globs match at least one
+      file in each reviewed worktree — all three verified positively, NOT by an empty `errors`
+      array, which does not prove a pack resolved
 - [ ] Every run was dispatched with `--tier full`; a run at any other tier is VOID
 - [ ] A run whose pack rendered empty is recorded VOID, not scored as a miss
 - [ ] Unresolvable VOIDs reduce scorable runs without re-deriving the committed denominator; below
