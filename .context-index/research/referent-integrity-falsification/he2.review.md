@@ -1,67 +1,86 @@
 ---
+spec: .context-index/specs/cross-cutting/graduated-rigor-tiers.spec.md
+charter: (cross-cutting — no parent charter)
+date: 2026-08-18
+verdict: BLOCK
+rigor-tier: full
 last-reviewed-revision: 1
-file-sha: 5cbbcac83c31dcc70eb70ffd016067322fe0448afd48582c0aee4724745c4126
+file-sha: c40c67183fc7b8f9d06e2558c893688d88559819f1b438e168c83981f842f0ec
+findings-total: 11
+blockers: 5
+warnings: 5
+suggestions: 3
 ---
 
 # Architecture Review: graduated-rigor-tiers
 
 > **Date:** 2026-08-18
-> **Spec:** .context-index/specs/cross-cutting/graduated-rigor-tiers.spec.md
+> **Spec:** `.context-index/specs/cross-cutting/graduated-rigor-tiers.spec.md` (revision 1)
+> **Charter:** none (cross-cutting spec)
+> **Rigor tier:** full (explicit `--tier full`)
 > **Verdict:** BLOCK
 
-**Rigor tier:** `full` (explicit `--tier full` override on invocation)
+> **Falsification-experiment note.** This review was run against a scratch worktree checked out
+> at `d5d2d554` — the commit immediately BEFORE `df11ba5d` fixed the `/adev:build --tier`
+> propagation gap (issue `he2`). The registry (`review.yaml`) and the `referent-integrity`
+> prompt were overwritten with their CURRENT versions before dispatch; everything else in this
+> worktree (the spec body, `skills/`, `lib/`) is the historical, pre-fix state. See
+> `.context-index/research/referent-integrity-falsification/run-log.md` for the resolved
+> project root, plugin root, and pack-verification evidence for this run.
 
 ## Reviewers Dispatched
 
 | ID | Name | Mode | Profile | Prompt/Skill |
 |----|------|------|---------|--------------|
-| structural-architect | Structural Architect | subagent | reviewer-reasoning | plugin:review-specs/structural-architect-prompt.md |
-| security-reviewer | Security Reviewer | subagent | reviewer-capable | plugin:review-specs/security-reviewer-prompt.md |
-| consistency-analyzer | Consistency Analyzer | subagent | reviewer-fast | plugin:review-specs/consistency-analyzer-prompt.md |
-| referent-integrity | Referent Integrity | subagent | reviewer-reasoning | prompts/referent-integrity.md |
+| structural-architect | Structural Architect | subagent | reviewer-reasoning | `plugin:review-specs/structural-architect-prompt.md` |
+| security-reviewer | Security Reviewer | subagent | reviewer-capable | `plugin:review-specs/security-reviewer-prompt.md` |
+| consistency-analyzer | Consistency Analyzer | subagent | reviewer-fast | `plugin:review-specs/consistency-analyzer-prompt.md` |
+| referent-integrity | Referent Integrity | subagent | reviewer-reasoning | `prompts/referent-integrity.md` |
 
-No disabled reviewers.
+No disabled reviewers. Registry loaded via `adev governance reviewers --json` from inside this
+worktree: `referent-integrity` present, `errors: []`.
 
 ## Structural Architect (structural-architect)
 
-**Verdict:** FAIL
+**Verdict:** FAIL (2 blockers, 3 warnings, 1 suggestion)
 
-- **SA-1 (blocker)** `structural-architect:adr-registry-bypass:83f712f6` — Quick-tier dispatch hardcodes a single bundled reviewer/check outside `governance/review.yaml` / `governance/validate.yaml`, reintroducing the two-parallel-selection-paths problem ADR-0003 unified away. Section: `review-specs-under-quick`.
-- **SA-2 (warning)** — Routing signal (`routingEasy`) can override a declarative high `risk_level` with no correlation/ceiling check, so an `/adev:route` misclassification can silently downgrade scrutiny on a project-declared high-risk spec.
-- **SA-3 (suggestion)** — "instead of the three … defaults" hardcodes a reviewer count that's already stale against this project's 4-reviewer `review.yaml`.
-- **SA-4 (suggestion)** — The "easy" classification threshold has no declared single owner/cross-reference between `/adev:route` and `/adev:work`.
+- **SA-1 (blocker)** `structural-architect:contradictory-artifact-path:c5c99666` — Output Contract names the bundled quick-reviewer prompt as `templates/review-specs/quick-synthesized.md`, but the spec's own source-manifest (and the real repo) show `skills/review-specs/quick-synthesized-reviewer-prompt.md`; `templates/review-specs/` holds only `defaults.yaml`. Also conflicts with ADR-0003's `plugin:<skill>/<file>` URI scheme. Section: `output-contract`.
+- **SA-2 (blocker)** `structural-architect:ambiguous-registry-contract:4844b8f8` — The spec asserts the quick reviewer "is a registry entry" but never defines its fields, and leaves undefined whether a project-added `dispatch: always` reviewer (like `referent-integrity`) is suppressed under `quick` or whether `severity_cap`/`dispatch: triggered` still apply. Section: `output-contract`.
+- **SA-3 (warning)** — "Identical gate contract" for the quick synthesized reviewer is asserted but the spec never assigns it a slug or requires blocker_id/section_anchor emission per the aggregator's contract.
+- **SA-4 (warning)** — Undefined precedence between legacy `require_review: false` and the new `review_mode` field for existing project policy files.
+- **SA-5 (warning)** — No described data path for how `routingEasy` travels from `/adev:route`/`/adev:work` to a later `/adev:review-specs`/`/adev:validate` invocation.
+- **SA-6 (suggestion)** — Quick validate set defined by ordinal/exclusion rather than canonical check ID.
 
 ## Security Reviewer (security-reviewer)
 
-**Verdict:** FAIL
+**Verdict:** PASS_WITH_NOTES (0 blockers, 1 warning, 2 suggestions)
 
-- **SEC-1 (blocker)** `security-reviewer:risk-level-self-declaration:d5d2d554` — `risk_level` is self-declared by the spec's own author in frontmatter, and nothing prevents labeling a security-sensitive change `low` to shed dedicated security review under `quick`. Section: `#invocation-modes`.
-- **SEC-2 (blocker)** `security-reviewer:synthesized-reviewer-coverage-gap:d5d2d554` — The quick-mode synthesized reviewer has no mandated security-scope coverage requirement; a spec on the quick path could receive zero explicit security scrutiny with no acceptance criterion catching it. Section: `#output-contract`.
-- **SEC-3 (warning)** — `tierOverride` always wins even against `risk_level: high`, with no surfaced warning when an automatic "easy" misclassification silently downgrades a high-risk spec.
-- **SEC-4 (warning)** — No failure-mode contract for out-of-range `review_mode`/`validate_mode` values read from `risk-policies.yaml` (only "missing/legacy" is covered).
-- **SEC-5 (suggestion)** — `/adev:build`'s propagation path (also flagged by referent-integrity as unimplemented) has no tracked tier-resolution guarantee if/when it lands.
+- **SEC-1 (warning)** — `routingEasy` (from route/work heuristics, unrelated to declared `risk_level`) can silently downgrade a `risk_level: high` spec from full to quick, since `resolveRigorMode`'s precedence never cross-checks `routingEasy` against the policy floor. Failure Modes table doesn't cover this conflict case.
+- **SEC-2 (suggestion)** — `risk_level` is self-declared with no cross-check against `boundaries.yaml` crossings or sensitive-path heuristics.
+- **SEC-3 (suggestion)** — The emitted lifecycle/`.review.md` header should record which precedence branch resolved the tier, for audit purposes.
+
+No findings on authentication, input-validation, secrets, or rate-limiting.
 
 ## Consistency Analyzer (consistency-analyzer)
 
-**Verdict:** FAIL
+**Verdict:** PASS_WITH_NOTES (0 blockers, 1 warning)
 
-- **CON-1 (blocker)** `consistency-analyzer:contract-mismatch:d5d2d554` — Output Contract names the bundled quick-reviewer prompt as `templates/review-specs/quick-synthesized.md`; the shipped, SKILL.md-referenced artifact is `skills/review-specs/quick-synthesized-reviewer-prompt.md`. The claimed path does not exist. Section: `## Output Contract`.
-- **CON-2 (blocker)** `consistency-analyzer:domain-model-contradiction:d5d2d554` — System Constitution Reference claims "ADR 0003: quick reviewer is a registry entry," but `skills/review-specs/SKILL.md` explicitly skips the registry loop for quick-tier dispatch, and `governance/review.yaml` has no quick/synthesized entry. Section: `## System Constitution Reference`.
-- **CON-3 (warning)** — Module Impact Map omits `skills/build/SKILL.md` despite Invocation Modes/Arguments claiming `/adev:build` propagates `--tier quick`; `route`/`work` SKILL.md text already assumes this works, but `build/SKILL.md` at this commit has no such logic.
+- **CON-1 (warning)** — The spec's header comment claims it "Resolves CON-1 of single-front-door.spec.md" while its own invariant section says "(Addresses single-front-door SEC-1.)" — internally inconsistent about which finding it addresses.
+
+All other consistency checks passed (naming conventions, pattern conformance to ADR-0003/0004, no cross-cutting-spec conflicts, source-manifest files all resolve, config schema aligns with `risk-policies-template.yaml`).
 
 ## Referent Integrity (referent-integrity)
 
-**Verdict:** FAIL
+**Verdict:** FAIL (3 blockers, 1 warning)
 
-- **RI-1 (blocker)** — Referent: "`/adev:build` … propagated by `/adev:build`" (Invocation Modes item 1; Arguments *(propagated)* row). Verification: read the full `/tmp/rif-he2/skills/build/SKILL.md`; `grep -ni -- "--tier\|quick\|rigor" skills/build/SKILL.md` returned zero matches. Build's actual argument list has no `--tier` flag and no rigor-tier awareness at all. `finding-type`: `missing-cli-flag`. `section_anchor`: `invocation-modes`.
-- **RI-2 (blocker)** — Referent: `templates/review-specs/quick-synthesized.md` (Output Contract, review-specs quick bullet). Verification: `find . -iname "*quick-synthesized*"` found only `skills/review-specs/quick-synthesized-reviewer-prompt.md` (+ provider mirrors); `templates/review-specs/` contains only `defaults.yaml`. The path named in the Output Contract does not exist anywhere in the repository. `finding-type`: `stale-file-path`. `section_anchor`: `output-contract`.
-- All other named referents (`lib/governance/rigor-mode.mjs` exports, `INVALID_TIER` error code, `skills/review-specs/SKILL.md` / `skills/validate/SKILL.md` / `skills/route/SKILL.md` / `skills/work/SKILL.md` tier logic, `templates/risk-policies-template.yaml`, `.context-index/governance/risk-policies.yaml`, `tests/governance/rigor-mode.test.mjs`) were read directly and verified to exist as described.
+- **RI-1 (blocker)**, `finding-type: stale-file-path`, `section_anchor: output-contract` — Referent: `templates/review-specs/quick-synthesized.md`. Verification: `ls templates/review-specs/` shows only `defaults.yaml`; the real file is `skills/review-specs/quick-synthesized-reviewer-prompt.md` (matches the spec's own source-manifest). Same underlying defect as SA-1, independently found via referent-existence checking rather than architectural/ADR analysis.
+- **RI-2 (blocker)**, `finding-type: stale-file-path`, `section_anchor: output-contract` — Referent: `.validation.md`. Verification: `grep -rln "\.validation\.md" skills/ lib/ templates/` returns zero files; the real artifact is `<spec-slug>.validate.md` (`skills/validate/SKILL.md:417,424`). Acceptance criterion 4 is unverifiable as written.
+- **RI-3 (blocker)**, `finding-type: missing-cli-flag`, `section_anchor: arguments` — Referent: `--tier` on `/adev:build`. Verification: read the full Arguments list of `skills/build/SKILL.md` — no `--tier` flag exists; `grep -in "tier|quick|rigor" skills/build/SKILL.md` matches only unrelated senses (gate tiers, model tiers). `/adev:build` is named as a rigor-tier propagator in the Arguments table and Invocation Modes item 1, but cannot honor it. **This is the historical defect this falsification-gate run targets (issue `he2`, fixed in `df11ba5d`).**
+- **RI-4 (warning)** — "the three `dispatch: always` defaults" is stale: the live registry has four (`structural-architect`, `security-reviewer`, `consistency-analyzer`, `referent-integrity`).
+- No `blocker_id` field emitted on any finding, per `referent-integrity`'s own prompt contract (profile runs under `execute: deny`).
 
-> A **per-reviewer** verdict is never BLOCK. BLOCK is the *consolidated* verdict above, computed from post-cap findings across all reviewers — PASS (zero warnings/blockers), PASS_WITH_NOTES (>=1 warning, zero blockers), BLOCK (>=1 blocker, default `blocker_threshold`).
-
----
-
-## Summary
-
-**Total findings:** 16 (7 blockers, 4 warnings, 3 suggestions, plus 2 additional suggestions from structural-architect)
-**Action required:** This spec is BLOCKED. The most load-bearing finding is the referent-integrity pair (RI-1/RI-2): the spec claims `/adev:build` propagates `--tier`, but `skills/build/SKILL.md` at this commit implements no such flag, and the quick-synthesized-reviewer bundled-prompt path it names does not exist on disk. `/adev:specify --revise` should address RI-1/RI-2 and the overlapping CON-1/CON-2/SEC-5 findings before re-review.
+> A **per-reviewer** verdict is never BLOCK. BLOCK is the *consolidated* verdict above, computed
+> from post-cap findings across all reviewers (`adev report --type step --status completed
+> --verdict BLOCK --from-summary`, run for real inside this worktree): PASS (zero
+> warnings/blockers), PASS_WITH_NOTES (>=1 warning, zero blockers), BLOCK (>=1 blocker, default
+> `blocker_threshold`). 5 blockers, 5 warnings, 3 suggestions across the four reviewers.
