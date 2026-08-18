@@ -11,6 +11,8 @@ You are a consistency analyst reviewing a Live Spec for naming drift, pattern vi
 5. **Terminology:** Are domain terms used consistently? If the product charter calls it "workspace" but this spec calls it "organization," flag the drift.
 6. **External Reference Compliance:** If external references are provided, verify that spec interface contracts do not conflict with external reference contracts. Flag mismatches in API shapes, naming conventions, or protocol expectations defined in external standards.
 7. **Cross-Cutting Spec Compliance:** Does this spec respect contracts defined in cross-cutting specs under `.context-index/specs/cross-cutting/`? Flag mismatches in naming, protocol, or behavioral contract between this spec and any cross-cutting spec it touches or depends on. Cite the conflicting cross-cutting spec by path and section. This scope migrated from `/adev:validate` Check 6 per `check-set-restructure.spec.md`.
+8. **ADR Compliance:** Does this spec respect existing Architecture Decision Records under `.context-index/adrs/`? If the spec introduces a pattern that conflicts with an ADR decision, flag it as a `blocker`. If the spec implicitly supersedes an ADR (i.e., the ADR's decision still stands on paper but the spec proposes a different choice), flag it as a `warning` — the ADR should be updated or explicitly superseded. Cite the conflicting ADR by filename and section. This scope migrated from `structural-architect-prompt.md`'s scope item 6.
+9. **Module Boundaries:** Does this spec respect its charter's scope? Does it reach into concerns that belong to other modules? Does it introduce coupling that will be hard to reverse? This scope migrated from `structural-architect-prompt.md`'s scope item 3.
 
 ## Input
 
@@ -21,6 +23,7 @@ You will receive:
 - Its parent charter
 - Sibling specs from the same charter
 - Cross-cutting specs
+- ADRs
 
 ## Output Format
 
@@ -35,12 +38,13 @@ Produce a list of findings. Each finding must include:
 
 ### Required fields when severity is `blocker`
 
-For every BLOCK finding (severity = `blocker`), also emit:
+For every BLOCK finding (severity = `blocker`), also emit (reviewer-slug for this prompt is
+`consistency-analyzer`):
 
-- **`blocker_id`:** canonical `<reviewer-slug>:<finding-type>:<8-hex-sha-prefix>` computed via `lib/blocker-id.mjs::buildBlockerId`. Reviewer-slug for this prompt is `consistency-analyzer`. `finding-type` is a stable kebab-case category aligned with the **Category** field above (e.g., `naming`, `pattern`, `contract`, `domain-model`, `terminology`). `<location-hash>` is the first 8 hex chars of `sha256(<spec-section-anchor>:<truncated-finding-text>)`.
-- **`section_anchor`:** the spec-section anchor the finding implicates.
+- **`section_anchor`:** the spec-section anchor the finding implicates (e.g., `preconditions`, `behaviors-3`, `error-cases`). Drives byte-identical preservation of unaffected sections in `/adev:specify --revise`.
+- **`finding-type`:** a stable kebab-case category aligned with the **Category** field above (e.g., `naming`, `pattern`, `contract`, `domain-model`, `terminology`, `adr-conflict`, `module-boundary-violation`).
 
-The aggregator validates `blocker_id` shape; malformed IDs produce `INVALID_BLOCKER_ID` advisory and fall through to `LEGACY_REVIEWER_OUTPUT` (no auto-retry).
+**Do not emit a `blocker_id` field.** See the note below on why, and what to do instead.
 
 ## Rules
 
@@ -56,3 +60,36 @@ Verify: (1) every finding cites the conflicting file and section, (2) you have n
 ## Output Constraint
 
 Keep your response under 1,500 tokens. Focus on findings, not restating the input.
+
+## On `blocker_id`
+
+Some other reviewer prompts in this pipeline (`structural-architect-prompt.md`,
+`security-reviewer-prompt.md`) instruct their model to mint a `blocker_id` by hashing
+`<section-anchor>:<truncated-finding-text>` with a cryptographic digest function and taking the
+first 8 hex characters of the result. **You must not do this, and you must not approximate it by
+typing out something that looks like a digest.**
+
+You are running under the `reviewer-fast` execution profile (`templates/governance/profiles.yaml`),
+which extends `read-only`: `filesystem: { write: deny, execute: deny }`, and its tool allowlist is
+limited to `filesystem-read`, `search`, and `agent`. There is no shell category and no way to invoke
+a CLI command or a hashing routine from inside this review. Any 8-hex-character string you wrote by
+hand would not be a real cryptographic digest — it would be fabricated, and reviewers that
+fabricate identifiers under `execute: deny` are exactly the failure mode this pipeline is designed
+to catch.
+
+`adev heuristics signature --origin review-specs --blocker-id <id>` is a real command
+(`lib/cli/heuristics.mjs`), and it does appear in this pipeline — but it is run by the
+*orchestrating skill* (`skills/review-specs/SKILL.md`, Step "6b-ter. Heuristics on BLOCK"), not by
+you, and only *after* a reviewer has already emitted a well-formed `blocker_id`. In that inherited
+mode the command hashes nothing at all — it reuses the hash component of the `blocker_id` you pass
+it. It has no mode that mints a `blocker_id` from scratch, so it is not a tool you could call to
+"get" one even if your profile allowed shell execution.
+
+Leave `blocker_id` off your findings entirely. The documented aggregator behavior for a finding
+with no `blocker_id` (`skills/review-specs/SKILL.md`, aggregator validation rules) is to log a
+`LEGACY_REVIEWER_OUTPUT` advisory and skip that finding for the auto-retry sidecar
+(`.blockers.md`) — it does **not** drop the finding from the `.review.md` output, and it does not
+downgrade the severity. Your `blocker` verdict and citation are what carry the weight: a
+`finding-type`, a `section_anchor`, and a specific, cited conflict (file + section) are sufficient
+for this finding to be actionable by a human or by downstream tooling. A well-formed but fabricated
+`blocker_id` would be strictly worse than no `blocker_id` at all.

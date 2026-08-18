@@ -334,7 +334,7 @@ describe("bundled context packs", () => {
     writeFixture(repo, ".context-index/constitution.md", "# C");
     writeFixture(repo, ".context-index/platform-context.yaml", "language: js");
     writeFixture(repo, ".context-index/adrs/0001-x.md", "# ADR");
-    writeFixture(repo, ".context-index/specs/cross-cutting/xc.md", "# XC");
+    writeFixture(repo, ".context-index/specs/cross-cutting/xc.spec.md", "# XC");
     writeFixture(repo, ".context-index/governance/risk-policies.yaml", "policies: {}");
     writeFixture(repo, ".context-index/specs/features/review/charter.md", "# Charter");
     writeFixture(repo, ".context-index/specs/features/review/sib.spec.md", "# Sibling");
@@ -424,6 +424,22 @@ materialized_at: 2026-08-16T00:00:00.000Z
       r.files.length,
       "omitted + rendered must account for every matched file"
     );
+  });
+
+  test("consistency pack now includes ADRs (matches architecture/security pattern)", () => {
+    const repo = PLUGIN_ROOT;
+    const cfg = loadReviewConfig(repo);
+    const target = ".context-index/specs/features/review/configurable-reviewers.spec.md";
+    const r = renderPack("consistency", cfg.contextPacks, { repoRoot: repo, targetSpecPath: target });
+    assert.ok(r.files.some((f) => f.startsWith(".context-index/adrs/")), "consistency pack must include ADRs");
+  });
+
+  test("referent-integrity and wiring packs resolve with zero errors", () => {
+    const cfg = loadReviewConfig(PLUGIN_ROOT);
+    for (const pack of ["referent-integrity", "wiring"]) {
+      const { errors } = resolveExtends(pack, cfg.contextPacks);
+      assert.equal(errors.length, 0, `${pack}: ${JSON.stringify(errors)}`);
+    }
   });
 
   test("software-domain reviewers reference the same three packs", () => {

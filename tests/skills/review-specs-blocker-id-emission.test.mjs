@@ -39,11 +39,12 @@ test('security-reviewer prompt documents blocker_id + section_anchor for BLOCK f
   assert.ok(body.includes('security-reviewer'));
 });
 
-test('consistency-analyzer prompt documents blocker_id + section_anchor for BLOCK findings', () => {
+test('consistency-analyzer prompt documents section_anchor + finding-type, no hash instruction', () => {
   const body = readSkill('consistency-analyzer-prompt.md');
-  assert.ok(body.includes('blocker_id'));
   assert.ok(body.includes('section_anchor'));
-  assert.ok(body.includes('lib/blocker-id.mjs'));
+  assert.ok(body.includes('finding-type') || body.includes('finding_type'));
+  assert.ok(!body.includes('lib/blocker-id.mjs'), 'must not instruct hash computation');
+  assert.ok(!/sha-?256/i.test(body), 'must not name a cryptographic digest');
   assert.ok(body.includes('consistency-analyzer'));
 });
 
