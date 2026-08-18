@@ -268,7 +268,7 @@ panel.
 
 ### Phase 2 — panel and prompts
 
-- [ ] No default-panel prompt instructs the model to compute a hash; `blocker_id` comes from `adev heuristics signature --origin review-specs --blocker-id`
+- [ ] No default-panel prompt instructs the model to compute a hash; each `blocker` finding instead carries `section_anchor` + `finding-type` only, omitting `blocker_id` entirely
 - [x] `/adev:specify` contains no HTTP status codes and no drag-and-drop examples (domain-authoring-guidance spec, validated)
 - [x] `templates/spec-template.behavioral.md` and `templates/spec-template.refactor.md` carry no
       `HTTP Status` column; their error-case columns are domain-neutral. Removing examples from the
