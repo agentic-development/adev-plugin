@@ -67,3 +67,53 @@ test('recordDebugAttempt: UNREPRODUCIBLE sets BUDGET_EXHAUSTED immediately with 
   assert.equal(rec.parked_reason, 'does not reproduce');
   rmSync(root, { recursive: true, force: true });
 });
+
+test('recordDebugAttempt: PARKED with no prior record computes CONTINUE via loop-convergence, unconditionally (BEH-2, BEH-5)', () => {
+  const root = mkdtempSync(join(tmpdir(), 'attempts-'));
+  const manifest = { tasks: { bugfix_loop: { attempt_cap: 3 } } };
+  const rec = recordDebugAttempt(root, manifest, {
+    issueId: 'issue-1',
+    outcome: 'PARKED',
+    checkIds: ['test-a', 'test-b'],
+  });
+  assert.equal(rec.attempts, 1);
+  assert.equal(rec.last_verdict, 'CONTINUE');
+  assert.deepEqual(rec.curr_blockers.sort(), ['test-a', 'test-b']);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('recordDebugAttempt: PARKED with cap=1 on first attempt yields BUDGET_EXHAUSTED, not unset (BEH-2 unconditional call)', () => {
+  const root = mkdtempSync(join(tmpdir(), 'attempts-'));
+  const manifest = { tasks: { bugfix_loop: { attempt_cap: 1 } } };
+  const rec = recordDebugAttempt(root, manifest, {
+    issueId: 'issue-1',
+    outcome: 'PARKED',
+    checkIds: ['test-a'],
+  });
+  assert.equal(rec.last_verdict, 'BUDGET_EXHAUSTED');
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('recordDebugAttempt: PARKED persistent blockers across two attempts yields NO_PROGRESS (BEH-6, write-read round trip)', () => {
+  const root = mkdtempSync(join(tmpdir(), 'attempts-'));
+  const manifest = { tasks: { bugfix_loop: { attempt_cap: 5 } } };
+  recordDebugAttempt(root, manifest, { issueId: 'issue-1', outcome: 'PARKED', checkIds: ['test-a'] });
+  const prior = readAttemptRecord(root, 'issue-1');
+  assert.deepEqual(prior.curr_blockers, ['test-a']); // read-back as next attempt's prev_blockers
+  const rec2 = recordDebugAttempt(root, manifest, { issueId: 'issue-1', outcome: 'PARKED', checkIds: ['test-a'] });
+  assert.equal(rec2.last_verdict, 'NO_PROGRESS');
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('recordDebugAttempt: PARKED without stable check IDs falls back to bounded hash (Error Cases row 1)', () => {
+  const root = mkdtempSync(join(tmpdir(), 'attempts-'));
+  const manifest = {};
+  const rec = recordDebugAttempt(root, manifest, {
+    issueId: 'issue-1',
+    outcome: 'PARKED',
+    rawOutput: 'raw stdout with no discrete check ids',
+  });
+  assert.equal(rec.curr_blockers.length, 1);
+  assert.match(rec.curr_blockers[0], /^[0-9a-f]{8}$/);
+  rmSync(root, { recursive: true, force: true });
+});
