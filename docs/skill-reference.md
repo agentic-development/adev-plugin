@@ -895,3 +895,47 @@ Batching and `--parallel` operate at different scopes: batching groups cohesive,
 **Expected Output:** A maturity scorecard with per-dimension scores, overall readiness rating, and prioritized improvement recommendations.
 
 **Related Guides:** [Getting Started Tutorial](getting-started.md), [Core Concepts](concepts.md)
+
+## How a skill is laid out on disk
+
+Each skill is a directory under `skills/`:
+
+```
+skills/<name>/
+├── SKILL.md          # the body — always loaded in full when the skill runs
+├── references/       # companions — loaded on demand, only when needed
+└── scripts/          # executable helpers the skill shells out to
+```
+
+**`SKILL.md` is the always-read part.** It is injected in full when the skill is
+invoked, and from then on it is re-read as part of the context prefix on every
+subsequent turn of that session. Its size is therefore multiplied by how long
+the session runs, not paid once.
+
+**`references/` is the on-demand part.** Material an agent needs only sometimes
+— one mode of a multi-mode skill, one audit pass, one pipeline step — lives
+here. The body keeps the heading, a one-line summary of what the section
+covers, and a pointer:
+
+> **Conditional loading:** Read `skills/hygiene/references/audit-passes/pass-12-lifecycle-audit.md` for the full instructions.
+
+The agent reads a companion immediately before it needs it, so a run that only
+touches one mode never loads the other six. `skills/hygiene/SKILL.md` is the
+clearest example: 23 audit passes live in `references/audit-passes/`, and the
+body carries a routing table mapping each pass to its `--check` slug and file.
+
+Some things stay in the body no matter how large it gets, because they govern
+the whole invocation rather than one branch: the Load Skill Extensions block,
+the dispatch-discipline rules, and `## Prerequisites`. A precondition behind a
+conditional-loading pointer is no longer unconditional.
+
+### Size limits
+
+| Limit | Value | What happens if you cross it |
+|-------|-------|------------------------------|
+| Copilot frontmatter cap | 65,536 bytes | Hard failure — `INVALID_SKILL_FRONTMATTER` breaks every Copilot adapter path |
+| Agent Skills guidance | ~5,000 tokens | Soft — the body costs more on every turn of every session that loads it |
+
+Both are checked by `tests/skills/skill-size-cap.test.mjs`. If you trip either,
+move a section into `references/` — do not delete prose to fit.
+
