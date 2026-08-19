@@ -41,3 +41,21 @@ test("debug SKILL.md skips the interactive ADR prompt under --auto and records a
     "Phase 6 step 3 must not write to the issue itself — it hands the note to step 4's single update() call site",
   );
 });
+
+const TOKEN_GRAMMAR = /^ADEV-[A-Z]+: [A-Z_]+$/;
+function assertGrammar(token) {
+  assert.ok(TOKEN_GRAMMAR.test(token), `token "${token}" must match ^ADEV-[A-Z]+: [A-Z_]+$`);
+}
+
+test("debug SKILL.md emits the ADEV-DEBUG completion token for FIXED and PARKED (BEH-1, BEH-2, BEH-4)", () => {
+  const md = read("skills/debug/SKILL.md");
+  for (const tok of ["ADEV-DEBUG: FIXED", "ADEV-DEBUG: PARKED"]) {
+    assertGrammar(tok);
+    assert.ok(md.includes(tok), `skills/debug/SKILL.md must instruct emitting "${tok}"`);
+  }
+  assert.match(
+    md,
+    /ADEV-DEBUG[\s\S]{0,400}?(final line|last line)|(final line|last line)[\s\S]{0,400}?ADEV-DEBUG/i,
+    "debug SKILL.md must require the ADEV-DEBUG token as the final line of output",
+  );
+});

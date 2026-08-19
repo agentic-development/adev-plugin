@@ -363,10 +363,20 @@ This is the key difference from generic debugging. Before diving into code, load
      ```
 
      The verb wraps `formatConfidenceNote` and emits a single JSON object `{note}` on stdout.
-   - Update the issue: `update(id, { status: "closed", notes: "<confidence note>" })`
-   - Only close with HIGH confidence (quality gates pass + fix verified against spec). If gates have not been run or fail, add a note but do not close: `update(id, { notes: "Fix applied but not yet validated — run /adev:validate" })`
+   - Update the issue: `update(id, { status: "closed", notes: "<confidence note>" })`. This is the HIGH-confidence closing branch — the Completion token section below follows immediately after this step, and this branch is what earns `ADEV-DEBUG: FIXED`.
+   - Only close with HIGH confidence (quality gates pass + fix verified against spec). If gates have not been run or fail, add a note but do not close: `update(id, { notes: "Fix applied but not yet validated — run /adev:validate" })`. This is the annotate-without-closing branch — the Completion token section below follows immediately after this step, and this branch is what earns `ADEV-DEBUG: PARKED`.
    - If the CLI invocation fails (e.g., `adev verify` not yet available in this environment), skip this step (non-blocking).
    - Report to user: "Updated issue `<id>` — closed with high confidence (tests pass, spec compliant)."
+
+### Completion token (`/goal`-friendly)
+
+After Phase 6's confidence gate resolves, the **final line** of your chat output for this run MUST be the completion token — emit it verbatim:
+
+- Phase 6 step 4 closed the issue with HIGH confidence (quality gates pass, fix verified against spec) → `ADEV-DEBUG: FIXED`
+- Phase 6 step 4 annotated without closing (gates not run, failed, or fix unverified) → `ADEV-DEBUG: PARKED`
+- Phase 1 exhausted its bounded reproduction-attempt limit under `--auto` without reproducing the symptom (see Phase 1) → `ADEV-DEBUG: UNREPRODUCIBLE`
+
+Rules: emit it exactly once, as plain text (no code fence, no backticks, no trailing prose after it), regardless of the active persona or verbosity level. This is a transcript-provable marker so Claude Code's `/goal` evaluator and the sibling `/adev:bugfix-loop` skill can read completion from the transcript's last line (see `.context-index/specs/cross-cutting/completion-tokens/`). Subagents dispatched by this skill MUST NOT emit a completion-token-grammar line — only this top-level skill does.
 
 ### Phase 7: Documentation Impact
 
