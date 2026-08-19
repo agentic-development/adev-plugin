@@ -216,15 +216,25 @@ rewrites tracked files in `.githooks/`.
     makes this *more* reachable, not less — a missing path now hard-fails, but
     an existing attacker-writable one still runs. CWE-22. (SEC-2.)
 
-    **Known gap — containment is lexical, not physical (SEC-11).** The check
-    uses `resolve()`/`relative()`, which are pure string operations. A tracked
-    in-repo **symlink** (`.husky → ../shared-hooks`) is carried by `git clone`,
-    passes this check, and the wrapper executes code outside the repository —
-    demonstrated by execution during re-review. Closing it requires
-    `realpathSync` on both the candidate and the repo root (the latter for the
-    macOS `/var` vs `/private/var` case) plus a re-check once the concrete
-    `originalHookPath` is known. Tracked separately; this AC states what is
-    enforced today, not what is intended.
+    **Containment is now physical, not only lexical (SEC-11 — closed).**
+    `validateHooksPath` follows `resolve()`/`relative()` with a second pass:
+    `lenientRealpath` (`lib/path-safety.mjs`) resolves every symlink component
+    in both the candidate and the repo root, tolerating components that don't
+    exist yet (a fresh `.githooks/` about to be scaffolded, or a dangling
+    symlink) rather than throwing like `realpathSync`. A tracked in-repo
+    **symlink** (`.husky → ../shared-hooks`, or a file symlink
+    `hooks/pre-commit → ../../evil.sh`) that resolves outside the repo is now
+    rejected — both shapes demonstrated by execution during re-review, both
+    now covered by direct unit tests
+    (`tests/cli-hooks-path-symlink-containment.test.mjs`). The repo root
+    itself is realpath'd too, so a repo root that is itself reached through a
+    symlink (the macOS `/var` vs `/private/var` shape) is not falsely
+    rejected. A second, independent check (`escapesRepoPhysically`) re-runs
+    physical containment on the concrete, per-hook-name `originalHookPath`
+    once it is known — not only on the raw `existingHooksPath` directory
+    string — since an individual file inside an otherwise-legitimate
+    directory can independently be a symlink escaping the repo, and a symlink
+    could be introduced between config-read time and that point.
 
 15. **When** the settings file **itself** is a symlink, **then** the installer
     refuses to write, naming the path and its target, and exits rather than
