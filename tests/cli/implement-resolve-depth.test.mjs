@@ -109,4 +109,67 @@ describe("adev implement resolve-depth", () => {
     assert.equal(printed.depth, "full");
     assert.ok(printed.floor_legs.includes("batched-task"));
   });
+
+  // ── governance-signal floor legs: the CLI must forward real path signals ──
+  //
+  // Both legs are only reachable if the verb actually reads the project's
+  // governance registries and forwards the task's declared files. The
+  // fixtures below are built so the task would otherwise resolve `quick`
+  // (risk_level: low + additive-only Create: + perfect routing scores), so a
+  // `full` here can ONLY come from the floor leg firing.
+
+  it("floors to full via the boundary leg when a declared file matches governance/boundaries.yaml", () => {
+    const { dir, specPath, planPath } = makeFixture();
+    writeFileSync(join(dir, ".context-index", "governance", "boundaries.yaml"),
+      "boundaries:\n  - id: no-direct-db\n    severity: error\n    pattern: 'src/db/'\n    exclude: []\n");
+    writeFileSync(planPath,
+      "> **Spec:** x.spec.md\n\n### Task 1: Example [specialist: none]\n\n" +
+      "**Files:**\n- Create: `src/db/query.ts`\n\n**Tests:** `new.test.mjs`\n");
+    const r = run(dir, "--spec", specPath, "--plan", planPath, "--task-id", "t1");
+    assert.equal(r.status, 0, r.stderr);
+    const printed = JSON.parse(r.stdout);
+    assert.ok(printed.floor_legs.includes("boundary"), `floor_legs=${JSON.stringify(printed.floor_legs)}`);
+    assert.equal(printed.floor_applied, true);
+    assert.equal(printed.depth, "full");
+  });
+
+  it("floors to full via the sensitive-path leg on a governance/sensitive-paths.yaml entry", () => {
+    const { dir, specPath, planPath } = makeFixture();
+    // "src/payments/**" matches no DEFAULT_SENSITIVE_PATHS glob, so the leg
+    // can only fire because this YAML file was actually read by the verb.
+    writeFileSync(join(dir, ".context-index", "governance", "sensitive-paths.yaml"),
+      'sensitive_paths:\n  - "src/payments/**"\n');
+    writeFileSync(planPath,
+      "> **Spec:** x.spec.md\n\n### Task 1: Example [specialist: none]\n\n" +
+      "**Files:**\n- Create: `src/payments/charge.ts`\n\n**Tests:** `new.test.mjs`\n");
+    const r = run(dir, "--spec", specPath, "--plan", planPath, "--task-id", "t1");
+    assert.equal(r.status, 0, r.stderr);
+    const printed = JSON.parse(r.stdout);
+    assert.ok(printed.floor_legs.includes("sensitive-path"), `floor_legs=${JSON.stringify(printed.floor_legs)}`);
+    assert.equal(printed.floor_applied, true);
+    assert.equal(printed.depth, "full");
+  });
+
+  it("floors to full via the sensitive-path leg on a built-in pattern with no governance YAML present", () => {
+    const { dir, specPath, planPath } = makeFixture();
+    writeFileSync(planPath,
+      "> **Spec:** x.spec.md\n\n### Task 1: Example [specialist: none]\n\n" +
+      "**Files:**\n- Create: `src/auth/session.ts`\n\n**Tests:** `new.test.mjs`\n");
+    const r = run(dir, "--spec", specPath, "--plan", planPath, "--task-id", "t1");
+    assert.equal(r.status, 0, r.stderr);
+    const printed = JSON.parse(r.stdout);
+    assert.ok(printed.floor_legs.includes("sensitive-path"), `floor_legs=${JSON.stringify(printed.floor_legs)}`);
+    assert.equal(printed.depth, "full");
+  });
+
+  it("neither governance leg fires for an unrelated declared file (no false floor)", () => {
+    const { dir, specPath, planPath } = makeFixture();
+    writeFileSync(join(dir, ".context-index", "governance", "boundaries.yaml"),
+      "boundaries:\n  - id: no-direct-db\n    severity: error\n    pattern: 'src/db/'\n    exclude: []\n");
+    const r = run(dir, "--spec", specPath, "--plan", planPath, "--task-id", "t1");
+    assert.equal(r.status, 0, r.stderr);
+    const printed = JSON.parse(r.stdout);
+    assert.ok(!printed.floor_legs.includes("boundary"));
+    assert.ok(!printed.floor_legs.includes("sensitive-path"));
+  });
 });
