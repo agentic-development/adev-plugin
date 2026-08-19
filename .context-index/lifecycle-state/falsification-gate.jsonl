@@ -64,3 +64,4 @@
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-08-18T17:29:26.029Z"}
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-08-18T17:31:48.002Z"}
 {"event":"code_drift_detected","drift_source":".context-index/specs/features/reviewer-domain-fit/charter.md","drift_at":"2026-08-18T23:04:35.324Z","ts":"2026-08-18T23:04:35.328Z"}
+{"event":"code_drift_detected","drift_source":".context-index/specs/features/reviewer-domain-fit/charter.md","drift_at":"2026-08-18T23:10:29.751Z","ts":"2026-08-18T23:10:29.753Z"}

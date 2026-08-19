@@ -1,7 +1,7 @@
 ---
 charter: reviewer-domain-fit
 kind: refactor
-status: review-passed
+status: validated
 mode: refactor
 revision: 1
 charter-revision: 2
