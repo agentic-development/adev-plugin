@@ -30,16 +30,45 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { PLUGIN_ROOT } from "../helpers.mjs";
 
 /**
- * Skills whose Prerequisites gate real preconditions. Kept explicit rather than
- * "every skill that has the heading", so that deleting the heading fails here
- * instead of quietly shrinking the guard's remit.
+ * Skills that MUST carry `## Prerequisites` in the body. Listed explicitly so
+ * that deleting the heading fails here rather than quietly shrinking the guard's
+ * remit — "every skill that currently has it" would let a relocation pass by
+ * making itself out of scope.
+ *
+ * This is the full set that has the section today, not a sample. An earlier
+ * version pinned only implement/validate/build, which was 3 of the 21 bodies
+ * BEH-6 states the rule for unqualified: the other 18 could be relocated behind
+ * a conditional-loading pointer with nothing failing.
  */
-const PREREQUISITE_SKILLS = ["implement", "validate", "build"];
+const REQUIRED_PREREQUISITE_SKILLS = [
+  "assess",
+  "brainstorm",
+  "build",
+  "codehealth",
+  "deploy",
+  "eval",
+  "hygiene",
+  "implement",
+  "issues",
+  "learn",
+  "prototype",
+  "reconcile",
+  "recover",
+  "research",
+  "retro",
+  "route",
+  "sample",
+  "specify",
+  "status",
+  "validate",
+  "work",
+];
+const PREREQUISITE_SKILLS = REQUIRED_PREREQUISITE_SKILLS;
 
 const body = (slug) =>
   readFileSync(join(PLUGIN_ROOT, "skills", slug, "SKILL.md"), "utf8");
@@ -69,10 +98,15 @@ for (const slug of PREREQUISITE_SKILLS) {
       `skills/${slug}/references/prerequisites.md exists — Prerequisites must ` +
         `not have a companion at all, or the body's copy will drift from it`,
     );
+    // No length floor. An extracted section leaves a very specific shape behind —
+    // a summary line plus a `> **Conditional loading:**` pointer — and the two
+    // assertions above catch exactly that. A byte threshold tuned to
+    // implement/validate/build would reject the legitimately short Prerequisites
+    // that skills like `learn` and `issues` carry, which is how a guard ends up
+    // scoped to whichever skills happened to pass it.
     assert.ok(
-      section.length > 400,
-      `skills/${slug}/SKILL.md Prerequisites is ${section.length} bytes — too ` +
-        `short to be the real section, so it was probably reduced to a stub`,
+      section.trim().length > 0,
+      `skills/${slug}/SKILL.md has an empty Prerequisites section`,
     );
   });
 }
@@ -93,5 +127,47 @@ test("implement's batch-flag conflict check is inside Prerequisites", () => {
     /CONFLICTING_BATCH_FLAGS/,
     "the --no-batch/--parallel conflict must be checked unconditionally, in " +
       "Prerequisites — Step 2.5 bypasses Step 2's own batch paragraph entirely",
+  );
+});
+
+// ── Invariant 3: every companion pointer carries the <ADEV_ROOT> anchor ──────
+//
+// Stated by the spec, previously enforced by nothing. A bare `skills/...`
+// pointer is repo-root-relative: cursor publishes to `~/.cursor/skills/adev-<name>/`,
+// copilot under `.github/` or `~/.copilot/`, codex to `~/.agents/skills/<name>/`,
+// and in a user project the agent's cwd is the *project* root — so the bare form
+// resolves to nothing, or binds to a same-named file in a project-owned skills/
+// tree that the pointer prose then tells the agent to trust.
+//
+// This sweep is the guard. It has to exist separately from resolveSkillPointer()
+// because a resolver that accepts both forms cannot be what enforces one.
+test("every companion pointer in skills/** is <ADEV_ROOT>-anchored", () => {
+  const walk = (dir, out = []) => {
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      const p = join(dir, e.name);
+      if (e.isDirectory()) walk(p, out);
+      else if (/\.(md|ya?ml)$/.test(e.name)) out.push(p);
+    }
+    return out;
+  };
+
+  const bare = [];
+  let anchored = 0;
+  for (const f of walk(join(PLUGIN_ROOT, "skills"))) {
+    const src = readFileSync(f, "utf8");
+    for (const m of src.matchAll(
+      /(<ADEV_ROOT>\/)?skills\/[a-z-]+\/(?:references|scripts)\/[A-Za-z0-9._/-]+/g,
+    )) {
+      if (m[1]) anchored++;
+      else bare.push(`${f.replace(PLUGIN_ROOT + "/", "")}: ${m[0]}`);
+    }
+  }
+
+  assert.ok(anchored > 100, `only ${anchored} anchored pointers found — sweep is not running`);
+  assert.deepEqual(
+    [...new Set(bare)],
+    [],
+    "unanchored companion pointers (Invariant 3) — prefix each with <ADEV_ROOT>/:\n  " +
+      [...new Set(bare)].join("\n  "),
   );
 });

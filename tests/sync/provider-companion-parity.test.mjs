@@ -41,7 +41,7 @@ function pointerTargets(body) {
   // Anchored form is canonical; the bare form is accepted here so that a
   // regression to it still gets its targets checked rather than skipped.
   for (const m of body.matchAll(
-    /(?:<ADEV_ROOT>\/)?skills\/([a-z-]+)\/((?:references|scripts)\/[A-Za-z0-9._/-]+)/g,
+    /(?:<ADEV_ROOT>\/)?skills\/([a-z-]+)\/((?:references|scripts)\/[A-Za-z0-9._/-]+?\.(?:md|ya?ml|sh|mjs))/g,
   )) {
     out.add({ skill: m[1], rel: m[2] });
   }
@@ -100,11 +100,61 @@ test("mirror trees hold the same companion set as canonical", () => {
     if (!existsSync(base)) continue;
     const mirror = new Set();
     walk(base, ".", mirror);
+    // BOTH directions. canonical ⊆ mirror alone is not enough: syncFile() never
+    // unlinks, so a companion deleted from canonical lingers in the mirror — and
+    // that stale copy then SATISFIES the pointer test above for a pointer whose
+    // canonical target is gone, masking a broken canonical pointer entirely.
+    // Verified by probe: with only the ⊆ direction, deleting a canonical
+    // companion still named by its body left every sync/parity test green.
     const missing = [...canonical].filter((f) => !mirror.has(f)).sort();
+    const extra = [...mirror].filter((f) => !canonical.has(f)).sort();
     assert.deepEqual(
       missing,
       [],
       `${provider} mirror is missing ${missing.length} companion(s) present in canonical skills/`,
     );
+    assert.deepEqual(
+      extra,
+      [],
+      `${provider} mirror carries ${extra.length} companion(s) absent from canonical ` +
+        `skills/ — sync does not delete, so remove them by hand. A stale mirror ` +
+        `companion masks a broken canonical pointer.`,
+    );
   }
+});
+
+test("every companion pointer in canonical skills/ resolves", () => {
+  // The mirror test above only proves the MIRROR is self-consistent. Canonical
+  // needs its own check: a pointer whose target was deleted or renamed in
+  // skills/ is the defect that actually reaches every provider, since all four
+  // publish from (or mirror) this tree.
+  const walk = (dir, out = []) => {
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      const p = join(dir, e.name);
+      if (e.isDirectory()) walk(p, out);
+      else if (/\.(md|ya?ml)$/.test(e.name)) out.push(p);
+    }
+    return out;
+  };
+
+  const broken = [];
+  let checked = 0;
+  for (const f of walk(join(ROOT, "skills"))) {
+    for (const m of readFileSync(f, "utf8").matchAll(
+      /<ADEV_ROOT>\/(skills\/[a-z-]+\/(?:references|scripts)\/[A-Za-z0-9._/-]+?\.(?:md|ya?ml|sh|mjs))/g,
+    )) {
+      checked++;
+      if (!existsSync(join(ROOT, m[1]))) {
+        broken.push(`${f.replace(ROOT + "/", "")} -> ${m[1]}`);
+      }
+    }
+  }
+
+  assert.ok(checked > 100, `only ${checked} pointers swept — the walk is truncated`);
+  assert.deepEqual(
+    [...new Set(broken)],
+    [],
+    "canonical companion pointers naming files that do not exist:\n  " +
+      [...new Set(broken)].join("\n  "),
+  );
 });

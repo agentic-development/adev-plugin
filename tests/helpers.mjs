@@ -305,5 +305,18 @@ export function readSkillSurfaceAt(root) {
  * @returns {string} absolute path under PLUGIN_ROOT
  */
 export function resolveSkillPointer(pointer) {
-  return join(PLUGIN_ROOT, pointer.replace(/^<ADEV_ROOT>\//, ""));
+  // STRICT on the anchor. The earlier version was
+  //   join(PLUGIN_ROOT, pointer.replace(/^<ADEV_ROOT>\//, ""))
+  // where the replace is a no-op on a bare `skills/...` pointer and the join
+  // yields an identical path — so callers could not distinguish anchored from
+  // unanchored, and a regression to the pre-fix form passed the whole suite.
+  // A resolver that accepts both forms cannot be the thing that enforces one.
+  if (!pointer.startsWith("<ADEV_ROOT>/")) {
+    throw new Error(
+      `unanchored skill pointer: ${JSON.stringify(pointer)} — pointers must be ` +
+        `written <ADEV_ROOT>/skills/<name>/references/... A bare skills/ path is ` +
+        `repo-root-relative and resolves to nothing once the skill is installed.`,
+    );
+  }
+  return join(PLUGIN_ROOT, pointer.slice("<ADEV_ROOT>/".length));
 }
