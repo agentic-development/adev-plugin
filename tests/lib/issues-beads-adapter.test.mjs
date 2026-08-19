@@ -72,6 +72,33 @@ describe("BeadsAdapter", () => {
     );
   });
 
+  it("resolves by id even when the record carries a stale, unrelated external_ref (adev-plugin-42zv)", () => {
+    // Reproduces the hl0m/ga1t shape: a record migrated from the legacy
+    // issue-N scheme still carries that old external_ref, but its *own* br
+    // id is now the adev-plugin-* id callers actually address it by. Clause
+    // 1 (external_ref match) correctly misses; clause 2 must not also miss
+    // just because external_ref happens to be non-empty.
+    const adapter = new BeadsAdapter("/tmp/nonexistent", { checkBr: false });
+    const scan = [
+      { id: "adev-plugin-hl0m", external_ref: "issue-591", title: "stale ref" },
+      { id: "adev-plugin-ga1t", external_ref: "issue-t6vahn", title: "stale ref 2" },
+      { id: "adev-plugin-gkfv.4", title: "no ref at all" },
+    ];
+
+    assert.equal(adapter._resolve("adev-plugin-hl0m", scan).id, "adev-plugin-hl0m");
+    assert.equal(adapter._resolve("adev-plugin-ga1t", scan).id, "adev-plugin-ga1t");
+    // Regression: a record with no external_ref still resolves by its own id.
+    assert.equal(adapter._resolve("adev-plugin-gkfv.4", scan).id, "adev-plugin-gkfv.4");
+    // Regression: the legacy external_ref lookup path (clause 1) is untouched —
+    // a caller still holding the pre-migration id resolves the same record.
+    assert.equal(adapter._resolve("issue-591", scan).id, "adev-plugin-hl0m");
+    // Regression: a genuinely unknown id still fails loudly.
+    assert.throws(
+      () => adapter._resolve("adev-plugin-zzzz", scan),
+      (err) => err.code === "NOT_FOUND",
+    );
+  });
+
   it("mints merge-safe ids that collide with nothing already on the board", () => {
     // issue-613: ids are no longer `max(external_ref) + 1`. Sequential
     // allocation is safe within one file and across worktrees but NOT across

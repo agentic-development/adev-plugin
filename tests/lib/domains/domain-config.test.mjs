@@ -281,7 +281,9 @@ describe('resolveDomain — edge cases', () => {
   });
 
   it('validates domain at project level', () => {
-    const manifest = { project: { domain: 'has/slash' } };
+    // resolveDomain() reads the TOP-LEVEL `domain` key for project-level
+    // resolution, not a nested `project.domain` (see lib/domains/resolve.mjs).
+    const manifest = { domain: 'has/slash' };
     assert.throws(
       () => resolveDomain(manifest, null, null),
       { code: 'INVALID_DOMAIN_NAME' }

@@ -1,0 +1,64 @@
+# Reviewer registry override for the web-service domain extension.
+#
+# 6 entries: the software domain's 5 active default-panel reviewers
+# (referent-integrity, wiring-reviewer, consistency-analyzer,
+# boundary-reviewer, termination-reviewer), kept field-equal to
+# templates/domains/software/reviewers.yaml, plus security-reviewer
+# re-enabled here since OWASP-scoped review fits the web-service artifact
+# class. See
+# .context-index/specs/features/reviewer-domain-fit/reviewer-panel-retarget.spec.md
+# (Migration Path Step 4) for the retargeting rationale.
+merge_strategy: append
+blocker_threshold: 1
+
+reviewers:
+  - id: referent-integrity
+    name: "Referent Integrity Reviewer"
+    dispatch: always
+    prompt: "plugin:review-specs/referent-integrity-prompt.md"
+    profile: reviewer-reasoning
+    context_pack: referent-integrity
+    severity_cap: blocker
+
+  - id: wiring-reviewer
+    name: "Wiring Reviewer"
+    dispatch: always
+    prompt: "plugin:review-specs/wiring-reviewer-prompt.md"
+    profile: reviewer-capable
+    context_pack: wiring
+    severity_cap: blocker
+
+  - id: consistency-analyzer
+    name: "Consistency Analyzer"
+    dispatch: always
+    prompt: "plugin:review-specs/consistency-analyzer-prompt.md"
+    profile: reviewer-fast
+    context_pack: consistency
+    severity_cap: blocker
+
+  - id: boundary-reviewer
+    name: "Boundary Reviewer"
+    dispatch: always
+    prompt: "plugin:review-specs/boundary-reviewer-prompt.md"
+    profile: reviewer-capable
+    context_pack: security
+    severity_cap: blocker
+
+  - id: termination-reviewer
+    name: "Termination Reviewer"
+    dispatch:
+      triggered:
+        keywords: [loop, retry, poll, polling, iterate, iteration, recurring, convergence, auto-retry]
+        min_score: 1
+    prompt: "plugin:review-specs/termination-reviewer-prompt.md"
+    profile: reviewer-fast
+    context_pack: base
+    severity_cap: blocker
+
+  - id: security-reviewer
+    name: "Security Reviewer"
+    dispatch: always
+    prompt: "plugin:review-specs/security-reviewer-prompt.md"
+    profile: reviewer-capable
+    context_pack: security
+    severity_cap: blocker

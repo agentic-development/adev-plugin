@@ -349,6 +349,17 @@ After resolution, the `kind` variable is available for Step 5's `resolveTemplate
 
 Guide the user through each section defined in the loaded domain template. Do not dump a blank template. Use the template's section names and structure -- do not substitute or rename sections. **Persona adaptation:** Frame questions at the level appropriate for the active persona. Product persona: ask about user outcomes and business rules, not implementation details. Developer/Architect: include technical specifics.
 
+**Domain-Aware Authoring Guidance:** Load illustrative examples for the Behaviors and Error Cases prompts below:
+
+```bash
+adev domain load-guidance --module <charter-module> [--charter <charter-path>]
+```
+
+Reuse the same `--module`/`--charter` values resolved for `adev domain resolve` earlier in this skill (Step 2). Stdout is a JSON object whose `guidance` field is either a markdown string or `null`.
+
+- If `guidance` is non-null, render its content as the source of illustrative examples for both the Behaviors and Error Cases prompts below, in place of any hardcoded example.
+- If `guidance` is `null`, print: *"No domain-specific authoring guidance available for this project; falling back to generic prompts."* and use domain-neutral generic prompts (no HTTP status codes, no drag-and-drop language) for both prompts.
+
 **Behavioral Contract:**
 Ask focused questions: what triggers this behavior, expected outcomes, failure scenarios. Write behaviors as an **unordered** list, each item opening with a bolded behavior ID, in the **When...then** format:
 
@@ -357,9 +368,11 @@ Ask focused questions: what triggers this behavior, expected outcomes, failure s
 
 <!-- retired-behavior-ids: (none) -->
 
-- **BEH-1** — **When** a user drags a card within the same column **then** the card's `position` updates and affected cards reindex.
-- **BEH-2** — **When** a user drags a card to a different column **then** the card moves and both columns reindex.
+- **BEH-1** — **When** <trigger> **then** <outcome>.
+- **BEH-2** — **When** <trigger> **then** <outcome>.
 ```
+
+Draw the illustrative Behaviors example from the loaded guidance above, or ask generically if none was loaded (no HTTP status codes, no drag-and-drop UI language in the fallback).
 
 A behavior ID is `BEH-<n>`, `<n>` a positive integer unique within *this* spec. IDs are spec-scoped — `BEH-3` in two specs are unrelated. The list is unordered deliberately: an ordered list re-renders `1. 2. 3.` alongside the IDs, leaving two competing referents for the same behavior.
 
@@ -377,9 +390,9 @@ Aim for 3-8 directly testable behavior statements.
 Derive from behavioral statements. Preconditions = what must be true before. Postconditions = what must be true after.
 
 **Error Cases:**
-Build an error case table (condition, expected behavior, status code). Ask:
+Build an error case table (condition, expected behavior, status code). Draw the illustrative Error Cases example from the loaded guidance above, or ask generically if none was loaded:
 ```
-→ Any additional error cases? I have: lacks permission → 403, column not found → 404, conflict → 409
+→ Any additional error cases?
 ```
 
 **Constitution Reference:**

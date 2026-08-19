@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 0.8
+      },
+      "rationale": "Verbatim test code and near-literal adaptation of the proven Phase 1 referent-integrity prompt plus two existing bundled prompts to match format; five files in one prompt-authoring area."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 1
+      },
+      "rationale": "ADR glob mirrors the existing architecture/security packs exactly; new packs and the prompt Input rewrite are mechanical once the pack composition is fixed; four files within the review-specs config area."
+    },
+    {
+      "task_id": "t3",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 0.8
+      },
+      "rationale": "Exact reviewer entries and the shouldDispatch object-vs-string dispatch quirk were already verified against source during planning; single registry file plus three companion test updates."
+    },
+    {
+      "task_id": "t4",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.6,
+        "novelty": 0.6
+      },
+      "rationale": "data-engineering gives a direct manifest shape to mirror, but this task spans extensions/, templates/, and two separate test suites, and accepts a deliberate hand-maintained-duplicate trade-off with no automatic sync enforcement."
+    },
+    {
+      "task_id": "t5",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Small, independent prose amendment with a directly cited precedent test file (test-strategies-charter-revision-3.test.mjs) for the assert.match pattern; touches only charter.md and its own new test."
+    }
+  ]
+}

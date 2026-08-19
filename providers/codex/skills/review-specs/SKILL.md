@@ -203,6 +203,8 @@ For each reviewer returned by the registry, call `shouldDispatch(reviewer, { tar
 
 Launch all dispatched reviewers in parallel. Each runs in a clean context window. Dispatch every reviewer with `run_in_background: false`, issuing the Agent calls in a single message so they still run concurrently. The harness backgrounds Agent dispatches by default, and background completion notifications do not re-invoke a nested caller (review-specs frequently runs as a build-step subagent) — a backgrounded reviewer therefore stalls the review. Synchronous parallel calls return all reviewer reports directly in the tool results.
 
+**Never end your turn to wait for a dispatched subagent.** A synchronous dispatch (`run_in_background: false`) returns its final result directly in the tool call — there is nothing to wait for. If a dispatch ever returns a task ID instead of a result, that is a bug in the dispatch (the rule above was violated, or the harness backgrounded it anyway): fix the dispatch and re-run it synchronously. Do not end the turn hoping a completion notification will resume you — in a nested subagent context it will not. If this skill is itself running as a dispatched subagent (e.g., a build pipeline step), your own caller is waiting on a result contract — for build pipeline steps this is the `STEP_RESULT` format defined in `skills/build/SKILL.md`. Ending your turn without that result to report is a protocol violation, not a valid pause point.
+
 ### Subagent-mode reviewer (reviewer entry has `prompt`)
 
 For each subagent-mode reviewer:
@@ -332,9 +334,22 @@ for (const reviewer of dispatchedReviewers) {
 
 `notes` MUST NOT include API keys, tokens, file contents, or stack traces beyond the immediate error message (4 KB cap; truncated with a `NOTES_TRUNCATED` warning).
 
-**6b. Write the rendered review report** adjacent to the spec. The `.review.md` artifact is now a presentation/audit artifact for human consumption; the canonical reviewer state lives in the lifecycle log.
+**6b. Write the rendered review report** to a `.tmp` staging file adjacent to the spec, then commit it atomically. The `.review.md` artifact is now a presentation/audit artifact for human consumption; the canonical reviewer state lives in the lifecycle log.
 
-**Frontmatter must come first.** The first non-blank line of the `.review.md` MUST be the `---` frontmatter delimiter — before the `# Architecture Review:` heading and before any HTML comment. `adev/frontmatter-present` (severity: `error`) rejects a markdown body above the delimiter, and downstream readers that parse the frontmatter (including `lib/specify-revise.mjs`) cannot see fields in an artifact that opens with a heading. Write the frontmatter block, then the heading, then the body.
+**Atomic write protocol (per epic-85 / issue-496, same idiom `/adev:validate` uses for `.validate.md`):** Write the rendered report in two steps so that a session terminated mid-write never leaves a partial `.review.md` on disk:
+
+1. Use the Write tool to write the full report body to `<spec-stem>.review.md.tmp` (note the `.tmp` suffix) — same directory as the spec.
+2. Commit the artifact via the CLI:
+
+```bash
+adev artifact commit --spec <spec-path> --kind review
+```
+
+**Frontmatter must come first.** The first non-blank line of the report body MUST be the `---` frontmatter delimiter — before the `# Architecture Review:` heading and before any HTML comment. `adev/frontmatter-present` (severity: `error`) rejects a markdown body above the delimiter, and downstream readers that parse the frontmatter (including `lib/specify-revise.mjs`) cannot see fields in an artifact that opens with a heading. `adev artifact commit` enforces this and exits non-zero with `ARTIFACT_FRONTMATTER_NOT_FIRST`, leaving the `.tmp` in place for you to fix and re-run — write the frontmatter block, then the heading, then the body, then re-run the commit.
+
+The verb resolves source (`<spec-path>.review.md.tmp`) and destination (`<spec-path>.review.md`) from the spec path, validates that the temp file exists, is non-empty (rejects zero-byte artifacts), and opens with frontmatter, then performs a same-directory `fs.renameSync` — atomic on POSIX. Until the commit step runs, the canonical `.review.md` either reflects the prior run or is absent; the new content is never partially observable. On any failure the verb exits non-zero with a diagnostic message and the temp file remains for inspection.
+
+**Write-state suffix choice (`.tmp` not `.partial`).** Per the write-state suffix taxonomy invariant in `agent-reliable-state-artifacts/charter.md` (Invariant #10) and `incremental-artifact-writes.spec.md` Integration Point 4, the review report keeps `.tmp` (byte-level, ms-scale, never recovered) rather than `.partial` (artifact-level, minutes-to-hours, durable): the entire report is computed in memory and written in a single Write call, so there is no incremental-checkpoint surface for `.partial` to protect.
 
 **6b-bis. Write the `.blockers.md` sidecar (BLOCK only).** When the consolidated verdict is BLOCK, also write a `<spec-stem>.blockers.md` sidecar via `lib/blockers-writer.mjs::writeBlockers` (the canonical writer for the `.blockers.md` artifact). Entries are keyed by the canonical `blocker_id` emitted by reviewers (see Task 6 of review-block-auto-retry); each entry carries `section_anchor` per SA-1 to drive byte-identical preservation in `/adev:specify --revise`. Collisions (same `blocker_id` from two reviewers) are deduplicated with a `BLOCKER_ID_COLLISION` advisory in the writer's return value. The SEC-3 redaction set is applied per prose blob; each blob is truncated at 8 KiB.
 

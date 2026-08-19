@@ -517,3 +517,115 @@ test('whitespace and backslash elements are ADMITTED and round-trip verbatim', (
   for (const element of ['a b', ' x', 'x ', '\tx', 'a\\b', '\\'])
     assert.deepEqual(roundTripCommand([element]), [element]);
 });
+
+// ── dispatch.triggered — the one narrowly-scoped two-level shape ─────────
+//
+// `termination-reviewer` (templates/domains/software/reviewers.yaml) needs
+// `dispatch: { triggered: { keywords: [...], min_score: N } }`, which is two
+// levels deep with an array leaf. `emitEntry`'s generic plain-object branch
+// only supports one level with scalar leaves (see `assertValidValue`'s own
+// doc comment) and previously refused this shape with
+// GOVERNANCE_FIELD_VALUE_INVALID ("must be a string scalar, got an object").
+// This is the ONE additional shape it now accepts, gated by
+// `assertValidDispatchTriggered` (governance-values.mjs) and reachable only
+// via the literal key pair `dispatch` -> `triggered`.
+
+test('emitEntry emits the dispatch.triggered shape as a nested block map', () => {
+  const lines = emitEntry({
+    id: 'termination-reviewer',
+    dispatch: { triggered: { keywords: ['loop', 'retry', 'auto-retry'], min_score: 1 } },
+  }, '  ');
+  assert.deepEqual(lines, [
+    '  - id: termination-reviewer',
+    '    dispatch:',
+    '      triggered:',
+    '        keywords: ["loop", "retry", "auto-retry"]',
+    '        min_score: 1',
+  ]);
+});
+
+test('dispatch.triggered round-trips through the real emitter and the real parser', () => {
+  const { text } = spliceRegistryEntries('reviewers: []\n', 'reviewers', [{
+    id: 'termination-reviewer',
+    dispatch: { triggered: { keywords: ['loop', 'retry', 'poll', 'auto-retry'], min_score: 1 } },
+  }]);
+  const parsed = parseYaml(text);
+  assert.deepEqual(parsed, {
+    reviewers: [{
+      id: 'termination-reviewer',
+      dispatch: { triggered: { keywords: ['loop', 'retry', 'poll', 'auto-retry'], min_score: 1 } },
+    }],
+  });
+  // The leaf types must survive, not just the shape: an integer that reparsed
+  // as a string would defeat `min_score` comparisons downstream, and a
+  // keyword that reparsed as a number/boolean would defeat keyword matching.
+  assert.equal(typeof parsed.reviewers[0].dispatch.triggered.min_score, 'number');
+  for (const kw of parsed.reviewers[0].dispatch.triggered.keywords) assert.equal(typeof kw, 'string');
+});
+
+test('the real software-domain termination-reviewer entry round-trips byte-for-shape', () => {
+  // Exercises the exact fixture that surfaced the original blocker.
+  const entries = parseYaml(
+    readFileSync(join(PLUGIN_ROOT, 'templates', 'domains', 'software', 'reviewers.yaml'), 'utf8'),
+  ).reviewers;
+  const termination = entries.find((e) => e.id === 'termination-reviewer');
+  assert.ok(termination, 'fixture precondition: termination-reviewer is declared');
+  const { text } = spliceRegistryEntries('reviewers: []\n', 'reviewers', [termination]);
+  assert.deepEqual(parseYaml(text).reviewers[0], termination);
+});
+
+test('a keyword containing a colon+space cannot escape its array-element position', () => {
+  // The documented attack class in governance-values.mjs: a block-sequence
+  // element with `: ` reparses as a map with an attacker-chosen key. Proven
+  // here by attempting the emission (refused) rather than only asserting the
+  // validator in isolation.
+  assert.throws(
+    () => spliceRegistryEntries('reviewers: []\n', 'reviewers', [{
+      id: 'x',
+      dispatch: { triggered: { keywords: ['loop', 'evil: rm -rf /'] } },
+    }]),
+    (e) => e.code === 'GOVERNANCE_SCALAR_UNSAFE',
+  );
+});
+
+test('a keyword that would open flow-sequence structure is refused, not written', () => {
+  for (const bad of ['a"b', 'a,b', '[', ']', '#', 'a#b', '\n', 'a\nb']) {
+    assert.throws(
+      () => spliceRegistryEntries('reviewers: []\n', 'reviewers', [{
+        id: 'x',
+        dispatch: { triggered: { keywords: [bad] } },
+      }]),
+      (e) => e.code === 'GOVERNANCE_SCALAR_UNSAFE',
+    );
+  }
+});
+
+test('dispatch.triggered with an unknown sub-field is refused', () => {
+  assert.throws(
+    () => spliceRegistryEntries('reviewers: []\n', 'reviewers', [{
+      id: 'x',
+      dispatch: { triggered: { keywords: ['loop'], exec: 'rm -rf /' } },
+    }]),
+    (e) => e.code === 'GOVERNANCE_FIELD_VALUE_INVALID',
+  );
+});
+
+test('a non-triggered object under dispatch still refuses (two-level cap otherwise unchanged)', () => {
+  assert.throws(
+    () => spliceRegistryEntries('reviewers: []\n', 'reviewers', [{
+      id: 'x',
+      dispatch: { untriggered: { keywords: ['loop'] } },
+    }]),
+    (e) => e.code === 'GOVERNANCE_FIELD_VALUE_INVALID',
+  );
+});
+
+test('an object two levels deep under a field other than dispatch still refuses', () => {
+  assert.throws(
+    () => spliceRegistryEntries('reviewers: []\n', 'reviewers', [{
+      id: 'x',
+      package: { skill: { nested: 'no' } },
+    }]),
+    (e) => e.code === 'GOVERNANCE_FIELD_VALUE_INVALID',
+  );
+});

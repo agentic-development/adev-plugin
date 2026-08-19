@@ -1,0 +1,3 @@
+{"event":"lifecycle_step","step":"specify","status":"started","ts":"2026-08-18T01:52:25.877Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"step_completed","step":"specify","verdict":"PASS","ts":"2026-08-18T01:52:25.948Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"skills/implement/SKILL.md","drift_at":"2026-08-18T15:37:23.900Z","ts":"2026-08-18T15:37:23.900Z","diagnostic_warnings":["adev/frontmatter-present"]}

@@ -16,14 +16,17 @@ Execute an implementation plan by dispatching a fresh subagent per task, routing
 - `--verbose`: disable silent execution for per-task subagents. Includes `VERBOSE: true` in subagent prompts so they narrate each step. Useful for debugging task failures.
 - `--parallel`: run file-disjoint task groups concurrently in adev-managed worktrees instead of strictly serially (see Step 2.5). Falls back to serial when the plan has no usable `## Parallelization` section.
 - `--fresh`: with `--parallel`, on a re-run collision auto-remove the retained worktree (`adev worktree remove --force`) and proceed, instead of aborting the group with `RERUN_COLLISION`. No effect without `--parallel`.
+- `--no-batch`: force solo dispatch for every task, restoring today's strict one-subagent-per-task behavior. Rejected with `CONFLICTING_BATCH_FLAGS` when combined with `--parallel` (`--parallel`'s unit of dispatch is already the group — the two flags would disagree about what "batching off" means).
+- `--max-batch <n>`: per-run override of `implement.max_batch_size` (default 4). `1` is equivalent to `--no-batch`.
 
 ## Prerequisites
 
-Before starting, verify all four conditions. If any fails, stop and tell the user what to fix.
+Before starting, verify all five conditions. If any fails, stop and tell the user what to fix.
 
-1. **Plan exists.** The plan file must exist and be readable.
-2. **Context Index exists.** `.context-index/` must be present with `constitution.md` and `manifest.yaml`.
-3. **Plan step gate.** As the FIRST action in the skill — before reading the plan file or loading context — gate on the prior step via the lifecycle log, then emit the step-started event:
+1. **No conflicting batch flags.** If both `--no-batch` and `--parallel` were passed to this skill invocation, stop immediately with `CONFLICTING_BATCH_FLAGS` — do not proceed to Step 1, Step 2, or Step 2.5. This check runs here, unconditionally, precisely because it must fire regardless of which of those steps the run would otherwise take: `--parallel` present routes to Step 2.5's group dispatch instead of Step 2's per-task loop, and Step 2's own "Batch resolution" paragraph (where `adev implement batches` is invoked) never executes on that path — so the flag conflict would otherwise go undetected on exactly the run where the operator most needs to hear about it. Report the same message `adev implement batches` itself would give: "`CONFLICTING_BATCH_FLAGS`: `--no-batch` and `--parallel` are mutually exclusive — `--parallel`'s unit of dispatch is already the group. Drop one flag."
+2. **Plan exists.** The plan file must exist and be readable.
+3. **Context Index exists.** `.context-index/` must be present with `constitution.md` and `manifest.yaml`.
+4. **Plan step gate.** As the FIRST action in the skill — before reading the plan file or loading context — gate on the prior step via the lifecycle log, then emit the step-started event:
 
    ```bash
    adev gate require --skill implement --spec <spec-path>
@@ -49,7 +52,7 @@ Before starting, verify all four conditions. If any fails, stop and tell the use
    **Already covered — do not double-emit.** Per-task escalations terminate through the Step 2d blocker path (`plan_task` `blocked`): the blocker-flag protocol, `MISSING_DEPTH_ASSIGNMENT`, and `LOOP_BUDGET_EXHAUSTED` / `LOOP_NO_PROGRESS` / `LOOP_REGRESSED`. Emit the step-level failed event only when the *whole skill* stops.
 
    **Known gap:** `adev report --type step` accepts no `--error` flag, so the abort's error code cannot ride on the event. Name it in operator-facing output instead.
-4. **Working branch.** The current git branch must not be main or master. If it is, stop and ask the user to create a feature branch following the naming convention in `manifest.yaml` (default: `<type>/<module>/<short-description>`, e.g. `feat/auth/login-flow`).
+5. **Working branch.** The current git branch must not be main or master. If it is, stop and ask the user to create a feature branch following the naming convention in `manifest.yaml` (default: `<type>/<module>/<short-description>`, e.g. `feat/auth/login-flow`).
 
 ## Process
 
@@ -289,6 +292,11 @@ This creates a visual task list in the Claude Code UI that the user can monitor 
 
 For each task in dependency order:
 
+Before the loop begins, `adev implement batches --plan <plan-path> [--max-batch <n>] [--no-batch]` resolves which tasks form a batch and which dispatch solo.
+
+> **Conditional loading:** Read `skills/implement/batched-mode.md` for the full Batched Task Dispatch instructions.
+> Load it only when at least one batch forms; a plan with no eligible `(sequential)` group runs the loop below exactly as written, per task.
+
 #### 2.pre: Implementation Probe
 
 Before dispatching a subagent, check if the task's target files already exist and may be already implemented:
@@ -469,6 +477,8 @@ Dispatch the subagent with `Agent({description, prompt, run_in_background: false
 
 **Always pass `run_in_background: false`.** The harness backgrounds Agent dispatches by default: the call returns immediately with a task ID and the caller is only re-invoked by a completion notification. That notification path is reliable only at the top level of a session — inside a nested subagent context (implement usually runs as a build-step subagent) it does not re-invoke the caller, so a backgrounded dispatch stalls the task loop (field-observed as implement subagents that auto-background and never report a status). This applies to **every** subagent dispatch in this skill: implementer, write-test, spec reviewer, code quality reviewer, visual verifier, and final reviewer.
 
+**Never end your turn to wait for a dispatched subagent.** A synchronous dispatch (`run_in_background: false`) returns its final result directly in the tool call — there is nothing to wait for. If a dispatch ever returns a task ID instead of a result, that is a bug in the dispatch (the rule above was violated, or the harness backgrounded it anyway): fix the dispatch and re-run it synchronously. Do not end the turn hoping a completion notification will resume you — in a nested subagent context it will not. If this skill is itself running as a dispatched subagent (e.g., a build pipeline step), your own caller is waiting on a result contract — for build pipeline steps this is the `STEP_RESULT` format defined in `skills/build/SKILL.md`. Ending your turn without that result to report is a protocol violation, not a valid pause point.
+
 **Do not pass `isolation: "worktree"`.** Implement runs tasks serially against the orchestrator's branch; the subagent must write to the same working tree. From inside an existing worktree (`cwd` contains `.claude/worktrees/`), worktree isolation nests a new worktree inside the parent — the parent then captures it as untracked `.claude/worktrees/agent-<id>/` content, and every per-task dispatch adds another level (8+ deep observed in field reports). Subagents that commit also defeat the harness's auto-cleanup contract, leaving the nested trees on disk forever.
 
 Handle the returned status:
@@ -628,7 +638,28 @@ After both reviews pass:
 1. Emit a `plan_task` `done` event: `reportPlanTask(projectRoot, specPath, { plan: planFilePath, task_id, status: "done", notes: <optional 1-line summary or null> })`. This is the **only** task-completion signal — the plan file itself is not modified.
 2. **Do NOT mutate plan file checkboxes.** The `- [ ]` markers in the plan file are authoring guides for human reviewers; they are not authoritative state and are never flipped by skills. Authoritative status lives in `currentState(spec).planTasks` (folded from `plan_task` events in the lifecycle log).
 3. **Commit-per-task is MANDATORY.** Per `incremental-artifact-writes.spec.md` Integration Point 2, every plan task MUST produce exactly one git commit before the orchestrator moves on. The commit IS the checkpoint — if a later task fails or a session crashes mid-pipeline, the prior task's work is preserved in git history. Multi-task implementations with a single combined commit are forbidden; they defeat the recovery guarantee.
-4. Record: specialist used (or "generic"), review cycles needed, concerns noted.
+4. **Record review-round provenance on both channels** (`review-provenance.spec.md`
+   Output Contract A and B). For each review stage that ran on this task — always at least `spec-compliance` and
+   `code-quality`, since 2h is reached only after both pass:
+   - **Trailer.** Add one `Review-round: <stage>=<cycles>` line to this task's single
+     commit, built by `buildReviewRoundTrailer(stage, cycles)` in
+     `lib/lifecycle-state.mjs`. That helper is the **only** sanctioned producer of the
+     line — never compose the text as prose. `cycles` counts reviewer dispatches
+     **including the initial review**, so a stage that passed on first look records
+     `=1`. Repeated `Review-round:` keys are legal, so two stages produce two lines. The helper
+     rejects CR/LF, control/ANSI escapes, over-cap length, an out-of-enum stage, and any
+     `cycles` that is not an integer >= 1; a rejection is never coerced into a written line.
+   - **Event.** Emit one event per stage:
+     `adev report --type review-round --spec <spec> --plan <plan> --task-id <id> --stage <s> --cycles <n> [--findings <m>]`.
+     Supply `--findings` only for `code-quality` (and `synthesized`), never for
+     `spec-compliance` — step 2f mandates no stable finding-id convention, so distinct
+     findings are not countable there. If a stage's cycle count is genuinely unknown
+     (for example the run resumed mid-task after a crash), **omit the event for that
+     stage** rather than guessing: absence reads as "not recorded", and a fabricated
+     count would corrupt the corpus this record exists to create.
+   Still record the specialist used (or "generic") and any concerns noted in the
+   task report as before. Neither channel gates task completion: a failed
+   observability write is a warning naming the task, not a task failure.
 5. Move to the next task.
 
 ### Step 2.5: Parallel Group Execution

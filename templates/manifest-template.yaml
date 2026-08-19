@@ -293,9 +293,23 @@ tasks:
 #   off    — diagnostics engine not invoked. Pre-rev-2 baseline behavior.
 #            Use in test fixtures and during incremental rollouts; the
 #            default tag mode is non-blocking (writes always succeed).
+#
+# Controls whether lib/lifecycle-state.mjs::reportStep refuses an orphan
+# step_completed/step_failed — one with no matching lifecycle_step "started"
+# event for the same step + revision already in the log.
+#   strict — refuse with ORPHAN_STEP_EVENT before writing (no side effect).
+#            Recommended for any project whose downstream steps gate on
+#            `adev gate require` / `requireGate`, since an orphan terminal
+#            event is otherwise indistinguishable from a legitimate one once
+#            it lands on disk.
+#   off    — (default) no check; pre-existing baseline behavior. Kept as the
+#            default because reportStep is also used as a bare low-level
+#            primitive (by tests and ad hoc tooling) to seed step state
+#            without simulating a full started→completed sequence.
 # lifecycle:
 #   gate_mode: strict
 #   event_diagnostics: tag
+#   step_pairing: strict
 
 # ============================================================================
 # Repo Map Configuration

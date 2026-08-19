@@ -4,7 +4,7 @@ reviewers:
   - id: data-contract-reviewer
     name: "Data Contract Reviewer"
     dispatch: always
-    prompt: "Review data contracts for schema completeness, SLA definitions, freshness guarantees, and data quality thresholds. Verify that all output schemas are fully defined with types, nullability, and primary keys. Check that failure modes have explicit recovery actions."
+    prompt_text: "Review data contracts for schema completeness. Check SLA definitions and freshness guarantees and data quality thresholds. Verify that all output schemas are fully defined with types and nullability and primary keys. Check that failure modes have explicit recovery actions."
     profile: reviewer-capable
     context_pack: base
     severity_cap: blocker

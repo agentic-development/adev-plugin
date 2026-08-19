@@ -1,21 +1,34 @@
+# Bundled reviewer registry defaults for the software domain.
+#
+# 7 entries: 5 active (referent-integrity, wiring-reviewer,
+# consistency-analyzer, boundary-reviewer, termination-reviewer) and 2
+# disabled (structural-architect, security-reviewer), retained with
+# `enabled: false` + `disabled_reason` per the enablement contract
+# (lib/governance/enablement.mjs) rather than removed, so the report can
+# name them and say why they do not run. See
+# .context-index/specs/features/reviewer-domain-fit/reviewer-panel-retarget.spec.md
+# (Migration Path Step 4) for the retargeting rationale: the default (Node
+# CLI/plugin) project shape is better served by referent-integrity/wiring/
+# consistency/boundary/termination review than by the prior OWASP/structural
+# panel, which relocates to the (Task 4) web-service domain extension.
 merge_strategy: append
 blocker_threshold: 1
 
 reviewers:
-  - id: structural-architect
-    name: "Structural Architect"
+  - id: referent-integrity
+    name: "Referent Integrity Reviewer"
     dispatch: always
-    prompt: "plugin:review-specs/structural-architect-prompt.md"
+    prompt: "plugin:review-specs/referent-integrity-prompt.md"
     profile: reviewer-reasoning
-    context_pack: architecture
+    context_pack: referent-integrity
     severity_cap: blocker
 
-  - id: security-reviewer
-    name: "Security Reviewer"
+  - id: wiring-reviewer
+    name: "Wiring Reviewer"
     dispatch: always
-    prompt: "plugin:review-specs/security-reviewer-prompt.md"
+    prompt: "plugin:review-specs/wiring-reviewer-prompt.md"
     profile: reviewer-capable
-    context_pack: security
+    context_pack: wiring
     severity_cap: blocker
 
   - id: consistency-analyzer
@@ -25,3 +38,42 @@ reviewers:
     profile: reviewer-fast
     context_pack: consistency
     severity_cap: blocker
+
+  - id: boundary-reviewer
+    name: "Boundary Reviewer"
+    dispatch: always
+    prompt: "plugin:review-specs/boundary-reviewer-prompt.md"
+    profile: reviewer-capable
+    context_pack: security
+    severity_cap: blocker
+
+  - id: termination-reviewer
+    name: "Termination Reviewer"
+    dispatch:
+      triggered:
+        keywords: [loop, retry, poll, polling, iterate, iteration, recurring, convergence, auto-retry]
+        min_score: 1
+    prompt: "plugin:review-specs/termination-reviewer-prompt.md"
+    profile: reviewer-fast
+    context_pack: base
+    severity_cap: blocker
+
+  - id: structural-architect
+    name: "Structural Architect"
+    dispatch: always
+    prompt: "plugin:review-specs/structural-architect-prompt.md"
+    profile: reviewer-reasoning
+    context_pack: architecture
+    severity_cap: blocker
+    enabled: false
+    disabled_reason: "Disabled as part of the reviewer-domain-fit initiative. OWASP/structural scope was retargeted to referent-integrity/wiring-reviewer/consistency-analyzer/boundary-reviewer for the default (Node CLI/plugin) project shape. Prompt retained on disk; still resolvable for any project whose materialized review.yaml already names it."
+
+  - id: security-reviewer
+    name: "Security Reviewer"
+    dispatch: always
+    prompt: "plugin:review-specs/security-reviewer-prompt.md"
+    profile: reviewer-capable
+    context_pack: security
+    severity_cap: blocker
+    enabled: false
+    disabled_reason: "Disabled as part of the reviewer-domain-fit initiative. OWASP-scoped review relocated to the web-service domain extension (opt-in via adev extension install web-service) where it fits the artifact class. Prompt retained on disk."

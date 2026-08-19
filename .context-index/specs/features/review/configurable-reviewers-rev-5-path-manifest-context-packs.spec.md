@@ -38,6 +38,7 @@ source-manifest:
 # renderer ships complete and inert — no bundled pack declares
 # `delivery: manifest` — so advancing the status would overstate what landed.
 # Advancing it is an operator call once j7pq.7 closes and 8/9/12/13 land.
+drift_detected: true
 ---
 
 # Amendment: Configurable Reviewer Registry (targeting rev 5)

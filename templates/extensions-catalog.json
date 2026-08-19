@@ -12,6 +12,12 @@
       "label": "Process Automation",
       "description": "Workflow automation, RPA, and event-driven processes",
       "path": "extensions/process-automation"
+    },
+    {
+      "name": "web-service",
+      "label": "Web Service",
+      "description": "Web services and APIs, with OWASP-scoped security review",
+      "path": "extensions/web-service"
     }
   ]
 }

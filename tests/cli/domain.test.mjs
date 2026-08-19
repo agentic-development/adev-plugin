@@ -473,6 +473,175 @@ test("adev domain load-verification with --mcp-server playwright produces a vali
   }
 });
 
+// ── load-guidance ─────────────────────────────────────────────────────────
+
+test("load-guidance: returns guidance:null when no specify-guidance.md exists anywhere", () => {
+  const dir = makeTempProject();
+  try {
+    // Resolve to a NON-bundled domain ("data-engineering"), not the default
+    // 'software' domain, because a later task in this same plan ships a real
+    // bundled specify-guidance.md under templates/domains/software/ —
+    // asserting null against 'software' here would pass now but silently
+    // flip to FAIL once that task lands. 'data-engineering' never gets a
+    // specify-guidance.md at any resolution level in this plan.
+    writeCharter(dir, "m", { domain: "data-engineering" });
+    const r = spawnSync(
+      "node",
+      [
+        CLI,
+        "domain",
+        "load-guidance",
+        "--module",
+        "m",
+        "--charter",
+        ".context-index/specs/features/m/charter.md",
+      ],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 0, `stderr: ${r.stderr}\nstdout: ${r.stdout}`);
+    const out = JSON.parse(r.stdout);
+    assert.strictEqual(out.guidance, null);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("load-guidance: project-installed custom domain resolves its own file", () => {
+  const dir = makeTempProject();
+  try {
+    writeCharter(dir, "m", { domain: "custom-x" });
+    mkdirSync(join(dir, ".context-index", "domains", "custom-x"), {
+      recursive: true,
+    });
+    writeFileSync(
+      join(dir, ".context-index", "domains", "custom-x", "specify-guidance.md"),
+      "# Custom Guidance\n",
+    );
+    const r = spawnSync(
+      "node",
+      [
+        CLI,
+        "domain",
+        "load-guidance",
+        "--module",
+        "m",
+        "--charter",
+        ".context-index/specs/features/m/charter.md",
+      ],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 0, `stderr: ${r.stderr}\nstdout: ${r.stdout}`);
+    const out = JSON.parse(r.stdout);
+    assert.strictEqual(out.guidance, "# Custom Guidance\n");
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("load-guidance: bundled software domain returns specify-guidance.md content", () => {
+  const dir = makeTempProject();
+  try {
+    const r = spawnSync(
+      "node",
+      [CLI, "domain", "load-guidance", "--module", "m"],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 0, `stderr: ${r.stderr}\nstdout: ${r.stdout}`);
+    const out = JSON.parse(r.stdout);
+    // domain-neutral, no HTTP status codes
+    assert.ok(out.guidance.includes("Error Code"));
+    // no bare HTTP-status-shaped numbers
+    assert.ok(!/[45]\d\d\b/.test(out.guidance.replace(/exit\s*\d+/gi, "")));
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("load-guidance: custom domain's own file wins over the now-real bundled default (BEH-3)", () => {
+  const dir = makeTempProject();
+  try {
+    writeCharter(dir, "m", { domain: "custom-x" });
+    mkdirSync(join(dir, ".context-index", "domains", "custom-x"), {
+      recursive: true,
+    });
+    writeFileSync(
+      join(dir, ".context-index", "domains", "custom-x", "specify-guidance.md"),
+      "# Custom Guidance\n",
+    );
+    const r = spawnSync(
+      "node",
+      [
+        CLI,
+        "domain",
+        "load-guidance",
+        "--module",
+        "m",
+        "--charter",
+        ".context-index/specs/features/m/charter.md",
+      ],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 0, `stderr: ${r.stderr}\nstdout: ${r.stdout}`);
+    const out = JSON.parse(r.stdout);
+    // Must be the CUSTOM content, never the bundled software default that
+    // also now exists on disk — proves precedence, not merely presence.
+    assert.strictEqual(out.guidance, "# Custom Guidance\n");
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("load-guidance: one-level extends fallthrough to bundled parent (BEH-4)", () => {
+  const dir = makeTempProject();
+  try {
+    writeCharter(dir, "m", { domain: "custom-y" });
+    mkdirSync(join(dir, ".context-index", "domains", "custom-y"), {
+      recursive: true,
+    });
+    writeFileSync(
+      join(dir, ".context-index", "domains", "custom-y", "domain.yaml"),
+      "extends: software\n",
+    );
+    // custom-y ships no specify-guidance.md of its own, so this must fall
+    // through to the real templates/domains/software/specify-guidance.md.
+    const r = spawnSync(
+      "node",
+      [
+        CLI,
+        "domain",
+        "load-guidance",
+        "--module",
+        "m",
+        "--charter",
+        ".context-index/specs/features/m/charter.md",
+      ],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 0, `stderr: ${r.stderr}\nstdout: ${r.stdout}`);
+    const out = JSON.parse(r.stdout);
+    assert.ok(
+      out.guidance.includes("Error Code"),
+      "expected bundled software guidance via extends fallthrough",
+    );
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("load-guidance: missing --module exits 1 with usage", () => {
+  const dir = makeTempProject();
+  try {
+    const r = spawnSync("node", [CLI, "domain", "load-guidance"], {
+      encoding: "utf8",
+      cwd: dir,
+    });
+    assert.strictEqual(r.status, 1);
+    assert.match(r.stderr, /missing --module/);
+  } finally {
+    cleanup(dir);
+  }
+});
+
 // ── Missing manifest is tolerated (no modules → uses default domain) ──────
 
 test("adev domain load-gates works when manifest.yaml is absent (default domain)", () => {

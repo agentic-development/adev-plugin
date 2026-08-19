@@ -134,7 +134,7 @@ reviewers:
   - id: api-reviewer
     name: "API Reviewer"
     dispatch: always
-    prompt: "Review API design for RESTful conventions and backward compatibility."
+    prompt_text: "Review API design for RESTful conventions and backward compatibility."
     profile: reviewer-capable
 ```
 
