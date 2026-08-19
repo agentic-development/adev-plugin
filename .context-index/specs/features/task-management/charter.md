@@ -1,7 +1,7 @@
 ---
 status: approved
-revision: 6
-updated: 2026-05-19
+revision: 7
+updated: 2026-08-19
 ---
 
 # Feature Charter: Task Management
@@ -37,11 +37,12 @@ This charter retains ownership of *what* the issue board means: lifecycle, tiere
 - Integration into `/adev:specify` (creates a Feature work item bound to the Live Spec it just authored, 1:1)
 - Constitution template section documenting task management
 - Sync block emitted by `/adev:sync` into agent files
+- **GitHub Issues bridge**: bidirectional sync between the local issue board and GitHub Issues, so external contributors can file bugs on GitHub that feed into the local board (and, per the autonomous bugfix loop, an unattended fixer). Carved out of the External Tracker Sync exclusion below by revision 7 (2026-08-19) — see Migration Notes. Scope of the bridge itself (conflict resolution, field mapping, credential handling, which direction is authoritative) is design work for a Live Spec, not fixed by this charter.
 
 ### Out of Scope
 
 - Backlog visualization or UI dashboards
-- External tracker sync (Jira, Linear, GitHub Issues)
+- External tracker sync to project-management trackers (Jira, Linear) — GitHub Issues is no longer covered by this exclusion as of revision 7; see In Scope and Migration Notes
 - Work-item assignment to specific agents or users
 - Time tracking or estimation
 - **Strict enum validation on `type`** (kept free-text by design)
@@ -133,6 +134,7 @@ This charter retains ownership of *what* the issue board means: lifecycle, tiere
 | Compaction Context | Inject claimed-item context on session compaction | Phase 2 | — |
 | Backfill of legacy flat IDs into tiered model | Manual restructuring is a project-level decision; framework does not auto-migrate | — | — |
 | Removal of deprecated `createEpic`/`createIssue` | Backward compatibility maintained until next major version bump | next major | Tiered Hierarchy adoption |
+| **GitHub Issues Bridge** | Scope carved out 2026-08-19 (revision 7); requirements/design not yet done. Tracked from `.context-index/research/autonomous-bugfix-loop.md`, which needs external bug intake to feed an unattended fixer loop. | 5 | — |
 
 ## Interface Contracts
 
@@ -191,3 +193,7 @@ The migration is opt-in. Projects can adopt tiered IDs, `next_action`, and gener
 Revision 5 (2026-05-19) adds the **Backend Migration** capability as the operational realization of the Consistency quality attribute. No domain-model changes — only an interface addition (`adev issues migrate` CLI verb). The verb is idempotent and dry-runnable; manifest writes require user confirmation.
 
 Not to be confused with `adev migrate` (format-shape migration of legacy state artifacts, owned by the `agent-reliable-state-artifacts` charter). `adev issues migrate` operates one level up — it converts the *configured backend* of the issue board using existing adapters, while `adev migrate` converts artifact *shapes* (e.g., markdown/YAML → JSON/JSONL).
+
+Revision 7 (2026-08-19) carves GitHub Issues out of the External Tracker Sync exclusion, human-approved during requirements work for `.context-index/research/autonomous-bugfix-loop.md` (which needs external bug intake so contributors can file bugs that an unattended fixer loop then works). Prior research at `.context-index/research/issue-board-merge-conflicts.md` §4b had already modeled this exact tradeoff (rate limits, latency, credential handling, offline-loss, local/remote impedance mismatch) and flagged it as a charter-level decision, not a spec-level one — this revision is that decision. Jira and Linear remain excluded; nothing about their tradeoffs was reconsidered here. The bridge's actual design (conflict resolution, field mapping, which side is authoritative, credential storage) is deferred to a future Live Spec — see the **GitHub Issues Bridge** row in Deferred Capabilities.
+
+**Open follow-up, not resolved by this revision**: `strategic-planning/charter.md` and `context-viz/charter.md` repeat the same "External tracker sync (Jira, Linear, GitHub Issues)" exclusion in their own Out of Scope sections. Those charters were not amended here — their exclusions may now be inconsistent with this one and should be reviewed separately before anyone relies on GitHub Issues sync from those modules' contexts.
