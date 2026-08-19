@@ -45,6 +45,7 @@ The two formats serve two distinct concerns and remain separate:
 |---|---|---|---|---|
 | `<slug>.jsonl` | `lib/lifecycle-state.mjs` | append-only JSON Lines | ✅ yes | `agent-reliable-state-artifacts/lifecycle-event-log.spec.md` |
 | `<slug>.json` | `lib/build-state.mjs` | single JSON snapshot | ❌ gitignored | `strategic-planning/adev-build-skill.spec.md` |
+| `bugfix-loop-attempts.jsonl` | `lib/bugfix-loop-attempts.mjs` | append-only JSON Lines | ✅ yes | `.context-index/specs/features/autonomous-bugfix-loop/per-issue-attempt-cap.spec.md` |
 
 ### Alternatives Considered
 
@@ -111,6 +112,7 @@ The remaining concern is solely **discoverability**: a contributor reading the d
   - `lib/lifecycle-state.mjs` — JSONL writer/reader
   - `lib/build-state.mjs` — JSON snapshot writer/reader
   - `lib/migrate-state-artifacts.mjs` — one-shot migration that renamed the directory
+  - `lib/bugfix-loop-attempts.mjs` — JSONL writer/reader for the single-file `bugfix-loop-attempts.jsonl` event log (per-issue `AttemptRecord`s for `/adev:bugfix-loop`'s attempt cap), following the same append-only pattern as `lib/lifecycle-state.mjs`
 - **Configuration:**
   - `.gitignore:27` — `.context-index/lifecycle-state/*.json` gitignored
 - **Prior ADRs in this area:**
