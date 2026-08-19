@@ -44,33 +44,23 @@ If the output is not `__NONE__`, incorporate it as additional standing instructi
 
 ### Board Display (no arguments)
 
-Call the manager to fetch live data:
+Fetch and render the board in one step:
 
-```javascript
-import { getIssueManager } from '<ADEV_ROOT>/lib/issues/registry.mjs';
-import { loadManifest } from '<ADEV_ROOT>/lib/manifest.mjs';
-
-const manager = getIssueManager(loadManifest(projectRoot));
-const epics = await manager.listEpics();
-const issues = await manager.list();
+```bash
+adev issues board [--milestone <name>]
 ```
 
-Then render via the canonical markdown layer rather than hand-writing rows:
+This prints the whole board as canonical markdown on stdout. It is read-only — it never writes `tasks.md`; persisting the rendered board to a file is a separate operation the user has to ask for explicitly. Pass `--milestone <name>` to restrict the epics section to a single milestone.
 
-```javascript
-import { renderTasksMd } from '<ADEV_ROOT>/lib/issues/render-markdown.mjs';
-const markdown = renderTasksMd({ version: 1, epics, issues });
-```
+Display that output to the user verbatim. **Persona adaptation:** the command emits the canonical board layout (epic groupings, milestone groupings, status sections). If a different persona is active, adapt the chat display to its output rules — but always source the board from this command; never hand-author table rows in skill responses.
 
-Display the rendered markdown to the user. **Persona adaptation:** the renderer emits the canonical board layout (epic groupings, milestone groupings, status sections). If a different persona is active, adapt the chat display to its output rules — but always source data via the manager and the renderer; never hand-author table rows in skill responses.
-
-Default ordering produced by the renderer:
+Default ordering in the output:
 
 1. **Open / In Progress** — active work (show first)
 2. **Deferred** — parked items
 3. **Closed** — completed (show last, collapsed if more than 10)
 
-Standalone issues (no epic) appear under "Unassigned." When any epic has a `milestone` field set, the renderer groups epics by milestone name; epics without a milestone appear under "No Milestone" at the end.
+Standalone issues (no epic) appear under "Unassigned." When any epic has a `milestone` field set, epics are grouped by milestone name; epics without a milestone appear under "No Milestone" at the end.
 
 ### Create Issue
 
