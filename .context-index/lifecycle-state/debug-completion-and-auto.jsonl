@@ -1,0 +1,2 @@
+{"event":"lifecycle_step","step":"specify","status":"started","ts":"2026-08-19T18:13:41.588Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"step_completed","step":"specify","verdict":"PASS","ts":"2026-08-19T18:13:41.731Z","diagnostic_warnings":["adev/frontmatter-present"]}
