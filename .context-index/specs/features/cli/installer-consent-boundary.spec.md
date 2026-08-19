@@ -6,7 +6,7 @@ risk_level: high
 revision: 2
 charter-revision: 4
 created: 2026-08-14
-updated: 2026-08-14
+updated: 2026-08-18
 affects:
   - setup
   - hooks
@@ -18,6 +18,7 @@ source-manifest:
     - skills/init/SKILL.md
     - tests/cli-hook-chaining.test.mjs
     - tests/cli-install-scope.test.mjs
+drift_detected: true
 ---
 
 <!-- partial_schema: spec@1 -->
@@ -242,14 +243,27 @@ rewrites tracked files in `.githooks/`.
     identity check for the two-scopes-one-file case, not a safety check, and
     does nothing about a link pointing at a third location.
 
-    **Known gap — leaf only (SEC-10).** `lstatSync` inspects the final path
-    component, so a symlinked **parent** (`.claude → ~/.ssh`, or
-    `.claude → ~/.claude`) is still followed; re-review demonstrated both, the
+    **Gap closed (was SEC-10, leaf only).** `lstatSync` inspects only the final
+    path component, so a symlinked **parent** (`.claude → ~/.ssh`, or
+    `.claude → ~/.claude`) was still followed; re-review demonstrated both
+    during execution against the real `adapter.enable("project")` API, the
     second silently leaking a project-scope enable into the user file and
-    defeating AC-2. Closing it requires resolving the parent chain and
-    requiring the settings path to land under the intended root — the pattern
-    already exists at `lib/issues/resolve-root.mjs`. Tracked separately; the
-    CWE-59 claim above is therefore partial.
+    defeating AC-2. Every `readJson`/`writeJson` call in
+    `providers/claude-code/adapter.mjs` now also resolves the settings path's
+    directory chain with `lenientRealpath` (`lib/path-safety.mjs`) and requires
+    it to land under the scope's intended root — `process.cwd()` for project,
+    `getClaudeHome()` for user — refusing with `SETTINGS_PATH_ESCAPES_ROOT`
+    when it escapes. `lenientRealpath` resolves symlinks at any existing path
+    component and tolerates a non-existent tail, so a first-ever install
+    (`.claude/` not yet created) is not falsely rejected, and a legitimate
+    parent symlink that still resolves inside the intended root is allowed —
+    only an escape is refused. The leaf-only check above stays in place
+    unconditionally alongside this one; it is a stricter, additive rule (any
+    directly symlinked leaf is refused even if it would resolve back inside
+    root), not superseded by it. Covered by
+    `tests/provider/claude-code-adapter.test.mjs`, including both concrete
+    attacks reproduced against the public API. The CWE-59 claim above no
+    longer needs the "partial" qualifier.
 
 ### Destructive rewrites are announced
 

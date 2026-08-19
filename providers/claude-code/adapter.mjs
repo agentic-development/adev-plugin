@@ -2,8 +2,9 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync, cpSync, chmodSync, 
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { execSync } from "child_process";
-import { readJson } from "../../lib/provider/json-io.mjs";
+import { readJson as readJsonRaw } from "../../lib/provider/json-io.mjs";
 import { installCopyFilter } from "../../lib/provider/ship-filter.mjs";
+import { lenientRealpath, isContained } from "../../lib/path-safety.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -15,6 +16,42 @@ const PLUGIN_VERSION = JSON.parse(
 function ensureDir(path) {
   if (!existsSync(path)) {
     mkdirSync(path, { recursive: true });
+  }
+}
+
+/**
+ * Confirm `path`'s directory resolves inside `root` before it is read or
+ * written.
+ *
+ * The leaf-only `lstatSync` check in `writeJson` below only ever saw a
+ * directly symlinked settings file. A symlinked ANCESTOR — a tracked
+ * `.claude -> ~/.claude` or `.claude -> ~/.ssh` — is still followed by plain
+ * `readFileSync`/`writeFileSync`, since neither one inspects any path
+ * component but the last. That silently redirects a project-scope
+ * enable/read into the user's file (or into an arbitrary attacker-chosen
+ * directory), which is exactly the class of bug `sameFile()` above exists to
+ * avoid for the two-scopes-one-file case — here the same realpathSync-based
+ * comparison is applied to containment instead of equality. `root` is the
+ * boundary the operator actually consented to for the given scope:
+ * `process.cwd()` for project, `getClaudeHome()` for user.
+ *
+ * `lenientRealpath` (unlike a bare `realpathSync`) resolves symlinks at any
+ * existing path component and tolerates a tail that doesn't exist yet — the
+ * common case on a first-ever install, where `.claude/` has not been created
+ * when this runs.
+ */
+function assertSettingsPathContained(path, root) {
+  const resolvedDir = lenientRealpath(dirname(path));
+  const resolvedRoot = lenientRealpath(root);
+  if (!isContained(resolvedDir, resolvedRoot)) {
+    const err = new Error(
+      `Refusing to use a settings path outside its scope: ${path}\n` +
+        `  resolves to ${resolvedDir}, which escapes ${resolvedRoot}.\n` +
+        "  adev will not read or write through a symlinked ancestor directory. " +
+        "Replace it with a regular directory, or point it inside the intended scope.",
+    );
+    err.code = "SETTINGS_PATH_ESCAPES_ROOT";
+    throw err;
   }
 }
 
@@ -31,8 +68,12 @@ function ensureDir(path) {
  * itself. Refusing is correct rather than replacing it: a symlinked settings
  * file may well be a deliberate dotfile-manager setup, and silently clobbering
  * that would be its own defect. Name it and let the operator decide.
+ *
+ * The leaf check stays unconditional (refused even when the link happens to
+ * resolve back inside `root`) — `assertSettingsPathContained` above is an
+ * additive check on the ANCESTOR chain, not a replacement for it.
  */
-function writeJson(path, data) {
+function writeJson(path, data, root) {
   let st = null;
   try {
     st = lstatSync(path);
@@ -48,7 +89,20 @@ function writeJson(path, data) {
     err.code = "SETTINGS_PATH_IS_SYMLINK";
     throw err;
   }
+  assertSettingsPathContained(path, root);
   writeFileSync(path, JSON.stringify(data, null, 2) + "\n");
+}
+
+/**
+ * Read JSON, gated by the same ancestor-containment check as `writeJson` —
+ * a read through an unintended symlinked directory is the other half of the
+ * bug (issue adev-plugin-settings-symlink-parent-jukh): `enable()` reads
+ * `settingsPath` before it writes it, so an unguarded read would still leak
+ * the escape even if only the write were checked.
+ */
+function readJson(path, root) {
+  assertSettingsPathContained(path, root);
+  return readJsonRaw(path);
 }
 
 function getClaudeHome() {
@@ -147,7 +201,7 @@ export const ClaudeCodeAdapter = {
    */
   updateRegistry(claudeHome, cacheDir, scope) {
     const registryPath = join(claudeHome, "plugins", "installed_plugins.json");
-    const registry = readJson(registryPath) || { version: 2, plugins: {} };
+    const registry = readJson(registryPath, claudeHome) || { version: 2, plugins: {} };
     const key = "adev@agentic-development";
     const now = new Date().toISOString();
     const existing = registry.plugins[key]?.[0];
@@ -165,7 +219,7 @@ export const ClaudeCodeAdapter = {
       },
     ];
 
-    writeJson(registryPath, registry);
+    writeJson(registryPath, registry, claudeHome);
   },
 
   enable(scope = "user") {
@@ -178,21 +232,28 @@ export const ClaudeCodeAdapter = {
       settingsPath = join(process.cwd(), ".claude", "settings.json");
     }
 
-    const settings = readJson(settingsPath) || {};
+    // The boundary the operator actually consented to for this scope — a
+    // "project" enable must resolve under cwd, a "user" enable under
+    // claudeHome. Threaded through every readJson/writeJson call below so a
+    // symlinked ancestor can never redirect one scope's write into the
+    // other's file (adev-plugin-settings-symlink-parent-jukh).
+    const scopeRoot = scope === "user" ? claudeHome : process.cwd();
+
+    const settings = readJson(settingsPath, scopeRoot) || {};
     if (!settings.enabledPlugins) {
       settings.enabledPlugins = {};
     }
 
     settings.enabledPlugins["adev@agentic-development"] = true;
     ensureDir(dirname(settingsPath));
-    writeJson(settingsPath, settings);
+    writeJson(settingsPath, settings, scopeRoot);
 
     // Register the custom marketplace in user-level settings so Claude Code
     // can resolve adev@agentic-development on any machine.
     const userSettingsPath = join(claudeHome, "settings.json");
     const userSettings = settingsPath === userSettingsPath
       ? settings
-      : (readJson(userSettingsPath) || {});
+      : (readJson(userSettingsPath, claudeHome) || {});
 
     if (!userSettings.extraKnownMarketplaces) {
       userSettings.extraKnownMarketplaces = {};
@@ -217,9 +278,9 @@ export const ClaudeCodeAdapter = {
 
       if (settingsPath !== userSettingsPath) {
         ensureDir(dirname(userSettingsPath));
-        writeJson(userSettingsPath, userSettings);
+        writeJson(userSettingsPath, userSettings, claudeHome);
       } else {
-        writeJson(settingsPath, settings);
+        writeJson(settingsPath, settings, claudeHome);
       }
     }
 
@@ -234,10 +295,10 @@ export const ClaudeCodeAdapter = {
     // no-op when the two paths are the same file (HOME == cwd), which would
     // otherwise delete the entry this call just wrote.
     if (scope !== "user" && !sameFile(settingsPath, userSettingsPath)) {
-      const onDisk = readJson(userSettingsPath);
+      const onDisk = readJson(userSettingsPath, claudeHome);
       if (onDisk?.enabledPlugins?.["adev@agentic-development"] !== undefined) {
         delete onDisk.enabledPlugins["adev@agentic-development"];
-        writeJson(userSettingsPath, onDisk);
+        writeJson(userSettingsPath, onDisk, claudeHome);
       }
     }
 
@@ -250,22 +311,23 @@ export const ClaudeCodeAdapter = {
 
     if (scope === "user" || scope === "all") {
       const userSettingsPath = join(claudeHome, "settings.json");
-      const userSettings = readJson(userSettingsPath);
+      const userSettings = readJson(userSettingsPath, claudeHome);
       if (userSettings?.enabledPlugins?.["adev@agentic-development"] !== undefined) {
         delete userSettings.enabledPlugins["adev@agentic-development"];
-        writeJson(userSettingsPath, userSettings);
+        writeJson(userSettingsPath, userSettings, claudeHome);
       }
     }
 
     if (scope === "project" || scope === "all") {
-      const projectSettingsPath = join(process.cwd(), ".claude", "settings.json");
-      const projectSettings = readJson(projectSettingsPath);
+      const projectRoot = process.cwd();
+      const projectSettingsPath = join(projectRoot, ".claude", "settings.json");
+      const projectSettings = readJson(projectSettingsPath, projectRoot);
       if (projectSettings?.enabledPlugins?.["adev@agentic-development"] !== undefined) {
         delete projectSettings.enabledPlugins["adev@agentic-development"];
         if (projectSettings.enabledPlugins["superpowers@claude-plugins-official"] === false) {
           delete projectSettings.enabledPlugins["superpowers@claude-plugins-official"];
         }
-        writeJson(projectSettingsPath, projectSettings);
+        writeJson(projectSettingsPath, projectSettings, projectRoot);
       }
     }
 
@@ -277,9 +339,10 @@ export const ClaudeCodeAdapter = {
 
   detectConflicts() {
     const claudeHome = getClaudeHome();
-    const userSettings = readJson(join(claudeHome, "settings.json")) || {};
-    const projectSettingsPath = join(process.cwd(), ".claude", "settings.json");
-    const projectSettings = readJson(projectSettingsPath) || {};
+    const projectRoot = process.cwd();
+    const userSettings = readJson(join(claudeHome, "settings.json"), claudeHome) || {};
+    const projectSettingsPath = join(projectRoot, ".claude", "settings.json");
+    const projectSettings = readJson(projectSettingsPath, projectRoot) || {};
 
     const conflicts = [];
     const enabled = {
@@ -301,14 +364,15 @@ export const ClaudeCodeAdapter = {
   },
 
   disableConflictingPlugin(pluginKey) {
-    const settingsPath = join(process.cwd(), ".claude", "settings.json");
-    const settings = readJson(settingsPath) || {};
+    const projectRoot = process.cwd();
+    const settingsPath = join(projectRoot, ".claude", "settings.json");
+    const settings = readJson(settingsPath, projectRoot) || {};
     if (!settings.enabledPlugins) {
       settings.enabledPlugins = {};
     }
     settings.enabledPlugins[pluginKey] = false;
     ensureDir(dirname(settingsPath));
-    writeJson(settingsPath, settings);
+    writeJson(settingsPath, settings, projectRoot);
   },
 };
 
