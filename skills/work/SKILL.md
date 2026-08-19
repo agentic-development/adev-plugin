@@ -96,6 +96,35 @@ If the user rejects the proposal or requests a different route, ask what they wo
 
 The goal: a user can start at `/adev:work` and never need to pick another command unless they *want* fine-grained control.
 
+### Do not re-enter a skill whose body is already loaded
+
+Conducting the arc means carrying the work forward **from the instructions
+already in this context** — not re-invoking skills to get them back.
+
+- **Never re-invoke `/adev:work` to advance the arc.** Once this body has loaded,
+  the classification table, the routing refinements, and Conductor Mode are all
+  in context for the rest of the session. Re-invoking the front door to pick the
+  next stage re-injects this entire file to learn something already present.
+- **Never re-invoke a target skill you have already invoked in this session for
+  the same unit of work.** If a stage must run a second time — a review came back
+  BLOCK, a validate failed and implement must re-run — either continue from that
+  skill's instructions already in context, or dispatch it as a subagent
+  (`Agent({...})`), which runs in its own context rather than appending to this
+  one.
+- **Prefer `/adev:build` for multi-stage arcs.** It dispatches each stage as a
+  fresh subagent with gate checks and resume, so no stage body ever lands in the
+  orchestrator's context at all. That is the cheapest shape available, and it is
+  why Conductor Mode routes full builds there rather than invoking each stage by
+  hand.
+
+**Why this rule exists, so it is not edited away as redundant.** A loaded
+SKILL.md is not paid for once. It joins the context prefix and is re-read on
+every subsequent turn for the rest of the session. In one measured lifecycle
+(`adev-plugin-04jr.1`) `specify` was loaded three times and `work` twice —
+about 31K tokens of pure duplication, re-read on every turn that followed. The
+skill cannot detect from inside itself that its body is already present, so
+this instruction is the only place the duplication can be prevented.
+
 ## Step 6: Intake Mode
 
 Applies when the request needs structured intake before routing.
