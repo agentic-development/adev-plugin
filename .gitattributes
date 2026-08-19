@@ -13,3 +13,17 @@
 # because the per-spec JSONL has no "shared" lines either branch could
 # meaningfully overwrite — every line is a discrete event.
 .context-index/lifecycle-state/*.jsonl merge=union
+
+# release-please bumps the "version" field of these three manifests
+# independently on main and on release/next (see docs/releasing.md); the two
+# lines are expected to diverge permanently. A plain merge conflicts on them
+# any time main touches a nearby line (adjacent-hunk overlap). The
+# `release-next-version` driver (scripts/git-merge-keep-version.sh)
+# neutralizes only that known divergence before delegating to a normal
+# 3-way merge, so a genuine conflict elsewhere in the file still surfaces.
+# The driver is configured only in the propagate-to-next.yml workflow
+# (`git config merge.release-next-version.driver ...`) — without that config
+# these attributes are a no-op and git falls back to its default merge.
+package.json merge=release-next-version
+.claude-plugin/plugin.json merge=release-next-version
+.cursor-plugin/plugin.json merge=release-next-version
