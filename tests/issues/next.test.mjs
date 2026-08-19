@@ -19,6 +19,9 @@ import {
   validateBugType,
   isModuleEligible,
   RESERVED_SAFETY_TAGS,
+  isLeaseExcluded,
+  hasOpenBlockingDependencies,
+  isAttemptCapExcluded,
 } from "../../lib/issues/eligibility.mjs";
 
 test("resolvePriorityBound: omitted --max-priority defaults to P3 (BEH-8 safety floor)", () => {
@@ -91,4 +94,59 @@ test("isModuleEligible: malformed (non-array) excluded_modules fails closed to t
   assert.doesNotThrow(() => isModuleEligible(["cli"], manifest));
   assert.equal(isModuleEligible(["cli"], manifest), true); // "cli" still eligible — malformed config ignored, not misread as excluding everything
   assert.equal(isModuleEligible(["review-gate"], manifest), false); // reserved tags remain excluded regardless
+});
+
+// ─── Task 3: Lease, dependency, and attempt-cap exclusion (BEH-3, BEH-4, BEH-5) ──
+
+test("isLeaseExcluded: live (non-expired) claim excluded (BEH-3)", () => {
+  const issue = { owner: "alice", claimed_at: new Date().toISOString() };
+  assert.equal(isLeaseExcluded(issue, { ttlMinutes: 240, now: Date.now() }), true);
+});
+
+test("isLeaseExcluded: expired claim not excluded (BEH-3)", () => {
+  const old = new Date(Date.now() - 300 * 60_000).toISOString();
+  const issue = { owner: "alice", claimed_at: old };
+  assert.equal(isLeaseExcluded(issue, { ttlMinutes: 240, now: Date.now() }), false);
+});
+
+test("isLeaseExcluded: unclaimed issue not excluded", () => {
+  assert.equal(isLeaseExcluded({}, { ttlMinutes: 240, now: Date.now() }), false);
+});
+
+test("isLeaseExcluded: omitted ttlMinutes defaults to DEFAULT_CLAIM_TTL_MINUTES (240), not 0/disabled (round-3 cq-1 regression)", () => {
+  // A claim well past 240 minutes but with no ttlMinutes passed must NOT be
+  // treated as "expiry disabled forever excluded" — it must resolve the
+  // same real default isClaimStale itself uses, so a stale claim is NOT
+  // excluded even when the caller omits the option entirely.
+  const old = new Date(Date.now() - 300 * 60_000).toISOString();
+  const issue = { owner: "alice", claimed_at: old };
+  assert.equal(isLeaseExcluded(issue, {}), false);
+  assert.equal(isLeaseExcluded(issue), false); // opts object itself omitted
+});
+
+test("hasOpenBlockingDependencies: open dependency excludes (BEH-4)", () => {
+  const issue = { id: "b1", dependencies: ["b0"] };
+  const byId = new Map([["b0", { id: "b0", status: "open" }]]);
+  assert.equal(hasOpenBlockingDependencies(issue, byId), true);
+});
+
+test("hasOpenBlockingDependencies: all deps closed does not exclude", () => {
+  const issue = { id: "b1", dependencies: ["b0"] };
+  const byId = new Map([["b0", { id: "b0", status: "closed" }]]);
+  assert.equal(hasOpenBlockingDependencies(issue, byId), false);
+});
+
+test("hasOpenBlockingDependencies: a dangling dependency id (absent from issuesById) does not exclude (round-3 cq-2, pinned behavior)", () => {
+  const issue = { id: "b1", dependencies: ["deleted-issue"] };
+  const byId = new Map(); // full board, but the referenced id no longer exists on it
+  assert.equal(hasOpenBlockingDependencies(issue, byId), false);
+});
+
+test("isAttemptCapExcluded: NO_PROGRESS/REGRESSED/BUDGET_EXHAUSTED exclude (BEH-5)", () => {
+  for (const verdict of ["NO_PROGRESS", "REGRESSED", "BUDGET_EXHAUSTED"]) {
+    assert.equal(isAttemptCapExcluded({ last_verdict: verdict }), true);
+  }
+  assert.equal(isAttemptCapExcluded({ last_verdict: "PASS" }), false);
+  assert.equal(isAttemptCapExcluded({ last_verdict: "CONTINUE" }), false);
+  assert.equal(isAttemptCapExcluded(null), false); // no AttemptRecord = zero attempts
 });
