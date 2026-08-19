@@ -17,6 +17,8 @@ import assert from "node:assert/strict";
 import {
   resolvePriorityBound,
   validateBugType,
+  isModuleEligible,
+  RESERVED_SAFETY_TAGS,
 } from "../../lib/issues/eligibility.mjs";
 
 test("resolvePriorityBound: omitted --max-priority defaults to P3 (BEH-8 safety floor)", () => {
@@ -47,4 +49,46 @@ test("validateBugType: non-bug --type is rejected (BEH-9)", () => {
   assert.equal(validateBugType("feature").error?.code, "UNSUPPORTED_TYPE");
   assert.equal(validateBugType("bug").error, null);
   assert.equal(validateBugType(undefined).error, null); // --type defaults to "bug"
+});
+
+// ─── Task 2: Module-safety eligibility checks (BEH-6, BEH-7, BEH-10, BEH-11) ──
+
+test("isModuleEligible: >1 affected_modules entries excluded regardless of content (BEH-6)", () => {
+  const manifest = { modules: [{ slug: "cli" }, { slug: "hooks" }] };
+  assert.equal(isModuleEligible(["cli", "hooks"], manifest), false);
+});
+
+test("isModuleEligible: reserved safety tags excluded unconditionally (BEH-7)", () => {
+  const manifest = { modules: [] };
+  for (const tag of RESERVED_SAFETY_TAGS) {
+    assert.equal(isModuleEligible([tag], manifest), false);
+  }
+});
+
+test("isModuleEligible: manifest-configured excluded_modules excluded (BEH-7)", () => {
+  const manifest = { modules: [{ slug: "billing" }], tasks: { bugfix_loop: { excluded_modules: ["billing"] } } };
+  assert.equal(isModuleEligible(["billing"], manifest), false);
+});
+
+test("isModuleEligible: empty/absent affected_modules excluded (BEH-10)", () => {
+  const manifest = { modules: [{ slug: "cli" }] };
+  assert.equal(isModuleEligible(undefined, manifest), false);
+  assert.equal(isModuleEligible([], manifest), false);
+});
+
+test("isModuleEligible: unrecognized slug excluded (BEH-11)", () => {
+  const manifest = { modules: [{ slug: "cli" }] };
+  assert.equal(isModuleEligible(["typo-slug"], manifest), false);
+});
+
+test("isModuleEligible: single real, non-excluded manifest slug is eligible", () => {
+  const manifest = { modules: [{ slug: "cli" }] };
+  assert.equal(isModuleEligible(["cli"], manifest), true);
+});
+
+test("isModuleEligible: malformed (non-array) excluded_modules fails closed to the reserved tags only, does not throw", () => {
+  const manifest = { modules: [{ slug: "cli" }], tasks: { bugfix_loop: { excluded_modules: "not-an-array" } } };
+  assert.doesNotThrow(() => isModuleEligible(["cli"], manifest));
+  assert.equal(isModuleEligible(["cli"], manifest), true); // "cli" still eligible — malformed config ignored, not misread as excluding everything
+  assert.equal(isModuleEligible(["review-gate"], manifest), false); // reserved tags remain excluded regardless
 });
