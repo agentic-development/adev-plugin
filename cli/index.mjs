@@ -9,7 +9,7 @@ import { getProvider, getProviderNames } from "../lib/provider/registry.mjs";
 import { resolveExtensionSource } from "../lib/extensions/resolve-source.mjs";
 import { installExtension, readManifestStamps } from "../lib/extensions/install.mjs";
 import { loadManifest } from "../lib/manifest.mjs";
-import { safeRealpath as resolveSymlink } from "../lib/path-safety.mjs";
+import { safeRealpath as resolveSymlink, lenientRealpath } from "../lib/path-safety.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -375,11 +375,36 @@ function shellSingleQuote(value) {
 }
 
 /**
+ * True iff `candidatePath`, once every symlink component is resolved,
+ * escapes `root`. Shared by `validateHooksPath` (the raw `core.hooksPath`
+ * string) and the `originalHookPath` re-check (the concrete, per-hook-name
+ * resolved file) so both containment checks are backed by one implementation
+ * rather than two independently-maintained copies of the same comparison.
+ *
+ * `lenientRealpath` (not `realpathSync`) because either argument can be a
+ * path that doesn't fully exist yet — see its own doc comment in
+ * lib/path-safety.mjs. A pathological symlink cycle makes `lenientRealpath`
+ * throw rather than hang; that is treated as an escape (fail closed) instead
+ * of letting the exception crash the installer.
+ */
+function escapesRepoPhysically(candidatePath, root) {
+  try {
+    const realRoot = lenientRealpath(root);
+    const realCandidate = lenientRealpath(candidatePath);
+    const rel = relative(realRoot, realCandidate);
+    return rel.startsWith("..") || isAbsolute(rel);
+  } catch {
+    return true;
+  }
+}
+
+/**
  * Reject a `core.hooksPath` that cannot be safely used.
  *
- * Two independent problems, both reachable from a value written by anything
- * with config-write access (an npm postinstall, a bootstrap script — NOT a
- * clone, which never carries .git/config):
+ * Three independent problems, all reachable WITHOUT `.git/config` write
+ * access — a tracked symlink rides along with an ordinary `git clone`, and
+ * `core.hooksPath = .husky` is the everyday value husky's own postinstall
+ * writes:
  *
  *   1. Shell metacharacters become code in the generated wrapper. Quoting
  *      (shellSingleQuote) is the containment; this allowlist is the control.
@@ -387,6 +412,18 @@ function shellSingleQuote(value) {
  *      `../../husky/pre-commit` resolves to a directory the installer does not
  *      own on a teammate's machine or a CI runner, and the wrapper executes
  *      whatever is there.
+ *   3. `resolve()`/`relative()` are pure string operations — they never touch
+ *      the filesystem. A tracked in-repo symlink (`.husky -> ../shared-hooks`,
+ *      or a file symlink `hooks/pre-commit -> ../../evil.sh`) is lexically
+ *      "under" repoRoot yet physically resolves somewhere else entirely
+ *      (CWE-22). `lenientRealpath` is used instead of `realpathSync` because
+ *      the candidate — or a directory symlink's target — may not exist yet
+ *      (a fresh `.githooks/` about to be scaffolded, or a dangling symlink
+ *      shipped in the repo), and `realpathSync` throws `ENOENT` the moment
+ *      any part of that chain is missing. `repoRoot` itself is realpath'd
+ *      too — on macOS `TMPDIR` (and other paths) sit behind a `/var` ->
+ *      `/private/var` symlink, so comparing an un-realpath'd repoRoot against
+ *      a realpath'd candidate would falsely reject a legitimate same-repo path.
  *
  * @returns {{ ok: true } | { ok: false, reason: string }}
  */
@@ -401,6 +438,19 @@ function validateHooksPath(rawPath, repoRoot) {
   const rel = relative(repoRoot, resolved);
   if (rel.startsWith("..") || isAbsolute(rel)) {
     return { ok: false, reason: `resolves outside the repository (${resolved})` };
+  }
+
+  if (escapesRepoPhysically(resolved, repoRoot)) {
+    let realResolved;
+    try {
+      realResolved = lenientRealpath(resolved);
+    } catch (err) {
+      return { ok: false, reason: `could not be resolved safely (${err.message})` };
+    }
+    return {
+      ok: false,
+      reason: `resolves outside the repository through a symlink (${realResolved})`,
+    };
   }
   return { ok: true };
 }
@@ -608,6 +658,23 @@ async function setupGitHooks() {
       const adevPath = join(githooksDir, adevVariant);
       const originalHookPath = join(chainFromPath, hookName);
 
+      // Re-check containment on THIS concrete file, not just the directory
+      // string validated by validateHooksPath() above. That check only ever
+      // saw `existingHooksPath` (e.g. "hooks") — an individual file inside a
+      // legitimately-contained directory can independently be a symlink
+      // escaping the repo (`hooks/pre-commit -> ../../evil.sh`), which a
+      // directory-level check can't see. A symlink could also be introduced
+      // between config-read time and this line (TOCTOU). Skip chaining just
+      // this one hook rather than aborting the whole run — same fallback the
+      // "no original hook for this name" branch below already takes.
+      const originalEscapesRepo = escapesRepoPhysically(originalHookPath, cwd);
+      if (originalEscapesRepo) {
+        const describedTarget = resolveSymlink(originalHookPath);
+        warn(
+          `Refusing to chain ${hookName}: ${existingHooksPath}/${hookName} resolves outside the repository through a symlink (${describedTarget})`,
+        );
+      }
+
       // Write the adev hook as the .adev variant
       const needsUpdate = !existsSync(adevPath) || Buffer.compare(srcContent, readFileSync(adevPath)) !== 0;
       if (needsUpdate) {
@@ -628,7 +695,7 @@ async function setupGitHooks() {
       // `destPath`, and the wrapper this branch writes ends up invoking
       // itself: unbounded recursion on every git commit.
       const chainsToSelf = resolve(originalHookPath) === resolve(destPath);
-      if (existsSync(originalHookPath) && !chainsToSelf) {
+      if (existsSync(originalHookPath) && !chainsToSelf && !originalEscapesRepo) {
         // Pass a REPO-RELATIVE path. The wrapper is written into tracked
         // .githooks/, so an absolute path from this machine would not resolve
         // on a teammate's clone — and the old fail-open guard turned that into
@@ -1809,6 +1876,8 @@ export {
   selectProviders,
   installProviders,
   buildChainedHook,
+  validateHooksPath,
+  escapesRepoPhysically,
 };
 
 // Re-export Claude Code adapter functions for backward compatibility
