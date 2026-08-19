@@ -9,6 +9,7 @@ import {
   resolveAttemptsLogPath,
   resolveAttemptCap,
   computeDegradedBlockerHash,
+  recordDebugAttempt,
 } from '../../lib/bugfix-loop-attempts.mjs';
 
 test('readAttemptRecord returns null when no record exists for the issue (BEH-5)', () => {
@@ -47,4 +48,22 @@ test('computeDegradedBlockerHash is stable for identical input and differs for d
   const c = computeDegradedBlockerHash('failure output B');
   assert.equal(a, b);
   assert.notEqual(a, c);
+});
+
+test('recordDebugAttempt: FIXED increments attempts and sets last_verdict PASS (BEH-1)', () => {
+  const root = mkdtempSync(join(tmpdir(), 'attempts-'));
+  const rec = recordDebugAttempt(root, {}, { issueId: 'issue-1', outcome: 'FIXED' });
+  assert.equal(rec.attempts, 1);
+  assert.equal(rec.last_verdict, 'PASS');
+  assert.deepEqual(readAttemptRecord(root, 'issue-1'), rec);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('recordDebugAttempt: UNREPRODUCIBLE sets BUDGET_EXHAUSTED immediately with parked_reason (BEH-3)', () => {
+  const root = mkdtempSync(join(tmpdir(), 'attempts-'));
+  const rec = recordDebugAttempt(root, {}, { issueId: 'issue-1', outcome: 'UNREPRODUCIBLE' });
+  assert.equal(rec.attempts, 1);
+  assert.equal(rec.last_verdict, 'BUDGET_EXHAUSTED');
+  assert.equal(rec.parked_reason, 'does not reproduce');
+  rmSync(root, { recursive: true, force: true });
 });
