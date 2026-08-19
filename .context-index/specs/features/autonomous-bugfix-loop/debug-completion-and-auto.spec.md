@@ -2,7 +2,7 @@
 
 ---
 charter: autonomous-bugfix-loop
-status: review-pending
+status: review-blocked
 kind: behavioral
 risk_level: medium
 milestone: 1
