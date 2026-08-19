@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createTempDir, cleanupTempDir, writeFixture } from '../helpers.mjs';
-import { detectFramework } from '../../skills/write-test/detect-framework.mjs';
+import { detectFramework } from '../../skills/write-test/scripts/detect-framework.mjs';
 
 test('detects vitest from package.json devDependencies', async (t) => {
   const dir = await createTempDir();

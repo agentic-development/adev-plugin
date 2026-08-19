@@ -35,10 +35,10 @@ const SKILLS_ROOT = join(PLUGIN_ROOT, "skills");
 
 const PLAN_SKILL_FILES = [
   "skills/plan/SKILL.md",
-  "skills/plan/feature-mode.md",
-  "skills/plan/epic-mode.md",
-  "skills/plan/release-mode.md",
-  "skills/plan/milestone-mode.md",
+  "skills/plan/references/feature-mode.md",
+  "skills/plan/references/epic-mode.md",
+  "skills/plan/references/release-mode.md",
+  "skills/plan/references/milestone-mode.md",
 ];
 
 // ────────────────────────────────────────────────────────────────────

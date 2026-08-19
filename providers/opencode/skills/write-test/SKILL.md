@@ -239,10 +239,10 @@ Resolve these setup errors before starting the TDD cycle.
 
 ## Step 2: Framework Detection
 
-Run `detect-framework.sh` with the project root:
+Run `scripts/detect-framework.sh` with the project root:
 
 ```bash
-result=$(bash detect-framework.sh "$projectRoot")
+result=$(bash scripts/detect-framework.sh "$projectRoot")
 # Returns JSON: {"framework":"...","command":"...","filePattern":"..."} or exits 1
 ```
 
@@ -349,17 +349,17 @@ Any assertion against unseeded runtime data is a Gaming Violation — `GAMING_VI
 
 ### Gaming Violation Detection
 
-Run `detect-gaming.sh` on each test file before producing the Handoff Block:
+Run `scripts/detect-gaming.sh` on each test file before producing the Handoff Block:
 
 ```bash
-violations=$(bash detect-gaming.sh test-file1.test.ts test-file2.test.ts)
+violations=$(bash scripts/detect-gaming.sh test-file1.test.ts test-file2.test.ts)
 # Returns JSON array of violations. Exit 0 always — read the JSON for results.
 ```
 
 - Any `blocking` violation → block with the violation type, file path, line number, and matched text. Error code: `GAMING_VIOLATION`. Do not produce the Handoff Block until resolved.
 - Any `advisory` violation → log with file and line. Do not block.
 
-**The 9 canonical blocking patterns (from `detect-gaming.sh`):**
+**The 9 canonical blocking patterns (from `scripts/detect-gaming.sh`):**
 - `toBeTruthy()` as sole assertion
 - `toBeDefined()` as sole assertion
 - `toBeGreaterThanOrEqual(0)`
@@ -436,10 +436,10 @@ module is the fix.
 
 ## Step 5: Handoff Block Production
 
-Call `write-handoff.sh` with all required fields:
+Call `scripts/write-handoff.sh` with all required fields:
 
 ```bash
-bash write-handoff.sh write \
+bash scripts/write-handoff.sh write \
   "<slug>" \
   "<spec path or standalone>" \
   ".context-index/packets" \
@@ -466,7 +466,7 @@ Invoked as: `adev:write-test --verify --packet <path>`
 ### 6a. Hash Check
 
 ```bash
-result=$(bash write-handoff.sh verify "<packetPath>")
+result=$(bash scripts/write-handoff.sh verify "<packetPath>")
 # Outputs: PASS or HASH_MISMATCH:<stored>:<computed>
 ```
 
@@ -589,8 +589,8 @@ During `--verify`, also check if the implementer introduced new mocks in test fi
 
 | Helper | Purpose | Uses |
 |--------|---------|------|
-| `detect-framework.sh` | Detect test framework from package.json or test files | Step 2 |
-| `detect-gaming.sh` | Scan test files for canonical gaming patterns | Step 4 |
-| `write-handoff.sh` | Write and verify Handoff Block with SHA-256 hash | Step 5, Step 6 |
+| `scripts/detect-framework.sh` | Detect test framework from package.json or test files | Step 2 |
+| `scripts/detect-gaming.sh` | Scan test files for canonical gaming patterns | Step 4 |
+| `scripts/write-handoff.sh` | Write and verify Handoff Block with SHA-256 hash | Step 5, Step 6 |
 
 These helpers accelerate deterministic checks. The skill functions without them — Claude can apply the same rules manually if a helper is unavailable.

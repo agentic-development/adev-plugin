@@ -8,7 +8,7 @@ import { PLUGIN_ROOT } from "../helpers.mjs";
 const SKILL_PATH = join(PLUGIN_ROOT, "skills", "build", "SKILL.md");
 const skill = readFileSync(SKILL_PATH, "utf8");
 
-const RESUME_PATH = join(PLUGIN_ROOT, "skills", "build", "resume-mode.md");
+const RESUME_PATH = join(PLUGIN_ROOT, "skills", "build", "references", "resume-mode.md");
 const resumeMode = readFileSync(RESUME_PATH, "utf8");
 
 describe("adev:build SKILL.md — One-Step-Per-Invocation Dispatch", () => {

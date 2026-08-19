@@ -9,14 +9,14 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 describe("workspace-aware skills", () => {
   it("plan SKILL.md supports workspace dependency ordering", () => {
     const content = readFileSync(join(__dirname, "..", "..", "skills", "plan", "SKILL.md"), "utf8")
-      + "\n" + readFileSync(join(__dirname, "..", "..", "skills", "plan", "milestone-mode.md"), "utf8");
+      + "\n" + readFileSync(join(__dirname, "..", "..", "skills", "plan", "references", "milestone-mode.md"), "utf8");
     assert.ok(content.includes("workspace") && content.includes("topolog"),
       "Plan should support topological ordering in workspace");
   });
 
   it("plan SKILL.md defines from-depends-on-to convention", () => {
     const content = readFileSync(join(__dirname, "..", "..", "skills", "plan", "SKILL.md"), "utf8")
-      + "\n" + readFileSync(join(__dirname, "..", "..", "skills", "plan", "milestone-mode.md"), "utf8");
+      + "\n" + readFileSync(join(__dirname, "..", "..", "skills", "plan", "references", "milestone-mode.md"), "utf8");
     assert.ok(content.includes("from") && content.includes("upstream"),
       "Plan should define dependency direction");
   });

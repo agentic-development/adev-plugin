@@ -61,7 +61,7 @@ Dispatched as a single subagent-review pass grounded in Read/Bash calls against 
 source-manifest files (no plan-checkbox evidence used). Full per-criterion results:
 
 - AC1 (sequential group of 2-4 tasks → one subagent, one commit/task): **PASS** —
-  `lib/implement/batching.mjs:117-178`; `skills/implement/batched-mode.md:20`.
+  `lib/implement/batching.mjs:117-178`; `skills/implement/references/batched-mode.md:20`.
 - AC2 (every eligibility row tested, `BATCH_SOLO_FORCED` names the failing row): **PASS** — all 6
   rows covered in `tests/lib/implement/batching.test.mjs` (size, human-only, human-checkpoint,
   boundary, routing-unusable x5 variants, prior-failure).

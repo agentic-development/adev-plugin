@@ -13,12 +13,12 @@ source-manifest:
   sha: "794bc64"
   files:
     - skills/write-test/SKILL.md
-    - skills/write-test/detect-framework.mjs
-    - skills/write-test/detect-framework.sh
-    - skills/write-test/detect-gaming.mjs
-    - skills/write-test/detect-gaming.sh
-    - skills/write-test/write-handoff.mjs
-    - skills/write-test/write-handoff.sh
+    - skills/write-test/scripts/detect-framework.mjs
+    - skills/write-test/scripts/detect-framework.sh
+    - skills/write-test/scripts/detect-gaming.mjs
+    - skills/write-test/scripts/detect-gaming.sh
+    - skills/write-test/scripts/write-handoff.mjs
+    - skills/write-test/scripts/write-handoff.sh
     - tests/write-test/detect-framework.test.mjs
     - tests/write-test/detect-gaming.test.mjs
     - tests/write-test/write-handoff.test.mjs
@@ -92,9 +92,9 @@ drift_detected: true
 | Task | Description | Estimated Complexity |
 |------|-------------|---------------------|
 | Write `skills/write-test/SKILL.md` | Core skill instructions: RED phase workflow, mocking boundary rules, seed data enforcement, Gaming Violation definitions, handoff block production | Large |
-| Write `skills/write-test/detect-framework.mjs` | Reads `package.json` and scans for `*.test.*` / `*.spec.*` files to identify the test framework. Returns framework name and test command. | Small |
-| Write `skills/write-test/detect-gaming.mjs` | Regex-based scanner for Gaming Violation patterns: vacuous matchers, conditional skips, unseeded assertions. Returns list of violations with file and line. | Medium |
-| Write `skills/write-test/write-handoff.mjs` | Writes the Handoff Block to `.context-index/packets/<slug>-tests.md`. Computes SHA-256 hash of test file contents. | Small |
+| Write `skills/write-test/scripts/detect-framework.mjs` | Reads `package.json` and scans for `*.test.*` / `*.spec.*` files to identify the test framework. Returns framework name and test command. | Small |
+| Write `skills/write-test/scripts/detect-gaming.mjs` | Regex-based scanner for Gaming Violation patterns: vacuous matchers, conditional skips, unseeded assertions. Returns list of violations with file and line. | Medium |
+| Write `skills/write-test/scripts/write-handoff.mjs` | Writes the Handoff Block to `.context-index/packets/<slug>-tests.md`. Computes SHA-256 hash of test file contents. | Small |
 | Write tests for companion helpers | `tests/adev:write-test/detect-framework.test.mjs`, `detect-gaming.test.mjs`, `write-handoff.test.mjs` using `node:test` | Medium |
 
 ## Acceptance Criteria

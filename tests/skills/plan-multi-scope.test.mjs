@@ -5,9 +5,9 @@ import { join } from "path";
 import { PLUGIN_ROOT } from "../helpers.mjs";
 
 const SKILL_PATH = join(PLUGIN_ROOT, "skills", "plan", "SKILL.md");
-const MODE_ROUTER_PATH = join(PLUGIN_ROOT, "skills", "plan", "mode-router.md");
-const REVIEWER_PATH = join(PLUGIN_ROOT, "skills", "plan", "plan-reviewer-prompt.md");
-const COMPANION_DIR = join(PLUGIN_ROOT, "skills", "plan");
+const MODE_ROUTER_PATH = join(PLUGIN_ROOT, "skills", "plan", "references", "mode-router.md");
+const REVIEWER_PATH = join(PLUGIN_ROOT, "skills", "plan", "references", "plan-reviewer-prompt.md");
+const COMPANION_DIR = join(PLUGIN_ROOT, "skills", "plan", "references");
 
 /** Read SKILL.md + all companion mode files */
 function readFullSkill() {
@@ -259,7 +259,7 @@ describe("adev:plan SKILL.md — multi-scope mode detection and per-mode flows",
   it("mode-router.md companion file exists", () => {
     assert.ok(
       existsSync(MODE_ROUTER_PATH),
-      "skills/plan/mode-router.md must exist"
+      "skills/plan/references/mode-router.md must exist"
     );
   });
 

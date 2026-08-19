@@ -46,6 +46,7 @@ source-manifest:
     - tests/skills/eval-layer3-scoring-verb.test.mjs
     - tests/skills/eval-rubric-keyword-emission.test.mjs
   computed-at: "2026-08-21T00:35:25.760Z"
+drift_detected: true
 ---
 
 # Live Spec: Rubric scoring engine and adev eval score verb

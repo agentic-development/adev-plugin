@@ -5,8 +5,8 @@ import { join } from "path";
 import { PLUGIN_ROOT } from "../helpers.mjs";
 
 const SKILL_PATH = join(PLUGIN_ROOT, "skills", "plan", "SKILL.md");
-const RELEASE_MODE_PATH = join(PLUGIN_ROOT, "skills", "plan", "release-mode.md");
-const MILESTONE_MODE_PATH = join(PLUGIN_ROOT, "skills", "plan", "milestone-mode.md");
+const RELEASE_MODE_PATH = join(PLUGIN_ROOT, "skills", "plan", "references", "release-mode.md");
+const MILESTONE_MODE_PATH = join(PLUGIN_ROOT, "skills", "plan", "references", "milestone-mode.md");
 const skill = readFileSync(SKILL_PATH, "utf8") + "\n" + readFileSync(RELEASE_MODE_PATH, "utf8") + "\n" + readFileSync(MILESTONE_MODE_PATH, "utf8");
 
 // Scope assertions to companion file contents directly

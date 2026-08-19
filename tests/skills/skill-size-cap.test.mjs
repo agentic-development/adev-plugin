@@ -96,7 +96,7 @@ test("every shipped SKILL.md is under the Copilot size cap", () => {
     oversize,
     [],
     "SKILL.md files over the Copilot cap — extract a section to a " +
-      "conditional-loading companion (see skills/implement/parallel-mode.md " +
+      "conditional-loading companion (see skills/implement/references/parallel-mode.md " +
       "for the pattern):\n  " + oversize.join("\n  "),
   );
 });

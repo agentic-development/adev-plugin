@@ -86,7 +86,7 @@ describe("plan SKILL.md — infrastructure requirements section (Behaviors 1-4, 
   });
 
   it("plan-reviewer-prompt.md includes infrastructure requirements completeness check", async () => {
-    const c = await readFile("skills/plan/plan-reviewer-prompt.md", "utf8");
+    const c = await readFile("skills/plan/references/plan-reviewer-prompt.md", "utf8");
     assert.ok(
       c.includes("Infrastructure") || c.includes("infra"),
       "plan-reviewer-prompt must include an infrastructure requirements check"

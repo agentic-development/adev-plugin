@@ -5,7 +5,7 @@ import { join } from "path";
 import { PLUGIN_ROOT } from "../helpers.mjs";
 
 const SKILL_PATH = join(PLUGIN_ROOT, "skills", "build", "SKILL.md");
-const WORKSPACE_PATH = join(PLUGIN_ROOT, "skills", "build", "workspace-mode.md");
+const WORKSPACE_PATH = join(PLUGIN_ROOT, "skills", "build", "references", "workspace-mode.md");
 const skill = readFileSync(SKILL_PATH, "utf8") + "\n" + readFileSync(WORKSPACE_PATH, "utf8");
 
 describe("adev:build SKILL.md — workspace-mode build orchestration", () => {

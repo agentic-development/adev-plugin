@@ -95,7 +95,7 @@ The advisory does not block; it does not appear when `detectWorkspace` returns `
 
 ## Milestone Planning Mode (`--milestone`)
 
-> **Conditional loading:** Read `skills/plan/milestone-mode.md` for the full Milestone Planning Mode instructions.
+> **Conditional loading:** Read `skills/plan/references/milestone-mode.md` for the full Milestone Planning Mode instructions.
 
 ---
 
@@ -758,7 +758,7 @@ After writing the complete plan, dispatch a plan-reviewer subagent.
 Agent({
   description: "Review implementation plan",
   prompt: `
-    <content of plan-reviewer-prompt.md from this skill directory>
+    <content of references/plan-reviewer-prompt.md in this skill directory>
 
     ---
 
@@ -870,25 +870,25 @@ Constitution: no boundary violations detected
 
 ## Feature Mode
 
-> **Conditional loading:** Read `skills/plan/feature-mode.md` for the full Feature Mode instructions.
+> **Conditional loading:** Read `skills/plan/references/feature-mode.md` for the full Feature Mode instructions.
 
 ---
 
 ## Release Mode
 
-> **Conditional loading:** Read `skills/plan/release-mode.md` for the full Release Mode instructions.
+> **Conditional loading:** Read `skills/plan/references/release-mode.md` for the full Release Mode instructions.
 
 ---
 
 ## Milestone Mode
 
-> **Conditional loading:** Read `skills/plan/milestone-mode.md` for the full Milestone Mode instructions.
+> **Conditional loading:** Read `skills/plan/references/milestone-mode.md` for the full Milestone Mode instructions.
 
 ---
 
 ## Epic Mode
 
-> **Conditional loading:** Read `skills/plan/epic-mode.md` for the full Epic Mode and next_action Convention Table.
+> **Conditional loading:** Read `skills/plan/references/epic-mode.md` for the full Epic Mode and next_action Convention Table.
 
 ---
 

@@ -32,5 +32,5 @@ Decompose work at multiple scopes (Live Spec → Tasks; Charter → Features; Re
 ## Key Files
 
 - `skills/plan/SKILL.md`
-- `skills/plan/plan-reviewer-prompt.md`
-- `skills/plan/mode-router.md` (internal — mode detection rules)
+- `skills/plan/references/plan-reviewer-prompt.md`
+- `skills/plan/references/mode-router.md` (internal — mode detection rules)

@@ -713,7 +713,7 @@ Build status recalculation is handled automatically by `recordStepResult()`: whe
 
 ## Resume Mode
 
-> **Conditional loading:** Read `skills/build/resume-mode.md` for the full Resume Mode instructions.
+> **Conditional loading:** Read `skills/build/references/resume-mode.md` for the full Resume Mode instructions.
 
 ---
 
@@ -745,19 +745,19 @@ Await user input. "overwrite" resets the build state and proceeds. "resume" appl
 
 ## Charter Mode
 
-> **Conditional loading:** Read `skills/build/charter-mode.md` for the full Charter Mode instructions.
+> **Conditional loading:** Read `skills/build/references/charter-mode.md` for the full Charter Mode instructions.
 
 ---
 
 ## Milestone Mode
 
-> **Conditional loading:** Read `skills/build/milestone-mode.md` for the full Milestone Mode instructions.
+> **Conditional loading:** Read `skills/build/references/milestone-mode.md` for the full Milestone Mode instructions.
 
 ---
 
 ## Workspace-Mode Build (`--milestone` at Workspace Root)
 
-> **Conditional loading:** Read `skills/build/workspace-mode.md` for the full Workspace-Mode Build instructions.
+> **Conditional loading:** Read `skills/build/references/workspace-mode.md` for the full Workspace-Mode Build instructions.
 
 ---
 

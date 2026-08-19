@@ -26,7 +26,7 @@ Explore ideas and formalize them into structured specifications before any code 
 ## Key Files
 
 - `skills/brainstorm/SKILL.md`
-- `skills/brainstorm/charter-reviewer-prompt.md`
+- `skills/brainstorm/references/charter-reviewer-prompt.md`
 - `skills/specify/SKILL.md`
 - `templates/charter-template.md`
 - `templates/live-spec-template.md`

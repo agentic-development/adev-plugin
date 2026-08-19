@@ -6,7 +6,7 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
-const skill = readFileSync(join(ROOT, "skills", "implement", "batched-mode.md"), "utf8");
+const skill = readFileSync(join(ROOT, "skills", "implement", "references", "batched-mode.md"), "utf8");
 const skillBody = readFileSync(join(ROOT, "skills", "implement", "SKILL.md"), "utf8");
 
 describe("implement batched-mode companion", () => {
@@ -57,11 +57,11 @@ describe("SKILL.md batched-dispatch wiring", () => {
   });
 
   it("points to batched-mode.md before the per-task loop begins", () => {
-    assert.match(skillBody, /Read `skills\/implement\/batched-mode\.md`/);
+    assert.match(skillBody, /Read `skills\/implement\/references\/batched-mode\.md`/);
   });
 
   it("documents all three batch advisories in the base skill or its companion", () => {
-    const combined = skillBody + "\n" + readFileSync(join(ROOT, "skills", "implement", "batched-mode.md"), "utf8");
+    const combined = skillBody + "\n" + readFileSync(join(ROOT, "skills", "implement", "references", "batched-mode.md"), "utf8");
     for (const advisory of ["BATCH_DISPATCHED", "BATCH_SOLO_FORCED", "BATCH_ABORTED"]) {
       assert.match(combined, new RegExp(advisory));
     }

@@ -48,7 +48,7 @@ Before starting, verify all five conditions. If any fails, stop and tell the use
    adev report --type step --spec <spec-path> --step implement --status failed --verdict FAIL
    ```
 
-   `--verdict FAIL` is required, not decorative — a `step_failed` without one is overwritten by the verdict synthesized from the actor reports on the log, so a run that died partway projects as passing and opens the `validate` gate on unfinished work. For the enumerated abort paths that MUST emit it, follow `failure-path-exit-event.md` from this skill directory.
+   `--verdict FAIL` is required, not decorative — a `step_failed` without one is overwritten by the verdict synthesized from the actor reports on the log, so a run that died partway projects as passing and opens the `validate` gate on unfinished work. For the enumerated abort paths that MUST emit it, follow `references/failure-path-exit-event.md` in this skill directory.
 
    **Already covered — do not double-emit.** Per-task escalations terminate through the Step 2d blocker path (`plan_task` `blocked`): the blocker-flag protocol, `MISSING_DEPTH_ASSIGNMENT`, and `LOOP_BUDGET_EXHAUSTED` / `LOOP_NO_PROGRESS` / `LOOP_REGRESSED`. Emit the step-level failed event only when the *whole skill* stops.
 
@@ -295,7 +295,7 @@ For each task in dependency order:
 
 Before the loop begins, `adev implement batches --plan <plan-path> [--max-batch <n>] [--no-batch]` resolves which tasks form a batch and which dispatch solo.
 
-> **Conditional loading:** Read `skills/implement/batched-mode.md` for the full Batched Task Dispatch instructions.
+> **Conditional loading:** Read `skills/implement/references/batched-mode.md` for the full Batched Task Dispatch instructions.
 > Load it only when at least one batch forms; a plan with no eligible `(sequential)` group runs the loop below exactly as written, per task.
 
 #### 2.pre: Implementation Probe
@@ -409,7 +409,7 @@ Build the implementer subagent prompt with these sections in order:
 5. **Spec excerpt.** The acceptance criteria from the Live Spec that this task addresses.
 5b. **Shared Test Helper Inventory.** The `## Shared Test Helper Inventory` section assembled in step 2a item 7, verbatim, when it is non-empty. Omit the section entirely when the inventory is empty. This is what stops a contextless implementer from re-deriving fixtures the project already has.
 6. **Scope discipline.** Only make changes directly required by the task. Do not refactor surrounding code, add abstractions, create helper files, or introduce patterns unless the task explicitly requires it. If you notice improvements outside the task scope, note them in your Concerns section but do not implement them. **Cross-repo isolation constraint (workspace mode):** When operating inside a workspace, do NOT modify files in sibling repos. Cross-repo reference context is read-only — it informs your implementation but all changes must be confined to the current repo. If a task requires changes in a sibling repo, report it as NEEDS_CONTEXT with a note identifying the sibling repo and required changes.
-7. **TDD mandate.** This section is non-negotiable. Include the full content of `tdd-mandate.md` from this skill directory.
+7. **TDD mandate.** This section is non-negotiable. Include the full content of `references/tdd-mandate.md` in this skill directory.
 
    **Write-test subagent dispatch:** When dispatching write-test subagents, set `ADEV_DISPATCHED_BY=implement` in the subagent environment so write-test can detect dispatch mode and skip its own preflight (implement already verified infrastructure).
 
@@ -609,7 +609,7 @@ Dispatch a fresh code quality reviewer subagent with:
 - Secondary specialist matches from step 2a (so the reviewer checks those domains)
 - Instructions to tag every Critical or Important finding with a stable short id (for example `cq-1`, `cq-2`) and to reuse the same id across cycles for the same underlying finding. The ids are what make the convergence check below meaningful — without them, "the same three issues came back" is indistinguishable from "three different issues".
 
-The code quality reviewer checks the items in `code-quality-checklist.md` from this skill directory.
+The code quality reviewer checks the items in `references/code-quality-checklist.md` in this skill directory.
 
 **Minor issues:** Noted but do not block progress.
 
@@ -678,12 +678,12 @@ After both reviews pass:
 
 ### Step 2.5: Parallel Group Execution
 
-> **Conditional loading:** Read `skills/implement/parallel-mode.md` for the full Parallel Group Execution instructions.
+> **Conditional loading:** Read `skills/implement/references/parallel-mode.md` for the full Parallel Group Execution instructions.
 > Load it only when `--parallel` is passed; it is not needed on a serial run.
 
 ### Step 2-post: Integration Gate
 
-> **Conditional loading:** Read `skills/implement/integration-gate.md` for the full Integration Gate instructions.
+> **Conditional loading:** Read `skills/implement/references/integration-gate.md` for the full Integration Gate instructions.
 > Load it only when the plan declares integration-tier gates; it is not needed on a serial run.
 
 ### Step 3: Final Review

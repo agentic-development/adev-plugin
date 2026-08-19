@@ -15,7 +15,7 @@ source-manifest:
     - lib/migrate-state-artifacts.mjs
     - lib/milestones.mjs
     - skills/build/SKILL.md
-    - skills/build/resume-mode.md
+    - skills/build/references/resume-mode.md
     - skills/debug/SKILL.md
     - skills/hygiene/SKILL.md
     - skills/implement/SKILL.md

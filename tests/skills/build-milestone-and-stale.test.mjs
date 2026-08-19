@@ -6,7 +6,7 @@ import { join } from "path";
 import { PLUGIN_ROOT } from "../helpers.mjs";
 
 const SKILL_PATH = join(PLUGIN_ROOT, "skills", "build", "SKILL.md");
-const MILESTONE_PATH = join(PLUGIN_ROOT, "skills", "build", "milestone-mode.md");
+const MILESTONE_PATH = join(PLUGIN_ROOT, "skills", "build", "references", "milestone-mode.md");
 const skill = readFileSync(SKILL_PATH, "utf8") + "\n" + readFileSync(MILESTONE_PATH, "utf8");
 
 describe("adev:build SKILL.md — milestone filter and stale build detection", () => {
