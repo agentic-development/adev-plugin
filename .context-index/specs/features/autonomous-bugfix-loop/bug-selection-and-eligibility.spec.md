@@ -2,7 +2,7 @@
 
 ---
 charter: autonomous-bugfix-loop
-status: review-passed
+status: implemented
 kind: behavioral
 risk_level: medium
 milestone: 1
@@ -10,6 +10,18 @@ revision: 6
 charter-revision: 7
 created: 2026-08-19
 updated: 2026-08-19
+source-manifest:
+  sha: "5545be7"
+  files:
+    - docs/cli-reference.md
+    - lib/cli/issues-next.mjs
+    - lib/cli/issues-stale.mjs
+    - lib/cli/issues.mjs
+    - lib/issues/eligibility.mjs
+    - lib/issues/interface.mjs
+    - templates/manifest-template.yaml
+    - tests/issues/next.test.mjs
+  computed-at: "2026-08-19T23:50:53.225Z"
 ---
 
 # Live Spec: Bug Selection Verb and Eligibility Filter
