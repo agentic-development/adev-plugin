@@ -48,6 +48,14 @@ over an autonomous agent with repo write access.
   label set: an issue becomes a local WorkItem only once both `bug` and `help wanted`
   are applied (manifest-overridable pair). Outbound writeback posts comments on
   claim/fix/park; it never changes GitHub issue state, labels, or assignees.
+- **Modular tracker-provider adapter interface** — the bridge is built behind a
+  `TrackerProviderAdapter` interface and registry, mirroring `task-management`'s own
+  `IssueManagerInterface`/backend-registry pattern (new backends added by implementing
+  the interface and registering, no core changes). GitHub is the only adapter
+  *implemented and shipped* by this charter; the interface exists so a future GitLab
+  Issues or Azure DevOps Boards adapter can be added without touching
+  `/adev:bugfix-loop` or task-management core. Shipping such an adapter would still
+  need its own task-management charter carve-out first — see Out of Scope.
 - **Documentation for composing with Claude Code's `/goal`** — an optional,
   Claude-Code-specific outer wrapper for genuinely hands-off (close-the-laptop) runs.
   Not a dependency of the core loop, which is self-contained and portable without it.
@@ -67,6 +75,11 @@ over an autonomous agent with repo write access.
 - **Jira, Linear, or any external tracker beyond GitHub Issues.** Still excluded per
   `task-management/charter.md`'s Out of Scope — only GitHub Issues was carved out
   (revision 7), and only for this module's use.
+- **Implementing a GitLab, Azure DevOps, or other second tracker-provider adapter.**
+  The adapter *interface* is in scope (see In Scope); a concrete second
+  implementation is not. Shipping one later requires its own `task-management`
+  charter carve-out first, same process this charter's GitHub carve-out went through
+  — the interface existing does not pre-approve any specific additional provider.
 - **Full GitHub issue state mirroring** — assignees, milestones, projects, and
   auto-close/reopen/relabel are not part of this charter. Outbound writeback is
   comment-only.
@@ -93,7 +106,8 @@ over an autonomous agent with repo write access.
 |--------|-------------|----------------|
 | BugfixLoopRun | One invocation of `/adev:bugfix-loop` across N self-re-invoked turns | run_id, started_at, max_bugs, max_turns, bugs_attempted[], status (running/complete/budget_exhausted) |
 | AttemptRecord | Per-issue attempt-cap state, independent of the board schema | issue_id, attempts, last_verdict (PASS/CONTINUE/NO_PROGRESS/REGRESSED/BUDGET_EXHAUSTED), parked_reason, updated_at |
-| GitHubSyncLink | Mapping between a GitHub issue and a local WorkItem | github_issue_number, local_issue_id, accepted_at (when both gate labels first seen), last_synced_at, last_comment_id |
+| TrackerSyncLink | Mapping between an external tracker issue and a local WorkItem, provider-agnostic | provider (e.g. `"github"`), external_ref, local_issue_id, accepted_at (when gate condition first met), last_synced_at, last_comment_id |
+| TrackerProviderAdapter | Interface contract implemented per tracker (GitHub is the only shipped implementation) | provider name, gate-check fn, inbound-fetch fn, outbound-writeback fn — mirrors `IssueManagerInterface`'s adapter shape |
 
 ### Relationships
 
@@ -101,10 +115,14 @@ over an autonomous agent with repo write access.
   attempted WorkItem produces or updates one AttemptRecord.
 - An AttemptRecord belongs to exactly one WorkItem by issue id and persists across
   multiple BugfixLoopRuns until the issue closes or a human resets it.
-- A GitHubSyncLink connects exactly one GitHub issue to exactly one local WorkItem,
-  created only when both gate labels are present at sync time.
-- A WorkItem created via the GitHub bridge carries an origin marker referencing its
-  GitHubSyncLink, so outbound writeback knows where to comment.
+- A TrackerSyncLink connects exactly one external tracker issue to exactly one local
+  WorkItem, created only when its provider adapter's gate condition is met (for the
+  GitHub adapter: both `bug` and `help wanted` labels present).
+- A TrackerSyncLink's `provider` field selects which TrackerProviderAdapter handles its
+  inbound sync and outbound writeback; the loop and task-management never branch on
+  provider directly.
+- A WorkItem created via a tracker bridge carries an origin marker referencing its
+  TrackerSyncLink, so outbound writeback knows where to comment.
 
 ### Invariants
 
@@ -119,6 +137,9 @@ over an autonomous agent with repo write access.
   `help wanted` (or the manifest-configured equivalent pair) are present at sync time.
 - Outbound writeback to GitHub is comment-only; the loop never changes GitHub issue
   state, labels, or assignees.
+- No tracker-provider-specific logic (label names, API shape, comment format) lives
+  outside its own `TrackerProviderAdapter` implementation; `/adev:bugfix-loop` and
+  task-management interact only with the adapter interface and `TrackerSyncLink`.
 - The loop never attempts an issue whose blast radius touches its own dependency
   machinery (review gate, convergence detector, retry loop, or the loop skill itself),
   regardless of priority or filter match.
@@ -133,8 +154,9 @@ over an autonomous agent with repo write access.
 | Per-Issue Attempt Cap | Reused `loop-convergence.mjs` bounding, keyed per issue, persisted in `lifecycle-state/` | must-have | 1 | — |
 | `/adev:bugfix-loop` Skill | Self-re-invoking, one-bug-per-turn loop draining eligible bugs; Load Skill Extensions block included | must-have | 1 | — |
 | Eligibility Filter | Fixed priority/blast-radius heuristic (P2/P3, single-module) gating loop attempts — the safety boundary | must-have | 1 | — |
-| GitHub Triage-Gated Inbound Sync | Issues labeled `bug`+`help wanted` become local WorkItems | must-have | 2 | — |
-| GitHub Outbound Comment Writeback | Claim/fix/park state posted as GitHub comments | must-have | 2 | — |
+| Tracker Provider Adapter Interface | `TrackerProviderAdapter` contract + registry; GitHub is the only shipped implementation | must-have | 2 | — |
+| GitHub Triage-Gated Inbound Sync | Issues labeled `bug`+`help wanted` become local WorkItems, via the GitHub adapter | must-have | 2 | — |
+| GitHub Outbound Comment Writeback | Claim/fix/park state posted as GitHub comments, via the GitHub adapter | must-have | 2 | — |
 | `/goal` Composition Docs | Documentation showing how to wrap `/adev:bugfix-loop` in `/goal` for hands-off Claude Code runs | nice-to-have | 1 | — |
 
 ## Deferred Capabilities
@@ -145,6 +167,7 @@ over an autonomous agent with repo write access.
 | Auto-Retry Policy for Parked Bugs | Whether/when parked bugs re-enter the loop automatically vs. staying parked until a human clears them — deferred to avoid a slow-motion grinding failure | — | — |
 | GitHub Issue State Mirroring | Auto-close/reopen/relabel GitHub issues based on loop state, beyond comment writeback | — | GitHub Outbound Comment Writeback |
 | Cross-Harness Outer Drivers | Equivalents to Claude Code's `/goal` for opencode/codex/cursor/copilot hands-off runs | — | — |
+| Second Tracker Provider Adapter (GitLab, Azure DevOps, etc.) | Interface exists and is proven by the GitHub adapter; a second implementation is deferred until there's demand, and needs its own task-management charter carve-out first | — | Tracker Provider Adapter Interface |
 
 ## Interface Contracts
 
@@ -157,6 +180,7 @@ over an autonomous agent with repo write access.
 | `/adev:debug --auto` | skill flag | Suppresses the interactive ADR-drafting prompt in Phase 6 |
 | `/adev:bugfix-loop [--max-bugs N] [--max-turns N] [--github-sync]` | skill | User-facing entry point for the unattended loop; self-re-invokes until board drained or budget hit |
 | GitHub Issues sync bridge | CLI verb (signature defined in Live Spec) | Pulls `bug`+`help wanted` labeled issues into the local board; posts outbound status comments |
+| `TrackerProviderAdapter` | internal interface (module contract, not a network endpoint) | Per-provider adapter contract (gate check, inbound fetch, outbound writeback); GitHub is the only implementation shipped by this charter |
 
 ### Consumed APIs
 
@@ -177,3 +201,4 @@ over an autonomous agent with repo write access.
 | Resilience | GitHub API failures (rate limit, outage) degrade to local-board-only operation; the loop must never block on bridge availability |
 | Auditability | Every claim/fix/park decision is traceable via `lifecycle-state/` JSONL records and, for GitHub-origin issues, outbound comments |
 | Boundedness | Both per-run (`max-bugs`/`max-turns`) and per-issue (attempt cap) budgets are enforced; the loop must terminate on a transcript-provable condition |
+| Extensibility | New tracker providers (GitLab, Azure DevOps, etc.) are added by implementing `TrackerProviderAdapter` and registering it, with no changes to `/adev:bugfix-loop` or task-management core — same pattern as `IssueManagerInterface`'s backend registry |
