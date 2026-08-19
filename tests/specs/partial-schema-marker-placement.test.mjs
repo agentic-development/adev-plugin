@@ -38,7 +38,6 @@ import { PLUGIN_ROOT, readSkillSurface } from "../helpers.mjs";
 import { run as frontmatterPresent } from "../../lib/diagnostics/tier1/frontmatter-present.mjs";
 
 const SPECIFY_SKILL = join(PLUGIN_ROOT, "skills", "specify", "SKILL.md");
-const PLAN_SKILL = join(PLUGIN_ROOT, "skills", "plan", "SKILL.md");
 
 /** The reader's own regex (lib/cli/partial.mjs readSchemaMarker). */
 const MARKER_RE = /partial_schema:\s*([a-z][a-z0-9-]{0,31}@[0-9]{1,3})/;
@@ -131,7 +130,10 @@ test("a frontmatter-key marker satisfies the diagnostic and the reader together"
 });
 
 test(".plan.md keeps the HTML-comment marker — plans carry no frontmatter contract", () => {
-  const body = readFileSync(PLAN_SKILL, "utf8");
+  const body = readFileSync(
+    join(PLUGIN_ROOT, "skills", "plan", "references", "steps", "step-5-write-the-plan.md"),
+    "utf8",
+  );
   const example = fencedBlockAfter(body, /partial_schema: plan@1/);
   const firstMeaningful = example.split(/\r?\n/).find((l) => l.trim() !== "");
   assert.match(

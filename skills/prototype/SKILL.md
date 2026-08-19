@@ -8,6 +8,18 @@ allowed-tools: [Read, Glob, Grep, Write, Bash, Edit]
 
 Generate tiered prototypes (wireframe, mockup, functional) from a Feature Charter, serve them via localhost for browser preview, iterate on conversational feedback, and persist or discard the result.
 
+### Load Skill Extensions
+
+**Load Skill Extensions:** Load any skill extension instructions before proceeding:
+
+```bash
+adev skill-ext load --skill prototype
+```
+
+If the output is not `__NONE__`, incorporate it as additional standing instructions that apply to this skill's entire execution. Frame it as: *"The following skill extension instructions apply to this invocation (source: installed domain extensions and/or project-level overrides)."* If the output is `__NONE__`, continue normally.
+
+---
+
 ## Arguments
 
 - `--module <name>`: Module name. Locates charter at `.context-index/specs/features/<name>/charter.md`. Required when invoked standalone.
@@ -42,307 +54,51 @@ When brainstorm context is present, skip the charter lookup in Step 0 entirely �
 
 ### Step 0: Standalone Entry
 
-This step runs only when `/adev:prototype` is invoked directly (not dispatched from `/adev:brainstorm`). When brainstorm context is provided, skip to Step 1.
+Applies only when invoked directly rather than from brainstorm.
 
-#### 0a. Module Resolution
-
-**When `--module` is provided:**
-
-Validate the module name via the CLI:
-
-```bash
-adev prototype validate-module-name --module <module>
-```
-
-Stdout is the literal string `true` (valid kebab-case, ≤ 64 chars) or `false`. Exit 0 always.
-
-If stdout is `false`: error and stop.
-
-> Invalid module name: `<value>`. Must be kebab-case (lowercase letters, numbers, hyphens). Error code: `INVALID_MODULE_NAME`.
-
-If stdout is `true`: locate the charter at `.context-index/specs/features/<module>/charter.md`. If the charter file does not exist:
-
-> No charter found at `.context-index/specs/features/<module>/charter.md`. Error code: `CHARTER_NOT_FOUND`.
-
-**When `--module` is NOT provided:**
-
-Discover available charters via the CLI:
-
-```bash
-adev prototype discover-charters
-```
-
-Stdout is a single JSON array of `{module, title, path}` objects — one per charter found under `.context-index/specs/features/`. Handle the result based on the number of charters found:
-
-- **Zero charters:** Error and stop. Error code: `NO_CHARTERS`.
-  > No charters found under `.context-index/specs/features/`. Run `/adev:brainstorm` first to create a charter.
-
-- **One charter:** Auto-select with confirmation:
-  > Using charter: `<module>` — `<charter title>`. Proceed? (yes / pick a different one)
-  
-  If the user confirms, use that charter. If they decline, stop (no other charters to pick from).
-
-- **Multiple charters:** List and prompt:
-  > Available charters:
-  >   1. `<module>` — `<charter title>`
-  >   2. `<module>` — `<charter title>`
-  > → Which module should this prototype target? (number or name)
-
-#### 0b. Context Construction
-
-Once a module is resolved:
-
-1. Load the charter at `.context-index/specs/features/<module>/charter.md`. Extract approach context from the **Business Intent** and **Capability Map** sections.
-2. Load `.context-index/constitution.md` for constraint validation. If missing: error and stop. Error code: `NO_CONSTITUTION`.
-   > Constitution not found. Run `/adev:init` to set up the context index.
-3. Load `.context-index/platform-context.yaml` for framework defaults. If missing: warn and proceed. Error code: `NO_PLATFORM_CONTEXT`.
-   > No platform context found. Framework defaults will not be pre-selected.
-
-#### 0c. Closed Charter Warning
-
-Check the charter's YAML frontmatter for `status: closed`. If closed, warn but do not block:
-
-> Note: The `<module>` charter is closed. You can still prototype against it, but consider whether a new charter is needed.
-
-Proceed to Step 1.
+> **Conditional loading:** Read `skills/prototype/references/steps/step-0-standalone-entry.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Step 1: Load Context and Heuristics
 
-1. Read the charter at `.context-index/specs/features/<module>/charter.md`.
-2. Read `.context-index/constitution.md` for constraint validation.
-3. Read `.context-index/platform-context.yaml` for framework defaults (if it exists).
-4. Load module heuristics via the CLI:
+Loads the Feature Charter and prior prototype heuristics.
 
-```bash
-adev heuristics retrieve --module <module> --format text
-```
-
-Stdout is either rendered markdown blocks (one per heuristic, separated by blank lines) or the literal sentinel `__NONE__` when no heuristics match. The verb exits 0 regardless — retrieval failures degrade to `__NONE__` so heuristic loading stays non-blocking.
-
-If heuristics are found (output is not `__NONE__`), present them to the user:
-
-> **Previous design learnings for this module:**
->
-> (heuristic summaries)
-
-If `retrieveHeuristics()` fails or returns empty, proceed silently. Do not block the session.
-
-**Load Skill Extensions:** Load any skill extension instructions before proceeding:
-
-```bash
-adev skill-ext load --skill prototype
-```
-
-If the output is not `__NONE__`, incorporate it as additional standing instructions that apply to this skill's entire execution. Frame it as: *"The following skill extension instructions apply to this invocation (source: installed domain extensions and/or project-level overrides)."* If the output is `__NONE__`, continue normally.
+> **Conditional loading:** Read `skills/prototype/references/steps/step-1-load-context.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Step 2: Tier Selection
 
-**If `--tier` was provided as an argument:**
+Chooses wireframe / mockup / functional.
 
-Validate that the value is one of `wireframe`, `mockup`, or `functional`. If valid, use it directly — skip the interactive prompt. If invalid: error and stop (do NOT re-prompt). Error code: `INVALID_TIER`.
-
-> Invalid tier: `<value>`. Options: wireframe, mockup, functional.
-
-**If `--framework` was provided as an argument:**
-
-- If `--tier functional` (or functional tier was selected interactively): validate that the value is one of `react`, `vue`, `svelte`, or `vanilla`. If valid, skip the framework prompt. If invalid: error and stop (do NOT re-prompt). Error code: `INVALID_FRAMEWORK`.
-- If the tier is NOT functional: ignore `--framework` with a note. Error code: `FRAMEWORK_IGNORED`.
-  > Note: `--framework` only applies to the functional tier. Ignoring for `<tier>` tier.
-
-**If `--tier` was NOT provided,** present three tier options:
-
-> **Choose a prototype tier:**
->
-> 1. **Wireframe** — Bare HTML with semantic structure. Shows information hierarchy, not visual design.
-> 2. **Mockup** — HTML + CSS with visual styling. Conveys design intent (colors, typography, spacing).
-> 3. **Functional** — Interactive SPA with mock data. Choose a framework (React, Vue, Svelte, vanilla JS). No build step — CDN imports only.
->
-> Enter 1, 2, or 3 (or tier name):
-
-**Validation:**
-- If user enters invalid input interactively: re-prompt with valid options. Error code: `INVALID_TIER`.
-- If `--tier` was passed with an invalid value: error with valid options, do NOT re-prompt.
-
-**If functional tier is selected**, ask for framework preference:
-
-> **Choose a framework:**
-> 1. React
-> 2. Vue
-> 3. Svelte
-> 4. Vanilla JS
->
-> Enter 1-4 (or framework name):
-
-- Invalid framework interactively: re-prompt. Error code: `INVALID_FRAMEWORK`.
-- Invalid `--framework` CLI argument: error, do not re-prompt.
-
-**The tier is immutable for the session.** Changing tier requires a new invocation.
+> **Conditional loading:** Read `skills/prototype/references/steps/step-2-tier-selection.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Step 3: Generate Prototype Files
 
-Generate prototype files into a temp directory:
+Renders the tier-appropriate prototype files.
 
-```javascript
-import { mkdtempSync } from 'fs';
-import { join } from 'path';
-import { tmpdir } from 'os';
-const tmpDir = mkdtempSync(join(tmpdir(), 'adev-prototype-'));
-```
-
-**Per-tier generation rules:**
-
-**Wireframe:**
-- Semantic HTML only (headings, lists, sections, nav, article, aside, footer)
-- Basic layout resets (box-sizing, margin: 0) — no visual styling
-- Placeholder text where content will go
-- Set `framework = 'html'`
-
-**Mockup:**
-- HTML + CSS with visual styling (colors, typography, spacing, borders)
-- Convey design intent — this is what the feature will look like
-- No JavaScript
-- Set `framework = 'html'`
-
-**Functional:**
-- Interactive SPA with the chosen framework
-- CDN imports only (no build step, no npm install)
-- Mock data for dynamic content
-- Single `index.html` entry point with all framework code
-- Set `framework` to the chosen framework name
-
-Write all generated files into the temp directory.
+> **Conditional loading:** Read `skills/prototype/references/steps/step-3-generate-files.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Step 4: Start HTTP Server
 
-Start the server via the CLI. The verb keeps the HTTP server alive for the rest of the skill session (the process must be backgrounded so the parent can read the printed port):
+Serves the prototype on localhost for review.
 
-```bash
-adev prototype start-server --dir <tmpDir> &
-```
-
-The verb prints a single JSON object `{port: <number|null>}` on stdout. Port range is 3210–3219; `null` indicates all ports are unavailable or permission was denied. Read the port from the first line of stdout, then continue with the feedback loop.
-
-**If server starts successfully (port is a number):**
-
-> Prototype server running at **http://127.0.0.1:<port>/**
-> Open this URL in your browser to preview.
-
-**If the printed `port` is `null` (all ports busy or permission error):**
-
-Fall back to file-path mode:
-
-> Could not start HTTP server (ports 3210-3219 unavailable or permission denied).
-> Open the prototype files directly: `<tmpDir>/index.html`
-
-Continue with the feedback loop regardless. Error codes: `SERVER_PORT_EXHAUSTED`, `SERVER_PERMISSION_ERROR`.
+> **Conditional loading:** Read `skills/prototype/references/steps/step-4-start-server.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Step 5: Feedback Loop
 
-This is a conversational loop. The initial generation counts as iteration 1.
+The conversational iteration rounds with the user.
 
-**Visual Reference Tracker:** At the start of the feedback loop, create a visual reference tracker. Derive `<ADEV_ROOT>` from this skill file by stripping `skills/prototype/` from its path.
-
-```javascript
-import { createVisualReferenceTracker } from '<ADEV_ROOT>/lib/visual-references.mjs';
-const tracker = createVisualReferenceTracker();
-```
-
-**On each feedback round:**
-
-1. Wait for user input.
-2. If user sends empty feedback: re-prompt with:
-   > Please describe what you'd like changed, or say "done" to finish.
-   Error code: `EMPTY_FEEDBACK`.
-3. If user indicates approval (e.g., "looks good", "approved", "done", "ship it"):
-   - End the feedback loop.
-   - Proceed to Step 6 (Persistence).
-   - The HTTP server remains active during the persistence prompt so the user can take a final look.
-4. If user provides change feedback:
-   - Increment `iteration_number` by 1.
-   - Clear ALL files and subdirectories in the temp directory (clean-slate regeneration — prevents stale files from prior iterations).
-   - Regenerate prototype files based on feedback.
-   - Notify user:
-     > Prototype updated (iteration <N>). Refresh your browser to see the changes.
-   - Continue the loop.
-5. **Visual reference detection:** If the user's input contains a file path ending in `.png`, `.jpg`, `.jpeg`, or `.webp`, handle it as a visual reference capture (see Step 5a below). Visual reference capture can happen alongside change feedback — process both the reference and any design feedback in the same round.
+> **Conditional loading:** Read `skills/prototype/references/steps/step-5-feedback-loop.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Step 5a: Visual Reference Capture
 
-Visual references can be captured at any point during the active session — during the feedback loop, at session start, or after approval. When a user provides an image file path:
+Captures screenshots of the running prototype.
 
-1. **Validate the source path.** Derive `<ADEV_ROOT>` from this skill file by stripping `skills/prototype/` from its path.
-
-```javascript
-import { validateSourcePath, copyVisualReference } from '<ADEV_ROOT>/lib/visual-references.mjs';
-const result = validateSourcePath(sourcePath, projectRoot);
-```
-
-   - If `result.valid === false`:
-     - `IMAGE_NOT_FOUND`: "File not found: `<path>`. Please check the path and try again."
-     - `IMAGE_SYMLINK`: "Path is a symlink. Please provide a direct file path."
-     - `IMAGE_TOO_LARGE`: "Image is too large (`<size>` MB, max 10 MB). Please resize and retry."
-     - `UNSUPPORTED_FORMAT`: "Unsupported image format: `.<ext>`. Supported formats: PNG, JPG, WebP. Please convert and re-provide."
-     - Do not save the image. Continue the feedback loop.
-   - If `result.external === true`: Prompt the user:
-     > Image is outside the project directory. Proceed? (yes/no)
-     If the user declines, skip the capture and continue.
-
-2. **Prompt for description if not provided.** If the user did not include a description with the image path:
-   > What does this image show? (used for the filename, e.g., 'homepage-hero-layout')
-   Wait for the user's description before proceeding.
-
-3. **Copy the reference.**
-
-```javascript
-const copyResult = copyVisualReference({
-  sourcePath,
-  module,
-  description,
-  projectRoot,
-});
-```
-
-4. **Track and confirm.**
-
-```javascript
-tracker.add({ path: copyResult.destinationPath, description });
-```
-
-   Confirm to the user:
-   > Saved visual reference to `<copyResult.destinationPath>`
+> **Conditional loading:** Read `skills/prototype/references/steps/step-5a-visual-reference-capture.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Step 6: Persistence Choice
 
-After the feedback loop ends, present the persistence choice:
+Asks whether to persist under .adev/prototype/ or discard.
 
-> **Keep these prototype files?**
->
-> - **Keep** — Saved to `.adev/prototype/<module>/` (gitignored, stays in your project)
-> - **Discard** — Temp files removed, nothing persisted
->
-> Enter keep or discard:
-
-**Keep (project persistence):**
-
-1. Re-validate the module name against `^[a-z0-9][a-z0-9-]*$` before path construction (defense-in-depth).
-2. Copy all files from the temp directory to `.adev/prototype/<module>/`.
-3. Ensure `.adev/` is gitignored via the CLI:
-
-```bash
-adev prototype ensure-gitignore
-```
-
-The verb appends `.adev/` to the project's `.gitignore` (idempotent — checks for existing entries and parent globs first). Stdout is `OK` on success; exit 1 only when `.gitignore` is unwritable.
-
-4. Remove the temp directory.
-5. Stop the HTTP server.
-
-If `.adev/` directory is not writable: error with code `PERSIST_WRITE_ERROR`. Suggest discard or fix permissions.
-
-**Discard (ephemeral persistence):**
-
-1. Remove the temp directory and all prototype files.
-2. Stop the HTTP server.
+> **Conditional loading:** Read `skills/prototype/references/steps/step-6-persistence-choice.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Step 7: Cleanup
 
@@ -354,41 +110,9 @@ Stop the server. The server is owned by the backgrounded `adev prototype start-s
 
 ### Step 8: Heuristics Capture
 
-After the prototype session completes (keep or discard), **propose** design decisions based on what you observed during the session. Review the prototyping iterations, user feedback, and design choices made, then present a numbered list:
+Records durable lessons from the prototype session.
 
-> **Design decisions from this session:**
->
-> 1. [decision derived from prototyping — e.g., "dark theme works well for developer tutorials"]
-> 2. [decision derived from prototyping — e.g., "nav bar with step numbers is clear navigation"]
-> 3. ...
->
-> Would you like to save these as heuristics? You can edit, remove, add, or say "skip" to proceed without saving.
-
-Propose 2-4 decisions. Base them on concrete observations: layout choices that worked, user feedback during iterations, visual patterns that were confirmed or rejected, interaction patterns that emerged. Do not ask the user to recall — you were present for the entire session.
-
-**Handling responses:**
-
-- **User provides "none", "skip", or empty response:** Proceed to Step 8b (Return to Brainstorm) or Step 9 (Session Summary) without saving heuristics. This is not an error — not every session produces reusable insights.
-
-- **User confirms or edits the proposed decisions (1-4 total):** For each decision, invoke `/adev:learn` to persist it as a module-scoped heuristic:
-  - The decision text as the heuristic content
-  - Module scope set to the current `<module>` (from brainstorm context or `--module` argument)
-  - Tag with `source: prototype` to identify the heuristic's origin
-  - Include the prototype tier and iteration number where the decision emerged (if identifiable)
-  - Track `heuristics_saved` count for the return contract (Step 8b)
-
-  If `/adev:learn` fails for any heuristic (import error, write error), this is non-blocking:
-  - Log the error
-  - Report: "Heuristic capture failed — you can save these manually with `/adev:learn` later"
-  - Proceed to session completion (do not block the prototype session). Error code: `HEURISTIC_SAVE_ERROR`.
-
-- **User provides more than 4 design decisions:** Ask the user to prioritize:
-
-  > You've identified N decisions. To keep heuristics focused, please select the 4 most important ones, or confirm you want to save all N.
-
-  If the user confirms saving all, proceed. If the user narrows to 4, save only the selected ones.
-
-- **User provides 0 decisions after the prompt (blank input):** Same as "skip" — proceed without saving heuristics.
+> **Conditional loading:** Read `skills/prototype/references/steps/step-8-heuristics-capture.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Step 8b: Return to Brainstorm
 
@@ -416,26 +140,9 @@ After returning the result, the brainstorm skill handles presentation and contin
 
 ### Step 9: Session Summary (Standalone Only)
 
-When invoked standalone (not from brainstorm), output a session summary after heuristics capture. When invoked from brainstorm, skip this step — the return-to-brainstorm contract handles the result.
+Standalone-only closing summary.
 
-> **Prototype Session Complete**
->
-> - **Module:** `<module>`
-> - **Tier:** `<wireframe|mockup|functional>`
-> - **Iterations:** `<iteration_count>` (number of Feedback Iteration cycles including the initial generation)
-> - **Persistence:** `"project"` (kept at `.adev/prototype/<module>/`) | `"ephemeral"` (discarded)
-> - **Visual references:** `<count>` captured
-> - **Heuristics saved:** `<count>`
-
-If visual references were captured during the session (tracker.count() > 0), append the tracker summary:
-
-```
-tracker.summary(module)
-```
-
-This outputs: "Captured N visual reference(s) in `.context-index/references/<module>/visuals/`:" followed by a list of `{ path, description }` pairs.
-
-No return-to-brainstorm step is performed. The session ends here.
+> **Conditional loading:** Read `skills/prototype/references/steps/step-9-session-summary.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Error Reference
 

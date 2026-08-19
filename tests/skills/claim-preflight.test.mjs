@@ -16,11 +16,15 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { readFileSync } from "node:fs";
+import { readSkillSurface } from "../helpers.mjs";
 
 const IMPLEMENT = "skills/implement/SKILL.md";
 const DEBUG = "skills/debug/SKILL.md";
 
-const read = (p) => readFileSync(p, "utf8");
+// SKILL.md plus its references/ companions: the claim/release prose moved into
+// step and phase companions under progressive disclosure.
+const SURFACE = { [IMPLEMENT]: "implement", [DEBUG]: "debug" };
+const read = (p) => (SURFACE[p] ? readSkillSurface(SURFACE[p]) : readFileSync(p, "utf8"));
 
 /**
  * Slice out the section a claim block lives in, so "exit 2 means stop" is

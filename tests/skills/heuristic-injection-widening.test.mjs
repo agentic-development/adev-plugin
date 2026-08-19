@@ -4,10 +4,10 @@ import { readFileSync } from "node:fs";
 import { readSkillSurface } from "../helpers.mjs";
 
 const skills = {
-  debug: readFileSync(new URL("../../skills/debug/SKILL.md", import.meta.url), "utf8"),
-  brainstorm: readFileSync(new URL("../../skills/brainstorm/SKILL.md", import.meta.url), "utf8"),
+  debug: readSkillSurface("debug"),
+  brainstorm: readSkillSurface("brainstorm"),
   specify: readSkillSurface("specify"),
-  "review-specs": readFileSync(new URL("../../skills/review-specs/SKILL.md", import.meta.url), "utf8"),
+  "review-specs": readSkillSurface("review-specs"),
   validate: readSkillSurface("validate"),
 };
 

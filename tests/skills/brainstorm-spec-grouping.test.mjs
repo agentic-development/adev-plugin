@@ -2,7 +2,7 @@ import { describe, it, before } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { PLUGIN_ROOT } from "../helpers.mjs";
+import { PLUGIN_ROOT, readSkillSurface } from "../helpers.mjs";
 
 const SKILL_PATH = join(PLUGIN_ROOT, "skills", "brainstorm", "SKILL.md");
 
@@ -21,8 +21,11 @@ describe("adev:brainstorm SKILL.md — Step 8 Spec Organization Plan", () => {
 
   before(() => {
     assert.ok(existsSync(SKILL_PATH), "skills/brainstorm/SKILL.md must exist");
-    content = readFileSync(SKILL_PATH, "utf8");
-    const start = content.indexOf("## Step 8: Transition to Specification");
+    content = readSkillSurface("brainstorm");
+    // lastIndexOf, not indexOf: the surface holds SKILL.md's Step 8 STUB before
+    // the companion carrying the real body, so the first match would return the
+    // conditional-loading pointer instead of the step.
+    const start = content.lastIndexOf("## Step 8: Transition to Specification");
     assert.ok(start !== -1, "Step 8 heading must exist");
     // Step 8 is currently the final ## section before Key Principles
     const end = content.indexOf("## Key Principles", start);

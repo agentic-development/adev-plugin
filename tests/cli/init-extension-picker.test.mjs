@@ -25,7 +25,7 @@ import { strict as assert } from 'node:assert';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createTempDir, cleanupTempDir, writeFixture, PLUGIN_ROOT } from '../helpers.mjs';
+import { createTempDir, cleanupTempDir, writeFixture, PLUGIN_ROOT, readSkillSurface } from '../helpers.mjs';
 import { installExtension, readManifestStamps } from '../../lib/extensions/install.mjs';
 import {
   runPicker,
@@ -290,7 +290,7 @@ describe('init-extension-picker integration', () => {
     // The picker moved out of cli/index.mjs and into /adev:init (it writes
     // `domain:` into manifest.yaml, which the CLI charter reserves for the
     // init skill), so the canonical banner now lives in the skill doc.
-    const skill = readFileSync(join(PLUGIN_ROOT, 'skills', 'init', 'SKILL.md'), 'utf8');
+    const skill = readSkillSurface("init");
     assert.match(skill, /Domain: <name>/);
     assert.doesNotMatch(skill, /Domain extension: </, 'must not use "Domain extension:" variant');
     assert.doesNotMatch(skill, /Selected domain:/, 'must not use "Selected domain:" variant');

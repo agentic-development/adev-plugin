@@ -7,6 +7,7 @@ import assert from 'node:assert';
 import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readSkillSurface } from '../helpers.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..', '..');
@@ -259,6 +260,6 @@ test('using-adev persona overlay names ADEV-BUGFIXLOOP as persona-exempt', () =>
 });
 
 test('work SKILL.md routing table lists /adev:bugfix-loop', () => {
-  const md = read('skills/work/SKILL.md');
+  const md = readSkillSurface('work');
   assert.match(md, /\/adev:bugfix-loop/);
 });

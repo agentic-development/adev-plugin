@@ -60,7 +60,7 @@ test("no-stale-format-refs / /adev:plan SKILL.md references reportPlanTask", () 
   // The canonical reportPlanTask block lives in the base SKILL.md. The mode
   // files inherit task emission behavior; we do not require every mode file
   // to spell it out, but the base must.
-  const content = readFileSync("skills/plan/SKILL.md", "utf8");
+  const content = readSkillSurface("plan");
   assert.ok(
     /reportPlanTask/.test(content),
     "skills/plan/SKILL.md does not reference reportPlanTask",
@@ -108,7 +108,7 @@ test("no-stale-format-refs / /adev:implement does not mutate plan checkboxes", (
 // ────────────────────────────────────────────────────────────────────
 
 test("skills/plan/SKILL.md: clarifying note about lifecycle log status tracking", () => {
-  const content = readFileSync("skills/plan/SKILL.md", "utf8");
+  const content = readSkillSurface("plan");
   assert.match(
     content,
     /(status .*lifecycle event log|checkboxes? are authoring guides only|not mutated by skills)/i,
@@ -222,6 +222,13 @@ const ALLOW_FILE_PATTERNS_AUDIT = {
   "status/SKILL.md": ["tasks.md parsing outside render/issues"],
   "sync/SKILL.md": ["tasks.md parsing outside render/issues"],
   "review-specs/SKILL.md": [
+    "last-reviewed-revision field manipulation",
+    "file-sha field manipulation",
+  ],
+  // Same ownership, different file: Step 6's body moved out of
+  // review-specs/SKILL.md into this companion under progressive disclosure.
+  // review-specs still owns these field writes; only the prose relocated.
+  "review-specs/references/steps/step-6-events-and-report.md": [
     "last-reviewed-revision field manipulation",
     "file-sha field manipulation",
   ],

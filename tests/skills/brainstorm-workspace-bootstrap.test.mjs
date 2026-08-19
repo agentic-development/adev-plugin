@@ -2,10 +2,10 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "fs";
 import { join } from "path";
-import { PLUGIN_ROOT } from "../helpers.mjs";
+import { PLUGIN_ROOT, readSkillSurface } from "../helpers.mjs";
 
 const SKILL_PATH = join(PLUGIN_ROOT, "skills", "brainstorm", "SKILL.md");
-const skill = readFileSync(SKILL_PATH, "utf8");
+const skill = readSkillSurface("brainstorm");
 
 describe("adev:brainstorm SKILL.md — workspace-mode bootstrap (Step 5b-3a)", () => {
   it("Step 5b references workspace-mode branching with detectWorkspace", () => {

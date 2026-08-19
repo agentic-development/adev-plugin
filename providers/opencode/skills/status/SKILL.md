@@ -43,91 +43,17 @@ If the output is not `__NONE__`, incorporate it as additional standing instructi
 
 ### Mode: `--spec <path>`
 
-1. Read the spec file at the given path
-2. Parse YAML frontmatter and extract:
-   - `status` (draft, review-pending, review-passed, review-blocked, implemented, validated)
-   - `revision` (current revision number)
-   - `charter-revision` (revision of charter when spec was last aligned)
-   - `updated` (last update date)
-   - `tracker-ref` (external tracker reference, if present)
-3. If the spec has a `source-manifest` section, verify it using `lib/source-manifest.mjs`:
-   - Check each listed source file exists
-   - Report any missing or changed files as "drifted"
-4. Query git log for commits with `Spec:` trailer matching this spec path:
-   ```bash
-   git log --all --format='%H %s' --grep='Spec: <spec-path>'
-   ```
-5. Scan `.context-index/sessions/` for session summaries that reference this spec
-6. If the spec belongs to a charter, read the charter and compare:
-   - If spec's `charter-revision` is behind the charter's current `revision`, flag as **charter-revision stale**
-7. Check if a plan exists for this spec (look for plan files referencing the spec path)
-8. Run `adev state current --spec <path>` and read the returned `planTasks` and `testDepthAssignments` projections. For each `planTasks` entry, check for a matching `testDepthAssignments` entry keyed on `plan` + `task_id`, where the projection folds `plan_task` and `test_depth_assigned` events and the most recent assignment per plan+task_id wins. Report `<N>/<total> tasks with a recorded assignment`. This counts lifecycle events rather than filesystem presence, since under any granularity other than `per-task`, multiple tasks can share one suite path and a raw file-existence probe no longer maps 1:1 to per-task completion.
-9. Display `tracker-ref` if present
+Status for exactly one spec.
 
-**Output format:**
-
-```
-Spec: <path>
-Status: <status>
-Revision: <revision>
-Updated: <date>
-Tracker: <tracker-ref or "none">
-Charter revision: <charter-revision> (current: <charter-revision>, charter: <charter-current>) [STALE if behind]
-
-Source manifest: <N files checked>
-  - <file>: OK | MISSING | DRIFTED
-
-Git commits: <N commits>
-  - <hash-short> <subject> (<date>)
-
-Sessions: <N sessions>
-  - <session-file>: <date> — <summary line>
-
-Plan: <found | not found>
-Tasks: <N>/<total> with a recorded test-depth assignment
-
-Review revisions (when present):
-  - rev 1: <verdict>  (<completed_at>)  [<N blockers>]
-  - rev 2: <verdict>  (<completed_at>)  [<N blockers>]
-  - rev 3: <verdict>  (<completed_at>)  [<N blockers>]
-```
-
-**Review revisions section** — only render when `currentState(spec).steps.review.byRevision` is populated with more than one revision (i.e., the BLOCK→revise auto-retry loop ran at least once for this spec). The per-revision projection is produced by `lib/lifecycle-state.mjs` Task 3 of review-block-auto-retry; consume `byRevision[N]` directly without re-folding the log. Each entry carries `verdict`, `completed_at`, and a `blockers[]` list of canonical `blocker_id`s. Order by ascending revision integer. If only one revision exists, the standard `Revision: <N>` line covers it — no separate section needed (non-breaking output for specs that never blocked).
+> **Conditional loading:** Read `skills/status/references/modes/spec-mode.md` for the full instructions. Do not act on this section from the summary above.
 
 **Terse form:** Renders the header lines — spec path, status, revision, updated date, tracker ref, charter-revision staleness — and the source-manifest, commit, session, and plan/task-assignment counts. Substitutes the per-file source-manifest listing with the file count and `/adev:status --file <path>` for detail on any one file. Skips the per-commit and per-session listings, and the review-revisions history beyond noting whether any revision blocked.
 
 ### Mode: `--charter <name>`
 
-1. Find the charter file by name under `.context-index/specs/features/` or `.context-index/specs/cross-cutting/`
-2. Read charter frontmatter and extract:
-   - `status` (draft, active, completed, archived)
-   - `revision` (current revision number)
-   - `updated` (last update date)
-3. Read the Capability Map table from the charter body
-4. Parse the Status column for each capability and compute progress:
-   - Count capabilities by status: not-started, specified, implemented, validated
-   - Report summary: "5/10 implemented, 2 validated, 3 not started"
-5. Find all specs that belong to this charter (specs whose frontmatter references this charter)
-6. For each spec, read its `status` and `revision`
+Status for one Feature Charter and the specs under it.
 
-**Output format:**
-
-```
-Charter: <name>
-Status: <status>
-Revision: <revision>
-Updated: <date>
-
-Capability Progress: <implemented>/<total> implemented, <validated> validated, <not-started> not started
-  - <capability-name>: <status>
-  - <capability-name>: <status>
-  ...
-
-Specs (<N total>):
-  - <spec-path>: <status> (rev <revision>)
-  - <spec-path>: <status> (rev <revision>)
-  ...
-```
+> **Conditional loading:** Read `skills/status/references/modes/charter-mode.md` for the full instructions. Do not act on this section from the summary above.
 
 **Terse form:** Renders the charter header line and the capability-progress summary — implemented/validated/not-started counts, one line per capability, showing its status. Substitutes the per-spec listing with a count of specs and `/adev:status --spec <path>` for detail on any one spec.
 
@@ -171,90 +97,9 @@ Summary:
 
 ### Mode: `--all` (default)
 
-**Optimization:** Use `adev state list --status <s>` to scan specs by status in a single call instead of reading each file individually. Loop over the lifecycle statuses:
+The default dashboard across charters, specs, and capabilities.
 
-```bash
-for s in draft review-pending review-passed implemented validated; do
-  adev state list --status "$s"
-done
-```
-
-Each invocation emits a single-line JSON `{ status, module, count, specs }`. The verb wraps `lib/meta-tools.mjs::findSpecsByStatus` and accepts `--module <slug>` to scope to a single charter (default `*` covers all features + cross-cutting).
-
-If the CLI call fails, fall back to the manual scan below.
-
-1. Scan all charters under `.context-index/specs/features/` and `.context-index/specs/cross-cutting/`
-2. Scan all `*.spec.md` files under the same directories
-3. For each charter, read frontmatter status
-4. For each spec, read frontmatter status
-
-**Report sections:**
-
-#### Charters by Status
-Count charters grouped by status (draft, active, completed, archived).
-
-#### Specs by Status
-Count specs grouped by status (draft, review-pending, review-passed, review-blocked, implemented, validated).
-
-#### Capability Progress
-Aggregate capability counts across all charters.
-
-#### Drifted Specs
-For each spec with a `source-manifest`, check using `lib/source-manifest.mjs`. Flag any spec where source files are missing or changed.
-
-#### Specs Needing Re-Review
-For each spec, call `currentState(projectRoot, specPath)` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` and compare the spec's `revision` frontmatter against `state.steps.review.lastReviewedRevision`. Flag specs where `revision` is greater (modified since last review pass). For the project-wide view, `listLifecycleStates(projectRoot)` returns the full set in one call.
-
-#### Milestone Progress
-
-If `tasks.backend` is configured in `manifest.yaml`, scan all epics for `milestone` fields. If any epics have milestones, add a "Milestone Progress" section showing per-milestone aggregation:
-
-- **Milestone name**
-- Total epics in milestone
-- Total issues across those epics
-- Issue counts by status: open / in_progress / closed
-- Percentage complete (closed issues / total issues)
-- **Milestone metadata** (from `milestones.json` via `lib/milestones.mjs`): call `getMilestoneStatusData(projectRoot, name)` for each milestone name. If found, include target_date, status, and ship_criteria count alongside the issue board aggregation.
-
-If no epics have milestones, skip this section entirely (unchanged behavior). If `tasks.backend` is not configured, skip this section silently.
-
-#### Stale Claims
-
-Run `adev issues stale --json` and report any expired claim leases (`stale[]`) plus any claims that can never expire (`unexpirable[]` — an owner with no `claimed_at`). Each entry names the issue, the holder, and how long ago it was claimed; a stale claim no longer blocks work, so surfacing it tells the user which issues an abandoned session left sitting. Skip this section when both lists are empty.
-
-#### Recent Sessions
-Read the 10 most recent session summaries from `.context-index/sessions/` and display date, type, and summary line.
-
-**Output format:**
-
-```
-=== Project Status Dashboard ===
-
-Charters: <N total>
-  draft: <n>  |  active: <n>  |  completed: <n>  |  archived: <n>
-
-Specs: <N total>
-  draft: <n>  |  review-pending: <n>  |  review-passed: <n>
-  review-blocked: <n>  |  implemented: <n>  |  validated: <n>
-
-Capabilities: <implemented>/<total> implemented, <validated> validated
-
-Drifted specs: <N>
-  - <spec-path>: <drift reason>
-
-Specs needing re-review: <N>
-  - <spec-path>: revision <current> (last reviewed: <last-reviewed>)
-
-Stale claims: <N> (lease <ttl_minutes> min)
-  - <issue-id> held by <owner>, claimed <age> ago
-
-Milestone Progress:
-  v1: 3 epics, 12 issues (4 open, 5 in_progress, 3 closed) — 25% complete
-  v2: 1 epic, 4 issues (4 open, 0 in_progress, 0 closed) — 0% complete
-
-Recent sessions (last 10):
-  - <date> [<type>] <summary>
-```
+> **Conditional loading:** Read `skills/status/references/modes/all-mode.md` for the full instructions. Do not act on this section from the summary above.
 
 **Terse form:** Renders one counts roll-up table — charters by status, specs by status, and capability progress — and substitutes every other grouping with a count plus a narrower pointer:
 
@@ -272,138 +117,33 @@ Recent sessions (last 10):
 
 ### Mode: `--issue <id>`
 
-Trace the full lifecycle chain for a single issue.
+Status for one issue.
 
-1. Read the issue from the issue board (via `getIssueManager(manifest)` from `lib/issues/registry.mjs`).
-2. If the issue has `planRef` and `planTask`, read the plan file and extract the task details.
-3. Follow the plan to its parent spec (the spec referenced in the plan frontmatter or adjacent spec with matching name).
-4. Search git history for commits with `Issue: <id>` trailer: `git log --all --format='%H %s %ai' --grep='Issue: <id>'`.
-5. For each commit, extract trailers and list files touched.
-6. If the spec has a source manifest, run `verifyManifest()` to check drift status.
-7. If the issue is closed, check for post-close changes: commits touching the same files after the issue's close date.
-
-**Output format:**
-```
-Issue: <id> — <title>
-Status: <status>
-Epic: <epic-id> — <epic-title>
-Plan: <plan-file> (Task <N> of <total>)
-Spec: <spec-path> (status: <spec-status>)
-
-Commits (via Issue: <id> trailer):
-  <sha> <subject> (<Author-type>, <date>)
-  ...
-
-Files touched:
-  <file> — <drift-status>
-
-Post-close changes: <N commits after close>
-```
+> **Conditional loading:** Read `skills/status/references/modes/issue-mode.md` for the full instructions. Do not act on this section from the summary above.
 
 **Terse form:** Renders the issue header line, epic reference, plan/task pointer, and spec status, plus the commit and post-close-change counts. Substitutes the files-touched listing with a count of files and `/adev:status --file <path>` for detail on any one file. Skips the per-commit listing.
 
 ### Mode: `--epic <id>`
 
-Show comprehensive epic status with child issues and code coverage.
+Status for one epic and its children.
 
-1. Read the epic and all its child issues from the issue board.
-2. For each issue, determine if it has code behind it (check for commits with `Issue: <id>` trailer).
-3. Flag "paper" issues (no commits found).
-4. Check epic completeness: are all issues closed? If so and epic is still open, flag as stale.
-5. Show issue-level summary table.
-
-**Output format:**
-```
-Epic: <id> — <title> (<status>)
-
-| Issue | Title | Status | Has Code | Commits |
-|-------|-------|--------|----------|---------|
-| issue-1 | ... | closed | yes | 3 |
-| issue-2 | ... | open | no (paper) | 0 |
-
-Completeness: <closed>/<total> issues closed
-Recommendation: <close epic / create missing issues / review deferred>
-```
+> **Conditional loading:** Read `skills/status/references/modes/epic-mode.md` for the full instructions. Do not act on this section from the summary above.
 
 **Terse form:** Renders the epic header line and the completeness summary (closed/total issues, recommendation). Substitutes the per-issue table with a count of child issues and `/adev:status --issue <id>` for detail on any one issue.
 
 ### Mode: `--file <path>`
 
-Reverse lookup from a source file to its lifecycle context.
+Which lifecycle artifacts cover a given source file.
 
-1. Use `buildReverseIndex()` from `lib/source-manifest.mjs` to find which spec claims the file.
-2. If claimed: read the spec, find the plan, find the issue, check drift via `verifyManifest()`.
-3. If unclaimed: report as unclaimed, check git history for any lifecycle trailers.
-4. Show recent commits touching the file with their trailer status.
-
-**Output format:**
-```
-File: <path>
-Claimed by: <spec-path> (source manifest) — or "Unclaimed (no spec)"
-Drift: <match/drift/missing>
-Issue: <id> (<status>) — or "No issue linkage"
-Epic: <epic-id>
-
-Recent commits:
-  <sha> <subject> (Spec: <yes/no>, Author-type: <type>)
-  ...
-```
+> **Conditional loading:** Read `skills/status/references/modes/file-mode.md` for the full instructions. Do not act on this section from the summary above.
 
 **Terse form:** Renders the file's claim status, drift status, and issue/epic linkage, plus a count of recent commits touching the file. Skips the per-commit listing.
 
 ### Mode: `--backlog`
 
-Aggregate all sources of pending work into a unified prioritized view.
+The backlog view.
 
-1. **Unplanned specs**: Scan specs with status `review-passed` that have no sibling `.plan.md` file.
-2. **Draft specs**: Scan specs with status `draft`.
-3. **Open issues**: Read issue board, filter by `status: open`.
-4. **Deferred issues**: Read issue board, filter by `status: deferred`. Flag staleness (> 14 days).
-5. **Stale epics**: Find epics with all issues closed but epic still `open`.
-6. **Charter deferred capabilities**: Scan charter Capability Map tables for entries with status `—` in phases marked v2/future/nice-to-have. Also scan "Out of Scope" sections.
-7. **Untraced code**: If provenance audit results exist (`.context-index/hygiene/drift-report.md`), include untraced file count.
-8. **Orphaned planRefs**: Issues whose `planRef` points to nonexistent files.
-
-**Prioritization:**
-- Critical: open issues with orphaned planRefs
-- High: review-passed specs with no plan
-- Medium: v2/future charter capabilities, deferred issues
-- Low: draft specs, nice-to-have capabilities
-
-**Cross-reference:** If an untraced code file's name or content matches a v2 charter capability keyword, flag it (e.g., "lib/orphan.mjs may implement SSO Integration from auth charter").
-
-**Output format:**
-```
-=== Backlog Summary ===
-
-Total items: <N>
-
-By Priority:
-  Critical: <n>
-  High: <n>
-  Medium: <n>
-  Low: <n>
-
-Unplanned Specs (<n>):
-  - <spec-path> (status: review-passed, charter: <name>)
-
-Draft Specs (<n>):
-  - <spec-path> (charter: <name>)
-
-Open Issues (<n>):
-  - <id>: <title> (epic: <epic-id>)
-
-Deferred Issues (<n>):
-  - <id>: <title> — deferred <N> days
-
-Stale Epics (<n>):
-  - <epic-id>: <title> — all <N> issues closed, epic still open
-
-Charter Deferred/Future Capabilities (<n>):
-  - <charter>: <capability> (<milestone>, <priority>)
-
-Untraced Code: <N files> (run /adev:hygiene --check provenance for details)
-```
+> **Conditional loading:** Read `skills/status/references/modes/backlog-mode.md` for the full instructions. Do not act on this section from the summary above.
 
 **Terse form:** Renders the total item count and the by-priority breakdown (critical/high/medium/low). Substitutes each category listing with a count plus its narrower pointer, in the order the default output presents them:
 
@@ -436,59 +176,9 @@ Show all capabilities in a specific milestone across all charters.
 
 ### Mode: Workspace Aggregation (workspace root)
 
-When invoked at a **workspace root** (a directory that contains `workspace.yaml` or `.workspace/` config but is not itself one of the registered repos), enter **workspace mode** to aggregate charter and spec status across all registered repos.
+Cross-repo rollup when run at a workspace root.
 
-#### Workspace Detection
-
-Call `detectWorkspace()` to determine whether the current directory is a workspace root. If `detectWorkspace()` returns a workspace context, enter workspace mode. Otherwise, fall through to single-repo behaviour.
-
-#### Cross-Repo Status Aggregation
-
-1. Call `resolveWorkspaceContext()` to obtain the list of registered repos, their local paths, and the dependency graph.
-2. **Aggregate per repo:** For each registered repo, check for a `.context-index/` directory and read its charters and specs.
-   - If the repo directory does not exist or has no `.context-index/`: report `<slug>: no context configured`
-   - Otherwise: summarize charter and spec counts by status (same fields as `--all` mode)
-3. **Group output by repo**, sorted in topological dependency order (upstream first) when a dependency graph is available.
-
-#### Charter-Revision Staleness Across Workspace
-
-When a workspace-level charter exists (in the workspace `.context-index/`), compare its current `revision` against the `charter-revision` field in each repo-level spec that implements it:
-
-1. Read the workspace charter's current `revision` value.
-2. For each registered repo, scan specs whose frontmatter references the workspace charter.
-3. If a spec's `charter-revision` is behind the workspace charter's current `revision`, flag that spec as **stale** — its `charter-revision` does not match the workspace charter revision.
-4. Include stale specs in the output under a "Stale Charter References" section per repo.
-
-This ensures that when a workspace charter is updated, all repo-level specs tracking it are flagged for re-alignment.
-
-**Output format:**
-
-```
-=== Workspace Status ===
-
-repo: core
-  Charters: 2 (1 active, 1 draft)
-  Specs: 5 (3 implemented, 1 review-passed, 1 draft)
-  Capabilities: 8/12 implemented
-  Stale Charter References:
-    - specs/auth-login.md: charter-revision 2 (workspace charter at 4) — STALE
-
-repo: api
-  Charters: 1 (1 active)
-  Specs: 3 (2 review-passed, 1 draft)
-  Capabilities: 4/9 implemented
-
-repo: frontend
-  no context configured
-```
-
-#### Repo-Mode-Inside-Workspace Advisory
-
-**When invoked inside a repo (not workspace root):** Use existing single-repo behavior for the full status output. If `detectWorkspace()` detects an ancestor workspace, emit the following advisory to stdout once per invocation:
-
-```
-Advisory: running repo-scoped inside workspace at <workspace-path>. Run /adev:status at the workspace root for cross-repo aggregation.
-```
+> **Conditional loading:** Read `skills/status/references/modes/workspace-aggregation.md` for the full instructions. Do not act on this section from the summary above.
 
 **Terse form:** Renders the workspace header and the number of registered repos, with one line per repo naming its context status (configured or not). Substitutes the per-repo charter/spec/capability counts and the Stale Charter References listing with `/adev:status --all` run from within that repo for full single-repo detail.
 
@@ -502,30 +192,6 @@ Advisory: running repo-scoped inside workspace at <workspace-path>. Run /adev:st
 
 ## API reference
 
-Lifecycle event log (the primary source for spec status, review verdicts, and re-review detection):
+Library functions this skill wraps.
 
-- `currentState(projectRoot, specPath)` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — single-spec projection.
-- `listLifecycleStates(projectRoot)` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` — aggregate per-spec lifecycle states across the project (used by `--all` and the Specs Needing Re-Review scan).
-
-Issue board (board-level work-item aggregation):
-
-- `getIssueManager(manifest)` from `<ADEV_ROOT>/lib/issues/registry.mjs` — returns the active adapter.
-- `IssueManagerInterface` — `init`, `create`, `update`, `close`, `list`, `get`, `listEpics`, `createEpic`, `updateEpic`, `addDependency`, `walkTree`.
-
-Amendment graph (base↔amendment relationships and effective revision):
-
-- `reportRelationship(projectRoot, specPath)` from `<ADEV_ROOT>/lib/amendment-graph.mjs` — for a spec carrying `amends:`, returns `{ isAmendment, amends, targetRevision, amendmentStatus, baseExists, line }`. Render the `line` (e.g. "amends `<base>` targeting rev `<N>`, status `<amendment-status>`") in the per-spec view when `isAmendment` is true.
-- `computeEffectiveRevision(projectRoot, baseSpecPath)` from `<ADEV_ROOT>/lib/amendment-graph.mjs` — returns `{ baseRevision, effectiveRevision, validatedAmendments, pendingAmendments }`. Effective revision = `max(base.revision, highest target-revision among VALIDATED amendments)` (SA-2). Render the effective revision alongside the base spec's own `revision:`; pending/unvalidated amendments are listed but excluded from the max. The base file is never rewritten.
-- `resolveAmendmentChain(projectRoot, specPath)` from `<ADEV_ROOT>/lib/amendment-graph.mjs` — returns `{ chain, cycle, cycleCode, danglingAt }`; render the full chain for an amendment-of-an-amendment, and report `AMENDMENT_CYCLE` instead of looping when `cycle` is true.
-
-Milestones:
-
-- `getMilestoneStatusData(projectRoot, name)` from `<ADEV_ROOT>/lib/milestones.mjs` — reads `.context-index/milestones.json`.
-
-Source-manifest drift:
-
-- `verifyManifest(manifest, projectRoot)` from `<ADEV_ROOT>/lib/source-manifest.mjs` — drift detection on `source-manifest` blocks.
-
-Manifest:
-
-- `loadManifest(projectRoot)` from `<ADEV_ROOT>/lib/manifest.mjs` — parses `.context-index/manifest.yaml`.
+> **Conditional loading:** Read `skills/status/references/api-reference.md` for the full instructions. Do not act on this section from the summary above.

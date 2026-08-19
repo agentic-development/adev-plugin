@@ -3,12 +3,14 @@ import assert from "node:assert/strict";
 import { readFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+import { readSkillSurface } from "../helpers.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 describe("init SKILL.md — governance scaffolding", () => {
-  const skillPath = join(__dirname, "..", "..", "skills", "init", "SKILL.md");
-  const content = readFileSync(skillPath, "utf8");
+  // SKILL.md plus its references/ companions: init's Step 7 scaffolding prose
+  // moved into behavior-by-project-state.md under progressive disclosure.
+  const content = readSkillSurface("init");
 
   it("should scaffold governance/gates.yaml from template (+1 more contract assertions)", () => {
     // should scaffold governance/gates.yaml from template
@@ -27,8 +29,9 @@ describe("init SKILL.md — governance scaffolding", () => {
 });
 
 describe("init SKILL.md — Step 7a seeds both gate tiers in argv form", () => {
-  const skillPath = join(__dirname, "..", "..", "skills", "init", "SKILL.md");
-  const content = readFileSync(skillPath, "utf8");
+  // SKILL.md plus its references/ companions: init's Step 7 scaffolding prose
+  // moved into behavior-by-project-state.md under progressive disclosure.
+  const content = readSkillSurface("init");
 
   // Bound to Step 7a only — the test-policy prose and sub-steps 7b-7e that
   // follow are out of scope for this contract.

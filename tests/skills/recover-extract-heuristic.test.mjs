@@ -4,7 +4,7 @@ import { spawnSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { readHeuristics } from "../../lib/heuristics.mjs";
-import { PLUGIN_ROOT, cleanupTempDir, createTempDir } from "../helpers.mjs";
+import { PLUGIN_ROOT, cleanupTempDir, createTempDir, readSkillSurface } from "../helpers.mjs";
 import { CATEGORY_ID_SLUGS, CATEGORY_LABELS, deriveId, extractHeuristic, normalizeRootCause } from "./recover-extract-heuristic-harness.mjs";
 import { runCheck12 } from "./validate-success-heuristic-harness.mjs";
 
@@ -440,7 +440,7 @@ describe("Task 6 — recover keys derive from `adev heuristics signature`", () =
 });
 
 describe("Task 6 — skills/recover/SKILL.md names the verb, not the rule", () => {
-  const src = () => readFileSync(RECOVER_SKILL, "utf8");
+  const src = () => readSkillSurface("recover");
 
   it("carries no prose derivation rule", () => {
     const source = src();

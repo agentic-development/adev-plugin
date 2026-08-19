@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
 
 import { loadDomainConfig } from '../../lib/domains/domain-config.mjs';
-import { createTempDir, cleanupTempDir, writeFixture } from '../helpers.mjs';
+import { createTempDir, cleanupTempDir, writeFixture, readSkillSurface } from '../helpers.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PLUGIN_ROOT = join(__dirname, '..', '..');
@@ -109,7 +109,7 @@ describe("hygiene Validate Config Drift audit (SKILL.md content + simulation)", 
   it("skills/hygiene/SKILL.md declares Audit Pass 19 covering validate.yaml drift", () => {
     // The body keeps the pass in its routing table; the remit lives in the
     // companion the table points at.
-    const content = readFileSync(join(PLUGIN_ROOT, 'skills', 'hygiene', 'SKILL.md'), 'utf8');
+    const content = readSkillSurface("hygiene");
     assert.ok(
       content.includes("Governance Registry Drift"),
       "hygiene SKILL.md must declare the audit pass"
@@ -338,7 +338,7 @@ describe("acceptance criteria: full coverage", () => {
 
 describe("SKILL.md content: init Step 7d.0", () => {
   it("skills/init/SKILL.md mentions loadDomainConfig with 'validate' configType", () => {
-    const content = readFileSync(join(PLUGIN_ROOT, 'skills', 'init', 'SKILL.md'), 'utf8');
+    const content = readSkillSurface("init");
     assert.ok(
       content.includes("loadDomainConfig(resolvedDomain, 'validate'"),
       "init SKILL.md must call loadDomainConfig with 'validate' configType"
@@ -346,7 +346,7 @@ describe("SKILL.md content: init Step 7d.0", () => {
   });
 
   it("skills/init/SKILL.md mentions software fallback for unknown domains", () => {
-    const content = readFileSync(join(PLUGIN_ROOT, 'skills', 'init', 'SKILL.md'), 'utf8');
+    const content = readSkillSurface("init");
     assert.ok(
       content.includes("scaffolded from 'software' as fallback"),
       "init SKILL.md must include the software-fallback advisory message"
@@ -354,7 +354,7 @@ describe("SKILL.md content: init Step 7d.0", () => {
   });
 
   it("skills/init/SKILL.md describes idempotency for governance/validate.yaml scaffold", () => {
-    const content = readFileSync(join(PLUGIN_ROOT, 'skills', 'init', 'SKILL.md'), 'utf8');
+    const content = readSkillSurface("init");
     assert.ok(
       /governance\/validate\.yaml already exists.*no-op|idempotent/i.test(content),
       "init SKILL.md must describe idempotency for the scaffold step"

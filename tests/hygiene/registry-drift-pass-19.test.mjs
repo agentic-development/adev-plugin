@@ -24,7 +24,7 @@ import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 
-import { createTempDir, cleanupTempDir, writeFixture, PLUGIN_ROOT } from "../helpers.mjs";
+import { createTempDir, cleanupTempDir, writeFixture, PLUGIN_ROOT, readSkillSurface } from "../helpers.mjs";
 import { runRegistryDriftPass, REGISTRY_NAMES } from "../../lib/hygiene/registry-drift.mjs";
 
 const DOMAIN = "acme";
@@ -402,7 +402,7 @@ test("hygiene Pass 19 names the verb rather than carrying the logic", () => {
 test("skills/hygiene/SKILL.md routes to the Pass 19 companion", () => {
   // The body must still point at the pass; a companion nothing references is
   // dead weight, and that is precisely what the split could silently create.
-  const skill = readFileSync(join(PLUGIN_ROOT, "skills", "hygiene", "SKILL.md"), "utf8");
+  const skill = readSkillSurface("hygiene");
   assert.ok(
     skill.includes("pass-19-governance-registry-drift.md"),
     "SKILL.md must name the Pass 19 companion file",

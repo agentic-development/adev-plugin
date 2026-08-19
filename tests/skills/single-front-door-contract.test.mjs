@@ -14,10 +14,14 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readSkillSurface } from "../helpers.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SKILLS = resolve(__dirname, "..", "..", "skills");
-const read = (slug) => readFileSync(join(SKILLS, slug, "SKILL.md"), "utf8");
+// SKILL.md plus its references/ companions: /adev:work's routing tables moved
+// into step companions under progressive disclosure, and this suite is about
+// the routes the skill ships, not which file holds the table.
+const read = (slug) => readSkillSurface(slug);
 
 // The lifecycle-spine skills that must carry a next-step handoff.
 const SPINE = ["brainstorm", "specify", "review-specs", "plan", "route", "implement"];

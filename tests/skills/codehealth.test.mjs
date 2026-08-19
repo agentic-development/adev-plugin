@@ -136,7 +136,7 @@ describe("adev:codehealth skill", () => {
 
 describe("hygiene integration", () => {
   it("should include Code Health pass in hygiene SKILL.md", () => {
-    const content = readFileSync(HYGIENE_PATH, "utf8");
+    const content = readSkillSurface("hygiene");
     assert.ok(
       content.includes("Code Health"),
       "Hygiene SKILL.md must include Code Health pass"
@@ -144,7 +144,7 @@ describe("hygiene integration", () => {
   });
 
   it("should include code-health in --check options", () => {
-    const content = readFileSync(HYGIENE_PATH, "utf8");
+    const content = readSkillSurface("hygiene");
     assert.ok(
       content.includes("code-health"),
       "Hygiene SKILL.md must list code-health in --check options"
