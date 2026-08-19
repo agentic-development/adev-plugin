@@ -133,7 +133,7 @@ Some other reviewer prompts in this pipeline (`structural-architect-prompt.md`,
 function and taking the first 8 hex characters of the result. **You must not do this, and you must
 not approximate it by typing out something that looks like a digest.**
 
-You are running under the `reviewer-reasoning` execution profile
+You are running under the `reviewer-capable` execution profile
 (`templates/governance/profiles.yaml`), which extends `read-only`:
 `filesystem: { write: deny, execute: deny }`, and its tool allowlist is limited to
 `filesystem-read`, `search`, and `agent`. There is no shell category and no way to invoke a CLI

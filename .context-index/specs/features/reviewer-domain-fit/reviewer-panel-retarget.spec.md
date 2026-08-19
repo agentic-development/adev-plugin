@@ -9,6 +9,26 @@ milestone:
 created: 2026-08-18
 updated: 2026-08-18
 tracker-ref: adev-plugin-j7pq.5
+source-manifest:
+  sha: "d21ff38"
+  files:
+    - .context-index/specs/features/reviewer-domain-fit/charter.md
+    - extensions/web-service/adev-extension.yaml
+    - extensions/web-service/domain/reviewers.yaml
+    - lib/domains/resolve.mjs
+    - lib/extensions/governance-splice.mjs
+    - lib/extensions/governance-values.mjs
+    - lib/lifecycle-gate-helpers.mjs
+    - skills/review-specs/boundary-reviewer-prompt.md
+    - skills/review-specs/consistency-analyzer-prompt.md
+    - skills/review-specs/referent-integrity-prompt.md
+    - skills/review-specs/termination-reviewer-prompt.md
+    - skills/review-specs/wiring-reviewer-prompt.md
+    - templates/domains/software/reviewers.yaml
+    - templates/extensions-catalog.json
+    - templates/review-specs/defaults.yaml
+  computed-at: "2026-08-19T12:29:36.568Z"
+drift_detected: true
 ---
 
 <!-- partial_schema: spec@1 -->

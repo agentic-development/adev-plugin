@@ -3,10 +3,10 @@ charter: domain-profiles
 status: validated
 risk_level: medium
 milestone:
-revision: 6
+revision: 7
 charter-revision: 5
 created: 2026-05-07
-updated: 2026-05-10
+updated: 2026-08-19
 source-manifest:
   sha: "f6a29b0"
   files:
@@ -17,7 +17,6 @@ source-manifest:
     - tests/lib/domains/constants.test.mjs
     - tests/lib/domains/resolve.test.mjs
   computed-at: "2026-05-11T16:09:28.530Z"
-drift_detected: true
 ---
 
 # Live Spec: Domain Resolution & Overlay Structure
@@ -54,8 +53,8 @@ loadDomainConfig(domain, overlayType, repoRoot, pluginRoot)
 ### Manifest Schema Extension
 
 This feature requires `manifest.yaml` to support two optional fields:
-- `project.domain` (string) — project-level domain declaration
-- `modules[].domain` (string) — per-module domain override
+- `domain` (string, top-level key) — project-level domain declaration. Written by the real production writer, `writeDomainKey()` in `lib/cli/domain-extension-picker.mjs`, via a bare top-level `domain: <name>` line (regex `/^domain:[^\n]*$/m`) — not a nested `project.domain`. Every real manifest (this repo's own, and `templates/manifest-template.yaml`) uses this top-level shape.
+- `modules[].domain` (string) — per-module domain override, read from `manifest.modules.find(m => m.slug === moduleSlug)`
 
 Both fields are optional. Existing manifests without these fields behave identically to today (backward compatibility). Manifest parsing must accept and preserve these fields without validation errors.
 
@@ -132,7 +131,7 @@ When multiple layers provide the same overlay type, they merge in this order (la
 
 2. **When** `resolveDomain()` is called without a charter-level domain but with `manifest.yaml` containing `modules[slug].domain: X` for the given module slug **then** it validates and returns `X` with `source_level: "module"`.
 
-3. **When** `resolveDomain()` is called without charter-level or module-level domain but with `manifest.yaml` containing `project.domain: X` **then** it validates and returns `X` with `source_level: "project"`.
+3. **When** `resolveDomain()` is called without charter-level or module-level domain but with `manifest.yaml` containing a top-level `domain: X` key **then** it validates and returns `X` with `source_level: "project"`.
 
 4. **When** `resolveDomain()` is called with no domain declared at any level **then** it returns `"software"` with `source_level: "default"`.
 
@@ -202,7 +201,7 @@ When multiple layers provide the same overlay type, they merge in this order (la
 | Add domain name validation | Validate domain values against `/^[a-z0-9][a-z0-9-]*$/` with INVALID_DOMAIN_NAME error | small |
 | Implement `extends` resolution in `loadDomainConfig()` | Read `domain.yaml` from custom domain dir, parse `extends` field, fall back to parent for missing files. Enforce one-level depth limit. | medium |
 | Implement bundled override guard | Check `.context-index/domains/` for directories matching bundled names, throw `BUNDLED_OVERRIDE_BLOCKED` | small |
-| Add manifest schema support | Extend manifest parsing to recognize `project.domain` and `modules[].domain` fields | small |
+| Add manifest schema support | Extend manifest parsing to recognize the top-level `domain` and `modules[].domain` fields | small |
 | Implement `loadDomainConfig()` helper in `lib/domains/config.mjs` | Convenience function that calls `resolveDomain()` + `loadDomainConfig()` for a given type, then merges with governance file. Returns fully resolved config object. Deterministic script, not markdown. | medium |
 | Write unit tests | Test all 4 resolution levels, precedence, fallback, two-level overlay loading, null returns, parse errors, domain name validation, size guard, extends chain, bundled override guard | medium |
 | Update `docs/configuration.md` | Document domain profiles: resolution precedence, extends model, overlay types, customization workflow (clone + override), reset instructions | medium |
