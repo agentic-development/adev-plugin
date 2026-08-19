@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync, rmSync, cpSync } from "fs";
-import { join, dirname } from "path";
+import { join, dirname, resolve, sep } from "path";
 import { fileURLToPath } from "url";
 import { readJson } from "../../lib/provider/json-io.mjs";
 import { installCopyFilter } from "../../lib/provider/ship-filter.mjs";
@@ -50,6 +50,34 @@ function getPluginCacheDir() {
  * @param {string} content
  * @returns {{ content: string, sanitizedName: string | null }}
  */
+/**
+ * A published skill directory name: one path segment, no separators, no dots.
+ *
+ * Deliberately stricter than the frontmatter grammar. `name:` is matched with
+ * `\S+`, which is fine for a YAML scalar and wrong for something concatenated
+ * into a filesystem path.
+ */
+const SAFE_SKILL_DIRNAME = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+
+/**
+ * Refuse a destination that does not resolve inside the skills root.
+ *
+ * Compares resolved paths and requires a trailing separator on the base, so
+ * `~/.cursor/skills-evil` is not accepted as being inside `~/.cursor/skills`.
+ *
+ * @param {string} root
+ * @param {string} target
+ */
+function assertWithinSkillsRoot(root, target) {
+  const base = resolve(root);
+  const dest = resolve(target);
+  if (dest !== base && !dest.startsWith(base + sep)) {
+    throw new Error(
+      `SKILL_PATH_ESCAPE: destination ${dest} is outside the skills root ${base}`,
+    );
+  }
+}
+
 export function sanitizeSkillName(content) {
   if (!content.startsWith("---\n") && !content.startsWith("---\r\n")) {
     return { content, sanitizedName: null };
@@ -115,7 +143,27 @@ async function publishSkillsFromCache(cacheDir) {
       const { content: sanitizedMd, sanitizedName } = sanitizeSkillName(raw);
       if (!sanitizedName) continue; // No name: frontmatter — skip silently.
 
+      // The name becomes a DIRECTORY NAME under targetSkillsDir, so it must be a
+      // single path segment. The frontmatter match is `/^name:\s*(\S+)\s*$/`, and
+      // `\S+` admits `/` and `..` — a skill declaring `name: adev:../../x` would
+      // otherwise escape ~/.cursor/skills/ before the recursive copy below.
+      // Rejected rather than re-sanitized: a name that needs path-stripping is
+      // malformed, and silently rewriting it would publish a skill under a name
+      // that is not the one it declares.
+      if (!SAFE_SKILL_DIRNAME.test(sanitizedName)) {
+        failed.push({
+          skill: entry.name,
+          error: `unsafe skill name ${JSON.stringify(sanitizedName)}: must match ${SAFE_SKILL_DIRNAME}`,
+        });
+        continue;
+      }
+
       const targetDir = join(targetSkillsDir, sanitizedName);
+      // Defence in depth, matching providers/copilot/adapter.mjs: even with the
+      // allowlist above, confirm the destination really lands inside the root
+      // before any write. Cheap, and the only check that survives a future edit
+      // loosening the regex.
+      assertWithinSkillsRoot(targetSkillsDir, targetDir);
       ensureDir(targetDir);
 
       // Copy all sibling files verbatim first, then overwrite SKILL.md
