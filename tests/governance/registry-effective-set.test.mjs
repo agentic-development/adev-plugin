@@ -212,7 +212,7 @@ describe("registry effective set", () => {
     withDir(async (dir) => {
       seedProject(dir);
       // A CUSTOM domain, because a bundled one cannot be overridden.
-      writeFixture(dir, ".context-index/manifest.yaml", "project:\n  domain: fixture-domain\n");
+      writeFixture(dir, ".context-index/manifest.yaml", "domain: fixture-domain\n");
       writeFixture(
         dir,
         ".context-index/domains/fixture-domain/gates.yaml",

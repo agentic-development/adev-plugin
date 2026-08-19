@@ -75,9 +75,34 @@ context_packs:
 
   consistency:
     extends: review-base
+    # ADRs push this pack's real corpus past the shared 262144-byte default once
+    # the aggregate truncation notice (Behavior 22m, deliberately exempt from the
+    # cap it reports on) is accounted for. Trimmed slightly below the shared
+    # default so the notice-inclusive render still lands under 262144 overall.
+    max_total_bytes: 260000
     include:
+      - glob: .context-index/adrs/*.md
+        title: ADRs
       - glob: .context-index/specs/cross-cutting/*.spec.md
         title: Cross-Cutting Specs
+
+  referent-integrity:
+    extends: base
+    include:
+      - glob: docs/cli-reference.md
+        title: CLI Reference
+      - glob: docs/skill-reference.md
+        title: Skill Reference
+      - glob: .context-index/orientation/architecture.md
+        title: Architecture Orientation
+
+  # wiring-reviewer does its own producer/consumer lookup via its filesystem-read
+  # and search grant; this pack exists only to give it an explicit, non-`base`
+  # context_pack identity (context_pack defaults to "base" per
+  # lib/governance/review-config.mjs, deliberately target-agnostic — leaving
+  # wiring-reviewer unspecified would silently under-deliver).
+  wiring:
+    extends: review-base
 
 verdict_rules:
   blocker_threshold: 1

@@ -1,5 +1,7 @@
 import { test, describe, afterEach } from "node:test";
 import { strict as assert } from "node:assert";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 import {
   loadReviewConfig,
@@ -10,7 +12,8 @@ import {
 } from "../../lib/governance/review-config.mjs";
 import { createRedactor } from "../../lib/profiles/redaction.mjs";
 import { stampMarker } from "../../lib/governance/registry-marker.mjs";
-import { createTempDir, cleanupTempDir, writeFixture } from "../helpers.mjs";
+import { parseYaml } from "../../lib/profiles/yaml.mjs";
+import { createTempDir, cleanupTempDir, writeFixture, PLUGIN_ROOT } from "../helpers.mjs";
 
 const tempDirs = [];
 function tmp() {
@@ -453,6 +456,16 @@ describe("review-config shouldDispatch", () => {
       { targetSpecPath: "specs/features/x.md", specContent: "nothing" }
     );
     assert.equal(r.dispatch, false);
+  });
+
+  test("termination-reviewer's real config dispatches on a keyword and not otherwise", () => {
+    const content = readFileSync(join(PLUGIN_ROOT, 'templates/domains/software/reviewers.yaml'), 'utf8');
+    const parsed = parseYaml(content);
+    const reviewer = parsed.reviewers.find(r => r.id === 'termination-reviewer');
+    const noKeyword = shouldDispatch(reviewer, { targetSpecPath: 'x.spec.md', specContent: 'nothing relevant here' });
+    assert.equal(noKeyword.dispatch, false);
+    const withKeyword = shouldDispatch(reviewer, { targetSpecPath: 'x.spec.md', specContent: 'contains a retry loop' });
+    assert.equal(withKeyword.dispatch, true);
   });
 });
 

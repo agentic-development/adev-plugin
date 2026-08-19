@@ -51,15 +51,30 @@ describe('software profile', () => {
     }
   });
 
-  it('reviewers.yaml has 3 reviewers with correct IDs', () => {
+  it('reviewers.yaml has 7 entries: 5 active + 2 disabled', () => {
     const content = readFileSync(join(SW_DIR, 'reviewers.yaml'), 'utf8');
     const parsed = parseYaml(content);
-    assert.ok(Array.isArray(parsed.reviewers), 'reviewers should be an array');
-    assert.equal(parsed.reviewers.length, 3);
+    assert.equal(parsed.reviewers.length, 7);
     const ids = parsed.reviewers.map(r => r.id);
-    assert.ok(ids.includes('structural-architect'));
-    assert.ok(ids.includes('security-reviewer'));
-    assert.ok(ids.includes('consistency-analyzer'));
+    for (const id of ['referent-integrity', 'wiring-reviewer', 'consistency-analyzer', 'boundary-reviewer', 'termination-reviewer']) {
+      assert.ok(ids.includes(id), `missing active reviewer: ${id}`);
+    }
+    const disabled = parsed.reviewers.filter(r => r.enabled === false);
+    assert.equal(disabled.length, 2);
+    const disabledIds = disabled.map(r => r.id).sort();
+    assert.deepEqual(disabledIds, ['security-reviewer', 'structural-architect']);
+    for (const r of disabled) {
+      assert.ok(typeof r.disabled_reason === 'string' && r.disabled_reason.trim().length > 0,
+        `${r.id} must carry a non-empty disabled_reason`);
+    }
+    const active = parsed.reviewers.filter(r => r.enabled !== false);
+    for (const r of active) {
+      assert.ok(r.profile, `${r.id} must declare an explicit profile`);
+      assert.ok(r.context_pack, `${r.id} must declare an explicit context_pack`);
+    }
+    const termination = parsed.reviewers.find(r => r.id === 'termination-reviewer');
+    assert.ok(termination.dispatch && typeof termination.dispatch === 'object' && termination.dispatch.triggered,
+      'termination-reviewer must use the nested-object triggered form, not a bare string');
   });
 
   it('reviewers.yaml has merge_strategy: append and blocker_threshold: 1', () => {

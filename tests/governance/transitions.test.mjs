@@ -48,7 +48,10 @@ const SPEC_SHA = "aaaa1111";
  */
 function seedProject({ gatesYaml, sourceManifest = defaultFrontmatter() } = {}) {
   const dir = createTempDir();
-  writeFixture(dir, ".context-index/manifest.yaml", "project:\n  domain: fixture-domain\n");
+  // Top-level `domain:` — the shape real writers (writeDomainKey()) and real
+  // manifests produce; resolveDomain() reads this key, not a nested
+  // `project.domain`.
+  writeFixture(dir, ".context-index/manifest.yaml", "domain: fixture-domain\n");
   writeFixture(dir, ".context-index/domains/fixture-domain/gates.yaml", "gates: []\n");
   // Fixture maintenance (Task 10): `gates.yaml` is a MARKED registry, so every
   // consumer read now fails closed without a `materialized_at` marker. These
@@ -837,7 +840,7 @@ describe("gate-set parity with `adev domain load-gates`", () => {
     writeFixture(
       dir,
       ".context-index/manifest.yaml",
-      "project:\n  domain: fixture-domain\nmodules:\n  - slug: m\n    domain: mod-domain\n",
+      "domain: fixture-domain\nmodules:\n  - slug: m\n    domain: mod-domain\n",
     );
     writeFixture(dir, ".context-index/domains/fixture-domain/gates.yaml", "gates: []\n");
     writeFixture(

@@ -86,7 +86,7 @@ function seedProject(dir, overrides = {}) {
   writeFixture(
     dir,
     ".context-index/manifest.yaml",
-    "project:\n  name: fixture\n  domain: software\n",
+    "project:\n  name: fixture\ndomain: software\n",
   );
   writeFixture(dir, GATES, overrides.gates ?? DEFAULT_GATES);
   writeFixture(dir, REVIEW, overrides.review ?? DEFAULT_REVIEW);
@@ -365,7 +365,7 @@ describe("adev governance materialize", () => {
       writeFixture(
         dir,
         ".context-index/manifest.yaml",
-        "project:\n  name: fixture\n  domain: acme\n",
+        "project:\n  name: fixture\ndomain: acme\n",
       );
       const r = runCli(dir, ["governance", "materialize", "--registry", "review"]);
       assert.equal(r.exitCode, 0, r.stderr);
@@ -544,7 +544,7 @@ describe("the `source` field records provenance AT MATERIALIZATION TIME", () => 
       writeFixture(
         dir,
         ".context-index/manifest.yaml",
-        "project:\n  name: fixture\n  domain: acme\n",
+        "project:\n  name: fixture\ndomain: acme\n",
       );
 
       const first = runCli(dir, ["governance", "materialize", "--registry", "gates"]);
@@ -558,7 +558,7 @@ describe("the `source` field records provenance AT MATERIALIZATION TIME", () => 
       writeFixture(
         dir,
         ".context-index/manifest.yaml",
-        "project:\n  name: fixture\n  domain: software\n",
+        "project:\n  name: fixture\ndomain: software\n",
       );
       const second = runCli(dir, ["governance", "materialize", "--registry", "gates"]);
       assert.equal(second.exitCode, 0, second.stderr);
@@ -697,7 +697,7 @@ describe("materialize — manifest.yaml:specialists still dispatch (review Impor
       writeFixture(
         dir,
         ".context-index/manifest.yaml",
-        "project:\n  name: fixture\n  domain: software\nspecialists: []\n",
+        "project:\n  name: fixture\ndomain: software\nspecialists: []\n",
       );
       const r = runCli(dir, ["governance", "materialize", "--registry", "review"]);
       assert.equal(r.exitCode, 0, r.stderr);
