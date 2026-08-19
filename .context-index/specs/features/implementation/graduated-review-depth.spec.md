@@ -3,7 +3,7 @@
 ---
 charter: implementation
 kind: skill
-status: review-passed
+status: implemented
 risk_level: high
 milestone:
 revision: 11
@@ -16,26 +16,52 @@ depends-on:
   - .context-index/specs/features/implementation/batched-task-dispatch.spec.md
 relates-to: .context-index/specs/cross-cutting/graduated-rigor-tiers.spec.md
 source-manifest:
+  sha: "2a12564"
   files:
+    - .context-index/governance/risk-policies.yaml
+    - docs/cli-reference.md
+    - docs/skill-reference.md
+    - lib/cli/implement.mjs
+    - lib/cli/test-policy.mjs
+    - lib/diagnostics/event-schemas.mjs
     - lib/governance/rigor-mode.mjs
     - lib/implement/review-depth.mjs
-    - lib/test-strategies/depth.mjs
-    - lib/manifest.mjs
-    - lib/cli/implement.mjs
-    - skills/implement/SKILL.md
-    - skills/implement/synthesized-reviewer-prompt.md
-    - skills/build/SKILL.md
-    - .context-index/specs/cross-cutting/graduated-rigor-tiers.spec.md
-    - .context-index/specs/features/implementation/batched-task-dispatch.spec.md
-    - lib/cli/boundaries.mjs
-    - .context-index/specs/features/agent-reliable-state-artifacts/lifecycle-event-log.spec.md
-    - .context-index/specs/features/test-strategies/test-depth-policy.spec.md
     - lib/lifecycle-events.mjs
-    - lib/diagnostics/event-schemas.mjs
-    - lib/cli/report.mjs
     - lib/lifecycle-state.mjs
-    - skills/route/SKILL.md
+    - lib/manifest.mjs
+    - providers/codex/skills/build/SKILL.md
+    - providers/codex/skills/build/step4-tier-propagation.md
+    - providers/codex/skills/implement/SKILL.md
+    - providers/codex/skills/implement/feature-completeness-dod.md
+    - providers/codex/skills/implement/graduated-review-depth.md
+    - providers/codex/skills/implement/synthesized-reviewer-prompt.md
+    - providers/opencode/skills/build/SKILL.md
+    - providers/opencode/skills/build/step4-tier-propagation.md
+    - providers/opencode/skills/implement/SKILL.md
+    - providers/opencode/skills/implement/feature-completeness-dod.md
+    - providers/opencode/skills/implement/graduated-review-depth.md
+    - providers/opencode/skills/implement/synthesized-reviewer-prompt.md
+    - skills/build/SKILL.md
+    - skills/build/step4-tier-propagation.md
+    - skills/implement/SKILL.md
+    - skills/implement/feature-completeness-dod.md
+    - skills/implement/graduated-review-depth.md
+    - skills/implement/synthesized-reviewer-prompt.md
     - templates/risk-policies-template.yaml
+    - tests/cli/implement-resolve-depth.test.mjs
+    - tests/docs/implement-resolve-depth-docs.test.mjs
+    - tests/governance/rigor-mode.test.mjs
+    - tests/governance/risk-policies-implement-mode.test.mjs
+    - tests/lib/implement/review-depth.test.mjs
+    - tests/lib/manifest.test.mjs
+    - tests/lifecycle/gate-outcomes.test.mjs
+    - tests/lifecycle/review-depth-resolved-event.test.mjs
+    - tests/skills/build-tier-propagation.test.mjs
+    - tests/skills/implement-graduated-review-depth.test.mjs
+    - tests/skills/implement-review-provenance.test.mjs
+    - tests/skills/implement-synthesized-prompt.test.mjs
+    - tests/skills/implement.test.mjs
+  computed-at: "2026-08-19T20:27:40.286Z"
 ---
 
 # Skill Spec: Graduated Review Depth in /adev:implement
