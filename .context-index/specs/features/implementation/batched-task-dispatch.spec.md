@@ -37,6 +37,7 @@ source-manifest:
     - tests/lib/manifest.test.mjs
     - tests/skills/implement-batched-mode.test.mjs
   computed-at: "2026-08-18T22:04:02.308Z"
+drift_detected: true
 ---
 
 # Skill Spec: Batched Task Dispatch

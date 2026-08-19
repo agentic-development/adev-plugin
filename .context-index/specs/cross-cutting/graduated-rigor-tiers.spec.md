@@ -3,7 +3,7 @@ kind: skill
 status: review-pending
 mode: cross-cutting
 risk_level: medium
-affects: [review-specs, validate, route, work, init, build]
+affects: [review-specs, validate, route, work, init, build, implement]
 source-manifest:
   files:
     - lib/governance/rigor-mode.mjs
@@ -15,9 +15,9 @@ source-manifest:
     - skills/build/SKILL.md
     - templates/risk-policies-template.yaml
   computed-at: "2026-08-12T00:00:00.000Z"
-revision: 2
+revision: 3
 created: 2026-07-01
-updated: 2026-08-12
+updated: 2026-08-19
 tracker-ref: "PR #199 / single-front-door CON-1; issue-568"
 drift_detected: true
 ---
@@ -64,6 +64,15 @@ Run the fail-fast quality gates (Check 1: tests / lint / typecheck) plus a **sin
 
 **Resolution helper (lib)**
 - A pure helper resolves the effective mode for a skill: `resolveRigorMode({ skill, riskLevel, policies, tierOverride, routingEasy })` → `"full" | "quick"`. Precedence: `tierOverride` > `routingEasy` > policy(`riskLevel`) > `"full"`. No I/O; unit-tested.
+- **Carve-out for `skill === "implement"`** (amendment landing with
+  `graduated-review-depth.spec.md`): for `implement` only, `tierOverride: "quick"`
+  does not win unconditionally — see `graduated-review-depth.spec.md` Output
+  Contract A for the implement-specific precedence (a quick-grant predicate and a
+  floor pass sit between the override and the resolved value). `tierOverride: "full"`
+  remains unconditional for every skill, `implement` included, and the
+  `routingEasy === true → "quick"` short-circuit does not apply to `implement` at
+  all. Every other skill's behavior (`review-specs`, `validate`, `route`, `work`,
+  `init`, `build`) is unchanged by this carve-out.
 
 **review-specs**
 - When resolved mode is `quick`: dispatch exactly one `quick-synthesized-reviewer` (bundled prompt `templates/review-specs/quick-synthesized.md`) rather than the three `dispatch: always` defaults.
