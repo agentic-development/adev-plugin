@@ -71,31 +71,31 @@ Twenty-three passes, each defined in its own companion under
 > carries that pass's goal, steps, finding table, and severity rules; none of
 > them is summarized here, so do not run a pass from the table alone.
 
-| # | Pass | `--check` slug | Companion file |
+| # | Pass | `--check` slug | Companion |
 |---|------|----------------|----------------|
-| 1 | Constitution Freshness | `constitution` | `pass-01-constitution-freshness.md` |
-| 2 | Charter Coverage | `charters` | `pass-02-charter-coverage.md` |
-| 3 | ADR Currency | `adrs` | `pass-03-adr-currency.md` |
-| 4 | Golden Sample Validity | `samples` | `pass-04-golden-sample-validity.md` |
-| 5 | Spec-to-Code Drift | `drift` | `pass-05-spec-to-code-drift.md` |
-| 6 | Session Analysis (Conditional) | `sessions` | `pass-06-session-analysis.md` |
-| 7 | External Reference Freshness | `references` | `pass-07-external-reference-freshness.md` |
-| 8 | Governance Policy Health | `governance` | `pass-08-governance-policy-health.md` |
-| 9 | Recovery Pattern Analysis | `recoveries` | `pass-09-recovery-pattern-analysis.md` |
-| 10 | Blocker Frequency Analysis | `blockers` | `pass-10-blocker-frequency-analysis.md` |
-| 11 | Milestone Coverage | `milestones` | `pass-11-milestone-coverage.md` |
-| 12 | Lifecycle Audit | `lifecycle` | `pass-12-lifecycle-audit.md` |
-| 13 | Code Health | `code-health` | `pass-13-code-health.md` |
-| 14 | Code Provenance | `provenance` | `pass-14-code-provenance.md` |
-| 15 | Issue Board Audit | `issue-board` | `pass-15-issue-board-audit.md` |
-| 16 | Heuristic Index Health | `heuristics` | `pass-16-heuristic-index-health.md` |
-| 17 | Code Drift | `code-drift` | `pass-17-code-drift.md` |
-| 18 | Kind Validity | `kind-validity` | `pass-18-kind-validity.md` |
-| 19 | Governance Registry Drift | `validate-config-drift` | `pass-19-governance-registry-drift.md` |
-| 20 | Platform Drift | `platform-drift` | `pass-20-platform-drift.md` |
-| 21 | Amendment Graph | — (no slug; full-audit only) | `pass-21-amendment-graph.md` |
-| 22 | Test-Policy Drift | `test-policy-drift` | `pass-22-test-policy-drift.md` |
-| 23 | Test Debt | `test-debt` | `pass-23-test-debt.md` |
+| 1 | Constitution Freshness | `constitution` | `skills/hygiene/references/audit-passes/pass-01-constitution-freshness.md` |
+| 2 | Charter Coverage | `charters` | `skills/hygiene/references/audit-passes/pass-02-charter-coverage.md` |
+| 3 | ADR Currency | `adrs` | `skills/hygiene/references/audit-passes/pass-03-adr-currency.md` |
+| 4 | Golden Sample Validity | `samples` | `skills/hygiene/references/audit-passes/pass-04-golden-sample-validity.md` |
+| 5 | Spec-to-Code Drift | `drift` | `skills/hygiene/references/audit-passes/pass-05-spec-to-code-drift.md` |
+| 6 | Session Analysis (Conditional) | `sessions` | `skills/hygiene/references/audit-passes/pass-06-session-analysis.md` |
+| 7 | External Reference Freshness | `references` | `skills/hygiene/references/audit-passes/pass-07-external-reference-freshness.md` |
+| 8 | Governance Policy Health | `governance` | `skills/hygiene/references/audit-passes/pass-08-governance-policy-health.md` |
+| 9 | Recovery Pattern Analysis | `recoveries` | `skills/hygiene/references/audit-passes/pass-09-recovery-pattern-analysis.md` |
+| 10 | Blocker Frequency Analysis | `blockers` | `skills/hygiene/references/audit-passes/pass-10-blocker-frequency-analysis.md` |
+| 11 | Milestone Coverage | `milestones` | `skills/hygiene/references/audit-passes/pass-11-milestone-coverage.md` |
+| 12 | Lifecycle Audit | `lifecycle` | `skills/hygiene/references/audit-passes/pass-12-lifecycle-audit.md` |
+| 13 | Code Health | `code-health` | `skills/hygiene/references/audit-passes/pass-13-code-health.md` |
+| 14 | Code Provenance | `provenance` | `skills/hygiene/references/audit-passes/pass-14-code-provenance.md` |
+| 15 | Issue Board Audit | `issue-board` | `skills/hygiene/references/audit-passes/pass-15-issue-board-audit.md` |
+| 16 | Heuristic Index Health | `heuristics` | `skills/hygiene/references/audit-passes/pass-16-heuristic-index-health.md` |
+| 17 | Code Drift | `code-drift` | `skills/hygiene/references/audit-passes/pass-17-code-drift.md` |
+| 18 | Kind Validity | `kind-validity` | `skills/hygiene/references/audit-passes/pass-18-kind-validity.md` |
+| 19 | Governance Registry Drift | `validate-config-drift` | `skills/hygiene/references/audit-passes/pass-19-governance-registry-drift.md` |
+| 20 | Platform Drift | `platform-drift` | `skills/hygiene/references/audit-passes/pass-20-platform-drift.md` |
+| 21 | Amendment Graph | — (no slug; full-audit only) | `skills/hygiene/references/audit-passes/pass-21-amendment-graph.md` |
+| 22 | Test-Policy Drift | `test-policy-drift` | `skills/hygiene/references/audit-passes/pass-22-test-policy-drift.md` |
+| 23 | Test Debt | `test-debt` | `skills/hygiene/references/audit-passes/pass-23-test-debt.md` |
 
 Pass 21 has no `--check` slug: it runs only as part of a full audit. That is a
 gap in the argument list, not a property of the pass.

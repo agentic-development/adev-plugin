@@ -118,7 +118,7 @@ Build the implementer subagent prompt with these sections in order:
 5. **Spec excerpt.** The acceptance criteria from the Live Spec that this task addresses.
 5b. **Shared Test Helper Inventory.** The `## Shared Test Helper Inventory` section assembled in step 2a item 7, verbatim, when it is non-empty. Omit the section entirely when the inventory is empty. This is what stops a contextless implementer from re-deriving fixtures the project already has.
 6. **Scope discipline.** Only make changes directly required by the task. Do not refactor surrounding code, add abstractions, create helper files, or introduce patterns unless the task explicitly requires it. If you notice improvements outside the task scope, note them in your Concerns section but do not implement them. **Cross-repo isolation constraint (workspace mode):** When operating inside a workspace, do NOT modify files in sibling repos. Cross-repo reference context is read-only — it informs your implementation but all changes must be confined to the current repo. If a task requires changes in a sibling repo, report it as NEEDS_CONTEXT with a note identifying the sibling repo and required changes.
-7. **TDD mandate.** This section is non-negotiable. Include the full content of `references/tdd-mandate.md` in this skill directory.
+7. **TDD mandate.** This section is non-negotiable. Include the full content of `skills/implement/references/tdd-mandate.md`.
 
    **Write-test subagent dispatch:** When dispatching write-test subagents, set `ADEV_DISPATCHED_BY=implement` in the subagent environment so write-test can detect dispatch mode and skip its own preflight (implement already verified infrastructure).
 
@@ -316,7 +316,7 @@ Dispatch a fresh code quality reviewer subagent with:
 - Secondary specialist matches from step 2a (so the reviewer checks those domains)
 - Instructions to tag every Critical or Important finding with a stable short id (for example `cq-1`, `cq-2`) and to reuse the same id across cycles for the same underlying finding. The ids are what make the convergence check below meaningful — without them, "the same three issues came back" is indistinguishable from "three different issues".
 
-The code quality reviewer checks the items in `references/code-quality-checklist.md` in this skill directory.
+The code quality reviewer checks the items in `skills/implement/references/code-quality-checklist.md`.
 
 **Minor issues:** Noted but do not block progress.
 

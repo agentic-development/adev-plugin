@@ -9,7 +9,7 @@ After writing the complete plan, dispatch a plan-reviewer subagent.
 Agent({
   description: "Review implementation plan",
   prompt: `
-    <content of references/plan-reviewer-prompt.md in this skill directory>
+    <content of skills/plan/references/plan-reviewer-prompt.md>
 
     ---
 
