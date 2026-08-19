@@ -22,6 +22,7 @@ import {
   isLeaseExcluded,
   hasOpenBlockingDependencies,
   isAttemptCapExcluded,
+  selectNextEligibleBug,
 } from "../../lib/issues/eligibility.mjs";
 
 test("resolvePriorityBound: omitted --max-priority defaults to P3 (BEH-8 safety floor)", () => {
@@ -149,4 +150,88 @@ test("isAttemptCapExcluded: NO_PROGRESS/REGRESSED/BUDGET_EXHAUSTED exclude (BEH-
   assert.equal(isAttemptCapExcluded({ last_verdict: "PASS" }), false);
   assert.equal(isAttemptCapExcluded({ last_verdict: "CONTINUE" }), false);
   assert.equal(isAttemptCapExcluded(null), false); // no AttemptRecord = zero attempts
+});
+
+// ─── Task 4: Selection and tie-break composition (BEH-1, BEH-2) ───────────
+
+function bug(overrides) {
+  return {
+    id: "b1", type: "bug", status: "open", priority: 3,
+    created: "2026-01-01T00:00:00.000Z", dependencies: [],
+    affected_modules: ["cli"], ...overrides,
+  };
+}
+
+test("selectNextEligibleBug: returns highest-priority eligible bug within bound (BEH-1)", () => {
+  const issues = [bug({ id: "b1", priority: 3 }), bug({ id: "b2", priority: 2 })];
+  const result = selectNextEligibleBug({ issues, manifest: { modules: [{ slug: "cli" }] }, maxPriorityBound: 3, attemptRecords: new Map() });
+  assert.equal(result.bug.id, "b2"); // lower number = higher priority
+});
+
+test("selectNextEligibleBug: returns null when nothing qualifies", () => {
+  const result = selectNextEligibleBug({ issues: [], manifest: {}, maxPriorityBound: 3, attemptRecords: new Map() });
+  assert.equal(result.bug, null);
+});
+
+test("selectNextEligibleBug: ties resolve FIFO by oldest created (BEH-2)", () => {
+  const issues = [
+    bug({ id: "b1", priority: 2, created: "2026-01-02T00:00:00.000Z" }),
+    bug({ id: "b2", priority: 2, created: "2026-01-01T00:00:00.000Z" }),
+  ];
+  const result = selectNextEligibleBug({ issues, manifest: { modules: [{ slug: "cli" }] }, maxPriorityBound: 3, attemptRecords: new Map() });
+  assert.equal(result.bug.id, "b2");
+});
+
+test("selectNextEligibleBug: priority above bound excluded", () => {
+  const issues = [bug({ id: "b1", priority: 4 })];
+  const result = selectNextEligibleBug({ issues, manifest: { modules: [{ slug: "cli" }] }, maxPriorityBound: 3, attemptRecords: new Map() });
+  assert.equal(result.bug, null);
+});
+
+test("selectNextEligibleBug: P0/P1 bugs are NEVER returned even though maxPriorityBound (2 or 3) would numerically admit them (BEH-8 safety boundary — round-1 review blocker)", () => {
+  // maxPriorityBound can only ever resolve to 2 or 3 (Task 1 rejects P0/P1 at the flag),
+  // but a P0/P1 bug could still exist on the board — the ceiling check `priority > bound`
+  // does not exclude a priority NUMERICALLY BELOW the bound. An explicit floor is required.
+  const issues = [bug({ id: "p0-bug", priority: 0 }), bug({ id: "p1-bug", priority: 1 })];
+  const result = selectNextEligibleBug({ issues, manifest: { modules: [{ slug: "cli" }] }, maxPriorityBound: 3, attemptRecords: new Map() });
+  assert.equal(result.bug, null);
+});
+
+test("selectNextEligibleBug: a bug blocked by a non-bug work item is excluded, and no OTHER candidate exists to mask the check (BEH-4, full-board dependency map)", () => {
+  // issuesById must be built from the FULL board (all types), not just bug candidates —
+  // a dependency on a `feature`/`task` work item must still block. This is the ONLY
+  // candidate bug in the fixture, so a false negative here (dependency wrongly ignored)
+  // cannot be masked by another eligible bug winning the tie-break — unlike an end-to-end
+  // fixture that also carries an unrelated eligible bug, this assertion has no escape hatch.
+  const blocker = { id: "f1", type: "feature", status: "open", dependencies: [], created: "2026-01-01T00:00:00.000Z" };
+  const blocked = bug({ id: "b1", dependencies: ["f1"] });
+  const result = selectNextEligibleBug({ issues: [blocked, blocker], manifest: { modules: [{ slug: "cli" }] }, maxPriorityBound: 3, attemptRecords: new Map() });
+  assert.equal(result.bug, null);
+});
+
+test("selectNextEligibleBug: missing priority is treated as eligible (normalized to 2/P2) rather than excluded or treated as P0", () => {
+  // Normalization is internal to filtering/sorting (`priority ?? 2`) — the function
+  // returns the ORIGINAL issue object unmodified, so `result.bug.priority` stays
+  // `undefined` on the returned object. Only the selection outcome (id) is asserted;
+  // callers that need a materialized priority read `result.bug.priority ?? 2` themselves.
+  const issue = bug({ id: "b1" });
+  delete issue.priority;
+  const result = selectNextEligibleBug({ issues: [issue], manifest: { modules: [{ slug: "cli" }] }, maxPriorityBound: 3, attemptRecords: new Map() });
+  assert.equal(result.bug.id, "b1");
+});
+
+test("selectNextEligibleBug: cascading exclusion — the more-urgent candidate is excluded (attempt-cap), the next eligible candidate wins (round-4 cq-1)", () => {
+  const issues = [
+    bug({ id: "urgent-but-excluded", priority: 2 }),
+    bug({ id: "next-in-line", priority: 3 }),
+  ];
+  const attemptRecords = new Map([["urgent-but-excluded", { last_verdict: "REGRESSED" }]]);
+  const result = selectNextEligibleBug({ issues, manifest: { modules: [{ slug: "cli" }] }, maxPriorityBound: 3, attemptRecords });
+  assert.equal(result.bug.id, "next-in-line");
+});
+
+test("selectNextEligibleBug: deferred-status bug is excluded (round-4 cq-2)", () => {
+  const issues = [bug({ id: "b1", status: "deferred" })];
+  const result = selectNextEligibleBug({ issues, manifest: { modules: [{ slug: "cli" }] }, maxPriorityBound: 3, attemptRecords: new Map() });
+  assert.equal(result.bug, null);
 });
