@@ -471,12 +471,16 @@ Dispatch a charter-reviewer subagent to validate the written charter.
 
 **Tier:** `capable` — read from `model_tiers` in `.context-index/platform-context.yaml`. Fall back to the hardcoded default in `.context-index/specs/cross-cutting/model-routing.md` if unset, and log a one-time advisory.
 
-**Subagent dispatch:**
+**Always pass `run_in_background: false` on every `Agent({...})` dispatch in this skill.** The harness backgrounds Agent dispatches by default: the call returns immediately with a task ID and the caller is only re-invoked by a completion notification. That notification path is reliable only at the top level of a session — inside a nested subagent context it does not re-invoke the caller, so a backgrounded dispatch stalls the pipeline (field-observed as steps that auto-background and never return a result).
+
+**Never end your turn to wait for a dispatched subagent.** A synchronous dispatch (`run_in_background: false`) returns its final result directly in the tool call — there is nothing to wait for. If a dispatch ever returns a task ID instead of a result, that is a bug in the dispatch (the rule above was violated, or the harness backgrounded it anyway): fix the dispatch and re-run it synchronously. Do not end the turn hoping a completion notification will resume you — in a nested subagent context it will not. If this skill is itself running as a dispatched subagent (e.g., a build pipeline step), your own caller is waiting on a result contract — for build pipeline steps this is the `STEP_RESULT` format defined in `skills/build/SKILL.md`. Ending your turn without that result to report is a protocol violation, not a valid pause point.
+
+**Subagent dispatch:** dispatch the subagent with `Agent({description, prompt, run_in_background: false})` and nothing else.
 
 ```
-Task tool (general-purpose):
-  description: "Review feature charter for completeness and consistency"
-  prompt: |
+Agent({
+  description: "Review feature charter for completeness and consistency",
+  prompt: `
     You are a Feature Charter reviewer for the Agentic Development Framework.
 
     **Charter to review:** [CHARTER_FILE_PATH]
@@ -510,6 +514,9 @@ Task tool (general-purpose):
     - [Section]: [specific issue] — [why it matters]
     **Recommendations (advisory, do not block approval):**
     - [suggestions]
+  `,
+  run_in_background: false,
+})
 ```
 
 **Handling review results:**
