@@ -83,3 +83,33 @@ test("manifest template documents tasks.bugfix_loop.reproduction_attempt_limit",
   const yaml = read("templates/manifest-template.yaml");
   assert.match(yaml, /reproduction_attempt_limit/);
 });
+
+test("debug SKILL.md writes a FAILING-CHECKS block into issue notes on the PARKED path under --auto (BEH-8, RI-1 fix)", () => {
+  const md = read("skills/debug/SKILL.md");
+  assert.match(md, /FAILING-CHECKS:/, "Phase 6 must define the FAILING-CHECKS: notes block");
+  // RI-1: the FAILING-CHECKS write must land in the SAME update() call the
+  // PARKED branch already makes -- not a separate write, and not a false
+  // claim that format-note is invoked on this branch.
+  assert.match(
+    md,
+    /Fix applied but not yet validated[\s\S]{0,400}FAILING-CHECKS|FAILING-CHECKS[\s\S]{0,400}Fix applied but not yet validated/,
+    "the FAILING-CHECKS block must be appended to the existing PARKED-path notes string, in the same update() call",
+  );
+});
+
+test("debug SKILL.md merges Phase 6 step 3's insight note into step 4's single update() call, for both the closing and parking branch (BEH-5/BEH-8 wiring)", () => {
+  const md = read("skills/debug/SKILL.md");
+  const step4Idx = md.indexOf("Update issue board with confidence");
+  assert.ok(step4Idx !== -1, "Phase 6 step 4 heading must exist");
+  const step4Window = md.slice(step4Idx, step4Idx + 2500);
+  assert.match(
+    step4Window,
+    /insight note/i,
+    "step 4 must reference merging step 3's insight note into its update() call(s)",
+  );
+  assert.match(
+    step4Window,
+    /FAILING-CHECKS[\s\S]{0,600}insight note|insight note[\s\S]{0,600}FAILING-CHECKS/i,
+    "the PARKED branch must concatenate FAILING-CHECKS and the insight note in the same update() call",
+  );
+});
