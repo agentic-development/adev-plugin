@@ -2,7 +2,7 @@
 
 ---
 charter: autonomous-bugfix-loop
-status: implemented
+status: validated
 kind: behavioral
 risk_level: high
 milestone: 1
