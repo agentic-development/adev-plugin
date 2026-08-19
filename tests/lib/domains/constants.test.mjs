@@ -14,9 +14,9 @@ import {
 } from '../../../lib/domains/constants.mjs';
 
 describe('domains/constants', () => {
-  it('exports all 8 overlay types', () => {
-    assert.equal(DOMAIN_CONFIG_TYPES.size, 8);
-    for (const t of ['charter-template', 'spec-template', 'reviewers', 'gates', 'verification', 'gate-config', 'test-config', 'validate']) {
+  it('exports all 9 overlay types', () => {
+    assert.equal(DOMAIN_CONFIG_TYPES.size, 9);
+    for (const t of ['charter-template', 'spec-template', 'reviewers', 'gates', 'verification', 'gate-config', 'test-config', 'validate', 'specify-guidance']) {
       assert.ok(DOMAIN_CONFIG_TYPES.has(t), `missing overlay type: ${t}`);
     }
     assert.ok(!DOMAIN_CONFIG_TYPES.has('charter-overlay'), 'charter-overlay should not be in DOMAIN_CONFIG_TYPES');
@@ -33,6 +33,8 @@ describe('domains/constants', () => {
     assert.equal(DOMAIN_CONFIG_FILENAMES.get('gate-config'), 'gate-config.yaml');
     assert.equal(DOMAIN_CONFIG_FILENAMES.get('test-config'), 'test-config.yaml');
     assert.equal(DOMAIN_CONFIG_FILENAMES.get('validate'), 'validate.yaml');
+    assert.equal(DOMAIN_CONFIG_FILENAMES.get('specify-guidance'), 'specify-guidance.md');
+    assert.ok(!STRUCTURED_CONFIG_TYPES.has('specify-guidance'), 'specify-guidance must NOT be structured');
 
     // exports only software as bundled domain name
     assert.equal(BUNDLED_DOMAIN_NAMES.size, 1);
