@@ -129,3 +129,13 @@ test("debug SKILL.md resolves ADEV_ISSUE_OWNER for both claim and release (BEH-9
     "the release command must reuse the ADEV_ISSUE_OWNER-resolved owner, not a fresh hardcoded literal",
   );
 });
+
+test("using-adev persona overlay names ADEV-DEBUG as persona-exempt (BEH-6)", () => {
+  const md = read("skills/using-adev/SKILL.md");
+  assert.match(md, /## Persona Output Override/);
+  assert.match(
+    md,
+    /ADEV-DEBUG/,
+    "the persona overlay must explicitly name ADEV-DEBUG in the completion-token exemption bullet",
+  );
+});
