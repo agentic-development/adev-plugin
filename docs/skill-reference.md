@@ -321,8 +321,12 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 - `--dry-run`: show routing decisions without executing
 - `--parallel`: run file-disjoint task groups concurrently in adev-managed worktrees (falls back to serial when the plan has no usable `## Parallelization` section). See [Build Phase → Parallel Execution](build-phase.md#parallel-execution---parallel).
 - `--fresh`: with `--parallel`, on a re-run collision auto-remove the retained worktree and continue instead of aborting with `RERUN_COLLISION`. No effect without `--parallel`.
+- `--no-batch`: force solo dispatch for every task, restoring today's strict one-subagent-per-task behavior. Rejected with `CONFLICTING_BATCH_FLAGS` when combined with `--parallel`.
+- `--max-batch <n>`: per-run override of `implement.max_batch_size` (default 4). `1` is equivalent to `--no-batch`.
 - `--no-infra`: skip infrastructure preflight checks (user-only)
 - `--verbose`: enable step-by-step narration for debugging
+
+Batching and `--parallel` operate at different scopes: batching groups cohesive, dependent tasks for sequential dispatch within the orchestrator's own tree, while `--parallel` runs disjoint groups concurrently across separate worktrees — hence `--no-batch` and `--parallel` conflict, since `--parallel`'s unit of dispatch is already the group.
 
 **Example:**
 ```

@@ -28,6 +28,8 @@ function makeEvent(type, extras = {}) {
       case 'status': event.status = 'done'; break;
       case 'kind': event.kind = 'debug'; break;
       case 'note': event.note = 'n'; break;
+      case 'stage': event.stage = 'code-quality'; break;
+      case 'cycles': event.cycles = 1; break;
       default: event[field] = 'x';
     }
   }
@@ -124,4 +126,40 @@ test('fires when ts is missing or non-string', () => {
   const result = run({ event });
   assert.equal(result.fired, true);
   assert.match(result.message, /ts/);
+});
+
+test('event-schema-valid accepts a well-formed review_round event', () => {
+  const result = run({
+    event: {
+      event: 'review_round', ts: '2026-01-01T00:00:00.000Z', plan: 'p.plan.md', task_id: 't1',
+      stage: 'code-quality', cycles: 2, findings: 1,
+    },
+  });
+  assert.deepEqual(result, { fired: false }, 'no diagnostic of any severity');
+});
+
+test('event-schema-valid flags a review_round event missing cycles', () => {
+  const result = run({
+    event: {
+      event: 'review_round', ts: '2026-01-01T00:00:00.000Z', plan: 'p.plan.md', task_id: 't1',
+      stage: 'code-quality',
+    },
+  });
+  assert.equal(result.fired, true);
+  assert.equal(result.severity, 'error');
+  assert.match(result.message, /cycles/);
+});
+
+test('event-schema-valid no longer reports review_round as an unknown event type', () => {
+  const result = run({
+    event: {
+      event: 'review_round', ts: '2026-01-01T00:00:00.000Z', plan: 'p.plan.md', task_id: 't1',
+      stage: 'spec-compliance', cycles: 1,
+    },
+  });
+  assert.equal(result.fired, false, `expected no diagnostic; got: ${JSON.stringify(result)}`);
+  assert.ok(
+    !/unknown event type/i.test(JSON.stringify(result)),
+    'review_round must be a known discriminator',
+  );
 });

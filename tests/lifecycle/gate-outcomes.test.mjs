@@ -333,6 +333,9 @@ const EXPECTED_VARIANTS = [
   'spec_amended',
   'human_approval_required',
   'test_depth_assigned',
+  // review-provenance.spec.md Output Contract B registration step 2 — the
+  // canonical set legitimately grew here, so the pin is updated in lockstep.
+  'review_round',
 ];
 
 test('no new CANONICAL_EVENTS variant is introduced', () => {

@@ -1,0 +1,94 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.6,
+        "novelty": 0.8
+      },
+      "rationale": "Output Contract B declares the amendment table and the plan supplies literal markdown plus the full test, but the edits land inside another charter's plan-task-events.spec.md (validated, risk_level high), so a checkpoint before amending another contract is warranted."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.6,
+        "novelty": 1
+      },
+      "rationale": "Mechanical four-step registration with exact code supplied; partial_recovery, spec_amended and test_depth_assigned are in-file precedents. Additive to a shared frozen enum across lib/ and tests/, and the spec resolves the ADR-0009 touch as autonomous."
+    },
+    {
+      "task_id": "t3",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.8,
+        "novelty": 0.8
+      },
+      "rationale": "Five Failure-Mode rows fix the throw contract exactly and validateGateOutcomes/GATE_OUTCOME_KEYS is a same-file pattern to mirror; only the stage-conditional findings rejection is new. Two files, purely additive export."
+    },
+    {
+      "task_id": "t4",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.8,
+        "novelty": 1
+      },
+      "rationale": "Fold rule, key form, last-wins and the not-unknownEvents constraint are all stated, and case 'test_depth_assigned' is an exact adjacent mirror with code supplied. One lib file; adding an emptyProjection key can ripple into other suites' deepEqual assertions."
+    },
+    {
+      "task_id": "t5",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.4,
+        "blast_radius": 0.8,
+        "novelty": 0.6
+      },
+      "rationale": "Weakest precedent in the plan: the nearest helper (escapeField) normalizes where Contract A demands refusal, and the spec demotes that reuse to non-contractual. The cap value and the control/ANSI character class are left to the implementer on a security-relevant (CWE-93/113/150) commit-authoring path."
+    },
+    {
+      "task_id": "t6",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.8,
+        "novelty": 0.8
+      },
+      "rationale": "The verb signature is fixed by the Arguments table and the --type plan-task block is a direct in-file template, but the plan also folds in a pre-existing four-way enum drift reconciliation behind a new exported REPORT_TYPES across five sites, a refactor no acceptance criterion shapes."
+    },
+    {
+      "task_id": "t7",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "One enum value plus one usage example in docs/cli-reference.md and a parity assertion copied from tests/docs/test-depth-policy-docs.test.mjs. Smallest blast radius in the plan and fully mechanical."
+    },
+    {
+      "task_id": "t8",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.6,
+        "novelty": 0.6
+      },
+      "rationale": "Prose-only edit to the orchestrator every implement run drives, inside the skills/** scope of the no-inline-node boundary rule, and it must satisfy four separate SKILL.md anti-patterns while provably changing no dispatch count or cycle cap (Output Contract D)."
+    }
+  ]
+}

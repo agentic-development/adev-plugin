@@ -160,6 +160,11 @@ completion:
 build:
   max_review_retries: 9
 
+# implement:
+#   batch_mode: on          # on | off — default on (Requires Human Approval; see
+#                            # batched-task-dispatch.spec.md System Constitution Reference)
+#   max_batch_size: 4       # integer >= 1 — cap on tasks per batch
+
 tasks:
   backend: beads
 

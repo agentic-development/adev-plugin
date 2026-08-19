@@ -303,12 +303,17 @@ adev governance materialize --registry gates --dry-run
 
 **Purpose:** Append a lifecycle event to `.context-index/lifecycle-state/<slug>.jsonl`. Replaces the inline `reportValidator` / `reportStep` / `reportReviewer` / `reportPlanTask` / `reportIntervention` calls.
 
-**Signature:** `report --type <validator|step|reviewer|plan-task|intervention|cost-checkpoint> --spec <path> [type-specific flags]`
+**Signature:** `report --type <validator|step|reviewer|plan-task|intervention|cost-checkpoint|review-round> --spec <path> [type-specific flags]`
 
 **Example:**
 ```
 adev report --type validator --spec <p> --step validate --validator check-2-spec-compliance --verdict PASS
+
+adev report --type review-round --spec <p> --plan <p>.plan.md --task-id t1 \
+  --stage code-quality --cycles 2 --findings 1
 ```
+
+`--findings` is omitted for `--stage spec-compliance` — that review stage has no stable finding-id convention to count against. As with the other `report` types, omitting an event entirely means "not recorded", never "zero". `cost-checkpoint` remains documented above but is not yet an implemented `--type`; this is a pre-existing gap, tracked separately, and left untouched here.
 
 **Implementation:** `lib/cli/report.mjs`. **Called by:** `/adev:plan`, `/adev:specify`, `/adev:review-specs`, `/adev:implement`, `/adev:validate`.
 
@@ -472,7 +477,26 @@ adev route render-sidecar --plan .context-index/specs/features/auth/login.plan.m
 adev implement read-routing --plan <p> --task-id task-3
 ```
 
+Exit codes: `0` success (entry JSON on stdout), `1` argument error / `INVALID_PLAN_PATH` / `INVALID_SIDECAR_JSON`, `2` `ROUTING_SIDECAR_MISSING`, `3` `ROUTING_ENTRY_MISSING`, `4` `ROUTING_AGENT_INVALID`.
+
 **Implementation:** `lib/cli/implement.mjs`. **Called by:** `/adev:implement`, `/adev:route`.
+
+#### `implement batches`
+
+**Purpose:** Resolve which of a plan's tasks are eligible to dispatch together as a batch (from `## Parallelization` sequential groups) versus solo, honoring per-run overrides.
+
+**Signature:** `implement batches --plan <p> [--max-batch <n>] [--no-batch]`
+
+Prints `{ batches, solo, advisories }` as JSON to stdout. `--no-batch` forces every task solo and is rejected with `CONFLICTING_BATCH_FLAGS` when combined with `--parallel`. `--max-batch <n>` overrides `implement.max_batch_size` for this run; an invalid value is rejected with `INVALID_MAX_BATCH_SIZE`.
+
+**Example:**
+```
+adev implement batches --plan <p> --max-batch 4
+```
+
+Exit codes: `0` success, `1` argument error / `CONFLICTING_BATCH_FLAGS` / `INVALID_MAX_BATCH_SIZE` / `INVALID_PLAN_PATH`, `2` `ROUTING_SIDECAR_MISSING`.
+
+**Implementation:** `lib/cli/implement.mjs`. **Called by:** `/adev:implement` only — `/adev:route` does not call `batches`.
 
 ### `specify`
 
@@ -713,7 +737,6 @@ adev test-policy explain --plan .context-index/specs/features/auth/login.plan.md
 **Implementation:** `lib/cli/test-policy.mjs`. **Called by:** `/adev:implement` (`resolve`,
 `assert-assigned`), operators directly (`show`, `set`, `explain`).
 
-<<<<<<< HEAD
 ### `test-helpers`
 
 **Purpose:** Emits the project's shared test infrastructure — helper modules with their
@@ -750,7 +773,7 @@ adev test-helpers check --file tests/auth/login.test.mjs --file tests/auth/sessi
 **Implementation:** `lib/cli/test-helpers.mjs` (logic in
 `lib/test-strategies/helper-inventory.mjs`). **Called by:** `/adev:write-test` (RED-phase
 Step 3a inventory, post-RED duplication check), `/adev:implement` (context-packet assembly).
-=======
+
 ### `test-debt`
 
 **Purpose:** Audit Pass 23 of `/adev:hygiene`. Scans the test suite for five categories of
@@ -785,7 +808,6 @@ adev test-debt scan --detector APPEND_CHAIN
 
 **Implementation:** `lib/cli/test-debt.mjs` (engine: `lib/hygiene/test-debt.mjs`).
 **Called by:** `/adev:hygiene` Audit Pass 23.
->>>>>>> e59ef658 (feat(maintenance): wire Audit Pass 23 (Test Debt) into /adev:hygiene)
 
 ### `worktree`
 
