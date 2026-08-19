@@ -61,6 +61,10 @@ Six phases. Complete each before proceeding to the next.
    - Does it happen every time?
    - If not reproducible, gather more data. Do not guess.
 
+2a. **Bounded reproduction attempts (`--auto` only).** Interactive mode keeps asking the user when reproduction fails — a human is present to redirect. Under `--auto`, track reproduction attempts against `tasks.bugfix_loop.reproduction_attempt_limit` (manifest-configurable, default 3). Each failed reproduction try counts as one attempt. When the limit is reached without a consistent reproduction, terminate Phase 1 immediately — do not proceed to Phase 2 or later — and emit `ADEV-DEBUG: UNREPRODUCIBLE` as the final line (see Completion token section). This is an intra-invocation counter, distinct from the sibling `per-issue-attempt-cap` spec's inter-invocation `AttemptRecord.attempts` — the two never share a counter or config key.
+
+2b. **No investigation target (`--auto` only).** If `--auto` is passed but Phase 1 cannot resolve any investigation target — no `--issue` id, no `--error` symptom, and nothing inferable from context — exit immediately with a clear `NO_INVESTIGATION_TARGET` message rather than guessing or blocking on an interactive question `--auto` has no user present to answer.
+
 3. **Check recent changes.**
    - Run `git diff` and `git log --oneline -10` in the affected area.
    - New dependencies, config changes, environmental differences.

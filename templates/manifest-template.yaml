@@ -251,8 +251,14 @@ tasks:
   #   auto-retry (per-issue-attempt-cap.spec.md). Default: 2. An issue whose
   #   AttemptRecord.last_verdict lands on NO_PROGRESS, REGRESSED, or
   #   BUDGET_EXHAUSTED is excluded from `adev issues next` until cleared.
+  # bugfix_loop.reproduction_attempt_limit: bounded reproduction-try limit for
+  #   /adev:debug --auto's Phase 1 (debug-completion-and-auto.spec.md). Default: 3.
+  #   Distinct from bugfix_loop.attempt_cap (per-issue-attempt-cap.spec.md) — this
+  #   counts intra-invocation reproduction tries, never leaving a single
+  #   /adev:debug --auto run; attempt_cap counts completed invocations.
   # bugfix_loop:
   #   attempt_cap: 2
+  #   reproduction_attempt_limit: 3
   # legacy_read: enabled | disabled
   #   When set to "enabled" (default) and tasks.json is absent, the json
   #   adapter falls back to reading tasks.md via the shared markdown parser.

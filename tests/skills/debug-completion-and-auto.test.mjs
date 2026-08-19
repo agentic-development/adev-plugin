@@ -59,3 +59,27 @@ test("debug SKILL.md emits the ADEV-DEBUG completion token for FIXED and PARKED 
     "debug SKILL.md must require the ADEV-DEBUG token as the final line of output",
   );
 });
+
+test("debug SKILL.md bounds --auto reproduction attempts and terminates UNREPRODUCIBLE (BEH-3, BEH-7)", () => {
+  const md = read("skills/debug/SKILL.md");
+  assert.match(
+    md,
+    /reproduction_attempt_limit/,
+    "Phase 1 must reference tasks.bugfix_loop.reproduction_attempt_limit",
+  );
+  assert.match(md, /\bdefault(?:s|ing)? (?:of |to )?3\b/i, "default reproduction attempt limit must be 3");
+  assert.ok(
+    md.includes("ADEV-DEBUG: UNREPRODUCIBLE"),
+    "Phase 1 must terminate with ADEV-DEBUG: UNREPRODUCIBLE when the bound is exhausted",
+  );
+  assert.match(
+    md,
+    /NO_INVESTIGATION_TARGET/,
+    "Phase 1 must exit with NO_INVESTIGATION_TARGET under --auto when no target can be resolved",
+  );
+});
+
+test("manifest template documents tasks.bugfix_loop.reproduction_attempt_limit", () => {
+  const yaml = read("templates/manifest-template.yaml");
+  assert.match(yaml, /reproduction_attempt_limit/);
+});
