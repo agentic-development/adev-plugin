@@ -109,7 +109,7 @@ approval per Architecture Boundaries — approved during brainstorm.
 
 | Entity | Description | Key Attributes |
 |--------|-------------|----------------|
-| BugfixLoopRun | One invocation of `/adev:bugfix-loop` across N self-re-invoked turns | run_id, started_at, max_bugs, max_turns, bugs_attempted[], status (running/complete/budget_exhausted), degraded_sync_note (string or null — written only by the tracker-provider-bridge's degraded-GitHub-sync escalation, added in revision 7) |
+| BugfixLoopRun | One invocation of `/adev:bugfix-loop` across N self-re-invoked turns | run_id, started_at, max_bugs, max_turns, bugs_attempted[], status (running/complete/budget_exhausted/blocked — `blocked` added in revision 7 to give the `ADEV-BUGFIXLOOP: BLOCKED` completion-token terminal state defined in `bugfix-loop-skill.spec.md`'s Failure Modes and Output Contract a corresponding persisted value; set once, only on the run's terminal turn, when a structural failure such as an unreachable issue board halts the run before any bug is attempted), degraded_sync_note (string or null — written only by the tracker-provider-bridge's degraded-GitHub-sync escalation, added in revision 7) |
 | AttemptRecord | Per-issue attempt-cap state, independent of the board schema | issue_id, attempts, last_verdict (PASS/CONTINUE/NO_PROGRESS/REGRESSED/BUDGET_EXHAUSTED), curr_blockers (failing check-ID set or bounded hash, for next-attempt diffing), parked_reason, updated_at |
 | TrackerSyncLink | Mapping between an external tracker issue and a local WorkItem, provider-agnostic | provider (e.g. `"github"`), external_ref, local_issue_id, accepted_at (when gate condition first met), last_synced_at, last_comment_id |
 | TrackerProviderAdapter | Interface contract implemented per tracker (GitHub is the only shipped implementation) | provider name, gate-check fn, inbound-fetch fn, outbound-writeback fn — mirrors `IssueManagerInterface`'s adapter shape |
@@ -154,9 +154,9 @@ approval per Architecture Boundaries — approved during brainstorm.
 | Capability | Description | Priority | Milestone | Status |
 |-----------|-------------|----------|-------|--------|
 | Bug Selection Verb | `adev issues next --type bug --max-priority <p> --json` returns the next eligible bug | must-have | 1 | review-passed |
-| ADEV-DEBUG Completion Token | `/adev:debug` emits `ADEV-DEBUG: FIXED \| PARKED \| UNREPRODUCIBLE` per `completion-tokens.spec.md` grammar | must-have | 1 | review-passed |
-| `--auto` Mode on `/adev:debug` | Non-interactive mode skipping the Phase 6 ADR-drafting prompt | must-have | 1 | review-passed |
-| Per-Issue Attempt Cap | Reused `loop-convergence.mjs` bounding, keyed per issue, persisted in `lifecycle-state/` | must-have | 1 | implemented |
+| ADEV-DEBUG Completion Token | `/adev:debug` emits `ADEV-DEBUG: FIXED \| PARKED \| UNREPRODUCIBLE` per `completion-tokens.spec.md` grammar | must-have | 1 | implemented |
+| `--auto` Mode on `/adev:debug` | Non-interactive mode skipping the Phase 6 ADR-drafting prompt | must-have | 1 | implemented |
+| Per-Issue Attempt Cap | Reused `loop-convergence.mjs` bounding, keyed per issue, persisted in `lifecycle-state/` | must-have | 1 | validated |
 | `/adev:bugfix-loop` Skill | Self-re-invoking, one-bug-per-turn loop draining eligible bugs; Load Skill Extensions block included | must-have | 1 | review-passed |
 | Eligibility Filter | Fixed priority/blast-radius heuristic (P2/P3, single-module) gating loop attempts — the safety boundary | must-have | 1 | review-passed |
 | Tracker Provider Adapter Interface | `TrackerProviderAdapter` contract + registry; GitHub is the only shipped implementation | must-have | 2 | review-passed |

@@ -2,7 +2,7 @@
 
 ---
 charter: autonomous-bugfix-loop
-status: review-passed
+status: implemented
 kind: behavioral
 risk_level: medium
 milestone: 1
@@ -10,6 +10,15 @@ revision: 3
 charter-revision: 7
 created: 2026-08-19
 updated: 2026-08-19
+source-manifest:
+  sha: "ca77e93"
+  files:
+    - docs/skill-reference.md
+    - skills/debug/SKILL.md
+    - skills/using-adev/SKILL.md
+    - templates/manifest-template.yaml
+    - tests/skills/debug-completion-and-auto.test.mjs
+  computed-at: "2026-08-19T20:41:14.434Z"
 ---
 
 # Live Spec: ADEV-DEBUG Completion Token and --auto Mode
