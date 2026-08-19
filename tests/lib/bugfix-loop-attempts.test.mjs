@@ -4,7 +4,12 @@ import { strict as assert } from 'node:assert';
 import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { readAttemptRecord, resolveAttemptsLogPath, resolveAttemptCap } from '../../lib/bugfix-loop-attempts.mjs';
+import {
+  readAttemptRecord,
+  resolveAttemptsLogPath,
+  resolveAttemptCap,
+  computeDegradedBlockerHash,
+} from '../../lib/bugfix-loop-attempts.mjs';
 
 test('readAttemptRecord returns null when no record exists for the issue (BEH-5)', () => {
   const root = mkdtempSync(join(tmpdir(), 'attempts-'));
@@ -29,4 +34,17 @@ test('resolveAttemptCap defaults to 2 when tasks.bugfix_loop.attempt_cap is unse
 
 test('resolveAttemptCap reads tasks.bugfix_loop.attempt_cap when present', () => {
   assert.equal(resolveAttemptCap({ tasks: { bugfix_loop: { attempt_cap: 5 } } }), 5);
+});
+
+test('computeDegradedBlockerHash returns 8 lowercase hex chars, matching lib/blocker-id.mjs convention', () => {
+  const hash = computeDegradedBlockerHash('some raw quality-gate failure output');
+  assert.match(hash, /^[0-9a-f]{8}$/);
+});
+
+test('computeDegradedBlockerHash is stable for identical input and differs for different input', () => {
+  const a = computeDegradedBlockerHash('failure output A');
+  const b = computeDegradedBlockerHash('failure output A');
+  const c = computeDegradedBlockerHash('failure output B');
+  assert.equal(a, b);
+  assert.notEqual(a, c);
 });
