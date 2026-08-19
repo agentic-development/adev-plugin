@@ -2,7 +2,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
-import { PLUGIN_ROOT } from "../helpers.mjs";
+import { PLUGIN_ROOT, readSkillSurface } from "../helpers.mjs";
 
 const SKILL_PATH = join(PLUGIN_ROOT, "skills", "codehealth", "SKILL.md");
 const HYGIENE_PATH = join(PLUGIN_ROOT, "skills", "hygiene", "SKILL.md");
@@ -197,7 +197,7 @@ describe("adev:codehealth Pass 2 — index.* is verified, not blanket-exempted",
 // field.
 describe("hygiene Pass 13 — staleness gate on repomap artifacts", () => {
   it("Pass 13's prerequisite checks dependency-graph.json's commit field, not just file existence", () => {
-    const content = readFileSync(HYGIENE_PATH, "utf8");
+    const content = readSkillSurface("hygiene");
     const start = content.indexOf("## Audit Pass 13: Code Health");
     const end = content.indexOf("## Audit Pass 14", start);
     assert.notEqual(start, -1);

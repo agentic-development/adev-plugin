@@ -34,7 +34,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync, writeFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
-import { PLUGIN_ROOT } from "../helpers.mjs";
+import { PLUGIN_ROOT, readSkillSurface } from "../helpers.mjs";
 import { run as frontmatterPresent } from "../../lib/diagnostics/tier1/frontmatter-present.mjs";
 
 const SPECIFY_SKILL = join(PLUGIN_ROOT, "skills", "specify", "SKILL.md");
@@ -64,7 +64,7 @@ function fencedBlockAfter(body, anchorRe) {
 }
 
 test("skills/specify prescribes a marker placement that satisfies adev/frontmatter-present", () => {
-  const body = readFileSync(SPECIFY_SKILL, "utf8");
+  const body = readSkillSurface("specify");
   const example = fencedBlockAfter(body, /partial_schema: spec@1/);
   const firstMeaningful = example
     .split(/\r?\n/)
@@ -78,7 +78,7 @@ test("skills/specify prescribes a marker placement that satisfies adev/frontmatt
 });
 
 test("skills/specify's prescribed example still carries a readable marker", () => {
-  const body = readFileSync(SPECIFY_SKILL, "utf8");
+  const body = readSkillSurface("specify");
   const example = fencedBlockAfter(body, /partial_schema: spec@1/);
   const m = example.match(MARKER_RE);
   assert.ok(m, "the example must still contain a partial_schema marker (SA-6)");

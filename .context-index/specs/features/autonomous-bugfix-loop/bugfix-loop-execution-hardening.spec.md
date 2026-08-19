@@ -32,6 +32,7 @@ source-manifest:
     - tests/skills/bugfix-loop-skill.test.mjs
     - tests/test-discovery.test.mjs
   computed-at: "2026-08-21T20:04:01.571Z"
+drift_detected: true
 ---
 
 # Refactoring Spec: Bugfix Loop Execution Hardening — Freshness, Isolation, Commit/PR Automation, Progress Reporting

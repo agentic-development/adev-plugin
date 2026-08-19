@@ -49,7 +49,7 @@ import { loadRubric } from "../../lib/evals/rubric.mjs";
 const RUNTIME_ENTRIES = Object.freeze(["cli", "lib", "providers", ".claude-plugin"]);
 
 /** Relative path of the shipped rubric inside a plugin root. */
-const SHIPPED_RUBRIC_REL = join("skills", "eval", "default-rubric.yaml");
+const SHIPPED_RUBRIC_REL = join("skills", "eval", "references", "default-rubric.yaml");
 
 /** Relative path the verdict set takes inside the temp project root. */
 const VERDICTS_REL = "verdicts.json";
@@ -327,7 +327,7 @@ function makePluginRoot() {
     cpSync(join(PLUGIN_ROOT, entry), join(dir, entry), { recursive: true });
   }
   cpSync(join(PLUGIN_ROOT, "package.json"), join(dir, "package.json"));
-  mkdirSync(join(dir, "skills", "eval"), { recursive: true });
+  mkdirSync(join(dir, "skills", "eval", "references"), { recursive: true });
   cpSync(join(PLUGIN_ROOT, SHIPPED_RUBRIC_REL), join(dir, SHIPPED_RUBRIC_REL));
   return dir;
 }
@@ -362,7 +362,7 @@ function makeProjectRoot() {
  */
 function makeDecoyRoot(rubricYaml) {
   const dir = createTempDir();
-  mkdirSync(join(dir, "skills", "eval"), { recursive: true });
+  mkdirSync(join(dir, "skills", "eval", "references"), { recursive: true });
   writeFileSync(join(dir, SHIPPED_RUBRIC_REL), rubricYaml);
   return dir;
 }

@@ -10,9 +10,10 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readSkillSurface } from "../helpers.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
-const skillBody = readFileSync(join(ROOT, "skills", "implement", "SKILL.md"), "utf8");
+const skillBody = readSkillSurface("implement");
 
 // The Step 2.5 body was extracted to a conditional-loading companion when
 // implement/SKILL.md crossed the 65,536-byte cap the Copilot provider enforces

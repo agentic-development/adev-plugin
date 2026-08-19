@@ -28,7 +28,7 @@ test("every error code named in the spec's Error Cases table is declared", () =>
 });
 
 test("the shipped default rubric declares every required top-level key", () => {
-  const raw = readFileSync("skills/eval/default-rubric.yaml", "utf8");
+  const raw = readFileSync("skills/eval/references/default-rubric.yaml", "utf8");
   for (const key of REQUIRED_TOP_LEVEL_KEYS) {
     assert.match(raw, new RegExp(`^${key}:`, "m"), `default rubric lacks ${key}`);
   }

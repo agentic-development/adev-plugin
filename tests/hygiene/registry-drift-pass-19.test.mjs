@@ -379,12 +379,16 @@ test("adev governance drift refuses a registry outside the pass's remit", async 
   }
 });
 
-test("skills/hygiene/SKILL.md names the verb rather than carrying the logic", () => {
-  const skill = readFileSync(join(PLUGIN_ROOT, "skills", "hygiene", "SKILL.md"), "utf8");
-  const start = skill.indexOf("## Audit Pass 19");
-  const end = skill.indexOf("## Audit Pass 20");
-  assert.ok(start >= 0 && end > start, "Pass 19 and Pass 20 headings must both be present");
-  const section = skill.slice(start, end);
+test("hygiene Pass 19 names the verb rather than carrying the logic", () => {
+  // Pass 19's body lives in its own companion (progressive disclosure); the
+  // whole file IS the section, so no heading-slicing is needed. SKILL.md must
+  // still route to it, which the following test asserts.
+  const section = readFileSync(
+    join(PLUGIN_ROOT, "skills", "hygiene", "references", "audit-passes",
+         "pass-19-governance-registry-drift.md"),
+    "utf8",
+  );
+  assert.ok(section.startsWith("## Audit Pass 19"), "companion must open with the Pass 19 heading");
   assert.ok(section.includes("adev governance drift"), "Pass 19 must name the CLI verb");
   for (const reg of REGISTRY_NAMES) {
     assert.ok(section.includes(`\`${reg}.yaml\``), `Pass 19 must name ${reg}.yaml in its remit`);
@@ -393,6 +397,20 @@ test("skills/hygiene/SKILL.md names the verb rather than carrying the logic", ()
   assert.ok(section.includes("hygiene/non-project-execution-field"));
   assert.ok(!section.includes("node -e"), "no inline Node in a SKILL section");
   assert.ok(!section.includes("```javascript"), "no fenced JavaScript directive in a SKILL section");
+});
+
+test("skills/hygiene/SKILL.md routes to the Pass 19 companion", () => {
+  // The body must still point at the pass; a companion nothing references is
+  // dead weight, and that is precisely what the split could silently create.
+  const skill = readFileSync(join(PLUGIN_ROOT, "skills", "hygiene", "SKILL.md"), "utf8");
+  assert.ok(
+    skill.includes("pass-19-governance-registry-drift.md"),
+    "SKILL.md must name the Pass 19 companion file",
+  );
+  assert.ok(
+    /Conditional loading/.test(skill),
+    "SKILL.md must carry the conditional-loading directive for the pass catalogue",
+  );
 });
 
 test("the pass runs against this repository without throwing", async () => {

@@ -28,6 +28,7 @@ import { join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
+import { readSkillSurface } from "../helpers.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const PLUGIN_ROOT = join(__filename, "..", "..", "..");
@@ -71,7 +72,7 @@ test("no-stale-format-refs / /adev:plan SKILL.md references reportPlanTask", () 
 // ────────────────────────────────────────────────────────────────────
 
 test("no-stale-format-refs / /adev:implement reads from planTasks projection", () => {
-  const content = readFileSync("skills/implement/SKILL.md", "utf8");
+  const content = readSkillSurface("implement");
   assert.ok(
     !/check the box|update the issue for this task|tick the checkbox/i.test(
       content,
@@ -90,7 +91,7 @@ test("no-stale-format-refs / /adev:implement reads from planTasks projection", (
 });
 
 test("no-stale-format-refs / /adev:implement does not mutate plan checkboxes", () => {
-  const content = readFileSync("skills/implement/SKILL.md", "utf8");
+  const content = readSkillSurface("implement");
   assert.ok(
     !/Update plan file checkboxes/i.test(content),
     "/adev:implement still instructs the agent to update plan file checkboxes",

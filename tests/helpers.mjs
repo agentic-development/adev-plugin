@@ -3,7 +3,7 @@
  */
 
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync, chmodSync } from "fs";
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync, chmodSync, readFileSync, readdirSync } from "fs";
 import { join, resolve, dirname } from "path";
 import { execSync, spawnSync } from "child_process";
 import { tmpdir } from "os";
@@ -238,4 +238,54 @@ export function runCLI(command, inputs = [], { env = {}, cwd } = {}) {
     stdout: result.stdout || "",
     stderr: result.stderr || "",
   };
+}
+
+/**
+ * Read a skill's full instruction surface: SKILL.md plus every companion file
+ * under its `references/` tree, concatenated in a stable order.
+ *
+ * WHY THIS EXISTS. Oversized SKILL.md bodies were split into `references/`
+ * companions for progressive disclosure (the agent loads a companion only when
+ * it needs that mode/pass). That relocates prose without changing the contract:
+ * the instruction is still shipped, still normative, still exactly one file
+ * away. Tests asserting on that prose must therefore search the whole surface,
+ * or they would silently stop testing the thing they name the moment it moves.
+ *
+ * Use this ONLY for assertions about instruction CONTENT. An assertion about
+ * where something lives -- a conditional-loading pointer, the body's byte
+ * budget -- must keep reading SKILL.md directly, or it stops being that test.
+ *
+ * @param {string} skillName directory name under skills/
+ * @returns {string} SKILL.md followed by each references/**\/*.md|yaml, newline-joined
+ */
+export function readSkillSurface(skillName) {
+  return readSkillSurfaceAt(join(PLUGIN_ROOT, "skills", skillName));
+}
+
+/**
+ * As `readSkillSurface`, but for a skill directory given by path -- use this
+ * when a test already resolves the directory itself, e.g. to assert the same
+ * contract against a provider mirror under providers/<p>/skills/<name>/.
+ *
+ * @param {string} root directory containing SKILL.md
+ * @returns {string} SKILL.md followed by each references/**\/*.md|yaml
+ */
+export function readSkillSurfaceAt(root) {
+  const parts = [readFileSync(join(root, "SKILL.md"), "utf8")];
+  const refs = join(root, "references");
+  const walk = (dir) => {
+    let entries;
+    try {
+      entries = readdirSync(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const e of entries.sort((a, b) => a.name.localeCompare(b.name))) {
+      const p = join(dir, e.name);
+      if (e.isDirectory()) walk(p);
+      else if (/\.(md|ya?ml)$/.test(e.name)) parts.push(readFileSync(p, "utf8"));
+    }
+  };
+  walk(refs);
+  return parts.join("\n");
 }

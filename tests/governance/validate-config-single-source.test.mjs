@@ -29,6 +29,18 @@ afterEach(() => {
   while (tempDirs.length) cleanupTempDir(tempDirs.pop());
 });
 
+/**
+ * Audit Pass 19's body, which progressive disclosure moved out of
+ * skills/hygiene/SKILL.md into its own companion. Assertions about the pass's
+ * remit and emission rules read this; assertions about SKILL.md routing to the
+ * pass keep reading SKILL.md.
+ */
+const PASS_19 = readFileSync(
+  join(PLUGIN_ROOT, 'skills', 'hygiene', 'references', 'audit-passes',
+       'pass-19-governance-registry-drift.md'),
+  'utf8',
+);
+
 describe("init scaffold simulation: governance/validate.yaml", () => {
   it("software starter is available via loadDomainConfig", () => {
     // This simulates what /adev:init Step 7d.0 would do at scaffold time.
@@ -95,20 +107,21 @@ describe("hygiene Validate Config Drift audit (SKILL.md content + simulation)", 
   // spec's requirement — that validate.yaml drift is audited by Pass 19 — is
   // unchanged and is asserted on the widened heading plus the registry name.
   it("skills/hygiene/SKILL.md declares Audit Pass 19 covering validate.yaml drift", () => {
+    // The body keeps the pass in its routing table; the remit lives in the
+    // companion the table points at.
     const content = readFileSync(join(PLUGIN_ROOT, 'skills', 'hygiene', 'SKILL.md'), 'utf8');
     assert.ok(
-      content.includes("Audit Pass 19: Governance Registry Drift"),
+      content.includes("Governance Registry Drift"),
       "hygiene SKILL.md must declare the audit pass"
     );
-    const passIdx = content.indexOf("Audit Pass 19");
     assert.ok(
-      content.slice(passIdx, passIdx + 4000).includes("`validate.yaml`"),
+      PASS_19.includes("`validate.yaml`"),
       "Audit Pass 19 must still name validate.yaml in its remit"
     );
   });
 
   it("skills/hygiene/SKILL.md describes SEC-4 value-type emission for prompt/context_pack", () => {
-    const content = readFileSync(join(PLUGIN_ROOT, 'skills', 'hygiene', 'SKILL.md'), 'utf8');
+    const content = PASS_19;
     assert.ok(
       content.includes("SEC-4"),
       "hygiene SKILL.md must reference SEC-4 emission rules"
@@ -120,11 +133,10 @@ describe("hygiene Validate Config Drift audit (SKILL.md content + simulation)", 
   });
 
   it("skills/hygiene/SKILL.md emits INFO (not WARN) for drift findings", () => {
-    const content = readFileSync(join(PLUGIN_ROOT, 'skills', 'hygiene', 'SKILL.md'), 'utf8');
-    // The Audit Pass 19 section must state INFO severity for drift findings.
-    const passIdx = content.indexOf("Audit Pass 19");
-    assert.ok(passIdx >= 0);
-    const passContent = content.slice(passIdx, passIdx + 4000);
+    // Pass 19's body is its own companion under progressive disclosure, so the
+    // whole file IS the section; a fixed-width slice of SKILL.md would only
+    // catch the routing table row.
+    const passContent = PASS_19;
     assert.ok(
       /INFO.*not WARN|INFO.*not\s+WARN|All findings.*INFO/i.test(passContent),
       "drift findings must be INFO severity"

@@ -3,11 +3,11 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "fs";
 import { join } from "path";
-import { PLUGIN_ROOT } from "../helpers.mjs";
+import { PLUGIN_ROOT, readSkillSurface } from "../helpers.mjs";
 
 const SKILL_PATH = join(PLUGIN_ROOT, "skills", "build", "SKILL.md");
 const MILESTONE_PATH = join(PLUGIN_ROOT, "skills", "build", "references", "milestone-mode.md");
-const skill = readFileSync(SKILL_PATH, "utf8") + "\n" + readFileSync(MILESTONE_PATH, "utf8");
+const skill = readSkillSurface("build") + "\n" + readFileSync(MILESTONE_PATH, "utf8");
 
 describe("adev:build SKILL.md — milestone filter and stale build detection", () => {
   it("Implement Pipeline milestone filter lists review-passed, implemented, validated explicitly (+8 more contract assertions)", () => {

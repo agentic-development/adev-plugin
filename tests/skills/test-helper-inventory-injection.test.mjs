@@ -13,10 +13,19 @@ import { readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { readSkillSurface } from "../helpers.mjs";
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..", "..");
 
+/**
+ * Read a skill's full instruction surface when `rel` names a SKILL.md, so that
+ * assertions still find prose that progressive disclosure moved into
+ * references/ companions. Any other path is read verbatim.
+ */
 function read(rel) {
+  const m = /^skills\/([^/]+)\/SKILL\.md$/.exec(rel);
+  if (m) return readSkillSurface(m[1]);
   return readFileSync(join(ROOT, rel), "utf8");
 }
 

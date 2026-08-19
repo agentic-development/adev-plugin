@@ -34,7 +34,8 @@ import {
   createTempDir,
   cleanupTempDir,
   writeFixture,
-} from "../helpers.mjs";
+  readSkillSurface,
+}  from "../helpers.mjs";
 import {
   deriveValidateFailureSignature,
   parseHeuristicsFile,
@@ -197,7 +198,7 @@ test("--check-id values that all sanitize away are an error", () => {
 // ── Part B: skills/validate/SKILL.md FAIL path ───────────────────────────
 
 const SKILL_PATH = join(PLUGIN_ROOT, "skills", "validate", "SKILL.md");
-const SKILL = readFileSync(SKILL_PATH, "utf8");
+const SKILL = readSkillSurface("validate");
 
 const CHECK_ID_MARKER = "--check-id";
 

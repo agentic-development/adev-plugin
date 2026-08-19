@@ -1,7 +1,7 @@
 // tests/cli/eval-default-rubric-keyword.test.mjs
 //
 // BEH-11: `--rubric default` is a KEYWORD naming the plugin's shipped
-// skills/eval/default-rubric.yaml, not a path. It resolves against the plugin
+// skills/eval/references/default-rubric.yaml, not a path. It resolves against the plugin
 // root — derived from `getPluginRoot()` in lib/profiles/index.mjs, which reads
 // its own `__dirname` — and is never containment-checked against the project
 // root. Every other --rubric value stays a path, contained per BEH-9.
@@ -137,7 +137,7 @@ test("the verb module reads no environment variable at all", () => {
 
 test("SCORE_DEFAULT_RUBRIC_MISSING fires when the shipped rubric file is absent", () => {
   // A plugin copy carrying cli/ and lib/ but deliberately NOT
-  // skills/eval/default-rubric.yaml. Spawning ITS entrypoint makes
+  // skills/eval/references/default-rubric.yaml. Spawning ITS entrypoint makes
   // getPluginRoot() — which derives from its own module's location on
   // disk — name a tree where the shipped rubric does not exist.
   const pluginCopy = createTempDir();
@@ -165,11 +165,11 @@ test("SCORE_DEFAULT_RUBRIC_MISSING also fires when the shipped rubric exists but
   // and only the read can fail, so this case cannot pass via the absent path.
   const pluginCopy = createTempDir();
   const projectRoot = makeProjectRoot();
-  const shipped = join(pluginCopy, "skills", "eval", "default-rubric.yaml");
+  const shipped = join(pluginCopy, "skills", "eval", "references", "default-rubric.yaml");
   try {
     copyPluginRuntime(pluginCopy);
-    mkdirSync(join(pluginCopy, "skills", "eval"), { recursive: true });
-    cpSync(join(PLUGIN_ROOT, "skills", "eval", "default-rubric.yaml"), shipped);
+    mkdirSync(join(pluginCopy, "skills", "eval", "references"), { recursive: true });
+    cpSync(join(PLUGIN_ROOT, "skills", "eval", "references", "default-rubric.yaml"), shipped);
     chmodSync(shipped, 0o000);
 
     const { code, stderr } = runVerbFrom(

@@ -4,10 +4,11 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readSkillSurface } from "../helpers.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const skill = readFileSync(join(ROOT, "skills", "implement", "references", "batched-mode.md"), "utf8");
-const skillBody = readFileSync(join(ROOT, "skills", "implement", "SKILL.md"), "utf8");
+const skillBody = readSkillSurface("implement");
 
 describe("implement batched-mode companion", () => {
   it("names the resolving CLI verb, not inline grouping logic", () => {
