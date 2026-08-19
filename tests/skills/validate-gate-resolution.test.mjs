@@ -10,23 +10,22 @@ describe("validate SKILL.md — unified gate system", () => {
   const skillPath = join(__dirname, "..", "..", "skills", "validate", "SKILL.md");
   const content = readFileSync(skillPath, "utf8");
 
-  it("should NOT have manifest fallback for gate resolution", () => {
+  it("should NOT have manifest fallback for gate resolution (+2 more contract assertions)", () => {
+    // should NOT have manifest fallback for gate resolution
     assert.ok(!content.includes("If governance does not exist → read `manifest.yaml`"),
-      "Should not have governance-to-manifest fallback");
+    "Should not have governance-to-manifest fallback");
     assert.ok(!content.includes("Tiered Gate Resolution (manifest.yaml)"),
-      "Should not have manifest tiered gate resolution section");
-  });
+    "Should not have manifest tiered gate resolution section");
 
-  it("should read gates exclusively from governance/gates.yaml with tiered execution", () => {
+    // should read gates exclusively from governance/gates.yaml with tiered execution
     assert.ok(content.includes("governance/gates.yaml") && content.includes("group"),
-      "Should read from governance/gates.yaml and group by tier");
+    "Should read from governance/gates.yaml and group by tier");
     assert.ok(!content.includes("Governance gates always execute as a flat Check 1"),
-      "Should not describe governance gates as flat-only execution");
-  });
+    "Should not describe governance gates as flat-only execution");
 
-  it("should report SKIP when governance/gates.yaml is absent", () => {
+    // should report SKIP when governance/gates.yaml is absent
     assert.ok(content.includes("No governance/gates.yaml found"),
-      "Should report SKIP with advisory when gates.yaml missing");
+    "Should report SKIP with advisory when gates.yaml missing");
   });
 
   // Migration Step 2 (explicit-governance-registries.spec.md) replaced both
@@ -35,37 +34,33 @@ describe("validate SKILL.md — unified gate system", () => {
   // it used to SKIP on an absent `governance/` directory and PASS on a missing
   // `boundaries.yaml`; it now SKIPs whenever no rule was evaluated, because a
   // PASS would assert that boundaries held when nothing was read.
-  it("should report SKIP for Check 8 when no boundary rules are declared", () => {
+  it("should report SKIP for Check 8 when no boundary rules are declared (+5 more contract assertions)", () => {
+    // should report SKIP for Check 8 when no boundary rules are declared
     assert.ok(content.includes("no boundary rules declared"),
-      "Check 8 should SKIP, with the evaluator's own reason, when no rule was evaluated");
+    "Check 8 should SKIP, with the evaluator's own reason, when no rule was evaluated");
     assert.ok(content.includes("records SKIP, never PASS"),
-      "Check 8 must not record PASS on an empty registry");
-  });
+    "Check 8 must not record PASS on an empty registry");
 
-  it("should report SKIP for Check 9 when no transitions", () => {
+    // should report SKIP for Check 9 when no transitions
     assert.ok(content.includes("no transitions configured"),
-      "Check 9 should SKIP when no transitions");
-  });
+    "Check 9 should SKIP when no transitions");
 
-  it("should include skip count in summary", () => {
+    // should include skip count in summary
     assert.ok(content.includes("skipped checks"),
-      "Report summary should count skipped checks");
-  });
+    "Report summary should count skipped checks");
 
-  it("should handle required: false forcing severity: warning", () => {
+    // should handle required: false forcing severity: warning
     assert.ok(content.includes("required: false") && content.includes("severity: warning"),
-      "Should document required:false → severity:warning rule");
-  });
+    "Should document required:false → severity:warning rule");
 
-  it("should restrict --fix auto-fix to fast tier only", () => {
+    // should restrict --fix auto-fix to fast tier only
     assert.ok(content.includes("--fix") && content.includes("fast tier"),
-      "Should document --fix applies only to fast tier");
+    "Should document --fix applies only to fast tier");
     assert.ok(content.includes("never auto-fixed"),
-      "Should document integration/e2e are never auto-fixed");
-  });
+    "Should document integration/e2e are never auto-fixed");
 
-  it("should skip undefined tiers with informational note", () => {
+    // should skip undefined tiers with informational note
     assert.ok(content.includes("no gates configured, skipped"),
-      "Should skip undefined tiers with informational note");
+    "Should skip undefined tiers with informational note");
   });
 });

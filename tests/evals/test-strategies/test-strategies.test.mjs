@@ -459,9 +459,15 @@ describe('Profile loading with fixtures', () => {
 describe('Profile content: schema', () => {
   const p = () => getStrategyProfile('schema', PROFILES_DIR).profile;
 
-  it('RED condition references migration assertions', () => {
+  it("RED condition references migration assertions (+1 more contract assertions)", () => {
+    // RED condition references migration assertions
     assert.ok(p().red_exit_condition.toLowerCase().includes('migration'),
-      `Expected "migration" in red_exit_condition: ${p().red_exit_condition}`);
+    `Expected "migration" in red_exit_condition: ${p().red_exit_condition}`);
+
+    // seed data rule requires production-like data
+    assert.ok(p().seed_data_rule.toLowerCase().includes('production') ||
+    p().seed_data_rule.toLowerCase().includes('representative'),
+    `Expected production-like seed data requirement`);
   });
 
   it('gaming blockers include empty database testing', () => {
@@ -475,11 +481,6 @@ describe('Profile content: schema', () => {
     assert.ok(blockers.includes('rollback'), `Expected rollback gaming blocker`);
   });
 
-  it('seed data rule requires production-like data', () => {
-    assert.ok(p().seed_data_rule.toLowerCase().includes('production') ||
-      p().seed_data_rule.toLowerCase().includes('representative'),
-      `Expected production-like seed data requirement`);
-  });
 
   it('permitted tools include migration frameworks', () => {
     const tools = p().permitted_tools.join(' ').toLowerCase();
@@ -491,10 +492,15 @@ describe('Profile content: schema', () => {
 describe('Profile content: contract', () => {
   const p = () => getStrategyProfile('contract', PROFILES_DIR).profile;
 
-  it('RED condition references consumer contract verification', () => {
+  it("RED condition references consumer contract verification (+1 more contract assertions)", () => {
+    // RED condition references consumer contract verification
     assert.ok(p().red_exit_condition.toLowerCase().includes('consumer') ||
-      p().red_exit_condition.toLowerCase().includes('contract'),
-      `Expected contract reference in red_exit_condition`);
+    p().red_exit_condition.toLowerCase().includes('contract'),
+    `Expected contract reference in red_exit_condition`);
+
+    // assertion rules require semantic assertions
+    assert.ok(p().assertion_rules.toLowerCase().includes('semantic'),
+    `Expected semantic assertion requirement`);
   });
 
   it('gaming blockers include structure-only assertions', () => {
@@ -509,10 +515,6 @@ describe('Profile content: contract', () => {
       `Expected happy-path-only gaming blocker`);
   });
 
-  it('assertion rules require semantic assertions', () => {
-    assert.ok(p().assertion_rules.toLowerCase().includes('semantic'),
-      `Expected semantic assertion requirement`);
-  });
 
   it('permitted tools include Pact', () => {
     const tools = p().permitted_tools.join(' ').toLowerCase();
@@ -535,15 +537,15 @@ describe('Profile content: fixture', () => {
       `Expected small fixture gaming blocker`);
   });
 
-  it('assertion rules require exact output comparison', () => {
+  it("assertion rules require exact output comparison (+1 more contract assertions)", () => {
+    // assertion rules require exact output comparison
     assert.ok(p().assertion_rules.toLowerCase().includes('exact'),
-      `Expected exact comparison requirement`);
-  });
+    `Expected exact comparison requirement`);
 
-  it('seed data rule requires hand-crafted fixtures', () => {
+    // seed data rule requires hand-crafted fixtures
     assert.ok(p().seed_data_rule.toLowerCase().includes('hand-crafted') ||
-      p().seed_data_rule.toLowerCase().includes('deterministic'),
-      `Expected hand-crafted seed data requirement`);
+    p().seed_data_rule.toLowerCase().includes('deterministic'),
+    `Expected hand-crafted seed data requirement`);
   });
 
   it('permitted tools include dbt', () => {

@@ -328,6 +328,58 @@ describe("adev governance materialize", () => {
   );
 
   test(
+    "review materialization writes a domain reviewer's prompt_text verbatim (adev-plugin-xg1f.4)",
+    withDir(async (dir) => {
+      // Regression for the real end-to-end path a domain extension install
+      // takes: `installDomainProfile()` copies `domain/reviewers.yaml` into
+      // `.context-index/domains/<name>/reviewers.yaml`, and `adev governance
+      // materialize --registry review` is the ONE sanctioned adoption step
+      // (lib/governance/materialize.mjs header) that writes it into the
+      // project's own file. That write goes through
+      // `lib/extensions/governance-splice.mjs::emitEntry`, which re-checks
+      // every scalar with `assertSafeScalar` — so `prompt_text` had to be
+      // added to `FIELD_ALLOWLIST` (or the field is silently dropped by
+      // `projectEntry`'s allowlist filter) AND the prose has to survive that
+      // scalar-safety pass on its own merits. Comma-bearing prose does not:
+      // `assertSafeScalar` refuses a literal `,` in any scalar, which is why
+      // both first-party domain extensions' prompts were rewritten comma-free
+      // rather than left as-is under the new field name.
+      seedProject(dir);
+      writeFixture(
+        dir,
+        ".context-index/domains/acme/reviewers.yaml",
+        [
+          "merge_strategy: append",
+          "",
+          "reviewers:",
+          "  - id: acme-data-reviewer",
+          '    name: "Acme Data Reviewer"',
+          "    dispatch: always",
+          '    prompt_text: "Review data contracts for schema completeness and SLA definitions."',
+          "    profile: reviewer-capable",
+          "    context_pack: base",
+          "    severity_cap: blocker",
+          "",
+        ].join("\n"),
+      );
+      writeFixture(
+        dir,
+        ".context-index/manifest.yaml",
+        "project:\n  name: fixture\n  domain: acme\n",
+      );
+      const r = runCli(dir, ["governance", "materialize", "--registry", "review"]);
+      assert.equal(r.exitCode, 0, r.stderr);
+      const text = readFileSync(join(dir, REVIEW), "utf8");
+      assert.match(text, /- id: acme-data-reviewer/);
+      assert.match(
+        text,
+        /prompt_text: Review data contracts for schema completeness and SLA definitions\./,
+      );
+      assert.match(text, /source: domain:acme/);
+    }),
+  );
+
+  test(
     "diagnostics materialization adds no entry but does stamp the marker",
     withDir(async (dir) => {
       seedProject(dir);
@@ -437,19 +489,24 @@ describe("materialize refuses to stamp an incomplete load", () => {
 // ── DDR-4: the on-disk `source` vocabulary ───────────────────────────────────
 
 describe("deriveSource implements the DDR-4 mapping", () => {
-  test("every runtime provenance value the spec maps is mapped", () => {
+  test("every runtime provenance value the spec maps is mapped (+1 more contract assertions)", () => {
+    // every runtime provenance value the spec maps is mapped
     assert.equal(deriveSource({ id: "a", __source: "bundled" }, "review", "software"), "bundled");
     assert.equal(deriveSource({ id: "a", __source: "project" }, "review", "software"), "project");
     assert.equal(deriveSource({ id: "a", __source: "governance" }, "review", "software"), "project");
     assert.equal(
-      deriveSource({ id: "a", __source: "project-override" }, "review", "software"),
-      "project",
+    deriveSource({ id: "a", __source: "project-override" }, "review", "software"),
+    "project",
     );
     assert.equal(
-      deriveSource({ id: "a", __source: "manifest-specialist" }, "review", "software"),
-      "project",
+    deriveSource({ id: "a", __source: "manifest-specialist" }, "review", "software"),
+    "project",
     );
     assert.equal(deriveSource({ id: "a", __source: "domain" }, "review", "acme"), "domain:acme");
+
+    // diagnostics provenance comes from the runner prefix
+    assert.equal(deriveSource({ id: "a", runner: "plugin:x.mjs" }, "diagnostics", null), "bundled");
+    assert.equal(deriveSource({ id: "a", runner: "project:x.mjs" }, "diagnostics", null), "project");
   });
 
   test("a genuinely unknown provenance value still throws", () => {
@@ -459,10 +516,7 @@ describe("deriveSource implements the DDR-4 mapping", () => {
     );
   });
 
-  test("diagnostics provenance comes from the runner prefix", () => {
-    assert.equal(deriveSource({ id: "a", runner: "plugin:x.mjs" }, "diagnostics", null), "bundled");
-    assert.equal(deriveSource({ id: "a", runner: "project:x.mjs" }, "diagnostics", null), "project");
-  });
+
 });
 
 // ── `source` is origin-at-materialization, not current contributor ───────────

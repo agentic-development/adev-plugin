@@ -737,7 +737,6 @@ adev test-policy explain --plan .context-index/specs/features/auth/login.plan.md
 **Implementation:** `lib/cli/test-policy.mjs`. **Called by:** `/adev:implement` (`resolve`,
 `assert-assigned`), operators directly (`show`, `set`, `explain`).
 
-<<<<<<< HEAD
 ### `test-helpers`
 
 **Purpose:** Emits the project's shared test infrastructure — helper modules with their
@@ -774,7 +773,7 @@ adev test-helpers check --file tests/auth/login.test.mjs --file tests/auth/sessi
 **Implementation:** `lib/cli/test-helpers.mjs` (logic in
 `lib/test-strategies/helper-inventory.mjs`). **Called by:** `/adev:write-test` (RED-phase
 Step 3a inventory, post-RED duplication check), `/adev:implement` (context-packet assembly).
-=======
+
 ### `test-debt`
 
 **Purpose:** Audit Pass 23 of `/adev:hygiene`. Scans the test suite for five categories of
@@ -809,7 +808,6 @@ adev test-debt scan --detector APPEND_CHAIN
 
 **Implementation:** `lib/cli/test-debt.mjs` (engine: `lib/hygiene/test-debt.mjs`).
 **Called by:** `/adev:hygiene` Audit Pass 23.
->>>>>>> e59ef658 (feat(maintenance): wire Audit Pass 23 (Test Debt) into /adev:hygiene)
 
 ### `worktree`
 

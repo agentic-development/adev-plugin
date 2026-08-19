@@ -217,11 +217,19 @@ There is no plan task to key a `test_depth_assigned` event to.
 
 ### Upgrading from before this capability shipped
 
-Adopting this capability changes default behavior: with the shipped `per-behavior` default,
-your project will plan **fewer test files** than before, because several tasks that implement
-one spec behavior now share a single suite instead of each task getting its own. If you want
-the previous one-suite-per-task behavior back, set `test_policy.granularity: per-task` in
-`manifest.yaml` — that is the explicit, supported opt-out.
+Adopting this capability changes default behavior. What `per-behavior` buys is that suite
+membership becomes derivable from the spec rather than from how the plan happened to split the
+work — the same behavior lands in the same suite no matter how many tasks implement it.
+
+It does **not** reliably mean fewer test files. Whether the count goes up or down depends on how
+your specs and plans compare: `per-behavior` yields one suite per declared behavior, `per-task`
+one per test-bearing task, so the direction follows whichever number is larger. Measured on this
+repository it yields *more* — 245 specs declare 1,923 behaviors, and the 119 spec+plan pairs
+average 10.9 behaviors per spec against 5.2 test-bearing tasks per plan. Check that ratio for
+your own corpus before assuming a reduction.
+
+If you want the previous one-suite-per-task behavior back, set `test_policy.granularity: per-task`
+in `manifest.yaml` — that is the explicit, supported opt-out.
 
 Upgrading requires **no new config file**. `governance/sensitive-paths.yaml` is optional and
 extend-only; its absence resolves to the built-in `DEFAULT_SENSITIVE_PATHS` set, and a

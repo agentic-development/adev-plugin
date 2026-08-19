@@ -39,16 +39,15 @@ test('classifyFormat: post-commit wrong agent → "unknown"', () => {
   assert.equal(classifyFormat(fm), 'unknown');
 });
 
-test('classifyFormat: empty frontmatter → "unknown"', () => {
+test("classifyFormat: empty frontmatter → \"unknown\" (+2 more contract assertions)", () => {
+  // classifyFormat: empty frontmatter → "unknown"
   assert.equal(classifyFormat({}), 'unknown');
-});
 
-test('classifyFormat: null/undefined → "unknown"', () => {
+  // classifyFormat: null/undefined → "unknown"
   assert.equal(classifyFormat(null), 'unknown');
   assert.equal(classifyFormat(undefined), 'unknown');
-});
 
-test('classifyFormat: random keys → "unknown"', () => {
+  // classifyFormat: random keys → "unknown"
   assert.equal(classifyFormat({ random: 'noise', foo: 1 }), 'unknown');
 });
 

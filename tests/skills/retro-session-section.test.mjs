@@ -29,19 +29,17 @@ const INIT_SKILL = readFileSync(join(PLUGIN_ROOT, 'skills/init/SKILL.md'), 'utf8
 
 // ---- Task 14: § 1.8 Session Activity step inserted into retro skill ----
 
-test('skills/retro: contains § 1.8 Session Activity heading', () => {
+test("skills/retro: contains § 1.8 Session Activity heading (+3 more contract assertions)", () => {
+  // skills/retro: contains § 1.8 Session Activity heading
   assert.match(RETRO_SKILL, /### 1\.8 Session Activity/);
-});
 
-test('skills/retro: § 1.8 invokes the CLI verb', () => {
+  // skills/retro: § 1.8 invokes the CLI verb
   assert.match(RETRO_SKILL, /adev retro session-activity/);
-});
 
-test('skills/retro: § 1.8 documents --format text', () => {
+  // skills/retro: § 1.8 documents --format text
   assert.match(RETRO_SKILL, /--format text/);
-});
 
-test('skills/retro: § 1.8 documents Graceful absence', () => {
+  // skills/retro: § 1.8 documents Graceful absence
   assert.match(RETRO_SKILL, /Graceful absence/);
 });
 

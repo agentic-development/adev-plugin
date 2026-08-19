@@ -17,19 +17,17 @@ const PLUGIN_ROOT = resolve(__dirname, '..', '..');
 describe('skills/init/SKILL.md picker walkthrough', () => {
   const md = readFileSync(join(PLUGIN_ROOT, 'skills', 'init', 'SKILL.md'), 'utf8');
 
-  it('documents the domain extension picker section', () => {
+  it("documents the domain extension picker section (+3 more contract assertions)", () => {
+    // documents the domain extension picker section
     assert.match(md, /domain extension picker/i);
-  });
 
-  it('uses the canonical Domain: <name> banner wording', () => {
+    // uses the canonical Domain: <name> banner wording
     assert.match(md, /Domain: <name>/);
-  });
 
-  it('documents the re-run path via adev extension install', () => {
+    // documents the re-run path via adev extension install
     assert.match(md, /adev extension install/);
-  });
 
-  it('mentions each picker option (software, catalog entries, skip)', () => {
+    // mentions each picker option (software, catalog entries, skip)
     assert.match(md, /software/i);
     assert.match(md, /skip/i);
   });

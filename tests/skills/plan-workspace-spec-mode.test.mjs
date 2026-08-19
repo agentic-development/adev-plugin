@@ -42,23 +42,22 @@ describe("adev:plan SKILL.md — Spec Mode workspace-aware target-repo detection
 });
 
 describe("adev:plan SKILL.md — Spec Mode workspace-aware context loading", () => {
-  it("loads target repo constitution, platform-context, and orientation", () => {
+  it("loads target repo constitution, platform-context, and orientation (+2 more contract assertions)", () => {
+    // loads target repo constitution, platform-context, and orientation
     assert.match(specModeSection, /target repo.*constitution|constitution.*target repo/i,
-      "Spec Mode must load target repo's constitution");
+    "Spec Mode must load target repo's constitution");
     assert.match(specModeSection, /platform-context/i,
-      "Spec Mode must load target repo's platform-context");
+    "Spec Mode must load target repo's platform-context");
     assert.match(specModeSection, /orientation/i,
-      "Spec Mode must load target repo's orientation");
-  });
+    "Spec Mode must load target repo's orientation");
 
-  it("handles missing .context-index/ gracefully", () => {
+    // handles missing .context-index/ gracefully
     assert.match(specModeSection, /missing.*\.context-index|\.context-index.*missing|gracefully/i,
-      "Spec Mode must handle missing .context-index/ in target repo");
-  });
+    "Spec Mode must handle missing .context-index/ in target repo");
 
-  it("handles target-repo: workspace (no repo constitution)", () => {
+    // handles target-repo: workspace (no repo constitution)
     assert.match(specModeSection, /target-repo:\s*workspace|target-repo.*workspace/i,
-      "Spec Mode must handle target-repo: workspace as a special value");
+    "Spec Mode must handle target-repo: workspace as a special value");
   });
 });
 
@@ -73,14 +72,14 @@ describe("adev:plan SKILL.md — Spec Mode cross-repo depends-on resolution", ()
       "Spec Mode must reference resolveRef() for cross-repo dependency resolution");
   });
 
-  it("includes resolved cross-repo deps in Context Packets", () => {
+  it("includes resolved cross-repo deps in Context Packets (+1 more contract assertions)", () => {
+    // includes resolved cross-repo deps in Context Packets
     assert.match(specModeSection, /Context Packet/i,
-      "Spec Mode must include resolved cross-repo deps in Context Packets");
-  });
+    "Spec Mode must include resolved cross-repo deps in Context Packets");
 
-  it("warns on unresolvable refs", () => {
+    // warns on unresolvable refs
     assert.match(specModeSection, /unresolvable|cannot resolve|warn.*ref/i,
-      "Spec Mode must warn on unresolvable cross-repo refs");
+    "Spec Mode must warn on unresolvable cross-repo refs");
   });
 });
 
@@ -90,14 +89,14 @@ describe("adev:plan SKILL.md — Spec Mode repo-relative file paths", () => {
       "Spec Mode must prefix file paths with repo path for repo-slug target");
   });
 
-  it("uses workspace-relative paths when target-repo is workspace", () => {
+  it("uses workspace-relative paths when target-repo is workspace (+1 more contract assertions)", () => {
+    // uses workspace-relative paths when target-repo is workspace
     assert.match(specModeSection, /workspace-relative/i,
-      "Spec Mode must use workspace-relative paths when target-repo is workspace");
-  });
+    "Spec Mode must use workspace-relative paths when target-repo is workspace");
 
-  it("includes target repo slug in commit scope", () => {
+    // includes target repo slug in commit scope
     assert.match(specModeSection, /commit.*scope.*target.*repo|target.*repo.*slug.*commit/i,
-      "Spec Mode must include target repo slug in commit scope");
+    "Spec Mode must include target repo slug in commit scope");
   });
 });
 

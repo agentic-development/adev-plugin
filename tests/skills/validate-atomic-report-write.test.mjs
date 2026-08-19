@@ -22,35 +22,33 @@ const SKILL_PATH = resolve(__dirname, "../../skills/validate/SKILL.md");
 describe("validate SKILL.md — atomic .validate.md write protocol (issue-496)", () => {
   const content = readFileSync(SKILL_PATH, "utf-8");
 
-  it("instructs the skill to write to a .tmp file before committing", () => {
+  it("instructs the skill to write to a .tmp file before committing (+3 more contract assertions)", () => {
+    // instructs the skill to write to a .tmp file before committing
     assert.match(
-      content,
-      /\.validate\.md\.tmp/,
-      "SKILL.md should reference the <spec-slug>.validate.md.tmp path",
+    content,
+    /\.validate\.md\.tmp/,
+    "SKILL.md should reference the <spec-slug>.validate.md.tmp path",
     );
-  });
 
-  it("references the `adev artifact commit` verb for the final rename", () => {
+    // references the `adev artifact commit` verb for the final rename
     assert.match(
-      content,
-      /adev artifact commit/,
-      "SKILL.md should invoke `adev artifact commit` to finalize the report",
+    content,
+    /adev artifact commit/,
+    "SKILL.md should invoke `adev artifact commit` to finalize the report",
     );
-  });
 
-  it("passes --kind validate to the commit verb", () => {
+    // passes --kind validate to the commit verb
     assert.match(
-      content,
-      /adev artifact commit[^\n]*--kind\s+validate/,
-      "the artifact commit invocation should specify --kind validate",
+    content,
+    /adev artifact commit[^\n]*--kind\s+validate/,
+    "the artifact commit invocation should specify --kind validate",
     );
-  });
 
-  it("passes --spec pointing to the .spec.md path", () => {
+    // passes --spec pointing to the .spec.md path
     assert.match(
-      content,
-      /adev artifact commit[^\n]*--spec[^\n]*\.spec\.md/,
-      "the artifact commit invocation should reference the .spec.md path",
+    content,
+    /adev artifact commit[^\n]*--spec[^\n]*\.spec\.md/,
+    "the artifact commit invocation should reference the .spec.md path",
     );
   });
 

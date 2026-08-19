@@ -37,6 +37,20 @@ reviewers:
   #   severity_cap: blocker
 
   # ----------------------------------------------------------------------
+  # Inline-prompt reviewer — prose directly in this file instead of a
+  # `prompt:` file reference. Mutually exclusive with `prompt`/`package`;
+  # declare exactly one. Keep it comma-free if adopted via
+  # `adev governance materialize` (see docs/governance.md).
+  # ----------------------------------------------------------------------
+  # - id: project.inline-reviewer
+  #   name: "Inline Reviewer"
+  #   dispatch: always
+  #   prompt_text: "Review the change for completeness and internal consistency."
+  #   profile: reviewer-capable
+  #   context_pack: base
+  #   severity_cap: blocker
+
+  # ----------------------------------------------------------------------
   # Package-mode reviewer — wrap an external skill as a reviewer. The
   # runner dispatches the skill under the declared profile; an adapter
   # subagent extracts findings from its output.

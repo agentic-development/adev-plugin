@@ -477,14 +477,15 @@ describe("review-config applySeverityCap", () => {
 });
 
 describe("review-config computeVerdict", () => {
-  test("PASS on zero findings or suggestions only", () => {
+  test("PASS on zero findings or suggestions only (+2 more contract assertions)", () => {
+    // PASS on zero findings or suggestions only
     assert.equal(computeVerdict([], {}), "PASS");
     assert.equal(computeVerdict([{ severity: "suggestion" }], {}), "PASS");
-  });
-  test("PASS_WITH_NOTES on warnings", () => {
+
+    // PASS_WITH_NOTES on warnings
     assert.equal(computeVerdict([{ severity: "warning" }], {}), "PASS_WITH_NOTES");
-  });
-  test("BLOCK on blocker when threshold is 1", () => {
+
+    // BLOCK on blocker when threshold is 1
     assert.equal(computeVerdict([{ severity: "blocker" }], {}), "BLOCK");
   });
   test("threshold > 1 requires more blockers", () => {

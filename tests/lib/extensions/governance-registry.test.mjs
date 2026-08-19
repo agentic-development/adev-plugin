@@ -103,6 +103,7 @@ const MAXIMAL_ENTRIES = {
     context_pack: 'base',
     severity_cap: 'warning',
     prompt: 'plugin:reviewers/one.md',
+    prompt_text: 'Review the change for completeness.',
     package: { skill: 'plugin:skills/one.md', adapter: 'plugin:adapters/generic.md' },
     enabled: true,
     disabled_reason: 'not-disabled',
@@ -270,6 +271,17 @@ test('package paths keep the scalar rule — the argv rule would refuse them', (
   }));
   assert.doesNotThrow(() => validateEntryFields('review.yaml',
     { id: 'r', prompt: 'plugin:review-specs/adapters/generic.md' }));
+});
+
+test('prompt_text is contributable to review.yaml (adev-plugin-xg1f.4)', () => {
+  // `prompt_text` is `prompt`'s sibling for inline prose. Comma-free prose
+  // passes the scalar rule the same as any other short sentence; it is listed
+  // here mainly so a future prune of FIELD_ALLOWLIST does not silently drop it
+  // and reintroduce GOVERNANCE_FIELD_NOT_ALLOWED for every domain reviewer that
+  // uses it (lib/domains/merge-reviewers.mjs -> lib/governance/materialize.mjs
+  // projectEntry() filters by this same allowlist at write time).
+  assert.doesNotThrow(() => validateEntryFields('review.yaml',
+    { id: 'r', prompt_text: 'Review the change for completeness.' }));
 });
 
 test('severity_cap uses its own vocabulary, not severity\'s', () => {

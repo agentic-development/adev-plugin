@@ -83,11 +83,11 @@ describe("validateIssue — issue body aliases", () => {
     });
   }
 
-  it("keeps notes working unchanged", () => {
+  it("keeps notes working unchanged (+1 more contract assertions)", () => {
+    // keeps notes working unchanged
     assert.equal(validateIssue({ title: "T", notes: "canonical" }).notes, "canonical");
-  });
 
-  it("defaults notes to empty string when no prose is supplied", () => {
+    // defaults notes to empty string when no prose is supplied
     assert.equal(validateIssue({ title: "T" }).notes, "");
   });
 

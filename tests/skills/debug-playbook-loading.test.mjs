@@ -16,43 +16,36 @@ describe('debug SKILL.md playbook loading', () => {
     assert.ok(content.length > 0);
   });
 
-  it('Phase 2 includes playbook loading step', () => {
+  it("Phase 2 includes playbook loading step (+8 more contract assertions)", () => {
+    // Phase 2 includes playbook loading step
     assert.match(content, /playbook/i);
     assert.match(content, /debug-playbook\.md/i);
-  });
 
-  it('loads module-scoped playbook path', () => {
+    // loads module-scoped playbook path
     assert.match(content, /\.context-index\/specs\/features\/<module>\/debug-playbook\.md/);
-  });
 
-  it('loads cross-cutting playbook path', () => {
+    // loads cross-cutting playbook path
     assert.match(content, /\.context-index\/specs\/cross-cutting\/debug-playbook\.md/);
-  });
 
-  it('describes trigger matching as LLM-side', () => {
+    // describes trigger matching as LLM-side
     assert.match(content, /trigger/i);
     assert.match(content, /match/i);
     assert.match(content, /symptom/i);
-  });
 
-  it('describes fallback menu when no triggers match', () => {
+    // describes fallback menu when no triggers match
     assert.match(content, /menu/i);
-  });
 
-  it('describes graceful absence', () => {
+    // describes graceful absence
     assert.match(content, /no playbook/i);
-  });
 
-  it('describes command execution via Bash with tool approval', () => {
+    // describes command execution via Bash with tool approval
     assert.match(content, /command/i);
     assert.match(content, /Bash/i);
-  });
 
-  it('describes escalation behavior', () => {
+    // describes escalation behavior
     assert.match(content, /escalation/i);
-  });
 
-  it('module-scoped precedence over cross-cutting on overlap', () => {
+    // module-scoped precedence over cross-cutting on overlap
     assert.match(content, /precedence/i);
   });
 

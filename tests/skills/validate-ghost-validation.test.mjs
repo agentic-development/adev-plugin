@@ -53,35 +53,33 @@ describe("validate SKILL.md — ghost validation guards (issue-184)", () => {
   });
 
   describe("Check 2: file reading requirement", () => {
-    it("requires Read tool use before citing file:line references", () => {
+    it("requires Read tool use before citing file:line references (+3 more contract assertions)", () => {
+      // requires Read tool use before citing file:line references
       assert.match(
-        skill,
-        /MUST use the Read tool|must.*Read tool.*read.*actual file|Read tool.*before.*cit/i,
-        "Check 2 must require explicit Read tool use before citing file:line"
+      skill,
+      /MUST use the Read tool|must.*Read tool.*read.*actual file|Read tool.*before.*cit/i,
+      "Check 2 must require explicit Read tool use before citing file:line"
       );
-    });
 
-    it("prohibits fabricating or inferring file contents", () => {
+      // prohibits fabricating or inferring file contents
       assert.match(
-        skill,
-        /Do not infer.*fabricate|not.*fabricate.*file|fabricate.*file.*content/i,
-        "Check 2 must prohibit inferring or fabricating file contents"
+      skill,
+      /Do not infer.*fabricate|not.*fabricate.*file|fabricate.*file.*content/i,
+      "Check 2 must prohibit inferring or fabricating file contents"
       );
-    });
 
-    it("explicitly forbids using plan checkboxes as evidence of completion", () => {
+      // explicitly forbids using plan checkboxes as evidence of completion
       assert.match(
-        skill,
-        /Do NOT use plan.*checkbox|plan.*\[x\].*not.*evidence|checkbox.*not.*proof/i,
-        "Check 2 must warn against treating plan [x] checkboxes as proof of implementation"
+      skill,
+      /Do NOT use plan.*checkbox|plan.*\[x\].*not.*evidence|checkbox.*not.*proof/i,
+      "Check 2 must warn against treating plan [x] checkboxes as proof of implementation"
       );
-    });
 
-    it("requires Glob or Grep to locate files before reading", () => {
+      // requires Glob or Grep to locate files before reading
       assert.match(
-        skill,
-        /Glob.*Grep.*identify|Use Glob and Grep/i,
-        "Check 2 must instruct using Glob/Grep to find files before reading them"
+      skill,
+      /Glob.*Grep.*identify|Use Glob and Grep/i,
+      "Check 2 must instruct using Glob/Grep to find files before reading them"
       );
     });
   });

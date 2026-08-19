@@ -8,14 +8,14 @@ const SKILL_PATH = join(PLUGIN_ROOT, "skills", "implement", "SKILL.md");
 const skill = readFileSync(SKILL_PATH, "utf8");
 
 describe("adev:implement SKILL.md — workspace detection in Step 1", () => {
-  it("Step 1 calls detectWorkspace(cwd) to detect workspace mode", () => {
+  it("Step 1 calls detectWorkspace(cwd) to detect workspace mode (+1 more contract assertions)", () => {
+    // Step 1 calls detectWorkspace(cwd) to detect workspace mode
     assert.match(skill, /detectWorkspace\(cwd\)/,
-      "Step 1 must call detectWorkspace(cwd)");
-  });
+    "Step 1 must call detectWorkspace(cwd)");
 
-  it("Step 1 stores workspace state for later steps", () => {
+    // Step 1 stores workspace state for later steps
     assert.match(skill, /workspace state/i,
-      "Step 1 must mention storing workspace state");
+    "Step 1 must mention storing workspace state");
   });
 
   it("fresh per task is defensive hygiene, not concurrency support", () => {
@@ -26,23 +26,22 @@ describe("adev:implement SKILL.md — workspace detection in Step 1", () => {
 });
 
 describe("adev:implement SKILL.md — repo-mode-inside-workspace advisory", () => {
-  it("emits advisory to stdout once per invocation", () => {
+  it("emits advisory to stdout once per invocation (+2 more contract assertions)", () => {
+    // emits advisory to stdout once per invocation
     assert.match(skill, /Advisory: running repo-scoped inside workspace/,
-      "Must include the repo-mode-inside-workspace advisory text");
+    "Must include the repo-mode-inside-workspace advisory text");
     assert.match(skill, /stdout/i,
-      "Advisory must specify stdout as the output channel");
+    "Advisory must specify stdout as the output channel");
     assert.match(skill, /once per invocation/i,
-      "Advisory must fire exactly once per invocation");
-  });
+    "Advisory must fire exactly once per invocation");
 
-  it("advisory does not block execution", () => {
+    // advisory does not block execution
     assert.match(skill, /advisory does not block/i,
-      "Must state the advisory does not block");
-  });
+    "Must state the advisory does not block");
 
-  it("advisory does not appear when detectWorkspace returns null", () => {
+    // advisory does not appear when detectWorkspace returns null
     assert.match(skill, /detectWorkspace.*returns?\s+null/i,
-      "Must state advisory is suppressed when detectWorkspace returns null");
+    "Must state advisory is suppressed when detectWorkspace returns null");
   });
 });
 
@@ -65,27 +64,27 @@ describe("adev:implement SKILL.md — cross-repo reference resolution in Step 2a
       "Must note that resolveRef only searches specs/features/");
   });
 
-  it("appends resolved content under ## Cross-Repo Reference Context", () => {
+  it("appends resolved content under ## Cross-Repo Reference Context (+1 more contract assertions)", () => {
+    // appends resolved content under ## Cross-Repo Reference Context
     assert.match(skill, /## Cross-Repo Reference Context/,
-      "Step 2a must append resolved content under ## Cross-Repo Reference Context heading");
-  });
+    "Step 2a must append resolved content under ## Cross-Repo Reference Context heading");
 
-  it("handles resolution failures with non-blocking warnings", () => {
+    // handles resolution failures with non-blocking warnings
     assert.match(skill, /non-blocking/i,
-      "Cross-repo resolution failures must be non-blocking");
+    "Cross-repo resolution failures must be non-blocking");
     assert.match(skill, /warning/i,
-      "Cross-repo resolution failures must emit warnings");
+    "Cross-repo resolution failures must emit warnings");
   });
 });
 
 describe("adev:implement SKILL.md — subagent prompt workspace additions in Step 2c", () => {
-  it("scene-setting context includes target-repo: informational advisory", () => {
+  it("scene-setting context includes target-repo: informational advisory (+1 more contract assertions)", () => {
+    // scene-setting context includes target-repo: informational advisory
     assert.match(skill, /target-repo:/,
-      "Step 2c scene-setting must include target-repo: advisory");
-  });
+    "Step 2c scene-setting must include target-repo: advisory");
 
-  it("scope discipline includes cross-repo isolation constraint", () => {
+    // scope discipline includes cross-repo isolation constraint
     assert.match(skill, /cross-repo isolation/i,
-      "Step 2c scope discipline must include cross-repo isolation constraint");
+    "Step 2c scope discipline must include cross-repo isolation constraint");
   });
 });

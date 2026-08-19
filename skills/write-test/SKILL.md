@@ -56,6 +56,10 @@ When invoked directly (not dispatched by `adev:implement`):
 
 ## Step 1: Model Tier Resolution
 
+**Always pass `run_in_background: false` on every `Agent({...})` dispatch in this skill.** The harness backgrounds Agent dispatches by default: the call returns immediately with a task ID and the caller is only re-invoked by a completion notification. That notification path is reliable only at the top level of a session — inside a nested subagent context (write-test usually runs as a subagent dispatched by `/adev:implement`) it does not re-invoke the caller, so a backgrounded dispatch stalls the task loop (field-observed as steps that auto-background and never return a result). This applies to every subagent dispatch in this skill: RED phase test authoring, `--verify` semantic diff, and gaming violation judgment.
+
+**Never end your turn to wait for a dispatched subagent.** A synchronous dispatch (`run_in_background: false`) returns its final result directly in the tool call — there is nothing to wait for. If a dispatch ever returns a task ID instead of a result, that is a bug in the dispatch (the rule above was violated, or the harness backgrounded it anyway): fix the dispatch and re-run it synchronously. Do not end the turn hoping a completion notification will resume you — in a nested subagent context it will not. If this skill is itself running as a dispatched subagent (e.g., a build pipeline step), your own caller is waiting on a result contract — for build pipeline steps this is the `STEP_RESULT` format defined in `skills/build/SKILL.md`. Ending your turn without that result to report is a protocol violation, not a valid pause point.
+
 Before any subagent dispatch, read `model_tiers` from `.context-index/platform-context.yaml`:
 
 ```yaml
@@ -317,7 +321,7 @@ authoring subagent reused anything — see the advisory duplication check at the
 
 ## Step 4: Test Authoring (RED Phase)
 
-Dispatch a `capable`-tier subagent with:
+Dispatch a `capable`-tier subagent with `Agent({description, prompt, run_in_background: false})` and nothing else:
 
 - The resolved spec, file interface, or free-form description
 - The detected framework, test command, and file naming pattern
@@ -473,7 +477,7 @@ result=$(bash write-handoff.sh verify "<packetPath>")
 
 ### 6b. Semantic Diff
 
-Dispatch a `fast`-tier subagent with:
+Dispatch a `fast`-tier subagent with `Agent({description, prompt, run_in_background: false})` and nothing else:
 - The original test file contents (from the Handoff Block's `## Original Test File Contents` section)
 - The current test file contents (read from disk)
 - The 5 tamper classifications and their detection rules (pass Step 6c verbatim)

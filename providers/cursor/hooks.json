@@ -38,11 +38,22 @@
         "failClosed": true,
         "timeout": 30,
         "matcher": "Write|Edit"
+      },
+      {
+        "command": "./hooks/artifact-frontmatter-guard.sh",
+        "failClosed": true,
+        "timeout": 30,
+        "matcher": "Write|Edit"
       }
     ],
     "beforeShellExecution": [
       {
         "command": "./hooks/merge-guard.sh",
+        "failClosed": true,
+        "timeout": 30
+      },
+      {
+        "command": "./hooks/destructive-git-guard.sh",
         "failClosed": true,
         "timeout": 30
       },

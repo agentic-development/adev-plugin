@@ -76,7 +76,21 @@
         "type": "command"
       },
       {
+        "bash": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/artifact-frontmatter-guard.sh\"",
+        "cwd": ".",
+        "matcher": "create|edit",
+        "timeoutSec": 30,
+        "type": "command"
+      },
+      {
         "bash": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/merge-guard.sh\"",
+        "cwd": ".",
+        "matcher": "bash",
+        "timeoutSec": 30,
+        "type": "command"
+      },
+      {
+        "bash": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/destructive-git-guard.sh\"",
         "cwd": ".",
         "matcher": "bash",
         "timeoutSec": 30,

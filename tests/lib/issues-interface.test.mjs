@@ -225,15 +225,14 @@ describe("checkCloseGuard", () => {
 });
 
 describe("constants", () => {
-  it("exports valid status values", () => {
+  it("exports valid status values (+2 more contract assertions)", () => {
+    // exports valid status values
     assert.deepEqual(VALID_STATUSES, ["open", "in_progress", "closed", "deferred"]);
-  });
 
-  it("exports valid type values", () => {
+    // exports valid type values
     assert.deepEqual(VALID_TYPES, ["bug", "feature", "task"]);
-  });
 
-  it("exports valid priority values", () => {
+    // exports valid priority values
     assert.deepEqual(VALID_PRIORITIES, [0, 1, 2, 3, 4]);
   });
 });

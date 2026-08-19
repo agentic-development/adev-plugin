@@ -11,11 +11,11 @@ const charter = readFileSync(
   "utf8",
 );
 
-test("charter revision 3 adds the Test Depth Policy capability row", () => {
+test("charter revision 3 adds the Test Depth Policy capability row (+1 more contract assertions)", () => {
+  // charter revision 3 adds the Test Depth Policy capability row
   assert.match(charter, /Test Depth Policy/);
-});
 
-test("charter Domain Model declares TestDepthAssignment entity", () => {
+  // charter Domain Model declares TestDepthAssignment entity
   assert.match(charter, /TestDepthAssignment/);
 });
 

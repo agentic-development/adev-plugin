@@ -36,11 +36,11 @@ function makeEvent(type, extras = {}) {
   return { ...event, ...extras };
 }
 
-test('returns { fired: false } when ctx.event is undefined (no-op outside write-time hook)', () => {
+test("returns { fired: false } when ctx.event is undefined (no-op outside write-time hook) (+1 more contract assertions)", () => {
+  // returns { fired: false } when ctx.event is undefined (no-op outside write-time hook)
   assert.deepEqual(run({}), { fired: false });
-});
 
-test('returns { fired: false } when ctx.event is null', () => {
+  // returns { fired: false } when ctx.event is null
   assert.deepEqual(run({ event: null }), { fired: false });
 });
 

@@ -77,19 +77,18 @@ async function ageClaim(adapter, id, minutes) {
 // ---------------------------------------------------------------------------
 
 describe("normalizeClaimTtlMinutes", () => {
-  it("defaults to 240 minutes when unset", () => {
+  it("defaults to 240 minutes when unset (+2 more contract assertions)", () => {
+    // defaults to 240 minutes when unset
     assert.equal(normalizeClaimTtlMinutes(undefined), 240);
     assert.equal(normalizeClaimTtlMinutes(null), 240);
     assert.equal(DEFAULT_CLAIM_TTL_MINUTES, 240);
-  });
 
-  it("accepts an integer as a number or as a manifest string literal", () => {
+    // accepts an integer as a number or as a manifest string literal
     assert.equal(normalizeClaimTtlMinutes(60), 60);
     assert.equal(normalizeClaimTtlMinutes("60"), 60);
     assert.equal(normalizeClaimTtlMinutes(" 15 "), 15);
-  });
 
-  it("treats 0 as expiry disabled", () => {
+    // treats 0 as expiry disabled
     assert.equal(normalizeClaimTtlMinutes(0), 0);
     assert.equal(normalizeClaimTtlMinutes("0"), 0);
   });
@@ -153,12 +152,12 @@ describe("isClaimStale", () => {
 });
 
 describe("isClaimUnexpirable", () => {
-  it("flags a held claim with no usable claimed_at", () => {
+  it("flags a held claim with no usable claimed_at (+1 more contract assertions)", () => {
+    // flags a held claim with no usable claimed_at
     assert.equal(isClaimUnexpirable({ owner: "agent-a" }), true);
     assert.equal(isClaimUnexpirable({ owner: "agent-a", claimed_at: "garbage" }), true);
-  });
 
-  it("does not flag a normal claim or an unclaimed issue", () => {
+    // does not flag a normal claim or an unclaimed issue
     assert.equal(isClaimUnexpirable({ owner: "agent-a", claimed_at: minutesAgo(1) }), false);
     assert.equal(isClaimUnexpirable({ id: "i1" }), false);
   });

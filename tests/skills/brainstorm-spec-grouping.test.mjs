@@ -29,17 +29,17 @@ describe("adev:brainstorm SKILL.md — Step 8 Spec Organization Plan", () => {
     step8Block = content.slice(start, end === -1 ? content.length : end);
   });
 
-  it("Step 8 heading exists in SKILL.md", () => {
+  it("Step 8 heading exists in SKILL.md (+1 more contract assertions)", () => {
+    // Step 8 heading exists in SKILL.md
     assert.ok(
-      content.includes("## Step 8: Transition to Specification"),
-      "Step 8 heading must be present"
+    content.includes("## Step 8: Transition to Specification"),
+    "Step 8 heading must be present"
     );
-  });
 
-  it("Step 8 renders the Spec Organization Plan section", () => {
+    // Step 8 renders the Spec Organization Plan section
     assert.ok(
-      step8Block.includes("Spec Organization Plan"),
-      "Step 8 must include the 'Spec Organization Plan' heading or label"
+    step8Block.includes("Spec Organization Plan"),
+    "Step 8 must include the 'Spec Organization Plan' heading or label"
     );
   });
 
@@ -103,19 +103,19 @@ describe("adev:brainstorm SKILL.md — Step 8 Spec Organization Plan", () => {
     }
   });
 
-  it("Step 8 encodes the heuristic-conflict rule verbatim", () => {
+  it("Step 8 encodes the heuristic-conflict rule verbatim (+1 more contract assertions)", () => {
+    // Step 8 encodes the heuristic-conflict rule verbatim
     assert.ok(
-      step8Block.includes(
-        "cohesion suggests together, blast-radius suggests apart"
-      ),
-      "Step 8 must include the verbatim heuristic-conflict note from the spec"
+    step8Block.includes(
+    "cohesion suggests together, blast-radius suggests apart"
+    ),
+    "Step 8 must include the verbatim heuristic-conflict note from the spec"
     );
-  });
 
-  it("Step 8 documents override stickiness across session turns", () => {
+    // Step 8 documents override stickiness across session turns
     assert.ok(
-      step8Block.includes("do not re-render the grouping table on subsequent turns"),
-      "Step 8 must document override stickiness (no re-rendering after user overrides)"
+    step8Block.includes("do not re-render the grouping table on subsequent turns"),
+    "Step 8 must document override stickiness (no re-rendering after user overrides)"
     );
   });
 

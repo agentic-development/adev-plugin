@@ -18,22 +18,20 @@ import {
 // ── slugFromSpec ────────────────────────────────────────────────────────────
 
 describe("slugFromSpec", () => {
-  it("strips .spec.md extension and lowercases", () => {
+  it("strips .spec.md extension and lowercases (+3 more contract assertions)", () => {
+    // strips .spec.md extension and lowercases
     assert.equal(slugFromSpec("my-feature.spec.md"), "my-feature");
-  });
 
-  it("strips .md extension when no .spec.md", () => {
+    // strips .md extension when no .spec.md
     assert.equal(slugFromSpec("some-doc.md"), "some-doc");
-  });
 
-  it("replaces dots and underscores with hyphens", () => {
+    // replaces dots and underscores with hyphens
     assert.equal(slugFromSpec("my_feature.v2.spec.md"), "my-feature-v2");
-  });
 
-  it("handles full path, uses basename only", () => {
+    // handles full path, uses basename only
     assert.equal(
-      slugFromSpec(".context-index/specs/features/build/my-spec.spec.md"),
-      "my-spec"
+    slugFromSpec(".context-index/specs/features/build/my-spec.spec.md"),
+    "my-spec"
     );
   });
 
@@ -376,11 +374,11 @@ describe("getNextStep", () => {
     }
   });
 
-  it("returns null for null state", () => {
+  it("returns null for null state (+1 more contract assertions)", () => {
+    // returns null for null state
     assert.equal(getNextStep(null), null);
-  });
 
-  it("returns null for state with no steps array", () => {
+    // returns null for state with no steps array
     assert.equal(getNextStep({ status: "in_progress" }), null);
   });
 });

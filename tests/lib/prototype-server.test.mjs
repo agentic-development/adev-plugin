@@ -285,14 +285,14 @@ describe('ensureGitignore (delegates to managed-block installer)', () => {
 });
 
 describe('validateModuleName', () => {
-  it('accepts valid module names', () => {
+  it("accepts valid module names (+1 more contract assertions)", () => {
+    // accepts valid module names
     assert.equal(validateModuleName('auth'), true);
     assert.equal(validateModuleName('my-module'), true);
     assert.equal(validateModuleName('module123'), true);
     assert.equal(validateModuleName('a'), true);
-  });
 
-  it('rejects invalid module names', () => {
+    // rejects invalid module names
     assert.equal(validateModuleName(''), false);
     assert.equal(validateModuleName('-starts-with-dash'), false);
     assert.equal(validateModuleName('Has-Upper'), false);

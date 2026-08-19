@@ -77,19 +77,19 @@ function nestedValueViolations(doc) {
 }
 
 describe("eval SKILL.md — default rubric is a real file", () => {
-  it("documents a default rubric path", () => {
+  it("documents a default rubric path (+1 more contract assertions)", () => {
+    // documents a default rubric path
     assert.notEqual(
-      RUBRIC_REL,
-      "",
-      "skills/eval/SKILL.md must name a shipped default rubric path under skills/eval/",
+    RUBRIC_REL,
+    "",
+    "skills/eval/SKILL.md must name a shipped default rubric path under skills/eval/",
     );
-  });
 
-  it("the documented default rubric file exists on disk", () => {
+    // the documented default rubric file exists on disk
     assert.equal(
-      existsSync(RUBRIC_ABS),
-      true,
-      `SKILL.md documents ${RUBRIC_REL || "<nothing>"} but no such file ships with the plugin`,
+    existsSync(RUBRIC_ABS),
+    true,
+    `SKILL.md documents ${RUBRIC_REL || "<nothing>"} but no such file ships with the plugin`,
     );
   });
 
@@ -183,36 +183,35 @@ describe("eval Layer 3 — binary verdicts, not numeric scales", () => {
     );
   });
 
-  it("declares the three-verdict vocabulary including the unknown escape hatch", () => {
+  it("declares the three-verdict vocabulary including the unknown escape hatch (+2 more contract assertions)", () => {
+    // declares the three-verdict vocabulary including the unknown escape hatch
     assert.match(String(rubric.verdict_values), /\bmet\b/);
     assert.match(String(rubric.verdict_values), /\bnot_met\b/);
     assert.match(String(rubric.verdict_values), /\bunknown\b/);
-  });
 
-  it("SKILL.md instructs judges to return UNKNOWN rather than guess", () => {
+    // SKILL.md instructs judges to return UNKNOWN rather than guess
     assert.match(skill, /VERDICT: UNKNOWN/);
     assert.match(
-      skill,
-      /Absence of (evidence|information) is never `?NOT_MET`?/i,
-      "SKILL.md must state that absence of evidence is never NOT_MET",
+    skill,
+    /Absence of (evidence|information) is never `?NOT_MET`?/i,
+    "SKILL.md must state that absence of evidence is never NOT_MET",
     );
-  });
 
-  it("SKILL.md dispatches one judge per criterion, never a bundle", () => {
+    // SKILL.md dispatches one judge per criterion, never a bundle
     assert.match(
-      skill,
-      /One criterion per judge dispatch/i,
-      "SKILL.md must state the one-criterion-per-judge rule",
+    skill,
+    /One criterion per judge dispatch/i,
+    "SKILL.md must state the one-criterion-per-judge rule",
     );
     assert.match(
-      skill,
-      /Never bundle criteria/i,
-      "SKILL.md must forbid bundling criteria into one prompt",
+    skill,
+    /Never bundle criteria/i,
+    "SKILL.md must forbid bundling criteria into one prompt",
     );
     assert.match(
-      skill,
-      /\*\*separate\*\* reviewer subagent/i,
-      "SKILL.md must dispatch a separate reviewer subagent per criterion",
+    skill,
+    /\*\*separate\*\* reviewer subagent/i,
+    "SKILL.md must dispatch a separate reviewer subagent per criterion",
     );
   });
 
@@ -263,15 +262,15 @@ describe("eval Layer 3 — binary verdicts, not numeric scales", () => {
 });
 
 describe("eval SKILL.md — constitution compliance", () => {
-  it("contains no inline-Node execution directives", () => {
+  it("contains no inline-Node execution directives (+1 more contract assertions)", () => {
+    // contains no inline-Node execution directives
     assert.doesNotMatch(
-      skill,
-      /node -e|node --input-type=module|Run inline Node/,
-      "SKILL.md must not contain executable inline-Node directives",
+    skill,
+    /node -e|node --input-type=module|Run inline Node/,
+    "SKILL.md must not contain executable inline-Node directives",
     );
-  });
 
-  it("uses <ADEV_ROOT> rather than a hardcoded plugin path", () => {
+    // uses <ADEV_ROOT> rather than a hardcoded plugin path
     assert.doesNotMatch(skill, /~\/\.claude\/|\/Users\/[^/]+\/\.claude\//);
   });
 });
