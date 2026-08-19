@@ -13,6 +13,7 @@ Systematic debugging grounded in project context. Forked from Superpowers' syste
 - `--error <message>`: the error message or symptom description
 - `--spec <path>`: scope debugging to a specific spec's domain
 - `--issue <id>`: the board issue tracking this bug — claimed in Phase 1.6 so a second agent cannot fix it in parallel
+- `--auto`: non-interactive mode. No step in Phase 1 or Phase 6 blocks waiting for user input — every decision point that would otherwise prompt falls back to a deterministic default (see Phase 1's bounded reproduction limit and Phase 6 step 3 below). Intended for `/adev:bugfix-loop`'s unattended invocations.
 - `--apply`: apply the fix after diagnosis (prompts for confirmation)
 - `--no-infra`: skip infrastructure preflight checks (user-only — the agent must never set this flag)
 
@@ -340,6 +341,12 @@ This is the key difference from generic debugging. Before diving into code, load
    - The fix must not violate any constitutional principles.
 
 3. **Consider drafting an ADR.**
+   - **Under `--auto`:** skip the interactive prompt entirely — there is no user present to answer it. If an architectural insight was detected, compute a confidence note carrying an insight description (not a generic label) via the existing `adev verify format-note` CLI verb:
+     ```bash
+     adev verify format-note --action "Architectural insight (auto mode): <one-sentence insight description>" --confidence low \
+                             --spec-path <specPath>
+     ```
+     `<one-sentence insight description>` is the actual finding from this step (the unexpected coupling, missing abstraction, violated assumption, or technology constraint) — never the literal placeholder text. **Do not call `update()` here.** Phase 6 step 4 is the single call site that writes to the issue's `notes` field; hand this note's text to step 4, which appends it to whichever notes string it ends up writing (see Phase 6 step 4 below). ADR authorship stays a deferred human follow-up; `--auto` never drafts one autonomously.
    - If the root cause reveals an architectural insight (unexpected coupling, missing abstraction, violated assumption, technology constraint), suggest drafting an ADR.
    - Prompt the user: "The root cause was [X]. This reveals [architectural insight]. Want me to draft an ADR to document this decision/constraint?"
    - If yes, create a draft ADR in `.context-index/adrs/` with the next sequential number.
