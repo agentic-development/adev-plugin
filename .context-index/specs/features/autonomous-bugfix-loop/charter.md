@@ -1,7 +1,7 @@
 ---
 status: approved
 kind: feature
-revision: 5
+revision: 6
 updated: 2026-08-19
 ---
 
@@ -50,7 +50,8 @@ approval per Architecture Boundaries — approved during brainstorm.
 - **GitHub Issues bridge** — triage-gated bidirectional sync using GitHub's default
   label set: an issue becomes a local WorkItem only once both `bug` and `help wanted`
   are applied (manifest-overridable pair). Outbound writeback posts comments on
-  claim/fix/park; it never changes GitHub issue state, labels, or assignees.
+  fix/park/unreproducible outcomes only — no trigger exists at claim time; it never
+  changes GitHub issue state, labels, or assignees.
 - **Modular tracker-provider adapter interface** — the bridge is built behind a
   `TrackerProviderAdapter` interface and registry, mirroring `task-management`'s own
   `IssueManagerInterface`/backend-registry pattern (new backends added by implementing
@@ -203,6 +204,6 @@ approval per Architecture Boundaries — approved during brainstorm.
 | Determinism | The loop never marks a bug fixed except via `/adev:debug`'s own deterministic quality-gate pass; no self-reported success |
 | Portability | The core loop mechanism (self-re-invocation) works in every harness adev supports; `/goal` is an optional Claude-Code-only enhancement, never a dependency |
 | Resilience | GitHub API failures (rate limit, outage) degrade to local-board-only operation; the loop must never block on bridge availability |
-| Auditability | Every claim/fix/park decision is traceable via `lifecycle-state/` JSONL records and, for GitHub-origin issues, outbound comments |
+| Auditability | Every claim/fix/park decision is traceable via `lifecycle-state/` JSONL records; for GitHub-origin issues, fix/park/unreproducible outcomes additionally get an outbound comment (not claim — no trigger exists at that point) |
 | Boundedness | Both per-run (`max-bugs`/`max-turns`) and per-issue (attempt cap) budgets are enforced; the loop must terminate on a transcript-provable condition |
 | Extensibility | New tracker providers (GitLab, Azure DevOps, etc.) are added by implementing `TrackerProviderAdapter` and registering it, with no changes to `/adev:bugfix-loop` or task-management core — same pattern as `IssueManagerInterface`'s backend registry |
