@@ -1,7 +1,7 @@
 ---
 status: approved
 kind: feature
-revision: 2
+revision: 3
 updated: 2026-08-19
 ---
 
@@ -95,6 +95,7 @@ approval per Architecture Boundaries — approved during brainstorm.
 |-----------|------|-------------|
 | Task Management | internal module | Issue board CRUD via `IssueManagerInterface`; GitHub Issues bridge scope carved out in `charter.md` revision 7, whose Deferred Capabilities table names this charter as the implementer (cross-referenced both directions) |
 | Implementation (owns `/adev:debug`, `skills/debug/SKILL.md`) | internal module | Per-bug worker; source of the `ADEV-DEBUG:` completion token and `--auto` mode, including the Phase 6 confidence gate this charter never overrides |
+| Setup (`skills/using-adev/SKILL.md`, Persona Output Override) | internal module | The `debug-completion-and-auto` spec extends the persona-exempt carve-out to name `ADEV-DEBUG`, alongside the existing `ADEV-BUILD`/`ADEV-VALIDATE` entries — added revision 3 after review flagged this dependency was undeclared |
 | Agent-Reliable State Artifacts | internal module | `lifecycle-state/` JSONL persistence conventions used for attempt-cap tracking |
 | `lib/loop-convergence.mjs` (owned by `review-block-auto-retry.spec.md`) | internal module | Reused bounding logic, keyed per issue instead of per review-revision — high-risk validated spec, coordinate before touching |
 | `/adev:build` (`skills/build/SKILL.md`) | internal module (reference) | Source of the self-re-invocation discipline this skill's loop copies |
