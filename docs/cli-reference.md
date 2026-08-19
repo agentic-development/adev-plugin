@@ -579,6 +579,7 @@ Set with `tasks.backend` in `manifest.yaml`. Verified against `br` 0.2.22.
 | lease TTL + `issues stale` | ✅ | ✅ | ❌ |
 | **stale-lease takeover** | ✅ atomic | ⚠️ **not atomic** — two calls | ❌ |
 | `branch` / `pr` / `claimed_at` / `spec_ref` | ✅ native columns | ✅ br `agent_context` (JSON, under the `adev` key) | 🔍 |
+| `affected_modules` (`issues set-modules`) | ✅ native column | ✅ br `agent_context`, same as above | 🔍 |
 | adev ids (`issue-N` / `epic-N`) | ✅ native | ✅ br `external_ref` — br enforces uniqueness | 🔍 |
 | claim holder | ✅ native | ✅ br `assignee`, and nowhere else | ❌ |
 | dependency edges on `list()` | ✅ | ⚠️ always `[]` — `br list` returns counts, not edges | 🔍 |
@@ -603,9 +604,12 @@ Live coverage for the beads path is `tests/evals/beads-live/`, an opt-in bucket 
 ```
 adev issues claim issue-42 --owner "$USER/local" --branch "$(git branch --show-current)"
 adev issues stale --json
+adev issues set-modules issue-42 cli,hooks
 ```
 
-**Implementation:** `lib/cli/issues.mjs` (+ `issues-migrate.mjs`, `issues-claim.mjs`, `issues-stale.mjs`). **Called by:** `/adev:issues`, and in preflight by `/adev:implement` and `/adev:debug`.
+**`set-modules <id> <slug>[,<slug>...] [--json]`:** sets `WorkItem.affected_modules` — the module-safety tag `adev issues next` (bug-selection-and-eligibility.spec.md) consults for its blast-radius and reserved-tag safety checks. This is v1's only producer for the field: a direct, scriptable verb, deliberately unpolished (no validation against `manifest.modules[]`, no GitHub-label sync — both remain charter Deferred Capabilities). Works identically on the `json` and `beads` backends. An issue with no `affected_modules` set fails closed and is never autonomously selected.
+
+**Implementation:** `lib/cli/issues.mjs` (+ `issues-migrate.mjs`, `issues-claim.mjs`, `issues-stale.mjs`, `issues-set-modules.mjs`). **Called by:** `/adev:issues`, and in preflight by `/adev:implement` and `/adev:debug`.
 
 ### `retro`
 
