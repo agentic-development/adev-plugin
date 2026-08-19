@@ -4,7 +4,7 @@
 affects: [all-skills, copilot-provider, codex-provider, opencode-provider, cursor-provider]
 mode: cross-cutting
 kind: refactor
-status: review-pending
+status: review-blocked
 created: 2026-08-19
 updated: 2026-08-19
 revision: 1
