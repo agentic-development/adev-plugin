@@ -157,9 +157,9 @@ approval per Architecture Boundaries — approved during brainstorm.
 | Per-Issue Attempt Cap | Reused `loop-convergence.mjs` bounding, keyed per issue, persisted in `lifecycle-state/` | must-have | 1 | specified |
 | `/adev:bugfix-loop` Skill | Self-re-invoking, one-bug-per-turn loop draining eligible bugs; Load Skill Extensions block included | must-have | 1 | specified |
 | Eligibility Filter | Fixed priority/blast-radius heuristic (P2/P3, single-module) gating loop attempts — the safety boundary | must-have | 1 | specified |
-| Tracker Provider Adapter Interface | `TrackerProviderAdapter` contract + registry; GitHub is the only shipped implementation | must-have | 2 | — |
-| GitHub Triage-Gated Inbound Sync | Issues labeled `bug`+`help wanted` become local WorkItems, via the GitHub adapter | must-have | 2 | — |
-| GitHub Outbound Comment Writeback | Claim/fix/park state posted as GitHub comments, via the GitHub adapter | must-have | 2 | — |
+| Tracker Provider Adapter Interface | `TrackerProviderAdapter` contract + registry; GitHub is the only shipped implementation | must-have | 2 | specified |
+| GitHub Triage-Gated Inbound Sync | Issues labeled `bug`+`help wanted` become local WorkItems, via the GitHub adapter | must-have | 2 | specified |
+| GitHub Outbound Comment Writeback | Claim/fix/park state posted as GitHub comments, via the GitHub adapter | must-have | 2 | specified |
 | `/goal` Composition Docs | Documentation showing how to wrap `/adev:bugfix-loop` in `/goal` for hands-off Claude Code runs | nice-to-have | 1 | — |
 
 ## Deferred Capabilities
