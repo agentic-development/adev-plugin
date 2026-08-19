@@ -29,6 +29,7 @@ All hooks follow the same protocol:
 | `lifecycle-gate.sh pre-bash` | PreToolUse | Bash | Blocks | Block bash commands that bypass lifecycle gates |
 | `plan-body-write-guard` | PreToolUse | `Write\|Edit` | Blocks | Block direct writes to immutable plan-task bodies |
 | `gaming-gate` | PreToolUse | `Write\|Edit` | Blocks | Block a test-file Write/Edit that introduces a new gaming-detector violation |
+| `artifact-frontmatter-guard` | PreToolUse | `Write\|Edit` | Blocks | Block a `.review.md`/`.validate.md` Write/Edit that would leave the artifact's body before its frontmatter |
 | `sync-trigger` | PostToolUse | Edit | Advisory | Trigger sync after constitution edits |
 | `session-capture` | PostToolUse | `.*` (all) | Advisory | Capture session activity for retrospectives; also tracks which `.context-index/` files have been read (folded-in former `context-read-tracker`) |
 | `issue-reminder` | PostToolUse | `.*` (all) | Advisory | Remind about relevant open issues |
@@ -202,6 +203,33 @@ This consolidates what were formerly three separate scripts (`lifecycle-gate-edi
 2. If the flag is a false positive on a detector fixture file that doesn't match the exemption list, extend `isDetectorFixtureFile()` in `lib/test-strategies/gaming-gate.mjs`
 
 See: `.context-index/specs/features/test-strategies/gaming-detector-gate-enforcement.spec.md`
+
+---
+
+### artifact-frontmatter-guard
+
+**Script:** `hooks/artifact-frontmatter-guard.sh` (helper: `hooks/_artifact-frontmatter-guard-check.mjs`)
+**Matcher:** `Write|Edit`
+**Behavior:** Blocks
+
+**Purpose:** `adev artifact commit` (`lib/cli/artifact.mjs`) already rejects a `.review.md`/`.validate.md` whose first non-blank line isn't the `---` frontmatter delimiter, but that check only runs on the code path that goes through the verb's `.tmp` + commit rename. Two independent writers reach the final path without ever calling it: `skills/review-specs/SKILL.md`'s Step 6b historically wrote `.review.md` straight to its final path, and `.validate.md` gets bypassed in practice when an agent hits the verb's `ARTIFACT_FRONTMATTER_NOT_FIRST` error and writes the final path directly instead of fixing the `.tmp` and re-running. This hook enforces the same shape at the PreToolUse boundary on the FINAL path, so the bad shape is unproducible regardless of which writer runs.
+
+Fires on every `Write`/`Edit` targeting a path ending in `.review.md` or `.validate.md` (never a `.tmp` staging path — those are free-form scratch space for the tmp+commit idiom). It reconstructs the content the pending call would produce (via the same `reconstructAfterContent` helper `gaming-gate` uses) and blocks before the call lands if the result's first non-blank line is not `---`.
+
+**What triggers a block:**
+- A `Write` whose content opens with a heading, HTML comment, or anything else before the `---` delimiter
+- An `Edit` that would strip or displace an already-conformant file's leading frontmatter block (e.g. deleting the frontmatter entirely, or inserting a heading above it)
+
+**What does NOT trigger a block:** an `Edit` to an already-conformant file that leaves the opening frontmatter position untouched — e.g. `/adev:review-specs` Step 6c stamping the final `file-sha` value into a placeholder deep inside an already-correct `.review.md`. When the edit's `old_string` cannot be located in the file's current on-disk content (so the resulting shape can't be determined), the hook allows it — a false positive on a legitimate patch is worse than an uncaught bypass, and the Edit tool's own unique-match semantics still govern whether a non-matching edit applies at all.
+
+**What the user sees:**
+- A stderr message pointing at `adev artifact commit --spec <spec-path> --kind <review|validate>`, followed by exit 2 (the write/edit is refused; the file on disk is unchanged)
+
+**Resolution:**
+1. Move the YAML frontmatter above any heading or HTML comment in the content you were about to write
+2. If you already staged a correct `.tmp` file, commit it with `adev artifact commit` instead of writing the final path directly
+
+See: adev-plugin-nkz, `lib/cli/artifact.mjs::hasLeadingFrontmatter`, `lib/diagnostics/tier1/frontmatter-present.mjs`.
 
 ---
 

@@ -68,3 +68,4 @@
 {"event":"validator_report","step":"validate","validator":"validate.check-2-spec-compliance","severity":"error","verdict":"PASS_WITH_NOTES","notes":"8/13 criteria PASS, 1 PARTIAL (6/SEC-1), 4 NOT MET from deferred tasks 9+12; no scope expansion; no weak assertions; plan coverage table overstates criterion 10","ts":"2026-08-17T22:20:51.351Z"}
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-08-17T22:22:19.147Z"}
 {"event":"code_drift_detected","drift_source":"lib/governance/review-config.mjs","drift_at":"2026-08-18T18:39:59.788Z","ts":"2026-08-18T18:39:59.789Z"}
+{"event":"code_drift_detected","drift_source":"skills/review-specs/SKILL.md","drift_at":"2026-08-18T20:26:17.381Z","ts":"2026-08-18T20:26:17.382Z"}
