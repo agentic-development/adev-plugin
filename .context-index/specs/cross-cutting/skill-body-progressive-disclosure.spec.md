@@ -1,13 +1,13 @@
 <!-- partial_schema: spec@1 -->
 
 ---
-affects: [all-skills, copilot-provider, codex-provider, opencode-provider, cursor-provider]
+affects: [all-skills, copilot-provider, codex-provider, opencode-provider, cursor-provider, extensions]
 mode: cross-cutting
 kind: refactor
-status: review-blocked
+status: review-pending
 created: 2026-08-19
 updated: 2026-08-19
-revision: 1
+revision: 2
 diff-source: "main..chore/skills/progressive-disclosure (5 commits, 417 files)"
 ---
 
@@ -53,14 +53,17 @@ files sitting flat at the skill root:
 ### Problems
 
 1. **16 of 30 SKILL.md bodies exceeded the Agent Skills spec's ~5,000-token
-   guidance**; 11 also exceeded its 500-line guidance. Total across all 30 bodies:
+   guidance**; 12 also exceeded its 500-line guidance (`recover` at 501 lines is the twelfth). Total across all 30 bodies:
    856,056 bytes (~209,818 tokens at the 4.08 B/tok ratio recovered from
    skill-validator's own hygiene measurement of 65,350 B / 16,018 tok).
 
 2. **Four bodies were within 1.5 KB of a hard crash.** `lib/providers/copilot/skill-validator.mjs`
    enforces `FRONTMATTER_BYTE_LIMIT = 64 * 1024`; crossing it throws
-   `INVALID_SKILL_FRONTMATTER` from inside `buildPlan()` and takes down every
-   Copilot adapter path — install, uninstall, status, dry-run.
+   `INVALID_SKILL_FRONTMATTER` from inside `buildPlan()`, which is called from
+   exactly one site (`providers/copilot/adapter.mjs:203`, inside `install()`).
+   Copilot **install** and its `--dry-run` branch fail; `uninstall()` and
+   `status()` never call it. (An earlier revision of this spec claimed every
+   adapter path — corrected per RI-2.)
 
    | Skill | Bytes | Headroom |
    |-------|-------|----------|
@@ -86,11 +89,25 @@ files sitting flat at the skill root:
 
 Constraints that bound any fix:
 
-- **`plugin:<skill>/<path>` is a published URI contract.** `templates/review-specs/defaults.yaml`,
-  `templates/domains/software/reviewers.yaml`, `lib/governance/review-config.mjs:609`
-  and `lib/governance/validate-config.mjs:316` resolve `plugin:review-specs/<file>`
-  and `plugin:validate/checks/<file>`. Those URIs are materialized into every user
-  project's `.context-index/governance/review.yaml` and `validate.yaml`.
+- **`plugin:<skill>/<path>` is a published URI contract over the WHOLE `skills/`
+  tree**, not a review-specs/validate subset. `resolveReviewerPath`
+  (`lib/governance/review-config.mjs:636-654`) resolves `plugin:` against
+  `resolve(pluginRoot, 'skills')` generically. Consumers:
+  `templates/review-specs/defaults.yaml`, `templates/domains/software/reviewers.yaml`,
+  `lib/governance/review-config.mjs:609`, `lib/governance/validate-config.mjs:316`,
+  `lib/extensions/content-install.mjs:284-302` (validates an extension-contributed
+  `prompt` against that tree; an unresolvable prompt aborts the whole review with
+  `GOVERNANCE_FIELD_VALUE_INVALID`), and `lib/extensions/install.mjs:100-102`
+  (`isRelocatablePayload` passes any `plugin:`-prefixed path through unrewritten).
+
+  **Consequence for the freeze.** All 76 moved files were inside the same published
+  URI surface as the 22 frozen ones. The freeze's conclusion still holds — but only
+  because no shipped template, doc, or extension names a moved path (verified: every
+  non-test `plugin:` URI in `templates/` resolves to `review-specs/*` or
+  `validate/checks/*`). A third-party extension pack naming, say,
+  `plugin:plan/plan-reviewer-prompt.md` now fails with `PLUGIN_FILE_MISSING`. The
+  moved-vs-frozen line is therefore empirical, not structural, and a future split
+  must re-check it rather than assume it.
 - **~25 test files assert on inline SKILL.md prose**, several by slicing between
   headings or comparing heading offsets.
 - **Provider mirrors** under `providers/{codex,opencode}/skills/` hold their own
@@ -125,25 +142,25 @@ mapping each pass to its `--check` slug and its companion path.
 
 | Problem | Resolution |
 |---------|------------|
-| 1. 16 bodies over guidance | 0 over. Total 856,056 → 350,162 B (−59.1%); ~209,818 → ~85,824 est. tokens |
+| 1. 16 bodies over guidance | 0 over. Total 856,056 → 355,184 B (−58.5%); ~209,818 → ~87,055 est. tokens |
 | 2. Four bodies near the hard cap | Smallest headroom across all 30 is now 47,688 B (`route`, untouched) |
-| 3. Multiplied cost | 505,894 fewer bytes enter the prefix per invocation, so the reduction compounds per turn |
+| 3. Multiplied cost | 500,872 fewer bytes enter the prefix per invocation, so the reduction compounds per turn |
 | 4. Invisible at authoring time | Both limits documented in `constitution.md` / `CLAUDE.md` and `docs/skill-reference.md`; guarded by `tests/skills/skill-size-cap.test.mjs` |
-| 5. Layout divergence | 27 prose-referenced companions moved to `references/` and `scripts/` |
+| 5. Layout divergence | 28 companions moved to `references/` and `scripts/` |
 
 Per-skill result for the 16 that were over guidance:
 
 | Skill | Before | After | Skill | Before | After |
 |-------|--------|-------|-------|--------|-------|
-| hygiene | 65,350 | 12,997 | review-specs | 43,053 | 14,225 |
-| build | 65,345 | 16,821 | brainstorm | 38,901 | 11,408 |
-| implement | 64,856 | 12,415 | write-test | 32,038 | 12,660 |
-| specify | 64,119 | 15,226 | retro | 27,358 | 4,532 |
-| validate | 60,062 | 16,746 | recover | 26,754 | 5,430 |
-| plan | 50,998 | 9,662 | debug | 24,063 | 7,968 |
-| init | 49,654 | 7,203 | status | 23,279 | 7,407 |
-| | | | prototype | 22,854 | 9,875 |
-| | | | work | 21,694 | 10,694 |
+| hygiene | 65,350 | 13,315 | review-specs | 43,053 | 14,309 |
+| build | 65,345 | 17,109 | brainstorm | 38,901 | 11,492 |
+| implement | 64,856 | 12,504 | write-test | 32,038 | 12,732 |
+| specify | 64,119 | 15,334 | retro | 27,358 | 4,604 |
+| validate | 60,062 | 16,926 | recover | 26,754 | 5,526 |
+| plan | 50,998 | 9,818 | debug | 24,063 | 8,076 |
+| init | 49,654 | 7,251 | status | 23,279 | 7,515 |
+| | | | prototype | 22,854 | 9,995 |
+| | | | work | 21,694 | 12,863 |
 
 ## Changes Catalog
 
@@ -159,9 +176,10 @@ Per-skill result for the 16 that were over guidance:
 
 ### MODIFIED
 
-- 30 `skills/*/SKILL.md` bodies (16 substantively; the rest only for rewritten companion paths)
-- 24 provider mirror `SKILL.md` files, regenerated by `scripts/sync-provider-skills.mjs`
-- ~25 test files, rewired to follow relocated prose (see Invariants)
+- 18 `skills/*/SKILL.md` bodies (the 16 in the size table plus `eval` and `research`, whose only change was rewritten companion paths)
+- 36 provider mirror `SKILL.md` files (18 codex + 18 opencode), regenerated by `scripts/sync-provider-skills.mjs`
+- 100 test files, of which 92 now import `readSkillSurface` (see Invariants)
+- `scripts/sync-provider-skills.mjs` — companion sync widened to walk `references/` and `scripts/` recursively
 - `skills/work/SKILL.md` — new "Do not re-enter a skill whose body is already loaded" section
 
 ### REMOVED
@@ -170,12 +188,13 @@ Nothing. No prose was deleted; every instruction still ships.
 
 ### RENAMED
 
-- 76 file moves: 27 canonical companions plus their provider-mirror counterparts
+- 76 file moves: 28 canonical companions (22 into `references/`, 6 into `scripts/`) plus their provider-mirror counterparts. Two of the 28 — `brainstorm/references/charter-reviewer-prompt.md` and `plan/references/mode-router.md` — were already orphaned on `main`, so 26 are prose-referenced.
 - `skills/write-test/{detect-framework,detect-gaming,write-handoff}.{sh,mjs}` → `scripts/`
 
-**Deliberately NOT moved** — 18 files addressed by the `plugin:<skill>/<path>` URI
-contract (`skills/review-specs/*-prompt.md`, `review-specs/adapters/`,
-`validate/checks/`). Relocating them breaks every installed project at review and
+**Deliberately NOT moved** — 22 files addressed by the `plugin:<skill>/<path>` URI
+contract: 8 `skills/review-specs/*-prompt.md`, `review-specs/adapters/generic.md`,
+and 13 under `validate/checks/`. Of those, 17 are named by an actual `plugin:` URI
+in `templates/` or `lib/`; the rest sit in the same addressable namespace. Relocating them breaks every installed project at review and
 validate time, and since they already live outside `SKILL.md` it would reclaim
 zero body bytes.
 
@@ -185,13 +204,13 @@ Executed in this order; each step was independently verifiable and left the suit
 
 ### Step 1: Adopt the spec layout for prose-referenced companions
 
-Move the 27 companions referenced only from adev's own SKILL.md prose into
+Move the 28 companions referenced only from adev's own SKILL.md prose into
 `references/` and `scripts/`; rewrite every path reference in skills, tests, lib,
 docs, and specs; move the provider mirrors in step.
 
 - **Risk:** Low — pure relocation, no prose change.
 - **Verify:** full suite green; `providers/*` mirrors regenerate with no drift.
-- **Landed:** commit `6281d3ae`.
+- **Landed:** commit `e50948e7`.
 
 ### Step 2: Split the five largest bodies
 
@@ -201,7 +220,7 @@ plus `validate`.
 - **Risk:** High — these are the most load-bearing skills in the repo.
 - **Verify:** full suite green; the Load Skill Extensions block and dispatch rules
   still present in every body.
-- **Landed:** commit `9bdbfec1`.
+- **Landed:** commit `3b95cc23`.
 
 ### Step 3: Bring the remaining eleven under the guidance
 
@@ -211,7 +230,7 @@ of the way.
 
 - **Risk:** Medium — same mechanism, less load-bearing skills.
 - **Verify:** all 30 bodies under the guidance; suite green.
-- **Landed:** commit `27a43f45`.
+- **Landed:** commit `bce79691`.
 
 ### Step 4: Stop the conductor re-loading bodies already in context
 
@@ -220,7 +239,7 @@ approach 3).
 
 - **Risk:** Low — additive instruction, no existing behaviour removed.
 - **Verify:** `tests/skills/work-no-skill-reentry.test.mjs`.
-- **Landed:** commit `57061d3a`.
+- **Landed:** commit `25a34fc1`.
 
 ### Step 5: Make both limits an authoring-time constraint
 
@@ -228,7 +247,7 @@ Constitution, docs, and a regression guard.
 
 - **Risk:** Low.
 - **Verify:** the new guard fails if any body exceeds the guidance.
-- **Landed:** commit `522181db`.
+- **Landed:** commit `61064c9a`.
 
 ## Invariants
 
@@ -251,8 +270,20 @@ Properties that held at every step, and must keep holding for any future split.
    All three were carried out by the mechanical split and had to be restored. This
    invariant exists because the failure is silent: the body still reads coherently.
 
-3. **Every companion is reachable by a full, greppable path.** `skills/<name>/references/...`
-   in backticks, not a bare filename, and not a path relative to the skill directory.
+3. **Every pointer is anchored with `<ADEV_ROOT>` and greppable.**
+   `` `<ADEV_ROOT>/skills/<name>/references/...` `` — not a bare filename, not a
+   path relative to the skill directory, and **not a bare `skills/...` path**.
+
+   The anchor is load-bearing, not cosmetic. A bare `skills/...` path is
+   repo-root-relative and nothing anchors it once the skill is installed: cursor
+   publishes to `~/.cursor/skills/adev-<name>/` with the directory renamed,
+   copilot under `.github/` or `~/.copilot/`, codex to `~/.agents/skills/<name>/`.
+   In a user project the agent's cwd is the *project* root, so a bare path
+   resolves to nothing — or binds to a same-named file in a project-owned
+   `skills/` tree that the pointer prose then tells the agent to treat as the
+   authoritative instructions. That is a confused deputy across the
+   plugin/project boundary, and it is why the constitution already forbids
+   hardcoded install paths.
 
 4. **Assertions follow the prose; they are never weakened to pass.** Three shapes,
    three treatments:
@@ -275,7 +306,19 @@ Properties that held at every step, and must keep holding for any future split.
    syncs only `SKILL.md`, so companion moves must be mirrored by hand or the mirrored
    prose points at files that are not there.
 
-7. **`.plan.md` files are immutable.** The mechanical path rewrite touched seven of
+7. **The pointer graph is a DAG rooted at each SKILL.md, at most 3 levels deep.**
+   A companion may point at another companion — the shipped tree does, e.g.
+   `implement/SKILL.md` → `references/repo-mode-advisory.md` →
+   `references/steps/step-2-per-task-loop.md` → `references/batched-mode.md` — but
+   the graph must stay acyclic and reachable from the body.
+
+   BEH-7's reachability test does not imply this: a mutually-referencing pair
+   A↔B satisfies "some file in that skill's surface references it" while being
+   both cyclic and unreachable from the body. Depth is bounded because each hop
+   is a separate read the agent must decide to make, and a chain deeper than
+   three has stopped being disclosure and become indirection.
+
+8. **`.plan.md` files are immutable.** The mechanical path rewrite touched seven of
    them and was reverted; `tests/skills/plan-task-immutability.test.mjs` detects this
    from git history, so the commit had to be amended rather than fixed in the tree.
 
@@ -294,7 +337,8 @@ Describes the system after the refactor.
   to move a section into `skills/<name>/references/` and leave a conditional-loading
   pointer; deleting prose to fit is a violation.
 - **BEH-3** — **When** a section is relocated to a companion, **then** the body retains
-  that section's heading, a one-line summary, and a full-path pointer to the companion.
+  that section's heading, a one-line summary, and a pointer to the companion by its
+  `<ADEV_ROOT>`-anchored full path.
 - **BEH-4** — **When** an agent reaches a section whose body carries a conditional-loading
   pointer, **then** it reads the named companion before acting, and does not act from
   the summary alone.
@@ -307,11 +351,36 @@ Describes the system after the refactor.
 - **BEH-7** — **When** a companion file is added under `skills/<name>/references/`,
   **then** some file in that skill's surface references it by full path; an unreferenced
   companion is dead weight.
-- **BEH-8** — **When** a skill's companions move, **then** the corresponding provider
-  mirrors under `providers/*/skills/<name>/` move in the same change.
+- **BEH-8** — **When** a skill gains, loses, or moves a companion, **then** the
+  provider mirrors under `providers/*/skills/<name>/` carry the identical
+  companion set in the same change, and every pointer in a mirror body resolves
+  inside that mirror's own tree.
+
+  Worded around *any* change to the companion set, not just moves. The original
+  wording said "when a skill's companions move", which excluded newly *created*
+  companions — and creation is exactly how this behavior was first violated: the
+  27 relocated companions were mirrored, the 156 created in later steps were not,
+  and a guard derived from the original wording would still have missed it.
 - **BEH-9** — **When** `/adev:work` has already loaded its own body or a target skill's
   body in a session, **then** it does not re-invoke that skill to advance the arc; it
   continues from the instructions in context or dispatches a subagent.
+- **BEH-9a** — **When** the conductor continues in context, **then** reading a companion
+  the body points at is a permitted continuation, not a re-entry. Without this,
+  BEH-9's first escape contradicts BEH-4: what is in context is the body plus only
+  the companions the first branch loaded, so a re-run taking a different branch has
+  no in-context instructions and BEH-4 forbids acting from the stub.
+- **BEH-9b** — **When** the conductor re-runs a stage, **then** it counts the re-runs
+  itself, caps them at 3 per stage per unit of work, and on the third failure stops
+  and reports rather than trying again or switching strategy. `build.max_retries`
+  and `build.max_review_retries` do NOT bound this path — they are decremented
+  inside `/adev:build`'s own state, so a conductor-driven re-run spends none of
+  that budget.
+- **BEH-9c** — **When** no operator is present (`--intake --file`, or any unattended
+  session), **then** the conductor stops at the FIRST failure rather than the third.
+  The "propose, don't assume" confirmation gates *invocation*, and an in-context
+  continuation is not an invocation, so nothing else would halt a repeat. Arcs that
+  genuinely need unattended retries route to `/adev:build`, which has real ceilings
+  and `--resume`.
 - **BEH-10** — **When** a test asserts on instruction prose, **then** it reads the
   surface (`readSkillSurface`) for content presence, or the specific companion for
   section-scoped and ordering assertions.
@@ -339,7 +408,8 @@ Describes the system after the refactor.
 | `codex` / `opencode` providers | Medium | Mirror trees carry companions; `sync-provider-skills.mjs` covers only `SKILL.md`, so companion moves are manual |
 | `cursor-provider` | Low | Publishes recursively (`cpSync {recursive:true}`), so companions ship without change; its test now reads the published tree |
 | Test suite | High | ~25 files rewired; `tests/helpers.mjs` gains the surface readers |
-| `governance` (review/validate registries) | None, by design | The `plugin:<skill>/<path>` URI contract is untouched — that is why 18 files did not move |
+| `governance` (review/validate registries) | Low | The `plugin:` contract is untouched, which is why 22 files did not move — but the contract spans the whole `skills/` tree, so the isolation is empirical, not structural (BND-3) |
+| `lib/extensions` | Low | `content-install.mjs` and `install.mjs` resolve `plugin:` URIs against the same tree; no shipped extension names a moved path, but a third-party pack could |
 
 ## Integration Points
 
@@ -384,13 +454,13 @@ Describes the system after the refactor.
 - [x] All 30 `SKILL.md` bodies are under the ~5,000-token guidance (16 were over)
 - [x] All 30 are under the 65,536-byte hard cap with ≥47,688 bytes of headroom
 - [x] No prose deleted — every relocated section moved whole (BEH-2)
-- [x] Every body retains heading + summary + full-path pointer per relocated section (BEH-3)
+- [x] Every body retains heading + summary + `<ADEV_ROOT>`-anchored pointer per relocated section (BEH-3)
 - [x] Load Skill Extensions block present in all 30 bodies (BEH-6), pinned by `tests/skills-extension-coverage.test.mjs`
 - [x] Dispatch-discipline rules present in all 9 dispatching bodies (BEH-6), pinned by `tests/skills-dispatch-turn-discipline.test.mjs`
-- [x] `## Prerequisites` restored to the body for `implement`, `validate`, `build` (BEH-6)
-- [x] 208 full-path companion references resolve; 0 broken (BEH-7)
-- [x] Provider mirrors moved in step and regenerate with no drift (BEH-8)
-- [x] `/adev:work` carries the no-re-entry rule (BEH-9), pinned by `tests/skills/work-no-skill-reentry.test.mjs`
+- [x] `## Prerequisites` in the body for `implement`, `validate`, `build` (BEH-6), pinned by `tests/skills/whole-invocation-rules-in-body.test.mjs`
+- [x] Every `<ADEV_ROOT>`-anchored companion pointer in `skills/**` resolves; 0 broken (BEH-7). 183 pointer occurrences across skill prose; the earlier figure of "208" named no scope and was not reproducible (RI-6)
+- [x] Mirrors carry the identical companion set (206 files each in canonical, codex, opencode) and every mirror-body pointer resolves inside its own tree (BEH-8), pinned by `tests/sync/provider-companion-parity.test.mjs`
+- [x] `/adev:work` carries the no-re-entry rule with a 3-per-stage cap, a stated cap-trip verdict, an unattended stop-at-first-failure default, and the companion-load carve-out (BEH-9, 9a, 9b, 9c), pinned by `tests/skills/work-no-skill-reentry.test.mjs`
 - [x] Test assertions follow the prose rather than being weakened (BEH-10)
 - [x] Both limits documented in `constitution.md` / `CLAUDE.md` and `docs/skill-reference.md`
 - [x] A regression guard fails if any body exceeds the guidance
@@ -406,8 +476,6 @@ Describes the system after the refactor.
       `skills/plan/references/mode-router.md` — both orphaned on `main` before this work,
       neither introduced by it. Left in place: wiring them in or deleting them is a
       decision about skill behaviour, not layout.
-- [ ] **No guard for provider-mirror companion parity.** `sync-provider-skills.mjs`
-      covers `SKILL.md` only, so BEH-8 is a manual invariant.
 - [ ] **The token saving is estimated, not measured.** Every figure here is bytes, or
       bytes divided by 4.08. The stored module heuristic warns byte proxies overstate
       savings by 2–2.5x, so these must not be quoted as a measured token or cost
@@ -415,6 +483,16 @@ Describes the system after the refactor.
       invocation. Settling it needs `adev cost summary --spec <s> --include-checkpoints`
       over one comparable lifecycle before and after — possible now that
       adev-plugin-882a.1 has landed, but not yet run.
+
+**Revision 2 note.** Revision 1 was reviewed BLOCK — 5 blockers, 13 warnings and
+5 suggestions across five reviewers (see the sibling `.review.md`). Two blockers were
+defects in the shipped tree rather than in this prose, and were fixed in the code
+instead of described away: the provider mirrors were missing 156 companions, and
+Invariant 3 mandated an install-unanchored pointer form. Two acceptance criteria in
+revision 1 were marked complete and were false; both now carry a guard that makes them
+checkable. The rest were stale counts, stale byte figures, and five `Landed:` SHAs
+orphaned by the `filter-branch` that re-stamped this branch's `Spec:` trailers — all
+corrected against the shipping tree.
 
 **Traceability:** adev-plugin-5yfz.3 (token budgets), adev-plugin-5yfz.4 (layout ruling),
 adev-plugin-skill-size-headroom-wnn9 (hard-cap headroom), adev-plugin-04jr.1 (skill-load

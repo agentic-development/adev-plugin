@@ -95,13 +95,13 @@ Complete these steps in order. Do not skip steps.
 
 Loads constitution, existing charters, and prior art before asking anything.
 
-> **Conditional loading:** Read `skills/brainstorm/references/steps/step-1-explore-context.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/brainstorm/references/steps/step-1-explore-context.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Step 2: Clarify
 
 The interactive clarification round that precedes charter authoring.
 
-> **Conditional loading:** Read `skills/brainstorm/references/steps/step-2-clarify.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/brainstorm/references/steps/step-2-clarify.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Step 3: Propose 2-3 Approaches
 
@@ -119,7 +119,7 @@ Lead with your recommended approach. Wait for user to choose before proceeding.
 
 Optional branch into /adev:prototype before specification.
 
-> **Conditional loading:** Read `skills/brainstorm/references/steps/step-3b-offer-prototype.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/brainstorm/references/steps/step-3b-offer-prototype.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Step 4: Present Design Sections
 
@@ -133,19 +133,19 @@ After the user approves all sections, proceed to writing.
 
 Renders the Feature Charter from the clarified answers.
 
-> **Conditional loading:** Read `skills/brainstorm/references/steps/step-5-write-charter.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/brainstorm/references/steps/step-5-write-charter.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Step 5b: Product.md Bootstrap
 
 Runs only when the project has no Product Charter yet.
 
-> **Conditional loading:** Read `skills/brainstorm/references/steps/step-5b-product-bootstrap.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/brainstorm/references/steps/step-5b-product-bootstrap.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Step 6: Charter Review Loop
 
 Dispatches the charter reviewer and applies its verdict, up to the retry ceiling.
 
-> **Conditional loading:** Read `skills/brainstorm/references/steps/step-6-charter-review-loop.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/brainstorm/references/steps/step-6-charter-review-loop.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Step 7: User Reviews
 
@@ -161,7 +161,7 @@ If changes requested: make them, re-run Step 6, ask for approval again. Only pro
 
 Hands the approved charter to /adev:specify and states what the caller receives.
 
-> **Conditional loading:** Read `skills/brainstorm/references/steps/step-8-transition-to-spec.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/brainstorm/references/steps/step-8-transition-to-spec.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Key Principles
 

@@ -28,19 +28,19 @@ If the output is not `__NONE__`, incorporate it as additional standing instructi
 
 The full first-run vs diagnostic decision tree and every Step 7/8 sub-step it drives.
 
-> **Conditional loading:** Read `skills/init/references/behavior-by-project-state.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/init/references/behavior-by-project-state.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Workspace Mode (`--workspace`)
 
 Applies only with --workspace: scaffolds a multi-repo workspace root.
 
-> **Conditional loading:** Read `skills/init/references/workspace-mode.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/init/references/workspace-mode.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Brownfield Mode (`--brownfield`)
 
 Applies only with --brownfield: initializes over an existing codebase.
 
-> **Conditional loading:** Read `skills/init/references/brownfield-mode.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/init/references/brownfield-mode.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Dry-Run Mode (`--dry-run`)
 
@@ -127,7 +127,7 @@ your constitution whenever you edit it.
 
 The interactive picker that selects installed domain extensions.
 
-> **Conditional loading:** Read `skills/init/references/domain-extension-picker.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/init/references/domain-extension-picker.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Sync Targets (multi-provider projects)
 

@@ -45,25 +45,25 @@ Stop processing. No other steps run.
 
 Reads in-progress lifecycle state before classifying anything.
 
-> **Conditional loading:** Read `skills/work/references/steps/step-1-project-state-scan.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/work/references/steps/step-1-project-state-scan.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Step 2: Classify Work
 
 Classifies the incoming request into a lifecycle entry point.
 
-> **Conditional loading:** Read `skills/work/references/steps/step-2-classify-work.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/work/references/steps/step-2-classify-work.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Step 3: State-Aware Routing Refinement
 
 Adjusts the route using what the state scan found.
 
-> **Conditional loading:** Read `skills/work/references/steps/step-3-routing-refinement.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/work/references/steps/step-3-routing-refinement.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Step 4: Route Proposal
 
 Presents the proposed route and gets confirmation.
 
-> **Conditional loading:** Read `skills/work/references/steps/step-4-route-proposal.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/work/references/steps/step-4-route-proposal.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Step 5: Invoke Skill
 
@@ -111,6 +111,38 @@ already in this context** — not re-invoking skills to get them back.
   skill's instructions already in context, or dispatch it as a subagent
   (`Agent({...})`), which runs in its own context rather than appending to this
   one.
+
+  **Loading a companion is a continuation, not a re-entry.** After progressive
+  disclosure, what is in context for an already-invoked skill is its body plus
+  only the companions the first branch happened to load. A re-run that takes a
+  different branch — `implement` under `--parallel`, whose instructions live in
+  `<ADEV_ROOT>/skills/implement/references/parallel-mode.md` — has no in-context
+  instructions for that branch. Read the companion the body points at. That is
+  required by the conditional-loading contract, costs one file, and is not
+  covered by the prohibition above, which is about re-injecting a whole SKILL.md.
+
+- **Bound the re-runs. Three per stage, per unit of work.** Conductor-driven
+  re-runs are NOT counted by `build.max_retries` or `build.max_review_retries` —
+  those are read and decremented inside `/adev:build`'s own state, so a stage you
+  re-run yourself spends none of that budget and nothing stops you. Keep the
+  count yourself, per stage, and treat 3 as a hard ceiling.
+
+  **On the third failure, stop and report.** Do not try a fourth time, do not
+  switch strategy and continue, and do not escalate rigor and continue. Emit what
+  you have — the failing stage, its verdict, the artifacts it wrote, and what you
+  changed between attempts — and hand back to the operator. A stage that has
+  failed three times with the context you already hold is not going to pass on
+  the fourth; continuing past that point burns budget to produce the same result
+  with more turns behind it.
+
+  **Unattended runs stop at the first failure, not the third.** Under
+  `/adev:work --intake --file` or any session with no operator answering, the
+  "Propose, don't assume" confirmation gate does not fire — it gates *invocation*,
+  and an in-context continuation is not an invocation. So there is no human in the
+  loop to notice a repeat. Re-run only when an operator is present to see it;
+  otherwise report the failure and stop. If a multi-stage arc genuinely needs
+  unattended retries, route it to `/adev:build`, which has real ceilings, real
+  state, and `--resume`.
 - **Prefer `/adev:build` for multi-stage arcs.** It dispatches each stage as a
   fresh subagent with gate checks and resume, so no stage body ever lands in the
   orchestrator's context at all. That is the cheapest shape available, and it is
@@ -129,7 +161,7 @@ this instruction is the only place the duplication can be prevented.
 
 Applies when the request needs structured intake before routing.
 
-> **Conditional loading:** Read `skills/work/references/steps/step-6-intake-mode.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/work/references/steps/step-6-intake-mode.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Key Principles
 

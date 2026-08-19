@@ -67,7 +67,7 @@ Found 3 Feature Charters:
 
 How the skill decides it is running at a multi-repo workspace root, and what changes when it is.
 
-> **Conditional loading:** Read `skills/specify/references/shared/workspace-mode-detection.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/specify/references/shared/workspace-mode-detection.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Shared: Load Context
 
@@ -143,49 +143,49 @@ After writing any spec, output the path, mode-specific stats (see each mode), an
 
 The lifecycle events every mode emits, and their required payload fields.
 
-> **Conditional loading:** Read `skills/specify/references/shared/lifecycle-events.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/specify/references/shared/lifecycle-events.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Standard Mode (default)
 
 The default path: author a new Live Spec inside an existing Feature Charter. Runs when no mode flag is passed.
 
-> **Conditional loading:** Read `skills/specify/references/modes/standard-mode.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/specify/references/modes/standard-mode.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Extract Mode (`--extract`)
 
 Snapshot a spec from code that already exists. Runs only with --extract.
 
-> **Conditional loading:** Read `skills/specify/references/modes/extract-mode.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/specify/references/modes/extract-mode.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Refactor Mode (`--refactor`)
 
 Spec a migration from a current state to a target state. Runs only with --refactor.
 
-> **Conditional loading:** Read `skills/specify/references/modes/refactor-mode.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/specify/references/modes/refactor-mode.md` for the full instructions. Do not act on this section from the summary above.
 
 ## From-Diff Mode (`--from-diff`)
 
 Author a retroactive spec from a diff. Runs only with --from-diff.
 
-> **Conditional loading:** Read `skills/specify/references/modes/from-diff-mode.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/specify/references/modes/from-diff-mode.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Cross-Cutting Mode (`--cross-cutting`)
 
 Spec a concern that spans several charters. Runs only with --cross-cutting.
 
-> **Conditional loading:** Read `skills/specify/references/modes/cross-cutting-mode.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/specify/references/modes/cross-cutting-mode.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Revise Mode (`--revise <spec-path>`)
 
 Revise an existing spec in place, bumping its revision. Runs only with --revise.
 
-> **Conditional loading:** Read `skills/specify/references/modes/revise-mode.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/specify/references/modes/revise-mode.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Amend Mode (`--amend <base-spec>`)
 
 Author a first-class amendment carrying amends: + target-revision:. Runs only with --amend.
 
-> **Conditional loading:** Read `skills/specify/references/modes/amend-mode.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/specify/references/modes/amend-mode.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Constitution Validation (All Modes)
 

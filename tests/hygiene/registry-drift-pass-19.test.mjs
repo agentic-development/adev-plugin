@@ -402,13 +402,21 @@ test("hygiene Pass 19 names the verb rather than carrying the logic", () => {
 test("skills/hygiene/SKILL.md routes to the Pass 19 companion", () => {
   // The body must still point at the pass; a companion nothing references is
   // dead weight, and that is precisely what the split could silently create.
-  const skill = readSkillSurface("hygiene");
+  //
+  // Reads SKILL.md DIRECTLY, never readSkillSurface(). This asserts WHERE a
+  // pointer lives, and the surface concatenates the body with all 23 pass
+  // companions — against that, both assertions below are satisfied by any
+  // companion in the tree and the test stops meaning what it says. It passed
+  // that way for one commit purely because neither string happened to appear
+  // under references/. See the scope note on readSkillSurface in
+  // tests/helpers.mjs, which states this rule.
+  const body = readFileSync(join(PLUGIN_ROOT, "skills", "hygiene", "SKILL.md"), "utf8");
   assert.ok(
-    skill.includes("pass-19-governance-registry-drift.md"),
-    "SKILL.md must name the Pass 19 companion file",
+    body.includes("<ADEV_ROOT>/skills/hygiene/references/audit-passes/pass-19-governance-registry-drift.md"),
+    "SKILL.md must name the Pass 19 companion by its anchored full path",
   );
   assert.ok(
-    /Conditional loading/.test(skill),
+    /Conditional loading/.test(body),
     "SKILL.md must carry the conditional-loading directive for the pass catalogue",
   );
 });

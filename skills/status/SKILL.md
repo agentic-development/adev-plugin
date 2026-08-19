@@ -45,7 +45,7 @@ If the output is not `__NONE__`, incorporate it as additional standing instructi
 
 Status for exactly one spec.
 
-> **Conditional loading:** Read `skills/status/references/modes/spec-mode.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/status/references/modes/spec-mode.md` for the full instructions. Do not act on this section from the summary above.
 
 **Terse form:** Renders the header lines — spec path, status, revision, updated date, tracker ref, charter-revision staleness — and the source-manifest, commit, session, and plan/task-assignment counts. Substitutes the per-file source-manifest listing with the file count and `/adev:status --file <path>` for detail on any one file. Skips the per-commit and per-session listings, and the review-revisions history beyond noting whether any revision blocked.
 
@@ -53,7 +53,7 @@ Status for exactly one spec.
 
 Status for one Feature Charter and the specs under it.
 
-> **Conditional loading:** Read `skills/status/references/modes/charter-mode.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/status/references/modes/charter-mode.md` for the full instructions. Do not act on this section from the summary above.
 
 **Terse form:** Renders the charter header line and the capability-progress summary — implemented/validated/not-started counts, one line per capability, showing its status. Substitutes the per-spec listing with a count of specs and `/adev:status --spec <path>` for detail on any one spec.
 
@@ -99,7 +99,7 @@ Summary:
 
 The default dashboard across charters, specs, and capabilities.
 
-> **Conditional loading:** Read `skills/status/references/modes/all-mode.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/status/references/modes/all-mode.md` for the full instructions. Do not act on this section from the summary above.
 
 **Terse form:** Renders one counts roll-up table — charters by status, specs by status, and capability progress — and substitutes every other grouping with a count plus a narrower pointer:
 
@@ -119,7 +119,7 @@ The default dashboard across charters, specs, and capabilities.
 
 Status for one issue.
 
-> **Conditional loading:** Read `skills/status/references/modes/issue-mode.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/status/references/modes/issue-mode.md` for the full instructions. Do not act on this section from the summary above.
 
 **Terse form:** Renders the issue header line, epic reference, plan/task pointer, and spec status, plus the commit and post-close-change counts. Substitutes the files-touched listing with a count of files and `/adev:status --file <path>` for detail on any one file. Skips the per-commit listing.
 
@@ -127,7 +127,7 @@ Status for one issue.
 
 Status for one epic and its children.
 
-> **Conditional loading:** Read `skills/status/references/modes/epic-mode.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/status/references/modes/epic-mode.md` for the full instructions. Do not act on this section from the summary above.
 
 **Terse form:** Renders the epic header line and the completeness summary (closed/total issues, recommendation). Substitutes the per-issue table with a count of child issues and `/adev:status --issue <id>` for detail on any one issue.
 
@@ -135,7 +135,7 @@ Status for one epic and its children.
 
 Which lifecycle artifacts cover a given source file.
 
-> **Conditional loading:** Read `skills/status/references/modes/file-mode.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/status/references/modes/file-mode.md` for the full instructions. Do not act on this section from the summary above.
 
 **Terse form:** Renders the file's claim status, drift status, and issue/epic linkage, plus a count of recent commits touching the file. Skips the per-commit listing.
 
@@ -143,7 +143,7 @@ Which lifecycle artifacts cover a given source file.
 
 The backlog view.
 
-> **Conditional loading:** Read `skills/status/references/modes/backlog-mode.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/status/references/modes/backlog-mode.md` for the full instructions. Do not act on this section from the summary above.
 
 **Terse form:** Renders the total item count and the by-priority breakdown (critical/high/medium/low). Substitutes each category listing with a count plus its narrower pointer, in the order the default output presents them:
 
@@ -178,7 +178,7 @@ Show all capabilities in a specific milestone across all charters.
 
 Cross-repo rollup when run at a workspace root.
 
-> **Conditional loading:** Read `skills/status/references/modes/workspace-aggregation.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/status/references/modes/workspace-aggregation.md` for the full instructions. Do not act on this section from the summary above.
 
 **Terse form:** Renders the workspace header and the number of registered repos, with one line per repo naming its context status (configured or not). Substitutes the per-repo charter/spec/capability counts and the Stale Charter References listing with `/adev:status --all` run from within that repo for full single-repo detail.
 
@@ -194,4 +194,4 @@ Cross-repo rollup when run at a workspace root.
 
 Library functions this skill wraps.
 
-> **Conditional loading:** Read `skills/status/references/api-reference.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/status/references/api-reference.md` for the full instructions. Do not act on this section from the summary above.

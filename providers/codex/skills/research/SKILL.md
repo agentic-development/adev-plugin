@@ -103,7 +103,7 @@ Agent (general-purpose, tier-matched model):
   subagent_type: general-purpose
   run_in_background: false
   prompt: |
-    <content of skills/research/references/<source>-researcher-prompt.md>
+    <content of <ADEV_ROOT>/skills/research/references/<source>-researcher-prompt.md>
 
     ---
 
@@ -124,9 +124,9 @@ Agent (general-purpose, tier-matched model):
 ```
 
 Read the appropriate prompt file for each researcher before dispatching:
-- Internal researcher: `skills/research/references/internal-researcher-prompt.md`
-- Web researcher: `skills/research/references/web-researcher-prompt.md`
-- GitHub researcher: `skills/research/references/github-researcher-prompt.md`
+- Internal researcher: `<ADEV_ROOT>/skills/research/references/internal-researcher-prompt.md`
+- Web researcher: `<ADEV_ROOT>/skills/research/references/web-researcher-prompt.md`
+- GitHub researcher: `<ADEV_ROOT>/skills/research/references/github-researcher-prompt.md`
 
 Wait for all researchers to return. Record SKIPPED sources, note any returns with `injection_detected: true` in their headers, and note any returns with `budget_exceeded: true` from the internal researcher.
 
@@ -136,7 +136,7 @@ Operate on the returned summaries only. The orchestrator never re-fetches tool o
 
 **Standard mode:** synthesize inline. Group findings by source, extract code examples with attribution, formulate recommendations grounded in the constitution.
 
-**Compare mode (`--compare`):** dispatch the synthesis subagent (`reasoning` tier, prompt from `skills/research/references/synthesis-prompt.md`, prepended with the literal word `ultrathink`) with all researcher summaries as input. Use the returned comparison matrix as the basis for the Findings section.
+**Compare mode (`--compare`):** dispatch the synthesis subagent (`reasoning` tier, prompt from `<ADEV_ROOT>/skills/research/references/synthesis-prompt.md`, prepended with the literal word `ultrathink`) with all researcher summaries as input. Use the returned comparison matrix as the basis for the Findings section.
 
 ### Step 5.5: Sanitization Pass
 

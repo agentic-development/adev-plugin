@@ -62,7 +62,7 @@ If the output is not `__NONE__`, incorporate it as additional standing instructi
 ## Audit Passes
 
 Twenty-three passes, each defined in its own companion under
-`skills/hygiene/references/audit-passes/`.
+`<ADEV_ROOT>/skills/hygiene/references/audit-passes/`.
 
 > **Conditional loading:** Read a pass's companion file immediately before you
 > run that pass, and read only the passes this invocation actually needs. A
@@ -73,29 +73,29 @@ Twenty-three passes, each defined in its own companion under
 
 | # | Pass | `--check` slug | Companion |
 |---|------|----------------|----------------|
-| 1 | Constitution Freshness | `constitution` | `skills/hygiene/references/audit-passes/pass-01-constitution-freshness.md` |
-| 2 | Charter Coverage | `charters` | `skills/hygiene/references/audit-passes/pass-02-charter-coverage.md` |
-| 3 | ADR Currency | `adrs` | `skills/hygiene/references/audit-passes/pass-03-adr-currency.md` |
-| 4 | Golden Sample Validity | `samples` | `skills/hygiene/references/audit-passes/pass-04-golden-sample-validity.md` |
-| 5 | Spec-to-Code Drift | `drift` | `skills/hygiene/references/audit-passes/pass-05-spec-to-code-drift.md` |
-| 6 | Session Analysis (Conditional) | `sessions` | `skills/hygiene/references/audit-passes/pass-06-session-analysis.md` |
-| 7 | External Reference Freshness | `references` | `skills/hygiene/references/audit-passes/pass-07-external-reference-freshness.md` |
-| 8 | Governance Policy Health | `governance` | `skills/hygiene/references/audit-passes/pass-08-governance-policy-health.md` |
-| 9 | Recovery Pattern Analysis | `recoveries` | `skills/hygiene/references/audit-passes/pass-09-recovery-pattern-analysis.md` |
-| 10 | Blocker Frequency Analysis | `blockers` | `skills/hygiene/references/audit-passes/pass-10-blocker-frequency-analysis.md` |
-| 11 | Milestone Coverage | `milestones` | `skills/hygiene/references/audit-passes/pass-11-milestone-coverage.md` |
-| 12 | Lifecycle Audit | `lifecycle` | `skills/hygiene/references/audit-passes/pass-12-lifecycle-audit.md` |
-| 13 | Code Health | `code-health` | `skills/hygiene/references/audit-passes/pass-13-code-health.md` |
-| 14 | Code Provenance | `provenance` | `skills/hygiene/references/audit-passes/pass-14-code-provenance.md` |
-| 15 | Issue Board Audit | `issue-board` | `skills/hygiene/references/audit-passes/pass-15-issue-board-audit.md` |
-| 16 | Heuristic Index Health | `heuristics` | `skills/hygiene/references/audit-passes/pass-16-heuristic-index-health.md` |
-| 17 | Code Drift | `code-drift` | `skills/hygiene/references/audit-passes/pass-17-code-drift.md` |
-| 18 | Kind Validity | `kind-validity` | `skills/hygiene/references/audit-passes/pass-18-kind-validity.md` |
-| 19 | Governance Registry Drift | `validate-config-drift` | `skills/hygiene/references/audit-passes/pass-19-governance-registry-drift.md` |
-| 20 | Platform Drift | `platform-drift` | `skills/hygiene/references/audit-passes/pass-20-platform-drift.md` |
-| 21 | Amendment Graph | — (no slug; full-audit only) | `skills/hygiene/references/audit-passes/pass-21-amendment-graph.md` |
-| 22 | Test-Policy Drift | `test-policy-drift` | `skills/hygiene/references/audit-passes/pass-22-test-policy-drift.md` |
-| 23 | Test Debt | `test-debt` | `skills/hygiene/references/audit-passes/pass-23-test-debt.md` |
+| 1 | Constitution Freshness | `constitution` | `<ADEV_ROOT>/skills/hygiene/references/audit-passes/pass-01-constitution-freshness.md` |
+| 2 | Charter Coverage | `charters` | `<ADEV_ROOT>/skills/hygiene/references/audit-passes/pass-02-charter-coverage.md` |
+| 3 | ADR Currency | `adrs` | `<ADEV_ROOT>/skills/hygiene/references/audit-passes/pass-03-adr-currency.md` |
+| 4 | Golden Sample Validity | `samples` | `<ADEV_ROOT>/skills/hygiene/references/audit-passes/pass-04-golden-sample-validity.md` |
+| 5 | Spec-to-Code Drift | `drift` | `<ADEV_ROOT>/skills/hygiene/references/audit-passes/pass-05-spec-to-code-drift.md` |
+| 6 | Session Analysis (Conditional) | `sessions` | `<ADEV_ROOT>/skills/hygiene/references/audit-passes/pass-06-session-analysis.md` |
+| 7 | External Reference Freshness | `references` | `<ADEV_ROOT>/skills/hygiene/references/audit-passes/pass-07-external-reference-freshness.md` |
+| 8 | Governance Policy Health | `governance` | `<ADEV_ROOT>/skills/hygiene/references/audit-passes/pass-08-governance-policy-health.md` |
+| 9 | Recovery Pattern Analysis | `recoveries` | `<ADEV_ROOT>/skills/hygiene/references/audit-passes/pass-09-recovery-pattern-analysis.md` |
+| 10 | Blocker Frequency Analysis | `blockers` | `<ADEV_ROOT>/skills/hygiene/references/audit-passes/pass-10-blocker-frequency-analysis.md` |
+| 11 | Milestone Coverage | `milestones` | `<ADEV_ROOT>/skills/hygiene/references/audit-passes/pass-11-milestone-coverage.md` |
+| 12 | Lifecycle Audit | `lifecycle` | `<ADEV_ROOT>/skills/hygiene/references/audit-passes/pass-12-lifecycle-audit.md` |
+| 13 | Code Health | `code-health` | `<ADEV_ROOT>/skills/hygiene/references/audit-passes/pass-13-code-health.md` |
+| 14 | Code Provenance | `provenance` | `<ADEV_ROOT>/skills/hygiene/references/audit-passes/pass-14-code-provenance.md` |
+| 15 | Issue Board Audit | `issue-board` | `<ADEV_ROOT>/skills/hygiene/references/audit-passes/pass-15-issue-board-audit.md` |
+| 16 | Heuristic Index Health | `heuristics` | `<ADEV_ROOT>/skills/hygiene/references/audit-passes/pass-16-heuristic-index-health.md` |
+| 17 | Code Drift | `code-drift` | `<ADEV_ROOT>/skills/hygiene/references/audit-passes/pass-17-code-drift.md` |
+| 18 | Kind Validity | `kind-validity` | `<ADEV_ROOT>/skills/hygiene/references/audit-passes/pass-18-kind-validity.md` |
+| 19 | Governance Registry Drift | `validate-config-drift` | `<ADEV_ROOT>/skills/hygiene/references/audit-passes/pass-19-governance-registry-drift.md` |
+| 20 | Platform Drift | `platform-drift` | `<ADEV_ROOT>/skills/hygiene/references/audit-passes/pass-20-platform-drift.md` |
+| 21 | Amendment Graph | — (no slug; full-audit only) | `<ADEV_ROOT>/skills/hygiene/references/audit-passes/pass-21-amendment-graph.md` |
+| 22 | Test-Policy Drift | `test-policy-drift` | `<ADEV_ROOT>/skills/hygiene/references/audit-passes/pass-22-test-policy-drift.md` |
+| 23 | Test Debt | `test-debt` | `<ADEV_ROOT>/skills/hygiene/references/audit-passes/pass-23-test-debt.md` |
 
 Pass 21 has no `--check` slug: it runs only as part of a full audit. That is a
 gap in the argument list, not a property of the pass.

@@ -79,6 +79,26 @@ function syncFile(srcPath, destPath, transform) {
   return existsSync(destPath) ? "updated" : "created";
 }
 
+/**
+ * Every companion file under a skill directory, as paths relative to it.
+ *
+ * Covers `references/` and `scripts/` at any depth plus any remaining flat
+ * companion, and deliberately does NOT return SKILL.md (synced separately with
+ * the description transform) or `agents/` (provider-owned, generated below).
+ */
+function listCompanions(mainDir, rel = "", out = []) {
+  for (const entry of readdirSync(join(mainDir, rel), { withFileTypes: true })) {
+    const childRel = rel ? `${rel}/${entry.name}` : entry.name;
+    if (entry.isDirectory()) {
+      if (entry.name === "agents") continue;
+      listCompanions(mainDir, childRel, out);
+    } else if (entry.name !== "SKILL.md") {
+      out.push(childRel);
+    }
+  }
+  return out;
+}
+
 function syncSkillToProvider(skillName, provider) {
   const mainDir = join(ROOT, "skills", skillName);
   const providerDir = join(ROOT, "providers", provider, "skills", skillName);
@@ -92,10 +112,23 @@ function syncSkillToProvider(skillName, provider) {
   );
   fileResults.push({ file: "SKILL.md", status: skillStatus });
 
-  // Sync companion .md files (mode files, reviewer prompts, etc.) — verbatim copy
-  const companions = readdirSync(mainDir)
-    .filter((f) => f.endsWith(".md") && f !== "SKILL.md");
-  for (const companion of companions) {
+  // Sync companion files — verbatim copy, recursively.
+  //
+  // WHY RECURSIVE. This originally globbed only flat `*.md` at the skill root,
+  // which matched the pre-`references/` layout. When progressive disclosure moved
+  // companions into `references/` and `scripts/` subdirectories, this filter
+  // silently stopped matching ANYTHING: the mirrors kept receiving regenerated
+  // SKILL.md bodies full of `<ADEV_ROOT>/skills/<name>/references/...` pointers
+  // while the files those pointers name were never copied. Both codex and
+  // opencode symlink their mirror directory straight into user installs, so the
+  // result was a skill whose sections were unreadable with no error surfaced.
+  //
+  // tests/sync/provider-skill-parity.test.mjs could not catch it, because it runs
+  // THIS script in --dry-run and compares against its own output. A sync that
+  // copies nothing reports no drift. tests/sync/provider-companion-parity.test.mjs
+  // checks the property directly instead: every pointer in a mirror body resolves
+  // inside that mirror tree.
+  for (const companion of listCompanions(mainDir)) {
     const status = syncFile(join(mainDir, companion), join(providerDir, companion));
     fileResults.push({ file: companion, status });
   }

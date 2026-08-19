@@ -56,49 +56,49 @@ When brainstorm context is present, skip the charter lookup in Step 0 entirely â
 
 Applies only when invoked directly rather than from brainstorm.
 
-> **Conditional loading:** Read `skills/prototype/references/steps/step-0-standalone-entry.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/prototype/references/steps/step-0-standalone-entry.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Step 1: Load Context and Heuristics
 
 Loads the Feature Charter and prior prototype heuristics.
 
-> **Conditional loading:** Read `skills/prototype/references/steps/step-1-load-context.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/prototype/references/steps/step-1-load-context.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Step 2: Tier Selection
 
 Chooses wireframe / mockup / functional.
 
-> **Conditional loading:** Read `skills/prototype/references/steps/step-2-tier-selection.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/prototype/references/steps/step-2-tier-selection.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Step 3: Generate Prototype Files
 
 Renders the tier-appropriate prototype files.
 
-> **Conditional loading:** Read `skills/prototype/references/steps/step-3-generate-files.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/prototype/references/steps/step-3-generate-files.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Step 4: Start HTTP Server
 
 Serves the prototype on localhost for review.
 
-> **Conditional loading:** Read `skills/prototype/references/steps/step-4-start-server.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/prototype/references/steps/step-4-start-server.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Step 5: Feedback Loop
 
 The conversational iteration rounds with the user.
 
-> **Conditional loading:** Read `skills/prototype/references/steps/step-5-feedback-loop.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/prototype/references/steps/step-5-feedback-loop.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Step 5a: Visual Reference Capture
 
 Captures screenshots of the running prototype.
 
-> **Conditional loading:** Read `skills/prototype/references/steps/step-5a-visual-reference-capture.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/prototype/references/steps/step-5a-visual-reference-capture.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Step 6: Persistence Choice
 
 Asks whether to persist under .adev/prototype/ or discard.
 
-> **Conditional loading:** Read `skills/prototype/references/steps/step-6-persistence-choice.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/prototype/references/steps/step-6-persistence-choice.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Step 7: Cleanup
 
@@ -112,7 +112,7 @@ Stop the server. The server is owned by the backgrounded `adev prototype start-s
 
 Records durable lessons from the prototype session.
 
-> **Conditional loading:** Read `skills/prototype/references/steps/step-8-heuristics-capture.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/prototype/references/steps/step-8-heuristics-capture.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Step 8b: Return to Brainstorm
 
@@ -142,7 +142,7 @@ After returning the result, the brainstorm skill handles presentation and contin
 
 Standalone-only closing summary.
 
-> **Conditional loading:** Read `skills/prototype/references/steps/step-9-session-summary.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/prototype/references/steps/step-9-session-summary.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Error Reference
 

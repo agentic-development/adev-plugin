@@ -4,6 +4,7 @@ import { readFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { readSkillSurface } from "../helpers.mjs";
+import { resolveSkillPointer } from "../helpers.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -25,7 +26,7 @@ describe("implement SKILL.md — unified integration gate", () => {
     pointer,
     "Step 2-post must carry a `Conditional loading:` pointer to its companion",
   );
-  const companionPath = join(__dirname, "..", "..", pointer[1]);
+  const companionPath = resolveSkillPointer(pointer[1]);
   const content = readFileSync(companionPath, "utf8");
 
   it("should read integration gates from governance/gates.yaml", () => {
@@ -81,7 +82,7 @@ describe("implement SKILL.md — Step 2-post merged gate source and severity", (
     pointer,
     "Step 2-post must carry a `Conditional loading:` pointer to its companion",
   );
-  const content = readFileSync(join(__dirname, "..", "..", pointer[1]), "utf8");
+  const content = readFileSync(resolveSkillPointer(pointer[1]), "utf8");
 
   // Bounding used to be necessary because Step 2h sits in the same file and
   // legitimately reads governance/gates.yaml directly, so unbounded assertions

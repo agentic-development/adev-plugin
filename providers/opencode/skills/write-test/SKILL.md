@@ -48,25 +48,25 @@ Dispatched by `adev:implement` (no pre-flight summary — context already confir
 
 Applies only when invoked outside an implement run.
 
-> **Conditional loading:** Read `skills/write-test/references/steps/step-0-standalone-preflight.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/write-test/references/steps/step-0-standalone-preflight.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Step 1: Model Tier Resolution
 
 Picks the model tier for the authoring subagent.
 
-> **Conditional loading:** Read `skills/write-test/references/steps/step-1-model-tier.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/write-test/references/steps/step-1-model-tier.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Step 1a: Infrastructure Preflight
 
 Runs only when the task declares infra_requirements.
 
-> **Conditional loading:** Read `skills/write-test/references/steps/step-1a-infra-preflight.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/write-test/references/steps/step-1a-infra-preflight.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Step 1b: Strategy Profile Resolution
 
 Resolves the test-strategy profile that governs depth and tiering.
 
-> **Conditional loading:** Read `skills/write-test/references/steps/step-1b-strategy-profile.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/write-test/references/steps/step-1b-strategy-profile.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Step 2: Framework Detection
 
@@ -154,7 +154,7 @@ authoring subagent reused anything — see the advisory duplication check at the
 
 Writes the failing tests that define the contract.
 
-> **Conditional loading:** Read `skills/write-test/references/steps/step-4-test-authoring.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/write-test/references/steps/step-4-test-authoring.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Step 5: Handoff Block Production
 
@@ -185,7 +185,7 @@ If write fails → block with filesystem error. Do not report success. — `WRIT
 
 Applies only with --verify: re-checks an existing handoff block.
 
-> **Conditional loading:** Read `skills/write-test/references/steps/step-6-verify-mode.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/write-test/references/steps/step-6-verify-mode.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Error Codes Reference
 

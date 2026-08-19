@@ -42,49 +42,49 @@ Mode: [task N | blocker <path> | interactive]
 
 Recognises that a task has stalled and captures the stall signature.
 
-> **Conditional loading:** Read `skills/recover/references/steps/step-1-detect.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/recover/references/steps/step-1-detect.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Step 1.5: Infrastructure Preflight
 
 Runs only when the stalled task declared infra_requirements.
 
-> **Conditional loading:** Read `skills/recover/references/steps/step-1.5-infra-preflight.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/recover/references/steps/step-1.5-infra-preflight.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Step 2: Gather Evidence
 
 Collects transcript, logs, and artifacts that explain the stall.
 
-> **Conditional loading:** Read `skills/recover/references/steps/step-2-gather-evidence.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/recover/references/steps/step-2-gather-evidence.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Step 3: Diagnose
 
 Classifies the stall into one of the six root-cause categories.
 
-> **Conditional loading:** Read `skills/recover/references/steps/step-3-diagnose.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/recover/references/steps/step-3-diagnose.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Step 4: Inject Corrective Context
 
 Builds the enriched context injected before re-dispatch.
 
-> **Conditional loading:** Read `skills/recover/references/steps/step-4-inject-context.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/recover/references/steps/step-4-inject-context.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Step 5: Resume
 
 Re-dispatches the task with the enriched prompt.
 
-> **Conditional loading:** Read `skills/recover/references/steps/step-5-resume.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/recover/references/steps/step-5-resume.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Step 6: Enrich
 
 Adds the recovered context back into the project record.
 
-> **Conditional loading:** Read `skills/recover/references/steps/step-6-enrich.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/recover/references/steps/step-6-enrich.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Step 7: Extract Heuristic
 
 Writes the recovery record and any durable heuristic learned.
 
-> **Conditional loading:** Read `skills/recover/references/steps/step-7-extract-heuristic.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/recover/references/steps/step-7-extract-heuristic.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Patterns Across Multiple Recoveries
 

@@ -65,6 +65,55 @@ test("/adev:work explains why the rule exists, in cost terms", () => {
   assert.match(work, /adev-plugin-04jr\.1/, "the measurement must stay traceable");
 });
 
+test("/adev:work bounds conductor-driven re-runs and states the cap-trip verdict", () => {
+  // TERM-1: the prohibition alone is not actionable — a BLOCK still has to
+  // re-run something. Without a ceiling the escape it recommends first is an
+  // uncapped repeat path, and build's own max_retries / max_review_retries do
+  // NOT cover it: those are decremented inside build's state, so a conductor
+  // re-running a stage itself spends none of that budget.
+  assert.match(work, /Bound the re-runs/, "a ceiling must be stated");
+  assert.match(work, /Three per stage/, "the ceiling must be a number, not 'a few'");
+  assert.match(
+    work,
+    /NOT counted by `build\.max_retries`/,
+    "must say why build's ceilings do not apply, or a reader will assume they do",
+  );
+  assert.match(
+    work,
+    /On the third failure, stop and report/,
+    "a cap with no stated cap-trip verdict is not a cap",
+  );
+});
+
+test("/adev:work makes the unattended default stop, not retry", () => {
+  // The confirmation gate reads 'wait for confirmation before invoking a skill'
+  // — it gates INVOCATION, and an in-context continuation is expressly not one.
+  // So batch/unattended runs have no brake unless one is stated here.
+  assert.match(
+    work,
+    /Unattended runs stop at the first failure/,
+    "the unattended default must be stop-and-report",
+  );
+  assert.match(work, /--intake --file/, "the batch entry point must be named");
+});
+
+test("/adev:work says loading a companion is a continuation, not a re-entry", () => {
+  // TERM-2: escape (a) collides with BEH-4 under progressive disclosure. What is
+  // in context is the body plus only the companions the FIRST branch loaded, and
+  // BEH-4 forbids acting from a stub — so without this carve-out the escape
+  // listed first is unavailable in exactly the case it was written for.
+  assert.match(
+    work,
+    /Loading a companion is a continuation, not a re-entry/,
+    "the carve-out must be explicit or the two rules contradict",
+  );
+  assert.match(
+    work,
+    /parallel-mode\.md/,
+    "name a concrete branch whose instructions are not in context",
+  );
+});
+
 test("/adev:work still prefers build for multi-stage arcs", () => {
   // build dispatches each stage as a fresh subagent, so no stage body reaches
   // the orchestrator's context at all — the cheapest available shape.

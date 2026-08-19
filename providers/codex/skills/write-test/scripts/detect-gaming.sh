@@ -40,6 +40,9 @@ LINE_PATTERNS=(
   'conditional-skip|blocking|\bxit\s*\(|false|xit( disabled test'
   'conditional-skip|blocking|\bxdescribe\s*\(|false|xdescribe( disabled suite'
   'conditional-skip|blocking|\.todo\s*\(|false|.todo( marked as todo'
+  'agent-skip|blocking|\.skipIf\s*\(|false|.skipIf( agent-initiated skip guard'
+  'agent-skip|blocking|\bcanConnect\b|false|canConnect infra skip guard'
+  'agent-skip|blocking|\bskipUnless\b|false|skipUnless infra skip guard'
   'vacuous-matcher|blocking|\.not\.toThrow\(\)|true|not.toThrow() as sole assertion'
   'weak-equality|advisory|\.toMatchObject\(|false|toMatchObject used where toStrictEqual may be appropriate'
 )

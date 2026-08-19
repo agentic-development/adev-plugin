@@ -1,7 +1,7 @@
 # Default Layer 3 rubric for /adev:eval
 #
-# Ships with the plugin at skills/eval/default-rubric.yaml. Resolved when
-# .context-index/evals/config.yaml says `rubric: default`, or when no
+# Ships with the plugin at <ADEV_ROOT>/skills/eval/references/default-rubric.yaml.
+# Resolved when .context-index/evals/config.yaml says `rubric: default`, or when no
 # --rubric <path> override is supplied. A custom rubric must carry the same
 # top-level keys as this file.
 #

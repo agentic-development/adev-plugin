@@ -41,7 +41,7 @@ If the output is not `__NONE__`, incorporate it as additional standing instructi
 
 The gate that must run before anything else, and the aborts it may raise.
 
-> **Conditional loading:** Read `skills/review-specs/references/steps/step-0-specify-gate.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/review-specs/references/steps/step-0-specify-gate.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Step 1: Identify Target Specs
 
@@ -60,7 +60,7 @@ If no specs need review, report that and exit.
 
 Builds the per-spec context pack handed to every reviewer.
 
-> **Conditional loading:** Read `skills/review-specs/references/steps/step-2-load-context.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/review-specs/references/steps/step-2-load-context.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Step 2b: Validate Cross-Repo `depends-on` References
 
@@ -106,25 +106,25 @@ When reviewing in bulk, resolve the tier per spec. Record the resolved tier in t
 
 Resolves the reviewer registry and each reviewer prompt URI.
 
-> **Conditional loading:** Read `skills/review-specs/references/steps/step-3-load-reviewer-registry.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/review-specs/references/steps/step-3-load-reviewer-registry.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Step 4: Dispatch Reviewers
 
 Dispatches the registry reviewers (or the single quick-tier reviewer) with the rendered context pack.
 
-> **Conditional loading:** Read `skills/review-specs/references/steps/step-4-dispatch-reviewers.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/review-specs/references/steps/step-4-dispatch-reviewers.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Step 5: Collect and Consolidate Findings
 
 Parses reviewer output, applies the severity cap, and validates blocker_ids.
 
-> **Conditional loading:** Read `skills/review-specs/references/steps/step-5-consolidate-findings.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/review-specs/references/steps/step-5-consolidate-findings.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Step 6: Emit Reviewer Events and Save Review Report
 
 Emits per-reviewer events and writes the consolidated .review.md artifact.
 
-> **Conditional loading:** Read `skills/review-specs/references/steps/step-6-events-and-report.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/review-specs/references/steps/step-6-events-and-report.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Step 7: Update Spec Status
 
@@ -243,7 +243,7 @@ Architecture Review Summary
 
 Library functions this skill wraps, for reference when reading its CLI verbs.
 
-> **Conditional loading:** Read `skills/review-specs/references/api-reference.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/review-specs/references/api-reference.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Next Step in the Lifecycle
 

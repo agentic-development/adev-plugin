@@ -289,3 +289,21 @@ export function readSkillSurfaceAt(root) {
   walk(refs);
   return parts.join("\n");
 }
+
+/**
+ * Resolve a conditional-loading pointer taken from skill prose to a real path.
+ *
+ * Pointers are written `<ADEV_ROOT>/skills/<name>/references/...` — anchored to
+ * the plugin root, because a bare `skills/...` path is repo-root-relative and
+ * resolves to nothing once the skill is installed (each provider publishes to a
+ * different location, and in a user project the agent's cwd is the project
+ * root). This performs the same substitution an agent does at runtime, so a
+ * test that resolves a pointer FROM THE PROSE keeps exercising the real
+ * indirection rather than hardcoding the companion's path.
+ *
+ * @param {string} pointer pointer text as it appears in the skill
+ * @returns {string} absolute path under PLUGIN_ROOT
+ */
+export function resolveSkillPointer(pointer) {
+  return join(PLUGIN_ROOT, pointer.replace(/^<ADEV_ROOT>\//, ""));
+}

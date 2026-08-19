@@ -35,37 +35,37 @@ The project must have `.context-index/` initialized with at least a `constitutio
 
 Collects commits, sessions, and lifecycle events for the period.
 
-> **Conditional loading:** Read `skills/retro/references/steps/step-1-gather-data.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/retro/references/steps/step-1-gather-data.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Step 2: Analyze Patterns
 
 Derives delivery metrics and recurring patterns from the gathered data.
 
-> **Conditional loading:** Read `skills/retro/references/steps/step-2-analyze-patterns.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/retro/references/steps/step-2-analyze-patterns.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Step 3: Generate Recommendations
 
 Turns the analysis into concrete, owned actions.
 
-> **Conditional loading:** Read `skills/retro/references/steps/step-3-recommendations.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/retro/references/steps/step-3-recommendations.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Step 4: Auto-Apply (if --auto-apply)
 
 Applies only with --auto-apply: writes the accepted recommendations back.
 
-> **Conditional loading:** Read `skills/retro/references/steps/step-4-auto-apply.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/retro/references/steps/step-4-auto-apply.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Step 5: Write Report
 
 Renders the retrospective artifact.
 
-> **Conditional loading:** Read `skills/retro/references/steps/step-5-write-report.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/retro/references/steps/step-5-write-report.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Step 6: Present to User
 
 The closing summary shown to the user.
 
-> **Conditional loading:** Read `skills/retro/references/steps/step-6-present.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/retro/references/steps/step-6-present.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Red Flags
 

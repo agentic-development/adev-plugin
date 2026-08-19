@@ -68,7 +68,7 @@ Before starting, verify all five conditions. If any fails, stop and tell the use
    adev report --type step --spec <spec-path> --step implement --status failed --verdict FAIL
    ```
 
-   `--verdict FAIL` is required, not decorative — a `step_failed` without one is overwritten by the verdict synthesized from the actor reports on the log, so a run that died partway projects as passing and opens the `validate` gate on unfinished work. For the enumerated abort paths that MUST emit it, follow `skills/implement/references/failure-path-exit-event.md`.
+   `--verdict FAIL` is required, not decorative — a `step_failed` without one is overwritten by the verdict synthesized from the actor reports on the log, so a run that died partway projects as passing and opens the `validate` gate on unfinished work. For the enumerated abort paths that MUST emit it, follow `<ADEV_ROOT>/skills/implement/references/failure-path-exit-event.md`.
 
    **Already covered — do not double-emit.** Per-task escalations terminate through the Step 2d blocker path (`plan_task` `blocked`): the blocker-flag protocol, `MISSING_DEPTH_ASSIGNMENT`, and `LOOP_BUDGET_EXHAUSTED` / `LOOP_NO_PROGRESS` / `LOOP_REGRESSED`. Emit the step-level failed event only when the *whole skill* stops.
 
@@ -81,31 +81,31 @@ Before starting, verify all five conditions. If any fails, stop and tell the use
 
 Loads plan, spec, charter, heuristics, and the shared-helper inventory before the first task.
 
-> **Conditional loading:** Read `skills/implement/references/steps/step-1-load-context.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/implement/references/steps/step-1-load-context.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Task discovery and state
 
 How tasks are discovered from the plan and how their state is tracked.
 
-> **Conditional loading:** Read `skills/implement/references/task-discovery-and-state.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/implement/references/task-discovery-and-state.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Task transitions
 
 Legal task state transitions and the events each one emits.
 
-> **Conditional loading:** Read `skills/implement/references/task-transitions.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/implement/references/task-transitions.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Repo-Mode-Inside-Workspace Advisory
 
 The one-line advisory printed when running repo-scoped inside a workspace.
 
-> **Conditional loading:** Read `skills/implement/references/repo-mode-advisory.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/implement/references/repo-mode-advisory.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Step 5: Update Spec Status and Source Manifest
 
 Writes the spec status transition and refreshes the source manifest.
 
-> **Conditional loading:** Read `skills/implement/references/steps/step-5-spec-status-and-manifest.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/implement/references/steps/step-5-spec-status-and-manifest.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Step 5.5: Commit Trailers
 
@@ -125,7 +125,7 @@ These trailers enable `/adev:retro` and `/adev:hygiene` to trace commits back to
 
 The completeness bar a feature must clear before implement may report done.
 
-> **Conditional loading:** Read `skills/implement/references/steps/step-6-definition-of-done.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/implement/references/steps/step-6-definition-of-done.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Red Flags
 
@@ -157,7 +157,7 @@ The completeness bar a feature must clear before implement may report done.
 
 Library functions this skill wraps, for reference when reading its CLI verbs.
 
-> **Conditional loading:** Read `skills/implement/references/api-reference.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/implement/references/api-reference.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Next Step in the Lifecycle
 

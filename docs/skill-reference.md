@@ -917,7 +917,16 @@ the session runs, not paid once.
 here. The body keeps the heading, a one-line summary of what the section
 covers, and a pointer:
 
-> **Conditional loading:** Read `skills/hygiene/references/audit-passes/pass-12-lifecycle-audit.md` for the full instructions.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/hygiene/references/audit-passes/pass-12-lifecycle-audit.md` for the full instructions.
+
+`<ADEV_ROOT>` is the plugin root, resolved at runtime. Pointers **must** carry it.
+A bare `skills/...` path is repo-root-relative, and nothing anchors it once the
+skill is installed: cursor publishes to `~/.cursor/skills/adev-<name>/` with the
+directory renamed, copilot under `.github/` or `~/.copilot/`, codex to
+`~/.agents/skills/<name>/`. In a user project the agent's cwd is the *project*
+root, so a bare path resolves to nothing — or, worse, binds to a same-named file
+in a project-owned `skills/` tree, which the pointer prose then instructs the
+agent to treat as the authoritative instructions.
 
 The agent reads a companion immediately before it needs it, so a run that only
 touches one mode never loads the other six. `skills/hygiene/SKILL.md` is the
@@ -933,7 +942,7 @@ conditional-loading pointer is no longer unconditional.
 
 | Limit | Value | What happens if you cross it |
 |-------|-------|------------------------------|
-| Copilot frontmatter cap | 65,536 bytes | Hard failure — `INVALID_SKILL_FRONTMATTER` breaks every Copilot adapter path |
+| Copilot frontmatter cap | 65,536 bytes | Hard failure — `INVALID_SKILL_FRONTMATTER` breaks Copilot **install** (and its `--dry-run` branch) |
 | Agent Skills guidance | ~5,000 tokens | Soft — the body costs more on every turn of every session that loads it |
 
 Both are checked by `tests/skills/skill-size-cap.test.mjs`. If you trip either,

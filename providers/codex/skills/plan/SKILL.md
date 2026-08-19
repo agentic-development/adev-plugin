@@ -45,7 +45,7 @@ Passing more than one of `--spec`, `--feature`, `--release`, `--milestone`, `--e
 
 Picks feature / release / milestone / epic mode from the arguments and repo state.
 
-> **Conditional loading:** Read `skills/plan/references/steps/step-0-mode-detection.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/plan/references/steps/step-0-mode-detection.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Repo-Mode-Inside-Workspace Advisory
 
@@ -60,7 +60,7 @@ The advisory does not block; it does not appear when `detectWorkspace` returns `
 
 ## Milestone Planning Mode (`--milestone`)
 
-> **Conditional loading:** Read `skills/plan/references/milestone-mode.md` for the full Milestone Planning Mode instructions.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/plan/references/milestone-mode.md` for the full Milestone Planning Mode instructions.
 
 ---
 
@@ -76,13 +76,13 @@ Steps 1–7 below apply when operating in **Spec Mode**. This is the original si
 
 Refuses to plan a spec that has not passed review, and states the one gate-passing abort.
 
-> **Conditional loading:** Read `skills/plan/references/steps/step-1-review-gate.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/plan/references/steps/step-1-review-gate.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Step 2: Load Context
 
 Assembles charter, spec, constitution, and pattern context before decomposition.
 
-> **Conditional loading:** Read `skills/plan/references/steps/step-2-load-context.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/plan/references/steps/step-2-load-context.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Step 3: Constitution Validation
 
@@ -121,25 +121,25 @@ These tags tell `/adev:implement` which subagent to dispatch for each task.
 
 Emits the ordered task list with TDD expectations and per-task context routing.
 
-> **Conditional loading:** Read `skills/plan/references/steps/step-5-write-the-plan.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/plan/references/steps/step-5-write-the-plan.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Test Infrastructure Requirements
 
 How infra_requirements are derived and recorded on the plan.
 
-> **Conditional loading:** Read `skills/plan/references/test-infrastructure-requirements.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/plan/references/test-infrastructure-requirements.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Step 6: Plan Review Loop
 
 Dispatches the plan reviewer and applies its verdict, up to the retry ceiling.
 
-> **Conditional loading:** Read `skills/plan/references/steps/step-6-plan-review-loop.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/plan/references/steps/step-6-plan-review-loop.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Step 7: Execution Handoff
 
 Hands the finished plan to route/implement and states what the caller receives.
 
-> **Conditional loading:** Read `skills/plan/references/steps/step-7-execution-handoff.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/plan/references/steps/step-7-execution-handoff.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Dry-Run Mode
 
@@ -161,25 +161,25 @@ Constitution: no boundary violations detected
 
 ## Feature Mode
 
-> **Conditional loading:** Read `skills/plan/references/feature-mode.md` for the full Feature Mode instructions.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/plan/references/feature-mode.md` for the full Feature Mode instructions.
 
 ---
 
 ## Release Mode
 
-> **Conditional loading:** Read `skills/plan/references/release-mode.md` for the full Release Mode instructions.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/plan/references/release-mode.md` for the full Release Mode instructions.
 
 ---
 
 ## Milestone Mode
 
-> **Conditional loading:** Read `skills/plan/references/milestone-mode.md` for the full Milestone Mode instructions.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/plan/references/milestone-mode.md` for the full Milestone Mode instructions.
 
 ---
 
 ## Epic Mode
 
-> **Conditional loading:** Read `skills/plan/references/epic-mode.md` for the full Epic Mode and next_action Convention Table.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/plan/references/epic-mode.md` for the full Epic Mode and next_action Convention Table.
 
 ---
 
@@ -187,7 +187,7 @@ Constitution: no boundary violations detected
 
 Library functions this skill wraps, for reference when reading its CLI verbs.
 
-> **Conditional loading:** Read `skills/plan/references/api-reference.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/plan/references/api-reference.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Next Step in the Lifecycle
 

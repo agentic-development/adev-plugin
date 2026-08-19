@@ -58,7 +58,12 @@ describe("SKILL.md batched-dispatch wiring", () => {
   });
 
   it("points to batched-mode.md before the per-task loop begins", () => {
-    assert.match(skillBody, /Read `skills\/implement\/references\/batched-mode\.md`/);
+    assert.match(
+      skillBody,
+      /Read `<ADEV_ROOT>\/skills\/implement\/references\/batched-mode\.md`/,
+      "the pointer must be <ADEV_ROOT>-anchored — a bare skills/ path does not " +
+        "resolve at any install surface",
+    );
   });
 
   it("documents all three batch advisories in the base skill or its companion", () => {
@@ -76,11 +81,16 @@ describe("SKILL.md batched-dispatch wiring", () => {
     // paragraph, a run with both --no-batch and --parallel would never hit
     // it. The check must therefore also live in Prerequisites, which every
     // invocation passes through before Step 1/2/2.5 are reached at all.
-    const prereqSection = skillBody.slice(
-      skillBody.indexOf("## Prerequisites"),
-      skillBody.indexOf("## Process"),
-    );
-    assert.ok(prereqSection.length > 0, "Prerequisites section must exist");
+    // Sliced from the BODY, not readSkillSurface(). Two reasons: the property is
+    // that the check lives in the body's unconditional Prerequisites, which the
+    // surface cannot distinguish; and if "## Process" ever moved to a companion
+    // this slice would silently widen from ~4 KB to the whole ~84 KB surface and
+    // keep passing on a match from anywhere in it.
+    const body = readFileSync(join(ROOT, "skills", "implement", "SKILL.md"), "utf8");
+    const start = body.indexOf("## Prerequisites");
+    const end = body.indexOf("## Process", start);
+    assert.ok(start !== -1 && end > start, "Prerequisites must precede Process in the body");
+    const prereqSection = body.slice(start, end);
     assert.match(prereqSection, /CONFLICTING_BATCH_FLAGS/);
     assert.match(prereqSection, /stop immediately/i);
   });

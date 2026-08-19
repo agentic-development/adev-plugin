@@ -33,7 +33,7 @@ If the output is not `__NONE__`, incorporate it as additional standing instructi
 
 Full argument reference for every pipeline mode.
 
-> **Conditional loading:** Read `skills/build/references/arguments.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/build/references/arguments.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Prerequisites
 
@@ -55,7 +55,7 @@ If `.context-index/` does not exist, tell the user:
 
 The mode matrix: full, single-spec, milestone, charter, workspace, resume.
 
-> **Conditional loading:** Read `skills/build/references/pipeline-modes.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/build/references/pipeline-modes.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Repo-Mode-Inside-Workspace Advisory
 
@@ -74,7 +74,7 @@ The advisory does not block; it does not appear when `detectWorkspace` returns `
 
 How the orchestrator dispatches each sub-skill and what it hands over.
 
-> **Conditional loading:** Read `skills/build/references/delegation/delegation-protocol.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/build/references/delegation/delegation-protocol.md` for the full instructions. Do not act on this section from the summary above.
 
 ## One-Step-Per-Invocation Dispatch
 
@@ -84,7 +84,7 @@ The build orchestrator executes **exactly one pipeline step per turn**, then yie
 
 The full per-turn loop: pick the next step, dispatch it, record the result, stop.
 
-> **Conditional loading:** Read `skills/build/references/delegation/dispatch-loop.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/build/references/delegation/dispatch-loop.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Why One Step Per Turn
 
@@ -94,7 +94,7 @@ This model prevents the "finish the work" failure mode where accumulated context
 
 Applies only when --verbose is passed: extra per-step reporting.
 
-> **Conditional loading:** Read `skills/build/references/verbose-mode.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/build/references/verbose-mode.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Build Pipeline
 
@@ -106,37 +106,37 @@ The pipeline executes 5 steps per spec, in strict order. For each step, the orch
 
 The verdict check that must pass before the next step may be dispatched.
 
-> **Conditional loading:** Read `skills/build/references/delegation/dispatch-gate.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/build/references/delegation/dispatch-gate.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Step 0: Specify (Full Pipeline only)
 
 Authors the Live Spec. Runs only in the full pipeline, and only when the spec does not already exist.
 
-> **Conditional loading:** Read `skills/build/references/pipeline/step-0-specify.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/build/references/pipeline/step-0-specify.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Step 1: Review
 
 Dispatches /adev:review-specs over the target spec and gates on the returned verdict.
 
-> **Conditional loading:** Read `skills/build/references/pipeline/step-1-review.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/build/references/pipeline/step-1-review.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Step 2: Plan
 
 Dispatches /adev:plan to decompose the reviewed spec into ordered tasks.
 
-> **Conditional loading:** Read `skills/build/references/pipeline/step-2-plan.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/build/references/pipeline/step-2-plan.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Step 3: Route
 
 Dispatches /adev:route to score each task and assign an execution mode.
 
-> **Conditional loading:** Read `skills/build/references/pipeline/step-3-route.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/build/references/pipeline/step-3-route.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Step 4: Implement
 
 Dispatches /adev:implement to execute the routed plan.
 
-> **Conditional loading:** Read `skills/build/references/pipeline/step-4-implement.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/build/references/pipeline/step-4-implement.md` for the full instructions. Do not act on this section from the summary above.
 
 **Rigor tier propagation:** Read `skills/build/step4-tier-propagation.md` for the `--tier` handoff to `/adev:implement`.
 
@@ -144,13 +144,13 @@ Dispatches /adev:implement to execute the routed plan.
 
 Dispatches /adev:validate and records the PASS/FAIL verdict on the build log.
 
-> **Conditional loading:** Read `skills/build/references/pipeline/step-5-validate.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/build/references/pipeline/step-5-validate.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Validate→Implement Retry Loop
 
 Governs re-entry into Step 4 after a failing Step 5, including the retry ceiling.
 
-> **Conditional loading:** Read `skills/build/references/pipeline/validate-implement-retry.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/build/references/pipeline/validate-implement-retry.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Build State
 
@@ -164,17 +164,17 @@ The helper creates its underlying storage directory on first write. Skill prose 
 
 On-disk schema of the build state file.
 
-> **Conditional loading:** Read `skills/build/references/build-state-format.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/build/references/build-state-format.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Incremental Persistence
 
 When and how the orchestrator flushes build state to disk.
 
-> **Conditional loading:** Read `skills/build/references/build-state-persistence.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/build/references/build-state-persistence.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Resume Mode
 
-> **Conditional loading:** Read `skills/build/references/resume-mode.md` for the full Resume Mode instructions.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/build/references/resume-mode.md` for the full Resume Mode instructions.
 
 ---
 
@@ -182,23 +182,23 @@ When and how the orchestrator flushes build state to disk.
 
 How a resumed build decides that recorded state is too old to trust.
 
-> **Conditional loading:** Read `skills/build/references/stale-build-detection.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/build/references/stale-build-detection.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Charter Mode
 
-> **Conditional loading:** Read `skills/build/references/charter-mode.md` for the full Charter Mode instructions.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/build/references/charter-mode.md` for the full Charter Mode instructions.
 
 ---
 
 ## Milestone Mode
 
-> **Conditional loading:** Read `skills/build/references/milestone-mode.md` for the full Milestone Mode instructions.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/build/references/milestone-mode.md` for the full Milestone Mode instructions.
 
 ---
 
 ## Workspace-Mode Build (`--milestone` at Workspace Root)
 
-> **Conditional loading:** Read `skills/build/references/workspace-mode.md` for the full Workspace-Mode Build instructions.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/build/references/workspace-mode.md` for the full Workspace-Mode Build instructions.
 
 ---
 
@@ -206,19 +206,19 @@ How a resumed build decides that recorded state is too old to trust.
 
 Applies only when --dry-run is passed: prints the planned pipeline without dispatching.
 
-> **Conditional loading:** Read `skills/build/references/dry-run-mode.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/build/references/dry-run-mode.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Single Spec Mode (`--spec`)
 
 Applies only when --spec is passed: runs the pipeline against exactly one spec.
 
-> **Conditional loading:** Read `skills/build/references/single-spec-mode.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/build/references/single-spec-mode.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Error Cases
 
 Enumerated failure modes and the required orchestrator response to each.
 
-> **Conditional loading:** Read `skills/build/references/error-cases.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/build/references/error-cases.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Key Principles
 
@@ -260,4 +260,4 @@ Enumerated failure modes and the required orchestrator response to each.
 
 Library functions this skill wraps, for reference when reading its CLI verbs.
 
-> **Conditional loading:** Read `skills/build/references/api-reference.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/build/references/api-reference.md` for the full instructions. Do not act on this section from the summary above.

@@ -62,49 +62,49 @@ Six phases. Complete each before proceeding to the next.
 
 Establishes a deterministic reproduction before any fix is attempted.
 
-> **Conditional loading:** Read `skills/debug/references/phases/phase-1-reproduce.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/debug/references/phases/phase-1-reproduce.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Phase 1.5: Infrastructure Preflight
 
 Runs only when the failing area declares infra_requirements.
 
-> **Conditional loading:** Read `skills/debug/references/phases/phase-1.5-infra-preflight.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/debug/references/phases/phase-1.5-infra-preflight.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Phase 1.6: Ownership Claim
 
 Claims the issue so concurrent sessions do not duplicate the fix.
 
-> **Conditional loading:** Read `skills/debug/references/phases/phase-1.6-ownership-claim.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/debug/references/phases/phase-1.6-ownership-claim.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Phase 2: Investigate (with Context)
 
 Context-aware investigation across ADRs, specs, and orientation.
 
-> **Conditional loading:** Read `skills/debug/references/phases/phase-2-investigate.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/debug/references/phases/phase-2-investigate.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Phase 3: Hypothesize
 
 Forms a falsifiable hypothesis from the investigation.
 
-> **Conditional loading:** Read `skills/debug/references/phases/phase-3-hypothesize.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/debug/references/phases/phase-3-hypothesize.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Phase 4: Verify
 
 Confirms or refutes the hypothesis before changing code.
 
-> **Conditional loading:** Read `skills/debug/references/phases/phase-4-verify.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/debug/references/phases/phase-4-verify.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Phase 5: Fix
 
 Applies the minimal fix that the verified hypothesis implies.
 
-> **Conditional loading:** Read `skills/debug/references/phases/phase-5-fix.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/debug/references/phases/phase-5-fix.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Phase 6: Validate and Record
 
 Runs the gates and records the fix against its spec.
 
-> **Conditional loading:** Read `skills/debug/references/phases/phase-6-validate-and-record.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/debug/references/phases/phase-6-validate-and-record.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Completion token (`/goal`-friendly)
 
@@ -120,7 +120,7 @@ Rules: emit it exactly once, as plain text (no code fence, no backticks, no trai
 
 Updates specs/ADRs whose assumptions the fix invalidated.
 
-> **Conditional loading:** Read `skills/debug/references/phases/phase-7-documentation-impact.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/debug/references/phases/phase-7-documentation-impact.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Red Flags
 

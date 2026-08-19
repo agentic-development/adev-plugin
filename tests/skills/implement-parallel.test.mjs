@@ -11,6 +11,7 @@ import { readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readSkillSurface } from "../helpers.mjs";
+import { resolveSkillPointer } from "../helpers.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const skillBody = readSkillSurface("implement");
@@ -29,7 +30,7 @@ const parallelPointer = skillBody.match(
   /### Step 2\.5: Parallel Group Execution[^\n]*\n\s*\n> \*\*Conditional loading:\*\* Read `([^`]+)`/,
 );
 const skill = parallelPointer
-  ? skillBody + "\n" + readFileSync(join(ROOT, parallelPointer[1]), "utf8")
+  ? skillBody + "\n" + readFileSync(resolveSkillPointer(parallelPointer[1]), "utf8")
   : skillBody;
 
 describe("implement --parallel documentation contract", () => {
@@ -84,7 +85,7 @@ describe("implement --parallel documentation contract", () => {
       parallelPointer,
       "Step 2.5 must carry a `Conditional loading:` pointer to its companion",
     );
-    const section = readFileSync(join(ROOT, parallelPointer[1]), "utf8");
+    const section = readFileSync(resolveSkillPointer(parallelPointer[1]), "utf8");
     assert.ok(section.length > 500, "companion must hold real instructions");
     assert.doesNotMatch(section, /node\s+-e|node --input-type=module -e|Run inline Node/);
   });

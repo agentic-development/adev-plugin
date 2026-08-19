@@ -84,7 +84,7 @@ The Prerequisites block (missing `.context-index/`, missing spec, missing implem
 
 Applies only at a multi-repo workspace root.
 
-> **Conditional loading:** Read `skills/validate/references/workspace-mode.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/validate/references/workspace-mode.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Preflight: Infrastructure Verification
 
@@ -116,13 +116,13 @@ If `lib/infra-preflight.mjs` fails to import, block with: "Infrastructure prefli
 
 Resolves the check registry and each entry prompt URI before any check runs.
 
-> **Conditional loading:** Read `skills/validate/references/step-0-load-check-registry.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/validate/references/step-0-load-check-registry.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Execution Strategy
 
 Ordering, parallelism, and fail-fast rules across the whole check set.
 
-> **Conditional loading:** Read `skills/validate/references/execution-strategy.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/validate/references/execution-strategy.md` for the full instructions. Do not act on this section from the summary above.
 
 ## The Checks
 
@@ -132,67 +132,67 @@ Ordering, parallelism, and fail-fast rules across the whole check set.
 
 Runs the resolved gate set in tiers and fails fast. Emits exactly one validator_report for the whole check.
 
-> **Conditional loading:** Read `skills/validate/references/checks-orchestration/check-1-quality-gates.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/validate/references/checks-orchestration/check-1-quality-gates.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Check 1.5: Source Manifest Verification
 
 Verifies the source manifest matches what the implementation actually touched.
 
-> **Conditional loading:** Read `skills/validate/references/checks-orchestration/check-1.5-source-manifest.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/validate/references/checks-orchestration/check-1.5-source-manifest.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Check 1.6: Code-Side Drift Warning
 
 Advisory only: warns when code has drifted from the spec since implementation.
 
-> **Conditional loading:** Read `skills/validate/references/checks-orchestration/check-1.6-code-drift.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/validate/references/checks-orchestration/check-1.6-code-drift.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Check 2: Spec Compliance
 
 Subagent review of implementation against the spec, including the scope-expansion sub-finding.
 
-> **Conditional loading:** Read `skills/validate/references/checks-orchestration/check-2-spec-compliance.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/validate/references/checks-orchestration/check-2-spec-compliance.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Check 4: Constitution Compliance
 
 Subagent review against the constitution, under the evidence-citation contract.
 
-> **Conditional loading:** Read `skills/validate/references/checks-orchestration/check-4-constitution.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/validate/references/checks-orchestration/check-4-constitution.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Check 8: Boundary Compliance
 
 Deterministic CLI read (adev boundaries check --json). SKIPs when the project declares no boundary rules.
 
-> **Conditional loading:** Read `skills/validate/references/checks-orchestration/check-8-boundaries.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/validate/references/checks-orchestration/check-8-boundaries.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Check 9: Transition Gates
 
 Deterministic CLI read (adev gate transitions --json). SKIPs with no implement-to-validate transition.
 
-> **Conditional loading:** Read `skills/validate/references/checks-orchestration/check-9-transition-gates.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/validate/references/checks-orchestration/check-9-transition-gates.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Check 11: Visual Verification (UI projects)
 
 Runs only for UI implementations that clear the trigger guard.
 
-> **Conditional loading:** Read `skills/validate/references/checks-orchestration/check-11-visual-verification.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/validate/references/checks-orchestration/check-11-visual-verification.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Per-Check Event Emission
 
 Which lifecycle events each check emits, and their payloads.
 
-> **Conditional loading:** Read `skills/validate/references/per-check-event-emission.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/validate/references/per-check-event-emission.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Report Format
 
 The exact structure of the PASS/FAIL report, including the migration-orientation footer.
 
-> **Conditional loading:** Read `skills/validate/references/report-format.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/validate/references/report-format.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Overall Status
 
 How per-check outcomes roll up into the single PASS/FAIL verdict.
 
-> **Conditional loading:** Read `skills/validate/references/overall-status.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/validate/references/overall-status.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Step Z: Emit lifecycle completion event
 
@@ -212,7 +212,7 @@ This event is REQUIRED. Without it, the lifecycle log shows `lifecycle_step:vali
 
 What to do with the verdict, including the migration-orientation footer.
 
-> **Conditional loading:** Read `skills/validate/references/after-validation.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/validate/references/after-validation.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Red Flags
 
