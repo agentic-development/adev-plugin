@@ -1965,7 +1965,17 @@ async function dispatch(argv) {
   // --help short-circuit applies only to new-contract modules. Legacy
   // adapters (run.length === 0) read process.argv themselves and may
   // implement verb-specific --help; defer to them.
-  if (mod.run.length > 0 && (verbArgs.includes("--help") || verbArgs.includes("-h"))) {
+  //
+  // Parent dispatchers that route help to their OWN sub-verbs opt out via
+  // `dispatchesSubcommandHelp`. Without that escape hatch this branch swallows
+  // `adev <verb> <sub> --help` and prints the parent's subcommand list, so the
+  // sub-verb's flags are unreachable from the CLI — which matters most for the
+  // verbs skills are told to call by name.
+  if (
+    mod.run.length > 0 &&
+    mod.dispatchesSubcommandHelp !== true &&
+    (verbArgs.includes("--help") || verbArgs.includes("-h"))
+  ) {
     if (typeof mod.help === "function") {
       mod.help();
       process.exit(0);

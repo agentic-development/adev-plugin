@@ -524,10 +524,13 @@ adev coordination scan --json --owner "$USER/local"
 
 | Subcommand | Purpose |
 |---|---|
+| `create <title> [--type <t>] [--priority 0-4] [--plan-ref <p>] [--spec-ref <p>] [--parent <id>] [--notes <text>] [--next-action <text>] [--id <id>] [--json]` | Create one board-granularity item (epic, feature, task, bug). Prints `Created <type> <id>: <title>` |
 | `migrate` | Convert the board to a different backend |
 | `claim <id> --owner <name> [--branch <b>] [--pr <ref>] [--json]` | Take ownership via an atomic check-and-set. Exit `2` = refused (held by a live owner, or closed); exit `1` = usage error or `CLAIM_UNSUPPORTED_BACKEND` |
 | `release <id> --owner <name> [--force] [--json]` | Give up ownership. `branch`/`pr` are kept as the record of where the work went; `--force` releases another owner's claim |
 | `stale [--json]` | Report claims past their TTL, plus `unexpirable` rows (an owner with no `claimed_at`, which can never expire on their own). Read-only |
+
+**Always create through this verb, never through the backend binary.** `br create` resolves `.beads/` from the current directory, and `git worktree add` materialises the git-tracked `issues.jsonl` into every linked worktree while the gitignored `beads.db` stays behind — so a raw `br` call from a worktree opens a JSONL with no database beside it and fails with `SYNC_CONFLICT`. `adev issues create` resolves the storage root through `resolveStorageRoot()` (the git common dir) and reaches the one real board from anywhere in the repo. Plan tasks are not issues — they live in the lifecycle log via `reportPlanTask` — so there is no `--plan-task` flag.
 
 Claims are **leases**, not locks: they expire after `tasks.claim_ttl_minutes` (default `240`, `0` disables expiry), and claiming an issue whose lease has expired takes it over and reports the displaced owner. Without expiry a crashed session would hold an issue forever, and an unreleasable gate is one people learn to bypass.
 
@@ -577,11 +580,12 @@ Live coverage for the beads path is `tests/evals/beads-live/`, an opt-in bucket 
 
 **Example:**
 ```
+adev issues create "Graduated review depth" --type epic --plan-ref .context-index/specs/features/implementation/x.plan.md
 adev issues claim issue-42 --owner "$USER/local" --branch "$(git branch --show-current)"
 adev issues stale --json
 ```
 
-**Implementation:** `lib/cli/issues.mjs` (+ `issues-migrate.mjs`, `issues-claim.mjs`, `issues-stale.mjs`). **Called by:** `/adev:issues`, and in preflight by `/adev:implement` and `/adev:debug`.
+**Implementation:** `lib/cli/issues.mjs` (+ `issues-create.mjs`, `issues-migrate.mjs`, `issues-claim.mjs`, `issues-stale.mjs`). **Called by:** `/adev:issues`, `/adev:plan` and `/adev:reconcile` (epic creation), and in preflight by `/adev:implement` and `/adev:debug`.
 
 ### `retro`
 

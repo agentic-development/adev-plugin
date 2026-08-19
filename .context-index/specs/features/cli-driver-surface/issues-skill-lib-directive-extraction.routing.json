@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 1
+      },
+      "rationale": "BEH-2/INV-6 fully specified with test code and an implementation sketch; issues-stale.mjs is a direct sibling shape; 4 cohesive files, read-only verb. Tier: quick."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 0.8
+      },
+      "rationale": "BEH-3 plus the ready-filter algorithm and its dangling-dependency edge case are spelled out; sibling verb shape exists; read-only, 4 files. Tier: quick."
+    },
+    {
+      "task_id": "t3",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.8,
+        "novelty": 0.6
+      },
+      "rationale": "Board writes with guard refusals (BEH-4/5/6, INV-5). No existing verb translates BLOCKED_BY_DEPENDENCIES/cycle into exit 2, and update resolves epic-vs-issue by lookup; matches the spec's Medium-risk Migration Step 2. Tier: full."
+    },
+    {
+      "task_id": "t4",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 1
+      },
+      "rationale": "Additive --epic/--milestone flags on a verb already under test; no new behavior of its own, so acceptance detail is thinner, but the change is mechanical across 3 files. Tier: quick."
+    },
+    {
+      "task_id": "t5",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.8,
+        "novelty": 0.6
+      },
+      "rationale": "BEH-7's always-present confirmFn is load-bearing (an omitted callback silently ships), plus four result-translation outcomes and gate timeouts. No sibling verb wraps lib/milestones.mjs; spec's Medium-risk Migration Step 4. Tier: full."
+    },
+    {
+      "task_id": "t6",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.6,
+        "novelty": 1
+      },
+      "rationale": "BEH-8 with an explicit case table; help-text and --help short-circuit only, but it touches six files across the new verb set. Tier: quick."
+    },
+    {
+      "task_id": "t7",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "Single new test file, but the plan flags the unit-vs-integration strategy at medium confidence and leaves an open branch (fix resolve-root.mjs if BEH-1 really fails). Hermetic git worktree fixtures need a human check. Tier: full."
+    },
+    {
+      "task_id": "t8",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "BEH-9/INV-3/INV-7 with the exact enforcement test and the exact prohibition prose; precedent wording exists in the plan/implement/reconcile skills; two files. Tier: quick."
+    },
+    {
+      "task_id": "t9",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.6,
+        "novelty": 1
+      },
+      "rationale": "Docs edit plus a scripted mirror regeneration pinned by the existing parity test; spans docs/ and providers/, and the final sweep is a judgment call, but the mechanism is mechanical. Tier: quick."
+    }
+  ]
+}

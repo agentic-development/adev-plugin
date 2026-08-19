@@ -103,6 +103,8 @@ Every adev lifecycle skill today embeds executable logic as inline Node blocks i
 | Tier-2/3 producer extension points | Registry supports them; concrete producers land in dependent charters | should-have | adev-compiler-discipline | — |
 | `adev <verb>` help / discovery | `adev --help`, `adev <verb> --help` for standard argv discoverability | should-have | adev-compiler-discipline | validated |
 
+> **Capability-Map note (2026-08-19, added by `/adev:plan`).** `issues-skill-lib-directive-extraction.spec.md` (revision 2, review-passed) is now **planned** — 9 tasks, see `issues-skill-lib-directive-extraction.plan.md`. It closes a residual gap in **Inline-Node extraction sweep** (the last embedded JS fence, `skills/issues/SKILL.md:49-63`) plus 15 *prose-level* lib directives that no existing capability row names. The spec carries `charter-extension: true` for exactly that reason. A "Lib-directive extraction (prose-level)" row — and a revision of the Out-of-Scope entry for provider-mirror sync, which `tests/sync/provider-skill-parity.test.mjs` now makes mandatory — should be added via `/adev:brainstorm`. Neither row is invented here: widening the Capability Map is a charter decision, not a planning one, and the spec explicitly does not block on it.
+
 ## Deferred Capabilities
 
 | Capability | Reason | Target Milestone | Depends On |
