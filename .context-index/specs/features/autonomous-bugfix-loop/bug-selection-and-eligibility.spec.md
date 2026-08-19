@@ -2,12 +2,12 @@
 
 ---
 charter: autonomous-bugfix-loop
-status: review-pending
+status: review-passed
 kind: behavioral
 risk_level: medium
 milestone: 1
-revision: 2
-charter-revision: 6
+revision: 3
+charter-revision: 7
 created: 2026-08-19
 updated: 2026-08-19
 ---
@@ -26,7 +26,7 @@ updated: 2026-08-19
 - The caller has read access to `.context-index/lifecycle-state/bugfix-loop-attempts.jsonl` for attempt-cap state (the file the sibling `per-issue-attempt-cap` spec establishes). Its absence is not an error — it means no attempts have been recorded for any issue yet.
 - This spec depends on the `AttemptRecord` schema defined in the charter's Domain Model and detailed by the sibling `per-issue-attempt-cap` spec (same charter, also Milestone 1). If that sibling spec's schema changes after this one ships, this verb's exclusion logic (BEH-5) must be updated to match — this is a normal parallel-spec dependency, not a blocker on writing either spec first.
 - **`--max-priority <p>` uses the `P0`–`P4` string vocabulary, mapped one-to-one onto `WorkItem.priority`'s numeric `0`–`4` scale**: `P0=0` (critical), `P1=1` (high), `P2=2` (medium), `P3=3` (low), `P4=4` (backlog). This mapping is fixed and owned by this spec; the CLI-facing string form exists only because "P2" reads clearer than "2" at the command line — `IssueManagerInterface` itself is never touched.
-- **The module-safety mechanism depends on `task-management/charter.md` revision 8's new `WorkItem.affected_modules` field** (optional array of manifest `modules[].slug` values or the reserved safety tags `review-gate`, `convergence-detector`, `retry-loop`, `bugfix-loop`), added specifically to give BEH-6/BEH-7 below a real producer. It is set only by a human or maintainer — via `/adev:issues` at filing time, or (for GitHub-origin bugs, once the `tracker-provider-bridge` spec ships) a maintainer-applied `module:<slug>` GitHub label, mirroring the `bug`+`help wanted` triage-gate pattern rather than being inferred from issue title/body text.
+- **The module-safety mechanism depends on `task-management/charter.md` revision 8's new `WorkItem.affected_modules` field** (optional array of manifest `modules[].slug` values or the reserved safety tags `review-gate`, `convergence-detector`, `retry-loop`, `bugfix-loop`), added specifically to give BEH-6/BEH-7 below a real *schema* producer. **This milestone ships no polished CLI/GitHub-label producer for it** — that was reviewed and found unwired in an earlier revision (`/adev:issues` has no flag for it; the GitHub bridge's `module:<slug>` label was asserted but never implemented). v1's only producer is a direct `IssueManager.update(id, { affected_modules: [...] })` call — invocable by any script or one-off command a human runs, not a polished UX. A CLI flag (`/adev:issues create/update --affected-modules <slug>`) and GitHub-label-based population are explicit Deferred Capabilities (see charter), not silently-assumed features. **Consequence, stated plainly: until one of those deferred producers ships, BEH-10's fail-closed default is the only reachable outcome for any bug not manually tagged via a direct API call** — the loop will not autonomously attempt any bug unless a human or script explicitly sets `affected_modules` outside the normal `/adev:issues` UX. This is intentional and safe (fail-closed), if more restrictive than the eventual UX.
 
 ### Behaviors
 

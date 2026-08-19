@@ -1,15 +1,16 @@
 ---
-last-reviewed-revision: 1
-file-sha: def8b4fd84358316f59ca1ecc428707e659a19d1031d84b4c15cefb85c33043e
+last-reviewed-revision: 2
+file-sha: e3f82bdc6f836679fa331be7b3a18349360a6f3f577baca87c5e685ebc96291b
 ---
 
-# Architecture Review: tracker-provider-bridge
+# Architecture Review: tracker-provider-bridge (round 2)
 
 > **Date:** 2026-08-19
 > **Spec:** .context-index/specs/features/autonomous-bugfix-loop/tracker-provider-bridge.spec.md
 > **Charter:** .context-index/specs/features/autonomous-bugfix-loop/charter.md
 > **Verdict:** BLOCK
 > **Rigor tier:** full
+> **Note:** re-review after round-1 BLOCK; round-1 findings verified resolved unless restated below.
 
 ## Reviewers Dispatched
 
@@ -21,55 +22,48 @@ file-sha: def8b4fd84358316f59ca1ecc428707e659a19d1031d84b4c15cefb85c33043e
 | boundary-reviewer | Boundary Reviewer | subagent | reviewer-capable | plugin:review-specs/boundary-reviewer-prompt.md |
 | termination-reviewer | Termination Reviewer | subagent | reviewer-fast | plugin:review-specs/termination-reviewer-prompt.md |
 
-## Disabled Reviewers
-
-| ID | Reason |
-|----|--------|
-| structural-architect | Disabled as part of the reviewer-domain-fit initiative. OWASP/structural scope was retargeted to referent-integrity/wiring-reviewer/consistency-analyzer/boundary-reviewer for the default (Node CLI/plugin) project shape. |
-| security-reviewer | Disabled as part of the reviewer-domain-fit initiative. OWASP-scoped review relocated to the web-service domain extension. |
-
 ## Consistency Analyzer (consistency-analyzer)
 
 **Verdict:** FAIL
 
-- **CON-1** [blocker] (contract, `acceptance-criteria`): Acceptance criteria claim "interface alone" is sufficient for extensibility, but the charter requires interface AND registry; no registry component appears anywhere in this spec.
-- **CON-2** [warning] (adr-compliance, `interaction-contract`): TrackerSyncLink storage path/format is never declared, unlike the sibling per-issue-attempt-cap spec which properly cites ADR-0015.
+- **CON-1** [blocker] (domain-model, `error-propagation`): Escalation note has no defined schema slot in either BugfixLoopRun or TrackerSyncLink.
+- **CON-2** [blocker] (contract, `participants`): gateCheck(issue)/fetchGated() argument shapes in Participants contradict their described batch/per-issue usage in the Interaction Contract.
+- **CON-3** [blocker] (adr-compliance, `interaction-contract`): ADR-0015 registration stated as already-true when it is future implementation work.
+- **CON-4** [warning] (pattern, `participants`): Registry pattern cited lib/issues/registry.mjs (hardcoded if/else) instead of lib/provider/registry.mjs (actual plain-map match).
 
 ## Referent Integrity Reviewer (referent-integrity)
 
 **Verdict:** FAIL
 
-- **RI-1** [blocker] (mischaracterized-prior-art, `system-constitution-reference`): lib/milestones.mjs's gh usage is cited as "existing read-only PR-visibility usage" but is unreachable in production — no default execGh injector exists and no caller ever supplies one.
-- **RI-2** [blocker] (weakened-boundary-justification, `system-constitution-reference`): The "Architecture Boundary: Not triggered" conclusion for skipping human approval on the gh dependency rests partly on the RI-1 mischaracterization, leaving only one (not two) verified prior-art precedents.
-- **RI-7** [suggestion] (forward-reference, `participants`): /adev:bugfix-loop --github-sync does not exist yet; correctly self-consistent forward reference to sibling in-flight work, not a factual gap.
+- **RI-1** [blocker] (stale-cross-reference, `interaction-contract`): Same ADR-0015 present-tense registration claim, independently confirmed false.
 
 ## Wiring Reviewer (wiring-reviewer)
 
 **Verdict:** FAIL
 
-- **WR-1** [blocker] (no-caller, `interaction-contract-outbound-writeback`): The "claimed" outcome branch of outbound writeback is unreachable — bugfix-loop-skill's actual call sequence never invokes writeback between claim and the debug attempt.
-- **WR-2** [blocker] (write-only-state, `interaction-contract-outbound-writeback`): last_synced_at and last_comment_id are written every writeback but never read by anything.
-- **WR-3** [suggestion] (implicit-mechanism, `interaction-contract-outbound-writeback`): WorkItem-to-TrackerSyncLink reverse lookup mechanism is implied but never stated explicitly.
+- **WR-3** [blocker] (write-only-state, `error-propagation`): Escalation note write has no defined landing slot in BugfixLoopRun's enumerated schema.
+- **WR-4** [blocker] (write-only-state, `error-propagation`): Run-level metadata note in tracker-sync-links.jsonl has no consumer and no defined record shape; TrackerSyncLink is per-link only.
+- **WR-5** [warning] (vague-trigger, `interaction-contract`): last_synced_at/last_comment_id human-read surface not named concretely.
+- **WR-6** [warning] (missing-producer, `interaction-contract`): module:<slug> GitHub label producer for affected_modules is asserted by a sibling spec but not implemented here.
+- **WR-7** [suggestion] (implicit-lookup, `participants`): provider-based registry lookup step left implicit.
+- **WR-8** [warning] (one-sided-contract, `interaction-contract`): Sibling debug-completion-and-auto spec does not itself establish that Phase 1 reads WorkItem.notes as its investigation target.
 
 ## Boundary Reviewer (boundary-reviewer)
 
-**Verdict:** FAIL
+**Verdict:** PASS_WITH_NOTES
 
-- **BD-1** [blocker] (input-trust, `interaction-contract`): Inbound GitHub issue title/body flows unvalidated into IssueManager.create with no length/content check, later becoming /adev:debug --auto's investigation target — the bug+help-wanted label gate is a triage boundary, not a content-safety boundary.
-- **BD-2** [warning] (artifact-leakage, `interaction-contract`): Same unvalidated title/body becomes a persisted, git-committed artifact with no stated escaping for the backend's serialization format.
-- **BD-3** [blocker] (privilege-escalation, `interaction-contract`): "Never changes GitHub issue state/labels/assignees" is asserted in prose only; the TrackerProviderAdapter interface itself grants unscoped writeback capability rather than a narrow postComment()-shaped method.
-- **BD-4** [warning] (subprocess-interpolation, `interaction-contract`): gh issue comment invocation is not required to use an argv array, despite comment text potentially referencing externally-sourced WorkItem titles.
+- **BD-1** [warning] (input-trust, `interaction-contract`): Oversized-content refusal mechanics (retry vs permanent skip) unstated.
+- **BD-2** [suggestion] (artifact-leakage, `system-constitution-reference`): escapeField mitigation exists but uncited.
 
 ## Termination Reviewer (termination-reviewer)
 
-**Verdict:** FAIL
+**Verdict:** PASS
 
-- **TR-1** [blocker] (missing-iteration-cap, `error-propagation`): Inbound-sync degrade-and-retry-next-turn on GitHub unreachability has no bound on consecutive degraded turns and no escalation path if GitHub stays unreachable indefinitely.
-- **TR-2** [suggestion] (clarity, `error-propagation`): Outbound-writeback skip-on-unreachability row is fully specified; minor phrasing consolidation suggested only.
+No findings.
 
 ---
 
 ## Summary
 
-**Total findings:** 14 (8 blockers, 3 warnings, 3 suggestions)
-**Action required:** Address the 8 blocker(s) listed above and in the accompanying `.blockers.md` sidecar, then run `/adev:specify --revise --spec .context-index/specs/features/autonomous-bugfix-loop/tracker-provider-bridge.spec.md` to produce revision 2, and re-review.
+**Total findings:** 13 (6 blockers, 5 warnings, 2 suggestions)
+**Action required:** Address the 6 blocker(s) listed above and in the accompanying `.blockers.md` sidecar, then run `/adev:specify --revise --spec .context-index/specs/features/autonomous-bugfix-loop/tracker-provider-bridge.spec.md` to produce revision 3, and re-review.

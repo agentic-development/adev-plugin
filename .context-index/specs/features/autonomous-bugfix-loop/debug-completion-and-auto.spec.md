@@ -2,12 +2,12 @@
 
 ---
 charter: autonomous-bugfix-loop
-status: review-pending
+status: review-passed
 kind: behavioral
 risk_level: medium
 milestone: 1
-revision: 2
-charter-revision: 6
+revision: 3
+charter-revision: 7
 created: 2026-08-19
 updated: 2026-08-19
 ---
@@ -39,7 +39,8 @@ updated: 2026-08-19
 - **BEH-5** — **When** `/adev:debug --auto` reaches Phase 6 step 3 (the ADR-drafting consideration) and an architectural insight is detected **then** the interactive prompt ("Want me to draft an ADR...") is skipped, and the insight is recorded as a note attached to the issue's confidence note (via the existing `adev verify format-note` note) rather than an ADR being drafted automatically — ADR authorship stays a deferred human follow-up, never a silent autonomous action. The note surfaces to a human via `/adev:issues`'s board view (the issue's `notes` field is visible there) — no new surface is introduced, but no automated audit currently flags an issue purely for carrying an unreviewed insight note; a human must browse to it.
 - **BEH-6** — **When** any active persona other than Developer (Product, Architect) is in effect **then** the `ADEV-DEBUG:` token is still emitted verbatim, unaffected by persona adaptation — matching the existing persona-exempt carve-out for `ADEV-BUILD`/`ADEV-VALIDATE` in `skills/using-adev/SKILL.md`'s Persona Output Override, extended to name `/adev:debug` (`ADEV-DEBUG: <STATE>`) explicitly. That bullet is enumerated per-skill today; it does not automatically cover a new terminal skill.
 - **BEH-7** — **When** `/adev:debug --auto` is invoked but Phase 1 cannot resolve any investigation target (no issue id, no reproducible symptom description, and no inferable target) **then** the skill exits immediately with a clear message rather than guessing or blocking on an interactive question that `--auto` has no user present to answer.
-- **BEH-8** — **When** `/adev:debug --auto` reaches Phase 6 step 1 ("Run quality gates") and one or more gates fail **then** the failing gates are captured as a stable, comparable set of check IDs (e.g., failing test names, one per line, sorted) and included in the `ADEV-DEBUG: PARKED` outcome's data — this is the sibling `per-issue-attempt-cap` spec's required input for its `curr_blockers` diffing (that spec's Precondition names this exact requirement as owned here). **When** the underlying test runner's output cannot be parsed into discrete IDs **then** Phase 6 step 1 falls back to reporting the raw failure output unchanged — the degraded-mode handling for that case is the *consuming* spec's responsibility (`per-issue-attempt-cap`'s `NO_STABLE_CHECK_IDS` error case), not this one's.
+- **BEH-8** — **When** `/adev:debug --auto` reaches Phase 6 step 1 ("Run quality gates") and one or more gates fail **then** the failing gates are captured as a stable, comparable set of check IDs (e.g., failing test names, one per line, sorted) and **written into the issue's `notes` field as a structured block** (`FAILING-CHECKS: <sorted-json-array>`, appended via the same `adev verify format-note`/`IssueManager.update` call Phase 6 step 4 already makes when annotating a `PARKED` issue — not a separate write). This is the concrete channel for the sibling `per-issue-attempt-cap` spec's required `curr_blockers` input (that spec's Precondition names the requirement; this behavior names where it lives): `bugfix-loop-skill`'s `AttemptRecord`-write step reads it via `IssueManager.get(id).notes`, extracting the `FAILING-CHECKS:` block. **When** the underlying test runner's output cannot be parsed into discrete IDs **then** Phase 6 step 1 falls back to writing the same block with the raw failure output instead of a JSON array — the degraded-mode bounding of that raw output (hash, not full text) is the *consuming* spec's responsibility (`per-issue-attempt-cap`'s `NO_STABLE_CHECK_IDS` error case), not this one's; this spec only guarantees the raw text reaches the `notes` field, once, in the same write.
+- **BEH-9** — **When** `/adev:debug --issue <id> --auto` is invoked with the environment variable `ADEV_ISSUE_OWNER` set **then** Phase 1.6's claim command uses that value as `--owner` instead of the hardcoded `"${USER}/local"` literal (`skills/debug/SKILL.md:161`). **When** `ADEV_ISSUE_OWNER` is unset **then** Phase 1.6's existing behavior is unchanged. This closes a real correctness gap the sibling `bugfix-loop-skill` spec depends on: that skill claims an issue as owner `bugfix-loop` before invoking `/adev:debug --issue <id> --apply --auto`, and without this behavior, Phase 1.6's re-claim under the hardcoded `"${USER}/local"` owner would be refused as `ISSUE_ALREADY_CLAIMED` (a *different* owner holding a live claim) on every single turn — the loop would never get past Phase 1.6. `bugfix-loop-skill.spec.md`'s Output Contract sets `ADEV_ISSUE_OWNER=bugfix-loop` in the environment before invoking `/adev:debug`, making the two claims genuinely idempotent (same owner), not merely asserted to be.
 
 ### Postconditions
 
@@ -67,7 +68,8 @@ updated: 2026-08-19
 |------|-------------|---------------------|
 | Add `ADEV-DEBUG` final-line directive to Phase 6 | Emit `FIXED`/`PARKED` per the existing close/annotate branches (BEH-1, BEH-2, BEH-4) | small |
 | Add bounded reproduction-attempt limit and `UNREPRODUCIBLE` terminal path to Phase 1, scoped to `--auto` | New logic: after `tasks.bugfix_loop.reproduction_attempt_limit` (default 3) without reproduction, terminate under `--auto` (BEH-3, BEH-7) | medium |
-| Emit a stable failing-check-ID set from Phase 6 step 1 under `--auto` | New structured output (sorted list of failing test names) attached to the `PARKED` outcome, consumed by the sibling `per-issue-attempt-cap` spec (BEH-8) | medium |
+| Emit a stable failing-check-ID set from Phase 6 step 1 under `--auto` | Written into the issue's `notes` field as a `FAILING-CHECKS:` block via the existing Phase 6 step 4 write, consumed by the sibling `per-issue-attempt-cap` spec via `IssueManager.get(id).notes` (BEH-8) | medium |
+| Add `ADEV_ISSUE_OWNER` env-var support to Phase 1.6's claim command | `skills/debug/SKILL.md:161` — read `ADEV_ISSUE_OWNER` before falling back to `"${USER}/local"`, closing the claim-owner mismatch with `bugfix-loop-skill` (BEH-9) | small |
 | Add `--auto` flag parsing and Phase 6 step 3 skip-and-note behavior | Suppress the interactive ADR prompt; record the insight as a note instead of drafting (BEH-5) | small |
 | Extend the persona-exempt carve-out to `ADEV-DEBUG` | Edit `skills/using-adev/SKILL.md`'s Persona Output Override bullet (BEH-6) | small |
 | Coordinate a small addition to `completion-tokens.spec.md`'s Task Map | Note `debug` as a third terminal skill covered, alongside `build`/`validate` — that spec's owner should make this edit, not this one | small |
@@ -81,6 +83,7 @@ updated: 2026-08-19
 - [ ] `--auto` bounds reproduction attempts to `tasks.bugfix_loop.reproduction_attempt_limit` (default 3) and terminates `UNREPRODUCIBLE` rather than looping indefinitely
 - [ ] Token is persona-exempt, verified across Product and Architect personas
 - [ ] No investigation target under `--auto` exits cleanly with `NO_INVESTIGATION_TARGET`, never a guess
-- [ ] `PARKED` outcomes under `--auto` include a stable, sorted, comparable set of failing check IDs from Phase 6 step 1
+- [ ] `PARKED` outcomes under `--auto` write a `FAILING-CHECKS:` block into the issue's `notes` field, readable via `IssueManager.get(id).notes`
+- [ ] Phase 1.6's claim command uses `ADEV_ISSUE_OWNER` when set, falling back to `"${USER}/local"` unchanged when unset
 - [ ] All quality gates pass (`npm test`)
 - [ ] No constitutional violations introduced
