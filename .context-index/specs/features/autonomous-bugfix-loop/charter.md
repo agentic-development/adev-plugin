@@ -1,7 +1,7 @@
 ---
 status: approved
 kind: feature
-revision: 3
+revision: 4
 updated: 2026-08-19
 ---
 
@@ -109,7 +109,7 @@ approval per Architecture Boundaries — approved during brainstorm.
 | Entity | Description | Key Attributes |
 |--------|-------------|----------------|
 | BugfixLoopRun | One invocation of `/adev:bugfix-loop` across N self-re-invoked turns | run_id, started_at, max_bugs, max_turns, bugs_attempted[], status (running/complete/budget_exhausted) |
-| AttemptRecord | Per-issue attempt-cap state, independent of the board schema | issue_id, attempts, last_verdict (PASS/CONTINUE/NO_PROGRESS/REGRESSED/BUDGET_EXHAUSTED), parked_reason, updated_at |
+| AttemptRecord | Per-issue attempt-cap state, independent of the board schema | issue_id, attempts, last_verdict (PASS/CONTINUE/NO_PROGRESS/REGRESSED/BUDGET_EXHAUSTED), curr_blockers (failing check-ID set or bounded hash, for next-attempt diffing), parked_reason, updated_at |
 | TrackerSyncLink | Mapping between an external tracker issue and a local WorkItem, provider-agnostic | provider (e.g. `"github"`), external_ref, local_issue_id, accepted_at (when gate condition first met), last_synced_at, last_comment_id |
 | TrackerProviderAdapter | Interface contract implemented per tracker (GitHub is the only shipped implementation) | provider name, gate-check fn, inbound-fetch fn, outbound-writeback fn — mirrors `IssueManagerInterface`'s adapter shape |
 
