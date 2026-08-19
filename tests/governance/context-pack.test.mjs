@@ -442,15 +442,18 @@ materialized_at: 2026-08-16T00:00:00.000Z
     }
   });
 
-  test("software-domain reviewers reference the same three packs", () => {
+  test("software-domain's five active reviewers reference their expected packs", () => {
     const repo = tmp();
     const domainPath = join(PLUGIN_ROOT, "templates/domains/software/reviewers.yaml");
     const domain = parseYaml(readFileSync(domainPath, "utf8"));
-    const byId = Object.fromEntries(domain.reviewers.map((r) => [r.id, r.context_pack]));
+    const active = domain.reviewers.filter((r) => r.enabled !== false);
+    const byId = Object.fromEntries(active.map((r) => [r.id, r.context_pack]));
     assert.deepEqual(byId, {
-      "structural-architect": "architecture",
-      "security-reviewer": "security",
+      "referent-integrity": "referent-integrity",
+      "wiring-reviewer": "wiring",
       "consistency-analyzer": "consistency",
+      "boundary-reviewer": "security",
+      "termination-reviewer": "base",
     });
     const cfg = loadReviewConfig(repo, { domainReviewers: domain });
     assert.equal(cfg.errors.length, 0, JSON.stringify(cfg.errors));
