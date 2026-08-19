@@ -67,7 +67,10 @@ function ids(report) {
  * @param {string} gateId The gate the domain contributes.
  */
 function seedCustomDomain(dir, domain, gateId) {
-  writeFixture(dir, ".context-index/manifest.yaml", `project:\n  domain: ${domain}\n`);
+  // Top-level `domain:` — the shape real writers (writeDomainKey()) and real
+  // manifests produce; resolveDomain() reads this key, not a nested
+  // `project.domain`.
+  writeFixture(dir, ".context-index/manifest.yaml", `domain: ${domain}\n`);
   writeFixture(
     dir,
     `.context-index/domains/${domain}/gates.yaml`,
@@ -374,7 +377,7 @@ describe("an uncomputable merged view", () => {
       // INVALID_DOMAIN_NAME. Every consumer of `adev domain load-gates`
       // hard-fails on this project, so a doctor that returns a clean bill of
       // health is diagnosing a project nobody can run.
-      writeFixture(dir, ".context-index/manifest.yaml", 'project:\n  domain: "../evil"\n');
+      writeFixture(dir, ".context-index/manifest.yaml", 'domain: "../evil"\n');
       writeFixture(dir, GATES_REL, 'gates:\n  - id: proj-only\n    command: ["npm", "test"]\n');
 
       const report = await runDoctor(dir);
@@ -408,7 +411,7 @@ describe("an uncomputable merged view", () => {
       // non-event — which is itself the strongest statement of the new
       // contract. `mergedGateIds` still rethrows anything uncoded (doctor.mjs);
       // no project state reaches that branch any more.
-      writeFixture(dir, ".context-index/manifest.yaml", "project:\n  domain: fixture-domain\n");
+      writeFixture(dir, ".context-index/manifest.yaml", "domain: fixture-domain\n");
       writeFixture(
         dir,
         ".context-index/domains/fixture-domain/domain.yaml",
