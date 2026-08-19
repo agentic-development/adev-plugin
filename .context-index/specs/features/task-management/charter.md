@@ -37,7 +37,7 @@ This charter retains ownership of *what* the issue board means: lifecycle, tiere
 - Integration into `/adev:specify` (creates a Feature work item bound to the Live Spec it just authored, 1:1)
 - Constitution template section documenting task management
 - Sync block emitted by `/adev:sync` into agent files
-- **GitHub Issues bridge**: bidirectional sync between the local issue board and GitHub Issues, so external contributors can file bugs on GitHub that feed into the local board (and, per the autonomous bugfix loop, an unattended fixer). Carved out of the External Tracker Sync exclusion below by revision 7 (2026-08-19) — see Migration Notes. Scope of the bridge itself (conflict resolution, field mapping, credential handling, which direction is authoritative) is design work for a Live Spec, not fixed by this charter.
+- **GitHub Issues bridge scope carve-out**: this charter permits bidirectional sync between the local issue board and GitHub Issues to exist — it does not implement it. Implementation (adapter interface, sync mechanics, field mapping, credentials) is owned by `autonomous-bugfix-loop/charter.md`, which this scope was carved out for. Carved out of the External Tracker Sync exclusion below by revision 7 (2026-08-19) — see Migration Notes.
 
 ### Out of Scope
 
@@ -134,7 +134,7 @@ This charter retains ownership of *what* the issue board means: lifecycle, tiere
 | Compaction Context | Inject claimed-item context on session compaction | Phase 2 | — |
 | Backfill of legacy flat IDs into tiered model | Manual restructuring is a project-level decision; framework does not auto-migrate | — | — |
 | Removal of deprecated `createEpic`/`createIssue` | Backward compatibility maintained until next major version bump | next major | Tiered Hierarchy adoption |
-| **GitHub Issues Bridge** | Scope carved out 2026-08-19 (revision 7); requirements/design not yet done. Tracked from `.context-index/research/autonomous-bugfix-loop.md`, which needs external bug intake to feed an unattended fixer loop. | 5 | — |
+| **GitHub Issues Bridge** | Scope carved out 2026-08-19 (revision 7). Implementer is `autonomous-bugfix-loop/charter.md` (its Capability Map, Milestone 2), not this charter — this row exists only to record the carve-out and its target module. Do not re-implement here. | 5 | — |
 
 ## Interface Contracts
 

@@ -20,6 +20,9 @@ orchestration engine. A triage-gated GitHub Issues bridge lets external contribu
 bug reports feed that loop without granting anonymous GitHub filers direct influence
 over an autonomous agent with repo write access.
 
+Note: this charter introduces a new skill (`/adev:bugfix-loop`) which requires human
+approval per Architecture Boundaries — approved during brainstorm.
+
 ## Scope and Boundaries
 
 ### In Scope
@@ -90,8 +93,8 @@ over an autonomous agent with repo write access.
 
 | Dependency | Type | Description |
 |-----------|------|-------------|
-| Task Management | internal module | Issue board CRUD via `IssueManagerInterface`; GitHub Issues bridge carve-out landed in `charter.md` revision 7 |
-| Debug Playbooks / `/adev:debug` | internal module | Per-bug worker; source of the `ADEV-DEBUG:` completion token and `--auto` mode |
+| Task Management | internal module | Issue board CRUD via `IssueManagerInterface`; GitHub Issues bridge scope carved out in `charter.md` revision 7, whose Deferred Capabilities table names this charter as the implementer (cross-referenced both directions) |
+| Implementation (owns `/adev:debug`, `skills/debug/SKILL.md`) | internal module | Per-bug worker; source of the `ADEV-DEBUG:` completion token and `--auto` mode, including the Phase 6 confidence gate this charter never overrides |
 | Agent-Reliable State Artifacts | internal module | `lifecycle-state/` JSONL persistence conventions used for attempt-cap tracking |
 | `lib/loop-convergence.mjs` (owned by `review-block-auto-retry.spec.md`) | internal module | Reused bounding logic, keyed per issue instead of per review-revision — high-risk validated spec, coordinate before touching |
 | `/adev:build` (`skills/build/SKILL.md`) | internal module (reference) | Source of the self-re-invocation discipline this skill's loop copies |
