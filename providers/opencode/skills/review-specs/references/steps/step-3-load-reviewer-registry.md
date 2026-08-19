@@ -6,7 +6,12 @@
 adev governance reviewers --json
 ```
 
-The envelope is `{ reviewers, disabled, context_packs, verdict_rules, warnings, errors, notes }`. Abort on any `errors` entry; surface `warnings` and `notes` in the report header. This verb wraps `loadReviewConfig` (`lib/governance/review-config.mjs`), which reads the project's MATERIALIZED `.context-index/governance/review.yaml` and **nothing else**, and fails closed with `REGISTRY_NOT_MATERIALIZED` when the file exists without its marker.
+The envelope is `{ reviewers, model_tiers, disabled, context_packs, verdict_rules, warnings, errors, notes }`.
+
+Each reviewer entry carries a resolved `model_tier` and `model`, mapped from its
+profile's tier through `.context-index/platform-context.yaml:model_tiers`. Step 4
+passes that `model` to the dispatch. A `null` model means the project configures no
+tier for that reviewer, and the dispatch inherits the session model. Abort on any `errors` entry; surface `warnings` and `notes` in the report header. This verb wraps `loadReviewConfig` (`lib/governance/review-config.mjs`), which reads the project's MATERIALIZED `.context-index/governance/review.yaml` and **nothing else**, and fails closed with `REGISTRY_NOT_MATERIALIZED` when the file exists without its marker.
 
 **Comparison view (optional).** To see what the active domain WOULD contribute, so the report can name reviewers the project has not adopted:
 

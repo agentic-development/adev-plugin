@@ -26,7 +26,14 @@ For each subagent-mode reviewer:
 4. Dispatch a subagent with:
    - `description`: `"<reviewer.name> review of <spec-slug>"`
    - `prompt`: the provenance preamble, then the prompt body, then the rendered context pack, then the target spec — the pack sections and the target spec each wrapped in a nonce-scoped fence (`<<<ADEV-PACK-<nonce> …>>>`) so the reviewer can tell repository-sourced content from text the artifact under review merely claims is a delimiter. Both use the **same** nonce from the `renderPack` call, and the preamble names that token.
-   - Tool restrictions, model, env, redaction set all from the adapter's `prepareForDispatch` return.
+   - `model`: the reviewer's resolved model id, taken from the `model` field on its
+     `adev governance reviewers --json` entry (Step 3). **Passing this is not
+     optional.** It is what makes the tier system real: omit it and the subagent
+     inherits the orchestrator's session model, so a reviewer declared `fast`
+     silently runs on the reasoning-tier model. When `model` is `null` the project
+     configures no tier for that reviewer — inherit the session model, which is the
+     documented fallback.
+   - Tool restrictions, env, redaction set all from the adapter's `prepareForDispatch` return.
 
    This composition is owned by `buildReviewerDispatches(...)` in `lib/governance/dispatch-shape.mjs` — that function is the single source of truth for prompt assembly, fencing, and preamble text. The description above is reference only; do not hand-assemble the prompt.
 
@@ -57,4 +64,4 @@ If a subagent-mode or package-mode runner attempts a tool call disallowed by its
 
 ### Tier note
 
-Tier assignment now flows from each reviewer's `profile.model.tier` (resolved via `platform-context.yaml:model_tiers` as today). Bundled defaults continue to use reasoning/capable/fast for architect/security/consistency respectively.
+Tier assignment flows from each reviewer's `profile.model.tier`, resolved through `.context-index/platform-context.yaml:model_tiers` by `adev governance reviewers --json`, which returns the concrete `model` on each reviewer entry. The dispatch MUST pass that value — a resolved tier that is never passed changes nothing, which is how every reviewer silently ran on the session model for two full review rounds (adev-plugin-reviewer-tier-not-applied-wohx). Bundled defaults use reasoning/capable/fast for architect/security/consistency respectively.
