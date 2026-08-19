@@ -439,6 +439,8 @@ Batching and `--parallel` operate at different scopes: batching groups cohesive,
 - No arguments: interactive (asks for symptoms)
 - `--error <message>`: the error message or symptom description
 - `--spec <path>`: scope debugging to a specific spec's domain
+- `--issue <id>`: the board issue tracking this bug — claimed in Phase 1.6 so a second agent cannot fix it in parallel. Claims/releases ownership using `ADEV_ISSUE_OWNER` when set in the environment, falling back to `"${USER}/local"` otherwise. `/adev:bugfix-loop` sets `ADEV_ISSUE_OWNER=bugfix-loop` for its own invocations so its own claim and `/adev:debug`'s internal re-claim/release resolve to the same owner.
+- `--auto`: non-interactive mode — no step blocks waiting for user input
 - `--apply`: apply the fix after diagnosis (prompts for confirmation)
 - `--no-infra`: skip infrastructure preflight checks (user-only)
 

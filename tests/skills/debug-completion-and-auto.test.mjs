@@ -113,3 +113,19 @@ test("debug SKILL.md merges Phase 6 step 3's insight note into step 4's single u
     "the PARKED branch must concatenate FAILING-CHECKS and the insight note in the same update() call",
   );
 });
+
+test("debug SKILL.md resolves ADEV_ISSUE_OWNER for both claim and release (BEH-9, RI-2 fix)", () => {
+  const md = read("skills/debug/SKILL.md");
+  assert.match(md, /ADEV_ISSUE_OWNER/, "Phase 1.6 must document ADEV_ISSUE_OWNER resolution");
+  // RI-2: the same resolved owner value must be reused at the release call,
+  // not re-derived as a second hardcoded "${USER}/local" literal.
+  const claimIdx = md.indexOf("adev issues claim");
+  const releaseIdx = md.indexOf("adev issues release");
+  assert.ok(claimIdx !== -1 && releaseIdx !== -1, "both claim and release commands must be present");
+  const releaseWindow = md.slice(releaseIdx, releaseIdx + 400);
+  assert.match(
+    releaseWindow,
+    /ADEV_ISSUE_OWNER|resolved owner|same owner/i,
+    "the release command must reuse the ADEV_ISSUE_OWNER-resolved owner, not a fresh hardcoded literal",
+  );
+});
