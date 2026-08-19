@@ -11,8 +11,13 @@
  * Spec: .context-index/specs/features/autonomous-bugfix-loop/bug-selection-and-eligibility.spec.md
  */
 
-import { test } from "node:test";
+import { test, describe, it, before, after } from "node:test";
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
+import { fileURLToPath } from "node:url";
 
 import {
   resolvePriorityBound,
@@ -24,6 +29,7 @@ import {
   isAttemptCapExcluded,
   selectNextEligibleBug,
 } from "../../lib/issues/eligibility.mjs";
+import { JsonAdapter } from "../../lib/issues/json-adapter.mjs";
 
 test("resolvePriorityBound: omitted --max-priority defaults to P3 (BEH-8 safety floor)", () => {
   const result = resolvePriorityBound(undefined);
@@ -234,4 +240,102 @@ test("selectNextEligibleBug: deferred-status bug is excluded (round-4 cq-2)", ()
   const issues = [bug({ id: "b1", status: "deferred" })];
   const result = selectNextEligibleBug({ issues, manifest: { modules: [{ slug: "cli" }] }, maxPriorityBound: 3, attemptRecords: new Map() });
   assert.equal(result.bug, null);
+});
+
+// ─── Task 5: `adev issues next` CLI verb — end-to-end dispatch ────────────
+
+const REPO_ROOT = fileURLToPath(new URL("../..", import.meta.url));
+
+function makeProject({ backend = "json" } = {}) {
+  const dir = mkdtempSync(join(tmpdir(), "issues-next-test-"));
+  mkdirSync(join(dir, ".context-index"), { recursive: true });
+  const manifestBody = backend
+    ? `tasks:\n  backend: ${backend}\nmodules:\n  - slug: cli\n`
+    : "modules:\n  - slug: cli\n"; // no tasks.backend key at all
+  writeFileSync(join(dir, ".context-index", "manifest.yaml"), manifestBody);
+  return dir;
+}
+
+function runCli(args, cwd) {
+  return spawnSync(process.execPath, [join(REPO_ROOT, "cli/index.mjs"), "issues", "next", ...args], {
+    cwd,
+    encoding: "utf8",
+  });
+}
+
+describe("adev issues next — CLI", () => {
+  let noBackendDir, emptyBoardDir, seededDir, seededBugId, blockedOnlyDir;
+
+  before(async () => {
+    noBackendDir = makeProject({ backend: null });
+
+    emptyBoardDir = makeProject();
+    await new JsonAdapter(emptyBoardDir).init();
+
+    seededDir = makeProject();
+    const adapter = new JsonAdapter(seededDir);
+    await adapter.init();
+    const created = await adapter.create({ title: "seeded eligible bug", type: "bug", priority: 2 });
+    await adapter.update(created.id, { affected_modules: ["cli"] });
+    seededBugId = created.id;
+
+    // Isolated fixture for the dependency-blocking regression: this board's
+    // ONLY bug is blocked. Reusing `seededDir` (which already carries an
+    // unrelated eligible bug) would make a false-negative dependency check
+    // undetectable — the pre-existing bug would win the tie-break regardless
+    // of whether the blocker was ever consulted.
+    blockedOnlyDir = makeProject();
+    const blockedAdapter = new JsonAdapter(blockedOnlyDir);
+    await blockedAdapter.init();
+    const blocker = await blockedAdapter.create({ title: "blocking feature", type: "feature" });
+    const blocked = await blockedAdapter.create({ title: "blocked bug", type: "bug", priority: 2 });
+    await blockedAdapter.update(blocked.id, { affected_modules: ["cli"], dependencies: [blocker.id] });
+  });
+
+  after(() => {
+    for (const d of [noBackendDir, emptyBoardDir, seededDir, blockedOnlyDir]) rmSync(d, { recursive: true, force: true });
+  });
+
+  it("ISSUE_BOARD_NOT_CONFIGURED when tasks.backend unset", () => {
+    const result = runCli(["--type", "bug", "--json"], noBackendDir);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /ISSUE_BOARD_NOT_CONFIGURED/);
+  });
+
+  it("UNSUPPORTED_TYPE for non-bug --type", () => {
+    const result = runCli(["--type", "feature", "--json"], emptyBoardDir);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /UNSUPPORTED_TYPE/);
+  });
+
+  it("INVALID_PRIORITY_BOUND for P0/P1/malformed", () => {
+    for (const p of ["P0", "P1", "P9"]) {
+      const result = runCli(["--max-priority", p, "--json"], emptyBoardDir);
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /INVALID_PRIORITY_BOUND/);
+    }
+  });
+
+  it('returns {"bug": null} exit 0 when nothing eligible', () => {
+    const result = runCli(["--type", "bug", "--json"], emptyBoardDir);
+    assert.equal(result.status, 0);
+    assert.deepEqual(JSON.parse(result.stdout), { bug: null });
+  });
+
+  it("returns the seeded eligible bug end-to-end", () => {
+    const result = runCli(["--type", "bug", "--max-priority", "P3", "--json"], seededDir);
+    assert.equal(result.status, 0);
+    const parsed = JSON.parse(result.stdout);
+    assert.equal(parsed.bug.id, seededBugId);
+  });
+
+  it("a bug blocked by a non-bug dependency is excluded end-to-end, with no other candidate to mask a false negative", () => {
+    const result = runCli(["--type", "bug", "--max-priority", "P3", "--json"], blockedOnlyDir);
+    assert.equal(result.status, 0);
+    const parsed = JSON.parse(result.stdout);
+    // blockedOnlyDir's only bug is blocked by a `type: "feature"` dependency — if the
+    // dependency map were ever rebuilt from a bug-only fetch, this assertion fails
+    // because the blocked bug would surface with nothing to hide it.
+    assert.equal(parsed.bug, null);
+  });
 });
