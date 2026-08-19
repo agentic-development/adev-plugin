@@ -2,12 +2,21 @@
 
 ---
 charter: autonomous-bugfix-loop
-status: review-passed
+status: implemented
 kind: behavioral
 risk_level: high
 milestone: 1
 revision: 2
 charter-revision: 7
+source-manifest:
+  sha: "967dd8f"
+  files:
+    - .context-index/adrs/0015-lifecycle-state-dual-format-coexistence.md
+    - lib/bugfix-loop-attempts.mjs
+    - templates/manifest-template.yaml
+    - tests/adrs/0015-decision-table.test.mjs
+    - tests/lib/bugfix-loop-attempts.test.mjs
+  computed-at: "2026-08-19T19:46:42.976Z"
 created: 2026-08-19
 updated: 2026-08-19
 ---

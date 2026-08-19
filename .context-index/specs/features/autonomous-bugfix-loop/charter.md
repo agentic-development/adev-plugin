@@ -156,7 +156,7 @@ approval per Architecture Boundaries — approved during brainstorm.
 | Bug Selection Verb | `adev issues next --type bug --max-priority <p> --json` returns the next eligible bug | must-have | 1 | review-passed |
 | ADEV-DEBUG Completion Token | `/adev:debug` emits `ADEV-DEBUG: FIXED \| PARKED \| UNREPRODUCIBLE` per `completion-tokens.spec.md` grammar | must-have | 1 | review-passed |
 | `--auto` Mode on `/adev:debug` | Non-interactive mode skipping the Phase 6 ADR-drafting prompt | must-have | 1 | review-passed |
-| Per-Issue Attempt Cap | Reused `loop-convergence.mjs` bounding, keyed per issue, persisted in `lifecycle-state/` | must-have | 1 | review-passed |
+| Per-Issue Attempt Cap | Reused `loop-convergence.mjs` bounding, keyed per issue, persisted in `lifecycle-state/` | must-have | 1 | implemented |
 | `/adev:bugfix-loop` Skill | Self-re-invoking, one-bug-per-turn loop draining eligible bugs; Load Skill Extensions block included | must-have | 1 | review-passed |
 | Eligibility Filter | Fixed priority/blast-radius heuristic (P2/P3, single-module) gating loop attempts — the safety boundary | must-have | 1 | review-passed |
 | Tracker Provider Adapter Interface | `TrackerProviderAdapter` contract + registry; GitHub is the only shipped implementation | must-have | 2 | review-passed |
