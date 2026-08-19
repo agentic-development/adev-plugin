@@ -7,7 +7,7 @@ kind: behavioral
 risk_level: high
 milestone: 1
 revision: 2
-charter-revision: 4
+charter-revision: 5
 created: 2026-08-19
 updated: 2026-08-19
 ---

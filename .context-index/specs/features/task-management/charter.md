@@ -1,6 +1,6 @@
 ---
 status: approved
-revision: 7
+revision: 8
 updated: 2026-08-19
 ---
 
@@ -67,7 +67,7 @@ This charter retains ownership of *what* the issue board means: lifecycle, tiere
 
 | Entity | Description | Key Attributes |
 |--------|-------------|----------------|
-| WorkItem | Generic tiered work unit (unifies former Epic and Issue entities) | id (dotted or legacy flat), title, status, priority (0-4), type (free-text, default "task"), parent_id (optional), next_action (free-text, optional), plan_ref (optional), plan_task (optional), dependencies [], notes, created, updated |
+| WorkItem | Generic tiered work unit (unifies former Epic and Issue entities) | id (dotted or legacy flat), title, status, priority (0-4), type (free-text, default "task"), parent_id (optional), next_action (free-text, optional), plan_ref (optional), plan_task (optional), dependencies [], notes, **affected_modules (optional array of manifest `modules[].slug` values or reserved safety tags, default empty — see revision 8 Migration Notes)**, created, updated |
 | TierConfig | Manifest-driven tier prefix convention | prefixes (default `{e: Epic, f: Feature, t: Task}`); override via `tasks.tier_prefixes` |
 | IssueBoard | The persistent store containing all work items | backend (file/beads), project-root, tier_config |
 
@@ -197,3 +197,5 @@ Not to be confused with `adev migrate` (format-shape migration of legacy state a
 Revision 7 (2026-08-19) carves GitHub Issues out of the External Tracker Sync exclusion, human-approved during requirements work for `.context-index/research/autonomous-bugfix-loop.md` (which needs external bug intake so contributors can file bugs that an unattended fixer loop then works). Prior research at `.context-index/research/issue-board-merge-conflicts.md` §4b had already modeled this exact tradeoff (rate limits, latency, credential handling, offline-loss, local/remote impedance mismatch) and flagged it as a charter-level decision, not a spec-level one — this revision is that decision. Jira and Linear remain excluded; nothing about their tradeoffs was reconsidered here. The bridge's actual design (conflict resolution, field mapping, which side is authoritative, credential storage) is deferred to a future Live Spec — see the **GitHub Issues Bridge** row in Deferred Capabilities.
 
 **Open follow-up, not resolved by this revision**: `strategic-planning/charter.md` and `context-viz/charter.md` repeat the same "External tracker sync (Jira, Linear, GitHub Issues)" exclusion in their own Out of Scope sections. Those charters were not amended here — their exclusions may now be inconsistent with this one and should be reviewed separately before anyone relies on GitHub Issues sync from those modules' contexts.
+
+Revision 8 (2026-08-19) adds `affected_modules` to `WorkItem`, driven by architecture review of `autonomous-bugfix-loop/charter.md`'s `bug-selection-and-eligibility` spec: three independent reviewers found that spec's safety-boundary exclusion (BEH-6/BEH-7 — "the modules implementing the review gate, the convergence detector, the retry loop") had no producer anywhere in the codebase, and that `manifest.yaml`'s `modules[]` granularity is too coarse to express it (the `lib` slug covers all of `lib/`, including unrelated code, alongside the safety-critical `lib/loop-convergence.mjs`). `affected_modules` closes that gap as an **optional**, human/maintainer-supplied field, deliberately not auto-inferred from issue content — see `bug-selection-and-eligibility.spec.md` BEH-6/BEH-7/BEH-10 for the consuming behavior and its fail-closed default (an untagged WorkItem is excluded from autonomous attempt, not silently permitted). This keeps classification authority with a human rather than parsing potentially-adversarial issue text (relevant once the GitHub bridge lands), and sidesteps `modules[]`'s coarseness by also accepting a small set of reserved safety tags (`review-gate`, `convergence-detector`, `retry-loop`, `bugfix-loop`) alongside real module slugs.
