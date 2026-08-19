@@ -498,6 +498,24 @@ Exit codes: `0` success, `1` argument error / `CONFLICTING_BATCH_FLAGS` / `INVAL
 
 **Implementation:** `lib/cli/implement.mjs`. **Called by:** `/adev:implement` only — `/adev:route` does not call `batches`.
 
+#### `implement resolve-depth`
+
+**Purpose:** Resolve the effective review depth (`full`|`quick`) for a single plan task, wrapping `lib/implement/review-depth.mjs::resolveImplementReviewDepth()` so `/adev:implement` doesn't inline the precedence chain and floor pass into skill prose.
+
+**Signature:**
+```
+implement resolve-depth --spec <path> --plan <path> --task-id <id> [--tier full|quick] [--review-cycles <n>] [--base-sha <sha>] [--pass provisional|final] [--in-batch] [--had-critical-finding]
+```
+
+**Example:**
+```
+adev implement resolve-depth --spec <s> --plan <p> --task-id t3 --tier quick --review-cycles 2
+```
+
+Exit codes: `0` success — `resolveImplementReviewDepth()` result plus `review_cycles` printed as JSON on stdout; `1` argument error / `INVALID_REVIEW_CYCLES` / `INVALID_SPEC_PATH` / `INVALID_PLAN_PATH` / `INVALID_TIER`; `2` `MISSING_DIFF_RANGE` (final pass without `--base-sha`); `3` `ROUTING_SIDECAR_MISSING` / `ROUTING_ENTRY_MISSING`.
+
+**Implementation:** `lib/cli/implement.mjs`. **Called by:** `/adev:implement` only.
+
 ### `specify`
 
 **Purpose:** Revise a BLOCKED spec from revision N to N+1 using its `.review.md` + `.blockers.md` sidecars (the auto-retry revise loop). Emits a `spec_revised` event.
