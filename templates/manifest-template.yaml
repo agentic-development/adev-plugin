@@ -247,6 +247,12 @@ tasks:
   #   Must be an integer >= 1, or 0; anything else is rejected at load.
   #   List expired leases with `adev issues stale [--json]`.
   # claim_ttl_minutes: 240
+  # bugfix_loop.attempt_cap: per-issue attempt cap for /adev:bugfix-loop's
+  #   auto-retry (per-issue-attempt-cap.spec.md). Default: 2. An issue whose
+  #   AttemptRecord.last_verdict lands on NO_PROGRESS, REGRESSED, or
+  #   BUDGET_EXHAUSTED is excluded from `adev issues next` until cleared.
+  # bugfix_loop:
+  #   attempt_cap: 2
   # legacy_read: enabled | disabled
   #   When set to "enabled" (default) and tasks.json is absent, the json
   #   adapter falls back to reading tasks.md via the shared markdown parser.
