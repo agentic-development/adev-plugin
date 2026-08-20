@@ -31,7 +31,7 @@ import { describe, it, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync } from "node:fs";
-import { registerHooks } from "node:module";
+import { register } from "node:module";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
@@ -227,15 +227,17 @@ describe("adev issues milestone ship", () => {
  * missing callback and a callback returning true are observationally
  * identical. So assert the call site directly.
  *
- * `milestoneShip` is intercepted with `module.registerHooks()` — an in-process
- * loader hook that swaps the module source for a stub. No production seam:
- * `lib/milestones.mjs` and `lib/cli/issues-milestone.mjs` are both untouched
- * by this test, and the stub re-exports the real module (loaded under a
- * distinct `?real=1` URL) so every other binding the verb imports is genuine.
+ * `milestoneShip` is intercepted with `module.register()` — a loader hook
+ * (run from a `data:` URL module, since the hooks thread cannot see this
+ * file's closures) that swaps the module source for a stub. No production
+ * seam: `lib/milestones.mjs` and `lib/cli/issues-milestone.mjs` are both
+ * untouched by this test, and the stub re-exports the real module (loaded
+ * under a distinct `?real=1` URL) so every other binding the verb imports is
+ * genuine. `register()`, not the sync `registerHooks()`, because the latter
+ * needs Node >= 22.15 and CI runs Node 20.
  */
 describe("adev issues milestone ship — confirmFn call site", () => {
   let root;
-  let hooks;
 
   const STUB_SOURCE = `
 export * from ${JSON.stringify(MILESTONES_URL + "?real=1")};
@@ -269,16 +271,16 @@ export async function milestoneShip(projectRoot, name, options = {}) {
       milestoneEntry({ epic_id: epicId, ship_criteria: [{ confirm: "CHANGELOG updated" }] }),
     ]);
     globalThis.__adevShipCalls = [];
-    hooks = registerHooks({
-      load(url, context, nextLoad) {
-        if (url !== MILESTONES_URL) return nextLoad(url, context);
-        return { format: "module", shortCircuit: true, source: STUB_SOURCE };
-      },
-    });
+    const hooksSource = `
+export function load(url, context, nextLoad) {
+  if (url !== ${JSON.stringify(MILESTONES_URL)}) return nextLoad(url, context);
+  return { format: "module", shortCircuit: true, source: ${JSON.stringify(STUB_SOURCE)} };
+}
+`;
+    register(`data:text/javascript,${encodeURIComponent(hooksSource)}`, import.meta.url);
   });
 
   after(() => {
-    if (hooks) hooks.deregister();
     delete globalThis.__adevShipCalls;
     rmSync(root, { recursive: true, force: true });
   });
