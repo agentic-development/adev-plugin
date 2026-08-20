@@ -2,12 +2,12 @@
 spec: .context-index/specs/features/eval-harness/scoring-engine.spec.md
 charter: .context-index/specs/features/eval-harness/charter.md
 date: 2026-08-20
-verdict: PASS_WITH_NOTES
-review-round: 8
+verdict: PASS
+review-round: 9
 rigor-tier: quick
 tier-source: explicit --tier flag (overrides risk_level medium -> full)
-last-reviewed-revision: 8
-file-sha: fdd58d532d330b289936d45efff9a28c74201fb4647235a5c0e2cd96c5cd517f
+last-reviewed-revision: 9
+file-sha: d8ae8effc31222b353a34ab62c17507539cb493fe6fa54fe005e27dc4c702834
 ---
 
 # Architecture Review: scoring-engine
@@ -15,15 +15,15 @@ file-sha: fdd58d532d330b289936d45efff9a28c74201fb4647235a5c0e2cd96c5cd517f
 > **Date:** 2026-08-20
 > **Spec:** .context-index/specs/features/eval-harness/scoring-engine.spec.md
 > **Charter:** .context-index/specs/features/eval-harness/charter.md
-> **Verdict:** PASS_WITH_NOTES
-> **Round:** 8 (revision 8; rounds 1-3 and 6 BLOCKed, rounds 4, 5 and 7 passed)
+> **Verdict:** PASS
+> **Round:** 9 — final round before operator handoff (rounds 1-3 and 6 BLOCKed; rounds 4, 5, 7 and 8 passed)
 > **Rigor tier:** quick (single synthesized reviewer; explicit `--tier quick` overrode the `medium` risk policy's `review_mode: full`)
 
-## Scope of This Round
+## Scope and Bar for This Round
 
-Revision 8 closes round 7's two warnings and applies its suggestion. Scope was the amended BEH-12 final clause, new task-map row 72, the amended end-to-end test row 71, and Acceptance Criteria lines 96-97. BEH-1 through BEH-11 have passed review and were confirmed undisturbed.
+This round was run at a deliberately raised bar: structural findings only, cosmetics let go, because the verdict goes to a human operator rather than into another revision cycle. Scope was the replaced Acceptance Criterion (line 98), the widened docs task row, the decoy-env-var wording on the end-to-end test row, and the new re-anchoring task row for `tests/skills/eval-default-rubric.test.mjs`. BEH-1 through BEH-12 have all passed review and were confirmed undisturbed.
 
-Round 7 passed and opened the gate; the author re-opened it rather than editing past a PASS, the same call made after revision 5. Both remaining findings concern the *wording* of the new criteria, not the design.
+Nothing structural was found. The single suggestion below is recorded for completeness and explicitly does not require action before planning.
 
 ## Registry Notes
 
@@ -35,7 +35,7 @@ Loader warnings surfaced by `adev governance reviewers --json` (profile-posture 
 
 Errors: none. `verdict_rules.blocker_threshold`: 1.
 
-Context-pack note: the parent charter (20258 bytes) exceeded the pack's 16384-byte per-file cap and was truncated in the rendered pack. The reviewer's read-only profile grants Read/Glob/Grep and it was directed to read the full charter plus `skills/eval/SKILL.md`, `docs/cli-reference.md`, `docs/skill-reference.md`, `templates/eval-config-template.yaml`, the two rubric-related skill tests, `tests/lib/session-capture-tool-use.test.mjs`, `scripts/run-tests.mjs`, and `lib/session-capture.mjs` from disk.
+Context-pack note: the parent charter (20258 bytes) exceeded the pack's 16384-byte per-file cap and was truncated in the rendered pack. The reviewer's read-only profile grants Read/Glob/Grep and it read the full charter, `skills/eval/SKILL.md`, `templates/eval-config-template.yaml`, `docs/cli-reference.md`, `lib/profiles/index.mjs`, and `tests/skills/eval-default-rubric.test.mjs` from disk.
 
 ## Reviewers Dispatched
 
@@ -54,92 +54,99 @@ Per the `quick` tier branch, the registry's specialist reviewers (`consistency-a
 
 ## Quick Synthesized Reviewer (quick-synthesized-reviewer)
 
-**Verdict:** PASS_WITH_NOTES
+**Verdict:** PASS
 
-Zero blockers. Two warnings, one suggestion.
+Zero blockers, zero warnings, one suggestion.
 
-### SA-1 — severity: warning
+### CON-1 — severity: suggestion
 
-- **Location:** Acceptance Criteria, line 97
-- **Finding:** AC 97 reads "No emitter of the `--rubric` argument anywhere in the repository passes a path to the shipped rubric — skill, provider mirrors, and `docs/cli-reference.md` all use the keyword." The shape is an unbounded universal followed by a bounded enumeration of three, and the two halves disagree. A repo-wide grep for the forbidden pattern matches beyond the three named surfaces — in archival review and validate artifacts that intentionally preserve historical quotes of the broken invocation. Read literally, "anywhere in the repository" is therefore perpetually false, or else requires a "live emitter versus archival record" judgment that no predicate in the spec draws. The enumeration is checkable; the universal prefix is not.
-- **Recommendation:** Narrow AC 97 to the exact checkable set, or scope it to an explicit grep over `skills/**`, `providers/**`, and `docs/**` excluding `.context-index/`.
+- **Location:** Acceptance Criteria, line 98
+- **Finding:** The static test's scope (`skills/**`, `providers/**`, `docs/**`) does not cover a hand-edited `.context-index/evals/config.yaml` pointing its `rubric:` key at a resolved shipped-rubric path.
+- **Recommendation:** Optionally note it as a known-scope limitation, or leave it for a future capability. Not required for this round.
 
-### SA-2 — severity: warning
+> A **per-reviewer** verdict is never BLOCK. BLOCK is the *consolidated* verdict computed from post-cap findings across all reviewers. Zero blockers and zero warnings — only `suggestion` severity — gives the consolidated PASS in the header.
 
-- **Location:** Task-map row 72 / `docs/cli-reference.md` signature prose
-- **Finding:** Row 72 changes only the example line. Verified on disk: the surrounding signature prose at lines 821-834 still states "`--rubric <path>` — a rubric YAML file, containment-checked against the project root", with no mention of the `default` keyword or the plugin-root containment branch BEH-11 adds. Once row 72 lands, the page shows `--rubric default` in an example sitting immediately below prose asserting that every `--rubric` value is a project-root-contained path — internally inconsistent, and describing a contract BEH-11 supersedes. AC 97 is framed around *emitters*, and prose describing the contract is not an emitter, so it does not catch this.
-- **Recommendation:** Widen row 72 to update the `--rubric <path>` bullet so it describes the `default` keyword branch (BEH-11) alongside the path branch (BEH-9).
+## Predicate Verification (verification point 1)
 
-### SA-3 — severity: suggestion
+Both the orchestrator and the reviewer executed AC 98's predicate independently against the tree and agree exactly.
 
-- **Location:** Task-map row 71, end-to-end test
-- **Finding:** Row 71 does not state that the decoy `CLAUDE_PLUGIN_ROOT` must be set per child process rather than by mutating `process.env` in place. Property (2) — plugin root outside the project root — almost certainly forces a spawned child in practice, which naturally aligns with the safe `env:`-option pattern that 20 of the 21 existing files use. But the spec does not say so, and the one exception (`tests/lib/session-capture-tool-use.test.mjs`) shows the in-process pattern already exists here.
-- **Recommendation:** One-line implementation note pinning the safe form rather than relying on precedent.
+```
+grep -rnE -- "--rubric[ =][^ ]*default-rubric\.yaml" skills/ providers/ docs/
+```
 
-> A **per-reviewer** verdict is never BLOCK. BLOCK is the *consolidated* verdict computed from post-cap findings across all reviewers. Zero blockers with at least one warning gives the consolidated PASS_WITH_NOTES in the header.
+**Result: exactly two matches** — `docs/cli-reference.md:851` and `:852` — which are precisely the two lines the docs task row is written to fix. The predicate terminates cleanly, matches nothing legitimate, and returns zero once that row lands. It is dischargeable as specified.
 
-## Orchestrator Verification Notes
+**The `--rubric` anchor is load-bearing, and confirmed tight enough.** Seven mentions of `default-rubric.yaml` live in the same scoped directories and must survive:
 
-**1. SA-1's falsifier is real, and broader than the reviewer found.** Running the repo-wide grep independently, the forbidden pattern appears in four places outside `docs/cli-reference.md`, excluding session logs:
-
-| Match | Nature |
+| Location | Why it is legitimate |
 |---|---|
-| `.context-index/specs/features/eval-harness/scoring-engine.review.md:88-89` | Round 7's report, quoting the two doc lines as evidence |
-| `.context-index/specs/features/eval-harness/scoring-engine.validate.md:92,101,103` | The validate report, quoting the failing invocation and its `UNSAFE_SCORE_PATH` output (an absolute-path variant the exact-string grep misses) |
-| `.context-index/sessions/2026-08-20-c857b3f.md:22` | A session log |
-| **`.context-index/specs/features/eval-harness/scoring-engine.spec.md:72`** | **Task-map row 72 itself**, which quotes the forbidden pattern in order to describe the fix |
+| `skills/eval/default-rubric.yaml:3` | The rubric file's own header comment naming where it ships |
+| `skills/eval/SKILL.md:118` | Documents where the shipped rubric lives — descriptive prose, not a flag emission |
+| `skills/eval/SKILL.md:288` | Config-block comment explaining what `default` resolves to |
+| Both provider mirrors of lines 118 and 288 (4 lines) | Kept in sync by the parity gate |
 
-The last one is the sharpest form of the finding and the reviewer did not reach it: **the spec that states AC 97 is itself a repository-wide match for the pattern AC 97 says appears nowhere.** Any literal grep check discharging AC 97 fails on the criterion's own document. This is not a reason to weaken the requirement — it is a precise demonstration that the universal quantifier is the wrong instrument, and that the author's stated preference for narrow-and-checkable over broad-and-aspirational should govern here.
+A looser implementation — grepping for any occurrence of `default-rubric.yaml` in the scoped directories, dropping the `--rubric` anchor — would false-positive on all seven, including the rubric file's own self-reference, and the test could never pass. AC 98's phrasing ("any `--rubric` value whose path component ends in `default-rubric.yaml`") pins the narrow form, and `SKILL.md:118`'s survival after BEH-12 is unambiguous because it emits no argument.
 
-Note also that the exact-string grep is itself insufficient: `validate.md:101` carries an absolute plugin-cache path ending in `skills/eval/default-rubric.yaml`, which a naive literal predicate would miss. Whatever check discharges AC 97 needs to be specified alongside the criterion, not left for a planner to invent.
+This is the substantive difference from revision 8. The criterion is no longer an assertion a reader must adjudicate; it is a command with a determinate answer, and it becomes a test rather than a claim.
 
-**2. `docs/cli-reference.md` signature prose — SA-2 confirmed on disk.** Lines 821-834 read as the reviewer describes. Confirmed.
+## The `.context-index/` Exclusion (verification point 2)
 
-**3. `docs/cli-reference.md` still showing the old example is expected, not a defect.** Revision 8's job was to *require* the fix; row 72 performs it during implementation. Explicitly excluded from the verdict.
+**Rated acceptable — not a blind spot worth acting on, and the reasoning is worth recording since the author asked to know now rather than discover it later.**
 
-## Answers to the Five Verification Points
+The candidate was `.context-index/evals/config.yaml`: a live input, not an archive, living under the excluded path, whose `rubric:` value the skill reads and forwards to `adev eval score --rubric`. Four facts settle it:
 
-1. **AC 97 is aspirational as worded, not checkable.** The bounded enumeration is discharge-able; the unbounded prefix is falsified by archival artifacts and by the spec itself. See SA-1 and orchestrator note 1. The author's instinct to prefer narrow and checkable is correct and this is the case for acting on it.
+1. **The file does not exist in this repository** — `.context-index/evals/` holds only `model-routing-eval.md`. It is generated on demand by `/adev:eval --configure`.
+2. **What generates it is safe.** `templates/eval-config-template.yaml` scaffolds `rubric: default`, the keyword, not a path.
+3. **The predicate would miss it for two independent reasons**, not one: the directory exclusion, *and* the fact that the predicate is anchored on the literal `--rubric` flag while config.yaml carries a bare `rubric:` key. Removing the exclusion would therefore not catch it either — which means the exclusion is not the thing to change.
+4. **The failure mode is loud, not silent.** If a user hand-wrote `rubric: skills/eval/default-rubric.yaml` into a consumer project's config, that path passes BEH-9 containment (it resolves under the project root) but no such file exists there, so the run fails on the read with a named error. It is a correctness footgun, not a containment or security gap, and it announces itself.
 
-2. **The decoy-env-var property does not introduce a flakiness source — the risk is contained, with one residual gap.** `scripts/run-tests.mjs` spawns `node --test <files...>`, and Node's test runner isolates per file by process, so the in-process `process.env` mutation in `tests/lib/session-capture-tool-use.test.mjs` cannot leak into the hook tests that read `CLAUDE_PLUGIN_ROOT` (`session-capture`, `session-start`, `session-end`, `pre-compact`, `lifecycle-gate-equivalence`) — different files, different processes. The new BEH-11 test lands in a different file again, and its own "plugin root outside the project root" property pushes toward a spawn-with-`env:` implementation, which is the pattern 20 of 21 existing files already use. Residual gap: the spec does not *mandate* the safe form. That is SA-3, a one-line fix.
+AC 98 scopes its verifiable claim explicitly to three shipped directories and does not claim to cover locally-generated, non-shipped config. That is the correct scope discipline — it is exactly what replaced revision 8's unbounded universal, and widening it again would reintroduce the defect this revision fixed. Recorded as CON-1 at suggestion severity for a future round if anyone wants defence in depth.
 
-3. **No fifth live emitter.** The four known surfaces (skill, two provider mirrors, `docs/cli-reference.md`) remain the complete live set. Everything else swept came back clean or benign:
-   - `templates/eval-config-template.yaml` already scaffolds `rubric: default` — correct, not an emitter of the forbidden pattern.
-   - `docs/skill-reference.md:470` documents the *skill's* `--rubric <path>` flag and passes no shipped-rubric path.
-   - `tests/skills/eval-layer3-scoring-verb.test.mjs:9` asserts only `/adev eval score/` — passes either way, so it neither emits nor guards.
-   - `tests/skills/eval-default-rubric.test.mjs` derives the rubric path *from SKILL.md prose* rather than hardcoding it. Worth flagging to the implementer, not as a defect: BEH-12 changes that prose, so this test either breaks or silently stops testing what its header says it exists to test. Its own comment — that a test hardcoding the path "would still pass if the skill later pointed somewhere else, which is the exact drift being fixed" — makes it the test most likely to need attention when BEH-12 lands.
-   - What the grep *did* surface repo-wide is archival, and its significance is to SA-1 rather than to the emitter set.
+## New Material in Revision 9 (verification point 3)
 
-   Standing caveat, unchanged: four surfaces were each found by a different mechanism and none by the test suite, so "no fifth emitter" is a statement about what this sweep reached, not a proof of completeness. The durable fix is the mechanical check SA-1 asks for — a specified predicate, run by something, beats another careful manual sweep.
+Each of the four changes was checked against the live tree:
 
-4. **The two adjacent gaps:** (a) the `docs/cli-reference.md` signature prose is a **real gap**, promoted to SA-2. (b) the config-key nesting mismatch (`llm_judge.rubric` in the template versus the skill's flat `rubric:` reference) is a **non-issue for this spec** — pre-existing, unrelated to the shipped-default path, and harmless because the config route and the step-3 fallback resolve to the same outcome when the nested key is missed. Out of scope; worth a separate issue if anyone wants the resolution order and the template to agree.
+- **Docs task row (widened).** Confirmed both the broken example *and* the "every `--rubric` value is project-root-contained" signature prose are still present on disk — consistent with "required but not yet implemented", which is the correct state for a review-pending spec.
+- **Decoy-env-var wording.** Checked against `getPluginRoot()` in `lib/profiles/index.mjs`; confirmed `__dirname`-derived with no environment fallback, matching BEH-11's citation exactly. The spawned-process `env:` requirement now pins the safe form rather than relying on the precedent of 20 of 21 files.
+- **Re-anchoring task row.** Confirmed `tests/skills/eval-default-rubric.test.mjs` derives its regex from the still-surviving prose at `SKILL.md:118`, so the task is well-scoped and the test is not silently broken by BEH-12.
+- **AC 98.** Verified above.
 
-5. **Round 7's warnings are closed at the source, not relocated.** SEC-1 is answered by test property (4) on row 71. Orchestrator note 3 is answered by row 72 plus AC 97 — though row 72's scoping leaves the prose inconsistency SA-2 names. SA-1 of round 7 is applied: BEH-12 now cites `tests/sync/provider-skill-parity.test.mjs` by name. No new defect in the round-8 diff beyond the two warnings.
+No structural defects found in any of them.
 
 ## Charter-Constraint Check
 
-Both charter constraints remain satisfied at revision 8 and neither is implicated in any finding:
+Both charter constraints this spec exists to honour are satisfied at revision 9:
 
-- **Split-delta invariant** — untouched by revisions 6-8, which concern rubric resolution rather than scoring. The halves remain separately addressable.
-- **ScoreComparison outcome set** — not re-opened. No new outcome names; `SCORE_DEFAULT_RUBRIC_MISSING` and `SCORE_INVALID_THRESHOLD` are error codes.
+- **Split-delta invariant** — honoured and untouched by revisions 6-9, which concern rubric resolution rather than scoring. The deterministic and judged halves remain separately addressable, and the number-or-status model keeps "earned nothing", "could not be judged" and "nothing to judge" distinguishable, which is what makes `judge-attributable` classification computable downstream.
+- **ScoreComparison outcome set** — not re-opened at any point across nine rounds. `INSUFFICIENT_EVIDENCE` and `NOT_SCORED` are half-value statuses; `SCORE_DEFAULT_RUBRIC_MISSING`, `SCORE_INVALID_THRESHOLD` and the rest are error codes. No parallel outcome vocabulary was introduced.
 
-## Charter Capability Map — Deliberate Deviation (unchanged from round 7)
+## Charter Capability Map — Deliberate Deviation (unchanged from rounds 7 and 8)
 
-Step 7 directs a passing verdict to set the parent charter's Capability Map row to `review-passed`. Not applied, for the same reason recorded in round 7: the row for "Scoring engine and `adev eval score`" reads `implemented`, having advanced there legitimately after round 5 passed and the capability was built across 11 tasks and 12 commits. Writing `review-passed` over it would regress real lifecycle progress. The Step 7 rule assumes review precedes implementation; rounds 6-8 are re-reviews of an already-implemented capability, which it does not anticipate. The row is left at `implemented`, flagged rather than done silently.
+Step 7 directs a passing verdict to set the parent charter's Capability Map row to `review-passed`. Not applied, for the third time and the same reason: the row for "Scoring engine and `adev eval score`" reads `implemented`, having advanced there legitimately after round 5 passed and the capability was built across 11 tasks and 12 commits. Writing `review-passed` over it would regress real lifecycle progress. The Step 7 rule assumes review precedes implementation; rounds 6-9 are re-reviews of an already-implemented capability, which it does not anticipate. The row is left at `implemented`, flagged rather than done silently.
+
+**Operator note:** this is a genuine gap in `/adev:review-specs` Step 7, not a one-off. Any re-review of an already-implemented capability hits it. Worth an issue against the skill.
 
 ## Reviewer-Output Compliance
 
-No blocker this round, so the mandatory `blocker_id` / `section_anchor` requirement went unexercised. Across eight rounds the fields were emitted correctly in rounds 1, 2 and 6, absent in round 3, and untested in rounds 4, 5, 7 and 8 — still consistent with the intermittent-failure hypothesis on P1 `adev-plugin-quick-reviewer-blocker-id-s0et`.
+No blocker this round, so the mandatory `blocker_id` / `section_anchor` requirement went unexercised. Final tally across nine rounds: emitted correctly in rounds 1, 2 and 6; absent in round 3; untested in rounds 4, 5, 7, 8 and 9. Consistent with the intermittent-failure hypothesis on P1 `adev-plugin-quick-reviewer-blocker-id-s0et`, which remains open.
 
-## Process Note
+## Operator Handoff Summary
 
-The heuristic being filed from round 7 — that the surfaces were each caught by a different mechanism and none by the test suite — gets a further data point here, in an unexpected direction. Revision 8's response to that blindness was to write a universal criterion ("no emitter anywhere"), and the criterion turns out to be unfalsifiable by grep because the repository archives its own history, including inside the spec that states it. The lesson generalises: when the answer to "we keep missing surfaces" is a broader assertion, the assertion needs its checking predicate specified in the same breath, or it converts a known gap into an unverifiable claim.
+Nine rounds, converging monotonically and without regression: a contradiction in the scoring model; that fix incompletely applied; a boundary case at `threshold = 100`; a traceability gap; a section-ordering nit; then — after the spec was planned, implemented and failed validate — an integration defect whose fix reached the callee but not the caller; the caller obligation with unpinned provenance; a fourth emitter in the docs; an unverifiable criterion written to prevent a fifth; and finally a specified predicate that discharges cleanly. No defect was ever reintroduced once fixed at the root.
 
-Two framework defects remain open and still block the automated path: `adev specify revise` cannot edit spec body content (`adev-plugin-revise-loop-no-content-edits-q6q0`), and `adev report --type step` stamps no revision (`adev-plugin-gkfv.3`), so all eight rounds project under `byRevision: {"1": ...}` with `lastReviewedRevision` unset.
+**Recommendation to the operator: proceed to `/adev:plan`.** The spec is behaviourally complete, its security boundary is pinned to an unforgeable source, its caller obligation is contractual, and its one universally-quantified claim has been replaced by an executable check.
+
+Three open items travel with it, none blocking:
+
+1. **CON-1** — `.context-index/evals/config.yaml` sits outside the predicate's scope by design. Loud failure mode; defence-in-depth only.
+2. **Three framework defects** that made this review slower than it should have been, all open: `adev specify revise` cannot edit spec body content (`adev-plugin-revise-loop-no-content-edits-q6q0`), so every revision here was hand-made; `adev report --type step` stamps no revision (`adev-plugin-gkfv.3`), so all nine rounds project under `byRevision: {"1": ...}` with `lastReviewedRevision` unset; and the quick reviewer intermittently omits `blocker_id` (`adev-plugin-quick-reviewer-blocker-id-s0et`). Together they mean the automated review-block retry loop cannot currently converge unaided.
+3. **The Step 7 re-review gap** described above.
+
+The durable lesson, already being filed as a heuristic: the defect surfaces here were each caught by a different mechanism — validate, review, an orchestrator grep — and none by the test suite, because a suite running where `<ADEV_ROOT>` and the project root coincide is structurally blind to this class. Revision 9's answer, an executable predicate rather than a broader assertion, is the right shape of fix.
 
 ---
 
 ## Summary
 
-**Total findings:** 3 (0 blockers, 2 warnings, 1 suggestion)
-**Action required:** None blocking; the spec is ready for `/adev:plan`. Two cheap edits are worth folding in first: narrow AC 97 to a scoped, mechanically checkable predicate (SA-1 — note it is currently falsified by the spec's own task-map row 72), and widen task row 72 to update `docs/cli-reference.md`'s signature prose as well as its example (SA-2). SA-3 is a one-line note pinning the decoy env var to a per-child-process form. Separately, flag `tests/skills/eval-default-rubric.test.mjs` to the implementer: it derives the rubric path from SKILL.md prose that BEH-12 changes.
+**Total findings:** 1 (0 blockers, 0 warnings, 1 suggestion)
+**Action required:** None. The spec is ready for `/adev:plan`. CON-1 is optional and can be recorded as a known-scope limitation or deferred.

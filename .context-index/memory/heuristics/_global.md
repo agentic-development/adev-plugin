@@ -61,3 +61,19 @@ contradicted-by: []
 created: 2026-05-14
 updated: 2026-05-14
 ---
+
+---
+id: universal-claims-need-a-predicate
+scope: _global
+title: A universal coverage claim must ship with the predicate that checks it
+pattern: When closing a coverage gap in a spec or acceptance criterion, state the executable check alongside the claim — the exact command or match, and the paths it runs over. Scope it to live surfaces (skills/, providers/, docs/) and exclude directories that archive review and validate artifacts, since those necessarily quote the pattern being forbidden. Match on the meaningful component rather than an exact string, so equivalent forms (absolute vs repo-relative) are both caught.
+anti-pattern: Answer a repeatedly-missed surface by widening the assertion — "no occurrence anywhere in the repository". An unbounded universal followed by a bounded list of examples cannot be discharged, and reads as coverage while providing none. The failure is self-demonstrating: a criterion forbidding a pattern must quote that pattern to describe itself, so a literal grep fails on the criterion's own document.
+confidence: low
+evidence:
+  - path: .context-index/specs/features/eval-harness/scoring-engine.review.md
+    date: 2026-08-20
+    source: learn
+contradicted-by: []
+created: 2026-08-20
+updated: 2026-08-20
+---
