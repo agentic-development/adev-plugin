@@ -71,3 +71,4 @@
 {"event":"reviewer_report","step":"review","reviewer":"boundary-reviewer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"round9: BD-1 title-unfenced warning carried forward unchanged; 1 suggestion","ts":"2026-08-20T01:18:55.017Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"reviewer_report","step":"review","reviewer":"termination-reviewer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"round9: TR-3 stale-notice visibility warning carried forward; 3 suggestions","ts":"2026-08-20T01:18:55.095Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"step_completed","step":"review","verdict":"BLOCK","ts":"2026-08-20T01:19:36.399Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"spec_revised","from_revision":9,"to_revision":10,"addressed_blocker_ids":["wiring-reviewer:write-only-state:17c01480"],"unresolved_blocker_ids":[],"ts":"2026-08-20T01:24:52.702Z","diagnostic_warnings":["adev/frontmatter-present"]}
