@@ -2,13 +2,12 @@
 spec: .context-index/specs/features/eval-harness/scoring-engine.spec.md
 charter: .context-index/specs/features/eval-harness/charter.md
 date: 2026-08-20
-verdict: BLOCK
-review-round: 6
+verdict: PASS_WITH_NOTES
+review-round: 7
 rigor-tier: quick
 tier-source: explicit --tier flag (overrides risk_level medium -> full)
-last-reviewed-revision: 6
-blockers-sidecar: scoring-engine.blockers.md
-file-sha: b22134f83b395c928db9fe5b2dc0589008384b0eace86d3372c63d6b749638f2
+last-reviewed-revision: 7
+file-sha: eab50163a57d80cad859f175975345a40b498826104555c5770bb98efb2d6709
 ---
 
 # Architecture Review: scoring-engine
@@ -16,15 +15,15 @@ file-sha: b22134f83b395c928db9fe5b2dc0589008384b0eace86d3372c63d6b749638f2
 > **Date:** 2026-08-20
 > **Spec:** .context-index/specs/features/eval-harness/scoring-engine.spec.md
 > **Charter:** .context-index/specs/features/eval-harness/charter.md
-> **Verdict:** BLOCK
-> **Round:** 6 (revision 6; rounds 1-3 BLOCKed, round 4 PASS_WITH_NOTES, round 5 PASS)
+> **Verdict:** PASS_WITH_NOTES
+> **Round:** 7 (revision 7; rounds 1-3 and 6 BLOCKed, round 4 PASS_WITH_NOTES, round 5 PASS)
 > **Rigor tier:** quick (single synthesized reviewer; explicit `--tier quick` overrode the `medium` risk policy's `review_mode: full`)
 
 ## Scope of This Round
 
-Revision 5 passed review, was planned, implemented across 11 tasks and 12 commits, and then failed `/adev:validate` on a reproduced integration defect. Revision 6 is the spec-side fix. This review targets the new material — BEH-11, three new Error Cases rows, two new Acceptance Criteria lines, one new task-map row — and does not re-open BEH-1 through BEH-10, which passed at revision 5 and are confirmed untouched.
+Revision 7 answers round 6's two security blockers: BEH-12 is new (the caller obligation), BEH-11 is amended (plugin-root provenance pinned to `getPluginRoot()`, `CLAUDE_PLUGIN_ROOT` named as forbidden), two task-map rows and four Acceptance Criteria lines are new or changed. BEH-1 through BEH-10 passed at revision 5 and were confirmed undisturbed.
 
-Both blockers are in the new material. Both are security-boundary findings. Neither reopens settled ground.
+Both round-6 blockers are closed at the root. The remaining findings are about proving the fix rather than about the fix.
 
 ## Registry Notes
 
@@ -36,7 +35,7 @@ Loader warnings surfaced by `adev governance reviewers --json` (profile-posture 
 
 Errors: none. `verdict_rules.blocker_threshold`: 1.
 
-Context-pack note: the parent charter (20258 bytes) exceeded the pack's 16384-byte per-file cap and was truncated in the rendered pack. The reviewer's read-only profile grants Read/Glob/Grep and it was directed to read the full charter, `skills/eval/SKILL.md`, `lib/evals/score-schema.mjs`, `lib/evals/score.mjs`, `lib/cli/eval.mjs`, `lib/evals/rubric.mjs`, and `cli/index.mjs` from disk. All findings cite specific lines in those files.
+Context-pack note: the parent charter (20258 bytes) exceeded the pack's 16384-byte per-file cap and was truncated in the rendered pack. The reviewer's read-only profile grants Read/Glob/Grep and it was directed to read the full charter plus `skills/eval/SKILL.md`, both provider mirrors, `lib/cli/eval.mjs`, `lib/profiles/index.mjs`, and `cli/index.mjs` from disk, and to grep for every `adev eval score` call site.
 
 ## Reviewers Dispatched
 
@@ -55,93 +54,99 @@ Per the `quick` tier branch, the registry's specialist reviewers (`consistency-a
 
 ## Quick Synthesized Reviewer (quick-synthesized-reviewer)
 
-**Verdict:** FAIL
+**Verdict:** PASS_WITH_NOTES
 
-Two blockers, one suggestion. Both blockers carried valid `blocker_id` and `section_anchor`, validated with `parseBlockerId`.
+Zero blockers. One warning, one suggestion.
 
-### SEC-1 — severity: blocker
+### SEC-1 — severity: warning
 
-- **Location:** Actionable Task Map / BEH-11 wiring
-- **blocker_id:** `quick-synthesized-reviewer:skill-passes-resolved-path-not-keyword:c0163abf`
-- **section_anchor:** `actionable-task-map`
-- **Finding:** `skills/eval/SKILL.md` is the only real caller of `adev eval score --rubric`, and it resolves the rubric *before* invoking the verb. Its documented resolution order names the shipped default as the absolute path `<ADEV_ROOT>/skills/eval/default-rubric.yaml`, and its invocation line reads `adev eval score --rubric <resolved rubric path>`. The literal string `default` is therefore never what the verb receives — it receives a pre-resolved absolute plugin-cache path.
+- **Location:** Behaviors BEH-11 / Actionable Task Map, end-to-end regression test row
+- **Finding:** The prohibition on reading `CLAUDE_PLUGIN_ROOT` is pinned by an Acceptance Criteria line ("no code path reads it from the environment"), but the mandatory three-property end-to-end test the task-map row requires — real `dispatch()` wiring, plugin root outside the project root, an assertion on the argv the skill's documented flow passes — never requires setting a conflicting `CLAUDE_PLUGIN_ROOT` and asserting it is ignored. An implementation can satisfy every literal test requirement in the row while never behaviourally proving env-var immunity. A regression that reintroduced `process.env.CLAUDE_PLUGIN_ROOT` as a fallback would be caught only by code review, not by the test the spec mandates.
+- **Recommendation:** Add a fourth required property to the task-map row (or a dedicated BEH-11 unit test): during the end-to-end run, set `CLAUDE_PLUGIN_ROOT` to a decoy path and assert the shipped rubric — not the decoy — is what loads.
 
-  BEH-11 only teaches the CLI verb to special-case the literal token. It does nothing for a caller that resolves the keyword upstream. That absolute path still fails BEH-9's project-root containment in any real install, so **the validate-caught defect reproduces end-to-end even after BEH-11 ships correctly in isolation**. No task-map row and no acceptance criterion requires updating SKILL.md's resolution order.
-- **Recommendation:** Add a BEH-11-scoped task-map row *and* an acceptance criterion requiring SKILL.md to stop pre-resolving `default` and instead pass the literal token through as `adev eval score --rubric default`, verified by the same regression test that exercises a differing plugin root.
-
-**Orchestrator verification — confirmed.** Read `skills/eval/SKILL.md` directly. Its `Rubric resolution` section states "The shipped default rubric is `<ADEV_ROOT>/skills/eval/default-rubric.yaml`", its step 3 is "Otherwise the shipped rubric", and its scoring invocation is `adev eval score --rubric <resolved rubric path> --input <verdict file path>`. The finding holds exactly as stated.
-
-This is the sharpest possible version of the question the author asked — "does BEH-11 close the hole or relocate it?" The answer is neither: as specified, BEH-11 does not reach the code path where the defect occurs.
-
-### SEC-2 — severity: blocker
-
-- **Location:** Behaviors, BEH-11
-- **blocker_id:** `quick-synthesized-reviewer:plugin-root-provenance-unpinned:657a9f82`
-- **section_anchor:** `behaviors-beh-11`
-- **Finding:** BEH-11 never states how "the plugin root" is derived at runtime, and the verb contract does not currently supply one. `cli/index.mjs` defines a trustworthy, non-caller-controllable `PLUGIN_ROOT` (`resolve(__dirname, "..")`, line 16), but `dispatch()` passes verb modules only `{ projectRoot, argv, manifest }` — `PLUGIN_ROOT` is never plumbed through. `lib/cli/eval.mjs`'s signature is `run({ projectRoot, argv })`, with no plugin-root input at all. Meanwhile `process.env.CLAUDE_PLUGIN_ROOT` is an established read elsewhere in this codebase (`lib/session-capture.mjs:715`).
-
-  An implementer wiring BEH-11 therefore finds no plugin root on the verb contract and a precedented, low-friction environment-variable source close to hand. That source is caller-settable: `CLAUDE_PLUGIN_ROOT=/etc adev eval score --rubric default` would turn BEH-9's benign refusal into an attacker-directed file read. That is the hole relocated and worsened, not closed.
-- **Recommendation:** BEH-11 must require the plugin root be sourced from a `__dirname`-derived constant — either the `PLUGIN_ROOT` `cli/index.mjs` already computes, plumbed through `dispatch()`/`run()`, or `getPluginRoot()` — and must explicitly prohibit env-var or any other caller-influenced derivation, as a normative clause rather than commentary.
-
-**Orchestrator verification — confirmed, with one moderating fact the reviewer did not mention.** Every factual claim checks out: `run({ projectRoot, argv })` at `lib/cli/eval.mjs:40`; `mod.run({ projectRoot, argv: verbArgs, manifest })` at `cli/index.mjs:2066` with no plugin root; `process.env.CLAUDE_PLUGIN_ROOT` at `lib/session-capture.mjs:715`.
-
-The moderating fact: `getPluginRoot()` in `lib/profiles/index.mjs` is an importable, `__dirname`-derived, safe source an implementer could simply use. So the accurate framing is "the spec leaves provenance open and the lowest-friction path is unsafe", not "only an unsafe path exists". **That moderates likelihood, not severity, and it does not lift the blocker** — this entire round exists because an assumption about what an implementer would obviously do proved wrong at validate. A security boundary that depends on the implementer picking the right one of two available sources is not specified.
+This is the round-6 SEC-2 concern one layer out. The rule is now stated normatively; what is still missing is a test that would fail if the rule were broken. Given that this spec's entire history is defects surviving until something executed them, that gap is worth closing before implementation rather than after.
 
 ### SA-1 — severity: suggestion
 
-- **Location:** Error Cases table (implementation-side)
-- **Finding:** `lib/evals/score-schema.mjs` carries inline comments asserting that `SCORE_INVALID_VERDICT_CONTEXT` and `SCORE_INPUT_PARSE_ERROR` are "not in the spec's Error Cases table, which enumerates nine". Revision 6 added rows for both, so those comments are now stale — and one of them explicitly instructs a future reader to "add a one-line row for it to the spec", which has now been done.
-- **Recommendation:** Update the comments during implementation. Implementation-comment drift, not a spec defect; it does not affect this verdict.
+- **Location:** Behaviors, BEH-12
+- **Finding:** BEH-12's when/then clause names only `skills/eval/SKILL.md`; the provider-mirror obligation appears solely in a task-map row and an Acceptance Criteria bullet. This is *not* the unenforced gap round 4's SA-1 described: `tests/sync/provider-skill-parity.test.mjs` runs `scripts/sync-provider-skills.mjs --dry-run` as a quality gate and fails `npm test` on any drift between canonical `skills/` and `providers/{codex,opencode}/skills/`, so a BEH-12 fix to the canonical file cannot land without the mirrors following.
+- **Recommendation:** Cite that parity mechanism by name in BEH-12 or the task-map row, for a reader who does not already know it exists.
 
-> A **per-reviewer** verdict is never BLOCK. BLOCK is the *consolidated* verdict computed from post-cap findings across all reviewers. Two blocker-severity findings against `verdict_rules.blocker_threshold: 1` give the consolidated BLOCK in the header.
+> A **per-reviewer** verdict is never BLOCK. BLOCK is the *consolidated* verdict computed from post-cap findings across all reviewers. Zero blockers and at least one warning give the consolidated PASS_WITH_NOTES in the header.
+
+## Orchestrator Verification Notes
+
+Three checks the orchestrator ran independently. The first two confirm reviewer claims; the third is an additional finding at warning severity that the reviewer noted the existence of but did not pursue. None changes the consolidated verdict, which is PASS_WITH_NOTES either way.
+
+**1. The provider-parity mechanism is real — SA-1's refutation stands.** `tests/sync/provider-skill-parity.test.mjs` exists and runs the real sync script in `--dry-run`, failing on any reported pending update. Its header documents the exact failure mode it was written for: mirrors silently drifting and serving stale skill instructions for weeks. This refutes the orchestrator's own pre-dispatch hypothesis that the mirrors were an unenforced BEH/AC scope mismatch of the round-4 SA-1 kind. They are enforced, by a mechanism outside this spec.
+
+**2. `getPluginRoot()` matches BEH-11's text exactly.** `lib/profiles/index.mjs` derives it as `join(__dirname, "..", "..")` with no environment fallback, and `cli/index.mjs` independently computes `PLUGIN_ROOT = resolve(__dirname, "..")`. BEH-11 names a source that exists and is unforgeable.
+
+**3. `docs/cli-reference.md` still teaches the pattern BEH-12 forbids — orchestrator finding, warning severity.** Lines 850-851 document the verb as:
+
+```
+adev eval score --rubric skills/eval/default-rubric.yaml --input .adev/eval/latest-verdicts.json
+adev eval score --rubric skills/eval/default-rubric.yaml --input .adev/eval/latest-verdicts.json --json
+```
+
+That is a project-root-relative path to the *shipped* rubric. It resolves only because this repository collapses `<ADEV_ROOT>` and the project root — the precise condition that hid the original defect through review, plan, implement and into validate. In any consumer project no such file exists under the project root, so a user copying the documented command gets a failure, and `CLAUDE.md`'s Context Routing table directs agents to `docs/cli-reference.md` as the authority for CLI verb signatures, so an agent may reproduce it too.
+
+Revision 7 fixes the callee (BEH-11), the canonical caller (BEH-12), and the mirrors (by parity). The documented example is a fourth surface that emits this argument and no behaviour, task-map row or acceptance criterion covers it. It is the same defect class as round 6's SEC-1 — the fix reaching some emitters of the argument but not all of them — one surface further out.
+
+Recommendation: extend BEH-12's scope, or add a task-map row, covering `docs/cli-reference.md`'s example so it reads `--rubric default`. Warning, not blocker: it misleads a reader rather than breaking the contract, and the same end-to-end test that proves BEH-12 would not catch it.
 
 ## Answers to the Five Verification Points
 
-1. **Does BEH-11 close the hole or relocate it?** Neither, and the reason is worse than either option the question offered. As specified, BEH-11 never reaches the real call site (SEC-1), and it leaves the containment boundary's own provenance unpinned in a way the codebase's nearest precedent would make caller-controllable (SEC-2). On the narrower sub-question the author raised: **the "literal value `default`" wording itself is precise and sound.** Case variants (`DEFAULT`, `Default`), surrounding whitespace, a trailing slash, `./default`, and encoded forms all fall through to the ordinary BEH-9 path branch. There is no hole in the keyword-matching wording.
+1. **The end-to-end path closes; no unreachable link remains.** Every route by which a `--rubric` value reaches the verb was enumerated and attributed:
 
-2. **Do BEH-9 and BEH-11 partition `--rubric` cleanly?** Yes, for the CLI verb's own argument in isolation. Exactly `"default"` (strict equality) reaches the keyword branch; every other value reaches BEH-9. No value satisfies both; no value satisfies neither. The round-3 class of defect — a region claimed by no behaviour — does not recur here.
+   | Route | Governed by |
+   |---|---|
+   | Skill step 1 — explicit `--rubric <path>` | BEH-9, project-root containment, unchanged |
+   | Config `rubric: default` in `.context-index/evals/config.yaml` | BEH-12 — its trigger ("rubric resolution selects the shipped default") reads broadly enough to cover the config route, not only the step-3 fallback |
+   | Config `rubric: <path>` | BEH-9, ordinary path |
+   | Step-3 fallback, nothing configured | BEH-12 — the case it was written against |
+   | Provider mirrors | Not named in BEH-12's prose, but structurally kept in sync by the parity gate (SA-1) |
+   | `docs/cli-reference.md` example | **Nothing** — orchestrator note 3 above |
+   | Other callers | None. Grepped; only the skill, its two mirrors, docs, and tests invoke the verb |
 
-3. **Is the Error Cases table complete against the implementation?** Yes. All 11 codes in `SCORE_ERROR_CODES` and every throw site in `score.mjs` and `eval.mjs` match the table, with no gap in either direction. `SCORE_DEFAULT_RUBRIC_MISSING` is correctly absent from the shipped constant because BEH-11 is not implemented yet — expected, not a defect. The two previously-undeclared codes validate flagged are now properly declared.
+   `lib/cli/eval.mjs` currently has no `default` handling at all, which is correct for a review-pending spec ahead of implementation.
 
-4. **Is the regression-test requirement strong enough to survive planning?** Partially — and this is the question that most deserved asking. The task-map row does forbid the collapsed case (plugin root == project root), which prevents a literal repeat of how the defect hid. But two gaps remain:
-   - It does not require the test to exercise the real `dispatch()` -> verb-module wiring end to end. A unit test that stubs an internal helper with a fake plugin root would satisfy the letter of the requirement while proving nothing about how the plugin root is actually obtained — the same gap underlying SEC-2.
-   - It does not require testing SKILL.md's actual resolution flow, which is where SEC-1 lives. A test that invokes `adev eval score --rubric default` directly would pass while the only real caller still passes a resolved path.
+2. **BEH-12 is testable, and the technique is already precedented here.** `tests/skills/eval-layer3-scoring-verb.test.mjs` asserts SKILL.md prose via `readFileSync` plus a regex, which fits the constitution's "skills are primarily markdown" stance, and the mandated end-to-end test goes further by asserting the actual argv through real `dispatch()` wiring rather than a grep. One refinement to the reviewer's answer: **the existing test is precedent for the technique, not sufficient for BEH-12.** Its assertion is `assert.match(layer3, /adev eval score/)`, which passes whether the skill emits `--rubric default` or a resolved path — so it would not catch a BEH-12 regression. The mandated new test is what does the work; the old one only shows the shape is available. Residual limitation, correctly identified: no test can prove a live agent follows markdown prose, only that the documented template is correct if followed. That ceiling is inherent to a markdown-only skill architecture, not a defect of this spec.
 
-   Suggested wording: require an end-to-end CLI invocation through `dispatch()` with the plugin root at a path outside the project root, *plus* an assertion on the argument SKILL.md's documented flow actually passes.
+3. **The env-var prohibition is normative, but under-tested.** It sits as prose inside BEH-11's single when/then rather than as its own clause, but it is tied directly to the "then" branch's containment mechanism and is pinned by a standalone Acceptance Criteria line, so an implementer cannot read it as optional and a reviewer can hold code to it. Adequate as a constraint. The gap is testability, which is SEC-1: nothing the spec mandates would fail if the rule were broken.
 
-5. **New problems in revision 6's material.** SEC-1 and SEC-2, both confined to BEH-11, the task map, and the acceptance criteria. Nothing in BEH-1 through BEH-10 is reopened or disturbed.
+4. **New material introduced only SEC-1 and SA-1**, both stemming from the two new or amended behaviours, plus the orchestrator's docs finding. Nothing structural.
 
-## Assessment of the Rejected Alternatives
-
-The author asked for an assessment of the two paths not taken. Both rejections were correct, and SEC-1/SEC-2 do not change that:
-
-- **Widening containment to permit `ADEV_ROOT`** would loosen a security boundary in this spec *and* in the shipped loader (`lib/evals/rubric.mjs` carries the same latent limitation) to serve one known-good case. Rejecting it was right. Note that SEC-2 is a warning that the *implementation* of the chosen alternative could arrive at an equivalent-or-worse posture by accident, which is an argument for pinning provenance, not for revisiting this decision.
-- **Copying the rubric into each project** would change install semantics and create a drift surface between the shipped rubric and per-project copies. Rejecting it was right.
-
-The keyword approach remains the correct design. Both blockers are about completing it, not replacing it.
+5. **Regression sweep — round 6's blockers closed at the root, not relocated.** SEC-1 of round 6 (keyword branch unreachable) is closed by BEH-12 making the caller obligation contractual. SEC-2 of round 6 (provenance unpinned) is closed by BEH-11 naming `getPluginRoot()` and forbidding `CLAUDE_PLUGIN_ROOT`, verified against the actual source. BEH-1 through BEH-10 show no disturbance.
 
 ## Charter-Constraint Check
 
-Both charter constraints remain satisfied at revision 6; neither is implicated in either blocker:
+Both charter constraints remain satisfied at revision 7 and neither is implicated in any finding:
 
-- **Split-delta invariant** — untouched by revision 6. The halves remain separately addressable and the number-or-status model is unchanged.
+- **Split-delta invariant** — untouched by revisions 6 and 7, which concern rubric resolution rather than scoring. The halves remain separately addressable.
 - **ScoreComparison outcome set** — not re-opened. `SCORE_DEFAULT_RUBRIC_MISSING` is an error code, not a comparison outcome.
 
 ## Reviewer-Output Compliance
 
-**The mandatory-output requirement was exercised this round and satisfied.** Both blockers carried `blocker_id` and `section_anchor`; both parse cleanly under `parseBlockerId`; the sidecar was written with 2 entries and no collisions. Across six rounds the fields were emitted correctly in rounds 1, 2 and 6, absent in round 3, and untested in rounds 4 and 5 — consistent with the intermittent-failure hypothesis on P1 `adev-plugin-quick-reviewer-blocker-id-s0et`, and a data point that the failure is not permanent.
+No blocker this round, so the mandatory `blocker_id` / `section_anchor` requirement went unexercised. Across seven rounds the fields were emitted correctly in rounds 1, 2 and 6, absent in round 3, and untested in rounds 4, 5 and 7 — still consistent with the intermittent-failure hypothesis on P1 `adev-plugin-quick-reviewer-blocker-id-s0et`.
 
 ## Process Note
 
-This round is the strongest available evidence for a claim made in the round-5 report: the value of this gate has depended on a human at every step. Revision 5 passed review, plan, implement and 12 commits before the defect surfaced, and it surfaced only because `/adev:validate` ran in an environment the test suite could not simulate. Two observations follow.
+Round 6's report observed that a test suite running where `<ADEV_ROOT>` and the project root coincide is *structurally* blind to this class of defect. Orchestrator note 3 is the same blindness showing up in a third artifact — the documentation — which strengthens the case for filing that observation as a heuristic independent of this spec, as the author intends. The three surfaces found so far (the verb, the skill, the docs) were each discovered by a different mechanism: validate, review, and an orchestrator grep. None was found by the test suite.
 
-First, a test suite that runs in the repository where `<ADEV_ROOT>` and the project root coincide is structurally blind to this entire class of defect. That is worth a heuristic entry independent of this spec.
-
-Second, the framework defects tracked across earlier rounds remain open and still block the automated path: `adev specify revise` cannot edit spec body content (`adev-plugin-revise-loop-no-content-edits-q6q0`), and `adev report --type step` stamps no revision (`adev-plugin-gkfv.3`), so all six rounds project under `byRevision: {"1": ...}` with `lastReviewedRevision` unset.
+Two framework defects remain open and still block the automated path: `adev specify revise` cannot edit spec body content (`adev-plugin-revise-loop-no-content-edits-q6q0`), and `adev report --type step` stamps no revision (`adev-plugin-gkfv.3`), so all seven rounds project under `byRevision: {"1": ...}` with `lastReviewedRevision` unset.
 
 ---
 
 ## Summary
 
-**Total findings:** 3 (2 blockers, 0 warnings, 1 suggestion)
-**Action required:** Address both blockers before re-review. SEC-1 requires a task-map row and an acceptance criterion covering the `skills/eval/SKILL.md` resolution-order change — without it BEH-11 ships correct and the defect still reproduces. SEC-2 requires BEH-11 to pin plugin-root provenance to a `__dirname`-derived constant and explicitly prohibit caller-influenced derivation. Consider strengthening the regression-test wording at the same time (verification point 4): as written, a conforming test could still miss both blockers. The `.blockers.md` sidecar carries both entries keyed by `blocker_id` for `/adev:specify --revise`.
+**Total findings:** 3 (0 blockers, 2 warnings, 1 suggestion)
+**Action required:** None blocking; the spec is ready for `/adev:plan`. Two warnings are worth folding in first, both cheap: add a decoy-`CLAUDE_PLUGIN_ROOT` property to the mandated end-to-end test (SEC-1), so the env-var prohibition has a test that would fail if broken; and bring `docs/cli-reference.md`'s example onto `--rubric default` (orchestrator note 3), so the documentation stops teaching the pattern BEH-12 forbids. SA-1 is a one-line citation of the existing parity gate.
+
+## Charter Capability Map — Deliberate Deviation
+
+Step 7 of `/adev:review-specs` directs a PASS/PASS_WITH_NOTES verdict to set the parent charter's Capability Map row to `review-passed`. That step was **not** applied this round, deliberately.
+
+The row for "Scoring engine and `adev eval score`" currently reads `implemented`. It advanced there legitimately: revision 5 passed review at round 5, and the capability was then planned and implemented across 11 tasks and 12 commits. Writing `review-passed` over `implemented` would regress a status that reflects real, completed lifecycle progress.
+
+The Step 7 rule assumes the ordinary ordering, where review precedes implementation and the row has not yet advanced past it. Rounds 6 and 7 are re-reviews of an already-implemented capability — the case the rule does not anticipate. Regressing the row is destructive and carries no benefit, so the row is left at `implemented`. Flagged here rather than performed silently.
