@@ -1,0 +1,13 @@
+[
+  { "id": "spec_criteria_referenced", "value": "met", "evidence": "tests/a.test.mjs:12 names BEH-11 verbatim" },
+  { "id": "tests_accompany_source", "value": "met", "evidence": "the diff pairs every changed source file with a test" },
+  { "id": "no_debug_residue", "value": "met", "evidence": "no added line introduces console.log or TODO" },
+  { "id": "no_disabled_tests_added", "value": "met", "evidence": "no added test line carries skip, only, or todo" },
+  { "id": "error_paths_asserted", "value": "met", "evidence": "tests/a.test.mjs:40 asserts a non-zero exit" },
+  { "id": "exported_symbols_documented", "value": "met", "evidence": "lib/x.mjs:8 carries a doc comment above the export" },
+  { "id": "readability_naming", "value": "met", "evidence": "lib/x.mjs:4 names the export after what it returns" },
+  { "id": "separation_of_concerns", "value": "not_met", "evidence": "lib/x.mjs:30 mixes containment and rendering" },
+  { "id": "spec_intent_fidelity", "value": "met", "evidence": "lib/x.mjs:22 handles the spec's missing-file edge case" },
+  { "id": "idiomatic_conformance", "value": "met", "evidence": "lib/x.mjs:1 imports node built-ins before relative modules" },
+  { "id": "error_handling_placement", "value": "met", "evidence": "lib/x.mjs:18 raises a coded error naming the failing input" }
+]
