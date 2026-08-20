@@ -247,6 +247,35 @@ tasks:
   #   Must be an integer >= 1, or 0; anything else is rejected at load.
   #   List expired leases with `adev issues stale [--json]`.
   # claim_ttl_minutes: 240
+  # bugfix_loop.attempt_cap: per-issue attempt cap for /adev:bugfix-loop's
+  #   auto-retry (per-issue-attempt-cap.spec.md). Default: 2. An issue whose
+  #   AttemptRecord.last_verdict lands on NO_PROGRESS, REGRESSED, or
+  #   BUDGET_EXHAUSTED is excluded from `adev issues next` until cleared.
+  # bugfix_loop.reproduction_attempt_limit: bounded reproduction-try limit for
+  #   /adev:debug --auto's Phase 1 (debug-completion-and-auto.spec.md). Default: 3.
+  #   Distinct from bugfix_loop.attempt_cap (per-issue-attempt-cap.spec.md) — this
+  #   counts intra-invocation reproduction tries, never leaving a single
+  #   /adev:debug --auto run; attempt_cap counts completed invocations.
+  # bugfix_loop.excluded_modules: additive list of manifest `modules[].slug`
+  #   values `adev issues next` treats as unconditionally unsafe to attempt
+  #   autonomously (bug-selection-and-eligibility.spec.md BEH-7). Layered ON
+  #   TOP OF, never replacing, the four hardcoded reserved safety tags
+  #   (review-gate, convergence-detector, retry-loop, bugfix-loop), which are
+  #   never manifest-overridable. A bug whose single `affected_modules` entry
+  #   matches either set is excluded from candidacy regardless of priority.
+  # bugfix_loop.tracker_provider: TrackerProviderAdapter to use for GitHub
+  #   Issues sync (tracker-provider-bridge.spec.md). Default: "github". Add a
+  #   new value by implementing TrackerProviderAdapter and registering it in
+  #   lib/provider/tracker-provider-registry.mjs.
+  # bugfix_loop.tracker_link_stale_days: age threshold (days) for the
+  #   stale-tracker-link notice on an already-linked, never-attempted issue.
+  #   Default: 30. Fires at most once per external ref per run.
+  # bugfix_loop:
+  #   attempt_cap: 2
+  #   reproduction_attempt_limit: 3
+  #   excluded_modules: []
+  #   tracker_provider: github
+  #   tracker_link_stale_days: 30
   # legacy_read: enabled | disabled
   #   When set to "enabled" (default) and tasks.json is absent, the json
   #   adapter falls back to reading tasks.md via the shared markdown parser.

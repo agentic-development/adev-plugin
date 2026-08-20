@@ -1,0 +1,83 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "BEH-5 and its acceptance criteria fully specify the --auto skip-and-note behavior; the plan supplies exact prose and tests. No golden sample, but the codebase's own format-note usage is strong precedent. Two files (SKILL.md + shared test suite)."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "BEH-1/2/4 fully specified; task mirrors skills/validate/SKILL.md:588-595 and skills/build/SKILL.md:868-872 nearly verbatim. Mechanical, one file plus shared test suite."
+    },
+    {
+      "task_id": "t3",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.6,
+        "novelty": 0.6
+      },
+      "rationale": "BEH-3/BEH-7 and the Error Cases table are well specified, but the bounded intra-invocation counter has no direct precedent in the codebase (only the sibling attempt_cap doc-comment convention to mirror for the manifest key), touches two source modules (skills/, templates/) plus the shared test suite, and combines counter-tracking, early-exit, and config-default patterns in a new composition."
+    },
+    {
+      "task_id": "t4",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "BEH-8 plus the plan's detailed RI-1 resolution notes pin the exact call site. No curated golden sample for merging three note sources into one update() call across two branches, but it is a bounded extension of an existing single-file write path."
+    },
+    {
+      "task_id": "t5",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 0.8
+      },
+      "rationale": "BEH-9 plus the plan's RI-2/RI-3 resolution notes are explicit. Extends an existing bash env-var-with-fallback pattern already present in the same file (${USER}/local). Two files (SKILL.md + a docs file), mechanical resolve-once-reuse change."
+    },
+    {
+      "task_id": "t6",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 1,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "BEH-6 is fully specified and the task only appends a token name to an existing enumerated carve-out bullet (ADEV-BUILD/ADEV-VALIDATE precedent already in file). Single file, purely mechanical."
+    },
+    {
+      "task_id": "t7",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Non-code coordination task (file a board note); precondition bullet 3 names the requirement though the delivery mechanism ('or an equivalent message') is slightly open-ended. No files touched, mechanical board-note action using the established /adev:issues workflow."
+    }
+  ]
+}

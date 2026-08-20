@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "BEH-8/BEH-9 fully specified with exact error codes and plan-supplied test+impl; reuses interface.mjs's VALID_PRIORITIES/err.code convention (codebase precedent, no curated sample); 2 new files, one module (lib/issues), mechanical mapping table."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "BEH-6/7/10/11 plus an explicit evaluation-order paragraph fully specify behavior; set-membership fail-closed checks have no curated golden sample (heuristics Check 12 is a contrasting, not matching, precedent); single-file extension of eligibility.mjs; composes 4 exclusion sources so scored just below pure-mechanical."
+    },
+    {
+      "task_id": "t3",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "BEH-3/4/5 fully specified, with the sibling per-issue-attempt-cap spec pinning the authoritative 3-value exclusion set; directly wraps existing isClaimStale/isClaimUnexpirable (interface.mjs) and readAttemptRecord (bugfix-loop-attempts.mjs) — close to a direct-match precedent though not a curated samples/ entry; single-file extension, mechanical."
+    },
+    {
+      "task_id": "t4",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "BEH-1/BEH-2 plus review-flagged composition regressions (BEH-8 floor, BEH-4 full-board dependency map) are explicitly enumerated with plan-supplied tests; filter+sort composition over prior predicates has no curated golden sample; single-file extension of eligibility.mjs; composing 4 predicates into one selection function is a minor step above pure mechanical."
+    },
+    {
+      "task_id": "t5",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.4,
+        "novelty": 1
+      },
+      "rationale": "Error Cases table and read-only Postconditions fully specified; near-exact pattern match to lib/cli/issues-stale.mjs and lib/cli/issues-set-modules.mjs (both cited as full-read references); touches 4 files across 3 top-level modules (lib/cli, templates/, docs/) so blast radius scores lower despite no boundaries.yaml rule crossing; wiring-only, mechanical."
+    }
+  ]
+}
