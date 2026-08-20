@@ -47,6 +47,7 @@ The two formats serve two distinct concerns and remain separate:
 | `<slug>.json` | `lib/build-state.mjs` | single JSON snapshot | ❌ gitignored | `strategic-planning/adev-build-skill.spec.md` |
 | `bugfix-loop-attempts.jsonl` | `lib/bugfix-loop-attempts.mjs` | append-only JSON Lines | ✅ yes | `.context-index/specs/features/autonomous-bugfix-loop/per-issue-attempt-cap.spec.md` |
 | `bugfix-loop-runs-<run_id>.json` | `lib/bugfix-loop-run.mjs` | single JSON snapshot | ❌ gitignored | `.context-index/specs/features/autonomous-bugfix-loop/bugfix-loop-skill.spec.md` |
+| `tracker-sync-links.jsonl` | `lib/tracker-sync-links.mjs` | append-only JSON Lines | ✅ yes | `.context-index/specs/features/autonomous-bugfix-loop/tracker-provider-bridge.spec.md` |
 
 ### Alternatives Considered
 

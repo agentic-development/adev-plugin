@@ -263,10 +263,19 @@ tasks:
   #   (review-gate, convergence-detector, retry-loop, bugfix-loop), which are
   #   never manifest-overridable. A bug whose single `affected_modules` entry
   #   matches either set is excluded from candidacy regardless of priority.
+  # bugfix_loop.tracker_provider: TrackerProviderAdapter to use for GitHub
+  #   Issues sync (tracker-provider-bridge.spec.md). Default: "github". Add a
+  #   new value by implementing TrackerProviderAdapter and registering it in
+  #   lib/provider/tracker-provider-registry.mjs.
+  # bugfix_loop.tracker_link_stale_days: age threshold (days) for the
+  #   stale-tracker-link notice on an already-linked, never-attempted issue.
+  #   Default: 30. Fires at most once per external ref per run.
   # bugfix_loop:
   #   attempt_cap: 2
   #   reproduction_attempt_limit: 3
   #   excluded_modules: []
+  #   tracker_provider: github
+  #   tracker_link_stale_days: 30
   # legacy_read: enabled | disabled
   #   When set to "enabled" (default) and tasks.json is absent, the json
   #   adapter falls back to reading tasks.md via the shared markdown parser.

@@ -21,3 +21,10 @@ test('ADR-0015 Decision table registers bugfix-loop-runs-<run_id>.json', () => {
   assert.match(md, /lib\/bugfix-loop-run\.mjs/);
   assert.match(md, /bugfix-loop-skill\.spec\.md/);
 });
+
+test('ADR-0015 Decision table registers tracker-sync-links.jsonl', () => {
+  const md = readFileSync(ADR_PATH, 'utf8');
+  assert.match(md, /tracker-sync-links\.jsonl/);
+  assert.match(md, /lib\/tracker-sync-links\.mjs/);
+  assert.match(md, /tracker-provider-bridge\.spec\.md/);
+});
