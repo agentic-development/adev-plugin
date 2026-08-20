@@ -162,126 +162,108 @@ Display that output to the user verbatim.
 
 ### Milestone Create
 
-`milestone create <name> [--target <YYYY-MM-DD>] [--strategy <manual|tag-only|release-please>] [--check <type>]... [--confirm "<text>"]...`
+```bash
+adev issues milestone create <name> [--target <YYYY-MM-DD>] [--strategy <manual|tag-only|release-please>] [--check <type>]... [--confirm "<text>"]...
+```
 
-Create or update a milestone in `.context-index/milestones.json` (via `lib/milestones.mjs`) with an auto-linked epic.
+Creates the milestone and links a fresh epic to it. Re-running with an existing name updates that milestone in place and creates no second epic, so it is safe to repeat.
 
 **Arguments:**
 - `<name>` (required) — milestone name, must match `[a-zA-Z0-9._-]+`
 - `--target <YYYY-MM-DD>` (optional) — target date for the milestone
-- `--strategy <value>` (optional) — set the release strategy (default: `manual`). Options: `manual` (no git ops at ship time), `tag-only` (git tag + optional GH release), `release-please` (writes release-as to config)
-- `--check <type>` (repeatable) — ship criteria check (e.g., `all_issues_closed`, `gates_pass`)
-- `--confirm "<text>"` (repeatable) — ship criteria confirmation prompt (e.g., `"CHANGELOG updated"`)
+- `--strategy <value>` (optional) — release strategy (default: `manual`). Options: `manual` (no git ops at ship time), `tag-only` (git tag + optional GH release), `release-please` (writes release-as to config)
+- `--check <type>` (repeatable) — auto-checked ship criterion (e.g., `all_issues_closed`, `gates_pass`)
+- `--confirm "<text>"` (repeatable) — manual ship criterion (e.g., `"CHANGELOG updated"`)
 
 **Behavior:**
-1. Validate name and optional target date
-2. Load existing milestones from `.context-index/milestones.json` via `lib/milestones.mjs` (creates file if absent)
-3. If a milestone with the same name exists, update it idempotently (no new epic created)
-4. If new, create a linked epic via `issueManager.createEpic({ title: name, milestone: name })`
-5. Write milestone entry: `{ name, status: "planned", epic_id, target_date, ship_criteria }`
-6. Report the created/updated milestone
+1. Validates the name and the optional target date
+2. Creates the milestones store if it does not exist yet
+3. Updates an existing milestone of the same name idempotently — no second epic
+4. Links a new epic named after the milestone when the milestone is new
+5. Records `{ name, status: "planned", epic_id, target_date, ship_criteria }`
+6. Prints the created or updated milestone
 
-**Implementation:** Call `milestoneCreate(projectRoot, name, options)` from `lib/milestones.mjs`. Pass the issue manager from `getIssueManager(manifest)`.
+Display the command output to the user verbatim.
 
-**Error cases:**
+**Error cases** (exit 1 unless noted):
 
 | Condition | Message | Code |
 |-----------|---------|------|
 | No name argument | Print usage hint | MISSING_NAME |
 | Invalid name | "Invalid milestone name" | INVALID_NAME |
 | Unparseable date | "Invalid date format. Use YYYY-MM-DD." | INVALID_DATE |
-| No backend configured | Warn, still write YAML | NO_BACKEND |
+| No backend configured | Warn, still write the entry | NO_BACKEND |
 | Epic creation fails | Write with `epic_id: null`, warn | EPIC_CREATE_FAILED |
 | Unknown strategy | "Unknown release strategy" | UNKNOWN_STRATEGY |
 
 ### Milestone List
 
-`milestone list`
+```bash
+adev issues milestone list
+```
 
-Display all milestones with status, target date, linked epic, and issue progress.
+Prints every milestone as a Name / Status / Target Date / Epic / Progress table. Progress counts open versus total issues on the linked epic; an `epic_id` that no longer exists on the board is shown as `<id> (broken)`. When nothing is defined it prints `No milestones defined.` instead of an empty table.
 
-**Behavior:**
-1. Load milestones from `.context-index/milestones.json` via `lib/milestones.mjs`
-2. For each milestone, query the issue manager for the linked epic and its child issues
-3. Display a table: Name, Status, Target Date, Epic, Progress (open/total)
-4. If a milestone's `epic_id` references a non-existent epic, show `epic-N (broken)` as a warning
-5. If no milestones exist, display: "No milestones defined. Run `milestone create <name>` to create one."
-
-**Implementation:** Call `milestoneList(projectRoot, options)` from `lib/milestones.mjs`. Pass the issue manager from `getIssueManager(manifest)`.
+Display that output to the user verbatim.
 
 **Error cases:**
 
 | Condition | Message | Code |
 |-----------|---------|------|
-| Malformed JSON | "milestones.json is malformed — cannot parse" | PARSE_ERROR |
+| Malformed store | "milestones.json is malformed — cannot parse" | PARSE_ERROR |
 
 ### Milestone Ship
 
-`milestone ship <name>`
+```bash
+adev issues milestone ship <name> [--yes] [--gate-timeout <ms>]
+```
 
-Evaluate ship criteria, execute the configured release strategy, update status to `shipped`, and close the linked epic.
+Evaluates the milestone's ship criteria and, if they all pass, marks it shipped, closes its epic, and performs the release action its strategy names.
 
 **Arguments:**
 - `<name>` (required) — milestone name to ship
+- `--yes` (optional) — answer every manual confirmation with yes
+- `--gate-timeout <ms>` (optional) — per-gate wall-clock budget (default 300000)
 
 **Release strategies:**
-- `manual` (default) — No git operations. Prints guidance for manual tag/publish.
-- `tag-only` — Creates git tag (`v<name>` for semver). Optionally creates GitHub release draft via `gh` CLI.
-- `release-please` — Writes `release-as` to `release-please-config.json`. Detects and prints open Release PR URL. Does not create tags.
+- `manual` (default) — no git operations; prints guidance for a manual tag or publish
+- `tag-only` — creates the git tag (`v<name>` for semver), optionally a GitHub release draft via `gh`
+- `release-please` — writes `release-as` into `release-please-config.json` and prints the open Release PR URL; creates no tag
 
-Set the strategy with `milestone create --strategy <value>` or call `lib/milestones.mjs` writers directly (do not hand-edit `milestones.json`).
+Set the strategy at creation time with `--strategy`; never hand-edit the milestones store.
 
-**Behavior:**
-1. Validate name, load milestone from `milestones.json` via `lib/milestones.mjs`
-2. If already shipped, report no-op and exit
-3. Run `evaluateShipCriteria(milestone, issueManager, manifest)` — evaluates `all_issues_closed` and `gates_pass` auto-checks
-4. If any auto-check fails, report failures and block ship
-5. For each manual `confirm` criterion, prompt the user: "<text>? (yes/no)". If any rejected, block ship
-6. Resolve release strategy via `resolveStrategy(milestone)` (defaults to `manual` when `release` is null)
-7. Execute strategy-specific release mechanics (see Release strategies above)
-8. Update milestone status to `shipped` in `milestones.json` via `lib/milestones.mjs`
-9. Close linked epic via `issueManager.close(epicId, "Milestone shipped")`
+**The confirmation protocol is the load-bearing part.** Exit 2 means the ship was REFUSED and **nothing was written** — an auto-check failed, a quality gate failed or timed out, or a manual confirmation is unanswered. Without `--yes` every manual confirmation counts as unanswered, so the command lists the pending items and refuses. Relay that list to the user, ask them in chat, and re-invoke with `--yes` once they have confirmed. Never bypass a refusal by editing the store or by reaching past the command.
 
-**Implementation:** Call `milestoneShip(projectRoot, name, options)` from `lib/milestones.mjs`. Pass the issue manager from `getIssueManager(manifest)` and the parsed manifest. For interactive confirms, implement `confirmFn` that prompts the user in chat.
+Exit 1 is a usage error or a lib failure (`MILESTONE_NOT_FOUND`, `BROKEN_EPIC`, `UNKNOWN_STRATEGY`, …). Exit 0 means the milestone shipped; the output names the strategy and the epic that was closed.
 
 **Error cases:**
 
-| Condition | Message | Code |
-|-----------|---------|------|
-| No name argument | Print usage hint | MISSING_NAME |
-| Invalid name | "Invalid milestone name" | INVALID_NAME |
-| Name not found | "Milestone '<name>' not found" | MILESTONE_NOT_FOUND |
-| No valid epic | "No valid linked epic" | BROKEN_EPIC |
-| Auto-check fails | Report failure detail, block | CRITERIA_FAILED |
-| Confirm rejected | "Ship cancelled" | CONFIRM_REJECTED |
-| Tag already exists (tag-only) | "Tag already exists" | TAG_EXISTS |
-| Config not found (release-please) | Falls back to manual with warning | RELEASE_CONFIG_MISSING |
-| Malformed config JSON (release-please) | "Not valid JSON — cannot write release-as" | RELEASE_CONFIG_INVALID |
-| Unknown strategy value | "Unknown release strategy" | UNKNOWN_STRATEGY |
-| Epic close fails | Warn, do not roll back | EPIC_CLOSE_FAILED |
-| No test command | "No test command configured" | NO_TEST_COMMAND |
+| Condition | Message | Code | Exit |
+|-----------|---------|------|------|
+| No name argument | Print usage hint | MISSING_NAME | 1 |
+| Invalid name | "Invalid milestone name" | INVALID_NAME | 1 |
+| Name not found | "Milestone '<name>' not found" | MILESTONE_NOT_FOUND | 1 |
+| No valid epic | "No valid linked epic" | BROKEN_EPIC | 1 |
+| Auto-check fails | Report the failure detail, block | CRITERIA_FAILED | 2 |
+| Quality gate times out | Name the gate and its budget, block | CRITERIA_FAILED | 2 |
+| Confirm unanswered or rejected | Name the pending confirm, block | CONFIRM_REJECTED | 2 |
+| Tag already exists (tag-only) | "Tag already exists" | TAG_EXISTS | 2 |
+| Config not found (release-please) | Falls back to manual with a warning | RELEASE_CONFIG_MISSING | 0 |
+| Malformed config JSON (release-please) | "Not valid JSON — cannot write release-as" | RELEASE_CONFIG_INVALID | 1 |
+| Unknown strategy value | "Unknown release strategy" | UNKNOWN_STRATEGY | 1 |
+| Epic close fails | Warn, do not roll back | EPIC_CLOSE_FAILED | 0 |
 
 ### Milestone Defer
 
-`milestone defer <name> --reason "<text>"`
+```bash
+adev issues milestone defer <name> --reason "<text>"
+```
 
-Set a milestone's status to `deferred` with a required reason.
+Marks a milestone deferred, records why, and defers its linked epic. `--reason` is required. Deferring an already-deferred milestone updates the reason idempotently; a shipped milestone cannot be deferred.
 
-**Arguments:**
-- `<name>` (required) — milestone name to defer
-- `--reason "<text>"` (required) — reason for deferral
+Display the command output to the user verbatim.
 
-**Behavior:**
-1. Validate name and reason (both required)
-2. Load milestone — reject if not found
-3. Reject if milestone is already shipped (ALREADY_SHIPPED)
-4. If already deferred, update the reason idempotently
-5. Set status to `deferred`, save `defer_reason` to `milestones.json` via `lib/milestones.mjs`
-6. If issue manager available, update linked epic status to `deferred`
-
-**Implementation:** Call `milestoneDefer(projectRoot, name, reason, options)` from `lib/milestones.mjs`. Pass the issue manager from `getIssueManager(manifest)`.
-
-**Error cases:**
+**Error cases** (exit 1):
 
 | Condition | Message | Code |
 |-----------|---------|------|
