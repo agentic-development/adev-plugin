@@ -40,3 +40,4 @@
 {"event":"reviewer_report","step":"review","reviewer":"termination-reviewer","severity":"blocker","verdict":"FAIL","notes":"TR-1 blocker: main loop unattended-mode behavior not stated","ts":"2026-08-19T20:48:02.926Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"step_completed","step":"review","verdict":"BLOCK","ts":"2026-08-19T20:49:27.520Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"spec_revised","from_revision":5,"to_revision":6,"addressed_blocker_ids":["referent-integrity:stale-source-citation:2140e22d","termination-reviewer:unsafe-unattended-default:ce3b6559","wiring-reviewer:write-only-state:507380be"],"unresolved_blocker_ids":[],"ts":"2026-08-20T00:14:35.243Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"lifecycle_step","step":"review","status":"started","ts":"2026-08-20T00:15:14.000Z","diagnostic_warnings":["adev/frontmatter-present"]}
