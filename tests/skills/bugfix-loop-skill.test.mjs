@@ -56,3 +56,13 @@ test('bugfix-loop SKILL.md fails fast on --github-sync when the bridge is unavai
   const md = read('skills/bugfix-loop/SKILL.md');
   assert.match(md, /--github-sync[\s\S]{0,600}(not available|not yet implemented|fail fast)/i);
 });
+
+test('using-adev gateway table lists /adev:bugfix-loop', () => {
+  const md = read('skills/using-adev/SKILL.md');
+  assert.match(md, /\/adev:bugfix-loop/);
+});
+
+test('using-adev persona overlay names ADEV-BUGFIXLOOP as persona-exempt', () => {
+  const md = read('skills/using-adev/SKILL.md');
+  assert.match(md, /ADEV-BUGFIXLOOP/);
+});
