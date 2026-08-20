@@ -3,13 +3,13 @@
 ---
 charter: autonomous-bugfix-loop
 kind: skill
-status: review-blocked
+status: review-pending
 risk_level: medium
 milestone: 1
-revision: 5
+revision: 6
 charter-revision: 7
 created: 2026-08-19
-updated: 2026-08-19
+updated: 2026-08-20
 ---
 
 # Skill Spec: /adev:bugfix-loop
