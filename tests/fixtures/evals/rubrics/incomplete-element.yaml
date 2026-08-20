@@ -1,0 +1,37 @@
+# Incomplete-element fixture — exercises BEH-5's RUBRIC_INCOMPLETE_ELEMENT path.
+# Modelled on conforming.yaml and kept valid and flat so it survives parse,
+# nesting, and the required-key pass and reaches the entry-completeness pass.
+#
+# The offender: required_elements[1], id "tests_accompany_source", declares
+# `source` but NO `met_when`. Element[0] is complete, so the error must name
+# the second entry's id.
+
+rubric_id: "fixture-incomplete-element"
+version: 1
+layer: 3
+verdict_values: "met | not_met | unknown (judged criteria) | not_applicable (deterministic elements)"
+
+required_elements:
+  - id: spec_criteria_referenced
+    description: "Every acceptance criterion in the spec is referenced verbatim by an added or modified test"
+    source: "the Live Spec's acceptance-criteria list, matched against test names and assertion messages in the diff"
+    met_when: "each criterion's identifier, or its literal wording, appears in at least one test name or assertion message"
+
+  - id: tests_accompany_source
+    description: "Every changed non-test source file has an added or modified test in the same diff"
+    source: "the diff file list"
+
+quality_dimensions:
+  - id: readability_naming
+    criterion: "Can a developer unfamiliar with this module state what each newly added symbol does from its name and signature alone?"
+    reference: "the matched golden sample in .context-index/samples/, else the naming conventions in the constitution"
+    met_when: "every new symbol's name and signature convey its purpose without reading its body"
+    not_met_when: "at least one new symbol requires reading its body to know what it does"
+    unknown_when: "no golden sample and no naming convention is declared, so there is no anchor to compare against"
+
+layer3_max_points: 25
+required_element_points: 10
+judged_criterion_points: 15
+unknown_policy: "exclude_from_denominator"
+not_applicable_policy: "exclude_from_denominator"
+insufficient_evidence_threshold_percent: 40
