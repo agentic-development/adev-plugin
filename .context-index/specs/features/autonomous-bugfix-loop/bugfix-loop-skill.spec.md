@@ -3,7 +3,7 @@
 ---
 charter: autonomous-bugfix-loop
 kind: skill
-status: review-pending
+status: review-passed
 risk_level: medium
 milestone: 1
 revision: 7

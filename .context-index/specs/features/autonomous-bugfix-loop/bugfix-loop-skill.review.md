@@ -1,16 +1,16 @@
 ---
-last-reviewed-revision: 6
-file-sha: 032015cda3889a1b3c7700ec455625afc59e805c322d749e398afedb40d2d644
+last-reviewed-revision: 7
+file-sha: 06512f47d2f40fe8c9dc6c0cb2daa3e195cc984573aad99feb4436d6922f058d
 ---
 
-# Architecture Review: bugfix-loop-skill (round 6)
+# Architecture Review: bugfix-loop-skill (round 7)
 
 > **Date:** 2026-08-20
 > **Spec:** .context-index/specs/features/autonomous-bugfix-loop/bugfix-loop-skill.spec.md
 > **Charter:** .context-index/specs/features/autonomous-bugfix-loop/charter.md
-> **Verdict:** BLOCK
+> **Verdict:** PASS_WITH_NOTES
 > **Rigor tier:** full
-> **Note:** re-review after round-5 BLOCK. Round 5's three blockers (RI-1 — stale claim about `skills/debug/SKILL.md`'s owner resolution; WR-1 — `bugs_attempted[]` write-only state / no `--max-bugs` enforcement; TR-1 — main loop's unattended-mode behavior unstated) were the specific target of this revision (5 → 6). All three were independently re-verified clean by this round's Referent Integrity, Wiring, and Termination reviewers respectively (see "Verified clean" / TR-1 sections below). This round surfaces three new blockers, all unrelated to round 5's three, that round 5 did not catch.
+> **Note:** re-review after round-6 BLOCK. Round 6's three blockers (CON-1 — stale `charter-revision` frontmatter; RI-1 — new `turns_completed` field not declared in charter's `BugfixLoopRun` Domain Model; WR-1 — `BugfixLoopRun.status` write-only, no named consumer) were the specific target of this revision (6 → 7). All three were independently re-verified resolved by this round's Consistency Analyzer, Referent Integrity, and Wiring Reviewer respectively. This round surfaces zero new blockers.
 
 ## Reviewers Dispatched
 
@@ -31,61 +31,62 @@ file-sha: 032015cda3889a1b3c7700ec455625afc59e805c322d749e398afedb40d2d644
 
 ## Consistency Analyzer (consistency-analyzer)
 
-**Verdict:** PASS_WITH_NOTES
+**Verdict:** PASS
 
-- **CON-1** [**blocker**] (contract, `frontmatter`): The spec's `charter-revision: 7` frontmatter field is stale — the parent `charter.md` is now at `revision: 8` (bumped by a concurrent sibling-agent edit to a different spec under the same charter, observed mid-review; not caused by this spec's own revision-6 content edit). **Orchestrator annotation (independently verified):** the reviewer's cited supporting detail — that the spec's Output Contract (line 40) references "`sync_retry_counts` fields... added in revision 8 to close round-5 review TR-1/TR-2" — does **not** appear anywhere in the spec; this appears to be a fabricated/hallucinated citation from the `reviewer-fast` (haiku-tier) model and should be disregarded. The underlying charter-revision mismatch itself is real, however, and is corroborated independently by Referent Integrity's RI-2 (below), which also flags `sync_retry_counts` as a real, charter-declared field this spec omits from its own field enumeration — a legitimate, non-hallucinated finding distinct from CON-1's fabricated citation. Note also that per `skills/hygiene/SKILL.md` Pass 12, `charter-revision` staleness is that skill's own `CHARTER_STALE` advisory category, not documented as in-scope for `consistency-analyzer`'s stated review scope (naming/pattern/contract/domain-model/terminology/external-ref/cross-cutting/adr-compliance/module-boundary) — this finding is scope-adjacent at best. Retained here as a blocker per the mechanical verdict rule, with this annotation for the human/agent who acts on it.
-- **CON-2** [warning] (pattern, `output-contract`): The spec's line-45 claim that `ADEV-BUGFIXLOOP` is "a fourth terminal skill added to that cross-cutting convention, alongside `build`/`validate`/`debug`" overstates `completion-tokens.spec.md`, which documents only `build`/`validate` as terminals; `debug`'s status as a terminal is established by the sibling `debug-completion-and-auto` spec and shipped code (`skills/debug/SKILL.md`, `using-adev/SKILL.md`), not by `completion-tokens.spec.md` itself.
-- **CON-3** [suggestion] (terminology, `output-contract`): The spec mixes "completion token" and "terminal token" terminology; `completion-tokens.spec.md` consistently uses "completion token." Standardize.
-- Verified clean (no finding): naming, domain-model alignment (aside from CON-1/RI-1's field-enumeration gap), ADR compliance, module boundaries, external-reference compliance.
+No findings.
+
+- Verified clean this round: completion-token grammar (`ADEV-BUGFIXLOOP: COMPLETE|BUDGET_EXHAUSTED|BLOCKED` matches `^ADEV-[A-Z]+: [A-Z_]+$`), Load Skill Extensions block, spine-skill-chaining exclusion, sibling-spec interface alignment (`bug-selection-and-eligibility`, `debug-completion-and-auto`, `per-issue-attempt-cap`, `tracker-provider-bridge`), BEH-9 (`ADEV_ISSUE_OWNER`) already shipped, domain model alignment against charter revision 9, `.gitignore` glob coverage, ADR-0015 reference, naming conventions, coordination notes (ADR-0015 table update, `/adev:work`/`using-adev` routing) present as acceptance criteria.
+- **CON-1 (round-6 blocker) — confirmed resolved.** `charter-revision: 9` now matches the charter's own `revision: 9` (this revision's own charter edit, on top of the sibling `tracker-provider-bridge` bump to 8).
 
 ## Referent Integrity Reviewer (referent-integrity)
 
-**Verdict:** FAIL
+**Verdict:** PASS_WITH_NOTES
 
-- **RI-1** [**blocker**] (undeclared-domain-model-field, `output-contract`): This round's own new `turns_completed` field (added to close round-5's WR-1) is not declared in the charter's `BugfixLoopRun` Domain Model row (`charter.md:113`, which lists exactly `run_id, started_at, max_bugs, max_turns, bugs_attempted[], status, degraded_sync_note, sync_retry_counts`). The spec's field-list bullet closes with "per the charter's Domain Model," which is true for every field it lists except `turns_completed` — the sole invention. Not cosmetic: this is the field `--max-turns` is now checked against, with its own acceptance criterion.
-  - **Recommendation:** Add `turns_completed` to the charter's `BugfixLoopRun` attribute list (next charter revision), or reword so the "per the charter's Domain Model" attribution excludes it and states explicitly that this spec extends the entity (mirroring `per-issue-attempt-cap.spec.md`'s pattern for `curr_blockers`).
-- **RI-2** [warning] (n/a, `frontmatter`): `charter-revision: 7` is stale; charter is at `revision: 8`. Corroborates CON-1's legitimate half without CON-1's fabricated citation.
-- **RI-3** [warning] (n/a, `output-contract`): `/adev:debug --issue <id> --apply --auto` — `--apply` is documented (`skills/debug/SKILL.md:17`) as prompting for confirmation, and nothing verified in `debug-completion-and-auto.spec.md` establishes that `--auto` suppresses that specific prompt. The unattended loop's own contract currently rests on an un-suppressed prompt.
-- **RI-4** [warning] (n/a, `output-contract`): `sync_retry_counts` (charter-declared, written into the same run-state file per the sibling `tracker-provider-bridge` spec) is not enumerated in this spec's own field list, unlike `degraded_sync_note`, which received that treatment.
-- **RI-5** [suggestion] (n/a, `output-contract`): `completion-tokens.spec.md` itself still enumerates only build/validate; recommends the coordinated Task Map addition also register `ADEV-DEBUG`, not just `ADEV-BUGFIXLOOP`.
-- Verified clean (no finding) — round 5's RI-1 re-confirmed genuinely resolved: `skills/debug/SKILL.md:163,168,180` read exactly as the spec now (accurately, past-tense) describes. Also verified clean: `adev issues next/claim/release` flags and usage banners, `ISSUE_ALREADY_CLAIMED`, `ADEV_ISSUE_OWNER` CLI-level honouring, `adev skill-ext load`, `.gitignore` glob, ADR-0015 registration pattern, `degraded_sync_note` sole-writer claim, `per-issue-attempt-cap` BEH-1/2/3 mapping, `FAILING-CHECKS:` block, Persona Output Override carve-out, `single-front-door.spec.md` citation, `/adev:build --resume` precedent, `/adev:work`/`using-adev` insertion points, `tasks.backend`, `crypto.randomUUID()`.
+- **RI-1** [suggestion] (naming, `output-contract`): The `status` field is labeled "the 4-value terminal-state enum" in the field-list bullet, but one of its four values (`running`) is explicitly non-terminal — the very next bullet (the status guard) correctly calls `running` "the only non-terminal value in the charter's enum." Purely a wording inconsistency inside the spec; the enum, its four values, and its charter declaration all check out.
+  - **Recommendation:** Reword to "the 4-value run-status enum (`running` plus three terminal values)".
+- **Round-6 RI-1 (blocker) — confirmed resolved.** `turns_completed (integer, default 0 … added in revision 9 to close round-6 review RI-1)` is now declared in the `BugfixLoopRun` Domain Model row at `charter.md:113`.
+- **Round-6 CON-1 staleness — independently corroborated resolved.** Spec frontmatter `charter-revision: 9` matches `charter.md` frontmatter `revision: 9`.
+- **Round-6 WR-1 — independently corroborated resolved.** `BugfixLoopRun.status` now has a real reader (the "Start-of-turn status guard" bullet), backed by an acceptance criterion.
+- Verified clean (no new finding): all CLI-surface citations (`adev issues next/claim/release`, `adev skill-ext load`), `/adev:debug --issue/--apply/--auto`, `skills/debug/SKILL.md:163,168,180` line-exact citations, `.gitignore:31` coverage, ADR-0015 Decision-section table, `completion-tokens.spec.md:30` grammar, `single-front-door.spec.md:105` citation, `using-adev/SKILL.md:142` carve-out gap (confirmed still outstanding, matching the spec's own coordination note), sibling behavior-ID citations (`per-issue-attempt-cap` BEH-1/2/3, `debug-completion-and-auto` BEH-6/8/9, `tracker-provider-bridge`'s `degraded_sync_note` writer).
 
 ## Wiring Reviewer (wiring-reviewer)
 
-**Verdict:** FAIL
+**Verdict:** PASS
 
-- **WR-1** [**blocker**] (write-only-state, `output-contract`): `BugfixLoopRun.status` (the 4-value terminal-state enum written immediately before the completion token) has no named consumer anywhere in the spec — the new per-turn budget check (this round's own WR-1 fix) reads back only `bugs_attempted.length` and `turns_completed`, never `status`. No sibling spec or `/adev:status`-style surface reads it either. The corresponding acceptance criterion (line 76) tests only that the write is correct, not any producer→consumer path — because none exists. Unlike `degraded_sync_note` (explicitly given a sole-reader treatment in this same spec) or the tracker-bridge spec's `last_synced_at`/`last_comment_id` (explicitly labeled "audit-only, no programmatic reader, by design"), `status` gets neither an explicit reader nor an explicit audit-only carve-out — its intended role is ambiguous.
-  - **Recommendation:** Either name a concrete consumer (e.g., have the manual `--resume`-after-crash path refuse/no-op on an already-terminal `status`, with a test), or explicitly document `status` as audit/inspection-only with no programmatic reader in this charter, the way the tracker-bridge spec does for its own audit fields.
-- **WR-2** [warning] (n/a, `invocation-modes`): The `--resume-run-id`-omitted fallback ("most-recently-modified `bugfix-loop-runs-*.json`") has a named consumer and trigger but no test exercises the actual file-selection logic when multiple run-state files exist.
-- **WR-3** [suggestion] (n/a, `output-contract`): ADR-0015 registration's enforcement test (`tests/adrs/0015-decision-table.test.mjs`, per the sibling `per-issue-attempt-cap` spec's precedent) is never cited by name in this spec's own acceptance criterion.
-- Fully wired, no issue (explicitly re-verified this round): the round-6 fix itself — `bugs_attempted[]`/`turns_completed` per-turn budget check (increment site, consumer, trigger, and dedicated tests for both `--max-bugs` and `--max-turns` no-attempt paths all present); `degraded_sync_note`; `AttemptRecord` write-back; `ADEV_ISSUE_OWNER`/`--owner bugfix-loop` claim parity; the bounded 3-retry claim-failure counter.
+- **WR-1 (round-6 blocker) — confirmed resolved**, informational note retained: `BugfixLoopRun.status` now has a full producer→consumer→trigger→test chain — producer (written `running` at creation, written again once on the terminal turn), consumer (the new "Start-of-turn status guard," named explicitly), trigger (start of every turn, before the budget check — a concrete call site on every invocation), test (acceptance criterion asserting a seeded terminal `status` causes refusal). No circularity: the guard reads the *prior* turn's persisted status, so the terminal turn's own status write happens after its own guard check.
+- **WR-2** [warning] (n/a, `output-contract`, pre-existing/unchanged from round 6): The `ADEV_ISSUE_OWNER=bugfix-loop` propagation chain (loop → env var → `/adev:debug`'s Phase 1.6 re-claim) is wired in prose (named consumer and trigger) but has no acceptance criterion carrying a "verified by a test that..." clause exercising the full chain end-to-end, unlike sibling bullets.
+  - **Recommendation:** Add an acceptance criterion naming an integration test that invokes the loop's claim step with `ADEV_ISSUE_OWNER` set and confirms `/adev:debug`'s Phase 1.6 re-claim succeeds.
+- Fully wired, no issue (re-verified this round): `bugs_attempted[]`/`turns_completed` per-turn budget check, `degraded_sync_note`, `ADEV-BUGFIXLOOP` token, `AttemptRecord` write-back, the bounded 3-retry claim-failure counter, Load Skill Extensions invocation.
 
 ## Boundary Reviewer (boundary-reviewer)
 
 **Verdict:** PASS_WITH_NOTES
 
-- **BD-1** [warning] (path-containment, `invocation-modes`, unchanged from round 5, exposure window widened): `--resume-run-id <id>` still has no stated format validation or containment before being used to build the run-state file path; the new per-turn budget check now dereferences this same file every turn rather than only at resume time.
-- **BD-2** [warning] (privilege-escalation, `invocation-modes`, elevated from round-5's BD-4 suggestion): The new explicit "automatic re-invocation" clause removes any ambiguity that a single up-front human invocation authorizes up to `--max-turns` (default 20) sequential autonomous `/adev:debug --apply` attempts with no incremental checkpoint — a qualitatively broader consent model than `exec-consent.mjs`'s per-action posture, though consistent with the already-shipped `/adev:build` precedent and the charter's recorded brainstorm approval.
-- Items 2 (subprocess interpolation), 3 (input trust), 5 (artifact leakage), 6 (destructive filesystem operations) — clean, no findings, all explicitly re-considered this round including against the new `turns_completed` field and budget-check text.
+- **BD-1** [warning] (path-containment, `invocation-modes`, unchanged from round 6): `--resume-run-id <id>` still has no stated format validation or containment check before being spliced into the `bugfix-loop-runs-<run_id>.json` path, and the per-turn budget check and now the status guard both dereference this file every turn.
+  - **Recommendation:** State that `--resume-run-id` is validated against a strict token pattern (e.g. UUID shape) and/or realpath-contained against the `.context-index/lifecycle-state/` base before use.
+- **BD-2** [suggestion] (input-trust, `invocation-modes`, unchanged from round 6): The `--resume`-without-`--resume-run-id` fallback ("most-recently-modified `bugfix-loop-runs-*.json`") selects and trusts a run-state file purely by glob-match and mtime, with no ownership/schema check before that state drives autonomous claim/attempt behavior.
+  - **Recommendation:** Optionally validate the selected file's `run_id`/schema shape before treating it as authoritative.
+- Items 2 (subprocess interpolation), 4 (privilege posture), 5 (artifact leakage) — clean, no findings, re-considered this round including against the new status-guard text. This revision's targeted edits (charter sync, `turns_completed` registration, status-guard bullet) introduce no new boundary crossings themselves; BD-1/BD-2 are pre-existing gaps surfaced by a fresh full pass, not new to this revision.
 
 ## Termination Reviewer (termination-reviewer)
 
 **Verdict:** PASS
 
-- **TR-1 from round 5 — RESOLVED, independently re-verified.** The new "Re-invocation is automatic, not human-triggered" clause states a concrete, unambiguous, testable mechanism (self-re-invokes via `--resume --resume-run-id`, no human action, stops only by printing the completion token instead of re-invoking), with a matching acceptance criterion.
+No findings.
+
+- Self-re-invocation loop (`--max-turns`/`--max-bugs`): iteration cap, cap-trip verdict (`BUDGET_EXHAUSTED`), and unattended default all clearly stated. No issue.
 - Claim-failure retry loop (3-retry bound): iteration cap, cap-trip verdict, and unattended default all clearly stated. No issue.
-- The new per-turn budget check (`max_bugs`/`max_turns`): iteration cap, cap-trip verdict (`BUDGET_EXHAUSTED`), and unattended default (automatic, no human intervention) all clearly stated. No issue.
-- No other repeating construct identified. No findings.
+- **New this round — the "Start-of-turn status guard":** confirmed to be a one-shot check executed once per turn (read `status`, branch proceed-or-exit), not a repeating construct — out of termination-review scope, correctly so.
 
 ---
 
 ## Summary
 
-**Total findings:** 12 (3 blockers, 7 warnings, 2 suggestions — CON-3 and RI-5, WR-3 not separately double-counted; see per-reviewer sections for exact IDs)
-**Action required:** Address the 3 blockers — CON-1 (charter-revision staleness; note the reviewer's supporting citation was independently found to be fabricated, but the underlying staleness is real and corroborated by RI-2/RI-4), RI-1 (`turns_completed` not declared in the charter's `BugfixLoopRun` Domain Model — this round's own WR-1 fix introduced an undeclared field), and WR-1 (`BugfixLoopRun.status` is write-only, no consumer — a *different* write-only gap than round 5's, on a field this revision did not touch) — then run `/adev:specify --revise --spec .context-index/specs/features/autonomous-bugfix-loop/bugfix-loop-skill.spec.md` to produce revision 7, and re-review.
+**Total findings:** 5 (0 blockers, 2 warnings — WR-2, BD-1; 3 suggestions — RI-1, WR-1's informational note, BD-2)
+**Action required:** None to unblock. The spec is ready for `/adev:plan`. Optionally address the 2 warnings (WR-2: add an explicit wiring test for `ADEV_ISSUE_OWNER` propagation; BD-1: state `--resume-run-id` format validation/containment) and the 3 suggestions in a future revision.
 
-**On round 5's three blockers (RI-1 stale claim, WR-1 bugs_attempted write-only, TR-1 unattended-mode unstated):** All three confirmed genuinely resolved by independent from-scratch verification this round — Referent Integrity re-read `skills/debug/SKILL.md:163,168,180` directly and confirmed the spec's now-past-tense claim is accurate; Wiring Reviewer explicitly re-traced the new `bugs_attempted[]`/`turns_completed` budget-check producer→consumer→trigger→test chain and found it fully wired; Termination Reviewer confirmed the new automatic-re-invocation clause is concrete, unambiguous, and testable. None of round 5's three blockers recur under any reviewer this round.
+**On round 6's three blockers (CON-1, RI-1, WR-1):** All three confirmed genuinely resolved by independent from-scratch verification this round — Consistency Analyzer and Referent Integrity both independently confirmed `charter-revision: 9` matches the charter's own `revision: 9`; Referent Integrity confirmed `turns_completed` is now declared in the charter's `BugfixLoopRun` Domain Model row; Wiring Reviewer explicitly re-traced the new "Start-of-turn status guard" producer→consumer→trigger→test chain and found it fully wired, with no circularity. None of round 6's three blockers recur under any reviewer this round.
 
-**On the new blockers:** CON-1/RI-1/WR-1 are unrelated to each other and to round 5's three. RI-1 and WR-1 are notable in that both are latent gaps in the very fix this revision made for round 5 (RI-1: the new `turns_completed` field was never added to the charter; WR-1: `status`, a pre-existing field, was never wired to a consumer, and its absence became more visible once `bugs_attempted[]`/`turns_completed` — the fields WR-1's round-5 fix *did* wire — set the bar for what "wired" looks like in this spec). CON-1 stems from environmental drift (a sibling agent's concurrent edit to `charter.md` mid-review-cycle) rather than a content defect introduced by this revision's edits themselves.
+**On carried-forward warnings/suggestions:** WR-2 and BD-1/BD-2 are pre-existing, unchanged from round 6 (or round 5, in BD-1/BD-2's case) — this revision's narrowly-scoped edits (charter-revision sync, `turns_completed` charter registration, status-guard consumer bullet) did not target them and did not introduce any new boundary crossings. RI-1 and WR-1's note are new-this-round observations, both cosmetic/informational, neither a blocker.
 
-**Note on `blocker_id`:** Per this project's bundled reviewer prompts (all five reviewers dispatched under a read-only, no-shell-execute profile), no reviewer emits a `blocker_id` for its blocker findings — the prompts explicitly instruct reviewers not to fabricate one. CON-1, RI-1, and WR-1 therefore carry no `blocker_id`. Per the aggregator validation rules (`skills/review-specs/SKILL.md`, Step 6b-bis), a BLOCK finding with no `blocker_id` is logged as a `LEGACY_REVIEWER_OUTPUT` advisory and excluded from the `.blockers.md` sidecar — consistent with rounds 2-5 (all of which also produced zero-`blocker_id` findings and no sidecar). No `.blockers.md` was written for this round, matching that precedent.
+**Note on `blocker_id`:** No blocker-severity findings this round, so no `.blockers.md` sidecar is written (findings.length === 0 clears/omits the sidecar per `lib/blockers-writer.mjs`).
