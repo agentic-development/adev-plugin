@@ -6,7 +6,7 @@ kind: behavioral
 status: review-pending
 risk_level: medium
 milestone: v1
-revision: 4
+revision: 5
 charter-revision: 4
 created: 2026-08-20
 updated: 2026-08-20
@@ -41,12 +41,12 @@ The result keeps the deterministic and judged halves separately addressable. A s
 | Tally with denominator exclusion | Count met/not_met per half, excluding `not_applicable` from the deterministic denominator and `unknown` from the judged one | medium |
 | Insufficient-evidence guard | Validate the threshold is numeric and within `[0, 100]`; compare the `unknown` share against it, and treat an all-`unknown` judged half as insufficient regardless of threshold. Set the judged half's value to the status `INSUFFICIENT_EVIDENCE`, leaving the deterministic half's points and maximum unchanged | medium |
 | Not-scored handling | A half whose rubric declares no entries, or whose deterministic entries are all `not_applicable`, carries the status `NOT_SCORED`; no `NaN` or division-by-zero value is ever produced | small |
-| Status precedence | Enforce that the two statuses are mutually exclusive per half, per BEH-3 and BEH-4, so a half with declared-but-unanswerable criteria resolves to `INSUFFICIENT_EVIDENCE` and never to `NOT_SCORED` | small |
+| Status assignment | Implement BEH-3 and BEH-4 as disjoint preconditions rather than an ordered fallback, so a half with declared-but-unanswerable criteria resolves to `INSUFFICIENT_EVIDENCE` and one with nothing to answer to `NOT_SCORED`, with no region left unclaimed | small |
 | Result assembly | Verdict table plus separately addressable halves, each a number-with-maximum or a status; a blended total only when both halves are numeric | medium |
 | `buildJudgeContext` | Assemble the single-criterion judge context and prove isolation | small |
 | `adev eval score` verb | Wrap the engine; table-with-aggregate output, a `--json` shape, and path containment on `--rubric`/`--input` | medium |
 | Update `skills/eval/SKILL.md` Layer 3 | Replace the in-prose aggregate formula with a call to `adev eval score`, and replace the whole-layer discard with the half-level status reporting this spec defines. Required, not optional: leaving it discarding all of Layer 3 on `INSUFFICIENT_EVIDENCE` while the engine keeps the deterministic half numeric would leave the engine's only in-repo consumer contradicting it | medium |
-| Unit tests | Verdict sets exercising every enum value, both statuses, the precedence rule, and every error code | medium |
+| Unit tests | Verdict sets exercising every enum value, both statuses, the disjoint-region assignment, and every error code | medium |
 
 ## Visual Expectations
 
@@ -61,7 +61,7 @@ Not applicable. This spec defines a library function and a CLI verb with no user
 - [ ] A judged half where every declared criterion resolved `unknown` carries `INSUFFICIENT_EVIDENCE` regardless of the rubric's threshold, including at `threshold: 100` (BEH-3)
 - [ ] A half with no entry to answer carries the status `NOT_SCORED` (BEH-4)
 - [ ] The two statuses are mutually exclusive, and exhaustive over the zero-denominator case: no verdict set produces a half satisfying both, and none reaches the numeric path with nothing answered (BEH-3, BEH-4)
-- [ ] A non-numeric or out-of-range `insufficient_evidence_threshold_percent` is rejected with `SCORE_INVALID_RUBRIC` before any tallying
+- [ ] A non-numeric or out-of-range `insufficient_evidence_threshold_percent` is rejected with `SCORE_INVALID_THRESHOLD` before any tallying (BEH-10)
 - [ ] `skills/eval/SKILL.md` Layer 3 calls `adev eval score` and reports half-level statuses rather than discarding the whole layer
 - [ ] A traversal or unreadable path on `--rubric`/`--input` exits non-zero with its named error and reads nothing (BEH-9)
 - [ ] A `met` or `not_met` verdict with empty evidence is rejected with `SCORE_EMPTY_EVIDENCE` (BEH-5)
@@ -92,6 +92,7 @@ Not applicable. This spec defines a library function and a CLI verb with no user
 - **BEH-7** — **When** `buildJudgeContext(criterion)` is called **then** its output contains that criterion's fields and no other criterion's identifier, no other criterion's verdict, and no running total, so single-criterion isolation is a property of the builder rather than of prose a judge is trusted to honour.
 - **BEH-8** — **When** `adev eval score --rubric <path> --input <path>` runs **then** it emits the verdict table together with the aggregate and never the aggregate alone; `--json` returns one object carrying the table, both halves — each a number or a status — and the blended total when both halves are numeric. A half carrying a status is rendered by that status name, never as `0`.
 - **BEH-9** — **When** either `--rubric` or `--input` resolves outside the project root through traversal or a symlink, or names a file that cannot be read **then** the verb exits non-zero with `UNSAFE_SCORE_PATH` or `SCORE_INPUT_NOT_FOUND` respectively, reporting the offending path verbatim and reading no content, matching the `UNSAFE_RUBRIC_PATH` precedent the shipped loader set.
+- **BEH-10** — **When** the supplied Rubric's `insufficient_evidence_threshold_percent` is non-numeric or falls outside `[0, 100]` **then** the engine throws `SCORE_INVALID_THRESHOLD` naming the value, before any tallying runs. The shipped loader validates that top-level keys are *present*, not that they are well-typed, so the engine checks the one field whose corruption is silent rather than loud: a non-numeric threshold coerces to `NaN`, every share comparison against it returns `false`, and BEH-3's second clause would never fire for any verdict set while the rubric still looked valid. Re-validating one field of an already-loaded Rubric does not make the engine a loader — it reads no file and parses nothing.
 
 ## Postconditions
 
@@ -112,7 +113,8 @@ Not applicable. This spec defines a library function and a CLI verb with no user
 | Element verdict outside `met`/`not_met`/`not_applicable`, or criterion verdict outside `met`/`not_met`/`unknown` | Throw, naming the entry id and the illegal value | `SCORE_INVALID_VERDICT` |
 | Duplicate verdict for one id | Throw, naming the id | `SCORE_DUPLICATE_VERDICT` |
 | Rubric argument is not a Rubric produced by `loadRubric` | Throw, naming the expected origin | `SCORE_INVALID_RUBRIC` |
-| `insufficient_evidence_threshold_percent` is non-numeric, or outside `[0, 100]` | Throw before any tallying, naming the value. The shipped loader validates that top-level keys are *present*, not that they are well-typed, so the engine defends itself rather than trusting the input: a non-numeric threshold makes every share comparison `false`, which would silently disable BEH-3 for all verdict sets | `SCORE_INVALID_RUBRIC` |
+| `insufficient_evidence_threshold_percent` is non-numeric, or outside `[0, 100]` | Throw before any tallying, naming the value (BEH-10). Distinct from `SCORE_INVALID_RUBRIC`, which covers a Rubric of the wrong origin: this one is a well-formed Rubric carrying a field the loader never type-checked | `SCORE_INVALID_THRESHOLD` |
+| Every declared `quality_dimensions` entry resolved `unknown` | Not an error — the judged half carries `INSUFFICIENT_EVIDENCE` regardless of the rubric's threshold (BEH-3) | — |
 | `--rubric` or `--input` escapes the project root by traversal or symlink | Exit non-zero, reporting the path verbatim; read nothing | `UNSAFE_SCORE_PATH` |
 | `--input` names a file that does not exist or cannot be read | Exit non-zero, naming the resolved path | `SCORE_INPUT_NOT_FOUND` |
 | `unknown` share above the rubric threshold | Not an error — the judged half carries the status `INSUFFICIENT_EVIDENCE` and the deterministic half is unaffected | — |
