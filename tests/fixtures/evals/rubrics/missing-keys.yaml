@@ -1,0 +1,40 @@
+# Missing-keys rubric fixture — the conforming shape with exactly three of the
+# twelve REQUIRED_TOP_LEVEL_KEYS removed:
+#
+#   - layer
+#   - unknown_policy
+#   - judged_criterion_points
+#
+# Three, not one, on purpose: BEH-3 requires the loader to report EVERY absent
+# required key in a single error rather than stopping at the first one, and a
+# fixture omitting a single key could not tell an aggregating implementation
+# apart from a short-circuiting one. The three are drawn from different regions
+# of the declaration order (early, middle, late) so an implementation that
+# happened to report only one region would still fail.
+#
+# Everything else stays valid and flat: this fixture must survive the parse and
+# nesting passes to reach the missing-key pass at all.
+
+rubric_id: "fixture-missing-keys"
+version: 1
+verdict_values: "met | not_met | unknown (judged criteria) | not_applicable (deterministic elements)"
+
+required_elements:
+  - id: spec_criteria_referenced
+    description: "Every acceptance criterion in the spec is referenced verbatim by an added or modified test"
+    source: "the Live Spec's acceptance-criteria list, matched against test names and assertion messages in the diff"
+    met_when: "each criterion's identifier, or its literal wording, appears in at least one test name or assertion message"
+    not_applicable_when: "the spec declares no acceptance criteria — record NOT_APPLICABLE"
+
+quality_dimensions:
+  - id: readability_naming
+    criterion: "Can a developer unfamiliar with this module state what each newly added symbol does from its name and signature alone?"
+    reference: "the matched golden sample in .context-index/samples/, else the naming conventions in the constitution"
+    met_when: "every new symbol's name and signature convey its purpose without reading its body"
+    not_met_when: "at least one new symbol requires reading its body to know what it does"
+    unknown_when: "no golden sample and no naming convention is declared, so there is no anchor to compare against"
+
+layer3_max_points: 25
+required_element_points: 10
+not_applicable_policy: "exclude_from_denominator"
+insufficient_evidence_threshold_percent: 40
