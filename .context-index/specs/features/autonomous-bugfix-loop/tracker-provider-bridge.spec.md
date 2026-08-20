@@ -3,11 +3,39 @@
 ---
 charter: autonomous-bugfix-loop
 kind: integration
-status: review-passed
+status: implemented
 risk_level: medium
 milestone: 2
 revision: 10
 charter-revision: 11
+source-manifest:
+  sha: "55e587f"
+  files:
+    - .context-index/adrs/0015-lifecycle-state-dual-format-coexistence.md
+    - cli/index.mjs
+    - lib/bugfix-loop-run.mjs
+    - lib/cli/issues-show.mjs
+    - lib/cli/issues.mjs
+    - lib/cli/tracker-sync.mjs
+    - lib/provider/tracker-provider-interface.mjs
+    - lib/provider/tracker-provider-registry.mjs
+    - lib/provider/tracker-providers/github-tracker-adapter.mjs
+    - lib/tracker-provider-bridge/inbound-sync.mjs
+    - lib/tracker-provider-bridge/outbound-writeback.mjs
+    - lib/tracker-sync-links.mjs
+    - skills/bugfix-loop/SKILL.md
+    - skills/debug/SKILL.md
+    - templates/manifest-template.yaml
+    - tests/cli/issues-show.test.mjs
+    - tests/cli/tracker-sync.test.mjs
+    - tests/lib/github-tracker-adapter.test.mjs
+    - tests/lib/tracker-provider-bridge-inbound.test.mjs
+    - tests/lib/tracker-provider-bridge-outbound.test.mjs
+    - tests/lib/tracker-provider-registry.test.mjs
+    - tests/lib/tracker-sync-links.test.mjs
+    - tests/skills/bugfix-loop-skill.test.mjs
+    - tests/skills/debug-phase1-notes-read.test.mjs
+  computed-at: "2026-08-20T02:29:18.245Z"
 created: 2026-08-19
 updated: 2026-08-20
 ---
