@@ -21,7 +21,13 @@ test("a threshold outside [0, 100] is rejected, naming the value", () => {
 test("the boundary values 0 and 100 are in range and do not throw here", () => {
   // threshold: 100 is explicitly legal — see BEH-3 clause 1, which is the only
   // path that catches an all-unknown judged half at this threshold (Task 5).
-  assert.doesNotThrow(() => scoreRubric(load("threshold-100"), []), /SCORE_INVALID_THRESHOLD/);
+  const completeVerdicts = [
+    { id: "spec_criteria_referenced", value: "met", evidence: "tests/x.test.mjs:12 names criterion 1" },
+    { id: "tests_accompany_source", value: "met", evidence: "the diff pairs every source file" },
+    { id: "readability_naming", value: "met", evidence: "lib/x.mjs:4 names the export" },
+    { id: "separation_of_concerns", value: "not_met", evidence: "lib/x.mjs:30 mixes two responsibilities" },
+  ];
+  assert.doesNotThrow(() => scoreRubric(load("threshold-100"), completeVerdicts), /SCORE_INVALID_THRESHOLD/);
 });
 
 test("threshold validation runs before verdict-set validation", () => {
