@@ -149,8 +149,8 @@ test("hasOpenBlockingDependencies: a dangling dependency id (absent from issuesB
   assert.equal(hasOpenBlockingDependencies(issue, byId), false);
 });
 
-test("isAttemptCapExcluded: NO_PROGRESS/REGRESSED/BUDGET_EXHAUSTED exclude (BEH-5)", () => {
-  for (const verdict of ["NO_PROGRESS", "REGRESSED", "BUDGET_EXHAUSTED"]) {
+test("isAttemptCapExcluded: NO_PROGRESS/REGRESSED/BUDGET_EXHAUSTED/UNREPRODUCIBLE exclude (BEH-5)", () => {
+  for (const verdict of ["NO_PROGRESS", "REGRESSED", "BUDGET_EXHAUSTED", "UNREPRODUCIBLE"]) {
     assert.equal(isAttemptCapExcluded({ last_verdict: verdict }), true);
   }
   assert.equal(isAttemptCapExcluded({ last_verdict: "PASS" }), false);

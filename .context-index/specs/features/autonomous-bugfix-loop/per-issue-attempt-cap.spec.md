@@ -6,19 +6,19 @@ status: validated
 kind: behavioral
 risk_level: high
 milestone: 1
-revision: 2
+revision: 3
 charter-revision: 7
 source-manifest:
-  sha: "967dd8f"
+  sha: "08164c6"
   files:
     - .context-index/adrs/0015-lifecycle-state-dual-format-coexistence.md
     - lib/bugfix-loop-attempts.mjs
     - templates/manifest-template.yaml
     - tests/adrs/0015-decision-table.test.mjs
     - tests/lib/bugfix-loop-attempts.test.mjs
-  computed-at: "2026-08-19T19:46:42.976Z"
+  computed-at: "2026-08-20T13:15:12.347Z"
 created: 2026-08-19
-updated: 2026-08-19
+updated: 2026-08-20
 ---
 
 # Live Spec: Per-Issue Attempt Cap
@@ -43,8 +43,8 @@ updated: 2026-08-19
 
 - **BEH-1** — **When** `/adev:debug --issue <id> --auto` completes with `ADEV-DEBUG: FIXED` **then** the issue's `AttemptRecord.attempts` increments by 1 and `last_verdict` is set to `PASS`.
 - **BEH-2** — **When** `/adev:debug --issue <id> --auto` completes with `ADEV-DEBUG: PARKED` **then** `AttemptRecord.attempts` increments, the attempt's failing quality-gate check IDs are recorded as `curr_blockers`, and `partitionBlockers(prev_blockers, curr_blockers)` is computed **unconditionally** — using an empty `prev_blockers`/`persistent` set when no prior `AttemptRecord` exists, exactly as BEH-5 already assumes — then passed to `evaluateStopCondition` (imported directly, not reimplemented) with `retries_remaining = cap - attempts`, producing `last_verdict` ∈ `{CONTINUE, NO_PROGRESS, REGRESSED, BUDGET_EXHAUSTED}`. This is unconditional specifically so a `cap`-of-1 (or any cap) first attempt that already exhausts `retries_remaining` correctly yields `BUDGET_EXHAUSTED` rather than an unset verdict — gating the call on "a prior attempt exists" would silently skip that case.
-- **BEH-3** — **When** `/adev:debug --issue <id> --auto` completes with `ADEV-DEBUG: UNREPRODUCIBLE` **then** `AttemptRecord.attempts` increments, `last_verdict` is set to `BUDGET_EXHAUSTED` immediately (treated as terminal — a same-context retry has no expected value), and `parked_reason` is set to `"does not reproduce"`. `parked_reason` is diagnostic/audit-only metadata — human-readable via direct inspection of the `lifecycle-state/` JSONL, with no programmatic reader in this charter; it exists so a human clearing a capped issue (BEH-4) can see why without re-running `/adev:debug`.
-- **BEH-4 (consumed by the sibling `bug-selection-and-eligibility` spec — authoritative exclusion set)** — **When** an `AttemptRecord.last_verdict` is `NO_PROGRESS`, `REGRESSED`, or `BUDGET_EXHAUSTED` **then** the issue is excluded from `adev issues next`'s candidacy until a human clears the record. This spec is the sole source of truth for which verdicts exclude an issue; the selection verb's BEH-5 must exclude on exactly this three-value set — `{NO_PROGRESS, REGRESSED, BUDGET_EXHAUSTED}`, not a subset — and any future change to this set is made here first, then propagated to that spec.
+- **BEH-3** — **When** `/adev:debug --issue <id> --auto` completes with `ADEV-DEBUG: UNREPRODUCIBLE` **then** `AttemptRecord.attempts` increments, `last_verdict` is set to `UNREPRODUCIBLE` immediately (treated as terminal — a same-context retry has no expected value), and `parked_reason` is set to `"does not reproduce"`. `last_verdict: UNREPRODUCIBLE` is its own value, distinct from `BUDGET_EXHAUSTED` — an issue that genuinely doesn't reproduce is not the same fact as a run that exhausted its retry budget on real, changing blockers, and conflating the two made `ADEV-BUGFIXLOOP: BUDGET_EXHAUSTED` (a whole-run completion token) and an individual issue's `last_verdict: BUDGET_EXHAUSTED` (a per-issue exclusion marker) read as the same event in logs when they were unrelated (found during pre-merge live testing of this charter). `parked_reason` is diagnostic/audit-only metadata — human-readable via direct inspection of the `lifecycle-state/` JSONL, with no programmatic reader in this charter; it exists so a human clearing a capped issue (BEH-4) can see why without re-running `/adev:debug`.
+- **BEH-4 (consumed by the sibling `bug-selection-and-eligibility` spec — authoritative exclusion set)** — **When** an `AttemptRecord.last_verdict` is `NO_PROGRESS`, `REGRESSED`, `BUDGET_EXHAUSTED`, or `UNREPRODUCIBLE` **then** the issue is excluded from `adev issues next`'s candidacy until a human clears the record. This spec is the sole source of truth for which verdicts exclude an issue; the selection verb's BEH-5 must exclude on exactly this four-value set — `{NO_PROGRESS, REGRESSED, BUDGET_EXHAUSTED, UNREPRODUCIBLE}`, not a subset — and any future change to this set is made here first, then propagated to that spec.
 - **BEH-5** — **When** no `AttemptRecord` exists for an issue **then** it is treated as zero attempts with an empty `prev_blockers` set — matching `evaluateStopCondition`'s existing `prevSet.size > 0` guard, so a first attempt never triggers `NO_PROGRESS` or `REGRESSED`.
 - **BEH-6** — **When** `attempts >= cap` without a `PASS` verdict having been reached **then** `evaluateStopCondition`'s `retries_remaining <= 0` branch fires, producing `BUDGET_EXHAUSTED` — this is the existing function's behavior, verified against, not reimplemented.
 - **BEH-7** — **When** `/adev:debug --issue <id> --auto` is invoked for an issue **then** `/adev:debug` itself has no awareness of the attempt cap or `AttemptRecord` — enforcement is entirely the eligibility filter's responsibility (BEH-4 above), keeping the cap's bounding logic in one place rather than duplicated across the worker and the selector.
@@ -54,7 +54,7 @@ updated: 2026-08-19
 - Every completed `/adev:debug --issue --auto` invocation produces exactly one `AttemptRecord` update (create-if-absent, increment, set `last_verdict`).
 - `AttemptRecord` state persists in `.context-index/lifecycle-state/bugfix-loop-attempts.jsonl` as an append-only event log (per ADR-0015's dual-format convention — this file and its owning module must be added to ADR-0015's Decision-section ownership table as part of implementation), independent of the issue board schema — `task-management`'s `WorkItem` gains no new fields from this spec.
 - `AttemptRecord`'s persisted fields are `issue_id, attempts, last_verdict, curr_blockers, parked_reason, updated_at` — extending the charter's Domain Model with `curr_blockers` (the current attempt's failing check-ID set, or its bounded hash in degraded mode — see Error Cases), persisted specifically so the *next* attempt can read it back as `prev_blockers` for BEH-2's diffing.
-- A `BUDGET_EXHAUSTED`, `NO_PROGRESS`, or `REGRESSED` verdict is durable across loop runs and machine restarts — it is read from disk, not held only in a running loop's memory.
+- A `BUDGET_EXHAUSTED`, `NO_PROGRESS`, `REGRESSED`, or `UNREPRODUCIBLE` verdict is durable across loop runs and machine restarts — it is read from disk, not held only in a running loop's memory.
 
 ### Error Cases
 
@@ -87,7 +87,7 @@ updated: 2026-08-19
 - [ ] `NO_PROGRESS`/`REGRESSED`/`BUDGET_EXHAUSTED` verdicts are computed via `lib/loop-convergence.mjs`'s existing functions, not reimplemented
 - [ ] A first attempt on an issue never triggers `NO_PROGRESS` or `REGRESSED` (matches the underlying function's guard)
 - [ ] A `cap`-of-1 (or any cap) first attempt that already exhausts `retries_remaining` correctly yields `BUDGET_EXHAUSTED`, not an unset verdict (BEH-2's unconditional call)
-- [ ] `UNREPRODUCIBLE` sets `BUDGET_EXHAUSTED` immediately without waiting for further attempts
+- [ ] `UNREPRODUCIBLE` sets `last_verdict` to `UNREPRODUCIBLE` immediately (not `BUDGET_EXHAUSTED`) without waiting for further attempts
 - [ ] `AttemptRecord` state persists in `.context-index/lifecycle-state/` and survives process restarts
 - [ ] `curr_blockers` is persisted per attempt and correctly read back as the next attempt's `prev_blockers`
 - [ ] Degraded-mode fallback persists only a bounded SHA-256 hash of failure output, never raw stdout

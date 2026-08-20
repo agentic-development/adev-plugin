@@ -6,12 +6,12 @@ status: validated
 kind: behavioral
 risk_level: medium
 milestone: 1
-revision: 6
+revision: 7
 charter-revision: 7
 created: 2026-08-19
-updated: 2026-08-19
+updated: 2026-08-20
 source-manifest:
-  sha: "5545be7"
+  sha: "a39dcc1"
   files:
     - docs/cli-reference.md
     - lib/cli/issues-next.mjs
@@ -21,7 +21,7 @@ source-manifest:
     - lib/issues/interface.mjs
     - templates/manifest-template.yaml
     - tests/issues/next.test.mjs
-  computed-at: "2026-08-19T23:50:53.225Z"
+  computed-at: "2026-08-20T13:15:34.355Z"
 ---
 
 # Live Spec: Bug Selection Verb and Eligibility Filter
@@ -51,7 +51,7 @@ source-manifest:
 - **BEH-2** — **When** multiple candidate WorkItems tie on priority **then** the one with the oldest `created` timestamp is selected (FIFO within a priority band).
 - **BEH-3** — **When** a candidate WorkItem is currently claimed with a lease that has not expired (per `tasks.claim_ttl_minutes`) **then** it is excluded from candidacy.
 - **BEH-4** — **When** a candidate WorkItem has one or more open (non-closed) blocking dependencies **then** it is excluded from candidacy.
-- **BEH-5** — **When** a candidate WorkItem's `AttemptRecord.last_verdict` is `NO_PROGRESS`, `REGRESSED`, or `BUDGET_EXHAUSTED` **then** it is excluded from candidacy — this is the exact three-value set the sibling `per-issue-attempt-cap` spec's BEH-4 defines as authoritative; this verb never diverges from it. **When** no `AttemptRecord` exists for a WorkItem **then** it is treated as zero attempts, not excluded.
+- **BEH-5** — **When** a candidate WorkItem's `AttemptRecord.last_verdict` is `NO_PROGRESS`, `REGRESSED`, `BUDGET_EXHAUSTED`, or `UNREPRODUCIBLE` **then** it is excluded from candidacy — this is the exact four-value set the sibling `per-issue-attempt-cap` spec's BEH-4 defines as authoritative; this verb never diverges from it. `UNREPRODUCIBLE` is its own distinct value, not folded into `BUDGET_EXHAUSTED` — an issue that doesn't reproduce and a run that exhausted its retry budget are different facts, and the sibling spec's BEH-3 sets them separately (found during pre-merge live testing of this charter). **When** no `AttemptRecord` exists for a WorkItem **then** it is treated as zero attempts, not excluded.
 - **BEH-6** — **When** a candidate WorkItem's `affected_modules` field (per `task-management/charter.md` revision 8) has more than one entry **then** it is excluded from candidacy, regardless of priority — multiple declared modules means the fix's blast radius isn't confined to one area.
 - **BEH-7 (safety boundary)** — **When** a candidate WorkItem's single `affected_modules` entry is in the eligibility filter's excluded-module list (the reserved safety tags `review-gate`, `convergence-detector`, `retry-loop`, `bugfix-loop`, or a manifest `modules[].slug` a project has additionally configured as sensitive via `tasks.bugfix_loop.excluded_modules`) **then** it is excluded from candidacy unconditionally — this exclusion cannot be overridden by `--max-priority` or any other flag.
 - **BEH-11 (unrecognized-slug fail-closed)** — **When** a candidate WorkItem's single `affected_modules` entry is neither one of the four reserved safety tags nor found in `manifest.modules[].slug` (i.e. it does not match any entry BEH-7 would check it against, and it is not the empty/absent case BEH-10 covers) **then** it is excluded from candidacy, identically to BEH-10 — an unrecognized or misspelled module slug is indistinguishable from an untagged bug and must never be treated as validated. The eligibility filter performs this membership check itself, against the manifest's `modules[].slug` list, on every invocation of `adev issues next` — it does not trust that `adev issues set-modules` (which performs no such validation by design, see Preconditions) already did this check. **Evaluation order:** BEH-6 (length > 1) is checked first; for a single-entry `affected_modules`, BEH-7 (reserved/excluded match) is checked next; if the entry matches neither BEH-7's excluded list nor a real `manifest.modules[].slug`, BEH-11 excludes it; only an entry that is a real, non-excluded manifest module slug is module-eligible. BEH-10 covers the separate empty/absent case. These four behaviors are jointly exhaustive over every possible `affected_modules` value: there is no value for which none of BEH-6, BEH-7, BEH-10, BEH-11 applies, and applying any of them yields exclusion except when BEH-7/BEH-11's checks are passed (a single entry that is a real, non-excluded manifest module slug).
@@ -104,7 +104,7 @@ source-manifest:
 - [ ] Bugs whose single `affected_modules` entry is neither a reserved safety tag nor found in `manifest.modules[].slug` (an unrecognized or misspelled slug) are excluded from candidacy, identically to the empty/absent case (BEH-11)
 - [ ] Claimed bugs with a non-expired lease are excluded from candidacy
 - [ ] Blocked bugs (open dependencies) are excluded from candidacy
-- [ ] Bugs with `AttemptRecord.last_verdict` ∈ `{NO_PROGRESS, REGRESSED, BUDGET_EXHAUSTED}` are excluded from candidacy — the exact set the sibling spec defines, no subset; bugs with no `AttemptRecord` are treated as zero attempts
+- [ ] Bugs with `AttemptRecord.last_verdict` ∈ `{NO_PROGRESS, REGRESSED, BUDGET_EXHAUSTED, UNREPRODUCIBLE}` are excluded from candidacy — the exact set the sibling spec defines, no subset; bugs with no `AttemptRecord` are treated as zero attempts
 - [ ] Ties within a priority band resolve FIFO by `created` timestamp
 - [ ] Invalid `--type` (`UNSUPPORTED_TYPE`) or `--max-priority` values produce a clear, non-zero-exit error, not a silent empty result
 - [ ] All quality gates pass (`npm test`)

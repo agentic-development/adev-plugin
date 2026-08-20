@@ -59,11 +59,11 @@ test('recordDebugAttempt: FIXED increments attempts and sets last_verdict PASS (
   rmSync(root, { recursive: true, force: true });
 });
 
-test('recordDebugAttempt: UNREPRODUCIBLE sets BUDGET_EXHAUSTED immediately with parked_reason (BEH-3)', () => {
+test('recordDebugAttempt: UNREPRODUCIBLE sets last_verdict to UNREPRODUCIBLE immediately, not BUDGET_EXHAUSTED (BEH-3)', () => {
   const root = mkdtempSync(join(tmpdir(), 'attempts-'));
   const rec = recordDebugAttempt(root, {}, { issueId: 'issue-1', outcome: 'UNREPRODUCIBLE' });
   assert.equal(rec.attempts, 1);
-  assert.equal(rec.last_verdict, 'BUDGET_EXHAUSTED');
+  assert.equal(rec.last_verdict, 'UNREPRODUCIBLE');
   assert.equal(rec.parked_reason, 'does not reproduce');
   rmSync(root, { recursive: true, force: true });
 });
