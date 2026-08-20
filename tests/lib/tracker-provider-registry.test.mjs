@@ -8,6 +8,13 @@ import assert from 'node:assert';
 import { assertTrackerProviderShape } from '../../lib/provider/tracker-provider-interface.mjs';
 import { get, registerForTest } from '../../lib/provider/tracker-provider-registry.mjs';
 
+test('registry resolves "github" to the GitHub tracker adapter by default', () => {
+  const adapter = get('github');
+  assert.strictEqual(typeof adapter.gateCheck, 'function');
+  assert.strictEqual(typeof adapter.fetchGated, 'function');
+  assert.strictEqual(typeof adapter.postComment, 'function');
+});
+
 test('get() throws UNKNOWN_TRACKER_PROVIDER for an unregistered name, never falls back', () => {
   assert.throws(() => get('nonexistent-provider-xyz'), /UNKNOWN_TRACKER_PROVIDER/);
 });
