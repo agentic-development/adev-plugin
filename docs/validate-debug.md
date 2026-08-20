@@ -48,6 +48,28 @@ You can scope debugging to a specific spec's domain with `--spec <path>`, or app
 
 See the [Skill Reference](skill-reference.md) for full details on the investigation phases and root cause classification.
 
+## Bugfix Loop
+
+**Skill:** `/adev:bugfix-loop`
+
+**What it does:** Drains eligible bugs off the issue board unattended, one bug per turn, self-re-invoking between turns until the board is drained or a budget cap is hit. Each turn selects the next eligible bug and runs `/adev:debug --auto` against it — same root-cause-first protocol as interactive `/adev:debug`, just without a human in the loop.
+
+**When to use it:** For hands-off cleanup of a backlog of low-risk bugs (P2/P3, single-module blast radius) — e.g. as a scheduled job, or wrapped in `/goal` for a long unattended run. Not a substitute for `/adev:debug` on anything high-priority or cross-cutting: the eligibility filter deliberately excludes P0/P1 bugs and anything touching more than one module.
+
+**Prerequisites:** `tasks.backend` configured and reachable. Bugs must be tagged with `affected_modules` (via `adev issues set-modules <id> <slug>`) to be eligible — untagged bugs are fail-closed excluded.
+
+**Example invocation:**
+
+```
+/adev:bugfix-loop --max-bugs 5
+```
+
+Add `--github-sync` to also pull bugs from GitHub (triage-gated: `bug`+`help wanted` labels) and post fix/park status back as comments.
+
+**Output:** One line per turn as bugs are attempted, ending with the terminal token `ADEV-BUGFIXLOOP: COMPLETE | BUDGET_EXHAUSTED | BLOCKED`.
+
+See the [Skill Reference](skill-reference.md) for the full argument list and eligibility rules.
+
 ## Eval
 
 **Skill:** `/adev:eval`
