@@ -1,7 +1,7 @@
 ---
 status: approved
 kind: feature
-revision: 9
+revision: 10
 updated: 2026-08-20
 ---
 
@@ -110,7 +110,7 @@ approval per Architecture Boundaries — approved during brainstorm.
 
 | Entity | Description | Key Attributes |
 |--------|-------------|----------------|
-| BugfixLoopRun | One invocation of `/adev:bugfix-loop` across N self-re-invoked turns | run_id, started_at, max_bugs, max_turns, bugs_attempted[], status (running/complete/budget_exhausted/blocked — `blocked` added in revision 7 to give the `ADEV-BUGFIXLOOP: BLOCKED` completion-token terminal state defined in `bugfix-loop-skill.spec.md`'s Failure Modes and Output Contract a corresponding persisted value; set once, only on the run's terminal turn, when a structural failure such as an unreachable issue board halts the run before any bug is attempted), degraded_sync_note (string or null — written only by the tracker-provider-bridge's degraded-GitHub-sync escalation, added in revision 7), sync_retry_counts (object, default `{ unreachable_consecutive_turns: 0, oversized_consecutive_turns: {} }` — added in revision 8 to close round-5 review TR-1/TR-2; written and read each turn by the tracker-provider-bridge's inbound sync so its two 5-consecutive-turn caps survive this skill's fresh-context-per-turn self-re-invocation and mid-run process restarts: `unreachable_consecutive_turns` is a single run-scoped counter for the GitHub-unreachable/rate-limited case, `oversized_consecutive_turns` is a map keyed by external GitHub issue number for the oversized-title/body-refusal case — both live in the same run-state file this entity already persists to, so a fresh `run_id` starts both counters at their defaults for free), turns_completed (integer, default 0 — added in revision 9 to close round-6 review RI-1; `bugfix-loop-skill.spec.md`'s own revision 6 introduced this field to fix that revision's WR-1 (`--max-turns` was previously unenforced) but never declared it here, an omission this revision corrects; incremented by exactly 1 at the end of every turn, whether or not that turn attempted a bug, and read back by the per-turn budget check to enforce `--max-turns` — distinct from `bugs_attempted.length`, which only grows on turns that reached an actual `/adev:debug` attempt) |
+| BugfixLoopRun | One invocation of `/adev:bugfix-loop` across N self-re-invoked turns | run_id, started_at, max_bugs, max_turns, bugs_attempted[], status (running/complete/budget_exhausted/blocked — `blocked` added in revision 7 to give the `ADEV-BUGFIXLOOP: BLOCKED` completion-token terminal state defined in `bugfix-loop-skill.spec.md`'s Failure Modes and Output Contract a corresponding persisted value; set once, only on the run's terminal turn, when a structural failure such as an unreachable issue board halts the run before any bug is attempted), degraded_sync_note (string or null — written only by the tracker-provider-bridge's degraded-GitHub-sync escalation, added in revision 7), sync_retry_counts (object, default `{ unreachable_consecutive_turns: 0, oversized_consecutive_turns: {} }` — added in revision 8 to close round-5 review TR-1/TR-2; written and read each turn by the tracker-provider-bridge's inbound sync so its two 5-consecutive-turn caps survive this skill's fresh-context-per-turn self-re-invocation and mid-run process restarts: `unreachable_consecutive_turns` is a single run-scoped counter for the GitHub-unreachable/rate-limited case, `oversized_consecutive_turns` is a map keyed by external GitHub issue number for the oversized-title/body-refusal case — both live in the same run-state file this entity already persists to, so a fresh `run_id` starts both counters at their defaults for free), turns_completed (integer, default 0 — added in revision 9 to close round-6 review RI-1; `bugfix-loop-skill.spec.md`'s own revision 6 introduced this field to fix that revision's WR-1 (`--max-turns` was previously unenforced) but never declared it here, an omission this revision corrects; incremented by exactly 1 at the end of every turn, whether or not that turn attempted a bug, and read back by the per-turn budget check to enforce `--max-turns` — distinct from `bugs_attempted.length`, which only grows on turns that reached an actual `/adev:debug` attempt), stale_link_notices_surfaced (array of external tracker refs, default `[]` — added in revision 10 to close round-7 review TR-4; written and read each turn by the tracker-provider-bridge's inbound sync, in the same run-state file `sync_retry_counts`/`degraded_sync_note` already live in, to bound its stale-tracker-link notice to at most one print per external ref per run: the stale-link condition itself, unlike the two `sync_retry_counts` cases, is re-evaluated true on every turn from data that does not change turn-to-turn, so it needs a "surfaced already this run" record rather than a numeric retry cap — see `tracker-provider-bridge.spec.md`'s Interaction Contract inbound step 5) |
 | AttemptRecord | Per-issue attempt-cap state, independent of the board schema | issue_id, attempts, last_verdict (PASS/CONTINUE/NO_PROGRESS/REGRESSED/BUDGET_EXHAUSTED), curr_blockers (failing check-ID set or bounded hash, for next-attempt diffing), parked_reason, updated_at |
 | TrackerSyncLink | Mapping between an external tracker issue and a local WorkItem, provider-agnostic | provider (e.g. `"github"`), external_ref, local_issue_id, accepted_at (when gate condition first met), last_synced_at, last_comment_id |
 | TrackerProviderAdapter | Interface contract implemented per tracker (GitHub is the only shipped implementation) | provider name, gate-check fn, inbound-fetch fn, outbound-writeback fn — mirrors `IssueManagerInterface`'s adapter shape |
@@ -124,9 +124,26 @@ approval per Architecture Boundaries — approved during brainstorm.
 - A TrackerSyncLink connects exactly one external tracker issue to exactly one local
   WorkItem, created only when its provider adapter's gate condition is met (for the
   GitHub adapter: both `bug` and `help wanted` labels present).
-- A TrackerSyncLink's `provider` field selects which TrackerProviderAdapter handles its
-  inbound sync and outbound writeback; the loop and task-management never branch on
-  provider directly.
+- **(revision 10, round-7 review WR-4 — corrected)** A TrackerSyncLink's `provider`
+  field records which TrackerProviderAdapter created and owns the link — set once, at
+  link-creation time, to the adapter name resolved via `TrackerProviderRegistry.get(...)`
+  in that same sync turn (`tracker-provider-bridge.spec.md` Interaction Contract inbound
+  step 4). It is **provenance, not a live dispatch key**: an earlier revision of this
+  bullet claimed the field "selects which TrackerProviderAdapter handles" a link's sync,
+  but no code path in the Interaction Contract ever reads it back for that purpose —
+  both inbound sync and outbound writeback resolve the active adapter by reading the
+  project-wide `tasks.bugfix_loop.tracker_provider` manifest setting directly (same
+  spec, inbound step 1 / outbound step 2), not this field. That is the architecturally
+  correct behavior for this charter's current scope, not a gap: v1 ships exactly one
+  configured provider per project (Capability Map: Tracker Provider Adapter Interface,
+  milestone 2), and a second provider implementation is an explicit Deferred Capability
+  ("Second Tracker Provider Adapter") with no target milestone — there is no scenario
+  in scope today where a single run could hold links to two different providers
+  simultaneously, so per-link dispatch would be speculative complexity with nothing to
+  select between. The field is populated now specifically so a future multi-provider
+  bridge can resolve per-link instead of per-project without a `TrackerSyncLink` schema
+  migration. The loop and task-management never branch on provider directly, in either
+  reading.
 - A WorkItem created via a tracker bridge carries an origin marker referencing its
   TrackerSyncLink, so outbound writeback knows where to comment.
 
