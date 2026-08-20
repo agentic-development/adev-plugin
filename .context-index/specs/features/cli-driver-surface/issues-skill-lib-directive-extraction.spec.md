@@ -2,10 +2,10 @@
 charter: cli-driver-surface
 kind: refactor
 mode: refactor
-status: implemented
+status: validated
 risk_level: low
 milestone: adev-compiler-discipline
-revision: 2
+revision: 3
 charter-revision: 3
 charter-extension: true
 created: 2026-08-19
@@ -130,6 +130,7 @@ The epic was never created; 11 planned tasks existed only in the lifecycle log. 
 | `lib/cli/issues-create.mjs` | `create` | MODIFIED — gains `--epic`, `--milestone` |
 | `lib/cli/issues-board.mjs` | `board` — render the canonical board to stdout | ADDED |
 | `lib/cli/issues-list.mjs` | `list`, `ready` — filtered and actionable views | ADDED |
+| `lib/cli/issues-epic.mjs` | `epic` — create in the EPIC store | ADDED (rev 3: not foreseen at rev 2 — see the epic-store note below) |
 | `lib/cli/issues-mutate.mjs` | `update`, `close`, `dep` — the three board writes | ADDED |
 | `lib/cli/issues-milestone.mjs` | `milestone create\|list\|ship\|defer` | ADDED |
 | `skills/issues/SKILL.md` | The skill | MODIFIED — every step names a verb |
@@ -150,21 +151,29 @@ Grouping rationale: `update`/`close`/`dep` share argument shapes and the adapter
 ### ADDED
 
 - `adev issues board [--milestone <name>] [--json]` — fetches epics + issues via the adapter, renders through `renderTasksMd()`, prints to stdout. `--json` emits `{ version, epics, issues }` unrendered.
-- `adev issues list [--status <s>] [--epic <id>] [--milestone <name>] [--json]` — filtered list, sorted by priority.
+- `adev issues list [--status <s>] [--epic <id>] [--milestone <name>] [--json]` — filtered list, sorted by priority. No `--type` filter.
 - `adev issues ready [--json]` — open issues with no unclosed blocker. The filter lives in the verb.
-- `adev issues update <id> [--status <s>] [--milestone <name>] [--next-action <text>] [--json]` — dispatches to `update()` or `updateEpic()` by resolving the item; the caller does not branch on id prefix.
-- `adev issues close <id> --reason "<text>" [--json]` — exits `2` when blocked by unclosed dependencies (a refusal, distinct from exit `1` usage/adapter errors), listing the blockers.
-- `adev issues dep <id> <depends-on-id> [--json]` — exits `2` on a cycle, naming it.
-- `adev issues milestone create <name> [--target <date>] [--strategy <s>] [--check <type>]... [--confirm "<text>"]...`
-- `adev issues milestone list [--json]`
-- `adev issues milestone ship <name> [--yes] [--json]` — the verb always supplies a `confirmFn`; `--yes` makes it accept, its absence makes it reject, so the verb prints the confirmation set and exits `2` without shipping and the skill can ask the user in chat and re-invoke. `lib/milestones.mjs` is NOT modified — see BEH-7 for why the callback must be present in both cases.
-- `adev issues milestone defer <name> --reason "<text>" [--json]`
-- `--epic <id>` and `--milestone <name>` flags on `adev issues create`.
+- `adev issues epic <title> [--plan-ref <path>] [--milestone <name>] [--json]` — creates in the **epic store**. **Not foreseen at rev 2**, which assumed `create --type epic` would serve. It does not: see the epic-store note below.
+- `adev issues update <id> [--status <s>] [--milestone <name>] [--title <text>] [--priority <0-4>] [--notes <text>]` — resolves the item by id (issue or epic) and dispatches to `update()` or `updateEpic()`; the caller never branches on id prefix. `--status closed` is refused with a pointer to `close`. `--milestone` on an issue and `--priority` on an epic are usage errors.
+- `adev issues close <id> --reason <text>` — exits `2` when blocked by unclosed dependencies or the cascade guard (a refusal, distinct from exit `1` usage/adapter errors), listing the blockers.
+- `adev issues dep <id> <depends-on-id>` — exits `2` on a cycle, naming it.
+- `adev issues milestone create <name> [--target <YYYY-MM-DD>] [--strategy <manual|tag-only|release-please>] [--check <type>]... [--confirm "<text>"]...`
+- `adev issues milestone list`
+- `adev issues milestone ship <name> [--yes] [--gate-timeout <ms>]` — the verb always supplies a `confirmFn`; `--yes` makes it accept, its absence makes it reject, so the verb prints the confirmation set and exits `2` without shipping and the skill can ask the user in chat and re-invoke. `lib/milestones.mjs` is NOT modified — see BEH-7 for why the callback must be present in both cases. `--gate-timeout` was added during implementation so the verb can name the budget it passed; see the note below.
+- `adev issues create <title> [--type <t>] [--priority <0-4>] [--epic <id>] [--plan-ref <path>] [--spec-ref <path>] [--parent <id>] [--notes <text>] [--next-action <text>] [--id <id>] [--json]` — gained `--epic` and `--plan-ref`. It does **not** accept `--milestone`: that flag exits `1` pointing at `adev issues epic`, because milestone is an epic-level field an issue would silently drop.
+
+**Rev 3 reconciliation — `--json` is narrower than rev 2 promised.** Only `board`, `list`, `ready`, `epic` and `create` ship `--json`. `update`, `close`, `dep` and all four `milestone` sub-verbs are human-output only. Rev 2 listed `[--json]` on every verb; that was aspirational, not built. Recorded rather than back-filled: adding `--json` to the mutating verbs is a follow-up, and `issue-l1efc1` (`--json` truncates at 64 KiB when piped) should land first, since widening the `--json` surface widens that bug's blast radius.
+
+**Rev 3 reconciliation — the epic store.** Rev 2's Changes Catalog said `create` would gain `--epic <id>` and `--milestone <name>` and that `create --type epic` would mint plan epics. Task 4 found this is false on `JsonAdapter`, the default backend: `create()` pushes to `board.issues`, only `createEpic()` writes `board.epics`, and `listEpics()` reads `board.epics` alone. An epic minted via `create --type epic` is therefore invisible to every epic lookup, so `/adev:implement`'s "load the epic for this plan" would miss it and mint a duplicate on every run. A dedicated `adev issues epic` verb was added instead, `create --milestone` became an explicit refusal, and commit `a0952b9c` repaired the three skills that had already been told to use `create --type epic`. The same two-store split is the root cause of `issue-1vwwea`.
 
 ### MODIFIED
 
 - `skills/issues/SKILL.md` — all 16 directive sites replaced by verb invocations; the fenced JS block at 49-63 deleted; the API reference section retained as descriptive documentation of what the verbs wrap.
-- `lib/cli/issues.mjs` — dispatch table and `help()` extended.
+- `lib/cli/issues.mjs` — dispatch table and `help()` extended; exports `dispatchesSubcommandHelp = true`.
+- `lib/cli/issues-create.mjs` — gained `--epic`, `--plan-ref`, and the `--milestone` refusal.
+- `cli/index.mjs` — the blanket `--help` short-circuit now honours `dispatchesSubcommandHelp`, so `adev issues <sub> --help` reaches the sub-verb's own help instead of printing the parent's subcommand list (BEH-8).
+- `docs/cli-reference.md` — §issues documents all 13 sub-verbs, with a uniform exit-code table. Incidentally repaired merge-conflict markers at lines 716-788 that merge `e59ef658` had committed into this file before this spec existed.
+- `providers/{codex,opencode}/skills/issues/SKILL.md` — regenerated by `scripts/sync-provider-skills.mjs`; see the header note on the charter's stale Out-of-Scope entry.
 
 ### REMOVED
 
