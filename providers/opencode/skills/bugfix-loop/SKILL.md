@@ -11,7 +11,7 @@ description: "Self-re-invoking, one-bug-per-turn loop that drains eligible P2/P3
 
 - `--max-bugs <N>`: caps bugs attempted across the whole run (across all self-re-invoked turns). Default: unbounded — the loop drains until no eligible bug remains or `--max-turns` is hit.
 - `--max-turns <N>`: caps self-re-invocation turns. Default: 20 — a conservative bound preventing an unbounded run when neither flag is set.
-- `--github-sync`: enables the tracker-provider-bridge's inbound pull before each bug selection and outbound writeback after each attempt. **Not yet available** — the bridge is Milestone 2 of the `autonomous-bugfix-loop` charter and is not implemented in this codebase. Passing this flag fails fast on the first turn with a clear "GitHub sync not available" error rather than silently no-op-ing.
+- `--github-sync`: enables the tracker-provider-bridge's inbound pull before each bug selection and outbound writeback after each attempt (`tracker-provider-bridge.spec.md`). Inbound sync runs once per turn in Step 0, before the status/budget guard; outbound writeback runs once per completed attempt in Step 4. Both degrade gracefully (never error the loop) when GitHub or `gh` is unreachable — see Failure Modes below.
 - `--resume [--resume-run-id <id>]` (internal): used only by this skill's own self-re-invocation, mirroring `/adev:build --resume`. Not intended for direct user invocation. `--resume-run-id` is always passed explicitly by the re-invocation call — the skill always knows its own `run_id` from the turn that just completed. A manual `--resume` without `--resume-run-id` falls back to `adev bugfix-loop latest` (the rare case of a manual `--resume` after a crash where the exact `run_id` wasn't captured).
 
 **Load Skill Extensions:**
@@ -24,7 +24,6 @@ The following skill extension instructions apply to this invocation (source: ins
 
 ## Step 0: Resolve the run
 
-- **`--github-sync` fail-fast:** if the flag is set, stop immediately with "GitHub sync not available — the tracker-provider-bridge capability has not shipped yet (Milestone 2). Omit --github-sync." before any run-state is created or resumed. Do not fall back to a silent no-op.
 - **Fresh invocation (`--max-bugs`/`--max-turns`/no resume flags):**
 
   ```bash
@@ -41,6 +40,14 @@ The following skill extension instructions apply to this invocation (source: ins
 
   If the result's `run` is `null`, there is nothing to resume — tell the user and stop. Otherwise use the returned `run.run_id`.
 
+- **`--github-sync` inbound pull:** once `run_id` is resolved (fresh or resumed), and only when `--github-sync` was passed, run inbound sync for this turn before the Step 1 guard:
+
+  ```bash
+  adev tracker-sync inbound --run-id <run_id> --json
+  ```
+
+  Capture the JSON result. Print any `notices` array entries as-is (each is already a formatted one-line stale-link message). This call degrades gracefully — a non-null `degraded: true` in the result means the turn proceeds with local-board-only candidates (see Failure Modes); it is never a reason to stop the run. Without `--github-sync`, skip this call entirely.
+
 ## Step 1: Turn guard (status + budget)
 
 Before selecting a bug, check the status guard and per-turn budget:
@@ -54,6 +61,8 @@ adev bugfix-loop guard --run-id <run_id> --json
 - `{"proceed": true}`: continue to Step 2.
 
 ## Step 2: Select a bug
+
+If `--github-sync` was set, inbound sync already ran in Step 0 — candidates below reflect the latest sync for this turn.
 
 ```bash
 adev issues next --type bug --max-priority P3 --json
@@ -104,6 +113,14 @@ adev bugfix-loop record-attempt --run-id <run_id> --issue <id>
 adev bugfix-loop complete-turn --run-id <run_id>
 ```
 
+- **`--github-sync` outbound writeback:** only when `--github-sync` was passed, after the AttemptRecord above is written, post the outcome comment for this attempt:
+
+  ```bash
+  adev tracker-sync outbound --local-issue-id <id> --verdict <FIXED|PARKED|UNREPRODUCIBLE> --completed-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --json
+  ```
+
+  This is a no-op (`{"posted": false, "reason": "no_link"}`) when the attempted WorkItem has no `TrackerSyncLink` — expected for any bug that did not originate from GitHub sync. Never blocks or retries within this turn on a post failure; the attempt's local state (`AttemptRecord`, `WorkItem`) is already correct regardless of whether the comment posted. Without `--github-sync`, skip this call entirely.
+
 **The skill never marks a bug fixed itself.** `FIXED` is entirely `/adev:debug`'s own Phase 6 confidence gate — this skill only reads the token it already emitted.
 
 ## Step 5: Finish (terminal turn only)
@@ -112,7 +129,7 @@ adev bugfix-loop complete-turn --run-id <run_id>
 adev bugfix-loop finish --run-id <run_id> --status <complete|budget_exhausted|blocked> --json
 ```
 
-Read `degraded_sync_note` from the JSON result. If non-null, print `GitHub sync degraded during this run: <degraded_sync_note>` as the line immediately before the token — the token itself is still unconditionally the literal last line.
+Read `degraded_sync_note` from the JSON result — this reflects whatever `adev tracker-sync inbound` (Step 0) wrote into the same run-state file over the course of this run, not a placeholder. If non-null, print `GitHub sync degraded during this run: <degraded_sync_note>` as the line immediately before the token — the token itself is still unconditionally the literal last line.
 
 Print `ADEV-BUGFIXLOOP: <token-from-result>` as the **final line** (the last line, verbatim, with no trailing prose) of this turn's output — one of:
 
@@ -135,7 +152,8 @@ Immediately re-invoke `/adev:bugfix-loop --resume --resume-run-id <run_id>` via 
 | Issue board unreachable / `tasks.backend` misconfigured | Halt immediately on the first turn, no retry; `adev bugfix-loop finish --status blocked`, then the `BLOCKED` token |
 | Claim fails 3 times in one turn (contention) | Turn ends without an attempt, still counts toward `--max-turns` (Step 3), self-re-invokes normally |
 | `/adev:debug --auto` crashes | Treated as `PARKED`, claim released, loop continues |
-| `--github-sync` set, bridge not implemented | Fails fast on the first turn (Step 0) |
+| `--github-sync` set, GitHub/`gh` unreachable during inbound sync | Degrades to local-board-only candidates this turn, no error; bounded to 5 consecutive degraded turns before `degraded_sync_note` is set and `gateCheck()` stops being called for the rest of the run (`tracker-provider-bridge.spec.md` Error Propagation) |
+| `--github-sync` set, GitHub/`gh` unreachable during outbound writeback | That attempt's comment post is skipped and logged; local state (`AttemptRecord`, `WorkItem`) is unaffected, not retried automatically within the run |
 
 ## Red Flags
 
@@ -146,4 +164,4 @@ Immediately re-invoke `/adev:bugfix-loop --resume --resume-run-id <run_id>` via 
 - End a non-terminal turn's response without self-re-invoking via the Skill tool
 - Leave a claim orphaned when `/adev:debug --auto` crashes — always release
 - Print the `ADEV-BUGFIXLOOP:` token anywhere but the literal last line of output
-- Silently ignore `--github-sync` when the tracker-provider-bridge is unavailable
+- Halt the run because `--github-sync` degraded — local-board-only operation is the correct degrade path, not a stop condition
