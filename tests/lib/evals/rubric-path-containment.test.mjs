@@ -2,25 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mkdirSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { createTempDir, cleanupTempDir } from "../../helpers.mjs";
+import { captureThrow, createTempDir, cleanupTempDir } from "../../helpers.mjs";
 import { loadRubric } from "../../../lib/evals/rubric.mjs";
-
-/**
- * Run `fn`, assert that it threw, and return the thrown error.
- *
- * `assert.throws()` itself returns `undefined` (it is a void assertion), so it
- * cannot hand the error back for further inspection. This keeps the strictness
- * of `assert.throws` — nothing thrown is still a failure — while exposing the
- * error so the code/message assertions below can run against it.
- */
-function captureThrow(fn) {
-  let thrown;
-  assert.throws(fn, (err) => {
-    thrown = err;
-    return true;
-  });
-  return thrown;
-}
 
 test("a traversal path is rejected and nothing is read", () => {
   const root = createTempDir();

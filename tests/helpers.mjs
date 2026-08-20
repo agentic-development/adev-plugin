@@ -2,6 +2,7 @@
  * Shared test utilities for adev-plugin E2E tests.
  */
 
+import assert from "node:assert/strict";
 import { mkdtempSync, rmSync, mkdirSync, writeFileSync, chmodSync } from "fs";
 import { join, resolve, dirname } from "path";
 import { execSync, spawnSync } from "child_process";
@@ -13,6 +14,27 @@ const __dirname = dirname(__filename);
 
 /** Resolved path to the plugin repository root. */
 export const PLUGIN_ROOT = resolve(__dirname, "..");
+
+/**
+ * Run `fn`, assert that it threw, and return the thrown error.
+ *
+ * `assert.throws()` is a void assertion — it returns `undefined` and cannot
+ * hand the error back for further inspection, so `const err = assert.throws(fn)`
+ * is always `undefined`. Wrapping it this way preserves its strictness (a call
+ * that throws nothing still fails the assertion) while exposing the error so
+ * `.code` / `.message` assertions can run against it.
+ *
+ * @param {() => any} fn - the call expected to throw.
+ * @returns {Error} the error `fn` threw.
+ */
+export function captureThrow(fn) {
+  let thrown;
+  assert.throws(fn, (err) => {
+    thrown = err;
+    return true;
+  });
+  return thrown;
+}
 
 /**
  * Create an isolated temp directory for a single test.
