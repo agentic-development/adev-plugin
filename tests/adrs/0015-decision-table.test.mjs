@@ -14,3 +14,10 @@ test('ADR-0015 Decision table registers bugfix-loop-attempts.jsonl (WR-7)', () =
   assert.match(md, /lib\/bugfix-loop-attempts\.mjs/);
   assert.match(md, /per-issue-attempt-cap\.spec\.md/);
 });
+
+test('ADR-0015 Decision table registers bugfix-loop-runs-<run_id>.json', () => {
+  const md = readFileSync(ADR_PATH, 'utf8');
+  assert.match(md, /bugfix-loop-runs-<run_id>\.json/);
+  assert.match(md, /lib\/bugfix-loop-run\.mjs/);
+  assert.match(md, /bugfix-loop-skill\.spec\.md/);
+});
