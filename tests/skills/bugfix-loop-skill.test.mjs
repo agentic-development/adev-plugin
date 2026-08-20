@@ -66,3 +66,8 @@ test('using-adev persona overlay names ADEV-BUGFIXLOOP as persona-exempt', () =>
   const md = read('skills/using-adev/SKILL.md');
   assert.match(md, /ADEV-BUGFIXLOOP/);
 });
+
+test('work SKILL.md routing table lists /adev:bugfix-loop', () => {
+  const md = read('skills/work/SKILL.md');
+  assert.match(md, /\/adev:bugfix-loop/);
+});
