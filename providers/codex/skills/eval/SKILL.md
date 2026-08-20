@@ -144,21 +144,58 @@ Never tell a judge the verdicts of other criteria or the running total — a jud
 
 ### Step 3 — Aggregate for trend tracking
 
-The layer's judged output is the verdict table. Compute the number only so `/adev:retro` and `/adev:hygiene` can plot a series across runs, using the point budgets in the rubric:
+Layer 3's judged output is the verdict table; Steps 1 and 2 already produced every entry it
+needs. Assemble the verdict set — one entry per declared id, each carrying `id`, `value` (the
+resolved verdict), and `evidence` — and write it to a JSON file (for example
+`.context-index/evals/<spec-slug>-verdicts.json`).
 
-```text
-answered elements  = required_elements with verdict MET or NOT_MET
-                     (NOT_APPLICABLE is excluded from the denominator)
-answered criteria  = quality_dimensions with verdict MET or NOT_MET
-                     (UNKNOWN is excluded from the denominator)
+**The verdict file uses the lowercase form of each verdict, not the uppercase form Steps 1 and 2
+recorded on the page.** Map `MET` → `met`, `NOT_MET` → `not_met`, `UNKNOWN` → `unknown`,
+`NOT_APPLICABLE` → `not_applicable` before writing each entry's `value` — the engine's verdict
+enums are lowercase only, and an uppercase value makes `adev eval score` reject the whole set with
+`SCORE_INVALID_VERDICT` on the first entry it reads. An entry resolving `met` or `not_met` must
+carry non-empty evidence or the engine rejects the set with `SCORE_EMPTY_EVIDENCE`; `unknown` and
+`not_applicable` may carry empty evidence, since absence of evidence is expressible only as
+`unknown`.
 
-element points = (elements MET / answered elements) * required_element_points
-judged points  = (criteria MET / answered criteria) * judged_criterion_points
+Then score it:
 
-Layer 3 score  = round(element points + judged points), capped at layer3_max_points
+```bash
+adev eval score --rubric <resolved rubric path> --input <verdict file path>
 ```
 
-**Insufficient-evidence guard.** If the share of `UNKNOWN` among `quality_dimensions` exceeds `insufficient_evidence_threshold_percent` (default 40 — that is, 3 or more of the 5 criteria must be answered), do not report a ratio. Two answered criteria out of five must not produce a confident 15/15. Instead report Layer 3 as `INSUFFICIENT_EVIDENCE`, contribute 0 points, and note in the report that the attainable total is reduced by `layer3_max_points` — the same convention Layer 4 uses when skipped. If `answered elements` or `answered criteria` is zero, the corresponding term contributes 0 and the report says so.
+The verb prints the verdict table together with an aggregate line, always both — the numeric
+aggregate exists for trend tracking only and is never reported without its verdict table. Report
+what it returns.
+
+Descriptive reference — what the verb computes, not an instruction to compute it yourself:
+
+```text
+`adev eval score` (lib/evals/score.mjs `scoreRubric`) tallies each half independently against its
+own point budget (required_element_points for the deterministic half, judged_criterion_points for
+the judged half), excluding not_applicable from the deterministic denominator and unknown from the
+judged denominator. A half with nothing declared, or nothing left after that exclusion, resolves to
+a status instead of a number (see below). When both halves resolve to a number, the total blends
+them: deterministic plus judged, rounded once, capped at layer3_max_points.
+```
+
+**Half-level status, not whole-layer discard.** Each half is scored independently and can resolve
+to a status instead of a number:
+
+- The **judged** half reports `INSUFFICIENT_EVIDENCE` when every `quality_dimensions` verdict is
+  `UNKNOWN` — **regardless of the rubric's threshold, including at `threshold: 100`** — because a
+  half where nothing was answered has no denominator to divide by. It also reports
+  `INSUFFICIENT_EVIDENCE` when the `UNKNOWN` share exceeds `insufficient_evidence_threshold_percent`
+  (default 40) while at least one criterion was answered. It reports `NOT_SCORED` when the rubric
+  declares no `quality_dimensions` at all.
+- The **deterministic** half reports `NOT_SCORED` when the rubric declares no `required_elements`,
+  or when every declared element resolved `NOT_APPLICABLE`. Otherwise it reports its points and
+  maximum unchanged — deterministic evidence does not go stale just because the judged half could
+  not decide.
+- The layer's numeric contribution is whichever half(s) resolved to a number; a half carrying a
+  status contributes nothing, and the attainable maximum is reduced by that half's own point
+  budget only (`judged_criterion_points` or `required_element_points`) — never by the full
+  `layer3_max_points`, since the other half may still be fully numeric.
 
 ## Layer 4: Human-in-the-Loop Checkpoints (Manual)
 
@@ -178,7 +215,7 @@ Present the checklist to the user. User marks each item as: PASS (5 points), ACC
 
 **Total quality score = Layer 1 + Layer 2 + Layer 3 + Layer 4 (0-100)**
 
-When a layer cannot contribute — Layer 3 reporting `INSUFFICIENT_EVIDENCE`, or Layer 4 skipped — that layer contributes 0 and the report states the reduced attainable maximum alongside the total (for example, `52/75 attainable`). Grade against the attainable maximum: normalise the total to a percent of attainable points, then read the table below as percentages. A raw `70/75` is 93%, an A — not the C its raw points would suggest.
+When Layer 3's deterministic or judged half cannot contribute — reporting `NOT_SCORED` or `INSUFFICIENT_EVIDENCE` — that half contributes 0 and the attainable maximum drops by that half's own point budget (`required_element_points` or `judged_criterion_points`), never by all of Layer 3's `layer3_max_points`. When Layer 4 is skipped, the whole layer contributes 0 and the attainable maximum drops by 25, exactly as before. The report states the reduced attainable maximum alongside the total (for example, `70/85 attainable` when only Layer 3's judged half — `judged_criterion_points` 15 — is out and Layer 4 ran). Grade against the attainable maximum: normalise the total to a percent of attainable points, then read the table below as percentages. A raw `70/75` is 93%, an A — not the C its raw points would suggest.
 
 | Score | Grade | Interpretation |
 |-------|-------|---------------|
@@ -212,14 +249,14 @@ Write to `.context-index/evals/<spec-slug>-eval.md`:
 - Complexity metrics: N/5
 - Test quality: N/5
 
-## Layer 3: Reference-Anchored Judgement — N/25 (or INSUFFICIENT_EVIDENCE)
+## Layer 3: Reference-Anchored Judgement — N/25 (or half-level status)
 > Rubric: <rubric_id> v<version> — <resolved path>
 > Verdicts: N met, N not met, N unknown, N not applicable
 
-### Deterministic elements — N/10
+### Deterministic elements — N/10 (or NOT_SCORED)
 - <element id>: MET/NOT_MET/NOT_APPLICABLE — <evidence, file:line>
 
-### Judged criteria — N/15
+### Judged criteria — N/15 (or INSUFFICIENT_EVIDENCE/NOT_SCORED)
 - <criterion id>: MET/NOT_MET/UNKNOWN — <evidence, file:line>
 
 ## Layer 4: HITL Checkpoints — N/25

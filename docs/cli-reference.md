@@ -853,8 +853,8 @@ adev eval score --rubric skills/eval/default-rubric.yaml --input .adev/eval/late
 ```
 
 **Implementation:** `lib/cli/eval.mjs` (engine: `lib/evals/rubric.mjs`, `lib/evals/score.mjs`).
-**Called by:** intended for `/adev:eval` Layer 3 — this verb is not yet invoked by any skill as of
-this entry; the wiring lands with the Layer 3 rewrite.
+**Called by:** `/adev:eval` Layer 3, Step 3 — aggregates the deterministic and judged halves into
+the half-level trend score once Steps 1 and 2 produce every verdict it needs.
 
 ### `worktree`
 
