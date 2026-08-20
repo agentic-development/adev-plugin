@@ -93,8 +93,8 @@ eval-harness owns one rubric contract, one scoring engine consumed by both, the 
 
 | Capability | Description | Priority | Milestone | Status |
 |-----------|-------------|----------|-------|--------|
-| Unified rubric schema | One rubric contract serving both consumers: key set, flat-YAML rule, verdict enum, point budgets, budget keys | must-have | v1 | — |
-| Rubric loader and validator | Parse and validate a rubric, failing loudly on nested maps, missing keys, and invalid verdicts | must-have | v1 | — |
+| Unified rubric schema | One rubric contract serving both consumers: key set, flat-YAML rule, verdict enum, point budgets, budget keys | must-have | v1 | specified |
+| Rubric loader and validator | Parse and validate a rubric, failing loudly on nested maps, missing keys, and invalid verdicts | must-have | v1 | specified |
 | Scoring engine and `adev eval score` | Verdict tallying, denominator exclusion, insufficient-evidence guard, attainable-maximum reporting, exposed as a CLI verb | must-have | v1 | — |
 | Hermetic fixture project and planted ground-truth catalog | An in-repo fixture tree carrying the scaffolding skills read, with a catalog of planted violations and known-clean artifacts | must-have | v1 | — |
 | Run-cost record | Generalise the session-JSONL collector so every scored run emits duration, token split, cost, turns, and subagent rollup | must-have | v1 | — |
