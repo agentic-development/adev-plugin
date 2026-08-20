@@ -1968,6 +1968,7 @@ const VERB_REGISTRY = new Map([
   ["execution-state", () => import("../lib/cli/execution-state.mjs")],
   ["build-state",     () => import("../lib/cli/build-state.mjs")],
   ["bugfix-loop",     () => import("../lib/cli/bugfix-loop.mjs")],
+  ["tracker-sync",    () => import("../lib/cli/tracker-sync.mjs")],
   ["preflight",       () => import("../lib/cli/preflight.mjs")],
   ["prototype",       () => import("../lib/cli/prototype.mjs")],
   ["artifact",        () => import("../lib/cli/artifact.mjs")],
