@@ -7,7 +7,7 @@ kind: refactor
 status: review-pending
 created: 2026-08-19
 updated: 2026-08-19
-revision: 7
+revision: 8
 diff-source: "main..61064c9a — the implementation range (5 commits, 417 files). The branch has since gained the reconciliation and review-fix commits."
 ---
 
@@ -416,6 +416,13 @@ Describes the system after the refactor.
 
 ### Error Cases
 
+> **This table names the SIGNAL each failure produces, not whether a guard exists
+> today.** Guard coverage and open/closed status live in exactly one place — the
+> Known-gaps list under Acceptance Criteria. Six findings across five review rounds
+> came from this table and that list disagreeing after a fix updated one of them;
+> the durable fix is that only one of them carries status at all.
+
+
 | Condition | Expected behavior | Signal |
 |-----------|-------------------|--------|
 | A `SKILL.md` exceeds 65,536 bytes | `validateSkillNames()` throws `INVALID_SKILL_FRONTMATTER`; Copilot **install** and its `--dry-run` branch fail (`uninstall`/`status` never call `buildPlan()`) | Exception from `buildPlan()` |
@@ -424,7 +431,7 @@ Describes the system after the refactor.
 | A body loses its Load Skill Extensions block | `tests/skills-extension-coverage.test.mjs` fails for that skill | Test failure |
 | A dispatching skill loses a dispatch-discipline rule | `tests/skills-dispatch-turn-discipline.test.mjs` fails | Test failure |
 | A conditional-loading pointer names a file that does not exist | Broken pointer — the agent cannot load the section | `tests/sync/provider-companion-parity.test.mjs` fails, naming the pointer and its missing target |
-| A companion exists that nothing references | Dead weight shipped to every consumer | **UNGUARDED** — no guard, but zero instances today; both former orphans were resolved in revision 6 |
+| A companion exists that nothing references | Dead weight shipped to every consumer | No automated signal — see Known gaps for current status |
 | Provider mirror `SKILL.md` drifts from canonical | `tests/sync/provider-skill-parity.test.mjs` fails, naming the drifted files | Test failure |
 | A skill declares a `name:` that is not a single path segment | `resolvePublishTarget` throws `SKILL_NAME_UNSAFE`; cursor publishes every other skill and reports this one | Entry in the `failed[]` array returned by `publishSkillsFromCache` — not an exception to the caller, not a test failure |
 | A published destination resolves outside the skills root | `resolvePublishTarget` throws `SKILL_PATH_ESCAPE` before any write | Same `failed[]` entry shape |
@@ -499,19 +506,22 @@ Describes the system after the refactor.
 - [x] Test assertions follow the prose rather than being weakened (BEH-10)
 - [x] Both limits documented in `constitution.md` / `CLAUDE.md` and `docs/skill-reference.md`
 - [x] A regression guard fails if any body exceeds the guidance
-- [x] All quality gates pass — 7203 tests, 7201 pass, 0 fail, 2 todo (baseline 7152 on `main`, reproduced by referent-integrity against a clean `git archive main` copy).
-      Measured immediately before this commit, with no edit in between — the
-      discipline this criterion asserts failed in revisions 3, 4, 5 AND 6, each time
-      because a later edit in the same commit moved a figure after it was taken. The
-      durable fix is fewer restated numbers, not more care: every count here that a
-      guard already enforces should cite the guard instead. Tracked, not yet done. Revisions 1, 2 and 3 each shipped a test count that was accurate
-      when taken and stale by the time it landed; in rev 3 the drift came from the
-      tier-dispatch commit adding 4 tests *after* the spec commit.
-      Note `tests/cli/verify.test.mjs:575` asserts a <100ms wall-clock envelope and
-      flakes under concurrent load (observed at 667ms while five review subagents
-      were running; passes in isolation). Unrelated to this refactor, but it will
-      flake on a busy CI runner.
-- [x] Cursor publishes only to single-path-segment names inside its skills root, checked through `realpathSync` (BND-4), pinned by `tests/provider/cursor-path-containment.test.mjs`. Falsified against three reintroduced defects: allowlist disabled, containment made lexical, and the unresolvable-root path allowed — each fails the suite
+- [x] All quality gates pass — `npm test` is green on this tree, 0 failures.
+
+      No absolute test count is stated here, deliberately. It drifted in revisions
+      3, 4, 5 and 6, every time because a later edit in the same commit moved it
+      after it was measured, and every time the response was to promise more care.
+      The number also carries nothing a reader needs: "the gates pass" is the claim,
+      and the suite's own size is not evidence for it.
+
+      The figures that DO track the tree — the current byte total, the saving, the
+      companion count, the pointer counts — are now re-derived by
+      `tests/skills/spec-figures-current.test.mjs`, which parses them out of this
+      prose and recomputes each from the repository. A stale figure fails the suite
+      instead of waiting for a reviewer to do the arithmetic. Baseline values
+      (856,056 B and the sixteen "before" sizes) are history and cannot drift, so
+      they are not pinned.
+
 - [x] No constitutional violations
 
 **Known gaps — carried, not silently closed:**
@@ -549,6 +559,25 @@ Describes the system after the refactor.
       invocation. Settling it needs `adev cost summary --spec <s> --include-checkpoints`
       over one comparable lifecycle before and after — possible now that
       adev-plugin-882a.1 has landed, but not yet run.
+
+**Revision 8 note — the structural fix, not another round of corrections.**
+
+Two defect classes accounted for most findings across five review rounds, and both
+were properties of how this document is written rather than mistakes in it:
+
+*Stale figures* (revisions 3-6, one per round). A number was measured, a later edit
+in the same commit moved it, and only a reviewer's arithmetic could notice. Now
+`tests/skills/spec-figures-current.test.mjs` parses the tree-tracking figures out of
+this prose and recomputes each from the repository, so drift fails the suite. Falsified
+against all six ways it actually went stale. The suite total was REMOVED rather than
+pinned — asserting it from inside the suite is circular and it tells a reader nothing.
+
+*Contradicting sections* (six findings). The Error Cases table and the Known-gaps list
+both carried guard status, so every fix had two places to be right and repeatedly hit
+one. Status now lives only in Known gaps; the table names the signal a failure
+produces and nothing else.
+
+Neither was fixed by more care, which had been tried and failed four times.
 
 **Revision 7 note.** Round 5 returned 2 blockers, both saying revision 5's fix was
 cosmetic. The per-surface `<ADEV_ROOT>` table merged codex and opencode into one row
