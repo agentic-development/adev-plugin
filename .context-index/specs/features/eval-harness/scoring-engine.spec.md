@@ -3,13 +3,34 @@
 ---
 charter: eval-harness
 kind: behavioral
-status: review-pending
+status: implemented
 risk_level: medium
 milestone: v1
 revision: 5
 charter-revision: 4
 created: 2026-08-20
 updated: 2026-08-20
+source-manifest:
+  sha: "ca85164"
+  files:
+    - cli/index.mjs
+    - docs/cli-reference.md
+    - lib/cli/eval.mjs
+    - lib/evals/score-schema.mjs
+    - lib/evals/score.mjs
+    - skills/eval/SKILL.md
+    - tests/cli/eval-score.test.mjs
+    - tests/lib/evals/score-insufficient-evidence.test.mjs
+    - tests/lib/evals/score-judge-context.test.mjs
+    - tests/lib/evals/score-not-scored.test.mjs
+    - tests/lib/evals/score-result-assembly.test.mjs
+    - tests/lib/evals/score-rubric-and-threshold.test.mjs
+    - tests/lib/evals/score-schema-contract.test.mjs
+    - tests/lib/evals/score-status-partition.test.mjs
+    - tests/lib/evals/score-tally.test.mjs
+    - tests/lib/evals/score-verdict-validation.test.mjs
+    - tests/skills/eval-layer3-scoring-verb.test.mjs
+  computed-at: "2026-08-20T17:22:00.580Z"
 ---
 
 # Live Spec: Rubric scoring engine and adev eval score verb
