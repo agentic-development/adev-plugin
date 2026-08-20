@@ -13,6 +13,10 @@
  * - the epic lands in `board.epics`, never `board.issues`
  * - --milestone is persisted and is visible to `adev issues list --milestone`
  * - omitting --milestone creates an epic that carries none
+ * - --plan-ref is persisted on the epic record, so `/adev:implement`'s "load
+ *   the epic matching this plan's planRef" and `/adev:reconcile` pass 1e can
+ *   find it instead of minting a duplicate on every run
+ * - omitting --plan-ref creates an epic that carries none
  * - --json emits the full epic record
  * - a missing title is exit 1 with the usage line
  * - --help prints THIS verb's usage, not the parent subcommand list
@@ -132,6 +136,60 @@ describe("adev issues epic", () => {
     assert.match(parsed.id, /^epic-/);
   });
 
+  it("persists --plan-ref on the epic record in board.epics", () => {
+    const r = runCli(root, [
+      "Plan ref carrier",
+      "--plan-ref",
+      ".context-index/specs/features/task-management/backend-migration.plan.md",
+    ]);
+    assert.equal(r.status, 0, r.stderr);
+    assert.match(r.stdout, /^Created epic epic-\w+: Plan ref carrier$/m);
+    assert.match(
+      r.stdout,
+      /^ {2}plan: \.context-index\/specs\/features\/task-management\/backend-migration\.plan\.md$/m
+    );
+
+    const board = readBoard(root);
+    const found = board.epics.find((e) => e.title === "Plan ref carrier");
+    assert.ok(found, "epic landed in board.epics");
+    assert.equal(
+      found.planRef,
+      ".context-index/specs/features/task-management/backend-migration.plan.md"
+    );
+    assert.equal(
+      board.issues.find((i) => i.title === "Plan ref carrier"),
+      undefined,
+      "an epic must not be duplicated into board.issues"
+    );
+  });
+
+  it("exposes --plan-ref through --json", () => {
+    const r = runCli(root, [
+      "Json plan ref epic",
+      "--plan-ref",
+      ".context-index/specs/features/cli-driver-surface/epic-plan-ref.plan.md",
+      "--json",
+    ]);
+    assert.equal(r.status, 0, r.stderr);
+    const parsed = JSON.parse(r.stdout);
+    assert.equal(parsed.title, "Json plan ref epic");
+    assert.equal(
+      parsed.planRef,
+      ".context-index/specs/features/cli-driver-surface/epic-plan-ref.plan.md"
+    );
+    assert.match(parsed.id, /^epic-/);
+  });
+
+  it("creates an epic with no planRef when --plan-ref is omitted", () => {
+    const r = runCli(root, ["No plan ref here", "--json"]);
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(JSON.parse(r.stdout).planRef, undefined);
+    assert.doesNotMatch(r.stdout, /planRef/);
+
+    const found = readBoard(root).epics.find((e) => e.title === "No plan ref here");
+    assert.equal(found.planRef, undefined);
+  });
+
   it("rejects a missing title with the usage line", () => {
     const r = runCli(root, []);
     assert.equal(r.status, 1);
@@ -150,5 +208,12 @@ describe("adev issues epic", () => {
     assert.equal(r.status, 0, r.stderr);
     assert.match(r.stdout, /^usage: adev issues epic/m);
     assert.doesNotMatch(r.stdout, /^Subcommands:$/m);
+  });
+
+  it("documents --plan-ref in the usage line and help body", () => {
+    const r = runCli(root, ["--help"]);
+    assert.equal(r.status, 0, r.stderr);
+    assert.match(r.stdout, /^usage: adev issues epic .*--plan-ref <path>/m);
+    assert.match(r.stdout, /^--plan-ref <path>/m);
   });
 });
