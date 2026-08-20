@@ -7,7 +7,7 @@ kind: refactor
 status: review-pending
 created: 2026-08-19
 updated: 2026-08-19
-revision: 5
+revision: 6
 diff-source: "main..61064c9a — the implementation range (5 commits, 417 files). The branch has since gained the reconciliation and review-fix commits."
 ---
 
@@ -499,7 +499,7 @@ Describes the system after the refactor.
 - [x] Test assertions follow the prose rather than being weakened (BEH-10)
 - [x] Both limits documented in `constitution.md` / `CLAUDE.md` and `docs/skill-reference.md`
 - [x] A regression guard fails if any body exceeds the guidance
-- [x] All quality gates pass — 7200 tests, 7198 pass, 0 fail, 2 todo (baseline 7152 on `main`, reproduced by referent-integrity against a clean `git archive main` copy).
+- [x] All quality gates pass — 7202 tests, 7200 pass, 0 fail, 2 todo (baseline 7152 on `main`, reproduced by referent-integrity against a clean `git archive main` copy).
       Measured on the tree this revision ships in, after the last edit rather than
       before it. Revisions 1, 2 and 3 each shipped a test count that was accurate
       when taken and stale by the time it landed; in rev 3 the drift came from the
@@ -513,23 +513,32 @@ Describes the system after the refactor.
 
 **Known gaps — carried, not silently closed:**
 
-- [ ] **No guard for the DAG / depth invariant (Invariant 7).** Nothing enforces
-      acyclicity or the 3-hop bound, and BEH-7's reachability test would accept a
-      cyclic A↔B pair unreachable from the body. The shipping tree sits exactly ON
-      the ceiling — `implement/SKILL.md` → `repo-mode-advisory.md` →
-      `steps/step-2-per-task-loop.md` → `batched-mode.md` is 3 hops — so the next
-      added hop violates it silently (TERM-3).
-- [ ] **`<ADEV_ROOT>` has no defined resolution at the cursor surface.** Cursor
-      publishes to `~/.cursor/skills/adev-<name>/`, which no root maps a
-      `skills/<name>/references/...` pointer onto. The confused-deputy risk is
-      closed — a literal `<ADEV_ROOT>` cannot bind to a project-owned tree — but a
-      cursor-hosted agent needs the plugin-cache root, and nothing states or
-      substitutes it (BND-1 in the revision-3 review).
-- [ ] **No guard for unreferenced companions.** Two exist today —
-      `skills/brainstorm/references/charter-reviewer-prompt.md` and
-      `skills/plan/references/mode-router.md` — both orphaned on `main` before this work,
-      neither introduced by it. Left in place: wiring them in or deleting them is a
-      decision about skill behaviour, not layout.
+- [x] **Invariant 7 is now enforced** by `tests/sync/provider-companion-parity.test.mjs`,
+      which walks the pointer graph from every `SKILL.md` and fails on a cycle or a
+      chain deeper than 3 hops (closes TERM-3, carried since revision 3). Falsified
+      against both modes. It found a real self-loop on its first run:
+      `skills/eval/references/default-rubric.yaml` named its own path in its header —
+      the same line the revision-3 review flagged as stale, where the staleness was
+      fixed and the self-reference left.
+- [x] **`<ADEV_ROOT>` resolution is now stated per surface** in
+      `docs/skill-reference.md`. Cursor is the case that catches people: it publishes
+      a renamed copy to `~/.cursor/skills/adev-<name>/`, which no root maps a
+      `skills/<name>/references/...` pointer onto, but its plugin cache at
+      `~/.cursor/plugins/local/adev/` is a full `cpSync` of the plugin root and does
+      hold a conforming tree. That is the root a cursor-hosted agent resolves to
+      (closes BND-1 from the revision-3 review). Still no *substitution* mechanism —
+      `<ADEV_ROOT>` is resolved by the agent from documentation, not by code.
+- [x] **Both orphan companions resolved**, each on its merits rather than as a batch.
+      `charter-reviewer-prompt.md` was a DUPLICATE of the prompt brainstorm Step 6
+      already inlines, and the duplicate carried the stale `Task tool (general-purpose)`
+      dispatch form that never executes — deleted. It survived because
+      `tests/skills-dispatch-turn-discipline.test.mjs` scanned only `SKILL.md` bodies,
+      a blind spot THIS refactor created by moving dispatch prose into companions
+      without the guard following; that sweep now covers `references/` too.
+      `mode-router.md` is self-described design documentation, not a runtime
+      companion, and is now referenced as background from `plan/SKILL.md` Step 0.
+      Zero markdown companions are unreferenced. The six `write-test/scripts/*` files
+      are referenced by relative `bash scripts/...` invocation and by test import.
 - [ ] **The token saving is estimated, not measured.** Every figure here is bytes, or
       bytes divided by 4.08. The stored module heuristic warns byte proxies overstate
       savings by 2–2.5x, so these must not be quoted as a measured token or cost
@@ -537,6 +546,28 @@ Describes the system after the refactor.
       invocation. Settling it needs `adev cost summary --spec <s> --include-checkpoints`
       over one comparable lifecycle before and after — possible now that
       adev-plugin-882a.1 has landed, but not yet run.
+
+**Revision 6 note.** Closes the three gaps carried since revision 3, rather than
+carrying them a fourth time.
+
+Invariant 7 is now enforced — a pointer-graph walk from every `SKILL.md` failing on
+a cycle or a chain past 3 hops, falsified against both. It found a real self-loop on
+its first run: `default-rubric.yaml` named its own path in its header, the same line
+the revision-3 review flagged as stale where the staleness was fixed and the
+self-reference left.
+
+`<ADEV_ROOT>` resolution is stated per surface in `docs/skill-reference.md`. Cursor
+was the gap: it publishes a renamed copy to `~/.cursor/skills/adev-<name>/` that no
+root maps a pointer onto, while its plugin cache is a full copy of the plugin root
+and does conform — that cache is the root a cursor-hosted agent resolves to.
+
+Both orphan companions are resolved on their merits. `charter-reviewer-prompt.md` was
+a duplicate of the prompt brainstorm Step 6 already inlines, carrying the stale
+`Task tool (general-purpose)` form that never executes; deleted, and the guard that
+should have caught it was widened to scan `references/` — it had scanned only
+`SKILL.md` bodies, a blind spot this refactor created by moving dispatch prose into
+companions without the guard following. `mode-router.md` is design documentation and
+is now referenced as background from `plan/SKILL.md`.
 
 **Revision 5 note.** Round 4 blocked on one finding, raised independently by two
 reviewers: the regression test written for the round-3 cursor containment fix never

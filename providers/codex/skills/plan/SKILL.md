@@ -43,6 +43,11 @@ Passing more than one of `--spec`, `--feature`, `--release`, `--milestone`, `--e
 
 ## Step 0: Mode Detection
 
+Background on why detection resolves in this order, with worked examples:
+`<ADEV_ROOT>/skills/plan/references/mode-router.md`. That companion is design
+documentation, not an instruction — this body remains the authoritative surface,
+and a run never needs to read it.
+
 Picks feature / release / milestone / epic mode from the arguments and repo state.
 
 > **Conditional loading:** Read `<ADEV_ROOT>/skills/plan/references/steps/step-0-mode-detection.md` for the full instructions. Do not act on this section from the summary above.

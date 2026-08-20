@@ -919,7 +919,25 @@ covers, and a pointer:
 
 > **Conditional loading:** Read `<ADEV_ROOT>/skills/hygiene/references/audit-passes/pass-12-lifecycle-audit.md` for the full instructions.
 
-`<ADEV_ROOT>` is the plugin root, resolved at runtime. Pointers **must** carry it.
+`<ADEV_ROOT>` is the **plugin root** — the directory containing `skills/`, `lib/`
+and `templates/` — resolved at runtime. Pointers **must** carry it.
+
+Where that is depends on how the skill was installed. It is the *plugin* root, not
+the directory the running skill happens to sit in, and for cursor those differ:
+
+| Surface | `<ADEV_ROOT>` resolves to |
+|---------|---------------------------|
+| Claude Code (plugin dir) | the plugin directory itself |
+| copilot | `<destRoot>/` — the skill tree is published under `<destRoot>/skills/<name>/` |
+| codex / opencode | `~/.agents/skills/` is a symlink into `providers/<p>/skills/`; the plugin root is the checkout those mirror |
+| cursor | `~/.cursor/plugins/local/adev/` — the plugin **cache**, NOT `~/.cursor/skills/` |
+
+Cursor is the one that catches people. It publishes a sanitized copy for discovery
+to `~/.cursor/skills/adev-<name>/`, with the directory renamed — so no root maps a
+`skills/<name>/references/...` pointer onto that layout. The cache is a full copy of
+the plugin root (`cpSync(PLUGIN_ROOT, cacheDir)`) and does contain a conforming
+`skills/<name>/references/...`, so a cursor-hosted agent resolves `<ADEV_ROOT>` to
+the cache.
 A bare `skills/...` path is repo-root-relative, and nothing anchors it once the
 skill is installed: cursor publishes to `~/.cursor/skills/adev-<name>/` with the
 directory renamed, copilot under `.github/` or `~/.copilot/`, codex to

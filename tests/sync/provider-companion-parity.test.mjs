@@ -158,3 +158,80 @@ test("every companion pointer in canonical skills/ resolves", () => {
       [...new Set(broken)].join("\n  "),
   );
 });
+
+test("the pointer graph is a DAG rooted at SKILL.md, at most 3 hops deep", () => {
+  // Invariant 7. Stated since revision 3 and enforced by nothing until now —
+  // carried as a known gap across three review rounds (TERM-3).
+  //
+  // BEH-7's reachability test does NOT imply this: it asks only that some file
+  // in the skill's surface references a companion, which a mutually-referencing
+  // pair A<->B satisfies while being both cyclic and unreachable from the body.
+  //
+  // The shipping tree sits exactly ON the ceiling — implement/SKILL.md ->
+  // repo-mode-advisory.md -> steps/step-2-per-task-loop.md -> batched-mode.md is
+  // 3 hops — so the next added hop violates the invariant. That is precisely why
+  // a guard is needed rather than an eyeball: the violation is one edit away and
+  // invisible in review.
+  const MAX_DEPTH = 3;
+
+  const walk = (dir, out = []) => {
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      const p = join(dir, e.name);
+      if (e.isDirectory()) walk(p, out);
+      else if (/\.(md|ya?ml)$/.test(e.name)) out.push(p);
+    }
+    return out;
+  };
+
+  // Edges: file -> the companions it points at, as repo-relative paths.
+  const edges = new Map();
+  for (const abs of walk(join(ROOT, "skills"))) {
+    const rel = abs.replace(ROOT + "/", "");
+    const targets = new Set();
+    for (const m of readFileSync(abs, "utf8").matchAll(
+      /<ADEV_ROOT>\/(skills\/[a-z-]+\/(?:references|scripts)\/[A-Za-z0-9._/-]+?\.(?:md|ya?ml|sh|mjs))/g,
+    )) {
+      targets.add(m[1]);
+    }
+    if (targets.size) edges.set(rel, [...targets]);
+  }
+  assert.ok(edges.size > 0, "no pointer edges found — the sweep is not running");
+
+  const cycles = [];
+  const tooDeep = [];
+
+  // DFS from each body. `path` is the chain so far, so a repeat inside it is a
+  // cycle reachable from a root — which is the case that actually hangs a reader.
+  const visit = (node, path) => {
+    if (path.includes(node)) {
+      cycles.push([...path, node].join(" -> "));
+      return;
+    }
+    const next = edges.get(node);
+    if (!next) return;
+    if (path.length >= MAX_DEPTH) {
+      tooDeep.push([...path, node].join(" -> "));
+      return;
+    }
+    for (const child of next) visit(child, [...path, node]);
+  };
+
+  for (const start of edges.keys()) {
+    if (!/\/SKILL\.md$/.test(start)) continue;
+    visit(start, []);
+  }
+
+  assert.deepEqual(
+    [...new Set(cycles)],
+    [],
+    "companion pointer cycles (Invariant 7 — the graph must be acyclic):\n  " +
+      [...new Set(cycles)].join("\n  "),
+  );
+  assert.deepEqual(
+    [...new Set(tooDeep)],
+    [],
+    `companion pointer chains deeper than ${MAX_DEPTH} hops (Invariant 7). Past ` +
+      "this depth disclosure has become indirection — inline the section or " +
+      "point at it from the body directly:\n  " + [...new Set(tooDeep)].join("\n  "),
+  );
+});

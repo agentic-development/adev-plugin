@@ -18,7 +18,7 @@
 
 import { test } from "node:test";
 import assert from "node:assert";
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { readdirSync, readFileSync, statSync, existsSync } from "node:fs";
 import { join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -103,6 +103,42 @@ for (const slug of DISPATCHING_SKILLS) {
     );
   });
 }
+
+test("no companion under skills/*/references/ contains stale dispatch syntax", () => {
+  // The sweep below covers SKILL.md bodies. Progressive disclosure moved a large
+  // amount of dispatch prose into references/ companions, and this guard did not
+  // follow it — so the corpus it protects shrank silently as the split landed.
+  // At the time this was added exactly one file still carried the stale form: an
+  // ORPHANED duplicate of brainstorm's charter-reviewer prompt, unreferenced by
+  // any skill, which is how it survived. It was deleted; this keeps the class shut.
+  const walk = (dir, out = []) => {
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      const p = join(dir, e.name);
+      if (e.isDirectory()) walk(p, out);
+      else if (e.name.endsWith(".md")) out.push(p);
+    }
+    return out;
+  };
+  const offenders = [];
+  let scanned = 0;
+  for (const slug of DISPATCHING_SKILLS) {
+    const refs = join(SKILLS_DIR, slug, "references");
+    if (!existsSync(refs)) continue;
+    for (const f of walk(refs)) {
+      scanned++;
+      if (STALE_DISPATCH_SYNTAX.test(readFileSync(f, "utf8"))) {
+        offenders.push(f.replace(SKILLS_DIR + "/", ""));
+      }
+    }
+  }
+  assert.ok(scanned > 0, "no companions scanned — the sweep is not running");
+  assert.deepEqual(
+    offenders,
+    [],
+    "companions using the stale `Task tool (general-purpose)` form, which never " +
+      "executes — use `Agent({...})`:\n  " + offenders.join("\n  "),
+  );
+});
 
 test("no skills/*/SKILL.md contains stale 'Task tool (general-purpose)' dispatch syntax", () => {
   const offenders = [];
