@@ -35,6 +35,7 @@ AI coding agents work best with structured context but most projects provide non
 | Cursor Provider | Fourth provider adapter that installs adev into Cursor 2.5's Plugin system, with a build-step generator translating canonical `hooks/hooks.json` to Cursor's event model and completing the `cursor` sync-target format | [charter.md](./features/cursor-provider/charter.md) |
 | Copilot Provider | Fifth provider adapter that installs adev into GitHub Copilot's per-repo customization surface (`.github/skills/`, `.github/hooks/`, `.github/copilot-instructions.md`, `.github/instructions/`), with a build-step generator emitting Copilot's PascalCase hook protocol and tool-name mapping; covers both VS Code Copilot and the standalone Copilot CLI from one install | [charter.md](./features/copilot-provider/charter.md) |
 | Worktree Parallelization | adev-managed git worktrees enabling parallel, file-disjoint lifecycle execution (implement task-groups, milestone builds) without conflicts, anchored to the main repo root so they never nest | [charter.md](./features/worktree-parallelization/charter.md) |
+| Eval Harness | One rubric contract and scoring engine shared by /adev:eval and tests/evals/, with hermetic planted-ground-truth fixtures, per-skill regression rubrics for all 30 skills, run-cost records, and tiered CI gates | [charter.md](./features/eval-harness/charter.md) |
 
 ## Cross-Cutting Concerns
 
