@@ -65,6 +65,7 @@ The constitution is synced into CLAUDE.md (and other agent files). For deeper co
 | End-to-end pipeline (review → validate) | `/adev:build` |
 | Post-implementation checks | `/adev:validate` |
 | Systematic debugging | `/adev:debug` |
+| Drain P2/P3 bugs unattended | `/adev:bugfix-loop` |
 | Audit context staleness & drift | `/adev:hygiene` |
 | Repair lifecycle mismatches | `/adev:reconcile` |
 | Everything else | `research`, `eval`, `deploy`, `document`, `retro`, `sample`, `learn`, `sync`, `repomap`, `codehealth`, `prototype`, `write-test` |
@@ -139,5 +140,5 @@ A persona directive (Product, Developer, or Architect) is injected at session st
 When a skill has a "Report to User", "Output Format", or similar section with prescriptive formatting (tables, code blocks, blocker codes), treat that format as the **default for the Developer persona**. If a different persona is active, adapt the chat summary to that persona's output rules:
 
 - **Artifacts written to disk** (`.review.md`, `.plan.md`, validation reports) always use the full technical format regardless of persona.
-- **Completion tokens** — the `/goal`-friendly terminal markers emitted by `/adev:build` (`ADEV-BUILD: <STATE>`), `/adev:validate` (`ADEV-VALIDATE: <STATE>`), and `/adev:debug` (`ADEV-DEBUG: <STATE>`) — are always emitted verbatim as the final line of output regardless of persona or verbosity. Persona and verbosity rules MUST NOT trim, reword, translate, summarize away, or fence them; like disk artifacts, they are exempt from persona adaptation (see `.context-index/specs/cross-cutting/completion-tokens/`).
+- **Completion tokens** — the `/goal`-friendly terminal markers emitted by `/adev:build` (`ADEV-BUILD: <STATE>`), `/adev:validate` (`ADEV-VALIDATE: <STATE>`), `/adev:debug` (`ADEV-DEBUG: <STATE>`), and `/adev:bugfix-loop` (`ADEV-BUGFIXLOOP: <STATE>`) — are always emitted verbatim as the final line of output regardless of persona or verbosity. Persona and verbosity rules MUST NOT trim, reword, translate, summarize away, or fence them; like disk artifacts, they are exempt from persona adaptation (see `.context-index/specs/cross-cutting/completion-tokens/`).
 - **Chat responses to the user** follow the active persona's dimension rules for verbosity, code references, review verdicts, test results, and next actions.
