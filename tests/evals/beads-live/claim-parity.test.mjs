@@ -226,6 +226,33 @@ describe("beads backend — live br parity", () => {
       assert.ok(!after.owner, "release clears the owner");
       assert.equal(after.branch, "feat/x", "branch records where the work went");
       assert.equal(after.pr, "42", "pr records where the work went");
+      assert.equal(
+        after.status,
+        "open",
+        "release is claim's inverse — an issue that was only probed must not be " +
+          "stranded at in_progress with no owner and no lease to expire",
+      );
+    } finally {
+      cleanupTempDir(dir);
+    }
+  });
+
+  it("does not resurrect a closed issue's status when a lingering claim on it is released", async () => {
+    const dir = makeBeadsProject();
+    try {
+      const a = new BeadsAdapter(dir);
+      await a.init();
+      const issue = await a.create({ title: "closed while claimed", type: "task", priority: 2 });
+
+      await a.claim(issue.id, "alice");
+      // close() does not clear the assignee, so the claim survives closing —
+      // release() must not blindly flip status back to "open" in that case.
+      await a.close(issue.id, "done");
+      await a.release(issue.id, "alice");
+
+      const after = await a.get(issue.id);
+      assert.equal(after.status, "closed", "release must not reopen a closed issue");
+      assert.ok(!after.owner, "release still clears the owner");
     } finally {
       cleanupTempDir(dir);
     }
