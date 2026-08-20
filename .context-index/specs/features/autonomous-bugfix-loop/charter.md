@@ -1,7 +1,7 @@
 ---
 status: approved
 kind: feature
-revision: 7
+revision: 8
 updated: 2026-08-19
 ---
 
@@ -99,6 +99,7 @@ approval per Architecture Boundaries — approved during brainstorm.
 | Setup (`skills/using-adev/SKILL.md`, Persona Output Override) | internal module | The `debug-completion-and-auto` spec extends the persona-exempt carve-out to name `ADEV-DEBUG`, alongside the existing `ADEV-BUILD`/`ADEV-VALIDATE` entries — added revision 3 after review flagged this dependency was undeclared |
 | Agent-Reliable State Artifacts | internal module | `lifecycle-state/` JSONL persistence conventions used for attempt-cap tracking |
 | `lib/loop-convergence.mjs` (owned by `review-block-auto-retry.spec.md`) | internal module | Reused bounding logic, keyed per issue instead of per review-revision — high-risk validated spec, coordinate before touching |
+| `lib/governance/context-pack.mjs`'s `fenceBlock`/`neutralizeFenceTokens` (owned by the review/governance domain, `configurable-reviewers`-family specs) | internal module | Reused nonce-scoped fence primitive (random per-invocation token, explicit closing delimiter, nonce-independent literal-prefix neutralization) for wrapping untrusted GitHub-origin issue bodies before they are stored as `WorkItem.notes` — same reuse posture as `lib/loop-convergence.mjs` above: coordinate before touching, added revision 8 to close round-5 review BD-1 |
 | `/adev:build` (`skills/build/SKILL.md`) | internal module (reference) | Source of the self-re-invocation discipline this skill's loop copies |
 | GitHub REST/GraphQL API (via `gh` CLI) | external service | Inbound issue label reads, outbound comment writeback |
 | Claude Code `/goal` | external harness feature (optional) | Documented as an optional outer driver; not a dependency of the core loop |
@@ -109,7 +110,7 @@ approval per Architecture Boundaries — approved during brainstorm.
 
 | Entity | Description | Key Attributes |
 |--------|-------------|----------------|
-| BugfixLoopRun | One invocation of `/adev:bugfix-loop` across N self-re-invoked turns | run_id, started_at, max_bugs, max_turns, bugs_attempted[], status (running/complete/budget_exhausted/blocked — `blocked` added in revision 7 to give the `ADEV-BUGFIXLOOP: BLOCKED` completion-token terminal state defined in `bugfix-loop-skill.spec.md`'s Failure Modes and Output Contract a corresponding persisted value; set once, only on the run's terminal turn, when a structural failure such as an unreachable issue board halts the run before any bug is attempted), degraded_sync_note (string or null — written only by the tracker-provider-bridge's degraded-GitHub-sync escalation, added in revision 7) |
+| BugfixLoopRun | One invocation of `/adev:bugfix-loop` across N self-re-invoked turns | run_id, started_at, max_bugs, max_turns, bugs_attempted[], status (running/complete/budget_exhausted/blocked — `blocked` added in revision 7 to give the `ADEV-BUGFIXLOOP: BLOCKED` completion-token terminal state defined in `bugfix-loop-skill.spec.md`'s Failure Modes and Output Contract a corresponding persisted value; set once, only on the run's terminal turn, when a structural failure such as an unreachable issue board halts the run before any bug is attempted), degraded_sync_note (string or null — written only by the tracker-provider-bridge's degraded-GitHub-sync escalation, added in revision 7), sync_retry_counts (object, default `{ unreachable_consecutive_turns: 0, oversized_consecutive_turns: {} }` — added in revision 8 to close round-5 review TR-1/TR-2; written and read each turn by the tracker-provider-bridge's inbound sync so its two 5-consecutive-turn caps survive this skill's fresh-context-per-turn self-re-invocation and mid-run process restarts: `unreachable_consecutive_turns` is a single run-scoped counter for the GitHub-unreachable/rate-limited case, `oversized_consecutive_turns` is a map keyed by external GitHub issue number for the oversized-title/body-refusal case — both live in the same run-state file this entity already persists to, so a fresh `run_id` starts both counters at their defaults for free) |
 | AttemptRecord | Per-issue attempt-cap state, independent of the board schema | issue_id, attempts, last_verdict (PASS/CONTINUE/NO_PROGRESS/REGRESSED/BUDGET_EXHAUSTED), curr_blockers (failing check-ID set or bounded hash, for next-attempt diffing), parked_reason, updated_at |
 | TrackerSyncLink | Mapping between an external tracker issue and a local WorkItem, provider-agnostic | provider (e.g. `"github"`), external_ref, local_issue_id, accepted_at (when gate condition first met), last_synced_at, last_comment_id |
 | TrackerProviderAdapter | Interface contract implemented per tracker (GitHub is the only shipped implementation) | provider name, gate-check fn, inbound-fetch fn, outbound-writeback fn — mirrors `IssueManagerInterface`'s adapter shape |
