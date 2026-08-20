@@ -8,7 +8,10 @@ import { mkdtempSync, rmSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execSync } from 'node:child_process';
-import { createRun, readRunState, resolveRunStatePath, checkStatusGuard, checkBudget } from '../../lib/bugfix-loop-run.mjs';
+import {
+  createRun, readRunState, resolveRunStatePath, checkStatusGuard, checkBudget,
+  appendAttempt, completeTurn, finishRun, tokenForStatus,
+} from '../../lib/bugfix-loop-run.mjs';
 
 test('createRun writes a run-state file with all BugfixLoopRun fields, defaults intact', () => {
   const root = mkdtempSync(join(tmpdir(), 'bfl-run-'));
@@ -57,4 +60,56 @@ test('checkBudget: exhausted on turns_completed reaching max_turns, independent 
 test('checkBudget: not exhausted when neither cap is hit', () => {
   const state = { max_bugs: 5, max_turns: 20, bugs_attempted: [{}], turns_completed: 1 };
   assert.deepEqual(checkBudget(state), { exhausted: false, reason: null });
+});
+
+test('appendAttempt appends to bugs_attempted[] without touching turns_completed', () => {
+  const root = mkdtempSync(join(tmpdir(), 'bfl-run-'));
+  const state = createRun(root, { maxBugs: null, maxTurns: 20 });
+  const updated = appendAttempt(root, state.run_id, 'issue-1');
+  assert.equal(updated.bugs_attempted.length, 1);
+  assert.equal(updated.bugs_attempted[0].issue_id, 'issue-1');
+  assert.equal(updated.turns_completed, 0);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('completeTurn increments turns_completed by exactly 1, every call', () => {
+  const root = mkdtempSync(join(tmpdir(), 'bfl-run-'));
+  const state = createRun(root, {});
+  completeTurn(root, state.run_id);
+  const after = completeTurn(root, state.run_id);
+  assert.equal(after.turns_completed, 2);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('finishRun writes the matching terminal status and returns the pinned token (AC bullet 7)', () => {
+  const root = mkdtempSync(join(tmpdir(), 'bfl-run-'));
+  const state = createRun(root, {});
+  const { state: finished, token } = finishRun(root, state.run_id, { status: 'budget_exhausted' });
+  assert.equal(finished.status, 'budget_exhausted');
+  assert.equal(token, 'BUDGET_EXHAUSTED');
+  assert.equal(readRunState(root, state.run_id).status, 'budget_exhausted');
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('finishRun rejects a non-terminal status', () => {
+  const root = mkdtempSync(join(tmpdir(), 'bfl-run-'));
+  const state = createRun(root, {});
+  assert.throws(() => finishRun(root, state.run_id, { status: 'running' }), /INVALID_TERMINAL_STATUS/);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('finishRun: complete status persists before the COMPLETE token is returned (AC bullet 8 — round-1 plan-review fix: the prior draft only covered budget_exhausted here and blocked in Task 5, never complete)', () => {
+  const root = mkdtempSync(join(tmpdir(), 'bfl-run-'));
+  const state = createRun(root, {});
+  const { state: finished, token } = finishRun(root, state.run_id, { status: 'complete' });
+  assert.equal(finished.status, 'complete');
+  assert.equal(token, 'COMPLETE');
+  assert.equal(readRunState(root, state.run_id).status, 'complete');
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('tokenForStatus maps all three terminal statuses (AC bullet 7)', () => {
+  assert.equal(tokenForStatus('complete'), 'COMPLETE');
+  assert.equal(tokenForStatus('budget_exhausted'), 'BUDGET_EXHAUSTED');
+  assert.equal(tokenForStatus('blocked'), 'BLOCKED');
 });
