@@ -1,0 +1,127 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Frozen-constants module mirroring the shipped lib/evals/rubric-schema.mjs; the spec's Error Cases table enumerates all nine codes and the plan carries the full suite. Two files, one module, no latitude."
+    },
+    {
+      "task_id": "t10",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.6,
+        "novelty": 0.6
+      },
+      "rationale": "No golden sample exists for a CLI verb module, so the agent follows lib/cli/partial.mjs by reference only. Six files across lib/cli, the cli/index.mjs dispatcher and docs. The default table rendering is the plan's one genuinely unpinned design decision, and the verb composes arg parsing, dual path containment and two renderers."
+    },
+    {
+      "task_id": "t11",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.6,
+        "novelty": 0.6
+      },
+      "rationale": "Not a docs chore: it changes a shipped skill's observable Layer 3 reporting, is the only task touching a file governed by the active no-inline-node-in-skills boundary rule and the pre-commit both-forms hook, and must restate the reduced-attainable convention at half granularity while leaving Layer 4's whole-layer convention intact. The tests pin regexes, not wording."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 0.8
+      },
+      "rationale": "BEH-10 and the SCORE_INVALID_RUBRIC row are stated in full, and the plan resolves the one open question: loadRubric returns an unbranded document, so origin checking is structural against REQUIRED_TOP_LEVEL_KEYS. Five files inside lib/evals plus fixtures."
+    },
+    {
+      "task_id": "t3",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 0.8
+      },
+      "rationale": "BEH-5, BEH-6 and both the duplicate and invalid-verdict rows are explicit, and the two verdict enums already exist in rubric-schema.mjs. One pass over one list: enum membership, key-set diff, duplicate detection."
+    },
+    {
+      "task_id": "t4",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "BEH-2 is arithmetic with the helper signature, the exclusion sets and the point budgets all prescribed by the plan, including the explicit instruction not to add an answered-zero guard that Tasks 5-6 own. Two files."
+    },
+    {
+      "task_id": "t5",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 0.8
+      },
+      "rationale": "BEH-3 is stated in full including the threshold-independence paragraph, and the plan supplies the literal two-clause expression plus its do-not-simplify comment. The round-3 regression risk is pinned by the threshold-100 REGRESSION GUARD test already written in the plan, which fails loudly if clause 1 is deleted."
+    },
+    {
+      "task_id": "t6",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 0.8
+      },
+      "rationale": "BEH-4 plus its two not-an-error rows fully determine the precondition, and the fixtures are copies of conforming.yaml with one list emptied. Four files, one module."
+    },
+    {
+      "task_id": "t7",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "An extraction refactor with the signature, the return set and the branch ordering all given by the plan's verified partition table, and an exhaustive sweep test already written. Two files."
+    },
+    {
+      "task_id": "t8",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "BEH-1 and the six postconditions are explicit, and the plan settles the shared result shape, the round-once-at-the-blend rule and the fixed key order for stable stringify. Two files, assembling values the earlier passes produced."
+    },
+    {
+      "task_id": "t9",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 1
+      },
+      "rationale": "An allow-list copy over REQUIRED_CRITERION_FIELDS, mechanically derivable from BEH-7. Spec completeness is 4 rather than 5 only because SCORE_INVALID_VERDICT_CONTEXT is absent from the spec's Error Cases table; the plan pre-dispositions that gap."
+    }
+  ]
+}

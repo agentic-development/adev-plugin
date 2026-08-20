@@ -3,10 +3,10 @@
 ---
 charter: eval-harness
 kind: behavioral
-status: implemented
+status: review-pending
 risk_level: medium
 milestone: v1
-revision: 5
+revision: 6
 charter-revision: 4
 created: 2026-08-20
 updated: 2026-08-20
@@ -66,6 +66,7 @@ The result keeps the deterministic and judged halves separately addressable. A s
 | Result assembly | Verdict table plus separately addressable halves, each a number-with-maximum or a status; a blended total only when both halves are numeric | medium |
 | `buildJudgeContext` | Assemble the single-criterion judge context and prove isolation | small |
 | `adev eval score` verb | Wrap the engine; table-with-aggregate output, a `--json` shape, and path containment on `--rubric`/`--input` | medium |
+| `--rubric default` keyword resolution | Resolve the literal `default` to the plugin's shipped rubric with the plugin root as containment boundary, leaving path values on the BEH-9 project-root path. Regression test must exercise a plugin root OUTSIDE the project root, since the repo's own layout makes them identical and hides the defect | medium |
 | Update `skills/eval/SKILL.md` Layer 3 | Replace the in-prose aggregate formula with a call to `adev eval score`, and replace the whole-layer discard with the half-level status reporting this spec defines. Required, not optional: leaving it discarding all of Layer 3 on `INSUFFICIENT_EVIDENCE` while the engine keeps the deterministic half numeric would leave the engine's only in-repo consumer contradicting it | medium |
 | Unit tests | Verdict sets exercising every enum value, both statuses, the disjoint-region assignment, and every error code | medium |
 
@@ -85,6 +86,9 @@ Not applicable. This spec defines a library function and a CLI verb with no user
 - [ ] A non-numeric or out-of-range `insufficient_evidence_threshold_percent` is rejected with `SCORE_INVALID_THRESHOLD` before any tallying (BEH-10)
 - [ ] `skills/eval/SKILL.md` Layer 3 calls `adev eval score` and reports half-level statuses rather than discarding the whole layer
 - [ ] A traversal or unreadable path on `--rubric`/`--input` exits non-zero with its named error and reads nothing (BEH-9)
+- [ ] `--rubric default` resolves the plugin's shipped rubric and succeeds even when the plugin root lies outside the project root (BEH-11)
+- [ ] A non-`default` `--rubric` value is still containment-checked against the project root, unchanged (BEH-9, BEH-11)
+- [ ] Every error code the implementation can raise appears in the Error Cases table
 - [ ] A `met` or `not_met` verdict with empty evidence is rejected with `SCORE_EMPTY_EVIDENCE` (BEH-5)
 - [ ] An unknown verdict id or a missing verdict is rejected with its named error (BEH-6)
 - [ ] `buildJudgeContext` output carries one criterion and no other criterion's id, verdict, or running total (BEH-7)
@@ -113,6 +117,7 @@ Not applicable. This spec defines a library function and a CLI verb with no user
 - **BEH-7** — **When** `buildJudgeContext(criterion)` is called **then** its output contains that criterion's fields and no other criterion's identifier, no other criterion's verdict, and no running total, so single-criterion isolation is a property of the builder rather than of prose a judge is trusted to honour.
 - **BEH-8** — **When** `adev eval score --rubric <path> --input <path>` runs **then** it emits the verdict table together with the aggregate and never the aggregate alone; `--json` returns one object carrying the table, both halves — each a number or a status — and the blended total when both halves are numeric. A half carrying a status is rendered by that status name, never as `0`.
 - **BEH-9** — **When** either `--rubric` or `--input` resolves outside the project root through traversal or a symlink, or names a file that cannot be read **then** the verb exits non-zero with `UNSAFE_SCORE_PATH` or `SCORE_INPUT_NOT_FOUND` respectively, reporting the offending path verbatim and reading no content, matching the `UNSAFE_RUBRIC_PATH` precedent the shipped loader set.
+- **BEH-11** — **When** `--rubric` carries the literal value `default` **then** the verb resolves the plugin's shipped `skills/eval/default-rubric.yaml` and loads it with the plugin root as its containment boundary, without applying project-root containment — because `default` is a keyword naming a known location, not a user-supplied path. Every other `--rubric` value is a path and is containment-checked against the project root per BEH-9, which is unchanged. Without this, the verb is uncallable from `skills/eval/SKILL.md`: that skill's documented resolution order already treats the literal `default` as naming the shipped rubric, but passing the shipped rubric as an `<ADEV_ROOT>`-relative path instead is refused in every real install, where the plugin cache lies outside the project root. The repository's own test suite cannot see that failure, because here `<ADEV_ROOT>` and the project root are the same directory.
 - **BEH-10** — **When** the supplied Rubric's `insufficient_evidence_threshold_percent` is non-numeric or falls outside `[0, 100]` **then** the engine throws `SCORE_INVALID_THRESHOLD` naming the value, before any tallying runs. The shipped loader validates that top-level keys are *present*, not that they are well-typed, so the engine checks the one field whose corruption is silent rather than loud: a non-numeric threshold coerces to `NaN`, every share comparison against it returns `false`, and BEH-3's second clause would never fire for any verdict set while the rubric still looked valid. Re-validating one field of an already-loaded Rubric does not make the engine a loader — it reads no file and parses nothing.
 
 ## Postconditions
@@ -138,5 +143,8 @@ Not applicable. This spec defines a library function and a CLI verb with no user
 | Every declared `quality_dimensions` entry resolved `unknown` | Not an error — the judged half carries `INSUFFICIENT_EVIDENCE` regardless of the rubric's threshold (BEH-3) | — |
 | `--rubric` or `--input` escapes the project root by traversal or symlink | Exit non-zero, reporting the path verbatim; read nothing | `UNSAFE_SCORE_PATH` |
 | `--input` names a file that does not exist or cannot be read | Exit non-zero, naming the resolved path | `SCORE_INPUT_NOT_FOUND` |
+| `--input` names a readable file that is not valid JSON | Exit non-zero, naming the resolved path. Distinct from `SCORE_INPUT_NOT_FOUND`: the file was read, not missed | `SCORE_INPUT_PARSE_ERROR` |
+| `buildJudgeContext` is given a non-object, or a criterion whose required fields are absent or hold `undefined`/`null` | Throw, naming the missing fields. Presence alone is insufficient — an all-`undefined` criterion would otherwise yield a context of blanks | `SCORE_INVALID_VERDICT_CONTEXT` |
+| `--rubric default` is passed but the plugin's shipped rubric is absent or unreadable | Exit non-zero, naming the resolved plugin path (BEH-11) | `SCORE_DEFAULT_RUBRIC_MISSING` |
 | `unknown` share above the rubric threshold | Not an error — the judged half carries the status `INSUFFICIENT_EVIDENCE` and the deterministic half is unaffected | — |
 | A half has no entry to answer (none declared, or all deterministic entries `not_applicable`) | Not an error — that half carries the status `NOT_SCORED`, never `INSUFFICIENT_EVIDENCE` | — |
