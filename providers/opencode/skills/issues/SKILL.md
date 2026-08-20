@@ -78,17 +78,31 @@ Report: "Created `<id>`: <title>" — or when a milestone is set: "Created `<id>
 
 ### Update
 
-Determine if `<id>` is an issue (`issue-N`) or epic (`epic-N`) by prefix:
-- `issue-*`: call `update(id, { status })` on the adapter
-- `epic-*`: call `updateEpic(id, { status })` on the adapter
+Edit one board item in one step:
 
-Respect the close-guard invariant — if status change to `closed` is attempted via update, direct the user to use `close` instead.
+```bash
+adev issues update <id> [--status <open|in_progress|deferred>] [--milestone <name>] [--title <text>] [--priority 0-4] [--notes <text>]
+```
+
+Pass only the id. The command resolves whether the id names an issue or an epic by looking it up on the board, so nothing here reads an id prefix — that keeps it correct on backends whose ids carry no prefix. `--status` and `--milestone` can be given together or independently; both land in a single call. `--milestone` applies to epics only (an issue carries none), and `--priority` to issues only — either on the wrong kind of item exits 1 with a message saying so.
+
+`--status closed` is refused with exit 1: closing goes through `adev issues close`, which enforces the dependency guard. Relay the command's own redirect to the user rather than re-deriving it.
+
+Display the command output to the user verbatim.
 
 ### Close
 
-Call `close(id, reason)` on the adapter. If blocked by unclosed dependencies, report:
+Close an item through the board's guards:
 
-> Cannot close `<id>`: blocked by `<dep-id-1>`, `<dep-id-2>`. Close those issues first.
+```bash
+adev issues close <id> --reason "<text>"
+```
+
+`--reason` is required. Exit 2 means a guard refused the close and the board is unchanged — an open dependency, or an unclosed child of a tiered id. Every blocker is named on stderr, in this shape:
+
+> Cannot close `<id>`: blocked by `<dep-id-1>`, `<dep-id-2>`. Close those first.
+
+Relay that to the user; do not attempt a second close or work around the guard. Exit 1 is a usage error or an adapter failure — an unknown id is an exit 1, not a refusal.
 
 ### List (filtered)
 
@@ -104,7 +118,15 @@ Display that output to the user verbatim.
 
 ### Add Dependency
 
-Call `addDependency(issueId, dependsOnId)`. If a circular dependency would be created, report the cycle.
+Record that one issue is blocked by another:
+
+```bash
+adev issues dep <issue-id> <depends-on-id>
+```
+
+Exit 2 means the dependency would close a cycle (direct or transitive); the command reports the cycle it found and writes nothing. Relay that report to the user. Recording a dependency that already exists is a no-op success.
+
+Display the command output to the user verbatim.
 
 ### Ready
 
