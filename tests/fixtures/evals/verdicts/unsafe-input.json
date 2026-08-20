@@ -1,0 +1,7 @@
+[
+  { "id": "spec_criteria_referenced", "value": "met", "evidence": "tests/x.test.mjs:12 names criterion 1" },
+  { "id": "tests_accompany_source", "value": "met", "evidence": "the diff pairs every source file" },
+  { "id": "readability_naming", "value": "met", "evidence": "lib/x.mjs:4 names the export" },
+  { "id": "separation_of_concerns", "value": "not_met", "evidence": "lib/x.mjs:30 mixes two responsibilities" },
+  { "id": "not_a_declared_criterion", "value": "met", "evidence": "this id is not in conforming.yaml" }
+]

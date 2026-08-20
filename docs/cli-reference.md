@@ -61,6 +61,7 @@ This file is the CLI counterpart to [`skill-reference.md`](skill-reference.md) (
 | `test-policy` | Resolve/inspect/set the test depth policy for a plan task | `lib/cli/test-policy.mjs` |
 | `test-helpers` | Emit the shared test-helper/fixture/test-sample inventory; check a test file for helper duplication | `lib/cli/test-helpers.mjs` |
 | `test-debt` | Scan the test suite for accreted debt (hygiene Audit Pass 23) | `lib/cli/test-debt.mjs` |
+| `eval` | Score a verdict set against a rubric (`eval score`) | `lib/cli/eval.mjs` |
 
 ---
 
@@ -808,6 +809,52 @@ adev test-debt scan --detector APPEND_CHAIN
 
 **Implementation:** `lib/cli/test-debt.mjs` (engine: `lib/hygiene/test-debt.mjs`).
 **Called by:** `/adev:hygiene` Audit Pass 23.
+
+### `eval`
+
+**Purpose:** Score a verdict set against a rubric — the CLI surface over the Layer 3 scoring
+engine (`lib/evals/rubric.mjs`'s `loadRubric`, `lib/evals/score.mjs`'s `scoreRubric`). `run()`
+dispatches on the first argument; `score` is the only subcommand today, and the verb is named
+`eval` rather than `eval-score` so a future Run-cost record capability can add `eval cost`
+beside it without a second registry entry.
+
+**Signature:** `eval score --rubric <path> --input <path> [--json]`
+
+- `--rubric <path>` — a rubric YAML file, containment-checked against the project root.
+- `--input <path>` — a JSON verdict-set file (an array of `{id, value, evidence}`),
+  containment-checked against the project root.
+- `--json` — print one JSON object carrying the verdict table, both halves, and the total,
+  instead of the default table.
+
+Both `--rubric` and `--input` are contained against the project root — resolved, then
+real-pathed to catch a symlink escape, then re-checked — **before either file is opened**, so a
+traversal or symlink escape on either flag is refused by one uniform code
+(`UNSAFE_SCORE_PATH`, naming the offending path exactly as supplied) without reading any
+content. This matches the `UNSAFE_RUBRIC_PATH` precedent `loadRubric` already sets; `loadRubric`
+re-contains `--rubric` again on its own, and that duplicate check is deliberate. A contained but
+missing or unreadable `--input` exits non-zero with `SCORE_INPUT_NOT_FOUND`, naming the resolved
+path. An unparsable JSON `--input` exits non-zero with `SCORE_INPUT_PARSE_ERROR`. A verdict set
+the engine rejects (an unknown id, a missing id, an illegal verdict, empty evidence, a
+duplicate, or a malformed rubric/threshold) surfaces that engine error code and exits non-zero.
+Nothing is ever printed — table, aggregate, or JSON — unless every step above succeeded.
+
+**The default table omits evidence.** Evidence strings are free text and would make every run's
+paste-into-a-conversation width unbounded, which defeats the point of a compact default; the
+table reports `id`, `kind`, and `verdict` only, with column widths computed from the data, plus
+one aggregate line (`deterministic: <points>/<max>` or `deterministic: <STATUS>`, likewise
+`judged`, then `total: <points>/<max>` or `total: n/a`). The verdict table and the aggregate
+always appear together, never the aggregate alone; a half carrying a status renders by that
+status's name, never as `0`. Evidence is available only via `--json`.
+
+**Example:**
+```
+adev eval score --rubric skills/eval/default-rubric.yaml --input .adev/eval/latest-verdicts.json
+adev eval score --rubric skills/eval/default-rubric.yaml --input .adev/eval/latest-verdicts.json --json
+```
+
+**Implementation:** `lib/cli/eval.mjs` (engine: `lib/evals/rubric.mjs`, `lib/evals/score.mjs`).
+**Called by:** intended for `/adev:eval` Layer 3 — this verb is not yet invoked by any skill as of
+this entry; the wiring lands with the Layer 3 rewrite.
 
 ### `worktree`
 
