@@ -1,0 +1,4 @@
+interface:
+  display_name: "adev Bugfix Loop"
+  short_description: "Run adev:bugfix-loop"
+  default_prompt: "Use $adev:bugfix-loop to run this skill."

@@ -1,0 +1,149 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Explicit interface spec with full JSDoc/test given; mirrors lib/provider/registry.mjs's shape-guard convention; single new file, no boundary crossings; mechanical pattern application."
+    },
+    {
+      "task_id": "t10",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.8,
+        "novelty": 0.6
+      },
+      "rationale": "Wires --github-sync into skills/bugfix-loop/SKILL.md at multiple insertion points; prose-level edit needing exact regex-matched wording in tests, more inference than a code diff."
+    },
+    {
+      "task_id": "t11",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 1,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Explicit CLI subcommand spec/tests; mirrors existing sibling subcommands in the same lib/cli/issues.mjs dispatch chain; single file; mechanical read-only endpoint."
+    },
+    {
+      "task_id": "t12",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.4,
+        "novelty": 0.6
+      },
+      "rationale": "Edits skills/debug/SKILL.md, explicitly flagged as owned by a different charter (implementation) with a coordination note about a concurrently-implementing sibling spec; cross-charter boundary crossing is this plan's own flagged risk."
+    },
+    {
+      "task_id": "t13",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 1,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Pure documentation task: explicit ADR table row and manifest doc-comment text given verbatim; mirrors existing ADR-0015/manifest doc patterns; no code logic."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Explicit registry spec/tests given; direct mirror of lib/provider/registry.mjs's plain-map pattern; single file, single module; mechanical."
+    },
+    {
+      "task_id": "t3",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.8,
+        "novelty": 0.6
+      },
+      "rationale": "Full test/impl given but no golden sample for the exec-injection+fence-reuse composition; shells out to gh CLI; combines two known patterns (scanPullRequests + fenceBlock) needing careful integration."
+    },
+    {
+      "task_id": "t4",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 1,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Trivial one-line registration into a registry this plan itself just built; explicit test; single file; fully mechanical."
+    },
+    {
+      "task_id": "t5",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Explicit tests/impl given; near-1:1 mirror of lib/bugfix-loop-attempts.mjs's append/fold pattern; single new file; mechanical fold-on-read logic."
+    },
+    {
+      "task_id": "t6",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.6,
+        "novelty": 0.8
+      },
+      "rationale": "Additive changes to lib/bugfix-loop-run.mjs, a file the plan itself flags as concurrently owned by a sibling in-flight spec; re-read-before-edit coordination risk plus non-trivial escalation/dedup logic."
+    },
+    {
+      "task_id": "t7",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.8,
+        "novelty": 0.6
+      },
+      "rationale": "Core orchestration combining registry+link+retry-counter+issue-creation across 5 upstream tasks; Interaction Contract is detailed but multi-path error handling composition is non-trivial."
+    },
+    {
+      "task_id": "t8",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.8,
+        "novelty": 0.8
+      },
+      "rationale": "Orchestration combining registry lookup, link state, and duplicate-post guard; narrower scope and fewer error paths than inbound sync; explicit tests given."
+    },
+    {
+      "task_id": "t9",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 1
+      },
+      "rationale": "Explicit CLI verb spec/tests; mirrors lib/cli/bugfix-loop.mjs's dispatch shape closely; mechanical wrapping of already-built orchestration functions."
+    }
+  ]
+}

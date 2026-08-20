@@ -1,7 +1,7 @@
 ---
 status: approved
-revision: 6
-updated: 2026-05-19
+revision: 8
+updated: 2026-08-19
 ---
 
 # Feature Charter: Task Management
@@ -37,11 +37,12 @@ This charter retains ownership of *what* the issue board means: lifecycle, tiere
 - Integration into `/adev:specify` (creates a Feature work item bound to the Live Spec it just authored, 1:1)
 - Constitution template section documenting task management
 - Sync block emitted by `/adev:sync` into agent files
+- **GitHub Issues bridge scope carve-out**: this charter permits bidirectional sync between the local issue board and GitHub Issues to exist — it does not implement it. Implementation (adapter interface, sync mechanics, field mapping, credentials) is owned by `autonomous-bugfix-loop/charter.md`, which this scope was carved out for. Carved out of the External Tracker Sync exclusion below by revision 7 (2026-08-19) — see Migration Notes.
 
 ### Out of Scope
 
 - Backlog visualization or UI dashboards
-- External tracker sync (Jira, Linear, GitHub Issues)
+- External tracker sync to project-management trackers (Jira, Linear) — GitHub Issues is no longer covered by this exclusion as of revision 7; see In Scope and Migration Notes
 - Work-item assignment to specific agents or users
 - Time tracking or estimation
 - **Strict enum validation on `type`** (kept free-text by design)
@@ -66,7 +67,7 @@ This charter retains ownership of *what* the issue board means: lifecycle, tiere
 
 | Entity | Description | Key Attributes |
 |--------|-------------|----------------|
-| WorkItem | Generic tiered work unit (unifies former Epic and Issue entities) | id (dotted or legacy flat), title, status, priority (0-4), type (free-text, default "task"), parent_id (optional), next_action (free-text, optional), plan_ref (optional), plan_task (optional), dependencies [], notes, created, updated |
+| WorkItem | Generic tiered work unit (unifies former Epic and Issue entities) | id (dotted or legacy flat), title, status, priority (0-4), type (free-text, default "task"), parent_id (optional), next_action (free-text, optional), plan_ref (optional), plan_task (optional), dependencies [], notes, **affected_modules (optional array of manifest `modules[].slug` values or reserved safety tags, default empty — see revision 8 Migration Notes)**, created, updated |
 | TierConfig | Manifest-driven tier prefix convention | prefixes (default `{e: Epic, f: Feature, t: Task}`); override via `tasks.tier_prefixes` |
 | IssueBoard | The persistent store containing all work items | backend (file/beads), project-root, tier_config |
 
@@ -133,6 +134,7 @@ This charter retains ownership of *what* the issue board means: lifecycle, tiere
 | Compaction Context | Inject claimed-item context on session compaction | Phase 2 | — |
 | Backfill of legacy flat IDs into tiered model | Manual restructuring is a project-level decision; framework does not auto-migrate | — | — |
 | Removal of deprecated `createEpic`/`createIssue` | Backward compatibility maintained until next major version bump | next major | Tiered Hierarchy adoption |
+| **GitHub Issues Bridge** | Scope carved out 2026-08-19 (revision 7). Implementer is `autonomous-bugfix-loop/charter.md` (its Capability Map, Milestone 2), not this charter — this row exists only to record the carve-out and its target module. Do not re-implement here. | 5 | — |
 
 ## Interface Contracts
 
@@ -191,3 +193,9 @@ The migration is opt-in. Projects can adopt tiered IDs, `next_action`, and gener
 Revision 5 (2026-05-19) adds the **Backend Migration** capability as the operational realization of the Consistency quality attribute. No domain-model changes — only an interface addition (`adev issues migrate` CLI verb). The verb is idempotent and dry-runnable; manifest writes require user confirmation.
 
 Not to be confused with `adev migrate` (format-shape migration of legacy state artifacts, owned by the `agent-reliable-state-artifacts` charter). `adev issues migrate` operates one level up — it converts the *configured backend* of the issue board using existing adapters, while `adev migrate` converts artifact *shapes* (e.g., markdown/YAML → JSON/JSONL).
+
+Revision 7 (2026-08-19) carves GitHub Issues out of the External Tracker Sync exclusion, human-approved during requirements work for `.context-index/research/autonomous-bugfix-loop.md` (which needs external bug intake so contributors can file bugs that an unattended fixer loop then works). Prior research at `.context-index/research/issue-board-merge-conflicts.md` §4b had already modeled this exact tradeoff (rate limits, latency, credential handling, offline-loss, local/remote impedance mismatch) and flagged it as a charter-level decision, not a spec-level one — this revision is that decision. Jira and Linear remain excluded; nothing about their tradeoffs was reconsidered here. The bridge's actual design (conflict resolution, field mapping, which side is authoritative, credential storage) is deferred to a future Live Spec — see the **GitHub Issues Bridge** row in Deferred Capabilities.
+
+**Open follow-up, not resolved by this revision**: `strategic-planning/charter.md` and `context-viz/charter.md` repeat the same "External tracker sync (Jira, Linear, GitHub Issues)" exclusion in their own Out of Scope sections. Those charters were not amended here — their exclusions may now be inconsistent with this one and should be reviewed separately before anyone relies on GitHub Issues sync from those modules' contexts.
+
+Revision 8 (2026-08-19) adds `affected_modules` to `WorkItem`, driven by architecture review of `autonomous-bugfix-loop/charter.md`'s `bug-selection-and-eligibility` spec: three independent reviewers found that spec's safety-boundary exclusion (BEH-6/BEH-7 — "the modules implementing the review gate, the convergence detector, the retry loop") had no producer anywhere in the codebase, and that `manifest.yaml`'s `modules[]` granularity is too coarse to express it (the `lib` slug covers all of `lib/`, including unrelated code, alongside the safety-critical `lib/loop-convergence.mjs`). `affected_modules` closes that gap as an **optional**, human/maintainer-supplied field, deliberately not auto-inferred from issue content — see `bug-selection-and-eligibility.spec.md` BEH-6/BEH-7/BEH-10 for the consuming behavior and its fail-closed default (an untagged WorkItem is excluded from autonomous attempt, not silently permitted). This keeps classification authority with a human rather than parsing potentially-adversarial issue text (relevant once the GitHub bridge lands), and sidesteps `modules[]`'s coarseness by also accepting a small set of reserved safety tags (`review-gate`, `convergence-detector`, `retry-loop`, `bugfix-loop`) alongside real module slugs.

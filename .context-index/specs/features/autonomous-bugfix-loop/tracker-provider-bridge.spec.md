@@ -1,0 +1,287 @@
+<!-- partial_schema: spec@1 -->
+
+---
+charter: autonomous-bugfix-loop
+kind: integration
+status: validated
+risk_level: medium
+milestone: 2
+revision: 10
+charter-revision: 11
+source-manifest:
+  sha: "55e587f"
+  files:
+    - .context-index/adrs/0015-lifecycle-state-dual-format-coexistence.md
+    - cli/index.mjs
+    - lib/bugfix-loop-run.mjs
+    - lib/cli/issues-show.mjs
+    - lib/cli/issues.mjs
+    - lib/cli/tracker-sync.mjs
+    - lib/provider/tracker-provider-interface.mjs
+    - lib/provider/tracker-provider-registry.mjs
+    - lib/provider/tracker-providers/github-tracker-adapter.mjs
+    - lib/tracker-provider-bridge/inbound-sync.mjs
+    - lib/tracker-provider-bridge/outbound-writeback.mjs
+    - lib/tracker-sync-links.mjs
+    - skills/bugfix-loop/SKILL.md
+    - skills/debug/SKILL.md
+    - templates/manifest-template.yaml
+    - tests/cli/issues-show.test.mjs
+    - tests/cli/tracker-sync.test.mjs
+    - tests/lib/github-tracker-adapter.test.mjs
+    - tests/lib/tracker-provider-bridge-inbound.test.mjs
+    - tests/lib/tracker-provider-bridge-outbound.test.mjs
+    - tests/lib/tracker-provider-registry.test.mjs
+    - tests/lib/tracker-sync-links.test.mjs
+    - tests/skills/bugfix-loop-skill.test.mjs
+    - tests/skills/debug-phase1-notes-read.test.mjs
+  computed-at: "2026-08-20T02:29:18.245Z"
+created: 2026-08-19
+updated: 2026-08-20
+---
+
+# Integration Spec: Tracker Provider Bridge
+
+<!-- Integration Spec within the autonomous-bugfix-loop charter.
+     An integration spec wires two or more existing modules/skills together. It defines
+     the participants and their roles, the interaction contract, the observable state
+     machine, and how failures propagate across the boundary.
+     Parent Charter: .context-index/specs/features/autonomous-bugfix-loop/charter.md -->
+
+## Participants
+
+| Module | Role |
+|---|---|
+| `TrackerProviderAdapter` interface | Defines the contract each provider implements: **`gateCheck()`** (queries the provider for the current batch of gated issues — no arg, returns a list), **`fetchGated(issue)`** (per-issue field mapper — takes one gated issue, returns WorkItem-shaped fields), and **`postComment(issueRef, text)`** — deliberately narrow and comment-shaped, not an open-ended writeback function, so "never changes issue state/labels/assignees" is enforced by what the interface allows a provider to do, not only asserted in prose. |
+| `TrackerProviderRegistry` | New registry module, mirroring `lib/provider/registry.mjs`'s plain map-and-lookup pattern (not `lib/issues/registry.mjs`'s `getIssueManager`, which is a hardcoded if/else chain — reviewed and found not to match this spec's own "add an entry, no other code changes" extensibility claim): maps a configured provider name (manifest `tasks.bugfix_loop.tracker_provider`, default `"github"`) to its registered `TrackerProviderAdapter` implementation via a plain lookup table. A second provider is added by adding a map entry after implementing the interface — no changes to this spec's other participants. **Consulted at a named call site (revision 7, WR-1):** Interaction Contract inbound step 1 and outbound step 2 each resolve the active adapter by calling `TrackerProviderRegistry.get(...)` — the registry is exercised at runtime on every sync turn, not merely documented as addable; nothing in this bridge holds a hardcoded reference to the GitHub adapter. |
+| GitHub adapter | Implements `TrackerProviderAdapter` for GitHub Issues, shelling out to the existing `gh` CLI via argv-array invocation (never shell-interpolated strings). This is the one adapter shipped by this spec and registered under the `"github"` provider name — see `TrackerProviderRegistry`, above, for how the Interaction Contract obtains it rather than referencing it directly. |
+| `TrackerSyncLink` | Provider-agnostic entity mapping one external tracker issue to one local WorkItem. **All fields now have a named reader (revision 7):** `accepted_at` is read by inbound sync's already-linked handling (Interaction Contract inbound step 5, WR-2) to emit a stale-link notice; `last_synced_at`/`last_comment_id` are read at the start of outbound writeback (Interaction Contract outbound step 2, WR-3) to detect and skip a duplicate comment post. **`provider` field removed (revision 11, round-9 review wiring-reviewer WR-1):** revisions 7-9 tried, in turn, to give this field a live-dispatch meaning, then a write-once-provenance relabeling, then a deferred Task Map row modeled on `notes`'s own write-only-gap tracking — round-9 review found the `notes` comparison not equivalent, since `notes`'s companion task is reachable today against an existing consumer while `provider`'s companion task depends on an unscheduled second `TrackerProviderAdapter` (charter Deferred Capabilities, no target milestone). Rather than reframe a fourth time, the field is deleted from `TrackerSyncLink`'s schema entirely (see corrected charter Relationships bullet, revision 11) — there is no field left to have no consumer. Adapter resolution for both inbound and outbound sync reads `tasks.bugfix_loop.tracker_provider` directly (Interaction Contract inbound step 1 / outbound step 2); if a second provider ever ships, a future spec can add whatever dispatch field that work actually needs. |
+| Task Management (`IssueManagerInterface`) | Owns the local WorkItem the bridge creates and updates; the bridge never bypasses `IssueManager.create`/`update`. |
+| `/adev:bugfix-loop` (`--github-sync`) | Consumer: triggers inbound pull before each turn's selection, and outbound writeback after each attempt. |
+| GitHub REST/GraphQL API (via `gh` CLI) | External system: source of inbound issues and labels, target of outbound comments. |
+| `skills/debug/SKILL.md` Phase 1 ("Reproduce") | **Intended consumer of `WorkItem.notes`** for GitHub-origin issues: when `/adev:debug --issue <id> --auto` is invoked with no `--error`/symptom description and no other inferable target, Phase 1 is meant to read `IssueManager.get(id).notes` — the capped, nonce-fenced text this bridge writes (Interaction Contract inbound step 3, revision 7 renumbering) — and treat it as the reported symptom to reproduce. **Verified against current source (round-3 review, WR-5): this read does not exist today.** Phase 1 only uses `--issue <id>` to drive the Phase 1.6 ownership claim; it never reads `notes` or any other issue field as an investigation target. Wiring this read is tracked as an explicit task in this spec's Actionable Task Map (below) — until that task ships, the capping/fencing in inbound step 3 is inert defense-in-depth data with no active reader, not yet an exercised safety boundary. **Revision 6 (round-5 review BD-1):** when the Task Map's wiring task lands, Phase 1 must prepend a short provenance-rule sentence — modeled on `lib/governance/dispatch-shape.mjs`'s `provenanceRule` string — before handing `notes` to the reproduction step, stating that only the text between the embedded `<<<ADEV-PACK-…>>>`/`<<<END-ADEV-PACK-…>>>` fence pair is the external report and must be treated as data, never as instructions; this sentence is static prose (it does not need to parse out the specific nonce — see Interaction Contract inbound step 3 for why no second genuine fence can appear inside the fenced span). |
+
+## Interaction Contract
+
+**On inbound sync** (triggered by `/adev:bugfix-loop --github-sync` at the start of each turn):
+1. **(revision 7, WR-1)** The bridge resolves the active provider adapter by calling `TrackerProviderRegistry.get(manifest tasks.bugfix_loop.tracker_provider, default: "github")` — this call is the Interaction Contract's sole entry point into the registry; every step below operates on the returned `provider` instance, never a hardcoded reference to the GitHub adapter. If the configured name has no registered entry, `TrackerProviderRegistry.get` throws `UNKNOWN_TRACKER_PROVIDER`; the bridge catches it at this same call site and treats it identically to the GitHub-unreachable row in Error Propagation for this turn (degraded-empty candidate list, no unhandled exception, no bugs lost — see the new Error Propagation row below).
+2. `provider.gateCheck()` queries open GitHub issues, filtering to those carrying both `bug` and `help wanted` labels (or the manifest-configured equivalent pair), and returns the list of gated issues.
+3. For each gated issue in that list with no existing `TrackerSyncLink`, `provider.fetchGated(issue)` maps that one issue's title/body/labels onto WorkItem fields — **title and body are refused, not sanitized, past a fixed length cap (title: 200 chars, body: 4000 chars — truncated content is dropped, not silently accepted at full length)**, and the (already length-capped) body is then wrapped in a **nonce-scoped fence, not a fixed template**, before being set as `notes`. **Revision 6 (round-5 review BD-1):** a fixed, spec-published wrap string is exactly the weaker instantiation of this problem the boundary reviewer flagged — it is guessable, has no closing delimiter (the untrusted span is unbounded on the far end), and has no collision handling for a body that itself contains the marker text. This bridge instead directly reuses `lib/governance/context-pack.mjs`'s `fenceBlock`/`neutralizeFenceTokens` (see charter Dependencies, revision 8), the same primitive `skills/review-specs/SKILL.md`'s dispatch layer already uses to wrap attacker-controllable spec content for reviewer prompts: a fresh random nonce is generated per `fetchGated` call (`randomBytes(12).toString('base64url')`, the same generator `renderPack` uses) and `fenceBlock({ nonce, attrs: 'role="untrusted-github-issue" provider="github" ref="<issue-number>"', body: <capped body> })` produces `<<<ADEV-PACK-<nonce> role="untrusted-github-issue" ...>>>\n<neutralized body>\n<<<END-ADEV-PACK-<nonce>>>>`, which is what is set as `notes`. Reusing `fenceBlock` means every property BD-1 asked for is inherited automatically rather than reimplemented: a per-sync random token, an explicit closing delimiter that bounds the untrusted span on both ends, and nonce-independent detection/neutralization of any literal `<<<ADEV-PACK-` or `<<<END-ADEV-PACK-` prefix the GitHub body itself contains (`neutralizeFenceTokens` rewrites the prefix regardless of which nonce follows it, so the body cannot forge a closing boundary even if it happens to guess or already know a nonce value used elsewhere). When `fenceBlock` reports `collided: true` (the body contained a literal fence-prefix attempt), the adapter logs a warning naming the GitHub issue number — the sync still proceeds with the neutralized text, exactly as `dispatch-shape.mjs`'s `CONTEXT_PACK_FENCE_COLLISION` warning does for spec content, rather than silently passing the collision through or failing the sync outright. This capping/fencing is a precondition for a safety guarantee, not yet the guarantee itself: as of this revision, `skills/debug/SKILL.md` Phase 1 does not read `WorkItem.notes` as an investigation target at all (see Participants — verified against current source), so `/adev:debug --issue <id> --auto` cannot yet encounter this text, safely or otherwise. This spec's Actionable Task Map adds the Phase 1 read that makes the guarantee real; once that task ships, Phase 1's reading of this WorkItem will never encounter unmarked, unbounded external text as its investigation target — the cap/fence logic here exists now specifically so that read is safe on day one once wired. `title`, `type: "bug"`, a default priority, and `affected_modules: []` (per `bug-selection-and-eligibility`'s BEH-10, this deliberately makes GitHub-origin bugs ineligible for the loop until a maintainer also sets `affected_modules` — the label gate authorizes *tracking*, not *autonomous attempt*; the `module:<slug>` GitHub label described in an earlier revision of this spec was never actually wired here and is now an explicit charter Deferred Capability, not a v1 producer) are passed to `IssueManager.create(...)`.
+4. A `TrackerSyncLink` is created connecting the GitHub issue number to the new local WorkItem id, with `accepted_at` set to now. **(revision 11)** `TrackerSyncLink` carries no `provider` field — see the Participants row above and the corrected charter Relationships bullet (revision 11) for why: adapter resolution for both inbound and outbound sync reads `tasks.bugfix_loop.tracker_provider` directly (step 1 of this Interaction Contract / outbound step 2), so a per-link provenance field would have no consumer. `TrackerSyncLink` persists in `.context-index/lifecycle-state/tracker-sync-links.jsonl` as an append-only event log, per ADR-0015's dual-format convention — **this file's format/ownership must be added to ADR-0015's Decision-section table as part of implementation** (not yet registered; matching the sibling `per-issue-attempt-cap` spec's honest future-tense framing for its own new artifact, corrected from an earlier revision of this spec that incorrectly asserted registration as already done).
+5. For gated issues that already carry a `TrackerSyncLink`, no duplicate WorkItem is created — idempotent, matching the idempotency pattern already used by `/adev:specify`'s Feature work-item binding (Step 5.6-2). **(revision 7, WR-2)** This is also `accepted_at`'s reader: for each already-linked gated issue, the bridge compares `accepted_at` against `tasks.bugfix_loop.tracker_link_stale_days` (default 30) and, when the link is older than that threshold and the linked WorkItem still has no `AttemptRecord` (never yet attempted by the loop), logs a `stale tracker link: GitHub issue <n> linked <days>d ago, never attempted` notice, printed immediately in that turn's inbound sync output. This is a visibility aid for an operator; the link and WorkItem are otherwise untouched. **(revision 8, TR-4 — fires-once-per-run cap, corrected)** Round-7 review found this notice had no bound: the underlying condition (`accepted_at` vs. threshold, `AttemptRecord` absence) is re-evaluated at the start of EVERY turn (Interaction Contract preamble) from data that does not change turn-to-turn, so as originally written it re-printed the identical notice on every turn of a multi-turn run for as long as the link stayed linked, stale, and un-attempted — unbounded in an unattended run. This is a pure notification, not a retry: unlike the GitHub-unreachable, oversized-refusal, and outbound-writeback-skip constructs (Error Propagation, below), which cap a *retry* and then change what the loop does next once the cap trips (stop calling `gateCheck()`, exclude an issue number, skip a duplicate post), there is no analogous action to take here on repetition — the link and WorkItem stay untouched either way. A numeric turn-cap-with-escalation is therefore the wrong shape; the right shape is "fire at most once per run, per link." The bridge tracks this via `BugfixLoopRun.stale_link_notices_surfaced` (array of external tracker refs already notified this run, default `[]` — charter Domain Model, revision 10), persisted in the same run-state file `sync_retry_counts`/`degraded_sync_note` already live in (`bugfix-loop-runs-<run_id>.json`) and read/written directly by this bridge exactly as it already does for those two fields — no change to `bugfix-loop-skill.spec.md` required, per that spec's own "per the charter's Domain Model" phrasing (Actionable Task Map, revision 6 note, applies identically here). Before logging the notice for a given external ref this turn, the bridge checks whether that ref is already present in the array: if so, the notice is suppressed (the underlying condition may still hold, but it has already been surfaced once this run) and no run-state write occurs for this ref. If not present, the notice is logged as before and the ref is appended to the array in the same run-state write that already persists this turn's `sync_retry_counts` updates. A fresh `run_id` starts with an empty array, so a new unattended run still surfaces exactly one reminder per still-stale link — matching every other persisted-state construct's "fresh count per run" behavior — and within a single run, a given link's notice prints at most once regardless of how many further turns follow.
+
+**On outbound writeback** (triggered by `/adev:bugfix-loop --github-sync` after each bug attempt completes — this does *not* include the claim step itself; the loop's call sequence has no writeback trigger between claim and the `/adev:debug` invocation, so this bridge only ever reports terminal outcomes, never "claimed"):
+1. The loop reads the completed attempt's `ADEV-DEBUG: FIXED | PARKED | UNREPRODUCIBLE` token.
+2. If the attempted WorkItem has a `TrackerSyncLink` (looked up by `local_issue_id`), the bridge resolves the active provider adapter via the same `TrackerProviderRegistry.get(...)` call as inbound sync step 1 **(revision 7, WR-1)** — re-resolved independently here, since outbound writeback is a separate trigger from inbound sync (Participants) and no adapter instance is cached across that boundary. **(revision 7, WR-3)** Before posting, the bridge reads `TrackerSyncLink.last_synced_at`: if it is already >= this attempt's completion timestamp, the outcome comment for this exact attempt has already been posted (e.g., outbound writeback was re-invoked after a partial run interruption) — `postComment` is skipped, and a no-op line naming the already-posted `last_comment_id` is logged instead of posting a duplicate. Otherwise, `provider.postComment(issueRef, text)` posts a fixed-template comment describing the outcome — never issue-controlled free text — via an argv-array `gh issue comment <number> --body-file -` invocation (never a shell-interpolated string).
+3. On a successful post, `TrackerSyncLink.last_synced_at` and `last_comment_id` are updated to the newly posted comment's timestamp/id — the same two fields step 2 just read before posting, closing the write-only gap (WR-3): every subsequent outbound writeback for this link reads them back first, so they gate future posts rather than sitting inert.
+4. The provider adapter never changes GitHub issue state, labels, or assignees — comment-only, enforced by `postComment`'s narrow signature (Participants), not merely asserted in prose.
+
+## State Machine
+
+```
+UNTRIAGED ──(maintainer applies bug+help wanted)──▶ GATED ──(inbound sync)──▶ LINKED
+                                                                                  │
+                                                                    (loop claims, attempts)
+                                                                                  ▼
+                                                                             ATTEMPTED
+                                                          (outbound comment posted; GitHub
+                                                           issue state/labels untouched)
+                                                                                  │
+                                   ┌──────────────────────────────────────────────┼──────────────────────────────────────────────┐
+                                   ▼                                              ▼                                              ▼
+                          comment: "Fixed"                              comment: "Parked"                          comment: "Unreproducible"
+                    (local WorkItem closed by                     (local WorkItem stays open,               (local WorkItem stays open,
+                     /adev:debug's own gate;                       ineligible per attempt cap)                ineligible per attempt cap)
+                     GitHub issue stays open)
+```
+
+States:
+- `UNTRIAGED`: GitHub issue exists, no `TrackerSyncLink`, gate condition not met.
+- `GATED`: `bug`+`help wanted` present, no `TrackerSyncLink` yet — the next inbound sync will link it.
+- `LINKED`: `TrackerSyncLink` exists, local WorkItem exists, not yet attempted by the loop.
+- `ATTEMPTED`: at least one outbound comment posted; `last_synced_at`/`last_comment_id` updated. Terminal for this spec's scope — further re-attempts (if the WorkItem remains eligible) post additional comments without a new state.
+
+## Error Propagation
+
+| Origin | Propagates as | Consumer behavior |
+|---|---|---|
+| GitHub API unreachable or rate-limited during inbound sync | Adapter returns a degraded-empty candidate list, never an unhandled exception. **Bounded to 5 consecutive degraded turns, via a persisted counter (revision 6, round-5 review TR-2)**: `BugfixLoopRun.sync_retry_counts.unreachable_consecutive_turns` (charter Domain Model, revision 8) is read from and written back to the SAME run-state file (`bugfix-loop-runs-<run_id>.json`) that `bugfix-loop-skill.spec.md` already persists every turn — not an in-process/adapter-local variable, which cannot survive this skill's fresh-context-per-turn self-re-invocation or a mid-run process restart (both explicitly tolerated by the charter's execution model). Each turn: if `gateCheck()` fails, the adapter increments the counter and writes the run-state file back before returning its degraded-empty result; if it succeeds, the counter resets to 0. On the increment that brings the counter to 5, the adapter additionally writes the one-time note into `BugfixLoopRun.degraded_sync_note` (the field `bugfix-loop-skill.spec.md`'s Output Contract reserves specifically for this — this spec is that field's only writer, and `bugfix-loop-skill.spec.md`'s Output Contract is that field's sole reader) in the same write. On every subsequent turn of this run, the adapter checks `degraded_sync_note` at the START of inbound sync — if it is already non-null, `gateCheck()` is not called at all for the remainder of the run (the note's presence doubles as the persisted "sync disabled" signal, so no separate boolean field is needed). A fresh `run_id` (a new, non-`--resume` invocation) starts with no run-state file, so `unreachable_consecutive_turns` and `degraded_sync_note` both begin at their defaults — a fresh count, per the charter's stated per-run scope. `TrackerSyncLink`'s own schema carries no run-level concept and is not used for this note or this counter. | Loop proceeds with local-board-only candidates this turn; no bugs are lost, sync catches up next turn. Beyond 5 consecutive turns, `bugfix-loop-skill`'s own Output Contract reads `degraded_sync_note` back on the turn that emits the terminal `ADEV-BUGFIXLOOP:` token and prints it as a `GitHub sync degraded during this run: <note>` warning line immediately above that token — a concrete, tested chat-visible surface rather than requiring a human to inspect the run-state file directly |
+| `tasks.bugfix_loop.tracker_provider` names a provider with no `TrackerProviderRegistry` entry (revision 7, WR-1) | `TrackerProviderRegistry.get(...)` throws `UNKNOWN_TRACKER_PROVIDER` at the resolution call site (Interaction Contract inbound step 1 / outbound step 2), caught there and treated identically to the GitHub-unreachable row above — same `unreachable_consecutive_turns` counter and `degraded_sync_note` escalation, since an unresolvable adapter is exactly as unable to gate as an unreachable API is; no separate counter is introduced for this case | Loop proceeds with local-board-only candidates this turn, same as GitHub-unreachable; a misconfigured `tracker_provider` value surfaces via the same `degraded_sync_note` warning line after 5 consecutive turns |
+| GitHub API unreachable during outbound writeback | Writeback is skipped for that attempt, logged as a warning | Local state (`AttemptRecord`, `WorkItem`) is already correct regardless; the comment is not retried automatically within this run |
+| `gh` CLI not installed or not authenticated | Treated identically to API-unreachable — degrades to local-only, not a special case | Install/authenticate `gh`, or continue operating without `--github-sync` |
+| A GitHub issue loses `bug` or `help wanted` after being linked | The existing `TrackerSyncLink`/WorkItem is NOT retroactively removed — un-labeling only prevents *new* links, it never un-syncs existing ones | A human closes or parks the local WorkItem manually if the un-labeling was meant to also halt the loop |
+| Two sync runs race on creating a `TrackerSyncLink` for the same GitHub issue number | The second creation attempt detects the existing link and no-ops rather than duplicating the WorkItem | None needed — self-healing |
+| A gated issue's title or body exceeds its length cap (200/4000 chars) | That issue's sync is refused for the turn — no `TrackerSyncLink`/WorkItem is created. **Bounded to 5 consecutive oversized-refusal turns per external GitHub issue number, via a persisted counter (revision 6, round-5 review TR-1)** — same numeric bound and per-key counter shape as the GitHub-unreachable row above, deliberately reused rather than invented fresh — an oversized issue is exactly as unable to resolve itself within a single run's turns, without human intervention, as an unreachable API is. **Revision 5 called this "self-contained adapter-local counting" — round-5 review (TR-1) found that unimplementable under the charter's fresh-context-per-turn, process-restart-tolerant execution model, since an in-process counter cannot accumulate across separate turn invocations.** Fixed the same way as the GitHub-unreachable row: `BugfixLoopRun.sync_retry_counts.oversized_consecutive_turns` (charter Domain Model, revision 8) is a map keyed by external GitHub issue number, persisted in the same run-state file `bugfix-loop-skill.spec.md` already writes every turn. Each turn's `gateCheck()` reads this map before invoking `fetchGated` on any candidate: an issue number whose counter already reads >= 5 is excluded from the candidate list outright (no `fetchGated` call, no re-check of its size this turn). For every gated issue number NOT already excluded, if `fetchGated` refuses it as oversized this turn, the adapter increments that issue number's entry (creating it at 1 if absent) and writes the run-state file back; if `fetchGated` succeeds (no longer oversized) or the issue no longer appears in `gateCheck()`'s labeled candidate set at all, its entry is deleted from the map (or written back at 0) rather than left stale. Turns 1-4 for a given issue number re-attempt automatically on the next inbound sync turn (degrade-and-retry, not a permanent skip); from the turn where the counter reaches 5 onward, that issue number is excluded as described above for the remainder of THIS run. A fresh `run_id` starts with no run-state file, so every issue number's counter begins at 0 — matching the "starts its own fresh count" behavior stated in the Consumer behavior column, now backed by an actual persistence mechanism rather than an in-process variable that resets every turn regardless of streak. This cap does not reuse `degraded_sync_note`/`unreachable_consecutive_turns`, which the row above reserves for the whole-adapter GitHub-unreachable case specifically | The issue doesn't appear on the local board for turns 1-4 of a given oversized streak; from the 5th consecutive turn onward for that same issue number, this run stops re-attempting it (still not a hard loop error — no exception, no `ADEV-BUGFIXLOOP: BLOCKED`). A maintainer editing the GitHub issue under the cap makes it eligible again on any future `/adev:bugfix-loop` invocation, which starts its own fresh count |
+
+## System Constitution Reference
+
+- **Principle:** "Minimize external dependencies — prefer Node.js built-ins." — Applies because the GitHub adapter shells out to the already-present `gh` CLI, not a new npm package dependency. Prior art: `lib/cli/coordination.mjs`'s `scanPullRequests` is a genuinely live, default-executing, degrade-gracefully `gh pr list` call. (`lib/milestones.mjs`'s `gh`-touching code was checked and found unreachable in production today — no default `execGh` executor exists and no caller supplies one — so it is not cited as prior art here, correcting an earlier draft of this spec that did.)
+- **Architecture Boundary:** "Adding external dependencies" (Requires Human Approval) — **Not triggered.** `gh` is an existing, already-relied-upon external CLI tool with one established, live degrade-gracefully precedent (`lib/cli/coordination.mjs`) in this codebase; this spec extends that pattern to a second, load-bearing use rather than introducing a new dependency class.
+- **Quality Attribute (charter):** Extensibility — "New tracker providers... are added by implementing `TrackerProviderAdapter` and registering it, with no changes to `/adev:bugfix-loop` or task-management core." This spec ships the GitHub implementation as the interface's proof, not its only possible member.
+- **Existing mitigation, corrected (revision 5 — round-4 review RI-1/BD-2):** an earlier revision of this bullet overstated what `escapeField` protects and when. Verified against current source (`lib/issues/file-adapter.mjs`, `lib/issues/json-adapter.mjs`, `lib/issues/beads-adapter.mjs`, `lib/issues/registry.mjs:24`, `cli/index.mjs:1575-1586`) and independently re-confirmed by two round-4 reviewers (Referent Integrity RI-1, Boundary Reviewer BD-2) from two different code paths:
+  - The `file` backend cannot reach `escapeField` at all — `create()`/`update()` are read-only-deprecated and throw `BACKEND_READ_ONLY_DEPRECATED`.
+  - `escapeField` only runs inside `renderTasksMd`/`writeTasksMd`, invoked solely by the opt-in `adev status --render` CLI path. It is **not** a write-time guarantee: `DEFAULT_BACKEND` is `"json"` (`lib/issues/registry.mjs:24`), and `JsonAdapter.create()`/`update()` persist `notes` to `tasks.json` completely unescaped. Nothing in this codebase runs `adev status --render` automatically after a mutation.
+  - The `beads` backend has no equivalent at all — `BeadsAdapter.create()`/`update()` (`lib/issues/beads-adapter.mjs`) write `notes` straight through as a `--description` argv token to `br create`/`update`, and there is no markdown-render pipeline for beads anywhere in this codebase today.
+  So `escapeField` is real, but it protects a narrower, different thing than the prior wording implied: it is a `tasks.md`-rendering-time safeguard for the `json` backend only, exercised only when a human or process explicitly runs `adev status --render`, and it never runs at the moment this bridge (or any other caller) writes `notes`.
+  **What this means for GitHub-origin content specifically:** the mitigation that is actually load-bearing for the security-relevant concern this spec cares about — untrusted external text later being read by `/adev:debug --auto` Phase 1 as an investigation target (Participants, Interaction Contract inbound step 3) — is **not** `escapeField`. It is the length-cap-refuses-past-threshold behavior and the nonce-scoped fence (revision 6, round-5 review BD-1 — reusing `lib/governance/context-pack.mjs`'s `fenceBlock`/`neutralizeFenceTokens`, not a fixed wrap template) applied by this bridge's own inbound sync, *before* the value is ever handed to `IssueManager.create(...)`. That protection is backend-agnostic (it operates on the value pre-write, so it applies identically whether the destination is `json` or `beads`) and is unaffected by this correction. Deliberately, the fenced text is **not** additionally run through `escapeField` before being stored: `escapeField`'s HTML/Markdown-structural escaping (backslashing `_`, `*`, `()`, `[]`, `#`, entity-encoding `& < > " '`) would corrupt the plain-text fidelity Phase 1 needs to reproduce a bug (e.g. code identifiers, file paths, stack traces) — mangling `notes` at the point of write to satisfy a markdown-rendering concern that Phase 1's direct-read consumer does not have would trade real debugging fidelity for protection against a threat (`tasks.md` render corruption) that read path is not exposed to. This is a materially different, and materially stronger, mechanism than the fixed template revision 5 shipped: `escapeField`'s narrow-mitigation correction (RI-1/BD-2) held up cleanly across two review rounds, but the text it was contrasted against (the wrap template) was itself found overstated in round 5 (BD-1) — this revision fixes that second half without reopening the first.
+  - The residual gap — `tasks.md` markdown-rendering safety for `notes` being opt-in-only on `json` and entirely absent on `beads` — is real but is a pre-existing, cross-cutting `task-management`-charter concern: it applies to every issue's `notes` field on every backend, not specifically to GitHub-origin content, and predates this bridge. This spec cannot close it unilaterally (same reasoning already applied to the Phase 1 wiring task below — a fix here would mean editing modules outside this charter's Participants list). It is tracked as an explicit follow-on task in the Actionable Task Map below rather than left as a silent gap.
+
+## Actionable Task Map
+
+<!-- Added in revision 4 to close WR-5 (round-3 review, wiring-reviewer): the
+     spec's core safety claim depended on a Phase 1 read that does not exist
+     in `skills/debug/SKILL.md` today. This section makes that gap an
+     explicit, tracked task instead of an implicit assumption. Integration
+     specs do not carry this section by template convention; it is added
+     here deliberately because this integration's safety claim is only true
+     once a specific piece of wiring — owned by a module outside this
+     charter's Participants list — actually exists.
+
+     Revision 5 adds one more row to close round-4 review RI-1/BD-2 (System
+     Constitution Reference's "Existing mitigation" bullet, corrected above):
+     the `tasks.md` markdown-rendering safety gap for `notes` (opt-in-only on
+     `json`, absent on `beads`) is real but is task-management-charter-owned
+     cross-cutting infrastructure, not something this integration spec's
+     Participants can close unilaterally — same reasoning already applied to
+     the Phase 1 wiring row below. It is named honestly here and given a real
+     tracked task rather than left as a silent gap, matching how WR-5 itself
+     was handled in revision 4. TR-1 (missing iteration cap on the oversized
+     title/body retry) was fixed directly in the Error Propagation table above
+     — no new task needed, since it only required stating a bound and a
+     cap-trip verdict this spec already fully owns.
+
+     Revision 6 closes round-5 review BD-1, TR-1, and TR-2, none of which need
+     a new Task Map row: BD-1 (nonce-scoped fence) replaces an in-charter
+     mechanism with another in-charter mechanism (reusing
+     `lib/governance/context-pack.mjs`, now a declared charter Dependency —
+     an import, not a coordination task); TR-1/TR-2 (persisted retry counters)
+     add a field to `BugfixLoopRun`, already registered in the charter's own
+     Domain Model (revision 8) and already written by this bridge directly
+     into the run-state file `bugfix-loop-skill.spec.md` owns, the same
+     precedent `degraded_sync_note` already established in revision 4 — no
+     edit to that sibling spec's body text is required, since its generic
+     "per the charter's Domain Model" phrasing already covers any field the
+     Domain Model lists. The Phase 1 wiring task below is updated in place
+     (still small, still cross-charter) to include prepending the BD-1
+     provenance-rule sentence alongside the `notes` read.
+
+     Revision 7 closes round-6 review WR-1, WR-2, and WR-3, none of which
+     need a new Task Map row: all three are wiring gaps entirely within
+     this spec's own Participants (TrackerProviderRegistry, TrackerSyncLink,
+     the bridge's own inbound/outbound steps), unlike the Phase 1 row below,
+     which is cross-charter because `skills/debug/SKILL.md` sits outside
+     this charter. WR-1 is closed by naming the registry-resolution call
+     site directly in the Interaction Contract (inbound step 1, outbound
+     step 2) plus a matching Error Propagation row for an unregistered
+     provider name. WR-2/WR-3 are closed by giving `accepted_at` and
+     `last_synced_at`/`last_comment_id` real readers inside the Interaction
+     Contract itself (inbound step 5's stale-link notice; outbound step 2's
+     duplicate-post guard) — no coordination with another charter is
+     required, so, matching TR-1's precedent from revision 5, the fix lives
+     directly in the affected sections rather than as a tracked follow-on
+     task. Renumbering inbound sync's steps (1-4 → 1-5, to make room for the
+     new step-1 registry resolution) required updating every cross-reference
+     to the old "Interaction Contract step 2" (the fetchGated/fencing step,
+     now inbound step 3) elsewhere in this spec — done throughout rather than
+     left stale.
+
+     Revision 8 closes round-7 review WR-4 and TR-4, neither of which needs a
+     new Task Map row: both are wiring/documentation corrections entirely
+     within this spec's own Participants and its parent charter (which this
+     spec is already permitted to amend for Domain Model additions, per the
+     sync_retry_counts/turns_completed precedent in revisions 8-9 of the
+     charter itself), not a cross-charter coordination task. WR-4 is closed
+     by correcting the charter's Relationships bullet for TrackerSyncLink
+     (revision 10): `provider` was documented as selecting the adapter but
+     no Interaction Contract step ever read it back for that purpose —
+     verified against this spec's own inbound step 1 / outbound step 2,
+     which resolve the adapter from `tasks.bugfix_loop.tracker_provider`
+     directly. Checked against the charter's Deferred Capabilities table:
+     a second tracker provider is explicitly out of scope for this
+     milestone with no target date, so per-link dispatch has nothing to
+     select between today; manifest-config-only resolution is correct as
+     shipped. The correction re-scopes `provider` honestly as
+     write-once-at-creation provenance (Interaction Contract inbound step 4
+     now sets it explicitly) for a future multi-provider bridge, rather than
+     leaving the charter and this spec's own Interaction Contract
+     contradicting each other. TR-4 is closed by observing that the
+     round-7 stale-link notice (inbound step 5, WR-2) re-evaluates a
+     turn-invariant condition on every turn with no persisted "already
+     surfaced" state, unlike every other bounded construct in this spec —
+     but because it is a pure notice with no degrade-and-continue action to
+     take on repetition, the fix is a fires-once-per-run dedup set
+     (`BugfixLoopRun.stale_link_notices_surfaced`, charter Domain Model
+     revision 10), not a numeric retry cap with a cap-trip verdict.
+
+     Revision 9 closes round-8 review WR-1 (blocker,
+     wiring-reviewer:write-only-state:87990d14): revision 8's fix
+     relabeled the charter's claim about `provider` (from "selects the
+     adapter" to "write-once provenance") but added no reader and no
+     tracked future-use task — the wiring reviewer judged that a
+     relabeling, not a wiring fix or an honest deferral, contrasting it
+     with `WorkItem.notes`'s own write-only gap, which has a concrete,
+     dated Actionable Task Map row and a dedicated acceptance-test row.
+     This revision closes the gap the same way, mirroring that precedent
+     exactly rather than inventing a new shape: two new Task Map rows
+     below track `provider`'s future consumer (per-link dispatch-key
+     resolution, once a second `TrackerProviderAdapter` ships — charter
+     Deferred Capabilities: "Second Tracker Provider Adapter", currently
+     unscheduled) and a regression test for that future read path, plus a
+     forward-reference from the Participants `TrackerSyncLink` bullet and
+     the Acceptance Criteria `provider` row pointing at the new rows —
+     the same cross-referencing shape already used for `notes`/Phase 1
+     above. No charter edit is required: the charter's revision-10
+     Relationships bullet and Deferred Capabilities entry already state
+     the facts this fix tracks; what was missing was this spec's own
+     Task Map acknowledgment, which is spec-owned, not charter-owned.
+
+     Revision 11 closes round-9 review WR-1 (blocker,
+     wiring-reviewer:write-only-state:17c01480): the reviewer found
+     revision 9's two new Task Map rows not equivalent, in concreteness,
+     to the `WorkItem.notes` precedent they claimed to mirror — `notes`'s
+     companion task (Phase 1 wiring) is reachable today against an
+     existing consumer, while `provider`'s companion task (per-link
+     dispatch) depends on a second `TrackerProviderAdapter` that the
+     charter's Deferred Capabilities table lists with no target
+     milestone, i.e. genuinely speculative rather than deferred-and-
+     tracked. Three consecutive rounds (7, 8, 9) tried to resolve this by
+     reframing what the field meant or how its future use was tracked;
+     none gave it a reachable-today consumer. Rather than reframe a
+     fourth time, this revision removes `provider` from `TrackerSyncLink`'s
+     schema entirely — in both this spec (Participants, Interaction
+     Contract inbound step 4, Acceptance Criteria) and the charter's
+     Domain Model and Relationships section (charter revision 11). This
+     eliminates the write-only-state problem outright: there is no field
+     left to have no consumer. The two speculative Task Map rows revision
+     9 added are removed along with it. If a second `TrackerProviderAdapter`
+     ever ships, a future spec can add whatever dispatch field that work
+     actually needs, informed by real requirements rather than
+     speculative schema. -->
+
+| Task | Description | Estimated Complexity |
+|------|-------------|---------------------|
+| Wire `skills/debug/SKILL.md` Phase 1 to read `WorkItem.notes` as investigation target | **When** `/adev:debug --auto` is invoked with `--issue <id>` and no `--error`/symptom description is supplied and no other inferable target exists, **then** Phase 1 resolves the investigation target by calling `IssueManager.get(id).notes` (already capped and nonce-fenced by this bridge's inbound sync — Interaction Contract inbound step 3, revision 7 renumbering) and treats the returned text as the reported symptom for reproduction. **Revision 6:** before handing the text to the reproduction step, Phase 1 must also prepend the BD-1 provenance-rule sentence (Participants row, above) so the fenced content is read as untrusted data, not instructions. This is the missing link WR-5 identified: this bridge's title/body capping and fencing currently write to a field nothing reads. `debug-completion-and-auto.spec.md`'s BEH-7 already assumes an issue id alone can satisfy investigation-target resolution ("no issue id, no reproducible symptom description, and no inferable target") but never defines the mechanism that turns an issue id into reproducible text; this task supplies that mechanism. `skills/debug/SKILL.md` is owned by the `implementation` charter (declared dependency, not a participant this charter can unilaterally edit at will), so land this task coordinated with that skill's owner — and, if `debug-completion-and-auto.spec.md` is already mid-implementation when this task is picked up, prefer a small, additive follow-on change over reopening that spec's already-passed review. | small |
+| Add a `node:test` regression covering the new consumer path end-to-end | A GitHub-origin `WorkItem`'s capped, fenced `notes` becomes the actual text `/adev:debug --auto` reproduces against when invoked with `--issue <id>` and no `--error` — asserts the read exists (with the provenance-rule sentence prepended), not just that the write is well-formed. | small |
+| Close the `notes` render-safety gap for `json`/`beads` backends (task-management charter) | **Round-4 review RI-1/BD-2, revision 5:** `escapeField`'s HTML/Markdown-structural escaping of `notes` currently only fires inside `renderTasksMd`/`writeTasksMd`, invoked solely by the opt-in `adev status --render` CLI path, and only for the `json` backend (`lib/issues/render-markdown.mjs`, `cli/index.mjs:1575-1586`); the `beads` backend (`lib/issues/beads-adapter.mjs`) has no markdown-render pipeline at all. This is a pre-existing gap in every issue's `notes` — not specific to GitHub-origin content, since this bridge's own fence/cap mechanism already covers the GitHub-origin-specific threat (Phase 1 prompt-injection) independently of `escapeField` (see corrected System Constitution Reference bullet). The task: either (a) make `tasks.md` regeneration for the `json` backend automatic after board-mutating writes instead of opt-in, so an unrendered board is never the operative state, or (b) explicitly and permanently document the opt-in gap as an accepted risk with an operator-facing warning, and (c) for `beads`, either build an equivalent render pipeline before any consumer projects `notes` into a markdown/HTML context, or explicitly declare markdown rendering out of scope for that backend until one exists. Owned by the `task-management` charter (`lib/issues/*`, `lib/issues/render-markdown.mjs` are outside this charter's Participants list), coordinated the same way as the Phase 1 wiring task above — this spec only names the gap and tracks it, it does not implement the fix. | medium |
+
+## Acceptance Criteria
+
+- [ ] Inbound sync creates exactly one local WorkItem per gated GitHub issue, idempotent under re-runs and races
+- [ ] Inbound title/body are refused past their length caps and the body is wrapped in a nonce-scoped fence (revision 6, BD-1 — reusing `lib/governance/context-pack.mjs`'s `fenceBlock`/`neutralizeFenceTokens`: random per-`fetchGated`-call nonce, explicit closing delimiter, nonce-independent neutralization of any literal fence-prefix the body contains), not a fixed spec-published template; `skills/debug/SKILL.md` Phase 1 reads `WorkItem.notes` as its investigation target when `--issue <id>` is passed with no `--error`/symptom and no other inferable target exists, prepends the BD-1 provenance-rule sentence, and treats the result as its investigation target — closing the previously write-only `notes` field this bridge sets (WR-5, this revision's Actionable Task Map)
+- [ ] A GitHub issue body containing a literal `<<<ADEV-PACK-` or `<<<END-ADEV-PACK-` fence-token collision attempt is detected and neutralized (not silently passed through) before being stored as `notes` — verified by a `node:test` that feeds `fetchGated` a body containing a forged fence-close attempt and asserts (a) the sync still succeeds with the neutralized text stored, (b) the collision is surfaced as a logged warning naming the GitHub issue number, and (c) the neutralized text contains no unescaped occurrence of either literal prefix (revision 6, BD-1)
+- [ ] GitHub-origin WorkItems are created with `affected_modules: []`, making them ineligible for the loop until a maintainer explicitly sets it
+- [ ] Outbound writeback posts comments on fix/park/unreproducible outcomes only (never on claim — no trigger exists for that); never touches GitHub issue state, labels, or assignees, enforced by `postComment`'s narrow interface signature
+- [ ] GitHub API or `gh` CLI unavailability degrades to local-board-only operation without erroring the loop, sets `BugfixLoopRun.degraded_sync_note` after 5 consecutive degraded turns, and stops calling `gateCheck()` for the rest of the run — the consecutive-turn count is read from and written to `BugfixLoopRun.sync_retry_counts.unreachable_consecutive_turns` in the run-state file each turn, not held in adapter-local memory (revision 6, TR-2); verified by a `node:test` that simulates the counter's value being read from a run-state file written by a PRIOR, separate call (i.e. a fresh in-process state, mirroring the skill's fresh-context-per-turn re-invocation) and confirms the 5th read-increment trips `degraded_sync_note` and suppresses further `gateCheck()` calls within that same `run_id`
+- [ ] An oversized title/body refuses that issue's sync for the turn and retries next turn, without erroring the loop, bounded to 5 consecutive oversized-refusal turns per external GitHub issue number (revision 5, TR-1) via `BugfixLoopRun.sync_retry_counts.oversized_consecutive_turns[<issue-number>]` persisted in the run-state file each turn, not adapter-local counting (revision 6, TR-1); on the turn the counter reaches 5, that issue number is excluded from `gateCheck()`'s candidates for the remainder of the run, not indefinitely re-attempted — verified by a `node:test` covering the same fresh-process-per-turn simulation as the GitHub-unreachable case above, plus a case where a fresh `run_id` (no prior run-state file) starts the same issue number's counter at 0
+- [ ] The System Constitution Reference's "Existing mitigation" bullet accurately states what `escapeField` protects (opt-in, `json`-backend-only, render-time-only) and does not claim it as a write-path guarantee for either `json` or `beads` (revision 5, RI-1/BD-2); the render-safety gap this leaves is tracked as an explicit task in the Actionable Task Map rather than left undescribed
+- [ ] Label removal after linking does not retroactively un-sync an existing `TrackerSyncLink`
+- [ ] `tracker-sync-links.jsonl`'s format/ownership is registered in ADR-0015's Decision-section table
+- [ ] The `TrackerProviderAdapter` interface has exactly one implementation (GitHub) shipped by this spec, registered via `TrackerProviderRegistry`'s plain lookup map; a second provider is addable by implementing the interface and adding a map entry
+- [ ] Both inbound sync and outbound writeback resolve their adapter by calling `TrackerProviderRegistry.get(...)` (Interaction Contract inbound step 1, outbound step 2) — never a hardcoded reference to the GitHub adapter, and an unregistered configured provider name degrades the turn exactly like GitHub-unreachable rather than throwing unhandled — verified by a `node:test` that registers a second stub `TrackerProviderAdapter`, sets `tasks.bugfix_loop.tracker_provider` to select it, and asserts the stub (not the GitHub adapter) receives the `gateCheck()`/`fetchGated()`/`postComment()` calls for that run; a second case asserts an unregistered provider name degrades-empty via the `UNKNOWN_TRACKER_PROVIDER` path instead of throwing (revision 7, WR-1)
+- [ ] `TrackerSyncLink.accepted_at` is read by inbound sync's already-linked step (Interaction Contract inbound step 5) to detect a link older than `tasks.bugfix_loop.tracker_link_stale_days` (default 30) whose WorkItem has no `AttemptRecord` yet, logging a stale-link notice — verified by a `node:test` asserting the notice fires past the threshold and does not fire under it or once an `AttemptRecord` exists (revision 7, WR-2)
+- [ ] The stale-link notice fires at most once per external tracker ref per `run_id`, via `BugfixLoopRun.stale_link_notices_surfaced` (revision 8, TR-4) — verified by a `node:test` that invokes inbound sync twice within the same run for a link that remains stale and un-attempted across both calls, and asserts the notice is logged on the first call and suppressed on the second; a second case asserts a fresh `run_id` (no prior run-state entry for that ref) surfaces the notice again
+- [ ] `TrackerSyncLink` carries no `provider` field (revision 11, round-9 review wiring-reviewer WR-1) — verified by a `node:test` asserting the object returned by `TrackerSyncLink` creation (Interaction Contract inbound step 4) has no `provider` key; both inbound sync and outbound writeback resolve their adapter solely via `TrackerProviderRegistry.get(tasks.bugfix_loop.tracker_provider)`, never a per-link field
+- [ ] `TrackerSyncLink.last_synced_at`/`last_comment_id` are read at the start of outbound writeback (Interaction Contract outbound step 2) before every post, and written back on every successful post (step 3) — a second outbound writeback invocation for the same already-posted attempt outcome is detected via `last_synced_at` and skips `postComment` rather than posting a duplicate, logging the existing `last_comment_id` instead — verified by a `node:test` that invokes outbound writeback twice for the same `AttemptRecord` and asserts `postComment` is called exactly once (revision 7, WR-3)
+- [ ] Tests cover both interaction-contract flows (inbound sync, outbound writeback) end-to-end
+- [ ] All quality gates pass (`npm test`)
+- [ ] No constitutional violations introduced
