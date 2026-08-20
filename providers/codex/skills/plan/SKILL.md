@@ -824,8 +824,20 @@ Per-task Issue creation is removed entirely — the skill no longer constructs `
 
 **Issue creation (optional, board-granularity only):** Read `tasks.backend` from `manifest.yaml`.
 
-If `tasks.backend` is configured:
-1. Create an epic for the plan: call `createEpic({ title: "<plan title>", planRef: "<plan-file-path>" })` from `lib/issues/registry.mjs` (use `getIssueManager(manifest)` to get the active adapter).
+If `tasks.backend` is configured, create an epic for the plan:
+
+```bash
+adev issues epic "<plan title>" --plan-ref "<plan-file-path>"
+```
+
+`adev issues epic` is the only verb that writes to the epic store the board reads. `adev issues create` lands the record in the issue store instead, where `/adev:implement` and `/adev:reconcile` will never find it — so they mint a duplicate epic on every run.
+
+Pass no spec ref on this call: the epic record has no spec-ref field, so the value would be dropped silently. The spec link lives on the spec and plan artifacts, not on the epic.
+
+Never invoke the backend binary (`br create`, …) directly. `adev issues epic` resolves the storage root from the git common dir, so an epic created inside a linked worktree lands on the one real board; a raw `br` call resolves `.beads/` from the current directory instead and fails with `SYNC_CONFLICT`, because a worktree carries a git-tracked `issues.jsonl` with no `beads.db` beside it.
+
+Then:
+1. Record the epic id printed by the verb (`Created epic <id>: <title>`); pass `--json` if you need the full record.
 2. **Do NOT create per-task Issues.** Plan-task state is tracked via `reportPlanTask` (above), not as Issues. Feature- and Epic-level Issues created by `--feature` / `--epic` / `--release` modes are unchanged — those are board-granularity items.
 3. Report: "Created epic `<epic-id>`. Plan-task state lives in the lifecycle log at `.context-index/lifecycle-state/<slug>.jsonl`."
 

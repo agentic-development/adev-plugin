@@ -13,7 +13,7 @@ Manage project issues and epics using the configured task backend.
 
 - No arguments: display the full issue board
 - `create "<title>" [--type bug|feature|task] [--epic <epic-id>] [--priority 0-4]`: create an issue
-- `epic "<title>" [--milestone <name>]`: create a new epic, optionally assigning it to a milestone
+- `epic "<title>" [--milestone <name>]`: create a new epic in the epic store, optionally assigning it to a milestone
 - `update <id> --status <open|in_progress|closed|deferred> [--milestone <name>]`: update issue status and/or milestone (for epics). `--status` and `--milestone` can be used together or independently — both fields are updated in a single call
 - `close <id> --reason "<text>"`: close an issue with a reason
 - `list [--status <status>] [--epic <epic-id>] [--milestone <name>]`: filtered issue list. `--milestone` filters to epics and issues belonging to epics with that milestone
@@ -30,9 +30,9 @@ Check that `.context-index/` exists with `manifest.yaml`. If not:
 
 ### Backend Resolution
 
-Read `tasks.backend` from `.context-index/manifest.yaml` via `loadManifest` (from `<ADEV_ROOT>/lib/manifest.mjs`). Use `getIssueManager(manifest)` from `<ADEV_ROOT>/lib/issues/registry.mjs` to get the active adapter. The default backend is `json` (`.context-index/tasks/tasks.json`); `file` (legacy markdown read-only) and `beads` are also supported.
+The active backend is whatever `tasks.backend` names in `.context-index/manifest.yaml`. The default is `json` (`.context-index/tasks/tasks.json`); `file` (legacy markdown, read-only) and `beads` are also supported.
 
-If the issue board has not been initialized, call `init()` on the adapter to create the storage.
+Nothing has to be resolved here. Every `adev issues` sub-verb reads the manifest, selects the matching adapter, and resolves the storage root from the git common dir on its own — so one invocation is correct from the main checkout and from a linked worktree alike. The board storage is created on the first write, so there is no separate initialisation step to run.
 
 **Load Skill Extensions:** Load any skill extension instructions before proceeding:
 
@@ -44,198 +44,226 @@ If the output is not `__NONE__`, incorporate it as additional standing instructi
 
 ### Board Display (no arguments)
 
-Call the manager to fetch live data:
+Fetch and render the board in one step:
 
-```javascript
-import { getIssueManager } from '<ADEV_ROOT>/lib/issues/registry.mjs';
-import { loadManifest } from '<ADEV_ROOT>/lib/manifest.mjs';
-
-const manager = getIssueManager(loadManifest(projectRoot));
-const epics = await manager.listEpics();
-const issues = await manager.list();
+```bash
+adev issues board [--milestone <name>]
 ```
 
-Then render via the canonical markdown layer rather than hand-writing rows:
+This prints the whole board as canonical markdown on stdout. It is read-only — it never writes `tasks.md`; persisting the rendered board to a file is a separate operation the user has to ask for explicitly. Pass `--milestone <name>` to restrict the epics section to a single milestone.
 
-```javascript
-import { renderTasksMd } from '<ADEV_ROOT>/lib/issues/render-markdown.mjs';
-const markdown = renderTasksMd({ version: 1, epics, issues });
-```
+Display that output to the user verbatim. **Persona adaptation:** the command emits the canonical board layout (epic groupings, milestone groupings, status sections). If a different persona is active, adapt the chat display to its output rules — but always source the board from this command; never hand-author table rows in skill responses.
 
-Display the rendered markdown to the user. **Persona adaptation:** the renderer emits the canonical board layout (epic groupings, milestone groupings, status sections). If a different persona is active, adapt the chat display to its output rules — but always source data via the manager and the renderer; never hand-author table rows in skill responses.
-
-Default ordering produced by the renderer:
+Default ordering in the output:
 
 1. **Open / In Progress** — active work (show first)
 2. **Deferred** — parked items
 3. **Closed** — completed (show last, collapsed if more than 10)
 
-Standalone issues (no epic) appear under "Unassigned." When any epic has a `milestone` field set, the renderer groups epics by milestone name; epics without a milestone appear under "No Milestone" at the end.
+Standalone issues (no epic) appear under "Unassigned." When any epic has a `milestone` field set, epics are grouped by milestone name; epics without a milestone appear under "No Milestone" at the end.
 
 ### Create Issue
 
-Call `create()` from the active adapter with provided fields. Defaults: type `task`, priority `2`, status `open`.
+Create one board item in one step:
 
-If `--epic` is provided, set the `epicId` field. Validate the epic exists by checking if the ID starts with `epic-`.
+```bash
+adev issues create "<title>" [--type <bug|feature|task>] [--priority 0-4] [--epic <epic-id>]
+```
 
-Report: "Created `<id>`: <title> (status: open, priority: <N>)"
+The command owns the defaults — type `task`, priority `2`, status `open` — so nothing here restates them per call. `--epic <id>` files the new issue under an existing epic; no id prefix is inspected anywhere, which keeps this correct on backends whose ids carry no prefix. Pass `--json` when you need the full created record rather than the summary line.
+
+It prints the minted id in this shape, with one indented line per ref that was set:
+
+> Created `<type>` `<id>`: <title>
+> &nbsp;&nbsp;epic: `<epic-id>`
+
+Display the command output to the user verbatim.
 
 ### Create Epic
 
-Call `createEpic({ title, milestone })` with the title and optional milestone. When `--milestone <name>` is provided, pass the `milestone` field to set it on the epic. When `--milestone` is omitted, the epic is created without a milestone (backward compatible).
+Create one epic in one step:
 
-Report: "Created `<id>`: <title>" — or when a milestone is set: "Created `<id>`: <title> (milestone: <name>)"
+```bash
+adev issues epic "<title>" [--milestone <name>]
+```
+
+This is a different verb from `adev issues create`, not a synonym: an epic belongs in the epic store, which is the store `adev issues board`, `adev issues list --milestone` and `adev issues update --milestone` all read. `adev issues create --type epic` writes to the issue store instead, where none of them can see it — and it REFUSES `--milestone` (exit 1) rather than accepting a value it would drop. Relay that refusal and re-run it here.
+
+Omitting `--milestone` creates an epic that carries none; one can be set later with `adev issues update <id> --milestone <name>`.
+
+It prints:
+
+> Created epic `<id>`: <title>
+> &nbsp;&nbsp;milestone: <name>
+
+with the second line present only when a milestone was set. Display the command output to the user verbatim.
 
 ### Update
 
-Determine if `<id>` is an issue (`issue-N`) or epic (`epic-N`) by prefix:
-- `issue-*`: call `update(id, { status })` on the adapter
-- `epic-*`: call `updateEpic(id, { status })` on the adapter
+Edit one board item in one step:
 
-Respect the close-guard invariant — if status change to `closed` is attempted via update, direct the user to use `close` instead.
+```bash
+adev issues update <id> [--status <open|in_progress|deferred>] [--milestone <name>] [--title <text>] [--priority 0-4] [--notes <text>]
+```
+
+Pass only the id. The command resolves whether the id names an issue or an epic by looking it up on the board, so nothing here reads an id prefix — that keeps it correct on backends whose ids carry no prefix. `--status` and `--milestone` can be given together or independently; both land in a single call. `--milestone` applies to epics only (an issue carries none), and `--priority` to issues only — either on the wrong kind of item exits 1 with a message saying so.
+
+`--status closed` is refused with exit 1: closing goes through `adev issues close`, which enforces the dependency guard. Relay the command's own redirect to the user rather than re-deriving it.
+
+Display the command output to the user verbatim.
 
 ### Close
 
-Call `close(id, reason)` on the adapter. If blocked by unclosed dependencies, report:
+Close an item through the board's guards:
 
-> Cannot close `<id>`: blocked by `<dep-id-1>`, `<dep-id-2>`. Close those issues first.
+```bash
+adev issues close <id> --reason "<text>"
+```
+
+`--reason` is required. Exit 2 means a guard refused the close and the board is unchanged — an open dependency, or an unclosed child of a tiered id. Every blocker is named on stderr, in this shape:
+
+> Cannot close `<id>`: blocked by `<dep-id-1>`, `<dep-id-2>`. Close those first.
+
+Relay that to the user; do not attempt a second close or work around the guard. Exit 1 is a usage error or an adapter failure — an unknown id is an exit 1, not a refusal.
 
 ### List (filtered)
 
-Call `list(filters)` with provided filters (`--status`, `--epic`, `--milestone`). When `--milestone <name>` is provided, filter to only epics with that milestone and their child issues. If no epics match the milestone, show an empty table with the message: "No epics found for milestone '<name>'."
+Fetch and render the filtered list in one step:
 
-Display as a table sorted by priority.
+```bash
+adev issues list [--status <s>] [--epic <id>] [--milestone <name>]
+```
+
+This prints a table of matching issues on stdout, sorted by priority ascending (0 first). `--milestone <name>` restricts the result to epics carrying that milestone and their child issues; when no epic carries it, the command prints `No epics found for milestone '<name>'.` instead of an empty table.
+
+Display that output to the user verbatim.
 
 ### Add Dependency
 
-Call `addDependency(issueId, dependsOnId)`. If a circular dependency would be created, report the cycle.
+Record that one issue is blocked by another:
+
+```bash
+adev issues dep <issue-id> <depends-on-id>
+```
+
+Exit 2 means the dependency would close a cycle (direct or transitive); the command reports the cycle it found and writes nothing. Relay that report to the user. Recording a dependency that already exists is a no-op success.
+
+Display the command output to the user verbatim.
 
 ### Ready
 
-Call `list({ status: "open" })`, then filter out issues whose dependencies include any unclosed issues. Display as "Actionable issues — open and unblocked."
+```bash
+adev issues ready
+```
+
+This prints the issues that can be picked up right now, under the heading `Actionable issues — open and unblocked.`, sorted by priority ascending.
+
+Display that output to the user verbatim.
 
 ### Milestone Create
 
-`milestone create <name> [--target <YYYY-MM-DD>] [--strategy <manual|tag-only|release-please>] [--check <type>]... [--confirm "<text>"]...`
+```bash
+adev issues milestone create <name> [--target <YYYY-MM-DD>] [--strategy <manual|tag-only|release-please>] [--check <type>]... [--confirm "<text>"]...
+```
 
-Create or update a milestone in `.context-index/milestones.json` (via `lib/milestones.mjs`) with an auto-linked epic.
+Creates the milestone and links a fresh epic to it. Re-running with an existing name updates that milestone in place and creates no second epic, so it is safe to repeat.
 
 **Arguments:**
 - `<name>` (required) — milestone name, must match `[a-zA-Z0-9._-]+`
 - `--target <YYYY-MM-DD>` (optional) — target date for the milestone
-- `--strategy <value>` (optional) — set the release strategy (default: `manual`). Options: `manual` (no git ops at ship time), `tag-only` (git tag + optional GH release), `release-please` (writes release-as to config)
-- `--check <type>` (repeatable) — ship criteria check (e.g., `all_issues_closed`, `gates_pass`)
-- `--confirm "<text>"` (repeatable) — ship criteria confirmation prompt (e.g., `"CHANGELOG updated"`)
+- `--strategy <value>` (optional) — release strategy (default: `manual`). Options: `manual` (no git ops at ship time), `tag-only` (git tag + optional GH release), `release-please` (writes release-as to config)
+- `--check <type>` (repeatable) — auto-checked ship criterion (e.g., `all_issues_closed`, `gates_pass`)
+- `--confirm "<text>"` (repeatable) — manual ship criterion (e.g., `"CHANGELOG updated"`)
 
 **Behavior:**
-1. Validate name and optional target date
-2. Load existing milestones from `.context-index/milestones.json` via `lib/milestones.mjs` (creates file if absent)
-3. If a milestone with the same name exists, update it idempotently (no new epic created)
-4. If new, create a linked epic via `issueManager.createEpic({ title: name, milestone: name })`
-5. Write milestone entry: `{ name, status: "planned", epic_id, target_date, ship_criteria }`
-6. Report the created/updated milestone
+1. Validates the name and the optional target date
+2. Creates the milestones store if it does not exist yet
+3. Updates an existing milestone of the same name idempotently — no second epic
+4. Links a new epic named after the milestone when the milestone is new
+5. Records `{ name, status: "planned", epic_id, target_date, ship_criteria }`
+6. Prints the created or updated milestone
 
-**Implementation:** Call `milestoneCreate(projectRoot, name, options)` from `lib/milestones.mjs`. Pass the issue manager from `getIssueManager(manifest)`.
+Display the command output to the user verbatim.
 
-**Error cases:**
+**Error cases** (exit 1 unless noted):
 
 | Condition | Message | Code |
 |-----------|---------|------|
 | No name argument | Print usage hint | MISSING_NAME |
 | Invalid name | "Invalid milestone name" | INVALID_NAME |
 | Unparseable date | "Invalid date format. Use YYYY-MM-DD." | INVALID_DATE |
-| No backend configured | Warn, still write YAML | NO_BACKEND |
+| No backend configured | Warn, still write the entry | NO_BACKEND |
 | Epic creation fails | Write with `epic_id: null`, warn | EPIC_CREATE_FAILED |
 | Unknown strategy | "Unknown release strategy" | UNKNOWN_STRATEGY |
 
 ### Milestone List
 
-`milestone list`
+```bash
+adev issues milestone list
+```
 
-Display all milestones with status, target date, linked epic, and issue progress.
+Prints every milestone as a Name / Status / Target Date / Epic / Progress table. Progress counts open versus total issues on the linked epic; an `epic_id` that no longer exists on the board is shown as `<id> (broken)`. When nothing is defined it prints `No milestones defined.` instead of an empty table.
 
-**Behavior:**
-1. Load milestones from `.context-index/milestones.json` via `lib/milestones.mjs`
-2. For each milestone, query the issue manager for the linked epic and its child issues
-3. Display a table: Name, Status, Target Date, Epic, Progress (open/total)
-4. If a milestone's `epic_id` references a non-existent epic, show `epic-N (broken)` as a warning
-5. If no milestones exist, display: "No milestones defined. Run `milestone create <name>` to create one."
-
-**Implementation:** Call `milestoneList(projectRoot, options)` from `lib/milestones.mjs`. Pass the issue manager from `getIssueManager(manifest)`.
+Display that output to the user verbatim.
 
 **Error cases:**
 
 | Condition | Message | Code |
 |-----------|---------|------|
-| Malformed JSON | "milestones.json is malformed — cannot parse" | PARSE_ERROR |
+| Malformed store | "milestones.json is malformed — cannot parse" | PARSE_ERROR |
 
 ### Milestone Ship
 
-`milestone ship <name>`
+```bash
+adev issues milestone ship <name> [--yes] [--gate-timeout <ms>]
+```
 
-Evaluate ship criteria, execute the configured release strategy, update status to `shipped`, and close the linked epic.
+Evaluates the milestone's ship criteria and, if they all pass, marks it shipped, closes its epic, and performs the release action its strategy names.
 
 **Arguments:**
 - `<name>` (required) — milestone name to ship
+- `--yes` (optional) — answer every manual confirmation with yes
+- `--gate-timeout <ms>` (optional) — per-gate wall-clock budget (default 300000)
 
 **Release strategies:**
-- `manual` (default) — No git operations. Prints guidance for manual tag/publish.
-- `tag-only` — Creates git tag (`v<name>` for semver). Optionally creates GitHub release draft via `gh` CLI.
-- `release-please` — Writes `release-as` to `release-please-config.json`. Detects and prints open Release PR URL. Does not create tags.
+- `manual` (default) — no git operations; prints guidance for a manual tag or publish
+- `tag-only` — creates the git tag (`v<name>` for semver), optionally a GitHub release draft via `gh`
+- `release-please` — writes `release-as` into `release-please-config.json` and prints the open Release PR URL; creates no tag
 
-Set the strategy with `milestone create --strategy <value>` or call `lib/milestones.mjs` writers directly (do not hand-edit `milestones.json`).
+Set the strategy at creation time with `--strategy`; never hand-edit the milestones store.
 
-**Behavior:**
-1. Validate name, load milestone from `milestones.json` via `lib/milestones.mjs`
-2. If already shipped, report no-op and exit
-3. Run `evaluateShipCriteria(milestone, issueManager, manifest)` — evaluates `all_issues_closed` and `gates_pass` auto-checks
-4. If any auto-check fails, report failures and block ship
-5. For each manual `confirm` criterion, prompt the user: "<text>? (yes/no)". If any rejected, block ship
-6. Resolve release strategy via `resolveStrategy(milestone)` (defaults to `manual` when `release` is null)
-7. Execute strategy-specific release mechanics (see Release strategies above)
-8. Update milestone status to `shipped` in `milestones.json` via `lib/milestones.mjs`
-9. Close linked epic via `issueManager.close(epicId, "Milestone shipped")`
+**The confirmation protocol is the load-bearing part.** Exit 2 means the ship was REFUSED and **nothing was written** — an auto-check failed, a quality gate failed or timed out, or a manual confirmation is unanswered. Without `--yes` every manual confirmation counts as unanswered, so the command lists the pending items and refuses. Relay that list to the user, ask them in chat, and re-invoke with `--yes` once they have confirmed. Never bypass a refusal by editing the store or by reaching past the command.
 
-**Implementation:** Call `milestoneShip(projectRoot, name, options)` from `lib/milestones.mjs`. Pass the issue manager from `getIssueManager(manifest)` and the parsed manifest. For interactive confirms, implement `confirmFn` that prompts the user in chat.
+Exit 1 is a usage error or a lib failure (`MILESTONE_NOT_FOUND`, `BROKEN_EPIC`, `UNKNOWN_STRATEGY`, …). Exit 0 means the milestone shipped; the output names the strategy and the epic that was closed.
 
 **Error cases:**
 
-| Condition | Message | Code |
-|-----------|---------|------|
-| No name argument | Print usage hint | MISSING_NAME |
-| Invalid name | "Invalid milestone name" | INVALID_NAME |
-| Name not found | "Milestone '<name>' not found" | MILESTONE_NOT_FOUND |
-| No valid epic | "No valid linked epic" | BROKEN_EPIC |
-| Auto-check fails | Report failure detail, block | CRITERIA_FAILED |
-| Confirm rejected | "Ship cancelled" | CONFIRM_REJECTED |
-| Tag already exists (tag-only) | "Tag already exists" | TAG_EXISTS |
-| Config not found (release-please) | Falls back to manual with warning | RELEASE_CONFIG_MISSING |
-| Malformed config JSON (release-please) | "Not valid JSON — cannot write release-as" | RELEASE_CONFIG_INVALID |
-| Unknown strategy value | "Unknown release strategy" | UNKNOWN_STRATEGY |
-| Epic close fails | Warn, do not roll back | EPIC_CLOSE_FAILED |
-| No test command | "No test command configured" | NO_TEST_COMMAND |
+| Condition | Message | Code | Exit |
+|-----------|---------|------|------|
+| No name argument | Print usage hint | MISSING_NAME | 1 |
+| Invalid name | "Invalid milestone name" | INVALID_NAME | 1 |
+| Name not found | "Milestone '<name>' not found" | MILESTONE_NOT_FOUND | 1 |
+| No valid epic | "No valid linked epic" | BROKEN_EPIC | 1 |
+| Auto-check fails | Report the failure detail, block | CRITERIA_FAILED | 2 |
+| Quality gate times out | Name the gate and its budget, block | CRITERIA_FAILED | 2 |
+| Confirm unanswered or rejected | Name the pending confirm, block | CONFIRM_REJECTED | 2 |
+| Tag already exists (tag-only) | "Tag already exists" | TAG_EXISTS | 2 |
+| Config not found (release-please) | Falls back to manual with a warning | RELEASE_CONFIG_MISSING | 0 |
+| Malformed config JSON (release-please) | "Not valid JSON — cannot write release-as" | RELEASE_CONFIG_INVALID | 1 |
+| Unknown strategy value | "Unknown release strategy" | UNKNOWN_STRATEGY | 1 |
+| Epic close fails | Warn, do not roll back | EPIC_CLOSE_FAILED | 0 |
 
 ### Milestone Defer
 
-`milestone defer <name> --reason "<text>"`
+```bash
+adev issues milestone defer <name> --reason "<text>"
+```
 
-Set a milestone's status to `deferred` with a required reason.
+Marks a milestone deferred, records why, and defers its linked epic. `--reason` is required. Deferring an already-deferred milestone updates the reason idempotently; a shipped milestone cannot be deferred.
 
-**Arguments:**
-- `<name>` (required) — milestone name to defer
-- `--reason "<text>"` (required) — reason for deferral
+Display the command output to the user verbatim.
 
-**Behavior:**
-1. Validate name and reason (both required)
-2. Load milestone — reject if not found
-3. Reject if milestone is already shipped (ALREADY_SHIPPED)
-4. If already deferred, update the reason idempotently
-5. Set status to `deferred`, save `defer_reason` to `milestones.json` via `lib/milestones.mjs`
-6. If issue manager available, update linked epic status to `deferred`
-
-**Implementation:** Call `milestoneDefer(projectRoot, name, reason, options)` from `lib/milestones.mjs`. Pass the issue manager from `getIssueManager(manifest)`.
-
-**Error cases:**
+**Error cases** (exit 1):
 
 | Condition | Message | Code |
 |-----------|---------|------|
@@ -252,9 +280,12 @@ Set a milestone's status to `deferred` with a required reason.
 - **Backend agnostic.** Instructions work identically for json, file (legacy), and beads backends.
 - **Graceful errors.** Report clear error messages for validation failures.
 - **No lifecycle gating.** This skill is supporting — it does not gate the plan/implement/validate pipeline.
-- **Worktree-safe.** Issue storage is automatically shared across git worktrees. The registry resolves the main repo root via git, or uses `tasks.db_path` from manifest if configured.
+- **Worktree-safe.** Issue storage is automatically shared across git worktrees. The verbs resolve the main repo root via git, or use `tasks.db_path` from manifest if configured.
+- **Never call the backend binary (`br create`, …) directly.** `br` resolves `.beads/` from the current directory, so inside a linked worktree it opens the git-tracked `issues.jsonl` with no `beads.db` beside it and fails with `SYNC_CONFLICT` — the write is silently lost. Every board operation goes through `adev issues <sub>`, which resolves the storage root from the git common dir.
 
 ## API reference
+
+**Descriptive only — do not call these directly.** This section documents what the `adev issues` verbs wrap internally, so the mapping from verb to source module is discoverable. It is not a set of instructions: every step above is performed by invoking the verb, never by importing or calling these functions.
 
 Source modules (resolve `<ADEV_ROOT>` to the plugin root at runtime):
 
