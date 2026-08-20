@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { assertSafeScalar, assertSafeArgvToken, assertSafeFlowElement, isArgvPathElement, assertValidValue, assertStringId }
+import { assertSafeScalar, assertSafeArgvToken, assertSafeFlowElement, isArgvPathElement, assertValidValue, assertStringId, assertValidDispatchTriggered }
   from '../../../lib/extensions/governance-values.mjs';
 import { assertWithinCaps, CAPS } from '../../../lib/extensions/governance-values.mjs';
 
@@ -196,5 +196,89 @@ test('assertSafeFlowElement reports the SCALAR rule verdict, naming the field', 
   assert.throws(
     () => assertSafeFlowElement('a#b', 'command[2]'),
     e => e.code === 'GOVERNANCE_SCALAR_UNSAFE' && /command\[2\]/.test(e.message),
+  );
+});
+
+// ── assertValidDispatchTriggered — the ONE additional bundled/domain shape ──
+//
+// `dispatch: { triggered: { keywords: [...], patterns: [...], min_score: N } }`
+// is two levels deep with an array leaf, which the generic `assertValidValue`
+// refuses (pinned above: "nesting is capped at one level and every leaf is
+// checked"). This function is a narrowly-scoped SECOND shape, analogous to
+// `assertPackageKeys` in governance-registry.mjs, reachable only from
+// `lib/extensions/governance-splice.mjs`'s emitter for bundled/domain-sourced
+// registry content — NOT from `assertValidValue`, and NOT from the
+// extension-installed-content boundary in governance-registry.mjs, which
+// keeps `dispatch` closed to `always`/`never` (Decision B, untouched).
+
+test('assertValidDispatchTriggered accepts the full termination-reviewer shape', () => {
+  assert.doesNotThrow(() => assertValidDispatchTriggered(
+    { keywords: ['loop', 'retry', 'auto-retry'], min_score: 1 },
+    'dispatch.triggered',
+  ));
+  assert.doesNotThrow(() => assertValidDispatchTriggered(
+    { patterns: ['while\\s*\\(true\\)'], keywords: ['poll'], min_score: 2 },
+    'dispatch.triggered',
+  ));
+});
+
+test('assertValidDispatchTriggered refuses a non-object value', () => {
+  assert.throws(() => assertValidDispatchTriggered('always', 'dispatch.triggered'),
+    e => e.code === 'GOVERNANCE_FIELD_VALUE_INVALID');
+  assert.throws(() => assertValidDispatchTriggered(['loop'], 'dispatch.triggered'),
+    e => e.code === 'GOVERNANCE_FIELD_VALUE_INVALID');
+  assert.throws(() => assertValidDispatchTriggered(null, 'dispatch.triggered'),
+    e => e.code === 'GOVERNANCE_FIELD_VALUE_INVALID');
+});
+
+test('assertValidDispatchTriggered refuses a key outside keywords/patterns/min_score', () => {
+  assert.throws(
+    () => assertValidDispatchTriggered({ keywords: ['loop'], extra: 'x' }, 'dispatch.triggered'),
+    e => e.code === 'GOVERNANCE_FIELD_VALUE_INVALID',
+  );
+});
+
+test('assertValidDispatchTriggered refuses non-array keywords/patterns', () => {
+  assert.throws(() => assertValidDispatchTriggered({ keywords: 'loop' }, 'dispatch.triggered'),
+    e => e.code === 'GOVERNANCE_FIELD_VALUE_INVALID');
+  assert.throws(() => assertValidDispatchTriggered({ patterns: 'x' }, 'dispatch.triggered'),
+    e => e.code === 'GOVERNANCE_FIELD_VALUE_INVALID');
+});
+
+test('assertValidDispatchTriggered checks each keyword/pattern with the flow-element rule', () => {
+  // Colon+whitespace reparses a block-sequence item as a map with an
+  // attacker-chosen key (the same class UNSAFE_COLON exists to block).
+  for (const bad of ['loop: rm -rf /', 'a"b', 'a,b', '[', ']', '#', 'a#b', '\n', 'a\nb']) {
+    assert.throws(() => assertValidDispatchTriggered({ keywords: [bad] }, 'dispatch.triggered'),
+      e => e.code === 'GOVERNANCE_SCALAR_UNSAFE');
+  }
+  assert.throws(() => assertValidDispatchTriggered({ patterns: ['bad: value'] }, 'dispatch.triggered'),
+    e => e.code === 'GOVERNANCE_SCALAR_UNSAFE');
+  // A safe plain word and an argv-shaped token are both admitted.
+  assert.doesNotThrow(() => assertValidDispatchTriggered({ keywords: ['loop', 'plugin:tier1/x'] }, 'dispatch.triggered'));
+});
+
+test('assertValidDispatchTriggered requires min_score to be a real number', () => {
+  assert.throws(() => assertValidDispatchTriggered({ min_score: '1' }, 'dispatch.triggered'),
+    e => e.code === 'GOVERNANCE_FIELD_VALUE_INVALID');
+  assert.throws(() => assertValidDispatchTriggered({ min_score: true }, 'dispatch.triggered'),
+    e => e.code === 'GOVERNANCE_FIELD_VALUE_INVALID');
+  assert.throws(() => assertValidDispatchTriggered({ min_score: NaN }, 'dispatch.triggered'),
+    e => e.code === 'GOVERNANCE_FIELD_VALUE_INVALID');
+  assert.doesNotThrow(() => assertValidDispatchTriggered({ min_score: 0 }, 'dispatch.triggered'));
+});
+
+test('assertValidDispatchTriggered enforces the argvElements cap on keywords/patterns', () => {
+  const many = Array.from({ length: CAPS.argvElements + 1 }, (_, i) => `k${i}`);
+  assert.throws(() => assertValidDispatchTriggered({ keywords: many }, 'dispatch.triggered'),
+    e => e.code === 'GOVERNANCE_LIMIT_EXCEEDED');
+});
+
+test('assertValidValue itself still refuses the dispatch.triggered shape (unchanged)', () => {
+  // Pins the existing generic one-level cap so adding the narrowly-scoped
+  // function above cannot accidentally loosen it.
+  assert.throws(
+    () => assertValidValue({ triggered: { keywords: ['x'], min_score: 1 } }, 'dispatch'),
+    e => e.code === 'GOVERNANCE_FIELD_VALUE_INVALID',
   );
 });

@@ -135,23 +135,34 @@ describe('backward-compat: software profile through overlay pipeline', () => {
 
   // ── Reviewers ─────────────────────────────────────────────────────
 
-  it('merged reviewers match pre-domain-profiles defaults', () => {
+  it('merged reviewers match the retargeted software-domain panel (reviewer-domain-fit)', () => {
     const overlay = loadDomainConfig('software', 'reviewers', REPO_ROOT, PLUGIN_ROOT);
     const { reviewers } = mergeReviewers(overlay, null);
 
-    // Expected defaults from templates/review-specs/defaults.yaml
+    // Before the reviewer-domain-fit initiative, the software domain's
+    // reviewer overlay mirrored templates/review-specs/defaults.yaml's 3
+    // bundled reviewers verbatim, and this test pinned that identity as
+    // proof the (then-new) domain-profile system was behavior-preserving.
+    // .context-index/specs/features/reviewer-domain-fit/
+    // reviewer-panel-retarget.spec.md deliberately ends that mirroring: the
+    // domain overlay now ships its own 5-active/2-disabled panel
+    // (templates/domains/software/reviewers.yaml), so this test pins
+    // identity against THAT file instead — the current source of truth for
+    // what "the software domain's reviewers" means. `mergeReviewers` does
+    // not filter on `enabled`, so all 7 declared entries are expected here;
+    // enablement is applied downstream by lib/governance/review-config.mjs.
     const expectedDefaults = parseYaml(
-      readFileSync(join(PLUGIN_ROOT, 'templates', 'review-specs', 'defaults.yaml'), 'utf8')
+      readFileSync(join(PLUGIN_ROOT, 'templates', 'domains', 'software', 'reviewers.yaml'), 'utf8')
     );
 
-    assert.equal(reviewers.length, 3, 'Should have 3 reviewers');
+    assert.equal(reviewers.length, 7, 'Should have 7 reviewers (5 active + 2 disabled)');
 
     for (const expected of expectedDefaults.reviewers) {
       const actual = reviewers.find(r => r.id === expected.id);
       assert.ok(actual, `Reviewer ${expected.id} should exist`);
       assert.equal(actual.name, expected.name, `${expected.id} name`);
       assert.equal(actual.profile, expected.profile, `${expected.id} profile`);
-      assert.equal(actual.dispatch, expected.dispatch, `${expected.id} dispatch`);
+      assert.deepEqual(actual.dispatch, expected.dispatch, `${expected.id} dispatch`);
     }
   });
 

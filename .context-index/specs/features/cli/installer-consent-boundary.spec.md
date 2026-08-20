@@ -6,7 +6,7 @@ risk_level: high
 revision: 2
 charter-revision: 4
 created: 2026-08-14
-updated: 2026-08-14
+updated: 2026-08-18
 affects:
   - setup
   - hooks
@@ -18,6 +18,7 @@ source-manifest:
     - skills/init/SKILL.md
     - tests/cli-hook-chaining.test.mjs
     - tests/cli-install-scope.test.mjs
+drift_detected: true
 ---
 
 <!-- partial_schema: spec@1 -->
@@ -215,15 +216,25 @@ rewrites tracked files in `.githooks/`.
     makes this *more* reachable, not less — a missing path now hard-fails, but
     an existing attacker-writable one still runs. CWE-22. (SEC-2.)
 
-    **Known gap — containment is lexical, not physical (SEC-11).** The check
-    uses `resolve()`/`relative()`, which are pure string operations. A tracked
-    in-repo **symlink** (`.husky → ../shared-hooks`) is carried by `git clone`,
-    passes this check, and the wrapper executes code outside the repository —
-    demonstrated by execution during re-review. Closing it requires
-    `realpathSync` on both the candidate and the repo root (the latter for the
-    macOS `/var` vs `/private/var` case) plus a re-check once the concrete
-    `originalHookPath` is known. Tracked separately; this AC states what is
-    enforced today, not what is intended.
+    **Containment is now physical, not only lexical (SEC-11 — closed).**
+    `validateHooksPath` follows `resolve()`/`relative()` with a second pass:
+    `lenientRealpath` (`lib/path-safety.mjs`) resolves every symlink component
+    in both the candidate and the repo root, tolerating components that don't
+    exist yet (a fresh `.githooks/` about to be scaffolded, or a dangling
+    symlink) rather than throwing like `realpathSync`. A tracked in-repo
+    **symlink** (`.husky → ../shared-hooks`, or a file symlink
+    `hooks/pre-commit → ../../evil.sh`) that resolves outside the repo is now
+    rejected — both shapes demonstrated by execution during re-review, both
+    now covered by direct unit tests
+    (`tests/cli-hooks-path-symlink-containment.test.mjs`). The repo root
+    itself is realpath'd too, so a repo root that is itself reached through a
+    symlink (the macOS `/var` vs `/private/var` shape) is not falsely
+    rejected. A second, independent check (`escapesRepoPhysically`) re-runs
+    physical containment on the concrete, per-hook-name `originalHookPath`
+    once it is known — not only on the raw `existingHooksPath` directory
+    string — since an individual file inside an otherwise-legitimate
+    directory can independently be a symlink escaping the repo, and a symlink
+    could be introduced between config-read time and that point.
 
 15. **When** the settings file **itself** is a symlink, **then** the installer
     refuses to write, naming the path and its target, and exits rather than
@@ -242,14 +253,27 @@ rewrites tracked files in `.githooks/`.
     identity check for the two-scopes-one-file case, not a safety check, and
     does nothing about a link pointing at a third location.
 
-    **Known gap — leaf only (SEC-10).** `lstatSync` inspects the final path
-    component, so a symlinked **parent** (`.claude → ~/.ssh`, or
-    `.claude → ~/.claude`) is still followed; re-review demonstrated both, the
+    **Gap closed (was SEC-10, leaf only).** `lstatSync` inspects only the final
+    path component, so a symlinked **parent** (`.claude → ~/.ssh`, or
+    `.claude → ~/.claude`) was still followed; re-review demonstrated both
+    during execution against the real `adapter.enable("project")` API, the
     second silently leaking a project-scope enable into the user file and
-    defeating AC-2. Closing it requires resolving the parent chain and
-    requiring the settings path to land under the intended root — the pattern
-    already exists at `lib/issues/resolve-root.mjs`. Tracked separately; the
-    CWE-59 claim above is therefore partial.
+    defeating AC-2. Every `readJson`/`writeJson` call in
+    `providers/claude-code/adapter.mjs` now also resolves the settings path's
+    directory chain with `lenientRealpath` (`lib/path-safety.mjs`) and requires
+    it to land under the scope's intended root — `process.cwd()` for project,
+    `getClaudeHome()` for user — refusing with `SETTINGS_PATH_ESCAPES_ROOT`
+    when it escapes. `lenientRealpath` resolves symlinks at any existing path
+    component and tolerates a non-existent tail, so a first-ever install
+    (`.claude/` not yet created) is not falsely rejected, and a legitimate
+    parent symlink that still resolves inside the intended root is allowed —
+    only an escape is refused. The leaf-only check above stays in place
+    unconditionally alongside this one; it is a stricter, additive rule (any
+    directly symlinked leaf is refused even if it would resolve back inside
+    root), not superseded by it. Covered by
+    `tests/provider/claude-code-adapter.test.mjs`, including both concrete
+    attacks reproduced against the public API. The CWE-59 claim above no
+    longer needs the "partial" qualifier.
 
 ### Destructive rewrites are announced
 

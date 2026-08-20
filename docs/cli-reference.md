@@ -303,12 +303,17 @@ adev governance materialize --registry gates --dry-run
 
 **Purpose:** Append a lifecycle event to `.context-index/lifecycle-state/<slug>.jsonl`. Replaces the inline `reportValidator` / `reportStep` / `reportReviewer` / `reportPlanTask` / `reportIntervention` calls.
 
-**Signature:** `report --type <validator|step|reviewer|plan-task|intervention|cost-checkpoint> --spec <path> [type-specific flags]`
+**Signature:** `report --type <validator|step|reviewer|plan-task|intervention|cost-checkpoint|review-round> --spec <path> [type-specific flags]`
 
 **Example:**
 ```
 adev report --type validator --spec <p> --step validate --validator check-2-spec-compliance --verdict PASS
+
+adev report --type review-round --spec <p> --plan <p>.plan.md --task-id t1 \
+  --stage code-quality --cycles 2 --findings 1
 ```
+
+`--findings` is omitted for `--stage spec-compliance` — that review stage has no stable finding-id convention to count against. As with the other `report` types, omitting an event entirely means "not recorded", never "zero". `cost-checkpoint` remains documented above but is not yet an implemented `--type`; this is a pre-existing gap, tracked separately, and left untouched here.
 
 **Implementation:** `lib/cli/report.mjs`. **Called by:** `/adev:plan`, `/adev:specify`, `/adev:review-specs`, `/adev:implement`, `/adev:validate`.
 
@@ -472,7 +477,44 @@ adev route render-sidecar --plan .context-index/specs/features/auth/login.plan.m
 adev implement read-routing --plan <p> --task-id task-3
 ```
 
+Exit codes: `0` success (entry JSON on stdout), `1` argument error / `INVALID_PLAN_PATH` / `INVALID_SIDECAR_JSON`, `2` `ROUTING_SIDECAR_MISSING`, `3` `ROUTING_ENTRY_MISSING`, `4` `ROUTING_AGENT_INVALID`.
+
 **Implementation:** `lib/cli/implement.mjs`. **Called by:** `/adev:implement`, `/adev:route`.
+
+#### `implement batches`
+
+**Purpose:** Resolve which of a plan's tasks are eligible to dispatch together as a batch (from `## Parallelization` sequential groups) versus solo, honoring per-run overrides.
+
+**Signature:** `implement batches --plan <p> [--max-batch <n>] [--no-batch]`
+
+Prints `{ batches, solo, advisories }` as JSON to stdout. `--no-batch` forces every task solo and is rejected with `CONFLICTING_BATCH_FLAGS` when combined with `--parallel`. `--max-batch <n>` overrides `implement.max_batch_size` for this run; an invalid value is rejected with `INVALID_MAX_BATCH_SIZE`.
+
+**Example:**
+```
+adev implement batches --plan <p> --max-batch 4
+```
+
+Exit codes: `0` success, `1` argument error / `CONFLICTING_BATCH_FLAGS` / `INVALID_MAX_BATCH_SIZE` / `INVALID_PLAN_PATH`, `2` `ROUTING_SIDECAR_MISSING`.
+
+**Implementation:** `lib/cli/implement.mjs`. **Called by:** `/adev:implement` only — `/adev:route` does not call `batches`.
+
+#### `implement resolve-depth`
+
+**Purpose:** Resolve the effective review depth (`full`|`quick`) for a single plan task, wrapping `lib/implement/review-depth.mjs::resolveImplementReviewDepth()` so `/adev:implement` doesn't inline the precedence chain and floor pass into skill prose.
+
+**Signature:**
+```
+implement resolve-depth --spec <path> --plan <path> --task-id <id> [--tier full|quick] [--review-cycles <n>] [--base-sha <sha>] [--pass provisional|final] [--in-batch] [--had-critical-finding]
+```
+
+**Example:**
+```
+adev implement resolve-depth --spec <s> --plan <p> --task-id t3 --tier quick --review-cycles 2
+```
+
+Exit codes: `0` success — `resolveImplementReviewDepth()` result plus `review_cycles` printed as JSON on stdout; `1` argument error / `INVALID_REVIEW_CYCLES` / `INVALID_SPEC_PATH` / `INVALID_PLAN_PATH` / `INVALID_TIER`; `2` `MISSING_DIFF_RANGE` (final pass without `--base-sha`); `3` `ROUTING_SIDECAR_MISSING` / `ROUTING_ENTRY_MISSING`.
+
+**Implementation:** `lib/cli/implement.mjs`. **Called by:** `/adev:implement` only.
 
 ### `specify`
 
@@ -602,6 +644,7 @@ Set with `tasks.backend` in `manifest.yaml`. Verified against `br` 0.2.22.
 | lease TTL + `issues stale` | ✅ | ✅ | ❌ |
 | **stale-lease takeover** | ✅ atomic | ⚠️ **not atomic** — two calls | ❌ |
 | `branch` / `pr` / `claimed_at` / `spec_ref` | ✅ native columns | ✅ br `agent_context` (JSON, under the `adev` key) | 🔍 |
+| `affected_modules` (`issues set-modules`) | ✅ native column | ✅ br `agent_context`, same as above | 🔍 |
 | adev ids (`issue-N` / `epic-N`) | ✅ native | ✅ br `external_ref` — br enforces uniqueness | 🔍 |
 | claim holder | ✅ native | ✅ br `assignee`, and nowhere else | ❌ |
 | dependency edges on `list()` | ✅ | ⚠️ always `[]` — `br list` returns counts, not edges | 🔍 |
@@ -647,9 +690,16 @@ adev issues milestone list
 adev issues milestone ship v1.0 --yes                  # exit 2 if criteria fail
 adev issues list --milestone v1.0 --status open
 adev issues stale --json
+adev issues set-modules issue-42 cli,hooks
 ```
 
-**Implementation:** `lib/cli/issues.mjs` dispatches to `issues-board.mjs` (`board`), `issues-create.mjs` (`create`), `issues-epic.mjs` (`epic`), `issues-mutate.mjs` (`update`, `close`, `dep`), `issues-list.mjs` (`list`, `ready`), `issues-milestone.mjs` (`milestone …`), `issues-migrate.mjs`, `issues-claim.mjs` (`claim`, `release`) and `issues-stale.mjs`. **Called by:** `/adev:issues` (every step), `/adev:plan` and `/adev:reconcile` (epic creation), and in preflight by `/adev:implement` and `/adev:debug`.
+**`set-modules <id> <slug>[,<slug>...] [--json]`:** sets `WorkItem.affected_modules` — the module-safety tag `adev issues next` (bug-selection-and-eligibility.spec.md) consults for its blast-radius and reserved-tag safety checks. This is v1's only producer for the field: a direct, scriptable verb, deliberately unpolished (no validation against `manifest.modules[]`, no GitHub-label sync — both remain charter Deferred Capabilities). Works identically on the `json` and `beads` backends. An issue with no `affected_modules` set fails closed and is never autonomously selected.
+
+**`next [--type bug] [--max-priority P0-P4] [--json]`:** read-only bug-selection verb for the autonomous bugfix loop. Returns the single highest-priority eligible `type: "bug"` WorkItem within the resolved priority bound, or `{"bug": null}` if none qualify — never a partial or ambiguous result, and never a write (no claim, no close, no AttemptRecord mutation). `--type` currently only accepts `"bug"` (the default); any other value exits non-zero with `UNSUPPORTED_TYPE`. `--max-priority` defaults to `P3` (covering `P2`/`P3`) and rejects `P0`/`P1` with `INVALID_PRIORITY_BOUND` — those priorities are outside the eligibility filter's safety boundary by design, not merely deprioritized, and can never be selected via this verb regardless of flags. Eligibility also requires: `status` other than `closed`/`deferred`; a single `affected_modules` entry that is a real `manifest.modules[].slug` and not a reserved safety tag (`review-gate`, `convergence-detector`, `retry-loop`, `bugfix-loop`) or a manifest-configured `tasks.bugfix_loop.excluded_modules` entry; no live (non-expired) claim; no open blocking dependencies; and no `AttemptRecord.last_verdict` of `NO_PROGRESS`, `REGRESSED`, or `BUDGET_EXHAUSTED`. Ties within a priority band resolve FIFO by oldest `created`. Exits non-zero with `ISSUE_BOARD_NOT_CONFIGURED` if `tasks.backend` is unset.
+
+Unlike `claim`/`release`, `next` is not yet called from any skill's preflight — no skill invokes `adev issues next` today; it is a standalone verb for the (separately specified) autonomous bugfix loop to call once that loop exists.
+
+**Implementation:** `lib/cli/issues.mjs` dispatches to `issues-board.mjs` (`board`), `issues-create.mjs` (`create`), `issues-epic.mjs` (`epic`), `issues-mutate.mjs` (`update`, `close`, `dep`), `issues-list.mjs` (`list`, `ready`), `issues-milestone.mjs` (`milestone …`), `issues-migrate.mjs`, `issues-claim.mjs` (`claim`, `release`), `issues-stale.mjs`, `issues-set-modules.mjs`, and `issues-next.mjs`. **Called by:** `/adev:issues` (every step), `/adev:plan` and `/adev:reconcile` (epic creation), and in preflight by `/adev:implement` and `/adev:debug`.
 
 ### `retro`
 

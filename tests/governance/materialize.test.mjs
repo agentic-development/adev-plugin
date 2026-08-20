@@ -86,7 +86,7 @@ function seedProject(dir, overrides = {}) {
   writeFixture(
     dir,
     ".context-index/manifest.yaml",
-    "project:\n  name: fixture\n  domain: software\n",
+    "project:\n  name: fixture\ndomain: software\n",
   );
   writeFixture(dir, GATES, overrides.gates ?? DEFAULT_GATES);
   writeFixture(dir, REVIEW, overrides.review ?? DEFAULT_REVIEW);
@@ -328,6 +328,58 @@ describe("adev governance materialize", () => {
   );
 
   test(
+    "review materialization writes a domain reviewer's prompt_text verbatim (adev-plugin-xg1f.4)",
+    withDir(async (dir) => {
+      // Regression for the real end-to-end path a domain extension install
+      // takes: `installDomainProfile()` copies `domain/reviewers.yaml` into
+      // `.context-index/domains/<name>/reviewers.yaml`, and `adev governance
+      // materialize --registry review` is the ONE sanctioned adoption step
+      // (lib/governance/materialize.mjs header) that writes it into the
+      // project's own file. That write goes through
+      // `lib/extensions/governance-splice.mjs::emitEntry`, which re-checks
+      // every scalar with `assertSafeScalar` — so `prompt_text` had to be
+      // added to `FIELD_ALLOWLIST` (or the field is silently dropped by
+      // `projectEntry`'s allowlist filter) AND the prose has to survive that
+      // scalar-safety pass on its own merits. Comma-bearing prose does not:
+      // `assertSafeScalar` refuses a literal `,` in any scalar, which is why
+      // both first-party domain extensions' prompts were rewritten comma-free
+      // rather than left as-is under the new field name.
+      seedProject(dir);
+      writeFixture(
+        dir,
+        ".context-index/domains/acme/reviewers.yaml",
+        [
+          "merge_strategy: append",
+          "",
+          "reviewers:",
+          "  - id: acme-data-reviewer",
+          '    name: "Acme Data Reviewer"',
+          "    dispatch: always",
+          '    prompt_text: "Review data contracts for schema completeness and SLA definitions."',
+          "    profile: reviewer-capable",
+          "    context_pack: base",
+          "    severity_cap: blocker",
+          "",
+        ].join("\n"),
+      );
+      writeFixture(
+        dir,
+        ".context-index/manifest.yaml",
+        "project:\n  name: fixture\ndomain: acme\n",
+      );
+      const r = runCli(dir, ["governance", "materialize", "--registry", "review"]);
+      assert.equal(r.exitCode, 0, r.stderr);
+      const text = readFileSync(join(dir, REVIEW), "utf8");
+      assert.match(text, /- id: acme-data-reviewer/);
+      assert.match(
+        text,
+        /prompt_text: Review data contracts for schema completeness and SLA definitions\./,
+      );
+      assert.match(text, /source: domain:acme/);
+    }),
+  );
+
+  test(
     "diagnostics materialization adds no entry but does stamp the marker",
     withDir(async (dir) => {
       seedProject(dir);
@@ -492,7 +544,7 @@ describe("the `source` field records provenance AT MATERIALIZATION TIME", () => 
       writeFixture(
         dir,
         ".context-index/manifest.yaml",
-        "project:\n  name: fixture\n  domain: acme\n",
+        "project:\n  name: fixture\ndomain: acme\n",
       );
 
       const first = runCli(dir, ["governance", "materialize", "--registry", "gates"]);
@@ -506,7 +558,7 @@ describe("the `source` field records provenance AT MATERIALIZATION TIME", () => 
       writeFixture(
         dir,
         ".context-index/manifest.yaml",
-        "project:\n  name: fixture\n  domain: software\n",
+        "project:\n  name: fixture\ndomain: software\n",
       );
       const second = runCli(dir, ["governance", "materialize", "--registry", "gates"]);
       assert.equal(second.exitCode, 0, second.stderr);
@@ -645,7 +697,7 @@ describe("materialize — manifest.yaml:specialists still dispatch (review Impor
       writeFixture(
         dir,
         ".context-index/manifest.yaml",
-        "project:\n  name: fixture\n  domain: software\nspecialists: []\n",
+        "project:\n  name: fixture\ndomain: software\nspecialists: []\n",
       );
       const r = runCli(dir, ["governance", "materialize", "--registry", "review"]);
       assert.equal(r.exitCode, 0, r.stderr);

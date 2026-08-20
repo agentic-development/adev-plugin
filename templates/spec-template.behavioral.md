@@ -76,7 +76,7 @@ updated: {{ date }}
 
 <!-- How the system behaves when things go wrong. Each error case needs a test. -->
 
-| Condition | Expected Behavior | HTTP Status / Error Code |
+| Condition | Expected Behavior | Error Code |
 |-----------|-------------------|--------------------------|
 | ... | ... | ... |
 

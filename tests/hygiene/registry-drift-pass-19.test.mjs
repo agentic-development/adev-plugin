@@ -81,7 +81,7 @@ function setupProject() {
   const dir = createTempDir();
   const pluginRoot = join(dir, "fake-plugin");
 
-  writeFixture(dir, ".context-index/manifest.yaml", `project:\n  domain: ${DOMAIN}\n`);
+  writeFixture(dir, ".context-index/manifest.yaml", `domain: ${DOMAIN}\n`);
 
   for (const name of REGISTRY_NAMES) {
     const [file, rootKey, starterFile] = SHAPE[name];
@@ -332,7 +332,7 @@ test(
 test("a missing project registry file is reported as a skip, not a crash", async () => {
   const dir = createTempDir();
   try {
-    writeFixture(dir, ".context-index/manifest.yaml", `project:\n  domain: ${DOMAIN}\n`);
+    writeFixture(dir, ".context-index/manifest.yaml", `domain: ${DOMAIN}\n`);
     const result = await runRegistryDriftPass(dir, { pluginRoot: join(dir, "fake-plugin") });
     assert.equal(result.findings.filter((f) => f.id === "hygiene/registry-absent").length, 4);
   } finally {

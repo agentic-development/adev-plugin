@@ -142,7 +142,7 @@ created: {{ date }}
 
 ### Error Cases
 
-| Condition | Expected Behavior | HTTP Status / Error Code |
+| Condition | Expected Behavior | Error Code |
 |-----------|-------------------|--------------------------|
 | ... | ... | ... |
 

@@ -3,10 +3,10 @@ charter: agent-reliable-state-artifacts
 status: validated
 risk_level: high
 milestone: 0.26.0
-revision: 2
+revision: 3
 charter-revision: 8
 created: 2026-05-12
-updated: 2026-05-12
+updated: 2026-08-18
 source-manifest:
   sha: "a4cef4c"
   files:
@@ -43,7 +43,7 @@ This unblocks the board-granularity invariant declared by the charter and consum
 - **StateProjection fields** — camelCase per the foundation spec. `currentState(spec).planTasks` is the map `{ <task_id>: { status, notes, updated } }` already established by `lifecycle-event-log.spec.md`.
 - **Skill prose** — `/adev:plan`, `/adev:implement`, and `/adev:work` instructions refer to tasks as "plan tasks" (not "task issues" or "task rows") to reinforce the channel change.
 
-Implementers must not invent new fields. If a future skill needs to carry extra metadata, it goes on `notes` (free-text, escaped at render boundary per `markdown-rendering-layer.spec.md`) or, if structured, becomes a new event variant in a follow-up spec.
+Implementers must not invent new fields. If a future skill needs to carry extra metadata, it goes on `notes` (free-text, escaped at render boundary per `markdown-rendering-layer.spec.md`) or, if structured, becomes a new event variant in a follow-up spec. **That clause is discharged for per-stage review metadata by `.context-index/specs/features/implementation/review-provenance.spec.md`, which adds the `review_round` variant (`plan`, `task_id`, `stage`, `cycles`, `findings?`) rather than widening this one. The `plan_task` payload above is unchanged.**
 
 ## Authoritative-Channel Invariant (CON-8)
 

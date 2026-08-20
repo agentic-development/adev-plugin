@@ -92,7 +92,7 @@ Each registry has an exhaustive allowlist (`FIELD_ALLOWLIST` in `lib/extensions/
 | Registry | Contributable fields |
 |---|---|
 | `validate.yaml` | `id`, `name`, `kind`, `severity`, `profile`, `context_pack`, `prompt`, `after`, `description`, `command`, `fail_fast`, `enabled`, `disabled_reason` |
-| `review.yaml` | `id`, `name`, `dispatch`, `profile`, `context_pack`, `severity_cap`, `prompt`, `package`, `enabled`, `disabled_reason` |
+| `review.yaml` | `id`, `name`, `dispatch`, `profile`, `context_pack`, `severity_cap`, `prompt`, `prompt_text`, `package`, `enabled`, `disabled_reason` |
 | `gates.yaml` | `id`, `command`, `description`, `severity`, `tier`, `enabled`, `disabled_reason` |
 | `diagnostics.yaml` | `id`, `runner`, `severity`, `tier`, `scope`, `enabled`, `disabled_reason` |
 | `boundaries.yaml` | `id`, `severity`, `pattern`, `flags`, `exclude`, `description`, `enabled`, `disabled_reason` |

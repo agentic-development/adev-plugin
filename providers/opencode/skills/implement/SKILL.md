@@ -16,14 +16,18 @@ Execute an implementation plan by dispatching a fresh subagent per task, routing
 - `--verbose`: disable silent execution for per-task subagents. Includes `VERBOSE: true` in subagent prompts so they narrate each step. Useful for debugging task failures.
 - `--parallel`: run file-disjoint task groups concurrently in adev-managed worktrees instead of strictly serially (see Step 2.5). Falls back to serial when the plan has no usable `## Parallelization` section.
 - `--fresh`: with `--parallel`, on a re-run collision auto-remove the retained worktree (`adev worktree remove --force`) and proceed, instead of aborting the group with `RERUN_COLLISION`. No effect without `--parallel`.
+- `--no-batch`: force solo dispatch for every task, restoring today's strict one-subagent-per-task behavior. Rejected with `CONFLICTING_BATCH_FLAGS` when combined with `--parallel` (`--parallel`'s unit of dispatch is already the group — the two flags would disagree about what "batching off" means).
+- `--max-batch <n>`: per-run override of `implement.max_batch_size` (default 4). `1` is equivalent to `--no-batch`.
+- `--review-cycles <n>`: per-run override of `implement.max_review_cycles` (default 3), forwarded to every `adev implement resolve-depth` call (the verb is the only validator).
 
 ## Prerequisites
 
-Before starting, verify all four conditions. If any fails, stop and tell the user what to fix.
+Before starting, verify all five conditions. If any fails, stop and tell the user what to fix.
 
-1. **Plan exists.** The plan file must exist and be readable.
-2. **Context Index exists.** `.context-index/` must be present with `constitution.md` and `manifest.yaml`.
-3. **Plan step gate.** As the FIRST action in the skill — before reading the plan file or loading context — gate on the prior step via the lifecycle log, then emit the step-started event:
+1. **No conflicting batch flags.** If both `--no-batch` and `--parallel` were passed to this skill invocation, stop immediately with `CONFLICTING_BATCH_FLAGS` — do not proceed to Step 1, Step 2, or Step 2.5. This check runs here, unconditionally, precisely because it must fire regardless of which of those steps the run would otherwise take: `--parallel` present routes to Step 2.5's group dispatch instead of Step 2's per-task loop, and Step 2's own "Batch resolution" paragraph (where `adev implement batches` is invoked) never executes on that path — so the flag conflict would otherwise go undetected on exactly the run where the operator most needs to hear about it. Report the same message `adev implement batches` itself would give: "`CONFLICTING_BATCH_FLAGS`: `--no-batch` and `--parallel` are mutually exclusive — `--parallel`'s unit of dispatch is already the group. Drop one flag."
+2. **Plan exists.** The plan file must exist and be readable.
+3. **Context Index exists.** `.context-index/` must be present with `constitution.md` and `manifest.yaml`.
+4. **Plan step gate.** As the FIRST action in the skill — before reading the plan file or loading context — gate on the prior step via the lifecycle log, then emit the step-started event:
 
    ```bash
    adev gate require --skill implement --spec <spec-path>
@@ -49,7 +53,7 @@ Before starting, verify all four conditions. If any fails, stop and tell the use
    **Already covered — do not double-emit.** Per-task escalations terminate through the Step 2d blocker path (`plan_task` `blocked`): the blocker-flag protocol, `MISSING_DEPTH_ASSIGNMENT`, and `LOOP_BUDGET_EXHAUSTED` / `LOOP_NO_PROGRESS` / `LOOP_REGRESSED`. Emit the step-level failed event only when the *whole skill* stops.
 
    **Known gap:** `adev report --type step` accepts no `--error` flag, so the abort's error code cannot ride on the event. Name it in operator-facing output instead.
-4. **Working branch.** The current git branch must not be main or master. If it is, stop and ask the user to create a feature branch following the naming convention in `manifest.yaml` (default: `<type>/<module>/<short-description>`, e.g. `feat/auth/login-flow`).
+5. **Working branch.** The current git branch must not be main or master. If it is, stop and ask the user to create a feature branch following the naming convention in `manifest.yaml` (default: `<type>/<module>/<short-description>`, e.g. `feat/auth/login-flow`).
 
 ## Process
 
@@ -142,7 +146,7 @@ If `exec.status === "active"`, resume from `exec.currentTask` instead of task 1.
 
 **Load or create epic on the issue board:** Read `tasks.backend` from `manifest.yaml`. If configured:
 - If an epic exists matching this plan's `planRef`, load it.
-- If no epic exists, create one with `adev issues epic "<plan title>" --plan-ref "<plan-file-path>"` (`adev issues epic` is the only verb that writes to the epic store this lookup reads; `adev issues create` lands the record in the issue store, where the lookup above never sees it and a duplicate is minted on every run). Never call the backend binary (`br create`, …) directly — the verb resolves the storage root from the git common dir, so it works from a linked worktree, where a raw `br` call fails with `SYNC_CONFLICT`. The epic is the **only** board entry created here — per-task Issue creation is forbidden by the board-granularity invariant (see `agent-reliable-state-artifacts/charter.md`).
+- If no epic exists, create it with `adev issues epic "<plan title>" --plan-ref "<plan-file-path>"` — never `adev issues create` (wrong store, duplicates) or `br create` (worktree `SYNC_CONFLICT`). It's the **only** board entry created here — per-task Issues are forbidden by the board-granularity invariant (see `agent-reliable-state-artifacts/charter.md`).
 - **Do NOT call `create({ ..., planTask: ... })`.** Plan-task state lives in the lifecycle log, not as Issues on the board. The `JsonAdapter` rejects such calls with `BOARD_GRANULARITY_VIOLATION`.
 
 If `tasks.backend` is not configured, skip epic creation entirely (plan-task events are still emitted to the lifecycle log).
@@ -289,6 +293,11 @@ This creates a visual task list in the Claude Code UI that the user can monitor 
 
 For each task in dependency order:
 
+Before the loop begins, `adev implement batches --plan <plan-path> [--max-batch <n>] [--no-batch]` resolves which tasks form a batch and which dispatch solo.
+
+> **Conditional loading:** Read `skills/implement/batched-mode.md` for the full Batched Task Dispatch instructions.
+> Load it only when at least one batch forms; a plan with no eligible `(sequential)` group runs the loop below exactly as written, per task.
+
 #### 2.pre: Implementation Probe
 
 Before dispatching a subagent, check if the task's target files already exist and may be already implemented:
@@ -344,6 +353,8 @@ Before routing or dispatching, assemble the task's context packet:
 - `auto-agent`: proceed with standard dispatch
 - `assisted-agent`: proceed with dispatch, but pause after RED phase (tests written) for user review before GREEN phase
 - `human-only`: generate scaffolding only (type stubs, file structure, test shells), present as a manual task checklist, emit `reportPlanTask(projectRoot, specPath, { plan: planFilePath, task_id, status: "skipped", notes: "MANUAL — requires human implementation" })`, skip to next task
+
+**Provisional review depth.** Alongside the routing-tag check, before dispatch: `adev implement resolve-depth --spec <spec> --plan <plan> --task-id <id> [--tier <t>] [--review-cycles <n>] [--in-batch] --pass provisional`. It briefs the implementer and reports `review_depth_resolved`; the final pass (2f-pre) decides which reviewer(s) dispatch. Contract: `graduated-review-depth.md`.
 
 #### 2b. Specialist Routing
 
@@ -465,9 +476,13 @@ The verb wraps `lib/execution-state.mjs::writeExecutionState`. If the CLI call e
 
 #### 2d. Dispatch and Handle Status
 
+- **Capture the task's base SHA** immediately before dispatch: `git rev-parse HEAD`. Used only by this task's final-pass depth resolution (2f-pre); never persisted.
+
 Dispatch the subagent with `Agent({description, prompt, run_in_background: false})` and nothing else.
 
 **Always pass `run_in_background: false`.** The harness backgrounds Agent dispatches by default: the call returns immediately with a task ID and the caller is only re-invoked by a completion notification. That notification path is reliable only at the top level of a session — inside a nested subagent context (implement usually runs as a build-step subagent) it does not re-invoke the caller, so a backgrounded dispatch stalls the task loop (field-observed as implement subagents that auto-background and never report a status). This applies to **every** subagent dispatch in this skill: implementer, write-test, spec reviewer, code quality reviewer, visual verifier, and final reviewer.
+
+**Never end your turn to wait for a dispatched subagent.** A synchronous dispatch (`run_in_background: false`) returns its final result directly in the tool call — there is nothing to wait for. If a dispatch ever returns a task ID instead of a result, that is a bug in the dispatch (the rule above was violated, or the harness backgrounded it anyway): fix the dispatch and re-run it synchronously. Do not end the turn hoping a completion notification will resume you — in a nested subagent context it will not. If this skill is itself running as a dispatched subagent (e.g., a build pipeline step), your own caller is waiting on a result contract — for build pipeline steps this is the `STEP_RESULT` format defined in `skills/build/SKILL.md`. Ending your turn without that result to report is a protocol violation, not a valid pause point.
 
 **Do not pass `isolation: "worktree"`.** Implement runs tasks serially against the orchestrator's branch; the subagent must write to the same working tree. From inside an existing worktree (`cwd` contains `.claude/worktrees/`), worktree isolation nests a new worktree inside the parent — the parent then captures it as untracked `.claude/worktrees/agent-<id>/` content, and every per-task dispatch adds another level (8+ deep observed in field reports). Subagents that commit also defeat the harness's auto-cleanup contract, leaving the nested trees on disk forever.
 
@@ -555,6 +570,15 @@ Do not proceed. Do not skip. Do not fall back to code-only review for UI tasks.
 
 **If the spec has no Visual Expectations section:** Still take a basic snapshot after implementation. Verify the page loads without errors, shows content (not a blank screen), and has no console errors. This is the minimum bar.
 
+#### 2f-pre. Final Review Depth
+
+> **Required reading:** `skills/implement/graduated-review-depth.md`.
+
+Immediately before 2f's dispatch — after GREEN, against the real diff — run the provisional call again with `[--had-critical-finding] --base-sha <captured-sha> --pass final`. Echo `REVIEW_DEPTH_FLOOR_APPLIED` (naming `floor_legs`) and any `ROUTING_SCORE_OUT_OF_RANGE` warning to the operator-facing transcript, not only to the persisted `review_depth_resolved` event. Then branch on the resolved `depth`:
+
+- **`full`** — run 2f then 2g below exactly as written.
+- **`quick`** — skip both stages; dispatch one synthesized reviewer carrying `synthesized-reviewer-prompt.md` and the union of both stages' context, under the same `cq-<n>` / `evaluateStopCondition` discipline, capped at the returned `review_cycles`. Record `stage: "synthesized"` provenance (`Review-round: synthesized=<n>`) instead of the two stage records.
+
 #### 2f. Stage 1 Review: Spec Compliance
 
 Dispatch a fresh spec reviewer subagent with:
@@ -569,7 +593,7 @@ The spec reviewer verifies by reading code, not by trusting the report:
 - **Extra work:** Was anything built that was not requested?
 - **Misunderstandings:** Were requirements interpreted correctly?
 
-**If the reviewer finds issues:** The implementer subagent (same one) fixes them. The spec reviewer reviews again. Maximum 3 review cycles per task. After the third, escalate to the user.
+**If the reviewer finds issues:** The implementer subagent (same one) fixes them. The spec reviewer reviews again. Maximum `implement.max_review_cycles` review cycles per task (default 3), or the effective `review_cycles` returned by this task's last `adev implement resolve-depth` call when `--review-cycles` was passed. After the last cycle, escalate to the user.
 
 **Only proceed to Stage 2 after Stage 1 passes.**
 
@@ -589,7 +613,7 @@ The code quality reviewer checks the items in `code-quality-checklist.md` from t
 
 **Minor issues:** Noted but do not block progress.
 
-**Critical or Important issues — bounded fix/review loop.** The implementer subagent (same one) fixes them and the reviewer reviews again, but the loop is capped. **Maximum 3 code-quality review cycles per task**, matching the Stage 1 cap (2f) and the visual fix cap (2e). This is a hardcoded convention because no manifest knob exists for it yet; a config-backed budget mirroring `build.max_review_retries` (see `lib/manifest.mjs` and `skills/build/SKILL.md` Step 1) is a follow-up.
+**Critical or Important issues — bounded fix/review loop.** The implementer subagent (same one) fixes them and the reviewer reviews again, but the loop is capped. **Maximum `implement.max_review_cycles` code-quality review cycles per task** (same effective value as Stage 1's cap above — both stages read the same resolved number, which is what makes the `quick` path's `1 × cap` (vs. `full`'s `2 × cap`) worst-case-dispatch claim true).
 
 Each cycle, compare the reviewer's Critical/Important finding ids against the previous cycle's set the way `/adev:build`'s BLOCK→revise loop does, using the convergence primitive `lib/loop-convergence.mjs` (`partitionBlockers` splits the two id sets into addressed / persistent / new; `evaluateStopCondition` turns that partition plus the cycles remaining into one verdict). Act on the verdict:
 
@@ -628,7 +652,28 @@ After both reviews pass:
 1. Emit a `plan_task` `done` event: `reportPlanTask(projectRoot, specPath, { plan: planFilePath, task_id, status: "done", notes: <optional 1-line summary or null> })`. This is the **only** task-completion signal — the plan file itself is not modified.
 2. **Do NOT mutate plan file checkboxes.** The `- [ ]` markers in the plan file are authoring guides for human reviewers; they are not authoritative state and are never flipped by skills. Authoritative status lives in `currentState(spec).planTasks` (folded from `plan_task` events in the lifecycle log).
 3. **Commit-per-task is MANDATORY.** Per `incremental-artifact-writes.spec.md` Integration Point 2, every plan task MUST produce exactly one git commit before the orchestrator moves on. The commit IS the checkpoint — if a later task fails or a session crashes mid-pipeline, the prior task's work is preserved in git history. Multi-task implementations with a single combined commit are forbidden; they defeat the recovery guarantee.
-4. Record: specialist used (or "generic"), review cycles needed, concerns noted.
+4. **Record review-round provenance on both channels** (`review-provenance.spec.md`
+   Output Contract A and B). For each review stage that ran on this task — always at least `spec-compliance` and
+   `code-quality`, since 2h is reached only after both pass:
+   - **Trailer.** Add one `Review-round: <stage>=<cycles>` line to this task's single
+     commit, built by `buildReviewRoundTrailer(stage, cycles)` in
+     `lib/lifecycle-state.mjs`. That helper is the **only** sanctioned producer of the
+     line — never compose the text as prose. `cycles` counts reviewer dispatches
+     **including the initial review**, so a stage that passed on first look records
+     `=1`. Repeated `Review-round:` keys are legal, so two stages produce two lines. The helper
+     rejects CR/LF, control/ANSI escapes, over-cap length, an out-of-enum stage, and any
+     `cycles` that is not an integer >= 1; a rejection is never coerced into a written line.
+   - **Event.** Emit one event per stage:
+     `adev report --type review-round --spec <spec> --plan <plan> --task-id <id> --stage <s> --cycles <n> [--findings <m>]`.
+     Supply `--findings` only for `code-quality` (and `synthesized`), never for
+     `spec-compliance` — step 2f mandates no stable finding-id convention, so distinct
+     findings are not countable there. If a stage's cycle count is genuinely unknown
+     (for example the run resumed mid-task after a crash), **omit the event for that
+     stage** rather than guessing: absence reads as "not recorded", and a fabricated
+     count would corrupt the corpus this record exists to create.
+   Still record the specialist used (or "generic") and any concerns noted in the
+   task report as before. Neither channel gates task completion: a failed
+   observability write is a warning naming the task, not a task failure.
 5. Move to the next task.
 
 ### Step 2.5: Parallel Group Execution
@@ -768,35 +813,9 @@ These trailers enable `/adev:retro` and `/adev:hygiene` to trace commits back to
 
 ## Step 6: Feature Completeness Definition of Done
 
-After Step 5.5, verify lifecycle artifact completeness. This is distinct from `/adev:validate` (which checks code correctness) — this checks that all lifecycle bookkeeping is done.
+After Step 5.5, verify lifecycle bookkeeping — distinct from `/adev:validate`, which checks code correctness. Gaps are reported but never block.
 
-**Checklist:**
-
-1. **All epic issues closed:** If the plan has an associated epic (via issue board), check that ALL issues in the epic are now closed. If not, report which issues remain open.
-2. **Source manifest stamped:** Verify the spec has a `source-manifest` block in frontmatter (done in Step 5).
-3. **Spec status updated:** Verify the spec status is `implemented` (done in Step 5).
-4. **Charter capability status updated:** Verify the charter's Capability Map has the capability status set to `implemented` (done in Step 5).
-5. **Epic closed:** If all issues in the epic are now closed, update the epic status to `closed`. Use `updateEpic(epicId, { status: 'closed' })` from the issue adapter.
-
-**Output format:**
-```
-Feature Completeness DoD:
-  [x] All epic issues closed (N/N)
-  [x] Source manifest stamped (sha: abc1234)
-  [x] Spec status: implemented
-  [x] Charter capability: implemented
-  [x] Epic closed: epic-N
-
-— or —
-
-  [x] All epic issues closed (N/N)
-  [x] Source manifest stamped (sha: abc1234)
-  [x] Spec status: implemented
-  [x] Charter capability: implemented
-  [ ] Epic NOT closed — 2 issues still open (issue-4, issue-5)
-```
-
-If any item fails, report it but do NOT block completion. The implementation is done; the DoD gaps are informational for follow-up.
+> **Conditional loading:** Read `skills/implement/feature-completeness-dod.md` for the checklist and output format.
 
 ## Red Flags
 

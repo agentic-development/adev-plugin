@@ -61,12 +61,12 @@ describe('init-extension-picker integration', () => {
   });
 
   it('skip choice writes domain: software and does not install', async () => {
-    // Catalog has 2 entries → options are: 1=software, 2=data-engineering,
-    // 3=process-automation, 4=skip
+    // Catalog has 3 entries → options are: 1=software, 2=data-engineering,
+    // 3=process-automation, 4=web-service, 5=skip
     const result = await runPicker({
       projectRoot: tmp,
       pluginRoot: PLUGIN_ROOT,
-      ask: async () => '4',
+      ask: async () => '5',
       installFn: installExtension,
       readStamps: readManifestStamps,
       detectWorkspace: () => null,
@@ -75,6 +75,31 @@ describe('init-extension-picker integration', () => {
     assert.strictEqual(result.domainName, 'software');
     const manifest = readFileSync(join(tmp, '.context-index', 'manifest.yaml'), 'utf8');
     assert.match(manifest, /^domain: software$/m);
+  });
+
+  it('web-service choice installs the extension and stamps the manifest', async () => {
+    const result = await runPicker({
+      projectRoot: tmp,
+      pluginRoot: PLUGIN_ROOT,
+      ask: async () => '4',
+      installFn: installExtension,
+      readStamps: readManifestStamps,
+      detectWorkspace: () => null,
+    });
+    assert.strictEqual(result.action, 'install');
+    assert.strictEqual(result.domainName, 'web-service');
+
+    const manifest = readFileSync(join(tmp, '.context-index', 'manifest.yaml'), 'utf8');
+    assert.match(manifest, /^domain: web-service$/m);
+
+    const stamps = readManifestStamps(tmp);
+    const stamp = stamps.find(s => s.name === 'web-service');
+    assert.ok(stamp, 'web-service should appear in installed_extensions');
+
+    assert.ok(
+      existsSync(join(tmp, '.context-index', 'domains', 'web-service')),
+      '.context-index/domains/web-service/ should exist after install'
+    );
   });
 
   it('data-engineering choice installs the extension and stamps the manifest', async () => {

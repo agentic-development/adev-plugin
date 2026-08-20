@@ -1,5 +1,59 @@
 # Changelog
 
+## [0.28.0-next.4](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.28.0-next.3...adev-cli-v0.28.0-next.4) (2026-08-19)
+
+
+### Features
+
+* add reviewer-domain-fit initiative charter ([cd4e811](https://github.com/agentic-development/adev-plugin/commit/cd4e8116c4db6830dd53e397794e2d437a57fe8f))
+* **cli:** add adev domain load-guidance subcommand ([de34512](https://github.com/agentic-development/adev-plugin/commit/de345123b4e6cf189111f3d708f2745830cc09bc))
+* **domains:** add specify-guidance domain-config type ([53aec50](https://github.com/agentic-development/adev-plugin/commit/53aec50d77a705e99656472f8b9f38f6650c3298))
+* **domains:** ship bundled software specify-guidance default ([618df6b](https://github.com/agentic-development/adev-plugin/commit/618df6ba2c0cfcc44b962bc31412ddf09bea5138))
+* **implementation:** add adev implement batches CLI verb ([804df91](https://github.com/agentic-development/adev-plugin/commit/804df91b6241dbc1885bd8ae08ed5845b69867ac))
+* **implementation:** add resolveBatches() and batch-verify postconditions ([b5e86d2](https://github.com/agentic-development/adev-plugin/commit/b5e86d27708c9fc4e64c8810dc50b58d360441ee))
+* **implementation:** validate implement.batch_mode and max_batch_size ([7b3a4c8](https://github.com/agentic-development/adev-plugin/commit/7b3a4c88c68e035c729fede1fae61da87c4bdba5))
+* **implementation:** wire batched dispatch into implement SKILL.md ([0cdd1d8](https://github.com/agentic-development/adev-plugin/commit/0cdd1d8102013d286a8710d85ebcf55aca42f52f))
+* **review-specs:** add four bundled reviewer prompts (referent-integrity, wiring, boundary, termination) ([8199599](https://github.com/agentic-development/adev-plugin/commit/819959938b2aed3d44f9ccd9b49cc61543f4cda8))
+* **review-specs:** extend consistency/referent-integrity/wiring context packs; rewrite consistency-analyzer prompt ([f2398a2](https://github.com/agentic-development/adev-plugin/commit/f2398a2e3d827b9b61943c7903d97c83c2b7d791))
+* **reviewer-domain-fit:** add domain-authoring-guidance Live Spec ([e37193f](https://github.com/agentic-development/adev-plugin/commit/e37193fe779a603492dd785e467d67102c42d4fc))
+* **reviewer-domain-fit:** add falsification-gate action spec ([12c2235](https://github.com/agentic-development/adev-plugin/commit/12c2235f44aa18ff6a4e44d7ae050dbb6868e5b5))
+* **reviewer-domain-fit:** add reviewer-panel-retarget Live Spec ([1029ec0](https://github.com/agentic-development/adev-plugin/commit/1029ec08d0292f2207a808435445268e6d38e361))
+* **reviewer-domain-fit:** ship the web-service domain extension ([2b00278](https://github.com/agentic-development/adev-plugin/commit/2b0027822e8099b675b676deacfc037a25caa9b0))
+* **specify:** load domain-owned authoring guidance in Step 4 ([5e053b5](https://github.com/agentic-development/adev-plugin/commit/5e053b5e162496985c4d771e705e9b35295b424f))
+
+
+### Bug Fixes
+
+* **ci:** stop main-&gt;release/next propagation conflicting on manifest versions ([6405edd](https://github.com/agentic-development/adev-plugin/commit/6405eddd8e4e66034e7d39be1b3932820fb62574))
+* **ci:** stop main-&gt;release/next propagation conflicting on manifest versions ([0d66a37](https://github.com/agentic-development/adev-plugin/commit/0d66a37db24086c1b3468c0316156036ba8c9fc0))
+* **cli:** realpath-resolve hook path containment against tracked symlinks ([205d5b5](https://github.com/agentic-development/adev-plugin/commit/205d5b5a52ef648b7bb517e2ac3583529d7875a3))
+* **cli:** realpath-resolve hook path containment against tracked symlinks ([4ac9176](https://github.com/agentic-development/adev-plugin/commit/4ac917643eb2ce52de92c38a6e4ca9ceaeba964c))
+* **domains:** resolveDomain reads top-level manifest.domain, not nested project.domain ([d52885a](https://github.com/agentic-development/adev-plugin/commit/d52885a38344213f489afc4220e3e5d36f422638))
+* **domains:** update bundled-profiles file-count test for specify-guidance.md ([eea5fb8](https://github.com/agentic-development/adev-plugin/commit/eea5fb8671bc3cb73be03e238172f06b6183570f))
+* **governance:** support dispatch.triggered for bundled/domain reviewer entries ([0b9303e](https://github.com/agentic-development/adev-plugin/commit/0b9303e25ce9f3857d3304a60909708a14bdfb6b))
+* **governance:** support inline reviewer prompt_text, unbreak two domain extensions ([262a0b4](https://github.com/agentic-development/adev-plugin/commit/262a0b4f2c928f3cfd518da30a3ee39be2d2dba9))
+* **governance:** support inline reviewer prompt_text, unbreak two domain extensions ([cd670e3](https://github.com/agentic-development/adev-plugin/commit/cd670e3f7aea1e12b56bcf326dc3248dd31edb8d))
+* **hooks:** guard .review.md/.validate.md against body-before-frontmatter ([bdabb83](https://github.com/agentic-development/adev-plugin/commit/bdabb83b36157a036c7a739a8f9eed0830d5820f))
+* **hooks:** guard .review.md/.validate.md against body-before-frontmatter ([73e68ce](https://github.com/agentic-development/adev-plugin/commit/73e68ce7738ff441576b65737cf010395349d9f0))
+* **implementation:** check CONFLICTING_BATCH_FLAGS unconditionally in Prerequisites ([da52847](https://github.com/agentic-development/adev-plugin/commit/da52847a0a54e2a33415d34d68c7c826c9343ef7))
+* **issues:** resolve a br id even when its record carries a stale external_ref ([ca282d8](https://github.com/agentic-development/adev-plugin/commit/ca282d815c584afeda4477af8cba8cf2b6790089))
+* **issues:** resolve a br id even when its record carries a stale external_ref ([6bae08e](https://github.com/agentic-development/adev-plugin/commit/6bae08e513d4d3e3d0df49f5cac1904ff3046095))
+* **lifecycle-state:** block destructive git and reject orphan step events ([408aa44](https://github.com/agentic-development/adev-plugin/commit/408aa44aa48ed1aa7e670b79018b83ca8ab34376))
+* **lifecycle-state:** block destructive git and reject orphan step events ([d07cab7](https://github.com/agentic-development/adev-plugin/commit/d07cab7f96a9a709481ca3fa71b3a1306a39802b))
+* **providers:** validate the full settings-path directory chain, not just the leaf ([6198217](https://github.com/agentic-development/adev-plugin/commit/619821704587c47e33e91e9fce8f7a3d9f6db6ff))
+* **providers:** validate the full settings-path directory chain, not just the leaf ([446a345](https://github.com/agentic-development/adev-plugin/commit/446a345f074ac9a44daa595880fda011663c30c8))
+* **review-specs:** clarify consistency-analyzer's ADR/module-boundary scope does not supersede structural-architect ([5738b07](https://github.com/agentic-development/adev-plugin/commit/5738b076e5c6f63428792dffa9bd0fe8481b41a6))
+* **review-specs:** correct stale blocker_id cross-references and Category enum gap ([c13f055](https://github.com/agentic-development/adev-plugin/commit/c13f05504b79c3887bc796da096dc653dfcd8aaf))
+* **reviewer-domain-fit:** correct he2 finding-count arithmetic error ([ebae9db](https://github.com/agentic-development/adev-plugin/commit/ebae9db77009286212b665f9fdcced5f6ea899d2))
+* **reviewer-domain-fit:** reconcile validate FAIL findings on reviewer-panel-retarget ([ad66eda](https://github.com/agentic-development/adev-plugin/commit/ad66edaf3496e0568a6f50cc3f447468e0730fc5))
+* **skills:** state the don't-wait-for-a-dispatch rule in every dispatching skill ([cfc73e8](https://github.com/agentic-development/adev-plugin/commit/cfc73e85170591fba78fb94f604ead414a9c974f))
+* **skills:** state the don't-wait-for-a-dispatch rule in every dispatching skill ([da912be](https://github.com/agentic-development/adev-plugin/commit/da912bec9d17a49ed7df8f0f60db33a8a29ffb9f))
+* **spec:** make the rev-3 pack check verifiable ([46fe80a](https://github.com/agentic-development/adev-plugin/commit/46fe80a294922c03529a01881954338216eac622))
+* **spec:** strip stray partial_schema marker from domain-authoring-guidance ([a0cb102](https://github.com/agentic-development/adev-plugin/commit/a0cb102547cd6dc5fad30a05196775c07c72013f))
+* **templates:** rename Error Cases column from HTTP Status to Error Code ([c608f39](https://github.com/agentic-development/adev-plugin/commit/c608f391f274db45c1c69cf666e4df87d4380095))
+* **worktree:** distinguish real merge conflicts from other git failures ([852b5f8](https://github.com/agentic-development/adev-plugin/commit/852b5f81c5559392f0dc60c5485711481d61e0ee))
+* **worktree:** distinguish real merge conflicts from other git failures ([2fb6f93](https://github.com/agentic-development/adev-plugin/commit/2fb6f93c4dfa3f73af19348d4e6cb08d07b1c0dc))
+
 ## [0.28.0-next.3](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.28.0-next.2...adev-cli-v0.28.0-next.3) (2026-08-18)
 
 

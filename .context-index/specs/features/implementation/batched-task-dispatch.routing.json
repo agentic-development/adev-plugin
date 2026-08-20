@@ -1,0 +1,83 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 1,
+        "blast_radius": 0.8,
+        "novelty": 1
+      },
+      "rationale": "Manifest validation for implement.batch_mode/max_batch_size mirrors the existing validateMaxReviewRetries() structurally; full test cases and validator code are supplied in the plan. Three files, one module (lib/manifest.mjs + its test + a commented manifest.yaml doc block). Purely mechanical config plumbing feeding Task 2."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 0.6
+      },
+      "rationale": "The largest task: a six-row eligibility gate, abort carry-forward, and three artifact-level postcondition checks. Full pseudocode and test suites are given, and reviewRounds is a shipped projection (review-provenance.spec.md, status: validated), but combining six gate rows plus carry-forward is genuine new composition. Four new files, one new module."
+    },
+    {
+      "task_id": "t3",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 1,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "adev implement batches directly mirrors adev parallel groups' CLI-verb-wraps-a-pure-parser shape and reuses lib/cli/parallel.mjs's emit()/argErr() helpers plus the existing read-routing subverb's exit-code convention. The plan deliberately elides the plumbing middle, leaving a small amount of wiring judgment. Two files, one module."
+    },
+    {
+      "task_id": "t4",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 1,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "batched-mode.md is a structural mirror of parallel-mode.md, extracted for the same byte-cap reason; the plan supplies eight content points and the full doc-contract test verbatim. Two new files, one module. Requires careful prose phrasing to satisfy exact regex assertions."
+    },
+    {
+      "task_id": "t5",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 1,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "SKILL.md wiring follows the exact --parallel precedent already in the file, with line numbers and markdown snippets fully specified. One file modified, tests already scaffolded by Task 4. Fully mechanical."
+    },
+    {
+      "task_id": "t6",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 1,
+        "blast_radius": 0.8,
+        "novelty": 1
+      },
+      "rationale": "Doc updates for adev implement batches and --no-batch/--max-batch mirror the existing test-depth-policy-docs.test.mjs pattern, with target sections and the full test file given. Three files spanning docs/ and tests/docs/, otherwise mechanical."
+    },
+    {
+      "task_id": "t7",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 1,
+        "blast_radius": 0.8,
+        "novelty": 0.6
+      },
+      "rationale": "2-arm equivalence eval mirrors the existing 3-arm worktree-parallelization harness, reusing judge()/renderReport() and Task 2's verify functions. Contract G is release-blocking and the live orchestration capture is deliberately left to implementation time, so genuine design judgment remains. Four new files, one new eval directory."
+    }
+  ]
+}

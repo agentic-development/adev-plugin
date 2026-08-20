@@ -122,6 +122,64 @@ describe("BeadsAdapter — dependencies read back (issue-bum897)", () => {
   });
 });
 
+describe("BeadsAdapter — affected_modules round-trip (RI-2 fix, bug-selection-and-eligibility round-3 review)", () => {
+  // Round-3 review found `IssueManager.update(id, { affected_modules })`
+  // silently dropped on this backend: update() forwarded neither a br
+  // column arg nor a context field for it, so the call appeared to succeed
+  // (the returned object echoed `...changes`) but nothing persisted. br has
+  // no native column for it, so — like branch/spec_ref/pr — it must ride in
+  // agent_context.adev via CONTEXT_FIELDS.
+
+  it("update() writes affected_modules into agent_context, not dropped", async () => {
+    const adapter = new BeadsAdapter("/tmp/nonexistent-beads", { checkBr: false });
+    const calls = [];
+    const item = {
+      id: "br-1",
+      external_ref: "issue-1",
+      agent_context: JSON.stringify({ adev: { branch: "feat/x" } }),
+    };
+    adapter._scan = () => [item];
+    adapter._runBr = (args) => {
+      calls.push(args);
+      return JSON.stringify({ id: "br-1" });
+    };
+
+    await adapter.update("issue-1", { affected_modules: ["cli"] });
+
+    const update = calls.find((c) => c[0] === "update");
+    assert.ok(update, "update() must call br update");
+    const i = update.indexOf("--agent-context");
+    assert.notEqual(i, -1, "affected_modules must ride in agent_context — br has no native column for it");
+    const written = JSON.parse(update[i + 1]);
+    assert.deepEqual(written.adev.affected_modules, ["cli"]);
+    // Read-modify-write must preserve sibling context, not clobber it.
+    assert.equal(written.adev.branch, "feat/x");
+  });
+
+  it("_toIssue reads affected_modules back from agent_context", () => {
+    const adapter = new BeadsAdapter("/tmp/nonexistent-beads", { checkBr: false });
+    const issue = adapter._toIssue({
+      id: "br-1",
+      external_ref: "issue-1",
+      agent_context: JSON.stringify({ adev: { affected_modules: ["cli", "hooks"] } }),
+    });
+    assert.deepEqual(issue.affected_modules, ["cli", "hooks"]);
+  });
+
+  it("_toIssue treats a missing or non-array affected_modules as undefined, not a crash", () => {
+    const adapter = new BeadsAdapter("/tmp/nonexistent-beads", { checkBr: false });
+    assert.equal(adapter._toIssue({ id: "x", external_ref: "issue-1" }).affected_modules, undefined);
+    assert.equal(
+      adapter._toIssue({
+        id: "x",
+        external_ref: "issue-1",
+        agent_context: JSON.stringify({ adev: { affected_modules: "not-an-array" } }),
+      }).affected_modules,
+      undefined,
+    );
+  });
+});
+
 // ─── merged from tests/issues/beads-adapter-id-preservation.test.mjs ──────────────────────────────────────────────
 {
   /**
