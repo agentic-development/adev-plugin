@@ -5,9 +5,8 @@ mode: refactor
 status: validated
 risk_level: low
 milestone: adev-compiler-discipline
-revision: 3
-charter-revision: 3
-charter-extension: true
+revision: 4
+charter-revision: 4
 created: 2026-08-19
 updated: 2026-08-20
 source-manifest:
@@ -48,19 +47,21 @@ source-manifest:
      in the 18 canonical skills/*/SKILL.md files". skills/issues/SKILL.md still carries one
      such fence (lines 49-63), so that capability has a residual gap. The remaining sites in
      this spec are PROSE directives ("Call `createEpic({...})` on the adapter"), which no
-     existing capability row names. `charter-extension: true` records that divergence rather
-     than silently widening a completed capability. A charter capability row for
-     "Lib-directive extraction (prose-level)" should be added via /adev:brainstorm as a
-     follow-up; this spec does not block on it.
+     existing capability row names. Revisions 1-2 carried `charter-extension: true` to record
+     that divergence rather than silently widen a completed capability. RESOLVED at charter
+     rev 4 (2026-08-20): the charter now carries a "Lib-directive extraction (prose-level)"
+     row at status `validated`, so the flag has been removed and `charter-revision` bumped
+     3 -> 4. The row was added only after the operator asked for it — two agents in the build
+     pipeline correctly declined to invent one.
 
      Second divergence recorded here (review finding CON-1): Migration Path Step 5 and the
      matching acceptance criterion regenerate the provider mirrors, which the charter lists
      under Out of Scope ("Provider mirror sync ... remains hand-maintained until a dedicated
-     provider-mirror-sync charter"). That charter text is stale relative to the repo:
-     scripts/sync-provider-skills.mjs exists and tests/sync/provider-skill-parity.test.mjs
-     FAILS when mirrors drift, so regeneration is mandatory to keep the suite green, not
-     optional scope creep. The charter's Out-of-Scope entry should be revised when the
-     capability row above is added.
+     provider-mirror-sync charter"). RESOLVED at charter rev 4: that entry was factually stale —
+     scripts/sync-provider-skills.mjs generates the mirrors and tests/sync/provider-skill-parity.test.mjs
+     fails the suite when they drift (verified 2026-08-20: 138 mirrors, 0 drift). The entry now
+     states that regenerating mirrors is in scope and mandatory, while hand-editing providers/**
+     stays out of scope.
 
      Distinct from lib-import-control-flow-extraction.spec.md (review-passed, unplanned),
      which covers three control-flow blocks in plan/implement SKILL.md. No site overlap. -->
