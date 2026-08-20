@@ -1,0 +1,49 @@
+# Invalid non-positive budget fixture — declares two budget_max_* keys whose
+# values are numbers but not greater than zero: `budget_max_turns: 0` first,
+# then `budget_max_cost_usd: -1`. Modelled on conforming.yaml and otherwise
+# complete and flat, so it survives parse, nesting, required-keys, completeness
+# and the verdict pass to reach the budget pass. budget_max_turns is listed
+# first so the aggregated error names it first.
+
+rubric_id: "fixture-invalid-budget-nonpositive"
+version: 1
+layer: 3
+verdict_values: "met | not_met | unknown (judged criteria) | not_applicable (deterministic elements)"
+
+required_elements:
+  - id: spec_criteria_referenced
+    description: "Every acceptance criterion in the spec is referenced verbatim by an added or modified test"
+    source: "the Live Spec's acceptance-criteria list, matched against test names and assertion messages in the diff"
+    met_when: "each criterion's identifier, or its literal wording, appears in at least one test name or assertion message"
+    not_applicable_when: "the spec declares no acceptance criteria — record NOT_APPLICABLE"
+
+  - id: tests_accompany_source
+    description: "Every changed non-test source file has an added or modified test in the same diff"
+    source: "the diff file list"
+    met_when: "no changed source file lacks a corresponding test change"
+    not_applicable_when: "never — the diff file list always answers this"
+
+quality_dimensions:
+  - id: readability_naming
+    criterion: "Can a developer unfamiliar with this module state what each newly added symbol does from its name and signature alone?"
+    reference: "the matched golden sample in .context-index/samples/, else the naming conventions in the constitution"
+    met_when: "every new symbol's name and signature convey its purpose without reading its body"
+    not_met_when: "at least one new symbol requires reading its body to know what it does"
+    unknown_when: "no golden sample and no naming convention is declared, so there is no anchor to compare against"
+
+  - id: separation_of_concerns
+    criterion: "Does each changed file hold a single responsibility, at the same boundary the reference draws?"
+    reference: "the matched golden sample's file/module split, else the Architecture Boundaries section of the constitution"
+    met_when: "no changed file mixes responsibilities the reference keeps apart"
+    not_met_when: "at least one changed file merges responsibilities the reference separates"
+    unknown_when: "the diff touches no file the reference covers"
+
+layer3_max_points: 25
+required_element_points: 10
+judged_criterion_points: 15
+unknown_policy: "exclude_from_denominator"
+not_applicable_policy: "exclude_from_denominator"
+insufficient_evidence_threshold_percent: 40
+
+budget_max_turns: 0
+budget_max_cost_usd: -1
