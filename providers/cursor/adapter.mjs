@@ -112,6 +112,25 @@ export function resolvePublishTarget(skillsRoot, name) {
   if (dest !== base && !dest.startsWith(base + sep)) {
     throw new Error(`SKILL_PATH_ESCAPE: ${dest} is outside the skills root ${base}`);
   }
+
+  // If the destination ALREADY exists, it must still be inside the root once
+  // dereferenced. Checking only the base is not enough: a pre-existing symlink at
+  // <root>/<name> pointing outside passes the lexical prefix test above, and the
+  // ensureDir/cpSync/writeFileSync that follow all traverse symlinks — so the write
+  // lands at the link's target. Needs prior write access to the user's own skills
+  // dir, so it is a narrow vector, but it is the one case the base-only realpath
+  // leaves open.
+  try {
+    const realDest = realpathSync(dest);
+    if (realDest !== base && !realDest.startsWith(base + sep)) {
+      throw new Error(
+        `SKILL_PATH_ESCAPE: existing ${dest} resolves to ${realDest}, outside ${base}`,
+      );
+    }
+  } catch (err) {
+    // ENOENT is the normal case — the destination has not been created yet.
+    if (err.code !== "ENOENT") throw err;
+  }
   return dest;
 }
 

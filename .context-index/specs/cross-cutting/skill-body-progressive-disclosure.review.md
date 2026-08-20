@@ -9,9 +9,15 @@ file-sha: 59642c6cb013764aafcddfeb8ff45c1b298ce7daa90ee4c9aa4f1ef746ae1ff2
 
 # Architecture Review: skill-body-progressive-disclosure
 
-> **Rounds 1-4.** Each round appends; earlier rounds are retained verbatim so a
-> finding id cited elsewhere resolves to the round that raised it. Finding ids are
-> round-scoped — `BND-4` in round 2 and round 3 are different findings.
+> **Rounds 1-5.** Each round appends. Round 1 is retained verbatim; rounds 2-5 are
+> SUMMARIES, not full transcripts — so an id cited elsewhere resolves here only if the
+> summary itemizes it. Every id cited from the spec is itemized below for exactly that
+> reason; an earlier version of this header claimed the rounds were verbatim, which
+> made three spec citations dangle.
+>
+> Finding ids are ROUND-SCOPED and reused across rounds: `BND-1` is the mirror-pointer
+> blocker in round 1, the vacuous containment test in round 4, and the opencode
+> resolution error in round 5. Always cite the round.
 
 ## Round 1 — revision 1
 
@@ -210,6 +216,11 @@ copy masked a deleted canonical target; the Prerequisites guard pinned 3 of 21 s
   `references/` copy widened what flows through the unvalidated destination.
 - **WIR-6** — a fifth stale UNGUARDED row. **RI-1** — the test total stale again, this
   time by the tier commit landing after the spec commit.
+- **WIR-7** — the review briefing asked the reviewer to check `lib/model-tiers.mjs`,
+  which this spec does not cover; it correctly declined and told the orchestrator to
+  confirm routing. Recorded because the spec cites it.
+- **RI-2** — the `plugin:tier1/*.mjs` resolution base was stated as the plugin root; it
+  is `<pluginRoot>/lib/diagnostics`.
 
 ---
 

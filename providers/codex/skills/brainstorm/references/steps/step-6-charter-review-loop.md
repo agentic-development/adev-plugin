@@ -38,6 +38,11 @@ Agent({
     Minor wording improvements and stylistic preferences are not issues.
     Approve unless there are structural gaps or compliance violations.
 
+    Before finalizing, verify: (1) every flagged issue would cause a real problem
+    during specification, (2) no issue is a stylistic preference.
+
+    Keep the response under 1,500 tokens. Focus on issues, not restating the charter.
+
     ## Output Format
     ## Charter Review
     **Status:** Approved | Issues Found

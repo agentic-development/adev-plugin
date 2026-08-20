@@ -929,7 +929,8 @@ the directory the running skill happens to sit in, and for cursor those differ:
 |---------|---------------------------|
 | Claude Code (plugin dir) | the plugin directory itself |
 | copilot | `<destRoot>/` — the skill tree is published under `<destRoot>/skills/<name>/` |
-| codex / opencode | `~/.agents/skills/` is a symlink into `providers/<p>/skills/`; the plugin root is the checkout those mirror |
+| codex | symlinks `~/.agents/skills/<name>` into the live checkout, so `<ADEV_ROOT>` is that checkout |
+| opencode | `~/.config/opencode/plugins/cache/adev/` — install copies the plugin root into that cache, then symlinks `~/.config/opencode/skills/<name>` into it. Like cursor, the cache is the plugin root, **not** the checkout and not the skills dir |
 | cursor | `~/.cursor/plugins/local/adev/` — the plugin **cache**, NOT `~/.cursor/skills/` |
 
 Cursor is the one that catches people. It publishes a sanitized copy for discovery

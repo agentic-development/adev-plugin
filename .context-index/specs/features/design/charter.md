@@ -26,7 +26,7 @@ Explore ideas and formalize them into structured specifications before any code 
 ## Key Files
 
 - `skills/brainstorm/SKILL.md`
-- `skills/brainstorm/references/charter-reviewer-prompt.md`
+- `skills/brainstorm/references/steps/step-6-charter-review-loop.md` (the charter-reviewer prompt is inlined here; the former standalone `charter-reviewer-prompt.md` was a duplicate and was removed)
 - `skills/specify/SKILL.md`
 - `templates/charter-template.md`
 - `templates/live-spec-template.md`

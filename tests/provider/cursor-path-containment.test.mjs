@@ -154,3 +154,29 @@ test("publishSkillsFromCache calls the guard before any write", () => {
     );
   }
 });
+
+test("a pre-existing symlinked destination is refused", () => {
+  // BND-2 (round 5): realpathing only the BASE leaves this open. A symlink already
+  // sitting at <root>/<name> and pointing outside passes the lexical prefix check,
+  // and ensureDir/cpSync/writeFileSync all follow symlinks — so the write lands at
+  // the link's target. Narrow (needs prior write access to the user's own skills
+  // dir) but it is the one case the base-only check misses.
+  const base = mkdtempSync(join(tmpdir(), "cursor-contain-destsym-"));
+  const skills = join(base, "skills");
+  const outside = join(base, "outside");
+  mkdirSync(skills, { recursive: true });
+  mkdirSync(outside, { recursive: true });
+  symlinkSync(outside, join(skills, "adev-evil"), "dir");
+  try {
+    assert.throws(
+      () => resolvePublishTarget(skills, "adev-evil"),
+      /SKILL_PATH_ESCAPE/,
+      "a destination that already exists as a symlink out of the root must be refused",
+    );
+    // and a normal pre-existing directory is still fine
+    mkdirSync(join(skills, "adev-build"), { recursive: true });
+    assert.ok(resolvePublishTarget(skills, "adev-build").endsWith("adev-build"));
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
+});
