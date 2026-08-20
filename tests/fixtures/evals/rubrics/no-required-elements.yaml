@@ -1,0 +1,33 @@
+# No-required-elements rubric fixture — derived from conforming.yaml, emptying
+# required_elements to an empty list while both quality_dimensions stay
+# declared. Used to prove the deterministic half is NOT_SCORED (not a
+# division-by-zero) when the rubric declares nothing to check deterministically.
+
+rubric_id: "fixture-conforming"
+version: 1
+layer: 3
+verdict_values: "met | not_met | unknown (judged criteria) | not_applicable (deterministic elements)"
+
+required_elements: []
+
+quality_dimensions:
+  - id: readability_naming
+    criterion: "Can a developer unfamiliar with this module state what each newly added symbol does from its name and signature alone?"
+    reference: "the matched golden sample in .context-index/samples/, else the naming conventions in the constitution"
+    met_when: "every new symbol's name and signature convey its purpose without reading its body"
+    not_met_when: "at least one new symbol requires reading its body to know what it does"
+    unknown_when: "no golden sample and no naming convention is declared, so there is no anchor to compare against"
+
+  - id: separation_of_concerns
+    criterion: "Does each changed file hold a single responsibility, at the same boundary the reference draws?"
+    reference: "the matched golden sample's file/module split, else the Architecture Boundaries section of the constitution"
+    met_when: "no changed file mixes responsibilities the reference keeps apart"
+    not_met_when: "at least one changed file merges responsibilities the reference separates"
+    unknown_when: "the diff touches no file the reference covers"
+
+layer3_max_points: 25
+required_element_points: 10
+judged_criterion_points: 15
+unknown_policy: "exclude_from_denominator"
+not_applicable_policy: "exclude_from_denominator"
+insufficient_evidence_threshold_percent: 40

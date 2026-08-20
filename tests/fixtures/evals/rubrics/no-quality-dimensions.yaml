@@ -1,0 +1,31 @@
+# No-quality-dimensions rubric fixture — derived from conforming.yaml, emptying
+# quality_dimensions to an empty list while both required_elements stay
+# declared. Used to prove the judged half is NOT_SCORED (not INSUFFICIENT_EVIDENCE
+# and not a division-by-zero) when the rubric declares nothing to judge.
+
+rubric_id: "fixture-conforming"
+version: 1
+layer: 3
+verdict_values: "met | not_met | unknown (judged criteria) | not_applicable (deterministic elements)"
+
+required_elements:
+  - id: spec_criteria_referenced
+    description: "Every acceptance criterion in the spec is referenced verbatim by an added or modified test"
+    source: "the Live Spec's acceptance-criteria list, matched against test names and assertion messages in the diff"
+    met_when: "each criterion's identifier, or its literal wording, appears in at least one test name or assertion message"
+    not_applicable_when: "the spec declares no acceptance criteria — record NOT_APPLICABLE"
+
+  - id: tests_accompany_source
+    description: "Every changed non-test source file has an added or modified test in the same diff"
+    source: "the diff file list"
+    met_when: "no changed source file lacks a corresponding test change"
+    not_applicable_when: "never — the diff file list always answers this"
+
+quality_dimensions: []
+
+layer3_max_points: 25
+required_element_points: 10
+judged_criterion_points: 15
+unknown_policy: "exclude_from_denominator"
+not_applicable_policy: "exclude_from_denominator"
+insufficient_evidence_threshold_percent: 40
