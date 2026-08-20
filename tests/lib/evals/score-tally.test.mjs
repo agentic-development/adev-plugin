@@ -19,7 +19,10 @@ test("not_applicable leaves the element denominator, so one met of one answered 
 });
 
 test("unknown leaves the criterion denominator, so one met of one answered is full points", () => {
-  const result = scoreRubric(rubric(), [
+  // threshold-100.yaml carries conforming.yaml's budgets with a threshold of 100, so the
+  // 50% unknown share below does not trip BEH-3 clause 2 and this stays a test of
+  // denominator exclusion rather than of the insufficient-evidence guard.
+  const result = scoreRubric(loadRubric("tests/fixtures/evals/rubrics/threshold-100.yaml"), [
     { id: "spec_criteria_referenced", value: "met", evidence: "tests/x.test.mjs:3" },
     { id: "tests_accompany_source", value: "not_met", evidence: "lib/y.mjs has no test" },
     { id: "readability_naming", value: "met", evidence: "lib/x.mjs:4" },
