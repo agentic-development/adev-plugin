@@ -3,7 +3,7 @@
 ---
 charter: autonomous-bugfix-loop
 kind: integration
-status: implemented
+status: validated
 risk_level: medium
 milestone: 2
 revision: 10
