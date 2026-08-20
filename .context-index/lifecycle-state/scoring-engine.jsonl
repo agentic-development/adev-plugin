@@ -5,3 +5,7 @@
 {"event":"reviewer_report","step":"review","reviewer":"quick-synthesized-reviewer","severity":"warning","verdict":"FAIL","notes":"1 blocker (SA-1: BEH-3 reduces attainable max by layer3_max_points, the both-halves ceiling), 1 warning (SEC-1: --input path containment unspecified), 1 suggestion.","ts":"2026-08-20T13:22:40.979Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"step_completed","step":"review","verdict":"BLOCK","ts":"2026-08-20T13:24:28.942Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"step_completed","step":"specify","verdict":"PASS","ts":"2026-08-20T13:36:09.696Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"lifecycle_step","step":"review","status":"started","ts":"2026-08-20T13:36:34.751Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"lifecycle_step","step":"review","status":"started","ts":"2026-08-20T13:37:16.357Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"reviewer_report","step":"review","reviewer":"quick-synthesized-reviewer","severity":"warning","verdict":"FAIL","notes":"r2: 1 blocker (SA-1: task-map row still says reduced attainable maximum, contradicting BEH-3), 2 warnings (BEH-3/BEH-4 precedence; no SKILL.md task row), 1 suggestion.","ts":"2026-08-20T13:40:19.681Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"step_completed","step":"review","verdict":"BLOCK","ts":"2026-08-20T13:42:53.983Z","diagnostic_warnings":["adev/frontmatter-present"]}

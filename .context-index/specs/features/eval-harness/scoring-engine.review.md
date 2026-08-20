@@ -3,10 +3,11 @@ spec: .context-index/specs/features/eval-harness/scoring-engine.spec.md
 charter: .context-index/specs/features/eval-harness/charter.md
 date: 2026-08-20
 verdict: BLOCK
+review-round: 2
 rigor-tier: quick
 tier-source: explicit --tier flag (overrides risk_level medium -> full)
-last-reviewed-revision: 1
-file-sha: b63bc6e885402a55316b2028ebb4595f004a451eebb3ba8238bbcfe4e805d12b
+last-reviewed-revision: 2
+file-sha: 3b62c1227a979e780a7a2f1bee55df6c678a9102f70dac593ffee40aa2561667
 ---
 
 # Architecture Review: scoring-engine
@@ -15,6 +16,7 @@ file-sha: b63bc6e885402a55316b2028ebb4595f004a451eebb3ba8238bbcfe4e805d12b
 > **Spec:** .context-index/specs/features/eval-harness/scoring-engine.spec.md
 > **Charter:** .context-index/specs/features/eval-harness/charter.md
 > **Verdict:** BLOCK
+> **Round:** 2 (revision 2; revision 1 BLOCKed on `quick-synthesized-reviewer:ambiguous-postcondition:f841f2d8`)
 > **Rigor tier:** quick (single synthesized reviewer; explicit `--tier quick` overrode the `medium` risk policy's `review_mode: full`)
 
 ## Registry Notes
@@ -27,7 +29,7 @@ Loader warnings surfaced by `adev governance reviewers --json` (profile-posture 
 
 Errors: none. `verdict_rules.blocker_threshold`: 1.
 
-Context-pack note: the parent charter (20258 bytes) exceeded the pack's 16384-byte per-file cap and was truncated in the rendered pack. The reviewer's read-only profile grants Read/Glob/Grep and it was directed to read the full charter from disk, so the split-delta invariant and the ScoreComparison entity were available to it.
+Context-pack note: the parent charter (20258 bytes) exceeded the pack's 16384-byte per-file cap and was truncated in the rendered pack. The reviewer's read-only profile grants Read/Glob/Grep and it was directed to read the full charter, `skills/eval/SKILL.md`, and the sibling loader spec from disk; its findings cite all three.
 
 ## Reviewers Dispatched
 
@@ -50,36 +52,70 @@ Per the `quick` tier branch, the registry's specialist reviewers (`consistency-a
 
 ### SA-1 — severity: blocker
 
-- **Location:** Behaviors, BEH-3 / Acceptance Criteria (INSUFFICIENT_EVIDENCE)
-- **blocker_id:** `quick-synthesized-reviewer:ambiguous-postcondition:f841f2d8`
-- **section_anchor:** `behaviors-beh-3`
-- **Finding:** BEH-3 states that when the `unknown` share exceeds `insufficient_evidence_threshold_percent`, "the reported attainable maximum is reduced by `layer3_max_points`." `layer3_max_points` is the rubric's *total* point ceiling across both the deterministic and judged halves (per the charter's Rubric entity: `required_element_points` + `judged_criterion_points` are the per-unit values that sum to it), not the judged-only portion. Applying the stated reduction literally zeroes (or negatives) the attainable maximum even when the deterministic half remains fully scoreable — directly contradicting this same spec's Behavioral Contract sentence that "the result keeps the deterministic and judged halves separately addressable." BEH-4 (zero-denominator) makes no equivalent attainable-maximum reduction, so the two guards are also inconsistent with each other on this point.
-- **Recommendation:** Clarify that the reduction is by the judged half's max-points contribution only, not `layer3_max_points`; state the formula explicitly and align BEH-4's treatment of attainable maximum with BEH-3's.
+- **Location:** Actionable Task Map, "Insufficient-evidence guard" row
+- **blocker_id:** `quick-synthesized-reviewer:stale-attainable-maximum:cc4c26c0`
+- **section_anchor:** `actionable-task-map`
+- **Finding:** The row still reads "produce the `INSUFFICIENT_EVIDENCE` result and reduced attainable maximum." This is unrevised round-1 language and directly contradicts BEH-3, which now states the deterministic half's "attainable maximum unchanged" when the judged half goes `INSUFFICIENT_EVIDENCE`. A reader working from the task map (rather than the behaviors) will implement the wrong contract — the exact hazard round 1 blocked on, now relocated rather than fixed.
+- **Recommendation:** Reword the task-map row to match BEH-3/BEH-4 (produce a status for the affected half only; the other half's maximum is untouched).
 
-### SEC-1 — severity: warning
+**Orchestrator verification note (not a reviewer finding).** A `grep` sweep of the spec for round-1 phrasing confirms the reviewer's SA-1 and finds a **second stale row in the same section**, which a revision addressing only the named row would leave behind:
 
-- **Location:** Behaviors BEH-8 / Error Cases (`adev eval score --rubric <path> --input <path>`)
-- **Finding:** The charter's Quality Attributes table requires "Rubric and fixture paths are validated against traversal, following the `UNSAFE_TEMPLATE_PATH` precedent," and the sibling rubric-loader spec implements this via `UNSAFE_RUBRIC_PATH` (BEH-7). This spec's CLI verb accepts a `--input <path>` argument but defines no error case for path traversal, a missing file, or a malformed/unreadable verdict file at that path — the Error Cases table only covers in-memory verdict-set validation (`SCORE_*` codes), not the file read that must precede it.
-- **Recommendation:** Add an error case (and precondition/behavior) for `--input` path containment and read failure, consistent with `UNSAFE_RUBRIC_PATH`'s precedent.
+- Line 42 — `Insufficient-evidence guard | ... produce the INSUFFICIENT_EVIDENCE result and reduced attainable maximum` (the reviewer's SA-1).
+- Line 43 — `Zero-denominator handling | A term with no answered entries contributes 0 and says so, never NaN` — stale against BEH-4, which now assigns the status `NOT_SCORED` rather than the number `0`. It also still says "term", the revision-1 vocabulary, where the spec now says "half".
 
-### SA-2 — severity: suggestion
+Line 44 (`Result assembly ... total, and attainable maximum`) is not stale on its face but should be checked in the same pass, since a half may now carry a status instead of a total.
 
-- **Location:** Error Cases (`SCORE_INVALID_RUBRIC`)
-- **Finding:** "Rubric argument is not a Rubric produced by `loadRubric`" gives no detection mechanism (branding vs. duck-typing), leaving the check underspecified.
-- **Recommendation:** Note how a valid Rubric is recognized (e.g., a marker property set by `loadRubric`), or defer explicitly to the implementation plan.
+### SA-2 — severity: warning
+
+- **Location:** BEH-3 / BEH-4
+- **Finding:** No precedence is stated for the case where a half has zero answered `quality_dimensions` entries — that simultaneously satisfies BEH-4's "no answered entries" (-> `NOT_SCORED`) and BEH-3's "unknown share exceeds threshold" (-> `INSUFFICIENT_EVIDENCE`, since 0 answered implies 100% unknown). Neither behavior states which guard governs.
+- **Recommendation:** State explicit precedence (e.g., zero-answered checked first, `NOT_SCORED` wins) or split the conditions so they are mutually exclusive.
+
+### CON-1 — severity: warning
+
+- **Location:** Behavioral Contract / Actionable Task Map
+- **Finding:** The Behavioral Contract commits to updating `skills/eval/SKILL.md`'s Layer 3 reporting as "part of this spec's work, not a follow-up," but the Task Map's eight rows contain no SKILL.md task. This is a completeness gap rather than a documentation-style nit, because the task map is the only place that cross-cutting commitment could be operationalized for planning.
+- **Recommendation:** Add an explicit task-map row for the SKILL.md reporting update, or downgrade the in-scope claim to a stated follow-up.
+
+### SA-3 — severity: suggestion
+
+- **Location:** Error Cases table, `SCORE_INVALID_RUBRIC`
+- **Finding:** Still no detection mechanism specified for "is a Rubric produced by `loadRubric`" (branding vs. duck-typing). Carried unaddressed from round 1's SA-2. Not blocking.
 
 > A **per-reviewer** verdict is never BLOCK. BLOCK is the *consolidated* verdict in the header above, computed from post-cap findings across all reviewers.
 
+## Round-1 Blocker Disposition
+
+`quick-synthesized-reviewer:ambiguous-postcondition:f841f2d8` (anchor `behaviors-beh-3`) — **resolved in the normative sections, reintroduced in the task map.**
+
+Revision 2's substitute was evaluated on its own terms rather than checked against a chosen number. Replacing the numeric stand-in with a closed status set (`INSUFFICIENT_EVIDENCE` / `NOT_SCORED`, with `0` reserved for "scored, earned nothing") does dissolve the round-1 contradiction: BEH-3 and BEH-4 now both assign a status instead of one silently zeroing, so the two guards no longer disagree. The reviewer confirmed the Behavioral Contract, BEH-1/3/4/8, the Acceptance Criteria, the Postconditions, and the Error Cases table are all internally consistent with that model. The blocker recurs only because the Actionable Task Map was not swept — which is why the new blocker is anchored to `actionable-task-map` rather than to `behaviors-beh-3`, and carries a distinct `blocker_id`.
+
+## Answers to the Three Verification Points
+
+1. **Is the closed status set closed and consistent?** Consistent everywhere *except* the Actionable Task Map. No stale "contributes 0" or "judged half zeroed" phrasing survives in the Behavioral Contract, BEH-1/3/4/8, the Acceptance Criteria, the Postconditions, or the Error Cases table. The task map is the one section the edit did not reach, and it holds two stale rows (SA-1 plus the orchestrator note above), which is what re-blocks the spec.
+
+2. **Is the two-level `INSUFFICIENT_EVIDENCE` overloading a hazard?** The vocabulary reuse itself is coherent, not a naming clash — both levels mean "too many judged unknowns to trust the result," and the per-criterion `unknown` verdict rolling up into a half-level status of that name is the natural extension of the rule the rubric schema already applies. The hazard is downstream and concrete: `skills/eval/SKILL.md` currently treats `INSUFFICIENT_EVIDENCE` as collapsing the *entire* Layer 3 to 0 points with the *whole* `layer3_max_points` deducted — behaviour the new engine no longer produces, since the deterministic half stays numeric. That is a real consumer-facing mismatch, but it is the same gap CON-1 already captures (no task-map entry for the SKILL.md update), not an independent finding. Verdict: **acceptable reuse, conditional on the SKILL.md update actually being scoped.**
+
+3. **Is the SKILL.md work adequately scoped without a task-map row?** No — it is a genuine scoping gap, recorded as CON-1 at **warning**, not blocker: the Behavioral Contract prose still puts a competent implementer on notice even without a line item, so it degrades planning quality rather than guaranteeing wrong output. Note the coupling: CON-1 is also what keeps answer 2 from becoming a blocker in its own right. If the SKILL.md task is dropped rather than added, the `INSUFFICIENT_EVIDENCE` overloading stops being acceptable reuse and becomes a live contract mismatch between the engine and its only in-repo consumer.
+
 ## Charter-Constraint Check
 
-The two charter constraints this spec exists to honour were both examined and neither is the source of the blocker:
+Both charter constraints this spec exists to honour remain satisfied at revision 2, and neither is the source of the blocker:
 
-- **Split-delta invariant** — honoured. The Behavioral Contract, BEH-1, the acceptance criteria, and the Postconditions all keep the deterministic and judged halves as distinct addressable fields so a downstream comparison can classify `judge-attributable` movement without re-deriving the element/criterion partition. SA-1 is a *consequence* of that invariant: BEH-3's reduction wording contradicts it.
-- **ScoreComparison outcome set** — not re-opened. The spec references `judge-attributable` only as an outcome a downstream comparison computes; it invents no parallel outcome names and defines no comparison verdicts of its own.
+- **Split-delta invariant** — honoured, and strengthened by the revision. Making a half's absence explicit rather than folding it to `0` means a downstream comparison can tell "judged half earned nothing" from "judged half could not be scored," which a blended or zeroed figure would have erased.
+- **ScoreComparison outcome set** — not re-opened. `INSUFFICIENT_EVIDENCE` and `NOT_SCORED` are *half-value statuses* on the scoring result, not comparison outcomes; the spec still references `judge-attributable` only as something a downstream comparison computes, and invents no parallel outcome names.
+
+## Round-2 Regression Check
+
+The reviewer was asked to report any new problem the hand edits introduced. SA-2 (the BEH-3/BEH-4 precedence gap at zero answered entries) is new in revision 2 — it did not exist in revision 1, where BEH-4 unconditionally contributed `0`. It is a direct consequence of promoting both cases to statuses without stating which wins when both conditions hold. Round-1 SEC-1 is fully addressed: BEH-9 plus the `UNSAFE_SCORE_PATH` and `SCORE_INPUT_NOT_FOUND` rows now cover traversal, symlink escape, and unreadable input on both `--rubric` and `--input`, following the `UNSAFE_RUBRIC_PATH` precedent.
+
+## Process Note
+
+Revision 2 was produced by hand rather than by `adev specify revise`, because that verb does not edit spec body content (open P1 `adev-plugin-revise-loop-no-content-edits-q6q0`), so the review-block auto-retry loop cannot converge on a content blocker. This round is direct evidence of the cost: the hand edit reached every normative section but missed the task map, producing a second BLOCK on the same underlying defect at a different anchor. A revise implementation that patched the section named by `section_anchor` and swept the spec for the blocker's phrasing would likely have caught both stale rows in one pass.
 
 ---
 
 ## Summary
 
-**Total findings:** 3 (1 blocker, 1 warning, 1 suggestion)
-**Action required:** Revise the spec to resolve SA-1 before planning. `/adev:specify --revise` against the `.blockers.md` sidecar, then re-run `/adev:review-specs`. SEC-1 (the `--input` path-containment gap) should be addressed in the same revision since it is a charter Quality-Attribute requirement, though it does not itself block.
+**Total findings:** 4 (1 blocker, 2 warnings, 1 suggestion)
+**Action required:** Sweep the Actionable Task Map for revision-1 phrasing — both the "Insufficient-evidence guard" row named by SA-1 and the "Zero-denominator handling" row identified in the orchestrator note — then re-review. Address SA-2's precedence gap and CON-1's missing SKILL.md task row in the same revision: CON-1 in particular is load-bearing, since the acceptability of the two-level `INSUFFICIENT_EVIDENCE` vocabulary depends on that update being scoped.

@@ -6,7 +6,7 @@ kind: behavioral
 status: review-pending
 risk_level: medium
 milestone: v1
-revision: 2
+revision: 3
 charter-revision: 4
 created: 2026-08-20
 updated: 2026-08-20
@@ -37,14 +37,16 @@ The result keeps the deterministic and judged halves separately addressable. A s
 
 | Task | Description | Estimated Complexity |
 |------|-------------|---------------------|
-| Verdict-set validation | Reject unknown ids, missing verdicts, illegal enum values, and empty evidence before any arithmetic runs | medium |
-| Tally with denominator exclusion | Count met/not_met per list, excluding `not_applicable` from elements and `unknown` from criteria | medium |
-| Insufficient-evidence guard | Compare the `unknown` share against the rubric threshold; produce the `INSUFFICIENT_EVIDENCE` result and reduced attainable maximum | medium |
-| Zero-denominator handling | A term with no answered entries contributes 0 and says so, never `NaN` | small |
-| Result assembly | Verdict table plus separately addressable deterministic and judged halves, total, and attainable maximum | medium |
+| Verdict-set validation | Reject unknown ids, missing verdicts, illegal enum values, duplicates, and empty evidence before any arithmetic runs | medium |
+| Tally with denominator exclusion | Count met/not_met per half, excluding `not_applicable` from the deterministic denominator and `unknown` from the judged one | medium |
+| Insufficient-evidence guard | Compare the `unknown` share against the rubric threshold; set the judged half's value to the status `INSUFFICIENT_EVIDENCE`, leaving the deterministic half's points and maximum unchanged | medium |
+| Not-scored handling | A half whose rubric declares no entries, or whose deterministic entries are all `not_applicable`, carries the status `NOT_SCORED`; no `NaN` or division-by-zero value is ever produced | small |
+| Status precedence | Enforce that the two statuses are mutually exclusive per half, per BEH-3 and BEH-4, so a half with declared-but-unanswerable criteria resolves to `INSUFFICIENT_EVIDENCE` and never to `NOT_SCORED` | small |
+| Result assembly | Verdict table plus separately addressable halves, each a number-with-maximum or a status; a blended total only when both halves are numeric | medium |
 | `buildJudgeContext` | Assemble the single-criterion judge context and prove isolation | small |
-| `adev eval score` verb | Wrap the engine; table-with-aggregate output and a `--json` shape | medium |
-| Unit tests | Verdict sets exercising every enum value, both guards, and every error code | medium |
+| `adev eval score` verb | Wrap the engine; table-with-aggregate output, a `--json` shape, and path containment on `--rubric`/`--input` | medium |
+| Update `skills/eval/SKILL.md` Layer 3 | Replace the in-prose aggregate formula with a call to `adev eval score`, and replace the whole-layer discard with the half-level status reporting this spec defines. Required, not optional: leaving it discarding all of Layer 3 on `INSUFFICIENT_EVIDENCE` while the engine keeps the deterministic half numeric would leave the engine's only in-repo consumer contradicting it | medium |
+| Unit tests | Verdict sets exercising every enum value, both statuses, the precedence rule, and every error code | medium |
 
 ## Visual Expectations
 
@@ -56,7 +58,9 @@ Not applicable. This spec defines a library function and a CLI verb with no user
 - [ ] A blended total appears only when both halves are numeric, rounded and capped at `layer3_max_points` (BEH-1)
 - [ ] `not_applicable` is excluded from the element denominator and `unknown` from the criterion denominator (BEH-2)
 - [ ] An `unknown` share above `insufficient_evidence_threshold_percent` sets the judged half to the status `INSUFFICIENT_EVIDENCE` while the deterministic half reports its points unchanged (BEH-3)
-- [ ] A half with no answered entries carries the status `NOT_SCORED`, distinguishable from `INSUFFICIENT_EVIDENCE` — no `NaN` reaches a caller (BEH-4)
+- [ ] A half with no entry to answer carries the status `NOT_SCORED`, and a 100% `unknown` judged half carries `INSUFFICIENT_EVIDENCE` — no `NaN` reaches a caller (BEH-4)
+- [ ] The two statuses are mutually exclusive: no verdict set produces a half that satisfies both conditions (BEH-3, BEH-4)
+- [ ] `skills/eval/SKILL.md` Layer 3 calls `adev eval score` and reports half-level statuses rather than discarding the whole layer
 - [ ] A traversal or unreadable path on `--rubric`/`--input` exits non-zero with its named error and reads nothing (BEH-9)
 - [ ] A `met` or `not_met` verdict with empty evidence is rejected with `SCORE_EMPTY_EVIDENCE` (BEH-5)
 - [ ] An unknown verdict id or a missing verdict is rejected with its named error (BEH-6)
@@ -79,8 +83,8 @@ Not applicable. This spec defines a library function and a CLI verb with no user
 
 - **BEH-1** — **When** `scoreRubric(rubric, verdicts)` receives a complete, valid verdict set **then** it returns the verdict table and the deterministic half and judged half as distinct addressable fields, each carrying either its earned points and its own attainable maximum, or an explicit status from the closed set `INSUFFICIENT_EVIDENCE` / `NOT_SCORED`. A blended total is produced only when both halves are numeric, and is then their sum rounded and capped at `layer3_max_points`.
 - **BEH-2** — **When** tallying **then** `not_applicable` entries are excluded from the deterministic denominator and `unknown` entries from the judged denominator, so a criterion a judge could not decide neither helps nor hurts the score.
-- **BEH-3** — **When** the share of `unknown` among `quality_dimensions` exceeds `insufficient_evidence_threshold_percent` **then** the judged half's value is the status `INSUFFICIENT_EVIDENCE`, not a number. The deterministic half reports its earned points and attainable maximum unchanged, and no blended total is produced. A consumer reads `deterministic: 8/10, judged: INSUFFICIENT_EVIDENCE` and is never handed a figure that implies the judges scored zero when in fact they did not answer.
-- **BEH-4** — **When** either half has no answered entries **then** that half's value is the status `NOT_SCORED`, not a number, and no `NaN` or division-by-zero value reaches the caller. A half that scored nothing and a half that could not be scored are distinguishable by which status it carries.
+- **BEH-3** — **When** the rubric declares at least one `quality_dimensions` entry and the share of `unknown` among them exceeds `insufficient_evidence_threshold_percent` **then** the judged half's value is the status `INSUFFICIENT_EVIDENCE`, not a number. The deterministic half reports its earned points and attainable maximum unchanged, and no blended total is produced. A consumer reads `deterministic: 8/10, judged: INSUFFICIENT_EVIDENCE` and is never handed a figure that implies the judges scored zero when in fact they did not answer. This holds at a 100% `unknown` share, which is a judged half that was asked and could not answer — not an unscored one.
+- **BEH-4** — **When** a half has no entry to answer — the rubric declares none for that half, or every deterministic entry resolved `not_applicable` — **then** that half's value is the status `NOT_SCORED`, not a number, and no `NaN` or division-by-zero value reaches the caller. The two statuses are mutually exclusive by construction: `INSUFFICIENT_EVIDENCE` requires at least one declared entry, `NOT_SCORED` requires none answerable, so no half can satisfy both and no precedence rule is needed. A half that scored nothing (`0`), one that could not be judged, and one with nothing to judge are three distinguishable outcomes.
 - **BEH-5** — **When** a verdict carries `met` or `not_met` with empty evidence **then** the engine rejects the verdict set with `SCORE_EMPTY_EVIDENCE` naming the entry id, because absence of evidence is expressible only as `unknown`.
 - **BEH-6** — **When** the verdict set names an id the rubric does not declare **then** `SCORE_UNKNOWN_VERDICT_ID`; **when** it omits an id the rubric does declare **then** `SCORE_MISSING_VERDICT`, each naming the id — a partial verdict set never scores as though it were complete.
 - **BEH-7** — **When** `buildJudgeContext(criterion)` is called **then** its output contains that criterion's fields and no other criterion's identifier, no other criterion's verdict, and no running total, so single-criterion isolation is a property of the builder rather than of prose a judge is trusted to honour.
@@ -109,4 +113,4 @@ Not applicable. This spec defines a library function and a CLI verb with no user
 | `--rubric` or `--input` escapes the project root by traversal or symlink | Exit non-zero, reporting the path verbatim; read nothing | `UNSAFE_SCORE_PATH` |
 | `--input` names a file that does not exist or cannot be read | Exit non-zero, naming the resolved path | `SCORE_INPUT_NOT_FOUND` |
 | `unknown` share above the rubric threshold | Not an error — the judged half carries the status `INSUFFICIENT_EVIDENCE` and the deterministic half is unaffected | — |
-| A half has no answered entries | Not an error — that half carries the status `NOT_SCORED` | — |
+| A half has no entry to answer (none declared, or all deterministic entries `not_applicable`) | Not an error — that half carries the status `NOT_SCORED`, never `INSUFFICIENT_EVIDENCE` | — |
