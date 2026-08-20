@@ -4,13 +4,13 @@
 // Plan-task: 1
 import { test } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, rmSync, existsSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execSync } from 'node:child_process';
 import {
   createRun, readRunState, resolveRunStatePath, checkStatusGuard, checkBudget,
-  appendAttempt, completeTurn, finishRun, tokenForStatus,
+  appendAttempt, completeTurn, finishRun, tokenForStatus, findLatestRunState,
 } from '../../lib/bugfix-loop-run.mjs';
 
 test('createRun writes a run-state file with all BugfixLoopRun fields, defaults intact', () => {
@@ -112,4 +112,46 @@ test('tokenForStatus maps all three terminal statuses (AC bullet 7)', () => {
   assert.equal(tokenForStatus('complete'), 'COMPLETE');
   assert.equal(tokenForStatus('budget_exhausted'), 'BUDGET_EXHAUSTED');
   assert.equal(tokenForStatus('blocked'), 'BLOCKED');
+});
+
+test('findLatestRunState returns the most-recently-modified valid run (BD-2 happy path)', () => {
+  const root = mkdtempSync(join(tmpdir(), 'bfl-run-'));
+  const older = createRun(root, {});
+  completeTurn(root, older.run_id); // touch mtime, still older than the next create
+  const newer = createRun(root, {});
+  const found = findLatestRunState(root);
+  assert.equal(found.run_id, newer.run_id);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('findLatestRunState skips a candidate whose filename run_id does not match its own run_id field (BD-2)', () => {
+  const root = mkdtempSync(join(tmpdir(), 'bfl-run-'));
+  const good = createRun(root, {});
+  const dir = join(root, '.context-index', 'lifecycle-state');
+  const foreignId = '22222222-2222-4222-8222-222222222222';
+  writeFileSync(
+    join(dir, `bugfix-loop-runs-${foreignId}.json`),
+    JSON.stringify({ run_id: 'mismatched-id', status: 'running' }),
+  );
+  const found = findLatestRunState(root);
+  assert.equal(found.run_id, good.run_id); // foreign/mismatched file skipped, good one found instead
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('findLatestRunState skips a candidate with a status outside the charter enum (BD-2)', () => {
+  const root = mkdtempSync(join(tmpdir(), 'bfl-run-'));
+  const good = createRun(root, {});
+  const dir = join(root, '.context-index', 'lifecycle-state');
+  const badId = '33333333-3333-4333-8333-333333333333';
+  writeFileSync(join(dir, `bugfix-loop-runs-${badId}.json`), JSON.stringify({ run_id: badId, status: 'not-a-real-status' }));
+  const found = findLatestRunState(root);
+  assert.equal(found.run_id, good.run_id);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('findLatestRunState returns null when no run-state files exist', () => {
+  const root = mkdtempSync(join(tmpdir(), 'bfl-run-'));
+  mkdirSync(join(root, '.context-index', 'lifecycle-state'), { recursive: true });
+  assert.equal(findLatestRunState(root), null);
+  rmSync(root, { recursive: true, force: true });
 });
