@@ -3,11 +3,30 @@
 ---
 charter: autonomous-bugfix-loop
 kind: skill
-status: review-passed
+status: implemented
 risk_level: medium
 milestone: 1
 revision: 7
 charter-revision: 9
+source-manifest:
+  sha: "c192b86"
+  files:
+    - .context-index/adrs/0015-lifecycle-state-dual-format-coexistence.md
+    - cli/index.mjs
+    - lib/bugfix-loop-run.mjs
+    - lib/cli/bugfix-loop.mjs
+    - lib/cli/issues-record-attempt.mjs
+    - lib/cli/issues.mjs
+    - skills/bugfix-loop/SKILL.md
+    - skills/using-adev/SKILL.md
+    - skills/work/SKILL.md
+    - tests/adrs/0015-decision-table.test.mjs
+    - tests/cli/bugfix-loop.test.mjs
+    - tests/cli/issues-record-attempt.test.mjs
+    - tests/integration/bugfix-loop-loop.test.mjs
+    - tests/lib/bugfix-loop-run.test.mjs
+    - tests/skills/bugfix-loop-skill.test.mjs
+  computed-at: "2026-08-20T01:26:28.457Z"
 created: 2026-08-19
 updated: 2026-08-20
 ---
