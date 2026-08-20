@@ -2,9 +2,9 @@
   "scenario": "hygiene --check lifecycle",
   "capturedAt": "2026-08-19",
   "model": "claude-haiku-4-5",
+  "note": "Captured on the split tree while auditing the main-baseline checkout, so the audit input was identical to the monolithic arm of the comparison.",
   "all": [
     "skills/hygiene/SKILL.md",
-    ".context-index/manifest.yaml",
     "skills/hygiene/references/audit-passes/pass-12-lifecycle-audit.md"
   ],
   "companions": [

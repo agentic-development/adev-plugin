@@ -1,0 +1,19 @@
+{
+  "scenario": "specify --extract",
+  "capturedAt": "2026-08-19",
+  "model": "claude-haiku-4-5",
+  "all": [
+    "skills/specify/SKILL.md",
+    "skills/specify/references/modes/extract-mode.md",
+    "skills/specify/references/shared/lifecycle-events.md",
+    "skills/specify/references/shared/workspace-mode-detection.md"
+  ],
+  "companions": [
+    "skills/specify/references/modes/extract-mode.md",
+    "skills/specify/references/shared/lifecycle-events.md",
+    "skills/specify/references/shared/workspace-mode-detection.md"
+  ],
+  "bodies": [
+    "skills/specify/SKILL.md"
+  ]
+}
