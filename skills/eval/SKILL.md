@@ -111,11 +111,18 @@ Layer 3 produces **binary verdicts per criterion**, not scores. Every criterion 
 
 Resolve the rubric once, in this order:
 
-1. `--rubric <path>` if passed.
-2. Otherwise `rubric:` in `.context-index/evals/config.yaml`. The literal value `default` resolves to the shipped rubric.
+1. `--rubric <path>` if passed — a user-supplied path is passed through to the scoring verb unchanged.
+2. Otherwise `rubric:` in `.context-index/evals/config.yaml`. The literal value `default` selects the shipped rubric.
 3. Otherwise the shipped rubric.
 
-The shipped default rubric is `<ADEV_ROOT>/skills/eval/default-rubric.yaml`. It carries these top-level keys, which any custom rubric must also provide: `rubric_id`, `version`, `layer`, `verdict_values`, `required_elements`, `quality_dimensions`, `layer3_max_points`, `required_element_points`, `judged_criterion_points`, `unknown_policy`, `not_applicable_policy`, `insufficient_evidence_threshold_percent`.
+**When the shipped default is selected (cases 2 and 3), pass the literal token `default` as the
+rubric argument** and let the scoring verb resolve it against the plugin root.
+The skill must never expand it to an `<ADEV_ROOT>`-relative path first: a resolved path arrives as an ordinary path
+argument, is contained against the project root, and is refused in every real install where the
+plugin lives outside the project — the keyword branch is never entered.
+
+The shipped default rubric is `<ADEV_ROOT>/skills/eval/default-rubric.yaml` — that is what the
+`default` keyword resolves to, not a value to type on the command line. It carries these top-level keys, which any custom rubric must also provide: `rubric_id`, `version`, `layer`, `verdict_values`, `required_elements`, `quality_dimensions`, `layer3_max_points`, `required_element_points`, `judged_criterion_points`, `unknown_policy`, `not_applicable_policy`, `insufficient_evidence_threshold_percent`.
 
 If the resolved rubric file is missing or lacks any required top-level key, block with: "Layer 3 rubric could not be resolved: <reason>. Pass a valid `--rubric <path>` or restore the default rubric."
 
@@ -161,8 +168,11 @@ carry non-empty evidence or the engine rejects the set with `SCORE_EMPTY_EVIDENC
 Then score it:
 
 ```bash
-adev eval score --rubric <resolved rubric path> --input <verdict file path>
+adev eval score --rubric default --input <verdict file path>
 ```
+
+`default` is the keyword form for the shipped rubric, resolved by the verb against the plugin root.
+If the run was invoked with a user-supplied rubric path, substitute that path here unchanged.
 
 The verb prints the verdict table together with an aggregate line, always both — the numeric
 aggregate exists for trend tracking only and is never reported without its verdict table. Report
