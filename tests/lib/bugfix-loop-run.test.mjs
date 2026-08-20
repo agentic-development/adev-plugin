@@ -11,6 +11,7 @@ import { execSync } from 'node:child_process';
 import {
   createRun, readRunState, resolveRunStatePath, checkStatusGuard, checkBudget,
   appendAttempt, completeTurn, finishRun, tokenForStatus, findLatestRunState,
+  recordSyncRetry, resetSyncRetry, recordStaleLinkNotice, hasStaleLinkNoticeFired,
 } from '../../lib/bugfix-loop-run.mjs';
 
 test('createRun writes a run-state file with all BugfixLoopRun fields, defaults intact', () => {
@@ -153,5 +154,84 @@ test('findLatestRunState returns null when no run-state files exist', () => {
   const root = mkdtempSync(join(tmpdir(), 'bfl-run-'));
   mkdirSync(join(root, '.context-index', 'lifecycle-state'), { recursive: true });
   assert.equal(findLatestRunState(root), null);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('createRun initializes stale_link_notices_surfaced to [] (Plan-task 6)', () => {
+  const root = mkdtempSync(join(tmpdir(), 'bfl-run-'));
+  const state = createRun(root, {});
+  assert.deepEqual(state.stale_link_notices_surfaced, []);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('recordSyncRetry increments unreachable_consecutive_turns and sets degraded_sync_note on the 5th', () => {
+  const root = mkdtempSync(join(tmpdir(), 'bfl-run-'));
+  const { run_id } = createRun(root, {});
+  for (let i = 0; i < 4; i++) recordSyncRetry(root, run_id, { kind: 'unreachable' });
+  let state = readRunState(root, run_id);
+  assert.equal(state.degraded_sync_note, null);
+  assert.equal(state.sync_retry_counts.unreachable_consecutive_turns, 4);
+  recordSyncRetry(root, run_id, { kind: 'unreachable' });
+  state = readRunState(root, run_id);
+  assert.equal(state.sync_retry_counts.unreachable_consecutive_turns, 5);
+  assert.ok(state.degraded_sync_note);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('resetSyncRetry resets unreachable_consecutive_turns to 0', () => {
+  const root = mkdtempSync(join(tmpdir(), 'bfl-run-'));
+  const { run_id } = createRun(root, {});
+  recordSyncRetry(root, run_id, { kind: 'unreachable' });
+  recordSyncRetry(root, run_id, { kind: 'unreachable' });
+  resetSyncRetry(root, run_id, { kind: 'unreachable' });
+  const state = readRunState(root, run_id);
+  assert.equal(state.sync_retry_counts.unreachable_consecutive_turns, 0);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('recordSyncRetry with kind:oversized increments a per-issue-number map entry, independent of the unreachable counter', () => {
+  const root = mkdtempSync(join(tmpdir(), 'bfl-run-'));
+  const { run_id } = createRun(root, {});
+  recordSyncRetry(root, run_id, { kind: 'oversized', issueNumber: 12 });
+  recordSyncRetry(root, run_id, { kind: 'oversized', issueNumber: 12 });
+  recordSyncRetry(root, run_id, { kind: 'oversized', issueNumber: 99 });
+  const state = readRunState(root, run_id);
+  assert.equal(state.sync_retry_counts.oversized_consecutive_turns[12], 2);
+  assert.equal(state.sync_retry_counts.oversized_consecutive_turns[99], 1);
+  assert.equal(state.sync_retry_counts.unreachable_consecutive_turns, 0);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('resetSyncRetry with kind:oversized deletes that issue number entry from the map', () => {
+  const root = mkdtempSync(join(tmpdir(), 'bfl-run-'));
+  const { run_id } = createRun(root, {});
+  recordSyncRetry(root, run_id, { kind: 'oversized', issueNumber: 5 });
+  resetSyncRetry(root, run_id, { kind: 'oversized', issueNumber: 5 });
+  const state = readRunState(root, run_id);
+  assert.equal(state.sync_retry_counts.oversized_consecutive_turns[5], undefined);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('recordStaleLinkNotice fires once per external ref per run; hasStaleLinkNoticeFired reflects it', () => {
+  const root = mkdtempSync(join(tmpdir(), 'bfl-run-'));
+  const { run_id } = createRun(root, {});
+  assert.equal(hasStaleLinkNoticeFired(root, run_id, 'github:9'), false);
+  recordStaleLinkNotice(root, run_id, 'github:9');
+  assert.equal(hasStaleLinkNoticeFired(root, run_id, 'github:9'), true);
+  const state = readRunState(root, run_id);
+  assert.deepEqual(state.stale_link_notices_surfaced, ['github:9']);
+  // Second call is a no-op — no duplicate entry.
+  recordStaleLinkNotice(root, run_id, 'github:9');
+  const state2 = readRunState(root, run_id);
+  assert.deepEqual(state2.stale_link_notices_surfaced, ['github:9']);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('a fresh run_id starts stale_link_notices_surfaced empty (fresh-per-run scope)', () => {
+  const root = mkdtempSync(join(tmpdir(), 'bfl-run-'));
+  const { run_id: run1 } = createRun(root, {});
+  recordStaleLinkNotice(root, run1, 'github:1');
+  const { run_id: run2 } = createRun(root, {});
+  assert.equal(hasStaleLinkNoticeFired(root, run2, 'github:1'), false);
   rmSync(root, { recursive: true, force: true });
 });
