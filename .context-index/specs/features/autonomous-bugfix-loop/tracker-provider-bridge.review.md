@@ -1,31 +1,15 @@
 ---
-last-reviewed-revision: 7
-file-sha: 76ac2545725a2cb16200448d42a63f54181a7a773a186233a62a760ac6cd139b
+last-reviewed-revision: 8
+file-sha: d1db6c6cc0275d0b7b2953ba7d2043c35a45388880016c0c72429c3d903d51aa
 ---
 
-# Architecture Review: tracker-provider-bridge (round 7)
+# Architecture Review: tracker-provider-bridge
 
 > **Date:** 2026-08-20
 > **Spec:** .context-index/specs/features/autonomous-bugfix-loop/tracker-provider-bridge.spec.md
 > **Charter:** .context-index/specs/features/autonomous-bugfix-loop/charter.md
 > **Verdict:** BLOCK
-> **Rigor tier:** full
-> **Note:** Re-review after round-6 BLOCK (WR-1: TrackerProviderRegistry never called; WR-2/WR-3:
-> TrackerSyncLink.accepted_at/last_synced_at/last_comment_id write-only). Revision 7 added an
-> explicit registry-resolution call site (Interaction Contract inbound step 1, outbound step 2)
-> and gave accepted_at (stale-link notice, inbound step 5) and last_synced_at/last_comment_id
-> (duplicate-post guard, outbound steps 2-3) real readers. **All three round-6 fixes were
-> independently re-verified against the revision-7 text this round, not rubber-stamped:** the
-> Wiring Reviewer confirmed WR-1 and WR-3 are fully closed with concrete producer/consumer/
-> trigger/test chains, and confirmed the accepted_at write-only gap (WR-2) is closed at the
-> minimum bar (a real read drives a real logged action). However, this round's Wiring Reviewer
-> and Termination Reviewer each independently surfaced **one new blocker on content the
-> revision-7 fix itself introduced**: `TrackerSyncLink.provider` — a fourth `TrackerSyncLink`
-> field, distinct from the three round-6 fixed — is written at link creation but never read
-> anywhere, contradicting the charter's own Relationships claim that it selects the adapter
-> (WR-4); and the new stale-link notice (added to close WR-2) has no iteration cap, cap-trip
-> verdict, or safe unattended default, unlike every other retry-shaped construct in this spec
-> (TR-4). The consolidated verdict is BLOCK on these two new findings.
+> **Rigor tier:** full (risk_level: medium → policies.medium.review_mode: full)
 
 ## Reviewers Dispatched
 
@@ -35,177 +19,72 @@ file-sha: 76ac2545725a2cb16200448d42a63f54181a7a773a186233a62a760ac6cd139b
 | referent-integrity | Referent Integrity Reviewer | subagent | reviewer-reasoning | plugin:review-specs/referent-integrity-prompt.md |
 | wiring-reviewer | Wiring Reviewer | subagent | reviewer-capable | plugin:review-specs/wiring-reviewer-prompt.md |
 | boundary-reviewer | Boundary Reviewer | subagent | reviewer-capable | plugin:review-specs/boundary-reviewer-prompt.md |
-| termination-reviewer | Termination Reviewer | subagent | reviewer-fast | plugin:review-specs/termination-reviewer-prompt.md |
+| termination-reviewer | Termination Reviewer | subagent | reviewer-fast | plugin:review-specs/termination-reviewer-prompt.md (triggered: loop/retry keywords matched) |
 
 ## Disabled Reviewers
 
 | ID | Reason |
 |----|--------|
-| structural-architect | Disabled as part of the reviewer-domain-fit initiative. OWASP/structural scope was retargeted to referent-integrity/wiring-reviewer/consistency-analyzer/boundary-reviewer for the default (Node CLI/plugin) project shape. Prompt retained on disk. |
-| security-reviewer | Disabled as part of the reviewer-domain-fit initiative. OWASP-scoped review relocated to the web-service domain extension (opt-in via `adev extension install web-service`). Prompt retained on disk. |
+| structural-architect | Disabled as part of the reviewer-domain-fit initiative. OWASP/structural scope was retargeted to referent-integrity/wiring-reviewer/consistency-analyzer/boundary-reviewer for the default (Node CLI/plugin) project shape. Prompt retained on disk; still resolvable for any project whose materialized review.yaml already names it. |
+| security-reviewer | Disabled as part of the reviewer-domain-fit initiative. OWASP-scoped review relocated to the web-service domain extension (opt-in via `adev extension install web-service`) where it fits the artifact class. Prompt retained on disk. |
 
 ## Consistency Analyzer (consistency-analyzer)
 
 **Verdict:** PASS_WITH_NOTES
 
-Reviewer noted its context pack this round contained only the constitution and platform context
-(no charter/sibling-spec text) and scoped findings accordingly.
+Re-verified the two round-7 blockers this revision targets:
+- **WR-4** (`TrackerSyncLink.provider` write-only, contradicting charter's "selects the adapter" claim): now consistent between spec and charter — both describe `provider` as write-once provenance, and both agree adapter resolution reads `tasks.bugfix_loop.tracker_provider` directly.
+- **TR-4** (stale-link notice had no iteration bound): now consistent — `BugfixLoopRun.stale_link_notices_surfaced` is declared identically in the charter Domain Model (revision 10) and consumed identically in the spec's Interaction Contract inbound step 5.
 
-- **CON-1 (warning — pattern):** The Actionable Task Map's "Wire `skills/debug/SKILL.md` Phase 1…"
-  task describes Phase 1 resolving the investigation target by "calling `IssueManager.get(id).notes`"
-  without specifying that the implementation must route through an `adev <verb>` CLI subcommand or
-  helper script, per CLAUDE.md's inline-Node anti-pattern (enforced by
-  `.githooks/pre-commit-no-inline-node`). Recommendation: name the implementation route explicitly
-  (e.g. `adev debug notes <id>`) so a future implementer doesn't write inline-Node prose into
-  `skills/debug/SKILL.md` and trip the pre-commit hook.
-- **CON-2 (suggestion — domain-model):** The Participants `TrackerSyncLink` row names only the three
-  round-6 fields (`accepted_at`, `last_synced_at`, `last_comment_id`) plus scattered mentions of
-  `local_issue_id` and the GitHub issue number elsewhere — the entity's full field set is not
-  enumerated in one place.
-- **CON-3 (suggestion — naming):** New/extended persisted fields (`accepted_at`, `last_synced_at`,
-  `last_comment_id`, `degraded_sync_note`, `sync_retry_counts.*`, `tracker_link_stale_days`) use
-  snake_case; flagged only because the reviewer could not verify the sibling-spec precedent
-  (`affected_modules`) for persisted-field snake_case from within its context pack this round.
+**CON-1 (warning, pattern):** The Actionable Task Map's "Wire `skills/debug/SKILL.md` Phase 1…" row still directs the implementer to resolve the investigation target "by calling `IssueManager.get(id).notes`" — a direct library-call description, not a named `adev <verb>` CLI route, conflicting with CLAUDE.md's Anti-Patterns clause (enforced by `.githooks/pre-commit-no-inline-node`). Pre-existing from round 7 (round-7 Consistency Analyzer's own CON-1); revision 8's changes were scoped to WR-4/TR-4 only and did not touch this row, so it remains open. Recommendation: name the implementation route explicitly (e.g. `adev debug notes <id>`) before this task is implemented.
+
+**CON-2 (suggestion, domain-model):** The charter's Domain Model Entities table still annotates `TrackerSyncLink.provider` only as `(e.g. "github")`, with no forward-reference to the corrected Relationships bullet below it. Not blocking — a one-clause pointer would remove ambiguity for a fast skim.
+
+No naming, ADR-compliance, or module-boundary violations found. Persisted-field naming is uniformly snake_case; ADR-0015/ADR-0016 compliance confirmed; `tracker-sync-links.jsonl`'s still-pending ADR-0015 registration remains honestly tracked, not a silent gap.
 
 ## Referent Integrity Reviewer (referent-integrity)
 
-**Verdict:** PASS_WITH_NOTES
+**Verdict:** PASS
 
-- **RI-1 (warning):** The System Constitution Reference "Existing mitigation, corrected" bullet's
-  "Verified against current source" citation list (`lib/issues/file-adapter.mjs`,
-  `lib/issues/json-adapter.mjs`, `lib/issues/beads-adapter.mjs`, `lib/issues/registry.mjs:24`,
-  `cli/index.mjs:1575-1586`) omits `lib/issues/render-markdown.mjs` — the file where `escapeField`,
-  `renderTasksMd`, and `writeTasksMd` (the three symbols the bullet is centrally about) are actually
-  defined. The Actionable Task Map's parallel row about the identical fact correctly cites that file;
-  this bullet does not. All underlying factual claims independently re-verified accurate (line
-  numbers, `DEFAULT_BACKEND`, `BACKEND_READ_ONLY_DEPRECATED`, unescaped `notes` persistence on both
-  `json` and `beads`). Recommendation: add `lib/issues/render-markdown.mjs` to this bullet's citation
-  parenthetical.
+All referents verified, including both new revision-8 referents:
+- **RI-2:** `BugfixLoopRun.stale_link_notices_surfaced` — verified at `charter.md:113` (array, default `[]`, added revision 10 to close round-7 TR-4), described identically to how the spec's inbound step 5 uses it.
+- **RI-3:** the corrected `TrackerSyncLink.provider` Relationships bullet — verified at `charter.md:127-146`; the spec's Participants row and inbound step 4 say the same thing without contradiction.
 
-Every other referent checked — `lib/provider/registry.mjs`, `lib/issues/registry.mjs::getIssueManager`,
-`lib/governance/context-pack.mjs`'s `fenceBlock`/`neutralizeFenceTokens`/`CONTEXT_PACK_FENCE_COLLISION`,
-`dispatch-shape.mjs`'s `provenanceRule`, ADR-0015's Decision table (confirms `tracker-sync-links.jsonl`
-still unregistered, matching the spec's own framing), `skills/specify/SKILL.md` Step 5.6-2,
-`lib/cli/coordination.mjs::scanPullRequests`, `lib/milestones.mjs`'s unreachable `execGh`,
-`debug-completion-and-auto.spec.md` BEH-7, `bug-selection-and-eligibility.spec.md` BEH-10,
-`charter.md`'s `revision: 9` / Domain Model / Deferred Capabilities / Dependencies,
-`bugfix-loop-skill.spec.md`'s Output Contract, `skills/debug/SKILL.md` Phase 1's confirmed non-read
-of `notes`, and `IssueManagerInterface` — independently verified accurate against live source.
+Also re-verified (unchanged from round 7, still holding): `lib/governance/context-pack.mjs`'s `fenceBlock`/`neutralizeFenceTokens` (RI-1), `lib/provider/registry.mjs` vs. `lib/issues/registry.mjs` pattern claim (RI-4), `escapeField`/render-markdown/beads-adapter claims (RI-5), `skills/debug/SKILL.md` Phase 1 non-read of `notes` (RI-6), ADR-0015 Decision table non-registration of `tracker-sync-links.jsonl` (RI-7), `lib/cli/coordination.mjs`/`lib/milestones.mjs` prior-art claims (RI-8).
+
+No findings.
 
 ## Wiring Reviewer (wiring-reviewer)
 
 **Verdict:** FAIL
 
-- **WR-1 (no finding — round-6 blocker closed):** `TrackerProviderRegistry.get(...)` is now an
-  explicit named call site (Interaction Contract inbound step 1, outbound step 2); every subsequent
-  step operates on the returned `provider`. Producer → consumer → trigger → test chain confirmed
-  complete, including the stub-adapter and `UNKNOWN_TRACKER_PROVIDER` acceptance-criteria tests.
-- **WR-2 (warning — overclaimed cross-spec surfacing):** `accepted_at`'s write-only gap is closed at
-  the minimum bar (inbound step 5 reads it and produces a real logged notice, with a named test).
-  However, the spec's claim that the notice is "surfaced the same way `degraded_sync_note` is…
-  printed immediately above the turn's terminal token" has no actual consumer:
-  `bugfix-loop-skill.spec.md`'s Output Contract documents a `degraded_sync_note` consumer bullet but
-  no equivalent for a stale-link notice, and the charter Domain Model has no field to carry this
-  notice across turns to whichever turn is terminal (unlike `degraded_sync_note`). As specified the
-  notice is effectively turn-local. **section_anchor:** `interaction-contract-inbound-5` ·
-  **finding-type:** `overclaimed-consumer`
-- **WR-3 (no finding — round-6 blocker closed):** `last_synced_at`/`last_comment_id` are fully closed
-  within this spec's own outbound writeback (step 2 reads, step 3 writes back); no cross-spec
-  dependency, dedicated double-invocation test named.
-- **WR-4 (blocker — write-only-state):** `TrackerSyncLink.provider` is written at link creation
-  (Interaction Contract inbound step 4, implicit) but never read anywhere in the Interaction
-  Contract — both inbound step 1 and outbound step 2 resolve the adapter via manifest config
-  (`tasks.bugfix_loop.tracker_provider`), never via the link's own `provider` field. This
-  contradicts the charter's Relationships section: "A `TrackerSyncLink`'s `provider` field selects
-  which `TrackerProviderAdapter` handles its inbound sync and outbound writeback." If
-  `tasks.bugfix_loop.tracker_provider` changes after a link's creation, outbound writeback for an
-  existing link resolves whatever adapter is *currently* configured, not the one recorded on the
-  link. The Participants row's revision-7 claim that "all three" write-only `TrackerSyncLink`
-  fields now have a reader omits this fourth field. **section_anchor:**
-  `interaction-contract-inbound-4` · **finding-type:** `write-only-state`
-- **WR-5 (no finding — pre-existing, honestly tracked):** `WorkItem.notes` → `skills/debug/SKILL.md`
-  Phase 1 chain remains an explicitly-tracked future task (Actionable Task Map), not a fresh gap.
+**WR-1 (blocker, write-only-state):** `TrackerSyncLink.provider`, set at Interaction Contract inbound step 4 (revision 8's WR-4 fix) to the adapter name resolved by step 1's `TrackerProviderRegistry.get(...)` call, still has **no consumer anywhere**. Inbound step 1 and outbound step 2 both resolve the adapter from `tasks.bugfix_loop.tracker_provider` directly, never from the link's own field — the charter's own corrected Relationships bullet concedes "no code path in the Interaction Contract ever reads it back." The only place the written value is inspected is the Acceptance Criteria test asserting `provider` equals the value just written — a correctness check on the write, not a functional reader. Revision 8's fix is judged a pure relabeling: it changed the charter's claim from "provider selects the adapter" (false) to "provider is provenance, not a dispatch key" (true about current code, but adds no reader). The cited justification — "populated now for a future multi-provider bridge" — points at "Second Tracker Provider Adapter" in the charter's Deferred Capabilities table, which carries **Target Milestone: —** (no date, deferred until there's demand). That fails the reviewer's own "planned companion change" carve-out: contrast with `WorkItem.notes`'s write-only gap, which has a concrete, dated Actionable Task Map row and a dedicated acceptance-test row tracking its future consumer — `provider` has neither. Section anchor: `interaction-contract-inbound-4`. Finding-type: `write-only-state`.
+
+Recommendation: either give `provider` a real consumer (e.g., outbound writeback or already-linked handling reads it back to warn on a `tracker_provider`/link mismatch) or add an explicit Actionable Task Map row tracking its future use, the way `notes`/Phase-1 got one, so the gap is honestly deferred rather than declared closed by a definition change.
+
+All other producers re-checked and found fully wired: `TrackerProviderRegistry.get(...)` resolution, `TrackerSyncLink.accepted_at`, `TrackerSyncLink.last_synced_at`/`last_comment_id`, the new `BugfixLoopRun.stale_link_notices_surfaced` (self-consuming across turns, same pattern already validated for `sync_retry_counts`/`degraded_sync_note`), `WorkItem.notes` (planned companion change, carve-out applies), `WorkItem.affected_modules`, `degraded_sync_note`/`sync_retry_counts.*` (pre-existing, unchanged this revision).
 
 ## Boundary Reviewer (boundary-reviewer)
 
 **Verdict:** PASS_WITH_NOTES
 
-- **BD-1 (warning — Input trust, carried forward unchanged from round 6):** Re-verified against
-  revision 7's actual text (Interaction Contract inbound step 3): body is still the only field
-  passed through `fenceBlock`/`neutralizeFenceTokens`; title remains only length-capped, never
-  fenced. This revision made no change here — confirmed still accurate, not new information.
-  Recommendation unchanged: scope the eventual Phase 1 read to `notes` only, or fence title
-  symmetrically with body.
-- **New surface (suggestion — Input trust):** The two new revision-7 log lines (stale-link notice,
-  duplicate-post skip) interpolate only internally-generated structured values (issue number,
-  integer day-count, numeric `last_comment_id`) — never untrusted GitHub title/body text — so BD-1's
-  title-fencing gap does not extend to them as specified. Recommendation: keep these log templates
-  to structured fields only if extended later.
+Re-checked all six checklist items against both revision-8 changes (WR-4, TR-4) and the unchanged surface. Items 1 (path containment), 2 (subprocess interpolation), 4 (privilege posture), 5 (artifact leakage), 6 (destructive filesystem operations) are clean passes — the new `provider` field and `stale_link_notices_surfaced` array are both internally-resolved, non-free-text values written via existing append-only/read-modify-write patterns.
 
-Checklist items 1 (Path containment), 2 (Subprocess interpolation), 4 (Privilege posture), 5
-(Artifact leakage), and 6 (Destructive filesystem operations) re-checked against all three revision-7
-wiring fixes and found consistent — no new path, no new subprocess construction, static manifest-keyed
-provider selection with fail-closed `UNKNOWN_TRACKER_PROVIDER` handling, no new persisted artifact, no
-destructive operation.
+**BD-1 (warning, input trust — carried forward unchanged from round 7):** `title` is length-capped but never routed through `fenceBlock`/`neutralizeFenceTokens` the way `body` is (Interaction Contract inbound step 3). Not escalated to blocker because `title` currently has no documented reader that treats it as an investigation/instruction target the way the Task Map's Phase 1 wiring task does for `notes`. Revision 8 touched neither `title` handling nor introduced a new consumer of it, so this is not re-blocking — reported for continuity.
 
 ## Termination Reviewer (termination-reviewer)
 
-**Verdict:** FAIL
+**Verdict:** PASS_WITH_NOTES
 
-Independently re-derived cap / cap-trip / unattended-default for all four loop/retry-shaped
-constructs in the spec (not just the two carried over from round 6).
+**TR-4 re-verification (round-7 blocker, this revision's claimed fix): CLOSED, downgraded to warning.** The "fires at most once per run per link" dedup via `BugfixLoopRun.stale_link_notices_surfaced` (Interaction Contract inbound step 5) has a real, concrete, non-vacuous iteration cap (verified against `bugfix-loop-skill.spec.md`'s `--resume`/terminal-turn semantics) and an explicitly stated cap-trip verdict (suppress, no run-state write). The spec's own reasoning — that this is correctly a dedup-set shape rather than a numeric-turn-cap-with-escalation shape, because the underlying condition is turn-invariant and no degrade-and-continue action is needed — was independently verified to hold up, not merely accepted at face value.
 
-- **TR-1 (no finding — fully bounded):** GitHub-unreachable / unregistered-provider degraded-sync
-  retry (Error Propagation rows 1-2) — persisted counter, `degraded_sync_note` cap-trip, safe
-  automatic unattended default. No finding.
-- **TR-2 (no finding — fully bounded):** Oversized title/body per-issue refusal retry (Error
-  Propagation row 4) — persisted per-issue counter, exclusion cap-trip, safe automatic default. No
-  finding.
-- **TR-3 (no finding — trivially bounded):** Outbound-writeback GitHub-unreachable skip (Error
-  Propagation row 3) — zero-retry by design, immediate safe skip. No finding.
-- **TR-4 (blocker — missing-iteration-cap):** The new stale tracker-link notice (Interaction
-  Contract, inbound sync step 5, added to close round-6 WR-2) has no iteration cap. The
-  `accepted_at` vs. `tracker_link_stale_days` comparison re-fires every inbound sync turn for as
-  long as the link stays linked, stale, and un-attempted — no bound is stated, no cap-trip verdict
-  exists, and the only described remedy ("a human closes or parks the WorkItem manually") is unsafe
-  as an unattended default: in the charter's own stated scheduled/unattended execution mode, this
-  notice prints indefinitely if no operator reads it. Unlike TR-1/TR-2/TR-3, none of the other
-  retry-shaped constructs in this spec share this gap. **section_anchor:**
-  `interaction-contract-inbound-5` · **finding-type:** `missing-iteration-cap`
+**TR-1 (warning, unattended default — new this round):** The notice is only printed as a per-turn console line, with no terminal-token-adjacent rollup analogous to `degraded_sync_note`'s purpose-built terminal surface. In a genuinely unattended run, the one permitted occurrence may never be seen by anyone. Not a blocker — the notice is purely advisory (gates no action; the link/WorkItem stay untouched regardless), so non-visibility doesn't create unsafe *loop* behavior, only a weaker-than-sibling audit trail, and the identical gap already exists un-flagged for the oversized-refusal cap-trip elsewhere in this same spec.
 
-> A **per-reviewer** verdict is never BLOCK. BLOCK is the *consolidated*
-> verdict in the header above, computed from post-cap findings across all
-> reviewers — PASS (zero findings, or only suggestion-severity),
-> PASS_WITH_NOTES (>=1 warning, zero blockers), BLOCK (>= `verdict_rules.blocker_threshold`
-> blockers, default 1). An individual reviewer signals a blocker by emitting
-> FAIL with a blocker-severity finding.
+All other loop/retry/poll constructs re-checked and found clean: GitHub-unreachable/`UNKNOWN_TRACKER_PROVIDER` degradation (5-turn cap, terminal-token rollup), oversized-title/body refusal (5-turn cap, per-issue-number), outbound writeback duplicate-post guard (state-based one-shot bound, durably persisted), GitHub-unreachable-during-outbound-writeback (zero-retry, trivially bounded).
 
 ---
 
 ## Summary
 
-**Total findings:** 9 (2 blockers, 4 warnings, 3 suggestions)
-**Action required:** Revise the spec to address WR-4 and TR-4 before this can pass. Specifically:
-(1) name a real consumer for `TrackerSyncLink.provider` (e.g. have outbound writeback and inbound's
-already-linked handling resolve the adapter via the link's own stored `provider` value rather than
-solely via current manifest config) or explicitly correct the charter's Relationships claim and state
-the field is intentionally unused pending a second shipped provider; (2) give the stale-link notice
-(inbound step 5) an iteration cap, a cap-trip verdict, and a safe automatic unattended default — the
-same shape already used successfully by every other retry construct in this spec (a persisted
-per-link or per-run counter feeding a bounded escalation), rather than relying solely on a human
-reading a per-turn log line. Warnings (CON-1, RI-1, WR-2, BD-1) and suggestions (CON-2, CON-3,
-Boundary's new-surface note) are not blocking but should be addressed in the same revision pass where
-practical — WR-2 in particular is related to the same root cause as TR-4 (the stale-link notice's
-surfacing/escalation story is underspecified) and a single fix may close both.
-
-**On the round-6 fixes specifically:** WR-1 (registry call site) and WR-3
-(`last_synced_at`/`last_comment_id` duplicate-post guard) are genuinely and cleanly resolved —
-independently re-verified against actual revision-7 text by the Wiring Reviewer, with concrete
-producer/consumer/trigger/test chains for both. WR-2 (`accepted_at`) is closed at the minimum bar (a
-real read drives a real logged action) but the specific cross-spec surfacing claim made for it is
-overstated (see WR-2 above). The two new blockers (WR-4, TR-4) were both introduced by the shape of
-this revision's own fix for WR-2/WR-3 — `TrackerSyncLink.provider` is a fourth, previously-unnoticed
-write-only field on the same entity, and the new stale-link notice is the one retry-shaped construct
-in this spec that did not receive the persisted-counter treatment already proven out for the other
-three. This is new information surfaced by independent re-verification, not a regression in the
-round-6 fixes themselves.
+**Total findings:** 6 (1 blocker, 4 warnings, 1 suggestion)
+**Action required:** This revision (8) genuinely closed TR-4 (termination-reviewer confirms the fires-once-per-run dedup shape is correct and well-bounded) but did **not** close WR-4 — wiring-reviewer independently re-flagged `TrackerSyncLink.provider` as still write-only-state, judging the revision-8 fix a relabeling (charter claim corrected from false to true) rather than a wiring fix (no reader added, and the cited future use has no target milestone, unlike the `notes`/Phase-1 precedent this same spec already uses for an honestly-deferred gap). Run `/adev:specify --revise` to address this new blocker (`wiring-reviewer:write-only-state:87990d14`), choosing either: (a) give `provider` a real reader, or (b) add an explicit Actionable Task Map row tracking its future multi-provider use the same way `notes`/Phase-1 already got one. Then re-run `/adev:review-specs`.
