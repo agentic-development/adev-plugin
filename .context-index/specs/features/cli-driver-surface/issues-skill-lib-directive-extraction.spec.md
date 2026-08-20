@@ -1,17 +1,42 @@
-<!-- partial_schema: spec@1 -->
-
 ---
 charter: cli-driver-surface
 kind: refactor
 mode: refactor
-status: review-passed
+status: implemented
 risk_level: low
 milestone: adev-compiler-discipline
 revision: 2
 charter-revision: 3
 charter-extension: true
 created: 2026-08-19
-updated: 2026-08-19
+updated: 2026-08-20
+source-manifest:
+  sha: "90e6843"
+  files:
+    - cli/index.mjs
+    - docs/cli-reference.md
+    - lib/cli/issues-board.mjs
+    - lib/cli/issues-create.mjs
+    - lib/cli/issues-epic.mjs
+    - lib/cli/issues-list.mjs
+    - lib/cli/issues-milestone.mjs
+    - lib/cli/issues-mutate.mjs
+    - lib/cli/issues.mjs
+    - skills/implement/SKILL.md
+    - skills/issues/SKILL.md
+    - skills/plan/SKILL.md
+    - skills/reconcile/SKILL.md
+    - tests/cli/issues-board.test.mjs
+    - tests/cli/issues-epic.test.mjs
+    - tests/cli/issues-help-routing.test.mjs
+    - tests/cli/issues-list.test.mjs
+    - tests/cli/issues-milestone.test.mjs
+    - tests/cli/issues-mutate.test.mjs
+    - tests/cli/issues-worktree-storage.test.mjs
+    - tests/issues/cli-create.test.mjs
+    - tests/skills/epic-creation-verb-coverage.test.mjs
+    - tests/skills/issues-skill-verb-coverage.test.mjs
+  computed-at: "2026-08-20T03:07:08.408Z"
 ---
 
 # Refactoring Spec: /adev:issues Lib-Directive Extraction
