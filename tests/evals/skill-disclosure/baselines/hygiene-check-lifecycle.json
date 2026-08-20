@@ -1,0 +1,16 @@
+{
+  "scenario": "hygiene --check lifecycle",
+  "skill": "hygiene",
+  "why": "A single-pass hygiene run must open the body and EXACTLY the one audit-pass companion the --check slug names. Reading the body alone means the agent worked from the routing table's one-line description and never loaded the pass's goal, steps, or severity rules — the exact regression progressive disclosure risks, and one that every prose assertion in tests/ stays green through.",
+  "required": [
+    "skills/hygiene/references/audit-passes/pass-12-lifecycle-audit.md"
+  ],
+  "requiredBodies": [
+    "skills/hygiene/SKILL.md"
+  ],
+  "mustNotRead": [
+    "skills/hygiene/references/audit-passes/pass-01-constitution-freshness.md",
+    "skills/hygiene/references/audit-passes/pass-23-test-debt.md"
+  ],
+  "mustNotReadWhy": "A --check run that loads other passes has lost the disclosure benefit — it is paying for all 23 to run one. Two are sampled rather than all 22; failing on the full set would make an agent that reads one extra companion look like a regression."
+}
