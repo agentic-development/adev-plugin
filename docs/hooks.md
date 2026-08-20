@@ -373,7 +373,7 @@ Bypass with `git commit --no-verify` only when justified. Provider mirrors under
 - Includes `specs-touched` derived from the commit's `Spec:` trailer (multiple specs supported, comma-separated)
 - Always exits 0 — if `node` is unavailable or any step fails, the hook quietly no-ops
 
-**Adopter convention for these files (important — see [issue-518](../.context-index/tasks/tasks.json)):**
+**Adopter convention for these files (important — see issue `adev-plugin-4l8t`, legacy id `issue-518`):**
 
 | Question | Answer |
 |---|---|
