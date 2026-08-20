@@ -24,7 +24,7 @@ eval-harness owns one rubric contract, one scoring engine consumed by both, the 
 - Run-cost record derived from session JSONL — wall-clock duration, the four-way token split, cost, turn counts, and subagent rollup, joined to the verdict table
 - Budget thresholds expressed as flat rubric keys that resolve to failing verdicts, evaluated over a sample set using median plus spread
 - Baseline provenance and percent-regression comparison
-- A hermetic fixture project with planted ground truth — known violations that must be caught, and known-clean artifacts that must not be flagged
+- A hermetic fixture project with planted ground truth at `tests/evals/skill-regression/` — known violations that must be caught, and known-clean artifacts that must not be flagged. The directory is new and unowned; it is deliberately not one of the domain-paired directories `eval-projects` covers
 - A rubric per skill for all 30 skills, conforming to the unified schema
 - Migration of the three existing skill-compression rubrics from 1-5 scales to binary verdicts
 - Tiered CI integration for the eval suite
@@ -37,6 +37,8 @@ eval-harness owns one rubric contract, one scoring engine consumed by both, the 
 - Repomap parser accuracy measurement — owned by the `repomap-eval` charter
 - Whether `/adev:eval` survives as a distinct skill or merges into `validate --score` — a skill-surface decision outside this charter. The shared engine is written so either outcome leaves it intact
 - Rubric content for the domain-specific eval projects — owned by `eval-projects`
+- **`eval-projects`' deferred "Eval Harness Implementation" capability** — that entry covers scenarios and rubrics scoring adev skills against the four domain project repos, and depends on all v1 project capabilities. Despite the name collision with this charter, it is a different capability and **remains open and unaddressed here**. This charter scores adev's skills against in-repo hermetic fixtures; that one scores them against the domain repos. Neither fulfils the other
+- Domain scenario and rubric content under the `tests/evals/` directories paired with the domain repos (`data-engineering`, `data-pipeline`, `data-migration`, `process-automation`, `web-api`) — owned by `eval-projects`. This charter owns the schema those files conform to and the engine that scores them, not their content
 
 ### Dependencies
 
@@ -76,11 +78,11 @@ eval-harness owns one rubric contract, one scoring engine consumed by both, the 
 ### Invariants
 
 - A rubric file containing a nested map is rejected at load with a named error, never silently loaded as an empty structure
-- Absence of evidence resolves to `unknown`, never to `not_met`
+- A Verdict whose value is `met` or `not_met` and whose `evidence` is empty is rejected by the scorer. Absence of evidence can only be expressed as `unknown`, so a judge that returns `not_met` without citing evidence fails the run rather than scoring it
 - `unknown` is excluded from judged-criterion denominators; `not_applicable` is excluded from deterministic-element denominators
 - A RequiredElement never resolves to `unknown`; a QualityCriterion never resolves to `not_applicable`
 - A numeric aggregate is never reported without its verdict table
-- Exactly one criterion is given to each judge dispatch; a judge is never shown another criterion's verdict or the running total
+- `buildJudgeContext(criterion)` emits exactly one criterion, and its output contains no other criterion's identifier, no other criterion's verdict, and no running total — so single-criterion isolation is a property of the context builder rather than of prose the judge is trusted to follow
 - A budget verdict requires at least three samples and is computed on the median, never on a single run or a mean
 - Every RunRecord names the model id and plugin version that produced it
 - A baseline comparison across differing model ids or pricing tables reports `incomparable`, never a regression
@@ -122,7 +124,8 @@ Capability ordering is deliberate. The fixture project precedes every rubric tie
 | `adev eval score --rubric <path> --input <path> [--json]` | CLI verb | Score an input against a rubric, returning the verdict table and aggregate |
 | `loadRubric(path)` | function | Parse and validate a rubric file, throwing named errors on schema violations |
 | `scoreRubric(rubric, verdicts)` | function | Aggregate verdicts into a score with attainable maximum |
-| `collectRunRecord(sessionId)` | function | Build a RunRecord from a session JSONL file, including subagent rollup |
+| `collectRunRecord(sessionPath)` | function | Build a RunRecord from a session JSONL file, including subagent rollup. Takes a path so tests can pass synthetic fixture JSONL |
+| `buildJudgeContext(criterion)` | function | Assemble the single-criterion context handed to one judge dispatch, carrying no other criterion and no running total |
 | Unified rubric schema | file contract | The YAML shape every rubric in the repository conforms to |
 | `npm run test:evals` | command | Existing opt-in eval bucket, extended to cover the new harness |
 | Rubric conformance and coverage test | test | Default-bucket test asserting every skill has a conforming rubric |
@@ -141,8 +144,9 @@ Capability ordering is deliberate. The fixture project precedes every rubric tie
 |-----------|-------------|
 | Performance | Scoring is pure computation with no network access and must run inside the existing `npm test` time budget. Tier A CI checks add no measurable wall-clock to a PR |
 | Determinism | The same rubric and the same verdicts produce a byte-identical score. No clock reads and no randomness anywhere in the scoring path |
-| Correctness | Denominator exclusion and the insufficient-evidence guard are covered by unit tests using verdict sets that exercise every enum value |
+| Correctness | Denominator exclusion, the insufficient-evidence guard, empty-evidence rejection, and single-criterion isolation in `buildJudgeContext` are each covered by unit tests using verdict sets that exercise every enum value |
 | Security | Rubric and fixture paths are validated against traversal, following the `UNSAFE_TEMPLATE_PATH` precedent. Session JSONL is untrusted input: parsed defensively, never evaluated |
 | Observability | Every score reports its attainable maximum alongside the total. Every budget verdict reports its sample count and spread. Any capped or skipped coverage is logged rather than silently omitted |
-| Portability | Fixtures resolve with no network, no submodules, and no container runtime, so Tier A and Tier B run on a clean CI checkout |
+| Portability | Fixtures resolve with no network, no submodules, and no container runtime, so Tier A and Tier B run on a clean CI checkout. Any Tier A or Tier B test of `collectRunRecord` reads synthetic fixture JSONL committed to the repository, never a real `~/.claude/projects/` session directory, which does not exist on a CI runner |
+| Vocabulary | The eval CI tiers (A, B, C) are distinct from the repository's three existing tier vocabularies — `gates.yaml` (fast, integration, e2e), `diagnostics.yaml` (1, 2, 3), and `graduated-rigor-tiers.spec.md` (full, quick). Specs authored under this charter must name which vocabulary they mean |
 | Dependencies | Zero new external dependencies, per constitution principle 1. Rubrics stay flat-YAML so the repository's minimal parsers read them correctly |
