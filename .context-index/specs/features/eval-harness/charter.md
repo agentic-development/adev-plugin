@@ -1,8 +1,8 @@
 ---
-status: approved
+status: evolving
 kind: feature
-revision: 2
-updated: 2026-08-19
+revision: 3
+updated: 2026-08-20
 ---
 
 # Feature Charter: eval-harness
@@ -28,6 +28,7 @@ eval-harness owns one rubric contract, one scoring engine consumed by both, the 
 - A rubric per skill for all 30 skills, conforming to the unified schema
 - Migration of the three existing skill-compression rubrics from 1-5 scales to binary verdicts
 - Tiered CI integration for the eval suite
+- Disclosure fidelity — an observed read trace as a deterministic `required_elements` source, so a rubric can assert which companion files a skill actually opened, plus pointer reachability and relocation fidelity as static checks
 
 ### Out of Scope
 
@@ -51,6 +52,8 @@ eval-harness owns one rubric contract, one scoring engine consumed by both, the 
 | `tests/evals/skill-compression` | internal module | Consumer of the shared schema and scoring engine |
 | `tests/evals/token-optimization` | internal module | Supplies the session-JSONL collector this charter generalises |
 | `eval-projects` | internal module | Owns the domain submodule fixtures this charter must not duplicate |
+| `hooks/session-capture.sh` | internal module | Registered on `PostToolUse`; appends `{tool, files, timestamp}` to `.context-index/.session-tracking.jsonl`, including calls made by dispatched subagents. The ReadTrace source of record |
+| `skill-body-progressive-disclosure` | internal module | Created the 210 companion files whose conditional loading disclosure fidelity exists to verify. Its `tests/evals/skill-disclosure/` and `lib/eval/read-trace.mjs` move under this charter's directories on adoption |
 
 ## Domain Model
 
@@ -66,6 +69,7 @@ eval-harness owns one rubric contract, one scoring engine consumed by both, the 
 | RunRecord | The measured cost of one scored run | `duration_ms`, `input`, `output`, `cache_creation`, `cache_read`, `cost`, `total_turns`, `tool_turns`, `subagent_rollup`, `model_id`, `plugin_version`, `pricing_table` |
 | Budget | Cost and time thresholds evaluated over a sample set | `budget_max_turns`, `budget_max_duration_ms`, `budget_max_cost_usd`, `sample_count` |
 | Baseline | A stored RunRecord and score for regression comparison | `rubric_id`, `run_record`, `score`, `recorded_at`, `model_id`, `plugin_version` |
+| ReadTrace | The set of files an agent actually opened during one scored run, observed rather than self-reported | `session_id`, `entries` (tool, absolute path, timestamp), `captured_at` |
 
 ### Relationships
 
@@ -84,6 +88,8 @@ eval-harness owns one rubric contract, one scoring engine consumed by both, the 
 - A numeric aggregate is never reported without its verdict table
 - `buildJudgeContext(criterion)` emits exactly one criterion, and its output contains no other criterion's identifier, no other criterion's verdict, and no running total — so single-criterion isolation is a property of the context builder rather than of prose the judge is trusted to follow
 - A budget verdict requires at least three samples and is computed on the median, never on a single run or a mean
+- A score comparison reports its own spread and returns `indistinguishable` — never a regression — when the delta between two scores sits inside that spread. Judged verdicts come from a model and are the least stable input in the loop: the same audit pass, given byte-identical instructions and identical inputs, has been measured producing three findings on one run and one on the next. Cost is a comparatively stable function of the work, so applying a sampling rule to budgets while scoring a single judged run inverts the protection
+- A ReadTrace is observed from the tool-call record, never self-reported by the agent under test. An agent asked what it read reports what it was asked about
 - Every RunRecord names the model id and plugin version that produced it
 - A baseline comparison across differing model ids or pricing tables reports `incomparable`, never a regression
 - Every fixture assertion has a negative twin: a planted violation that must be caught and a known-clean artifact that must not be flagged
@@ -93,15 +99,16 @@ eval-harness owns one rubric contract, one scoring engine consumed by both, the 
 
 | Capability | Description | Priority | Milestone | Status |
 |-----------|-------------|----------|-------|--------|
-| Unified rubric schema | One rubric contract serving both consumers: key set, flat-YAML rule, verdict enum, point budgets, budget keys | must-have | v1 | implemented |
-| Rubric loader and validator | Parse and validate a rubric, failing loudly on nested maps, missing keys, and invalid verdicts | must-have | v1 | implemented |
+| Unified rubric schema | One rubric contract serving both consumers: key set, flat-YAML rule, verdict enum, point budgets, budget keys | must-have | v1 | validated |
+| Rubric loader and validator | Parse and validate a rubric, failing loudly on nested maps, missing keys, and invalid verdicts | must-have | v1 | validated |
 | Scoring engine and `adev eval score` | Verdict tallying, denominator exclusion, insufficient-evidence guard, attainable-maximum reporting, exposed as a CLI verb | must-have | v1 | — |
 | Hermetic fixture project and planted ground-truth catalog | An in-repo fixture tree carrying the scaffolding skills read, with a catalog of planted violations and known-clean artifacts | must-have | v1 | — |
 | Run-cost record | Generalise the session-JSONL collector so every scored run emits duration, token split, cost, turns, and subagent rollup | must-have | v1 | — |
 | Budget thresholds as failing verdicts | Flat budget keys resolving to verdicts, with median-plus-spread over a sample set so the gate does not flap | must-have | v1 | — |
 | Rubric set, change-imminent tier | Rubrics for the 11 skills queued for demotion, merge, or deletion: codehealth, repomap, document, deploy, sync, learn, issues, eval, assess, using-adev, prototype | must-have | v1 | — |
 | Rubric set, core lifecycle tier | Rubrics for the 12 highest-blast-radius skills: work, brainstorm, specify, review-specs, plan, route, implement, write-test, validate, debug, build, hygiene | must-have | v1 | — |
-| CI integration, tiered eval gates | Tier A schema and coverage checks on every PR; Tier B deterministic scoring on skill changes; Tier C judged and cost runs nightly and pre-release | must-have | v1 | — |
+| CI integration, tiered eval gates | Tier A schema, coverage, pointer-reachability and relocation-fidelity checks on every PR; Tier B deterministic scoring and read-trace on skill changes; Tier C judged and cost runs nightly and pre-release | must-have | v1 | — |
+| Disclosure fidelity | An observed read trace as a deterministic element source, so a rubric can assert that a skill opened the companion files its conditional-loading pointers name — distinguishing a followed pointer from a plausible guess that happens to score well | must-have | v1 | — |
 | Baseline provenance and percent-regression | Store per-rubric baselines with model and version provenance; compare by percent regression rather than absolute ceiling | should-have | v1 | — |
 | Rubric set, remaining tier | Rubrics for the 7 remaining skills: init, reconcile, recover, research, retro, sample, status | should-have | v2 | — |
 
@@ -113,7 +120,8 @@ Capability ordering is deliberate. The fixture project precedes every rubric tie
 |-----------|--------|-------------|------------|
 | Handoff-contract assertions | A different contract — downstream parser conformance rather than rubric scoring | v2 | Hermetic fixture project |
 | Reuse the collector for `lib/cost-summary.mjs` | The product-side cost surface is owned by the Token Cost and Measurement epic | v2 | Run-cost record |
-| Judge-panel disagreement reporting | Requires multiple judges per criterion, which the one-judge-per-criterion invariant forbids by design | v2 | Scoring engine and `adev eval score` |
+| Judge-panel disagreement reporting | Requires *different* judges scoring one criterion, which the one-judge-per-criterion invariant forbids by design. This deferral does NOT rule out repeated sampling: dispatching the same criterion N times is not a panel, because `buildJudgeContext`'s isolation property is per-dispatch and each of the N dispatches satisfies it independently | v2 | Scoring engine and `adev eval score` |
+| Judged-verdict sampling (N dispatches, median or majority) | The spread-reporting invariant above is the cheaper protection and lands first; sampling multiplies the cost of the already-expensive Tier C. Revisit if reported spread proves too wide to be actionable | v2 | Baseline provenance and percent-regression |
 
 ## Interface Contracts
 
@@ -126,6 +134,7 @@ Capability ordering is deliberate. The fixture project precedes every rubric tie
 | `scoreRubric(rubric, verdicts)` | function | Aggregate verdicts into a score with attainable maximum |
 | `collectRunRecord(sessionPath)` | function | Build a RunRecord from a session JSONL file, including subagent rollup. Takes a path so tests can pass synthetic fixture JSONL |
 | `buildJudgeContext(criterion)` | function | Assemble the single-criterion context handed to one judge dispatch, carrying no other criterion and no running total |
+| `snapshotReadTrace()` / `readTraceSince(marker)` / `compareReadTrace(observed, expected)` | function | Capture and diff the observed read set for one scored run, so a `required_elements` entry can name it as a `source` |
 | Unified rubric schema | file contract | The YAML shape every rubric in the repository conforms to |
 | `npm run test:evals` | command | Existing opt-in eval bucket, extended to cover the new harness |
 | Rubric conformance and coverage test | test | Default-bucket test asserting every skill has a conforming rubric |
@@ -148,5 +157,6 @@ Capability ordering is deliberate. The fixture project precedes every rubric tie
 | Security | Rubric and fixture paths are validated against traversal, following the `UNSAFE_TEMPLATE_PATH` precedent. Session JSONL is untrusted input: parsed defensively, never evaluated |
 | Observability | Every score reports its attainable maximum alongside the total. Every budget verdict reports its sample count and spread. Any capped or skipped coverage is logged rather than silently omitted |
 | Portability | Fixtures resolve with no network, no submodules, and no container runtime, so Tier A and Tier B run on a clean CI checkout. Any Tier A or Tier B test of `collectRunRecord` reads synthetic fixture JSONL committed to the repository, never a real `~/.claude/projects/` session directory, which does not exist on a CI runner |
+| Naming | This charter's code lives in `lib/evals/` and its fixtures and evals in `tests/evals/skill-regression/`. Sibling directories differing by one character (`lib/eval/` beside `lib/evals/`) are prohibited: adopted work is moved into the established directories rather than landing beside them. `lib/evals/` is the established name, having shipped with a validated spec behind it |
 | Vocabulary | The eval CI tiers (A, B, C) are distinct from the repository's three existing tier vocabularies — `gates.yaml` (fast, integration, e2e), `diagnostics.yaml` (1, 2, 3), and `graduated-rigor-tiers.spec.md` (full, quick). Specs authored under this charter must name which vocabulary they mean |
 | Dependencies | Zero new external dependencies, per constitution principle 1. Rubrics stay flat-YAML so the repository's minimal parsers read them correctly |
