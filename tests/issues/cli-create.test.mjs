@@ -14,6 +14,8 @@
  * - --json emits the full record
  * - missing title, extra positionals, and out-of-range --priority exit 1
  * - a create issued from a linked worktree writes to the MAIN repo's board
+ * - --epic records the parent epic on the created issue
+ * - --milestone is refused here and names `adev issues epic` instead
  */
 
 import { describe, it, before, after } from "node:test";
@@ -136,5 +138,37 @@ describe("adev issues create", () => {
     assert.equal(found.type, "epic");
 
     execFileSync("git", ["worktree", "remove", "--force", wt], { cwd: root });
+  });
+
+  it("--epic records the parent epic on the created issue", () => {
+    const r = runCli(root, ["Child of an epic", "--epic", "epic-7"]);
+    assert.equal(r.status, 0, r.stderr);
+    assert.match(r.stdout, /^Created task issue-\w+: Child of an epic$/m);
+
+    const found = readBoard(root).issues.find((i) => i.title === "Child of an epic");
+    assert.ok(found, "issue landed on the board");
+    assert.equal(found.epicId, "epic-7");
+  });
+
+  it("refuses --milestone and names the verb that owns it", () => {
+    const r = runCli(root, ["Wants a milestone", "--milestone", "v9"]);
+    assert.equal(r.status, 1);
+    assert.match(r.stderr, /milestone is an epic-level field/);
+    assert.match(r.stderr, /adev issues epic/);
+
+    // Refused means refused: nothing may reach the board.
+    assert.equal(
+      readBoard(root).issues.find((i) => i.title === "Wants a milestone"),
+      undefined
+    );
+  });
+
+  it("leaves epicId unset when --epic is omitted", () => {
+    const r = runCli(root, ["No epic of its own", "--json"]);
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(JSON.parse(r.stdout).epicId, undefined);
+
+    const found = readBoard(root).issues.find((i) => i.title === "No epic of its own");
+    assert.equal(found.epicId, undefined);
   });
 });

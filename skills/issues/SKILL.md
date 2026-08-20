@@ -13,7 +13,7 @@ Manage project issues and epics using the configured task backend.
 
 - No arguments: display the full issue board
 - `create "<title>" [--type bug|feature|task] [--epic <epic-id>] [--priority 0-4]`: create an issue
-- `epic "<title>" [--milestone <name>]`: create a new epic, optionally assigning it to a milestone
+- `epic "<title>" [--milestone <name>]`: create a new epic in the epic store, optionally assigning it to a milestone
 - `update <id> --status <open|in_progress|closed|deferred> [--milestone <name>]`: update issue status and/or milestone (for epics). `--status` and `--milestone` can be used together or independently — both fields are updated in a single call
 - `close <id> --reason "<text>"`: close an issue with a reason
 - `list [--status <status>] [--epic <epic-id>] [--milestone <name>]`: filtered issue list. `--milestone` filters to epics and issues belonging to epics with that milestone
@@ -64,17 +64,39 @@ Standalone issues (no epic) appear under "Unassigned." When any epic has a `mile
 
 ### Create Issue
 
-Call `create()` from the active adapter with provided fields. Defaults: type `task`, priority `2`, status `open`.
+Create one board item in one step:
 
-If `--epic` is provided, set the `epicId` field. Validate the epic exists by checking if the ID starts with `epic-`.
+```bash
+adev issues create "<title>" [--type <bug|feature|task>] [--priority 0-4] [--epic <epic-id>]
+```
 
-Report: "Created `<id>`: <title> (status: open, priority: <N>)"
+The command owns the defaults — type `task`, priority `2`, status `open` — so nothing here restates them per call. `--epic <id>` files the new issue under an existing epic; no id prefix is inspected anywhere, which keeps this correct on backends whose ids carry no prefix. Pass `--json` when you need the full created record rather than the summary line.
+
+It prints the minted id in this shape, with one indented line per ref that was set:
+
+> Created `<type>` `<id>`: <title>
+> &nbsp;&nbsp;epic: `<epic-id>`
+
+Display the command output to the user verbatim.
 
 ### Create Epic
 
-Call `createEpic({ title, milestone })` with the title and optional milestone. When `--milestone <name>` is provided, pass the `milestone` field to set it on the epic. When `--milestone` is omitted, the epic is created without a milestone (backward compatible).
+Create one epic in one step:
 
-Report: "Created `<id>`: <title>" — or when a milestone is set: "Created `<id>`: <title> (milestone: <name>)"
+```bash
+adev issues epic "<title>" [--milestone <name>]
+```
+
+This is a different verb from `adev issues create`, not a synonym: an epic belongs in the epic store, which is the store `adev issues board`, `adev issues list --milestone` and `adev issues update --milestone` all read. `adev issues create --type epic` writes to the issue store instead, where none of them can see it — and it REFUSES `--milestone` (exit 1) rather than accepting a value it would drop. Relay that refusal and re-run it here.
+
+Omitting `--milestone` creates an epic that carries none; one can be set later with `adev issues update <id> --milestone <name>`.
+
+It prints:
+
+> Created epic `<id>`: <title>
+> &nbsp;&nbsp;milestone: <name>
+
+with the second line present only when a milestone was set. Display the command output to the user verbatim.
 
 ### Update
 

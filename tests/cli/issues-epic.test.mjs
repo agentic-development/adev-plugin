@@ -1,0 +1,154 @@
+/**
+ * Tests for `adev issues epic`.
+ *
+ * Why this verb is separate from `adev issues create --type epic`: `create()`
+ * lands every item in `board.issues`, and `validateIssue`'s fixed whitelist
+ * drops `milestone` outright. `createEpic()` is the ONLY path that reaches
+ * `board.epics`, which is in turn the only store `listEpics()` reads — so
+ * `adev issues board`, `adev issues list --milestone` and `adev issues update
+ * --milestone` cannot see an "epic" minted through `create({type:"epic"})`.
+ * These tests pin that boundary from the outside.
+ *
+ * Covers:
+ * - the epic lands in `board.epics`, never `board.issues`
+ * - --milestone is persisted and is visible to `adev issues list --milestone`
+ * - omitting --milestone creates an epic that carries none
+ * - --json emits the full epic record
+ * - a missing title is exit 1 with the usage line
+ * - --help prints THIS verb's usage, not the parent subcommand list
+ */
+
+import { describe, it, before, after } from "node:test";
+import assert from "node:assert/strict";
+import { execFileSync, spawnSync } from "node:child_process";
+import { mkdtempSync, mkdirSync, rmSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
+import { fileURLToPath } from "node:url";
+
+const CLI = fileURLToPath(new URL("../../cli/index.mjs", import.meta.url));
+
+function runIssues(cwd, args) {
+  return spawnSync(process.execPath, [CLI, "issues", ...args], {
+    cwd,
+    encoding: "utf8",
+    env: { ...process.env, ADEV_SILENCE_SHADOW_BOARD: "1" },
+  });
+}
+
+function runCli(cwd, args) {
+  return runIssues(cwd, ["epic", ...args]);
+}
+
+/** A git repo with a json-backed board — the default backend, no `br` needed. */
+function makeProject() {
+  const root = mkdtempSync(join(tmpdir(), "adev-issues-epic-"));
+  mkdirSync(join(root, ".context-index"), { recursive: true });
+  writeFileSync(join(root, ".context-index", "manifest.yaml"), "tasks:\n  backend: json\n");
+  execFileSync("git", ["init", "-q", "."], { cwd: root });
+  execFileSync("git", ["config", "user.email", "t@example.com"], { cwd: root });
+  execFileSync("git", ["config", "user.name", "t"], { cwd: root });
+  execFileSync("git", ["commit", "-q", "--allow-empty", "-m", "init"], { cwd: root });
+  return root;
+}
+
+function readBoard(root) {
+  return JSON.parse(readFileSync(join(root, ".context-index", "tasks", "tasks.json"), "utf8"));
+}
+
+describe("adev issues epic", () => {
+  let root;
+
+  before(() => {
+    root = makeProject();
+  });
+
+  after(() => {
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  it("lands the epic in board.epics, never board.issues", () => {
+    const r = runCli(root, ["Epic store surface"]);
+    assert.equal(r.status, 0, r.stderr);
+    assert.match(r.stdout, /^Created epic epic-\w+: Epic store surface$/m);
+
+    const board = readBoard(root);
+    const found = board.epics.find((e) => e.title === "Epic store surface");
+    assert.ok(found, "epic landed in board.epics");
+    assert.equal(found.status, "open");
+    assert.equal(
+      board.issues.find((i) => i.title === "Epic store surface"),
+      undefined,
+      "an epic must not be duplicated into board.issues"
+    );
+  });
+
+  it("persists --milestone on the epic record", () => {
+    const r = runCli(root, ["Milestone carrier", "--milestone", "v9"]);
+    assert.equal(r.status, 0, r.stderr);
+    assert.match(r.stdout, /^Created epic epic-\w+: Milestone carrier$/m);
+    assert.match(r.stdout, /^ {2}milestone: v9$/m);
+
+    const found = readBoard(root).epics.find((e) => e.title === "Milestone carrier");
+    assert.equal(found.milestone, "v9");
+  });
+
+  it("exposes the milestone to `adev issues list --milestone`", () => {
+    const created = runCli(root, ["Listable milestone epic", "--milestone", "v10", "--json"]);
+    assert.equal(created.status, 0, created.stderr);
+    const epicId = JSON.parse(created.stdout).id;
+
+    const child = runIssues(root, ["create", "Child under v10", "--epic", epicId]);
+    assert.equal(child.status, 0, child.stderr);
+
+    const listed = runIssues(root, ["list", "--milestone", "v10"]);
+    assert.equal(listed.status, 0, listed.stderr);
+    assert.match(listed.stdout, /Child under v10/);
+
+    // A milestone no epic carries is reported as such, which is the proof the
+    // filter reads the epic store this verb wrote to.
+    const empty = runIssues(root, ["list", "--milestone", "v10-nonexistent"]);
+    assert.equal(empty.status, 0, empty.stderr);
+    assert.match(empty.stdout, /No epics found for milestone 'v10-nonexistent'\./);
+  });
+
+  it("creates an epic with no milestone when the flag is omitted", () => {
+    const r = runCli(root, ["No milestone here", "--json"]);
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(JSON.parse(r.stdout).milestone, undefined);
+    assert.doesNotMatch(r.stdout, /milestone": "/);
+
+    const found = readBoard(root).epics.find((e) => e.title === "No milestone here");
+    assert.equal(found.milestone, undefined);
+  });
+
+  it("--json emits the full epic record", () => {
+    const r = runCli(root, ["Json shaped epic", "--milestone", "v11", "--json"]);
+    assert.equal(r.status, 0, r.stderr);
+    const parsed = JSON.parse(r.stdout);
+    assert.equal(parsed.title, "Json shaped epic");
+    assert.equal(parsed.status, "open");
+    assert.equal(parsed.milestone, "v11");
+    assert.match(parsed.id, /^epic-/);
+  });
+
+  it("rejects a missing title with the usage line", () => {
+    const r = runCli(root, []);
+    assert.equal(r.status, 1);
+    assert.match(r.stderr, /a title is required/);
+    assert.match(r.stderr, /^usage: adev issues epic/m);
+  });
+
+  it("rejects extra positionals rather than joining them", () => {
+    const r = runCli(root, ["two", "words"]);
+    assert.equal(r.status, 1);
+    assert.match(r.stderr, /expected exactly one title/);
+  });
+
+  it("--help prints this verb's usage, not the parent subcommand list", () => {
+    const r = runCli(root, ["--help"]);
+    assert.equal(r.status, 0, r.stderr);
+    assert.match(r.stdout, /^usage: adev issues epic/m);
+    assert.doesNotMatch(r.stdout, /^Subcommands:$/m);
+  });
+});
