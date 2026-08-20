@@ -92,9 +92,15 @@ Call `close(id, reason)` on the adapter. If blocked by unclosed dependencies, re
 
 ### List (filtered)
 
-Call `list(filters)` with provided filters (`--status`, `--epic`, `--milestone`). When `--milestone <name>` is provided, filter to only epics with that milestone and their child issues. If no epics match the milestone, show an empty table with the message: "No epics found for milestone '<name>'."
+Fetch and render the filtered list in one step:
 
-Display as a table sorted by priority.
+```bash
+adev issues list [--status <s>] [--epic <id>] [--milestone <name>]
+```
+
+This prints a table of matching issues on stdout, sorted by priority ascending (0 first). `--milestone <name>` restricts the result to epics carrying that milestone and their child issues; when no epic carries it, the command prints `No epics found for milestone '<name>'.` instead of an empty table.
+
+Display that output to the user verbatim.
 
 ### Add Dependency
 
@@ -102,7 +108,13 @@ Call `addDependency(issueId, dependsOnId)`. If a circular dependency would be cr
 
 ### Ready
 
-Call `list({ status: "open" })`, then filter out issues whose dependencies include any unclosed issues. Display as "Actionable issues — open and unblocked."
+```bash
+adev issues ready
+```
+
+This prints the issues that can be picked up right now, under the heading `Actionable issues — open and unblocked.`, sorted by priority ascending.
+
+Display that output to the user verbatim.
 
 ### Milestone Create
 
