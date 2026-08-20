@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync, rmSync, cpSync } from "fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync, rmSync, cpSync, realpathSync } from "fs";
 import { join, dirname, resolve, sep } from "path";
 import { fileURLToPath } from "url";
 import { readJson } from "../../lib/provider/json-io.mjs";
@@ -60,22 +60,59 @@ function getPluginCacheDir() {
 const SAFE_SKILL_DIRNAME = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 
 /**
- * Refuse a destination that does not resolve inside the skills root.
+ * Resolve the directory a sanitized skill name may be published to, or throw.
  *
- * Compares resolved paths and requires a trailing separator on the base, so
- * `~/.cursor/skills-evil` is not accepted as being inside `~/.cursor/skills`.
+ * EXPORTED SO IT CAN BE TESTED. The guard used to live inline in
+ * `publishSkillsFromCache`, which is module-private and derives its own target
+ * from `getCursorHome()` — so the only way to exercise it was a full install
+ * against a poisoned plugin root, which a test cannot arrange. The regression
+ * test written for it therefore fell back to grepping this file for identifier
+ * names, which passes against a guard that is declared but never called, called
+ * after the write, or logically inverted. Pulling the decision into a pure
+ * function makes the real behaviour reachable.
  *
- * @param {string} root
- * @param {string} target
+ * Two layers:
+ *
+ *  1. The name must be a single path segment. The frontmatter grammar is
+ *     `/^name:\s*(\S+)\s*$/`, and `\S+` admits `/` and `..` — fine for a YAML
+ *     scalar, wrong for something concatenated into a filesystem path.
+ *  2. The resolved destination must sit inside the root, compared through
+ *     `realpathSync`. A lexical `resolve()` + `startsWith` check is NOT enough:
+ *     if the root is itself a symlink — dotfile managers commonly do this, and
+ *     it can be planted before install — `resolve()` never dereferences it, so
+ *     the check reports containment while `ensureDir`/`cpSync`/`writeFileSync`,
+ *     which all follow symlinks, land at the link's real target. This is the
+ *     `/var` -> `/private/var` class of gap that
+ *     `lib/extensions/exec-payload.mjs::assertContained` documents in its own
+ *     header, and the reason that primitive realpaths both sides.
+ *
+ * @param {string} skillsRoot directory published skills live under
+ * @param {string} name sanitized skill name from SKILL.md frontmatter
+ * @returns {string} absolute destination directory
+ * @throws {Error} SKILL_NAME_UNSAFE | SKILL_PATH_ESCAPE
  */
-function assertWithinSkillsRoot(root, target) {
-  const base = resolve(root);
-  const dest = resolve(target);
-  if (dest !== base && !dest.startsWith(base + sep)) {
+export function resolvePublishTarget(skillsRoot, name) {
+  if (!SAFE_SKILL_DIRNAME.test(name)) {
     throw new Error(
-      `SKILL_PATH_ESCAPE: destination ${dest} is outside the skills root ${base}`,
+      `SKILL_NAME_UNSAFE: ${JSON.stringify(name)} must match ${SAFE_SKILL_DIRNAME}`,
     );
   }
+
+  // The root exists by construction (ensureDir runs before publishing), so it can
+  // be realpath'd directly. The destination itself may not exist yet, which is why
+  // the root is the side that gets dereferenced.
+  let base;
+  try {
+    base = realpathSync(resolve(skillsRoot));
+  } catch (err) {
+    throw new Error(`SKILL_PATH_ESCAPE: cannot resolve skills root ${skillsRoot}: ${err.message}`);
+  }
+
+  const dest = resolve(base, name);
+  if (dest !== base && !dest.startsWith(base + sep)) {
+    throw new Error(`SKILL_PATH_ESCAPE: ${dest} is outside the skills root ${base}`);
+  }
+  return dest;
 }
 
 export function sanitizeSkillName(content) {
@@ -150,20 +187,12 @@ async function publishSkillsFromCache(cacheDir) {
       // Rejected rather than re-sanitized: a name that needs path-stripping is
       // malformed, and silently rewriting it would publish a skill under a name
       // that is not the one it declares.
-      if (!SAFE_SKILL_DIRNAME.test(sanitizedName)) {
-        failed.push({
-          skill: entry.name,
-          error: `unsafe skill name ${JSON.stringify(sanitizedName)}: must match ${SAFE_SKILL_DIRNAME}`,
-        });
-        continue;
-      }
-
-      const targetDir = join(targetSkillsDir, sanitizedName);
-      // Defence in depth, matching providers/copilot/adapter.mjs: even with the
-      // allowlist above, confirm the destination really lands inside the root
-      // before any write. Cheap, and the only check that survives a future edit
-      // loosening the regex.
-      assertWithinSkillsRoot(targetSkillsDir, targetDir);
+      // MUST precede every write below. resolvePublishTarget applies both the
+      // single-path-segment allowlist and the realpath containment check, and
+      // throws rather than returning a sanitized fallback — a name that needs
+      // path-stripping is malformed, and rewriting it would publish a skill
+      // under a name it does not declare.
+      const targetDir = resolvePublishTarget(targetSkillsDir, sanitizedName);
       ensureDir(targetDir);
 
       // Copy all sibling files verbatim first, then overwrite SKILL.md

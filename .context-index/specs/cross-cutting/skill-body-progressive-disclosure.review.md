@@ -3,11 +3,17 @@ spec: .context-index/specs/cross-cutting/skill-body-progressive-disclosure.spec.
 date: 2026-08-19
 verdict: BLOCK
 rigor-tier: full
-last-reviewed-revision: 1
-file-sha: 9e8367a985dfe8224ca7f3b73ddd2b820681892e8a718198b2c909ca8bee63cd
+last-reviewed-revision: 4
+file-sha: 59642c6cb013764aafcddfeb8ff45c1b298ce7daa90ee4c9aa4f1ef746ae1ff2
 ---
 
 # Architecture Review: skill-body-progressive-disclosure
+
+> **Rounds 1-4.** Each round appends; earlier rounds are retained verbatim so a
+> finding id cited elsewhere resolves to the round that raised it. Finding ids are
+> round-scoped — `BND-4` in round 2 and round 3 are different findings.
+
+## Round 1 — revision 1
 
 > **Date:** 2026-08-19
 > **Spec:** `.context-index/specs/cross-cutting/skill-body-progressive-disclosure.spec.md`
@@ -155,3 +161,100 @@ a broken tree. Fix order:
 
 Then re-review. Because all five blockers carry `LEGACY_REVIEWER_OUTPUT`, there
 is no `.blockers.md` sidecar and no auto-revise dispatch — this loop is manual.
+
+---
+
+## Round 2 — revision 2
+
+**Verdict:** BLOCK · 23 findings (2 blockers, 15 warnings, 6 suggestions) · rigor tier full
+
+| Reviewer | Verdict |
+|----------|---------|
+| consistency-analyzer | FAIL |
+| referent-integrity | FAIL |
+| wiring-reviewer | PASS_WITH_NOTES |
+| boundary-reviewer | PASS_WITH_NOTES |
+| termination-reviewer | PASS_WITH_NOTES |
+
+Both blockers were revision 1's fixes landing incompletely, not new defects:
+
+- **CON-1 / RI-1** (blocker) — the Target State pointer template still showed the bare
+  `skills/<name>/references/...` form Invariant 3 forbids. The block a future author
+  copies taught the failure the invariant exists to prevent.
+- **CON-2** (blocker), with **WIR-1** and **BND-3** reaching it independently — four
+  sections still asserted companion sync was manual and UNGUARDED, including
+  Invariant 6, which instructed maintainers to hand-mirror: the exact procedure that
+  produced the round-1 blocker.
+
+Guard holes proven by probe: `resolveSkillPointer` accepted bare pointers via a no-op
+replace; `provider-companion-parity` checked only canonical ⊆ mirror, so a stale mirror
+copy masked a deleted canonical target; the Prerequisites guard pinned 3 of 21 skills.
+
+---
+
+## Round 3 — revision 3
+
+**Verdict:** BLOCK · 1 blocker, 5 warnings · first round on correct per-reviewer models
+
+| Reviewer | Model | Verdict |
+|----------|-------|---------|
+| consistency-analyzer | claude-haiku-4-5 | PASS (0 findings) |
+| referent-integrity | claude-opus-5 | PASS_WITH_NOTES |
+| wiring-reviewer | claude-sonnet-5 | PASS_WITH_NOTES |
+| boundary-reviewer | claude-sonnet-5 | FAIL |
+| termination-reviewer | claude-haiku-4-5 | PASS_WITH_NOTES |
+
+- **BND-4** (blocker) — `providers/cursor/adapter.mjs` had no path containment; `\S+` in
+  the frontmatter name grammar admits `..`. Escalated from a round-2 suggestion because
+  it was neither fixed nor recorded as a carried gap, while this refactor's recursive
+  `references/` copy widened what flows through the unvalidated destination.
+- **WIR-6** — a fifth stale UNGUARDED row. **RI-1** — the test total stale again, this
+  time by the tier commit landing after the spec commit.
+
+---
+
+## Round 4 — revision 4
+
+**Verdict:** BLOCK · 1 blocker, 5 warnings, 1 suggestion
+
+| Reviewer | Model | Verdict |
+|----------|-------|---------|
+| consistency-analyzer | claude-haiku-4-5 | PASS_WITH_NOTES |
+| referent-integrity | claude-opus-5 | PASS_WITH_NOTES |
+| wiring-reviewer | claude-sonnet-5 | PASS_WITH_NOTES |
+| boundary-reviewer | claude-sonnet-5 | FAIL |
+| termination-reviewer | claude-haiku-4-5 | PASS_WITH_NOTES |
+
+- **BND-1 / WIR-9** (blocker, found independently by two reviewers) — the regression
+  test written for the round-3 containment fix never exercised it.
+  `publishSkillsFromCache` is not exported and its real signature differs from the one
+  the test assumed, so the test always fell into a fallback that grepped the adapter's
+  source for three identifiers — matching anywhere, including a comment. It would have
+  passed against a guard declared but never called, called after the write, or inverted.
+- **BND-2** — the new containment check compared paths lexically, omitting the
+  `realpathSync` step of `lib/extensions/exec-payload.mjs::assertContained`, the
+  primitive it cited as its model. A symlinked skills root defeats a lexical check.
+- **WIR-8** — no Error Cases row for the new guard, whose signal shape (`failed[]`
+  entry) differs from every existing row. **CON-1** — no acceptance criterion.
+- **RI-1/2/3** — test-file added-count stale by the last commit; a cited issue id that
+  did not resolve in this tree; reviewer finding ids colliding across rounds.
+
+**Termination lane closed.** TERM-2 resolved outright; TERM-1 and TERM-3 ruled
+tolerable as documented, with reasoning recorded rather than restated a third time.
+
+**What round 4 confirmed holds.** Referent-integrity re-derived every figure
+independently, including running the suite against a clean `git archive main` copy to
+reproduce the 7152 baseline: all byte totals, per-skill pairs, headroom, pointer counts
+(185/181/0 broken under the guard's own regex), 211 companions per tree, 76 renames,
+22-frozen-of-which-16-named, the 21 Prerequisites skills, the 3-hop chain, and all five
+`Landed:` SHAs as ancestors of HEAD. First round every figure reproduced.
+
+### Resolution
+
+All round-4 findings are addressed in revision 5. The containment guard was extracted
+into the exported pure function `resolvePublishTarget` so its behaviour is reachable,
+and falsified against three reintroduced defects — allowlist disabled, containment made
+lexical, unresolvable root allowed — each failing the suite, with every probe asserted
+to have actually applied. That check caught a fourth vacuous guard: the first repair
+still passed with the allowlist disabled, because the test never created the skills root
+and every input threw `SKILL_PATH_ESCAPE` for an unrelated reason.

@@ -6,97 +6,151 @@
 // WHY THIS EXISTS. providers/cursor/adapter.mjs parses the name with
 // `/^name:\s*(\S+)\s*$/`. `\S+` is a reasonable YAML scalar grammar and a wrong
 // filesystem-path grammar: it admits `/` and `..`, so `name: adev:../../x`
-// produced `sanitizedName = "adev-../../x"`, which flowed unchecked into
-// `join(targetSkillsDir, sanitizedName)` and then `cpSync` + `writeFileSync`.
-// providers/copilot/adapter.mjs realpath-contains every destination; cursor had
-// no equivalent check anywhere in the file.
+// produced a sanitizedName that flowed unchecked into join(targetSkillsDir, ...)
+// and then cpSync + writeFileSync. Found by the boundary reviewer (BND-4).
 //
-// Pre-existing, but the progressive-disclosure refactor widened the blast radius:
-// the recursive copy now carries a whole references/ tree to that destination
-// rather than a handful of flat files.
+// WHY IT LOOKS LIKE THIS. The first version of this file tried to drive
+// publishSkillsFromCache directly. That function is module-private, is async,
+// and derives its own target from getCursorHome() — and install() returns early
+// when the cache exists, so publish only runs against a cache populated from the
+// real plugin root, which a test cannot poison. The test therefore always fell
+// into a fallback branch that grepped this adapter's SOURCE for the identifiers
+// `SAFE_SKILL_DIRNAME` / `assertWithinSkillsRoot` / `SKILL_PATH_ESCAPE`. Those
+// match anywhere in the file, including a comment, so it passed against a guard
+// that was declared but never invoked, invoked after the write, or inverted.
+// Two reviewers caught it independently (WIR-9, BND-1) and both were right: it
+// asserted on source text, not behaviour.
 //
-// Two layers are asserted, because either alone is brittle: an allowlist on the
-// name, and a containment check on the resolved destination.
-//
-// Found by the boundary reviewer (BND-4) across three review rounds.
+// The guard decision now lives in the exported pure function
+// `resolvePublishTarget`, so the real logic is reachable. What remains
+// source-scoped is only the ORDERING question — that the call precedes the
+// writes — which is genuinely a property of the call site, not of a function.
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync, readdirSync } from "node:fs";
-import { join } from "node:path";
+import { mkdtempSync, mkdirSync, rmSync, symlinkSync, realpathSync, readFileSync } from "node:fs";
+import { join, sep } from "node:path";
 import { tmpdir } from "node:os";
-import { pathToFileURL } from "node:url";
 import { PLUGIN_ROOT } from "../helpers.mjs";
+import { resolvePublishTarget } from "../../providers/cursor/adapter.mjs";
 
-const ADAPTER = pathToFileURL(join(PLUGIN_ROOT, "providers", "cursor", "adapter.mjs")).href;
-
-/** A throwaway plugin tree holding one skill with the given frontmatter name. */
-function fixture(nameValue) {
-  const root = mkdtempSync(join(tmpdir(), "adev-cursor-containment-"));
-  const skillDir = join(root, "src", "skills", "probe");
-  mkdirSync(skillDir, { recursive: true });
-  writeFileSync(
-    join(skillDir, "SKILL.md"),
-    `---\nname: ${nameValue}\ndescription: "probe"\n---\n\n# Probe\n`,
-  );
-  mkdirSync(join(skillDir, "references"), { recursive: true });
-  writeFileSync(join(skillDir, "references", "companion.md"), "# companion\n");
-  return { root, sourceSkills: join(root, "src", "skills"), target: join(root, "out", "skills") };
-}
-
-test("a traversing skill name is refused, and nothing is written outside the root", async () => {
-  const mod = await import(ADAPTER);
-  const publish = mod.publishSkillsFromCache ?? mod.default?.publishSkillsFromCache;
-  if (typeof publish !== "function") {
-    // The adapter does not expose the publish step directly; assert the guards
-    // exist in source rather than skipping, so this test cannot silently pass.
-    const src = (await import("node:fs")).readFileSync(
-      join(PLUGIN_ROOT, "providers", "cursor", "adapter.mjs"), "utf8",
-    );
-    assert.match(src, /SAFE_SKILL_DIRNAME/, "name allowlist must exist");
-    assert.match(src, /assertWithinSkillsRoot/, "containment check must exist");
-    assert.match(src, /SKILL_PATH_ESCAPE/, "escape must be refused with a named error");
-    return;
-  }
-
-  const { root, sourceSkills, target } = fixture("adev:../../escaped");
+test("a traversing or multi-segment skill name is refused", () => {
+  const root = mkdtempSync(join(tmpdir(), "cursor-contain-"));
+  const skills = join(root, "skills");
+  // The root MUST exist. An earlier version of this test omitted this, so
+  // realpathSync failed and EVERY input threw SKILL_PATH_ESCAPE regardless of
+  // its name — the assertions passed for a reason unrelated to what they claim
+  // to test, and a disabled allowlist still passed the whole file.
+  mkdirSync(skills, { recursive: true });
   try {
-    const res = publish(sourceSkills, target);
-    const escaped = join(root, "out", "escaped");
-    assert.ok(!existsSync(escaped), `wrote outside the skills root: ${escaped}`);
-    assert.ok(
-      !(res?.published ?? []).some((n) => String(n).includes("..")),
-      "a traversing name must not be reported as published",
+    for (const bad of ["adev-../../escaped", "adev-a/b", "../x", "/abs", "..", ".", ".hidden"]) {
+      assert.throws(
+        () => resolvePublishTarget(skills, bad),
+        /SKILL_NAME_UNSAFE|SKILL_PATH_ESCAPE/,
+        `must refuse ${JSON.stringify(bad)}`,
+      );
+    }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("a nested name is refused by the allowlist, not just by containment", () => {
+  // `adev-a/b` resolves INSIDE the root, so the containment layer allows it —
+  // only the single-path-segment allowlist rejects it. Without this case the
+  // suite cannot tell whether the allowlist is present at all: every other bad
+  // input escapes the root and is caught by layer 2 regardless.
+  const root = mkdtempSync(join(tmpdir(), "cursor-contain-nested-"));
+  const skills = join(root, "skills");
+  mkdirSync(skills, { recursive: true });
+  try {
+    assert.throws(
+      () => resolvePublishTarget(skills, "adev-a/b"),
+      /SKILL_NAME_UNSAFE/,
+      "a separator inside the name must be refused by the allowlist specifically",
     );
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
 });
 
-test("the name allowlist rejects separators and traversal, accepts real skill names", async () => {
-  const src = (await import("node:fs")).readFileSync(
-    join(PLUGIN_ROOT, "providers", "cursor", "adapter.mjs"), "utf8",
-  );
-  const m = /const SAFE_SKILL_DIRNAME = (\/.*\/);/.exec(src);
-  assert.ok(m, "SAFE_SKILL_DIRNAME must be declared as a regex literal");
-  const re = new RegExp(m[1].slice(1, -1));
-
-  // Only genuinely unsafe inputs. A trailing dot (`adev-.`) is a legal POSIX
-  // directory name and not a traversal — traversal needs the SEGMENT to be `.`
-  // or `..`, which the leading-alnum requirement already rejects. Asserting
-  // against it would have meant distorting the guard to satisfy the test.
-  for (const bad of [
-    "adev-../../x",  // the reported vector
-    "adev-a/b",      // any separator
-    "../x",          // relative traversal
-    "/abs",          // absolute
-    ".hidden",       // leading dot
-    "..",            // the traversal segment itself
-    ".",             // the current-dir segment itself
-  ]) {
-    assert.ok(!re.test(bad), `allowlist must reject ${JSON.stringify(bad)}`);
+test("a legitimate skill name resolves inside the root", () => {
+  const root = mkdtempSync(join(tmpdir(), "cursor-contain-ok-"));
+  const skills = join(root, "skills");
+  mkdirSync(skills, { recursive: true });
+  try {
+    for (const good of ["adev-build", "adev-review-specs", "adev-write-test"]) {
+      const dest = resolvePublishTarget(skills, good);
+      assert.ok(
+        dest.startsWith(realpathSync(skills) + sep),
+        `${good} must resolve inside the root, got ${dest}`,
+      );
+      assert.ok(dest.endsWith(sep + good), `${good} must keep its declared name`);
+    }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
   }
-  for (const good of ["adev-build", "adev-review-specs", "adev-write-test", "adev-init"]) {
-    assert.ok(re.test(good), `allowlist must accept the real name ${JSON.stringify(good)}`);
+});
+
+test("containment is computed through realpath, not lexically", () => {
+  // BND-2: a lexical resolve()+startsWith check reports containment when the ROOT
+  // is itself a symlink, while ensureDir/cpSync/writeFileSync all follow it and
+  // land at the link's real target. Same class as macOS /var -> /private/var,
+  // which lib/extensions/exec-payload.mjs documents as the reason its own
+  // containment primitive realpaths both sides.
+  const base = mkdtempSync(join(tmpdir(), "cursor-contain-sym-"));
+  const real = join(base, "real-skills");
+  const link = join(base, "skills");
+  mkdirSync(real, { recursive: true });
+  symlinkSync(real, link, "dir");
+  try {
+    const dest = resolvePublishTarget(link, "adev-build");
+    // The destination must be expressed against the DEREFERENCED root, so a
+    // caller comparing it to the real location sees the truth.
+    assert.ok(
+      dest.startsWith(realpathSync(real) + sep),
+      `destination ${dest} must resolve under the symlink's real target ${realpathSync(real)}`,
+    );
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
+});
+
+test("an unresolvable skills root is refused rather than assumed safe", () => {
+  const root = mkdtempSync(join(tmpdir(), "cursor-contain-missing-"));
+  try {
+    assert.throws(
+      () => resolvePublishTarget(join(root, "does-not-exist"), "adev-build"),
+      /SKILL_PATH_ESCAPE/,
+      "a root that cannot be realpath'd must fail closed",
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("publishSkillsFromCache calls the guard before any write", () => {
+  // The one genuinely source-scoped assertion in this file, and deliberately so:
+  // ordering is a property of the CALL SITE, which no unit test of a pure
+  // function can observe. Kept narrow — it locates the function body and checks
+  // the guard call precedes every write primitive within it, rather than
+  // grepping the whole file for an identifier.
+  const src = readFileSync(join(PLUGIN_ROOT, "providers", "cursor", "adapter.mjs"), "utf8");
+  const start = src.indexOf("async function publishSkillsFromCache(");
+  assert.ok(start !== -1, "publishSkillsFromCache must exist");
+  const end = src.indexOf("\nexport const CursorAdapter", start);
+  const body = src.slice(start, end === -1 ? undefined : end);
+
+  const guardAt = body.indexOf("resolvePublishTarget(");
+  assert.ok(guardAt !== -1, "publishSkillsFromCache must call resolvePublishTarget");
+
+  for (const write of ["ensureDir(targetDir)", "cpSync(", "writeFileSync("]) {
+    const at = body.indexOf(write);
+    assert.ok(at !== -1, `expected ${write} in publishSkillsFromCache`);
+    assert.ok(
+      guardAt < at,
+      `resolvePublishTarget must be called BEFORE ${write} — a containment check ` +
+        `that runs after the write does not contain anything`,
+    );
   }
 });

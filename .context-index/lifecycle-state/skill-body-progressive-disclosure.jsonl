@@ -18,3 +18,5 @@
 {"event":"reviewer_report","step":"review","reviewer":"boundary-reviewer","severity":"blocker","verdict":"FAIL","notes":"rev 3: BND-4 cursor path containment unactioned and undocumented; model-tiers surface audited clean","ts":"2026-08-19T23:54:11.234Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"reviewer_report","step":"review","reviewer":"termination-reviewer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"rev 3: three carried warnings unchanged; no new termination risk","ts":"2026-08-19T23:54:11.299Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"step_completed","step":"review","verdict":"BLOCK","ts":"2026-08-19T23:54:11.364Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"lifecycle_step","step":"review","status":"started","ts":"2026-08-19T23:56:34.615Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"step_completed","step":"review","verdict":"BLOCK","ts":"2026-08-20T00:10:50.023Z","diagnostic_warnings":["adev/frontmatter-present"]}
