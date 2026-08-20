@@ -11,6 +11,16 @@
  * exists would still pass if the skill later pointed somewhere else, which is
  * the exact drift being fixed.
  *
+ * The derivation is anchored to the sentence that DEFINES what the `default`
+ * keyword resolves to ("The shipped default rubric is `<path>` — that is what
+ * the `default` keyword resolves to"), not to the first `skills/eval/*.yaml`
+ * substring anywhere in the file. SKILL.md mentions rubric paths in more than
+ * one place — the config-block comment, override examples — so an unanchored
+ * match is incidental: it is not tied to the definition being guarded, and it
+ * silently stops guarding it. A miss degrades quietly (empty match → sentinel
+ * path → empty rubric → vacuous passes), so a dedicated assertion below fails
+ * loudly when the defining sentence is absent or reworded.
+ *
  * Pattern: tests/skills/skill-integration-preflight.test.mjs
  */
 
@@ -41,14 +51,23 @@ const REQUIRED_KEYS = [
 ];
 
 /**
- * Pull the documented default-rubric path out of SKILL.md prose. Accepts an
- * optional `<ADEV_ROOT>/` prefix and returns a plugin-root-relative path, or
- * the empty string when SKILL.md documents no rubric path at all.
+ * The sentence in SKILL.md that defines what the `default` keyword resolves
+ * to. The captured group is the rubric path it names. Anchoring on both
+ * halves — the "shipped default rubric is <path>" clause and the "`default`
+ * keyword resolves to" clause — is what stops an unrelated `skills/eval/*.yaml`
+ * mention elsewhere in the file from standing in for the definition.
  */
-function documentedRubricPath() {
-  const m = skill.match(
-    /(?:<ADEV_ROOT>\/)?(skills\/eval\/[A-Za-z0-9._-]+\.ya?ml)/,
-  );
+const KEYWORD_DEFINITION_PATTERN =
+  /The shipped default rubric is `(?:<ADEV_ROOT>\/)?(skills\/eval\/[A-Za-z0-9._-]+\.ya?ml)`[\s\S]{0,120}?`default` keyword resolves to/;
+
+/**
+ * Pull the documented default-rubric path out of SKILL.md prose, reading it
+ * from the keyword-definition sentence only. Accepts an optional
+ * `<ADEV_ROOT>/` prefix and returns a plugin-root-relative path, or the empty
+ * string when SKILL.md carries no such definition.
+ */
+function documentedRubricPath(text = skill) {
+  const m = text.match(KEYWORD_DEFINITION_PATTERN);
   return m ? m[1] : "";
 }
 
@@ -77,6 +96,37 @@ function nestedValueViolations(doc) {
 }
 
 describe("eval SKILL.md — default rubric is a real file", () => {
+  it("anchors the documented path to the sentence defining `default` (+2 more contract assertions)", () => {
+    // SKILL.md still carries the sentence that defines what `default` resolves
+    // to. Without it every assertion below degrades to a vacuous pass, so this
+    // is the guard that keeps the rest of the suite load-bearing.
+    assert.match(
+      skill,
+      KEYWORD_DEFINITION_PATTERN,
+      "skills/eval/SKILL.md must state what the `default` rubric keyword resolves to, in the form: The shipped default rubric is `<ADEV_ROOT>/skills/eval/<file>.yaml` — that is what the `default` keyword resolves to",
+    );
+
+    // The anchor is specific, not incidental: a rubric path mentioned outside
+    // the defining sentence must not be mistaken for the definition.
+    assert.equal(
+      documentedRubricPath(
+        "Pass `--rubric skills/eval/custom-rubric.yaml` to override the shipped rubric.",
+      ),
+      "",
+      "documentedRubricPath must ignore skills/eval/*.yaml mentions outside the keyword-definition sentence",
+    );
+
+    // ...and it genuinely reads the path from that sentence rather than
+    // hardcoding today's filename.
+    assert.equal(
+      documentedRubricPath(
+        "The shipped default rubric is `<ADEV_ROOT>/skills/eval/relocated.yaml` — that is what the\n`default` keyword resolves to, not a value to type on the command line.",
+      ),
+      "skills/eval/relocated.yaml",
+      "documentedRubricPath must derive the path from the defining sentence",
+    );
+  });
+
   it("documents a default rubric path (+1 more contract assertions)", () => {
     // documents a default rubric path
     assert.notEqual(
