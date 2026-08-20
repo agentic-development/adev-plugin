@@ -17,6 +17,7 @@ policies:
     require_hitl_approval: true
     review_mode: full
     validate_mode: full
+    implement_mode: full
     test_depth: thorough
     additional_gates: []           # gate IDs from gates.yaml
   medium:
@@ -24,6 +25,7 @@ policies:
     require_hitl_approval: false
     review_mode: full
     validate_mode: full
+    implement_mode: full
     test_depth: standard
     additional_gates: []
   low:
@@ -31,5 +33,6 @@ policies:
     require_hitl_approval: false
     review_mode: quick
     validate_mode: quick
+    implement_mode: quick
     test_depth: minimal
     additional_gates: []

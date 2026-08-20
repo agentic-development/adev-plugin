@@ -18,6 +18,7 @@ Execute an implementation plan by dispatching a fresh subagent per task, routing
 - `--fresh`: with `--parallel`, on a re-run collision auto-remove the retained worktree (`adev worktree remove --force`) and proceed, instead of aborting the group with `RERUN_COLLISION`. No effect without `--parallel`.
 - `--no-batch`: force solo dispatch for every task, restoring today's strict one-subagent-per-task behavior. Rejected with `CONFLICTING_BATCH_FLAGS` when combined with `--parallel` (`--parallel`'s unit of dispatch is already the group — the two flags would disagree about what "batching off" means).
 - `--max-batch <n>`: per-run override of `implement.max_batch_size` (default 4). `1` is equivalent to `--no-batch`.
+- `--review-cycles <n>`: per-run override of `implement.max_review_cycles` (default 3), forwarded to every `adev implement resolve-depth` call (the verb is the only validator).
 
 ## Prerequisites
 
@@ -353,6 +354,8 @@ Before routing or dispatching, assemble the task's context packet:
 - `assisted-agent`: proceed with dispatch, but pause after RED phase (tests written) for user review before GREEN phase
 - `human-only`: generate scaffolding only (type stubs, file structure, test shells), present as a manual task checklist, emit `reportPlanTask(projectRoot, specPath, { plan: planFilePath, task_id, status: "skipped", notes: "MANUAL — requires human implementation" })`, skip to next task
 
+**Provisional review depth.** Alongside the routing-tag check, before dispatch: `adev implement resolve-depth --spec <spec> --plan <plan> --task-id <id> [--tier <t>] [--review-cycles <n>] [--in-batch] --pass provisional`. It briefs the implementer and reports `review_depth_resolved`; the final pass (2f-pre) decides which reviewer(s) dispatch. Contract: `graduated-review-depth.md`.
+
 #### 2b. Specialist Routing
 
 Determine which specialist (if any) should handle this task.
@@ -473,6 +476,8 @@ The verb wraps `lib/execution-state.mjs::writeExecutionState`. If the CLI call e
 
 #### 2d. Dispatch and Handle Status
 
+- **Capture the task's base SHA** immediately before dispatch: `git rev-parse HEAD`. Used only by this task's final-pass depth resolution (2f-pre); never persisted.
+
 Dispatch the subagent with `Agent({description, prompt, run_in_background: false})` and nothing else.
 
 **Always pass `run_in_background: false`.** The harness backgrounds Agent dispatches by default: the call returns immediately with a task ID and the caller is only re-invoked by a completion notification. That notification path is reliable only at the top level of a session — inside a nested subagent context (implement usually runs as a build-step subagent) it does not re-invoke the caller, so a backgrounded dispatch stalls the task loop (field-observed as implement subagents that auto-background and never report a status). This applies to **every** subagent dispatch in this skill: implementer, write-test, spec reviewer, code quality reviewer, visual verifier, and final reviewer.
@@ -565,6 +570,15 @@ Do not proceed. Do not skip. Do not fall back to code-only review for UI tasks.
 
 **If the spec has no Visual Expectations section:** Still take a basic snapshot after implementation. Verify the page loads without errors, shows content (not a blank screen), and has no console errors. This is the minimum bar.
 
+#### 2f-pre. Final Review Depth
+
+> **Required reading:** `skills/implement/graduated-review-depth.md`.
+
+Immediately before 2f's dispatch — after GREEN, against the real diff — run the provisional call again with `[--had-critical-finding] --base-sha <captured-sha> --pass final`. Echo `REVIEW_DEPTH_FLOOR_APPLIED` (naming `floor_legs`) and any `ROUTING_SCORE_OUT_OF_RANGE` warning to the operator-facing transcript, not only to the persisted `review_depth_resolved` event. Then branch on the resolved `depth`:
+
+- **`full`** — run 2f then 2g below exactly as written.
+- **`quick`** — skip both stages; dispatch one synthesized reviewer carrying `synthesized-reviewer-prompt.md` and the union of both stages' context, under the same `cq-<n>` / `evaluateStopCondition` discipline, capped at the returned `review_cycles`. Record `stage: "synthesized"` provenance (`Review-round: synthesized=<n>`) instead of the two stage records.
+
 #### 2f. Stage 1 Review: Spec Compliance
 
 Dispatch a fresh spec reviewer subagent with:
@@ -579,7 +593,7 @@ The spec reviewer verifies by reading code, not by trusting the report:
 - **Extra work:** Was anything built that was not requested?
 - **Misunderstandings:** Were requirements interpreted correctly?
 
-**If the reviewer finds issues:** The implementer subagent (same one) fixes them. The spec reviewer reviews again. Maximum 3 review cycles per task. After the third, escalate to the user.
+**If the reviewer finds issues:** The implementer subagent (same one) fixes them. The spec reviewer reviews again. Maximum `implement.max_review_cycles` review cycles per task (default 3), or the effective `review_cycles` returned by this task's last `adev implement resolve-depth` call when `--review-cycles` was passed. After the last cycle, escalate to the user.
 
 **Only proceed to Stage 2 after Stage 1 passes.**
 
@@ -599,7 +613,7 @@ The code quality reviewer checks the items in `code-quality-checklist.md` from t
 
 **Minor issues:** Noted but do not block progress.
 
-**Critical or Important issues — bounded fix/review loop.** The implementer subagent (same one) fixes them and the reviewer reviews again, but the loop is capped. **Maximum 3 code-quality review cycles per task**, matching the Stage 1 cap (2f) and the visual fix cap (2e). This is a hardcoded convention because no manifest knob exists for it yet; a config-backed budget mirroring `build.max_review_retries` (see `lib/manifest.mjs` and `skills/build/SKILL.md` Step 1) is a follow-up.
+**Critical or Important issues — bounded fix/review loop.** The implementer subagent (same one) fixes them and the reviewer reviews again, but the loop is capped. **Maximum `implement.max_review_cycles` code-quality review cycles per task** (same effective value as Stage 1's cap above — both stages read the same resolved number, which is what makes the `quick` path's `1 × cap` (vs. `full`'s `2 × cap`) worst-case-dispatch claim true).
 
 Each cycle, compare the reviewer's Critical/Important finding ids against the previous cycle's set the way `/adev:build`'s BLOCK→revise loop does, using the convergence primitive `lib/loop-convergence.mjs` (`partitionBlockers` splits the two id sets into addressed / persistent / new; `evaluateStopCondition` turns that partition plus the cycles remaining into one verdict). Act on the verdict:
 
@@ -799,35 +813,9 @@ These trailers enable `/adev:retro` and `/adev:hygiene` to trace commits back to
 
 ## Step 6: Feature Completeness Definition of Done
 
-After Step 5.5, verify lifecycle artifact completeness. This is distinct from `/adev:validate` (which checks code correctness) — this checks that all lifecycle bookkeeping is done.
+After Step 5.5, verify lifecycle bookkeeping — distinct from `/adev:validate`, which checks code correctness. Gaps are reported but never block.
 
-**Checklist:**
-
-1. **All epic issues closed:** If the plan has an associated epic (via issue board), check that ALL issues in the epic are now closed. If not, report which issues remain open.
-2. **Source manifest stamped:** Verify the spec has a `source-manifest` block in frontmatter (done in Step 5).
-3. **Spec status updated:** Verify the spec status is `implemented` (done in Step 5).
-4. **Charter capability status updated:** Verify the charter's Capability Map has the capability status set to `implemented` (done in Step 5).
-5. **Epic closed:** If all issues in the epic are now closed, update the epic status to `closed`. Use `updateEpic(epicId, { status: 'closed' })` from the issue adapter.
-
-**Output format:**
-```
-Feature Completeness DoD:
-  [x] All epic issues closed (N/N)
-  [x] Source manifest stamped (sha: abc1234)
-  [x] Spec status: implemented
-  [x] Charter capability: implemented
-  [x] Epic closed: epic-N
-
-— or —
-
-  [x] All epic issues closed (N/N)
-  [x] Source manifest stamped (sha: abc1234)
-  [x] Spec status: implemented
-  [x] Charter capability: implemented
-  [ ] Epic NOT closed — 2 issues still open (issue-4, issue-5)
-```
-
-If any item fails, report it but do NOT block completion. The implementation is done; the DoD gaps are informational for follow-up.
+> **Conditional loading:** Read `skills/implement/feature-completeness-dod.md` for the checklist and output format.
 
 ## Red Flags
 

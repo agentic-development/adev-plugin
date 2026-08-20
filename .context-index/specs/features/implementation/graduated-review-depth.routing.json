@@ -1,0 +1,127 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 1,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Near-identical existing validator (validateMaxReviewRetries) is a direct template; single-module change with full test code already given in the plan."
+    },
+    {
+      "task_id": "t10",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 1,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Single clause insertion in build/SKILL.md mirroring two already-existing identical --tier clauses in Steps 1 and 5 of the same file."
+    },
+    {
+      "task_id": "t11",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 1,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Doc-only additions to two reference files mirroring existing adjacent entries; mechanical and low risk."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 1,
+        "blast_radius": 0.6,
+        "novelty": 1
+      },
+      "rationale": "Additive config rows mirroring existing validate_mode keys across template, live YAML, and test; trivial one-line diffs despite spanning three directories."
+    },
+    {
+      "task_id": "t3",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 1,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Exact two-line fix given verbatim with full regression tests extending the existing rigor-mode suite; single-module, low risk."
+    },
+    {
+      "task_id": "t4",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "New precedence-chain module ports lib/test-strategies/depth.mjs's structure into a new domain; full implementation and tests are given in the plan, confined to one new module."
+    },
+    {
+      "task_id": "t5",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "Floor-pass logic assembles three separate existing precedents (git-diff union, sensitive-paths, slugFromSpec) plus new git-status/rename-edge-case reasoning for scope-mismatch — more composition and judgment than Task 4."
+    },
+    {
+      "task_id": "t6",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 1,
+        "blast_radius": 0.6,
+        "novelty": 1
+      },
+      "rationale": "Structural copy of reportReviewRound's event-registration pattern across three sibling lib files; well-precedented and low risk."
+    },
+    {
+      "task_id": "t7",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 1,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "New CLI verb closely follows cmdBatches's existing shape in the same file; some new plan-body parsing (hasModifyEntry) but the plan gives the full implementation."
+    },
+    {
+      "task_id": "t8",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 1,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Prose companion file directly adapts the existing quick-synthesized-reviewer-prompt.md template to /adev:implement's two review lenses."
+    },
+    {
+      "task_id": "t9",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.4,
+        "novelty": 0.6
+      },
+      "rationale": "Edits the core /adev:implement orchestration skill to branch the TDD review loop on resolved depth. The constitution flags this exact review-thinning mechanism as needing human approval (pre-authorized only at the spec level, not per task), so blast radius and novelty are scored low despite fully detailed prose edits being given."
+    }
+  ]
+}

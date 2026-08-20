@@ -84,11 +84,11 @@ test("/adev:implement Stage 2 code-quality loop is not unbounded", () => {
   );
 });
 
-test("/adev:implement Stage 2 code-quality loop declares a 3-cycle cap", () => {
+test("/adev:implement Stage 2 code-quality loop declares a configurable cycle cap", () => {
   const md = readFileSync(SKILL_PATH, "utf8");
   assert.match(
     md,
-    /Maximum 3 code-quality review cycles per task/i,
+    /Maximum `implement\.max_review_cycles` code-quality review cycles per task/i,
     "Stage 2 must cap review cycles the way Stage 1 and the visual loop do",
   );
 });

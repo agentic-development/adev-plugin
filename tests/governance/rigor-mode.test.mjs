@@ -77,6 +77,36 @@ test("validate skill reads validate_mode, not review_mode", () => {
   );
 });
 
+test("resolveRigorMode: skill='implement' resolves against implement_mode, never review_mode", () => {
+  const policies = { medium: { review_mode: "quick", implement_mode: "full" } };
+  const result = resolveRigorMode({ skill: "implement", riskLevel: "medium", policies });
+  assert.equal(result, "full"); // would be "quick" under the old ternary
+});
+
+test("resolveRigorMode: routingEasy does NOT short-circuit to quick when skill='implement'", () => {
+  const result = resolveRigorMode({
+    skill: "implement", riskLevel: "medium", policies: { medium: { implement_mode: "full" } },
+    routingEasy: true,
+  });
+  assert.equal(result, "full"); // old code returned "quick" unconditionally here
+});
+
+test("resolveRigorMode: routingEasy still short-circuits to quick for review-specs (regression)", () => {
+  const result = resolveRigorMode({ skill: "review-specs", routingEasy: true });
+  assert.equal(result, "quick");
+});
+
+test("resolveRigorMode: routingEasy still short-circuits to quick for validate (regression)", () => {
+  const result = resolveRigorMode({ skill: "validate", routingEasy: true });
+  assert.equal(result, "quick");
+});
+
+test("resolveRigorMode: unrecognized skill keeps the review_mode fallback", () => {
+  const policies = { medium: { review_mode: "quick" } };
+  const result = resolveRigorMode({ skill: "route", riskLevel: "medium", policies });
+  assert.equal(result, "quick");
+});
+
 test("precedence 4: defaults to full when nothing resolves", () => {
   assert.equal(resolveRigorMode({}), "full");
   assert.equal(
