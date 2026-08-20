@@ -154,3 +154,127 @@ for (const target of TARGETS) {
     });
   });
 }
+
+/* ------------------------------------------------------------------------ *
+ * Repo-wide no-live-emitter sweep.
+ *
+ * Task 2 fixed the three eval SKILL.md files; this sweep proves no OTHER
+ * shipped surface still hands the verb a path to the shipped rubric. Any
+ * such emitter reproduces the bug wherever an agent copies it — the
+ * docs/cli-reference.md examples did exactly that, and CLAUDE.md's Context
+ * Routing table names that page as the authority an agent reads instead of
+ * reverse-engineering the signature from source.
+ *
+ * SCOPE — deliberately bounded to skills/, providers/ and docs/.
+ * `.context-index/` is EXCLUDED: it archives review, validate and spec
+ * artifacts that necessarily quote the forbidden pattern in order to
+ * describe it (the acceptance criterion for this very sweep quotes it), so
+ * an unbounded "nowhere in the repository" check would fail on the document
+ * that states it. A criterion that cannot be discharged is not a criterion.
+ *
+ * PREDICATE — the argument's final PATH COMPONENT, not an exact string, so a
+ * future absolute plugin-cache path
+ * (/…/agentic-development/adev/<v>/skills/eval/default-rubric.yaml) is caught
+ * by the same rule as the repo-relative one. Both `--rubric <v>` and
+ * `--rubric=<v>` forms are matched.
+ * ------------------------------------------------------------------------ */
+
+const SWEEP_DIRS = ["skills", "providers", "docs"];
+
+/**
+ * Extensions skipped as binary or otherwise incapable of carrying a shell
+ * invocation. Everything else (md, mjs, yaml, json, txt, sh, …) is read.
+ */
+const BINARY_EXTENSIONS = new Set([
+  ".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".pdf",
+  ".zip", ".gz", ".tgz", ".woff", ".woff2", ".ttf", ".otf",
+  ".eot", ".mp4", ".mov", ".wasm",
+]);
+
+/** Recursively collect text files under `dir` (absolute paths). */
+function collectFiles(dir, acc = []) {
+  let entries;
+  try {
+    entries = readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return acc;
+  }
+  for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
+    if (entry.name === "node_modules" || entry.name === ".git") continue;
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      collectFiles(full, acc);
+      continue;
+    }
+    if (!entry.isFile()) continue;
+    const dot = entry.name.lastIndexOf(".");
+    const ext = dot === -1 ? "" : entry.name.slice(dot).toLowerCase();
+    if (BINARY_EXTENSIONS.has(ext)) continue;
+    acc.push(full);
+  }
+  return acc;
+}
+
+/** Strip markup/punctuation an argument may be wrapped in within prose. */
+function unwrapArgument(raw) {
+  return raw.replace(/^[`'"(\[]+/, "").replace(/[`'"),\].;:]+$/, "");
+}
+
+/** True when the argument's final path component names the shipped rubric. */
+function namesShippedRubric(value) {
+  const component = unwrapArgument(value).split("/").pop();
+  return component === "default-rubric.yaml" || component === "default-rubric.yml";
+}
+
+/** Every `--rubric <v>` / `--rubric=<v>` emitter naming the shipped rubric. */
+function sweepEmitters() {
+  const hits = [];
+  for (const dirName of SWEEP_DIRS) {
+    for (const file of collectFiles(join(PLUGIN_ROOT, dirName))) {
+      const label = file.slice(PLUGIN_ROOT.length + 1);
+      const lines = readFileSync(file, "utf8").split("\n");
+      lines.forEach((line, i) => {
+        for (const m of line.matchAll(/--rubric(?:[ \t]+|=)(\S+)/g)) {
+          if (namesShippedRubric(m[1])) {
+            hits.push(`${label}:${i + 1}: ${line.trim()}`);
+          }
+        }
+      });
+    }
+  }
+  return hits;
+}
+
+describe("eval rubric keyword emission — repo-wide no-live-emitter sweep", () => {
+  it("sweeps a non-empty set of files under skills/, providers/ and docs/", () => {
+    // Guards the sweep itself: a walker that silently found nothing would
+    // report zero emitters and look green.
+    for (const dirName of SWEEP_DIRS) {
+      const count = collectFiles(join(PLUGIN_ROOT, dirName)).length;
+      assert.ok(count > 0, `sweep found no files under ${dirName}/ — walker is broken`);
+    }
+  });
+
+  it("catches both the repo-relative and the absolute plugin-cache form", () => {
+    // The predicate must bite on a path component, not an exact string.
+    assert.equal(namesShippedRubric("skills/eval/default-rubric.yaml"), true);
+    assert.equal(
+      namesShippedRubric(
+        "/Users/x/.claude/plugins/cache/agentic-development/adev/0.28.0/skills/eval/default-rubric.yaml",
+      ),
+      true,
+    );
+    assert.equal(namesShippedRubric("`skills/eval/default-rubric.yaml`"), true);
+    assert.equal(namesShippedRubric("default"), false);
+  });
+
+  it("no file under skills/, providers/ or docs/ passes `--rubric <shipped rubric path>`", () => {
+    const hits = sweepEmitters();
+    assert.deepEqual(
+      hits,
+      [],
+      `\`--rubric\` must receive the keyword \`default\`, never a path to the shipped ` +
+        `rubric. Offending emitters (${hits.length}):\n${hits.join("\n")}`,
+    );
+  });
+});

@@ -818,16 +818,19 @@ dispatches on the first argument; `score` is the only subcommand today, and the 
 `eval` rather than `eval-score` so a future Run-cost record capability can add `eval cost`
 beside it without a second registry entry.
 
-**Signature:** `eval score --rubric <path> --input <path> [--json]`
+**Signature:** `eval score --rubric <path|default> --input <path> [--json]`
 
-- `--rubric <path>` — a rubric YAML file, containment-checked against the project root.
+- `--rubric <path|default>` — either a rubric YAML file, containment-checked against the
+  project root, **or** the literal keyword `default`, which resolves the plugin's shipped
+  `skills/eval/default-rubric.yaml`. Only the exact literal `default` is the keyword;
+  `Default`, `./default`, and `default.yaml` are ordinary paths and take the containment branch.
 - `--input <path>` — a JSON verdict-set file (an array of `{id, value, evidence}`),
   containment-checked against the project root.
 - `--json` — print one JSON object carrying the verdict table, both halves, and the total,
   instead of the default table.
 
-Both `--rubric` and `--input` are contained against the project root — resolved, then
-real-pathed to catch a symlink escape, then re-checked — **before either file is opened**, so a
+Every `--rubric` *path* value and `--input` are contained against the project root — resolved,
+then real-pathed to catch a symlink escape, then re-checked — **before either file is opened**, so a
 traversal or symlink escape on either flag is refused by one uniform code
 (`UNSAFE_SCORE_PATH`, naming the offending path exactly as supplied) without reading any
 content. This matches the `UNSAFE_RUBRIC_PATH` precedent `loadRubric` already sets; `loadRubric`
@@ -837,6 +840,19 @@ path. An unparsable JSON `--input` exits non-zero with `SCORE_INPUT_PARSE_ERROR`
 the engine rejects (an unknown id, a missing id, an illegal verdict, empty evidence, a
 duplicate, or a malformed rubric/threshold) surfaces that engine error code and exits non-zero.
 Nothing is ever printed — table, aggregate, or JSON — unless every step above succeeded.
+
+**The `default` keyword is not a path, and so is not contained against the project root.** It
+names a fixed location inside the plugin, and is bounded by the **plugin root** instead — derived
+from the plugin's own module location on disk (`getPluginRoot()` in `lib/profiles/index.mjs`),
+never from an environment variable such as `CLAUDE_PLUGIN_ROOT` and never threaded in from the
+caller, because the whole safety argument for skipping project-root containment is that the
+location it resolves is unforgeable. The same resolve/real-path/re-check sequence is then applied
+against the plugin root, so the keyword is bounded exactly as a path value is, only against a
+different root. `--input` is a path in every case and is contained against the project root
+unconditionally, keyword or not. When the shipped rubric is absent or unreadable, the verb exits
+non-zero with `SCORE_DEFAULT_RUBRIC_MISSING`, naming the resolved plugin path; a shipped rubric
+that is readable but malformed keeps its own parse/schema error code rather than being reported
+as missing.
 
 **The default table omits evidence.** Evidence strings are free text and would make every run's
 paste-into-a-conversation width unbounded, which defeats the point of a compact default; the
@@ -848,8 +864,8 @@ status's name, never as `0`. Evidence is available only via `--json`.
 
 **Example:**
 ```
-adev eval score --rubric skills/eval/default-rubric.yaml --input .adev/eval/latest-verdicts.json
-adev eval score --rubric skills/eval/default-rubric.yaml --input .adev/eval/latest-verdicts.json --json
+adev eval score --rubric default --input .adev/eval/latest-verdicts.json
+adev eval score --rubric default --input .adev/eval/latest-verdicts.json --json
 ```
 
 **Implementation:** `lib/cli/eval.mjs` (engine: `lib/evals/rubric.mjs`, `lib/evals/score.mjs`).
