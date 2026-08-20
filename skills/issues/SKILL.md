@@ -30,9 +30,9 @@ Check that `.context-index/` exists with `manifest.yaml`. If not:
 
 ### Backend Resolution
 
-Read `tasks.backend` from `.context-index/manifest.yaml` via `loadManifest` (from `<ADEV_ROOT>/lib/manifest.mjs`). Use `getIssueManager(manifest)` from `<ADEV_ROOT>/lib/issues/registry.mjs` to get the active adapter. The default backend is `json` (`.context-index/tasks/tasks.json`); `file` (legacy markdown read-only) and `beads` are also supported.
+The active backend is whatever `tasks.backend` names in `.context-index/manifest.yaml`. The default is `json` (`.context-index/tasks/tasks.json`); `file` (legacy markdown, read-only) and `beads` are also supported.
 
-If the issue board has not been initialized, call `init()` on the adapter to create the storage.
+Nothing has to be resolved here. Every `adev issues` sub-verb reads the manifest, selects the matching adapter, and resolves the storage root from the git common dir on its own — so one invocation is correct from the main checkout and from a linked worktree alike. The board storage is created on the first write, so there is no separate initialisation step to run.
 
 **Load Skill Extensions:** Load any skill extension instructions before proceeding:
 
@@ -280,9 +280,12 @@ Display the command output to the user verbatim.
 - **Backend agnostic.** Instructions work identically for json, file (legacy), and beads backends.
 - **Graceful errors.** Report clear error messages for validation failures.
 - **No lifecycle gating.** This skill is supporting — it does not gate the plan/implement/validate pipeline.
-- **Worktree-safe.** Issue storage is automatically shared across git worktrees. The registry resolves the main repo root via git, or uses `tasks.db_path` from manifest if configured.
+- **Worktree-safe.** Issue storage is automatically shared across git worktrees. The verbs resolve the main repo root via git, or use `tasks.db_path` from manifest if configured.
+- **Never call the backend binary (`br create`, …) directly.** `br` resolves `.beads/` from the current directory, so inside a linked worktree it opens the git-tracked `issues.jsonl` with no `beads.db` beside it and fails with `SYNC_CONFLICT` — the write is silently lost. Every board operation goes through `adev issues <sub>`, which resolves the storage root from the git common dir.
 
 ## API reference
+
+**Descriptive only — do not call these directly.** This section documents what the `adev issues` verbs wrap internally, so the mapping from verb to source module is discoverable. It is not a set of instructions: every step above is performed by invoking the verb, never by importing or calling these functions.
 
 Source modules (resolve `<ADEV_ROOT>` to the plugin root at runtime):
 
