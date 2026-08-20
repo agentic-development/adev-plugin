@@ -3,13 +3,43 @@
 ---
 charter: eval-harness
 kind: behavioral
-status: review-pending
+status: implemented
 risk_level: medium
 milestone: v1
 revision: 1
 charter-revision: 2
 created: 2026-08-19
 updated: 2026-08-19
+source-manifest:
+  sha: "84a465b"
+  files:
+    - lib/evals/rubric-schema.mjs
+    - lib/evals/rubric.mjs
+    - skills/eval/default-rubric.yaml
+    - tests/fixtures/evals/rubrics/conforming.yaml
+    - tests/fixtures/evals/rubrics/duplicate-ids.yaml
+    - tests/fixtures/evals/rubrics/element-without-id.yaml
+    - tests/fixtures/evals/rubrics/incomplete-criterion.yaml
+    - tests/fixtures/evals/rubrics/incomplete-element.yaml
+    - tests/fixtures/evals/rubrics/invalid-budget-nonnumeric.yaml
+    - tests/fixtures/evals/rubrics/invalid-budget-nonpositive.yaml
+    - tests/fixtures/evals/rubrics/invalid-criterion-verdict.yaml
+    - tests/fixtures/evals/rubrics/invalid-element-verdict.yaml
+    - tests/fixtures/evals/rubrics/legacy-weight-scale.yaml
+    - tests/fixtures/evals/rubrics/malformed.yaml
+    - tests/fixtures/evals/rubrics/missing-keys.yaml
+    - tests/fixtures/evals/rubrics/nested-map.yaml
+    - tests/helpers.mjs
+    - tests/lib/evals/rubric-budget-keys.test.mjs
+    - tests/lib/evals/rubric-incomplete-entries.test.mjs
+    - tests/lib/evals/rubric-legacy-scale.test.mjs
+    - tests/lib/evals/rubric-load-success.test.mjs
+    - tests/lib/evals/rubric-missing-keys.test.mjs
+    - tests/lib/evals/rubric-nested-map.test.mjs
+    - tests/lib/evals/rubric-path-containment.test.mjs
+    - tests/lib/evals/rubric-schema-contract.test.mjs
+    - tests/lib/evals/rubric-verdict-enums.test.mjs
+  computed-at: "2026-08-20T02:09:30.855Z"
 ---
 
 # Live Spec: Unified rubric schema and loader
@@ -98,3 +128,8 @@ Not applicable. This spec defines a library function with no user interface. Its
 | Legacy 1-5 `weight` values on quality dimensions | Throw, naming the migration to binary verdicts | `RUBRIC_LEGACY_SCALE` |
 | Rubric file does not exist or is unreadable | Throw, naming the resolved path | `RUBRIC_NOT_FOUND` |
 | Duplicate element or criterion id within one rubric | Throw, naming the duplicated id | `RUBRIC_DUPLICATE_ID` |
+| Rubric file is readable but not parseable as YAML, or parses to something other than a top-level map | Throw, naming the rubric path and the parser's own message | `RUBRIC_PARSE_ERROR` |
+
+> **Known constraint — fractional values are not expressible.** `lib/profiles/yaml.mjs` types bare integers only (`/^-?\d+$/`), so a decimal such as `budget_max_cost_usd: 0.5` or `weight: 1.5` arrives as a *string*, not a number. Two consequences follow and both are pinned by tests rather than worked around: a fractional budget is rejected by `RUBRIC_INVALID_BUDGET` (the error message names this cause), and a fractional legacy `weight` escapes `RUBRIC_LEGACY_SCALE`, whose trigger is a *numeric* weight. The second matters for the skill-compression migration, whose rubrics use `1.5`/`2.5`. Closing both means teaching the YAML reader to type decimals, which has blast radius beyond rubrics and belongs to its own change.
+>
+> `RUBRIC_PARSE_ERROR` was added during implementation. The loader must wrap the YAML reader's `YamlParseError` so no uncoded parser exception escapes to a caller branching on `.code`, and no other code in this table fits a readable-but-unparseable file (`RUBRIC_NOT_FOUND` covers a missing or unreadable one). It has no BEH id because it states no new behavior — it is the coded surface of a failure the loader always had.
