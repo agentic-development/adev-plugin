@@ -336,6 +336,106 @@ test("loadManifest: explicit implement.max_batch_size and implement.batch_mode r
   }
 });
 
+// ── implement.max_review_cycles default + validation (Task 1, tdd-cycle-simplification) ─
+
+test("loadManifest: defaults implement.max_review_cycles to 3 when omitted", () => {
+  const root = createTempDir();
+  try {
+    mkdirSync(join(root, ".context-index"), { recursive: true });
+    writeFileSync(
+      join(root, ".context-index/manifest.yaml"),
+      "project:\n  name: t\n",
+    );
+    const m = loadManifest(root);
+    assert.equal(m.implement.max_review_cycles, 3);
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test("loadManifest: rejects implement.max_review_cycles of 0 — INVALID_MAX_REVIEW_CYCLES", () => {
+  const root = createTempDir();
+  try {
+    mkdirSync(join(root, ".context-index"), { recursive: true });
+    writeFileSync(
+      join(root, ".context-index/manifest.yaml"),
+      "project:\n  name: t\nimplement:\n  max_review_cycles: 0\n",
+    );
+    assert.throws(
+      () => loadManifest(root),
+      (err) => err.code === "INVALID_MAX_REVIEW_CYCLES",
+    );
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test("loadManifest: rejects negative implement.max_review_cycles — INVALID_MAX_REVIEW_CYCLES", () => {
+  const root = createTempDir();
+  try {
+    mkdirSync(join(root, ".context-index"), { recursive: true });
+    writeFileSync(
+      join(root, ".context-index/manifest.yaml"),
+      "project:\n  name: t\nimplement:\n  max_review_cycles: -1\n",
+    );
+    assert.throws(
+      () => loadManifest(root),
+      (err) => err.code === "INVALID_MAX_REVIEW_CYCLES",
+    );
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test("loadManifest: rejects non-integer implement.max_review_cycles — INVALID_MAX_REVIEW_CYCLES", () => {
+  const root = createTempDir();
+  try {
+    mkdirSync(join(root, ".context-index"), { recursive: true });
+    writeFileSync(
+      join(root, ".context-index/manifest.yaml"),
+      'project:\n  name: t\nimplement:\n  max_review_cycles: "two"\n',
+    );
+    assert.throws(
+      () => loadManifest(root),
+      (err) => err.code === "INVALID_MAX_REVIEW_CYCLES",
+    );
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test("loadManifest: rejects fractional implement.max_review_cycles — INVALID_MAX_REVIEW_CYCLES", () => {
+  const root = createTempDir();
+  try {
+    mkdirSync(join(root, ".context-index"), { recursive: true });
+    writeFileSync(
+      join(root, ".context-index/manifest.yaml"),
+      "project:\n  name: t\nimplement:\n  max_review_cycles: 2.5\n",
+    );
+    assert.throws(
+      () => loadManifest(root),
+      (err) => err.code === "INVALID_MAX_REVIEW_CYCLES",
+    );
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test("loadManifest: round-trips an explicit implement.max_review_cycles", () => {
+  const root = createTempDir();
+  try {
+    mkdirSync(join(root, ".context-index"), { recursive: true });
+    writeFileSync(
+      join(root, ".context-index/manifest.yaml"),
+      "project:\n  name: t\nimplement:\n  max_review_cycles: 5\n",
+    );
+    const m = loadManifest(root);
+    assert.equal(m.implement.max_review_cycles, 5);
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
 // loadManifestForStorage — tolerant wrapper lifted from the (formerly)
 // triplicated private helper in lib/execution-state.mjs, lib/milestones.mjs,
 // lib/migrate-state-artifacts.mjs, and lib/issues/render-markdown.mjs.

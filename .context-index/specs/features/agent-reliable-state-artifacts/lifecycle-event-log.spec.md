@@ -3,10 +3,10 @@ charter: agent-reliable-state-artifacts
 status: validated
 risk_level: high
 milestone: 0.26.0
-revision: 5
+revision: 6
 charter-revision: 3
 created: 2026-05-11
-updated: 2026-08-18
+updated: 2026-08-19
 source-manifest:
   sha: "449d3d5"
   files:
@@ -106,6 +106,7 @@ Not applicable — `lib/lifecycle-state.mjs` is a passive library module with no
 - [ ] The StateProjection uses camelCase keys throughout (`currentStep`, `currentTask`, `planTasks`, `startedAt`, `updatedAt`, `interventions`, `partialRecoveries`, `unknownEvents`, `reviewRounds`). No snake_case keys on the projection (event-discriminator names within event payloads keep their snake_case as per Naming Conventions).
 - [ ] `reportPartialRecovery(projectRoot, specPath, args)` exists with the documented signature. `action` is validated against the closed enum `{resumed, discarded, stolen, aborted}` and rejected with `EVENT_SCHEMA_INVALID` otherwise. `artifact_path` is rejected with `EVENT_SCHEMA_INVALID` if absolute. The fold surfaces `partial_recovery` events under `partialRecoveries[]` on the projection (NOT folded into `interventions[]`). This is the cross-spec contract with `incremental-artifact-writes.spec.md` — that spec defines the .partial recovery lifecycle; this spec owns the event-payload shape and projection field.
 - [ ] `reportReviewRound(projectRoot, specPath, args)` exists with the documented signature and validates against a closed key allow-list (`plan`, `task_id`, `stage`, `cycles`, `findings`) and the closed stage enum, throwing `EVENT_SCHEMA_INVALID` otherwise. The fold surfaces `review_round` events under `reviewRounds` keyed `plan::task_id::stage` with last-wins (NOT under `unknownEvents[]`). Cross-spec contract with `review-provenance.spec.md`.
+- [ ] `reportReviewDepthResolved(projectRoot, specPath, args)` exists with the documented signature and validates against a closed key allow-list (`plan`, `task_id`, `pass`, `depth`, `source`, `floor_applied`, `floor_legs`), the closed `pass` enum (`provisional`, `final`), and the closed `depth` enum (`full`, `quick`), throwing `EVENT_SCHEMA_INVALID` otherwise. The fold surfaces `review_depth_resolved` events under `reviewDepthResolutions` keyed `plan::task_id::pass` with last-wins (NOT under `unknownEvents[]`). Cross-spec contract with `graduated-review-depth.spec.md`.
 - [ ] **Data-exposure boundary (SEC-8):** `partial_recovery` events MUST persist `artifact_path` as project-root-relative. Helper rejects absolute paths at write time. Lock-payload PIDs, environment values, and full command output MUST NOT appear in any `partial_recovery` event — those belong outside the lifecycle log per the spec's data-exposure boundary.
 - [ ] `listLifecycleStates(projectRoot)` returns one entry per `<slug>.jsonl` file in `.context-index/lifecycle-state/`. Empty array when directory missing.
 - [ ] All constitution quality gates pass: `npm test` green, no new dependencies in `package.json`, all files are `.mjs` ESM.
@@ -183,6 +184,22 @@ Not applicable — `lib/lifecycle-state.mjs` is a passive library module with no
   observability, not a lifecycle position. Cross-spec contract with
   `.context-index/specs/features/implementation/review-provenance.spec.md`, which defines the
   two-channel provenance design; this spec owns the payload shape and projection field.
+- **When** `/adev:implement` resolves review depth for a task (provisionally at dispatch,
+  or finally right before Stage 1/2 review) **then** the actor MUST call
+  `reportReviewDepthResolved(projectRoot, specPath, { plan, task_id, pass, depth, source, floor_applied, floor_legs })`.
+  The helper appends a `review_depth_resolved` event. `pass` is validated against the closed
+  enum `{provisional, final}`; `depth` against `{full, quick}`; `source` is a free-form string
+  naming which precedence stage resolved the value; `floor_applied` is boolean; `floor_legs` is
+  an array of strings, empty when `floor_applied` is `false`. The fold surfaces these events
+  under a new projection field `reviewDepthResolutions`, a map keyed
+  `` `${plan}::${task_id}::${pass}` `` where the fold is **last-wins** — mirroring
+  `testDepthAssignments` and `reviewRounds`. `review_depth_resolved` is NOT folded into
+  `unknownEvents[]`. `status` and `currentStep` are unchanged by the fold: this is
+  observability, not a lifecycle position, following the same rule `review_round` already
+  established. Cross-spec contract with
+  `.context-index/specs/features/implementation/graduated-review-depth.spec.md`, which owns the
+  payload shape and the resolution semantics; this spec owns only the event registration, fold,
+  and projection field.
 
 ## Postconditions
 

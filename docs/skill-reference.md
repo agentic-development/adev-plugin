@@ -323,6 +323,9 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 - `--fresh`: with `--parallel`, on a re-run collision auto-remove the retained worktree and continue instead of aborting with `RERUN_COLLISION`. No effect without `--parallel`.
 - `--no-batch`: force solo dispatch for every task, restoring today's strict one-subagent-per-task behavior. Rejected with `CONFLICTING_BATCH_FLAGS` when combined with `--parallel`.
 - `--max-batch <n>`: per-run override of `implement.max_batch_size` (default 4). `1` is equivalent to `--no-batch`.
+- `--tier full`: absolute — forces `full` review depth for every task in the run, no exceptions.
+- `--tier quick`: not absolute — authorizes evaluating the quick-grant predicate for this run even when the policy baseline is `full`; each task still must independently satisfy every quick-grant condition to actually resolve `quick`. A task failing any condition resolves `full`. Still subject to the floor pass.
+- `--review-cycles <n>`: per-run override of `implement.max_review_cycles`. Must be an integer `>= 1`; `0` is rejected with `INVALID_REVIEW_CYCLES`. Precedence: `--review-cycles` (highest) → `implement.max_review_cycles` (manifest) → `3` (default).
 - `--no-infra`: skip infrastructure preflight checks (user-only)
 - `--verbose`: enable step-by-step narration for debugging
 

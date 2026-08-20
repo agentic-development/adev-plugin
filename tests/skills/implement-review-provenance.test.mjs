@@ -70,7 +70,7 @@ test('a multi-cycle task produces exactly one commit carrying both stage trailer
 test('review-provenance prose changes no cap, threshold, or dispatch count (Contract D)', () => {
   const stage1 = SKILL.slice(SKILL.indexOf('#### 2f.'), SKILL.indexOf('#### 2g.'));
   const stage2 = SKILL.slice(SKILL.indexOf('#### 2g.'), SKILL.indexOf('#### 2h.'));
-  assert.match(stage2, /Maximum 3 code-quality review cycles per task/);
+  assert.match(stage2, /Maximum `implement\.max_review_cycles` code-quality review cycles per task/);
   assert.match(stage2, /On any terminal non-PASS verdict, Stage 2 has NOT passed/);
   assert.ok(!/review[- ]round/i.test(stage1), 'Stage 1 prose must be untouched');
   assert.ok(!/review[- ]round/i.test(stage2), 'Stage 2 prose must be untouched');

@@ -336,6 +336,9 @@ const EXPECTED_VARIANTS = [
   // review-provenance.spec.md Output Contract B registration step 2 — the
   // canonical set legitimately grew here, so the pin is updated in lockstep.
   'review_round',
+  // Task 6 — review_depth_resolved registration; the canonical set
+  // legitimately grew here, so the pin is updated in lockstep.
+  'review_depth_resolved',
 ];
 
 test('no new CANONICAL_EVENTS variant is introduced', () => {
