@@ -152,14 +152,6 @@ completion:
 # Task Management
 # ============================================================================
 
-# Build pipeline. `max_review_retries` bounds the BLOCK -> revise loop in
-# `/adev:build --full`. Raised from the default 2 on 2026-08-15: high-risk
-# specs reviewed at full tier converge monotonically but need more than two
-# rounds, and the loop was halting at BUDGET_EXHAUSTED mid-convergence
-# (heuristics Phase 3 went 6 -> 2 -> 1 blockers across three rounds).
-build:
-  max_review_retries: 9
-
 # implement:
 #   batch_mode: on          # on | off — default on (Requires Human Approval; see
 #                            # batched-task-dispatch.spec.md System Constitution Reference)
@@ -454,4 +446,15 @@ build:
   # validated the lower cap at -22% cost with "3rd iteration added no value".
   # Raising it bought one additional regression and no convergence. Fix the stall
   # guards before touching the budget again.
+  #
+  # Rejected alternative (adev-plugin-gkfv.2): a separate same-day edit raised
+  # this to 9, reasoning that high-risk specs at full tier converge
+  # monotonically but need more than two rounds, and the loop was halting at
+  # BUDGET_EXHAUSTED mid-convergence (heuristics Phase 3 went 6 -> 2 -> 1
+  # blockers across three rounds). That edit landed in a second, duplicate
+  # top-level `build:` block earlier in this file and was silently dead —
+  # YAML's last-wins semantics meant this block always won. The 9-value
+  # reasoning may still be worth revisiting if BUDGET_EXHAUSTED-mid-convergence
+  # recurs, but do so deliberately, in this one block, not by re-adding a
+  # second `build:` section.
   max_review_retries: 2
