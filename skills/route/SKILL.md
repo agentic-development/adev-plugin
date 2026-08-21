@@ -239,6 +239,8 @@ Task 7: Custom analytics engine (score: 6/20)
   Suggestion: Break into smaller subtasks or implement manually
 ```
 
+**Terse form:** Renders the per-task routing table (task, route, score, and the four dimension scores), the route-distribution count line, and the sidecar path `<plan-stem>.routing.json`, written alongside the plan; the plan file itself is unchanged. Substitutes the human-only guidance block with a count of human-only tasks and a pointer to that same sidecar path, which already carries each task's scores and rationale.
+
 ## Integration with /adev:implement
 
 `/adev:implement` reads routing decisions from `<plan-stem>.routing.json` via
@@ -270,6 +272,8 @@ Dry run: routing scores computed but no sidecar written.
 
 To write the routing sidecar: /adev:route --plan <path>
 ```
+
+**Terse form:** This section's terse form governs the composed view; `## Step 5: Report to User`'s terse form applies only when Step 5 renders on its own. Renders the same per-task routing summary and route-distribution count Step 5 would render, states that no sidecar was written and none was disturbed, and renders the follow-on `/adev:route --plan <path>` invocation to write it.
 
 ## Red Flags
 
