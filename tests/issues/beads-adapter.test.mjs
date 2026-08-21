@@ -369,3 +369,129 @@ describe("BeadsAdapter — affected_modules round-trip (RI-2 fix, bug-selection-
     });
   });
 }
+
+// ─── claim()/release() status symmetry (adev-plugin-idqa) ─────────────────
+{
+  /**
+   * `claim()` sets status: open -> in_progress. `release()` cleared only
+   * `owner`/`claimed_at`, never touching status — so a released issue that
+   * was merely probed (claimed then released, never worked) was left
+   * permanently in_progress with no owner and no lease to expire it.
+   * Confirmed live 2026-08-18: two claimed-then-released issues stayed
+   * in_progress, corrupting their parent epic's rollup, until manually
+   * repaired with `br update --status open`.
+   *
+   * Fix: `claim()` records the pre-claim status in agent_context, write-once
+   * (an idempotent re-claim or a takeover on a stale lease must not clobber
+   * the ORIGINAL pre-claim status with "in_progress"). `release()` restores
+   * it — but only when status is still exactly what claim() left it in
+   * (nothing else moved it in the meantime) — and always clears the marker.
+   */
+
+  function agentContext(meta) {
+    return JSON.stringify({ adev: meta });
+  }
+
+  function makeScanRecord({ status, owner, meta }) {
+    return {
+      id: "br-1",
+      external_ref: "issue-1",
+      title: "t",
+      status,
+      assignee: owner,
+      agent_context: agentContext(meta),
+    };
+  }
+
+  describe("BeadsAdapter — claim() records pre-claim status (adev-plugin-idqa)", () => {
+    it("claiming an open issue writes pre_claim_status: open into agent_context", async () => {
+      const c = makeAdapter();
+      c.adapter._scan = () => [makeScanRecord({ status: "open", owner: undefined, meta: {} })];
+      await c.adapter.claim("issue-1", "agent-a", {});
+      const update = c.calls.find((call) => call.includes("--claim")) || c.calls.find((call) => call[0] === "update");
+      const i = update.indexOf("--agent-context");
+      assert.notEqual(i, -1);
+      const ctx = JSON.parse(update[i + 1]);
+      assert.equal(ctx.adev.pre_claim_status, "open");
+    });
+
+    it("claiming an already-in_progress issue (not via a prior claim) records pre_claim_status: in_progress", async () => {
+      const c = makeAdapter();
+      c.adapter._scan = () => [makeScanRecord({ status: "in_progress", owner: undefined, meta: {} })];
+      await c.adapter.claim("issue-1", "agent-a", {});
+      const update = c.calls.find((call) => call.includes("--claim")) || c.calls.find((call) => call[0] === "update");
+      const ctx = JSON.parse(update[update.indexOf("--agent-context") + 1]);
+      assert.equal(ctx.adev.pre_claim_status, "in_progress");
+    });
+
+    it("an idempotent re-claim (same owner) does not overwrite an existing pre_claim_status", async () => {
+      const c = makeAdapter();
+      c.adapter._scan = () => [
+        makeScanRecord({ status: "in_progress", owner: "agent-a", meta: { pre_claim_status: "open", claimed_at: "2026-01-01T00:00:00.000Z" } }),
+      ];
+      await c.adapter.claim("issue-1", "agent-a", {});
+      const update = c.calls.find((call) => call[0] === "update");
+      const ctx = JSON.parse(update[update.indexOf("--agent-context") + 1]);
+      assert.equal(ctx.adev.pre_claim_status, "open", "the original pre-claim status must survive an idempotent re-claim");
+    });
+  });
+
+  describe("BeadsAdapter — release() restores pre-claim status (adev-plugin-idqa)", () => {
+    it("releasing an issue claimed from open restores status to open", async () => {
+      const c = makeAdapter();
+      c.adapter._scan = () => [
+        makeScanRecord({ status: "in_progress", owner: "agent-a", meta: { pre_claim_status: "open", claimed_at: "2026-01-01T00:00:00.000Z" } }),
+      ];
+      await c.adapter.release("issue-1", "agent-a", {});
+      const update = c.calls.find((call) => call[0] === "update");
+      assert.ok(update, "release must emit a br update call");
+      const si = update.indexOf("--status");
+      assert.notEqual(si, -1, "release must restore status");
+      assert.equal(update[si + 1], "open");
+    });
+
+    it("releasing an issue claimed from deferred restores status to deferred, not open", async () => {
+      const c = makeAdapter();
+      c.adapter._scan = () => [
+        makeScanRecord({ status: "in_progress", owner: "agent-a", meta: { pre_claim_status: "deferred", claimed_at: "2026-01-01T00:00:00.000Z" } }),
+      ];
+      await c.adapter.release("issue-1", "agent-a", {});
+      const update = c.calls.find((call) => call[0] === "update");
+      const si = update.indexOf("--status");
+      assert.notEqual(si, -1);
+      assert.equal(update[si + 1], "deferred");
+    });
+
+    it("releasing an issue that was already in_progress before the claim leaves it in_progress", async () => {
+      const c = makeAdapter();
+      c.adapter._scan = () => [
+        makeScanRecord({ status: "in_progress", owner: "agent-a", meta: { pre_claim_status: "in_progress", claimed_at: "2026-01-01T00:00:00.000Z" } }),
+      ];
+      const result = await c.adapter.release("issue-1", "agent-a", {});
+      assert.equal(result.status, "in_progress");
+    });
+
+    it("release clears the pre_claim_status marker from agent_context", async () => {
+      const c = makeAdapter();
+      c.adapter._scan = () => [
+        makeScanRecord({ status: "in_progress", owner: "agent-a", meta: { pre_claim_status: "open", claimed_at: "2026-01-01T00:00:00.000Z" } }),
+      ];
+      await c.adapter.release("issue-1", "agent-a", {});
+      const update = c.calls.find((call) => call[0] === "update");
+      const ctx = JSON.parse(update[update.indexOf("--agent-context") + 1]);
+      assert.ok(!("pre_claim_status" in ctx.adev), "the marker must not survive release");
+    });
+
+    it("releasing an issue with no pre_claim_status marker (pre-fix legacy claim) does not touch status", async () => {
+      // Backward compatibility: an issue claimed by an older build before
+      // this fix shipped has no marker. Must not regress by guessing.
+      const c = makeAdapter();
+      c.adapter._scan = () => [
+        makeScanRecord({ status: "in_progress", owner: "agent-a", meta: { claimed_at: "2026-01-01T00:00:00.000Z" } }),
+      ];
+      await c.adapter.release("issue-1", "agent-a", {});
+      const update = c.calls.find((call) => call[0] === "update");
+      assert.equal(update.indexOf("--status"), -1, "no marker means no restore — status is left exactly as today");
+    });
+  });
+}
