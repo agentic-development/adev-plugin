@@ -119,6 +119,61 @@ test('bugfix-loop SKILL.md Step 3 documents ADD_FAILED handling: no attempt this
   assert.match(nearbyText, /Step 2/);
 });
 
+test('bugfix-loop SKILL.md Step 6 calls adev worktree remove --slug bugfix-<issue-id> after commit (or explicit skip) is confirmed (Plan-task 7)', () => {
+  const md = read('skills/bugfix-loop/SKILL.md');
+  const step6Idx = md.indexOf('## Step 6: Self-re-invoke');
+  const failureModesIdx = md.indexOf('## Failure Modes');
+  const step6Text = md.slice(step6Idx, failureModesIdx);
+  assert.ok(step6Idx !== -1 && failureModesIdx !== -1);
+  assert.match(step6Text, /adev worktree remove --slug bugfix-<issue-id>/, 'worktree remove must be documented within Step 6');
+});
+
+test('bugfix-loop SKILL.md Step 6 documents REMOVE_FAILED as non-blocking advisory — never retried, never blocks self-re-invocation (Plan-task 7)', () => {
+  const md = read('skills/bugfix-loop/SKILL.md');
+  assert.match(md, /REMOVE_FAILED/);
+  const idx = md.indexOf('REMOVE_FAILED');
+  const nearby = md.slice(idx, idx + 300);
+  assert.match(nearby, /non-blocking advisory/);
+  assert.match(nearby, /[Nn]ever retr/);
+});
+
+test('the manual --resume path (no --resume-run-id) performs the same orphan-worktree sweep as Step 6 (BEH-13) (Plan-task 7)', () => {
+  const md = read('skills/bugfix-loop/SKILL.md');
+  const manualResumeIdx = md.indexOf('manual crash recovery');
+  const step1Idx = md.indexOf('## Step 1: Turn guard');
+  const manualResumeText = md.slice(manualResumeIdx, step1Idx);
+  assert.match(manualResumeText, /adev worktree remove --slug bugfix-<issue-id>/);
+  assert.match(manualResumeText, /BEH-13/);
+});
+
+test('bugfix-loop SKILL.md documents WORKTREE_REMOVAL_DEFERRED: an uncommitted diff leaves the worktree in place, logging its path, instead of removing it (Plan-task 7)', () => {
+  const md = read('skills/bugfix-loop/SKILL.md');
+  assert.match(md, /WORKTREE_REMOVAL_DEFERRED/);
+});
+
+test('bugfix-loop SKILL.md has a Step 4.5 that calls adev bugfix-loop commit-pr on a FIXED verdict when --worktree-per-bug or --auto-commit is set (Plan-task 11)', () => {
+  const md = read('skills/bugfix-loop/SKILL.md');
+  const step4Idx = md.indexOf('## Step 4: Attempt via /adev:debug --auto');
+  const step45Idx = md.indexOf('## Step 4.5: Commit and open a PR');
+  const step5Idx = md.indexOf('## Step 5: Finish');
+  assert.ok(step4Idx !== -1 && step45Idx !== -1 && step5Idx !== -1);
+  assert.ok(step4Idx < step45Idx && step45Idx < step5Idx, 'Step 4.5 must sit between Step 4 and Step 5');
+  const step45Text = md.slice(step45Idx, step5Idx);
+  assert.match(step45Text, /adev bugfix-loop commit-pr/);
+  assert.match(step45Text, /FIXED/);
+  assert.match(step45Text, /--worktree-per-bug.*--auto-commit|--auto-commit.*--worktree-per-bug/);
+});
+
+test('bugfix-loop SKILL.md documents Step 4.5 is skipped entirely for PARKED/UNREPRODUCIBLE verdicts (BEH-5) (Plan-task 11)', () => {
+  const md = read('skills/bugfix-loop/SKILL.md');
+  const step45Idx = md.indexOf('## Step 4.5: Commit and open a PR');
+  const step5Idx = md.indexOf('## Step 5: Finish');
+  const step45Text = md.slice(step45Idx, step5Idx);
+  assert.match(step45Text, /PARKED.*UNREPRODUCIBLE|UNREPRODUCIBLE.*PARKED/);
+  assert.match(step45Text, /skip/i);
+  assert.match(step45Text, /BEH-5/);
+});
+
 test('using-adev gateway table lists /adev:bugfix-loop', () => {
   const md = read('skills/using-adev/SKILL.md');
   assert.match(md, /\/adev:bugfix-loop/);
