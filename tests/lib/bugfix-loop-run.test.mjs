@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, dirname, relative } from 'node:path';
 import { execSync } from 'node:child_process';
 import {
   createRun, readRunState, resolveRunStatePath, checkStatusGuard, checkBudget,
@@ -38,8 +38,14 @@ test('resolveRunStatePath rejects a non-UUID-shaped run_id (BD-1)', () => {
 test('run-state filename stays covered by the .gitignore lifecycle-state/*.json glob', () => {
   const root = process.cwd();
   const path = resolveRunStatePath(root, '11111111-1111-4111-8111-111111111111');
-  const rel = path.slice(root.length + 1);
-  const out = execSync(`git check-ignore ${rel}`, { cwd: root }).toString().trim();
+  // resolveRunStatePath maps `root` onto the shared main-repo storage root
+  // (BEH-3, worktree-aware resolution — `git check-ignore` when *this test
+  // itself* runs from inside a linked worktree redirects here rather than
+  // to `root`) — derive the actual containing root from the returned path
+  // itself, not the input, so the assertion holds either way.
+  const storageRoot = dirname(dirname(dirname(path))); // strip lifecycle-state/<file>.json, then .context-index
+  const rel = relative(storageRoot, path);
+  const out = execSync(`git check-ignore ${rel}`, { cwd: storageRoot }).toString().trim();
   assert.equal(out, rel);
 });
 
@@ -308,4 +314,26 @@ test('formatSummaryTable on a run with no attempts yet renders a table with head
   assert.match(table, /issue/i);
   assert.match(table, /verdict/i);
   rmSync(root, { recursive: true, force: true });
+});
+
+test('resolveRunStatePath resolves a relative tasks.db_path to an absolute path, not silently against process.cwd() (Plan-task 16 cq-1 fix)', () => {
+  const root = mkdtempSync(join(tmpdir(), 'bfl-run-'));
+  const dbDir = mkdtempSync(join(tmpdir(), 'bfl-run-dbpath-'));
+  // A relative tasks.db_path, resolved relative to *this process's* cwd —
+  // deliberately NOT `root`, to prove resolveRunStatePath does not silently
+  // treat it as relative-to-root either. Use path.relative so the test
+  // itself does not hardcode process.cwd()'s identity.
+  const relativeDbPath = relative(process.cwd(), dbDir);
+  mkdirSync(join(root, '.context-index'), { recursive: true });
+  writeFileSync(join(root, '.context-index', 'manifest.yaml'), `tasks:\n  db_path: ${relativeDbPath}\n`);
+
+  const runId = '22222222-2222-4222-8222-222222222222';
+  const path = resolveRunStatePath(root, runId);
+
+  // The resolved path must be absolute and must land under dbDir (resolved
+  // against process.cwd(), matching node:path's own resolve() semantics —
+  // not silently left relative, and not anchored to `root`).
+  assert.ok(path.startsWith(dbDir + '/'), `expected path under ${dbDir}, got ${path}`);
+  rmSync(root, { recursive: true, force: true });
+  rmSync(dbDir, { recursive: true, force: true });
 });
