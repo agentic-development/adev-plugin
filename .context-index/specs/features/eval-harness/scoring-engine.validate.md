@@ -1,210 +1,305 @@
 ---
-kind: validate
+kind: validate-report
 spec: .context-index/specs/features/eval-harness/scoring-engine.spec.md
 plan: .context-index/specs/features/eval-harness/scoring-engine.plan.md
 charter: eval-harness
+spec-revision: 9
+rigor-tier: quick
+head: e1f075d5
+manifest-sha: 428bd5d
+status: PASS
+verdict: PASS_WITH_NOTES
 date: 2026-08-20
-rigor_tier: quick
-status: FAIL
 ---
 
 # Validation Report: Rubric scoring engine and adev eval score verb
 
 > **Date:** 2026-08-20
-> **Spec:** `.context-index/specs/features/eval-harness/scoring-engine.spec.md`
+> **Spec:** `.context-index/specs/features/eval-harness/scoring-engine.spec.md` (revision 9)
 > **Plan:** `.context-index/specs/features/eval-harness/scoring-engine.plan.md`
-> **Rigor tier:** `quick` (explicit `--tier quick`) — Check 1 plus one synthesized spec+constitution compliance check; Checks 1.5, 1.6, 8 and 9 skipped by tier.
-> **Overall Status:** FAIL
+> **Rigor tier:** `quick` (explicit `--tier quick`) — Check 1 plus one synthesized spec+constitution compliance check; Checks 1.5, 1.6, 8, 9 and 14 recorded SKIP
+> **HEAD:** `e1f075d5` · **Registry warnings:** none · **Workspace:** not detected
+> **Overall Status:** PASS (with notes)
 
-Registry loaded from `.context-index/governance/validate.yaml` with no warnings.
-Domain resolved: `software` (source level: project). Workspace: none detected.
-Infrastructure preflight: PASS (spec declares no `infra_requirements`).
+This is a **delta round**. The previous validate of this spec returned FAIL on a
+reproduced defect: `adev eval score --rubric default` was refused on any real
+install because `skills/eval/SKILL.md` passed an `<ADEV_ROOT>`-resolved path
+while BEH-9 containment checks the **project** root. Spec revisions 6–9 added
+BEH-11 (keyword resolution bounded by a module-derived plugin root, never an
+environment variable) and BEH-12 (the skill passes the literal token). This
+round implemented exactly that, in seven commits `15cbb37b..e1f075d5`.
 
 ---
 
-## Check 1: Quality Gates — PASS (with notes)
+## Check 1: Quality Gates — PASS (with a warning-severity integration failure)
 
-Gate set resolved from the project's materialized `.context-index/governance/gates.yaml` via `adev domain load-gates --module eval-harness`.
+Gate set resolved from the project's materialized `governance/gates.yaml` via
+`adev domain load-gates --module eval-harness` (domain `software`, source level
+`project`). No legacy `gates:` section in `manifest.yaml`.
 
 ### Check 1a — fast tier: PASS
 
-| Gate | Command | Result |
-|---|---|---|
-| `test` | `npm test` | **PASS** (28.3s) — 7272 tests, 7270 pass, 0 fail, 2 todo, 989 suites |
-| `quality-gate` | `npm test` | **PASS** (32.4s) — identical counts |
+| Gate | Command | Severity | Result |
+|---|---|---|---|
+| `test` | `npm test` | error | **PASS** (39.7 s) |
+| `quality-gate` | `npm test` | error | **PASS** (same command, same run) |
 
-### Check 1b — integration tier: WARN (severity `warning`, non-blocking)
+`npm test`: **7294 tests, 7292 pass, 0 fail, 0 skipped, 2 todo.** The two todos
+are pre-existing and unrelated to this spec.
 
-| Gate | Command | Result |
-|---|---|---|
-| `integration-test` | `npm run test:evals` | **FAIL** — 393 tests, 381 pass, **12 fail** |
+### Check 1b — integration tier: WARN (non-blocking)
 
-The 12 failures are **pre-existing and unrelated to this spec**. None of the failing files
-appear in `git diff 07b5ab04~1..HEAD`:
+| Gate | Command | Severity | Result |
+|---|---|---|---|
+| `integration-test` | `npm run test:evals` | **warning** | **FAIL** (exit 1) |
 
-- `tests/evals/integration-sandbox/build-with-db.test.mjs` (6), `build-without-db.test.mjs` (2),
-  `reality-check.test.mjs` (3) — all require PostgreSQL on port 5433, which is not running in
-  this environment. These tests correctly **fail hard** rather than skipping, which is the
-  intended project policy; they are not being suppressed here, they are being reported.
-- `tests/evals/configurable-governance/tier2-dispatch-shape.test.mjs` (1) — governance
-  dispatch-shape eval, last touched by `631a12ad` / `734ea5a9`, unrelated to eval-harness.
+381 pass / 12 fail across 116 suites. Every failure is pre-existing
+infrastructure breakage unrelated to the eval-harness scoring engine:
 
-Because the gate's declared severity is `warning`, Check 1 does not block and validation
-proceeded to the compliance check. **This does not excuse the failures** — they are real and
-should be triaged separately (infra for the sandbox suite; a genuine regression triage for
-`tier2-dispatch-shape`).
+- `PostgreSQL IS running on port 5433`, `seed data is loaded` — Postgres offline.
+- `npm test exits with code 0`, `at least one test passed`, `zero tests failed`,
+  `failure is a connection error, not a logic error`, `no test file uses skip
+  guards for infrastructure`, `no test file uses describe.skipIf` — all inside
+  the integration-sandbox fixture project, downstream of the offline Postgres.
+- `detects spec as implemented with HIGH or MEDIUM confidence`, `evidence
+  includes committed files`, `verifies spec, generates confidence note, produces
+  audit trail` — reality-check fixture, same sandbox.
+- `all three stages carry a nonce-fenced target spec…` — Tier 2 context-pack
+  test, unrelated module.
 
-### Check 1c — e2e tier: SKIP
+None of the twelve touch `lib/evals/`, `lib/cli/eval.mjs`, or any file in the
+spec's source manifest. Severity is `warning`, so Check 1 does not fail and
+Checks 2/4 were not skipped.
 
-e2e tier — no gates configured, skipped.
+### Check 1c — e2e tier
 
-**Per-gate attestation** emitted on one `validator_report` (`validate.check-1-quality-gates`)
-carrying `gate_outcomes` for all three gates with their loader-computed `command_sha`, and
-`--manifest-sha ca85164`.
+No gates configured for the e2e tier — skipped.
+
+### Per-gate outcome attestation
+
+Emitted once for the whole check, `--manifest-sha 428bd5d`:
+
+| id | verdict | tier | command_sha |
+|---|---|---|---|
+| `test` | `pass` | fast | `527c484bcc3bb219e92ed61f99ff968f31143f89e53fda93d09b74c0ce3177d4` |
+| `quality-gate` | `pass` | fast | `527c484bcc3bb219e92ed61f99ff968f31143f89e53fda93d09b74c0ce3177d4` |
+| `integration-test` | `fail` | integration | `9e6a54d23534258f784b28304c370e52ef93b8fb94ddd7fb879938a6735e941e` |
 
 ---
 
-## Check 2: Spec Compliance — FAIL
+## Check 2: Spec Compliance — PASS (with notes)
 
-Every behavioral criterion BEH-1 … BEH-10 was verified against files read in this run.
-All ten pass on their own terms. The FAIL is an **integration defect between BEH-9 and Task 11**
-that no single criterion owns.
+Every acceptance criterion in the spec's `## Acceptance Criteria` list was
+verified against files read in this run. Full per-criterion evidence is in the
+synthesized check's record; the criteria specific to this delta round are
+restated here with the orchestrator's own independent verification.
 
-| Criterion | Verdict | Evidence |
-|---|---|---|
-| BEH-1 — verdict table + two distinct halves; blended total only when both numeric, rounded once, capped | PASS | `lib/evals/score.mjs:499-571`, halves 532-548, total 554-560; `buildVerdictTable` 421-434. Tests: `tests/lib/evals/score-result-assembly.test.mjs:14-43`, `score-tally.test.mjs:48-57` |
-| BEH-2 — `not_applicable` out of element denominator, `unknown` out of criterion denominator | PASS | `lib/evals/score.mjs:318-326`; call sites 510-517. Tests: `score-tally.test.mjs:9-34`, `:36-46` |
-| BEH-3 — two-clause insufficient-evidence rule; deterministic half unaffected; no blended total | PASS | `lib/evals/score.mjs:389-402`; independent resolution 537-548. Tests: `score-insufficient-evidence.test.mjs:12-21`, `:23-33`, `:35-48`, `:50-60` |
-| BEH-4 — nothing to answer ⇒ `NOT_SCORED`, no NaN reaches the caller | PASS | `lib/evals/score.mjs:390`, `:392-394`. Tests: `score-not-scored.test.mjs:8-51` |
-| BEH-5 — `met`/`not_met` with empty evidence ⇒ `SCORE_EMPTY_EVIDENCE` | PASS | `lib/evals/score.mjs:254-260`, `isEmptyEvidence` 180-182. Test: `score-verdict-validation.test.mjs:17-29` |
-| BEH-6 — unknown id / missing id rejected | PASS | `lib/evals/score.mjs:236-242`, `:265-272`. Test: `score-verdict-validation.test.mjs:31-42` |
-| BEH-7 — `buildJudgeContext` allow-list isolation | PASS | `lib/evals/score.mjs:626-651`, guard 642-645. Test: `score-judge-context.test.mjs:42-76` |
-| BEH-8 — table always accompanies aggregate; status half by name, never `0` | PASS | `lib/cli/eval.mjs:153-156`, `:167-172`, `:181-183`. Test: `tests/cli/eval-score.test.mjs:18-40` |
-| BEH-9 — path containment on both flags before either file is opened | PASS | `lib/cli/eval.mjs:95-101`, called 218-219 **before** `readFileSync` at 223 |
-| BEH-10 — bad threshold ⇒ `SCORE_INVALID_THRESHOLD` before tallying; `100` in range | PASS | `lib/evals/score.mjs:149-153`; ordering at `:500-502`. Tests: `score-rubric-and-threshold.test.mjs:9-39` |
-| Status partition mutually exclusive and exhaustive over the zero-denominator case | PASS | `lib/evals/score.mjs:389-402`; machine-checked sweep at `score-status-partition.test.mjs:25-41` |
-| Determinism / stable key order | PASS | "do not reorder" comments at `score.mjs:423-424, 530-531, 543-544, 564-565`; no clock, no RNG. Test: `score-result-assembly.test.mjs:51-56` |
-| Zero new external dependencies | PASS | `git diff 07b5ab04~1..HEAD -- package.json package-lock.json` → empty |
+### Delta-round criteria (BEH-11 / BEH-12)
 
-### FAIL-1 (blocking) — `adev eval score` rejects the default rubric in every real installation
+- **`--rubric default` resolves the shipped rubric and succeeds even when the
+  plugin root lies outside the project root (BEH-11): PASS.** Verified
+  **end to end, outside the test suite**, by building a plugin root and a
+  project root as sibling directories in a scratch area and invoking the real
+  entrypoint: `--rubric default` exited 0 and printed the shipped rubric's
+  eleven-row table and `deterministic: 10/10   judged: 12/15   total: 22/25`.
+  Implementation: `lib/cli/eval.mjs:138-153` (`loadDefaultRubric`), branch at
+  `lib/cli/eval.mjs:275-276`.
+- **The plugin root is derived from the module's own location; no code path
+  reads it from the environment (BEH-11): PASS.**
+  `grep -n "process.env" lib/cli/eval.mjs` returns **nothing**. The root comes
+  from `getPluginRoot()` at `lib/profiles/index.mjs:28-30`
+  (`join(__dirname, "..", "..")`, `__dirname` from `import.meta.url`). A
+  whole-file static guard exists at
+  `tests/cli/eval-default-rubric-keyword.test.mjs:127-136`, asserted over the
+  entire file rather than one code path.
+- **A decoy `CLAUDE_PLUGIN_ROOT` does not redirect `--rubric default`: PASS.**
+  Verified end to end: with both `CLAUDE_PLUGIN_ROOT` and `ADEV_ROOT` pointed at
+  a decoy tree carrying a rubric at the exact relative path the keyword branch
+  reads, the shipped rubric still loaded and the shipped table still printed.
+- **`skills/eval/SKILL.md` and both provider mirrors pass the literal `default`
+  (BEH-12): PASS.** `skills/eval/SKILL.md:171`,
+  `providers/codex/skills/eval/SKILL.md:171`,
+  `providers/opencode/skills/eval/SKILL.md:171` — all
+  `adev eval score --rubric default --input <verdict file path>`.
+- **The regression test runs through `dispatch()` with the plugin root outside
+  the project root, and asserts the argument the skill's documented flow passes:
+  PASS.** `tests/cli/eval-default-rubric-e2e.test.mjs` spawns
+  `join(pluginRoot, "cli", "index.mjs")` with `cwd: projectRoot`, asserts the
+  roots are non-nested, and extracts the `--rubric` value from the real
+  `### Step 3` section rather than hardcoding `default`.
+- **No live emitter of `--rubric` passes a path to the shipped rubric (BEH-12):
+  PASS.** The spec's acceptance predicate,
+  `grep -rnE -- "--rubric[ =][^ ]*default-rubric\.yaml" skills/ providers/ docs/`,
+  was run by the orchestrator and returns **0 matches** (pre-state was 2, at
+  `docs/cli-reference.md:851-852`). The in-suite sweep at
+  `tests/skills/eval-rubric-keyword-emission.test.mjs:229-279` is self-guarded:
+  it fails if the walker finds no files, and proves its predicate bites on the
+  repo-relative, absolute plugin-cache, and backtick-wrapped forms while not
+  matching `default`.
+- **A non-`default` `--rubric` value is still containment-checked against the
+  project root, unchanged (BEH-9, BEH-11): PASS.** Verified end to end:
+  `--rubric ../../../etc/passwd` exits 1 with
+  `UNSAFE_SCORE_PATH: path "../../../etc/passwd" escapes the project root.`
+  Implementation: `lib/cli/eval.mjs:275-277`, `:301`.
+- **The documented invocation is corrected: PASS.**
+  `docs/cli-reference.md:821` now reads
+  `eval score --rubric <path|default> --input <path> [--json]`; the blanket
+  containment sentence is narrowed to "every `--rubric` *path* value"
+  (`:832`); a new paragraph (`:843-854`) names the plugin-root boundary, the
+  never-from-an-environment-variable rule, and `SCORE_DEFAULT_RUBRIC_MISSING`;
+  both examples (`:867-868`) use `--rubric default`.
 
-`skills/eval/SKILL.md:110-118` resolves the Layer 3 rubric, defaulting to
-`<ADEV_ROOT>/skills/eval/default-rubric.yaml`. `skills/eval/SKILL.md:163-165` then instructs the
-agent to pass **that resolved path** to `adev eval score --rubric`. BEH-9's containment
-(`lib/cli/eval.mjs:218`) checks it against the **project root**. In any real installation
-`<ADEV_ROOT>` is the plugin cache directory, outside the project — so the default path is refused.
+### Pre-existing criteria (BEH-1 … BEH-10)
 
-Reproduced in this run against the installed plugin copy:
+All PASS. Highlights, all cited from files read this run:
 
-```
-$ node cli/index.mjs eval score \
-    --rubric /Users/dpavancini/.claude/plugins/cache/agentic-development/adev/0.28.0-next.4/skills/eval/default-rubric.yaml \
-    --input tests/fixtures/evals/verdicts/complete.json
-UNSAFE_SCORE_PATH: path "…/skills/eval/default-rubric.yaml" escapes the project root.
-exit 1
-```
+- BEH-1 halves as distinct addressable fields and a blended total only when both
+  are numeric — `lib/evals/score.mjs:532-548`, `:554-560`, `:566-571`.
+- BEH-2 denominator exclusions — `lib/evals/score.mjs:318-326`, wired `:510-517`.
+- BEH-3 both clauses, including the threshold-independent one —
+  `lib/evals/score.mjs:392-399`.
+- BEH-4 `NOT_SCORED` — `lib/evals/score.mjs:390-394`.
+- Disjointness and exhaustiveness over the zero-denominator case —
+  `lib/evals/score.mjs:389-402`, swept by
+  `tests/lib/evals/score-status-partition.test.mjs:25-41`.
+- BEH-10 threshold validation before tallying — `lib/evals/score.mjs:149-153`,
+  ordering asserted at `tests/lib/evals/score-rubric-and-threshold.test.mjs:33`.
+- BEH-5/6/7/8 — `lib/evals/score.mjs:236-272`, `:626-651`;
+  `lib/cli/eval.mjs:205-208`, `:233-235`, `:308-312`.
+- Determinism — fixed key order at `lib/evals/score.mjs:423-424`, `:530-531`,
+  `:543-544`, `:564-565`; no clock or randomness imported. Asserted by
+  `JSON.stringify` equality, not `deepEqual`, at
+  `tests/lib/evals/score-result-assembly.test.mjs:51-56`.
 
-The containment behaviour is exactly what BEH-9 mandates, and `loadRubric`'s own
-`UNSAFE_RUBRIC_PATH` containment predates this spec. What is **new in this diff** is Task 11
-wiring Layer 3's `<ADEV_ROOT>`-resolved default into a project-root-contained verb. The spec's
-stated purpose — "`adev eval score` exposes that to both consumers — `/adev:eval` Layer 3 and the
-`tests/evals/` suite" — is therefore unmet for Layer 3's default configuration.
+### Error-code table completeness — PASS
 
-No test covers this: every CLI test passes an in-repo relative path. In this repository
-`ADEV_ROOT === projectRoot`, which is why the defect is invisible to the suite.
+Twelve codes are constructed in the implementation, twelve are declared in
+`SCORE_ERROR_CODES` (`lib/evals/score-schema.mjs:63-89`), and twelve rows appear
+in the spec's Error Cases table. Three-way parity holds with no orphans in
+either direction.
 
-**Remedy (spec-level decision required, not an autonomous fix):** either teach `containPath` an
-ADEV_ROOT-aware allowance for the shipped rubric, or change `skills/eval/SKILL.md` to copy /
-reference the default rubric from inside the project. Either way the spec needs a criterion
-covering the plugin-root case, plus a regression test.
+`loadRubric`'s own codes (`UNSAFE_RUBRIC_PATH`, `RUBRIC_NOT_FOUND`, …) pass
+through the verb but are **not** omissions: they are tabled by
+`rubric-schema-and-loader.spec.md`, and this spec's Preconditions scope the
+engine to already-loaded rubrics. Only `RUBRIC_NOT_FOUND` is re-coded, and only
+on the `default` branch.
 
-### Scope expansion — WARN
+### Test integrity findings (non-blocking)
 
-1. **Two error codes ship that the spec's nine-row Error Cases table does not enumerate:**
-   `SCORE_INVALID_VERDICT_CONTEXT` (`lib/evals/score-schema.mjs:79`, raised at
-   `lib/evals/score.mjs:584-593`) and `SCORE_INPUT_PARSE_ERROR` (`score-schema.mjs:87`, raised at
-   `lib/cli/eval.mjs:234-239`). Both close real silent-failure holes and both are defensible —
-   but `score-schema.mjs:71-78` prescribes its own remedy: *"add a one-line row for it to the
-   spec rather than dropping the check."* That row was never added.
-2. `resolveHalfStatus` is a public export (`lib/evals/score.mjs:389`) though the charter's
-   Exposed-APIs table names only `loadRubric`, `scoreRubric`, `buildJudgeContext`,
-   `collectRunRecord`. Justified (it is what makes the exhaustive partition sweep testable) but
-   undeclared.
-3. The spec's `source-manifest` omits the 9 new files under `tests/fixtures/evals/**` and both
-   provider mirrors (`providers/{codex,opencode}/skills/eval/SKILL.md`), all touched by this diff.
-   Drift detection will not see them as spec-tracked. `adev source-manifest verify` still returns
-   PASS (`sha: ca85164`) because it only checks listed files.
+None invalidates a criterion. No conditional skips, no `try/catch`-wrapped
+assertions, and no tautological assertions were found in the new or modified
+test files.
 
-### Test integrity — no weakening found
+1. **Loose matcher (pre-existing).** `tests/cli/eval-score.test.mjs:65` asserts
+   `/SCORE_(EMPTY_EVIDENCE|MISSING_VERDICT|UNKNOWN_VERDICT_ID)/` against a
+   deterministic fixture whose last entry makes the code unambiguously
+   `SCORE_UNKNOWN_VERDICT_ID`. A three-way alternation where one exact value is
+   known lets two distinct regressions pass. **Recommended fix.**
+2. **One-directional error-code check.**
+   `tests/lib/evals/score-schema-contract.test.mjs:10-21` asserts membership of a
+   hand-copied list in `SCORE_ERROR_CODES`. Neither a code declared-but-untabled
+   nor a table row never implemented would fail it. Parity was verified by grep
+   in this run instead of by machine. **Recommended fix:** assert both
+   directions, or derive the list from the spec table.
+3. **Presence-only assertion.** `tests/cli/eval-score.test.mjs:32` asserts the
+   three aggregate keys exist, not their values. Mitigated: the exact aggregate
+   is pinned to the digit at `tests/cli/eval-default-rubric-e2e.test.mjs:563-568`.
+4. **Near-unfalsifiable fixture guards.**
+   `tests/cli/eval-default-rubric-e2e.test.mjs:452-455` — `contains()` between
+   two `mkdtempSync` results can essentially never be true. These document the
+   fixture's shape; the load-bearing assertions in the same file are exact and
+   falsifiable.
+5. **Fragile teardown.** `tests/cli/eval-default-rubric-keyword.test.mjs:185`
+   calls `chmodSync(shipped, …)` unconditionally in `finally`, so a failure
+   before the `cpSync` at `:172` would surface as ENOENT and mask the real
+   error. The `chmodSync(shipped, 0o000)` case fails loudly rather than skipping
+   under a root runner, which is the correct posture.
 
-Every assertion-touching edit in `git log 07b5ab04~1..HEAD` was inspected. Two commits modify an
-earlier task's test; both are isolation, not loosening:
+Positive finding: the re-anchored `tests/skills/eval-default-rubric.test.mjs:99-128`
+asserts its extraction regex matches the real prose, **rejects** a decoy
+sentence, and reads a relocated filename out of a synthetic sentence — so the
+extractor cannot silently degrade to a vacuous pass.
 
-- `27a4765c` — Task 2's threshold test passed an empty verdict set that Task 3's new validation
-  correctly rejects; the input became a complete valid set. Assertion shape unchanged.
-- `c81a7e9b` — Task 4's denominator test moved from `conforming.yaml` (threshold 40) to
-  `threshold-100.yaml` so a 50%-unknown share would not trip BEH-3 clause 2. Verified: the two
-  fixtures differ **only** in comments and `insufficient_evidence_threshold_percent: 40 → 100`
-  (identical budgets); the assertions `=== 15`, `=== 15`, `=== null` are byte-identical to the
-  original; and coverage of the "50% unknown at threshold 40 ⇒ INSUFFICIENT_EVIDENCE" case is
-  retained by `score-insufficient-evidence.test.mjs:12-21`. Nothing was lost.
+### Guard falsification (performed by the orchestrator, not reported second-hand)
 
-Three minor weak assertions (advisory, non-blocking):
+`tests/cli/eval-default-rubric-e2e.test.mjs` was falsified independently. In a
+scratch copy of the repository, `loadDefaultRubric` was changed to
+`process.env.CLAUDE_PLUGIN_ROOT || getPluginRoot()` — the exact defect BEH-11
+prohibits. Both cases went **RED**, through two different channels:
 
-1. `tests/cli/eval-score.test.mjs:65` — `/SCORE_(EMPTY_EVIDENCE|MISSING_VERDICT|UNKNOWN_VERDICT_ID)/`
-   over a deterministic fixture that can only produce `SCORE_UNKNOWN_VERDICT_ID`. This is the one
-   assertion in the set that would pass under a wrong-error regression.
-2. `tests/lib/evals/score-result-assembly.test.mjs:47-48` — `assert.ok(Array.isArray(…) && length > 0)`;
-   near-tautological, though `:16` already pins `length === 4`.
-3. `tests/cli/eval-score.test.mjs:39` — `assert.doesNotMatch(stdout, /judged\s*[:|]\s*0\b/i)` is
-   hard to fail; the paired `assert.match(stdout, /NOT_SCORED/)` at `:38` carries the weight.
+- Case 1 (disjoint-id decoy) — `AssertionError: expected a successful score, got
+  exit 1, stderr: SCORE_UNKNOWN_VERDICT_ID: verdict id "spec_criteria_referenced"
+  is not declared by the rubric's required_elements or quality_dimensions.`
+  The **exit-code** channel.
+- Case 2 (same-id decoy, two kinds flipped, budgets inverted) —
+  `AssertionError: the table row for error_paths_asserted must carry the SHIPPED
+  rubric's kind (element)`. The actual output carried the decoy's kinds and the
+  decoy's aggregate `deterministic: 15/15   judged: 8/10   total: 23/25`. The
+  **printed-output** channel, which reaches exit 0 and so cannot be explained by
+  an error.
 
-No conditional skips, no try/catch-wrapped assertions, no assertions on clock or random data.
+Neither assertion is vacuous: `assertDecoyIsLoadable` proves each decoy loads
+cleanly through `loadRubric` before the run, so "the decoy was simply rejected"
+is excluded as an explanation for the shipped values appearing.
+
+### Scope-expansion sub-finding — none
+
+`git diff --name-only 15cbb37b~1..e1f075d5` touched 13 files. Twelve appear
+verbatim in the spec's `source-manifest.files`; the thirteenth is the spec
+itself. Commit `43fa6281` explicitly completed the manifest.
+
+---
+
+## Cross-Repo Dependency Validation — N/A
+
+No workspace detected; the spec declares no cross-repo `depends-on` references.
 
 ---
 
 ## Check 4: Constitution Compliance — PASS
 
-- **Architecture boundaries: PASS.** No approval boundary crossed. No skill added to the
-  lifecycle order; `.claude-plugin/plugin.json` untouched; no hook-protocol change (`hooks/`
-  absent from the diff); no CLI install-path change; zero new external dependencies. The single
-  `cli/index.mjs` edit is one `VERB_REGISTRY` row (`cli/index.mjs:1974`).
+- **Architecture boundaries: PASS.** No lifecycle-order change, no hook-protocol
+  change, no CLI install-path change, no plugin-registration change, no new
+  dependency. `hooks/` untouched. Changes confined to `lib/cli/`, `lib/evals/`,
+  `skills/eval/`, `providers/*/skills/eval/`, `docs/`, `tests/`, and the spec.
 - **Non-negotiable principles: PASS.**
-  - Dependencies — `git diff 07b5ab04~1..HEAD -- package.json package-lock.json` is empty;
-    `lib/cli/eval.mjs:28-30` imports only `node:util`, `node:fs`, `node:path`.
-  - Skills primarily markdown — the arithmetic moved **out** of `skills/eval/SKILL.md` into
-    `lib/evals/score.mjs`, which is the constitution's stated intent.
-  - Pure ESM — all changed source files are `.mjs` with `import`/`export`; no CommonJS.
-  - Version parity — `package.json`, `.claude-plugin/plugin.json`, `.cursor-plugin/plugin.json`
-    all read `0.27.8` and none appears in the diff. No version bump in a feature PR (ADR-0008).
-- **Coding standards: PASS.** camelCase functions, kebab-case files, node-builtins-first import
-  ordering (`lib/cli/eval.mjs:28-35`), coded errors in the engine and `process.exit(1)` in the CLI.
-- **SKILL.md anti-patterns: PASS.** No `node -e`, no `Run inline Node.js:` heading, no
-  `node --input-type=module -e` heredoc in `skills/eval/SKILL.md`. No H3 section carries both an
-  inline-Node block and an `adev <verb>` call (there are no inline-Node blocks at all). No
-  ```` ```javascript ```` fence exists; the two added fences are ```` ```bash ```` (the verb
-  invocation, `:163-165`) and ```` ```text ```` (`:173-180`, explicitly labelled *"Descriptive
-  reference — what the verb computes, not an instruction to compute it yourself"*, carrying no
-  control flow). `hooks/pre-commit-no-inline-node.sh` run independently over the canonical file
-  and both provider mirrors: **exit 0**. Load Skill Extensions block present and untouched at
-  `skills/eval/SKILL.md:65-71`.
-- **Commit trailers: PASS.** All 12 commits in `07b5ab04~1..HEAD` carry
-  `Spec: .context-index/specs/features/eval-harness/scoring-engine.spec.md`. The 11
-  implementation commits carry `Plan-task: 1` … `Plan-task: 11`, contiguous with no gaps. The
-  12th (`ca32e1f3`, the status stamp) correctly carries `Spec:` without `Plan-task:`.
+  1. *Minimize external dependencies* — `package.json` and `package-lock.json`
+     unmodified across all seven commits; `lib/evals/score.mjs:23-35` and
+     `lib/cli/eval.mjs:29-37` import only `node:*` and relative modules.
+  2. *Skills are primarily markdown* — `skills/eval/SKILL.md` contains no
+     `javascript` fence at all; the descriptive block at `:183-190` is a `text`
+     fence explicitly labelled "not an instruction to compute it yourself".
+  3. *Pure ESM* — every changed code file is `.mjs` with `import`/`export`; no
+     `require` or `module.exports` in the diff.
+  4. *Hook protocol compliance* — N/A, no hook touched.
+  5. *Version parity* — correctly **not** bumped. None of `package.json`,
+     `.claude-plugin/plugin.json`, `.cursor-plugin/plugin.json` were modified,
+     as CLAUDE.md requires for a feature/fix PR (release-please owns bumps).
+- **Coding standards: PASS.**
+  - No inline-Node and no executable logic in SKILL.md — asserted by
+    `tests/skills/eval-layer3-scoring-verb.test.mjs:32-34` and confirmed by a
+    fence grep in this run.
+  - The skill names `adev eval score`; the body lives in `lib/cli/eval.mjs`,
+    registered in `cli/index.mjs`.
+  - No hardcoded `~/.claude/` paths; the root is derived at
+    `lib/profiles/index.mjs:28-30`.
+  - camelCase functions, kebab-case files, built-ins imported first.
+  - **Commit trailers:** all seven commits carry `Spec:`, a `Plan-task:`,
+    `Author-type: agent/claude-code`, and `Operator: dpavancini/local`.
+  - **Provider mirror parity:** both mirrors carry the BEH-12 text at line
+    numbers identical to the canonical file;
+    `tests/sync/provider-skill-parity.test.mjs` runs inside the green suite.
 
 ---
 
 ## Check 1.5: Source Manifest Verification — SKIP
 
-Skipped — quick rigor tier. Run informationally: `adev source-manifest verify` returned
-**PASS — source manifest matches (sha: ca85164)**, and all 17 listed files are git-tracked with
-no uncommitted changes under `lib/`, `cli/`, `skills/`, `tests/`, `docs/`, `providers/`. See
-Scope-expansion item 3 for the manifest's coverage gap.
+Skipped — quick rigor tier. (Stamped by `/adev:implement` at `sha: 428bd5d`,
+33 files, drift cleared; carried on the Check 1 attestation as `--manifest-sha`.)
 
 ## Check 1.6: Code-Side Drift Warning — SKIP
 
-Skipped — quick rigor tier. See the drift note below.
+Skipped — quick rigor tier.
 
 ## Check 8: Boundary Compliance — SKIP
 
@@ -216,66 +311,62 @@ Skipped — quick rigor tier.
 
 ## Check 11: Visual Verification — SKIP
 
-No UI files in the implementation diff — visual verification not applicable. (Case A: no UI
-files, no Playwright MCP.)
+No UI files in the implementation diff (Case A). None of the 13 changed files
+matches a UI pattern, and Playwright MCP is not available. Not applicable — this
+spec defines a library function and a CLI verb with no user interface, as its
+own `## Visual Expectations` section states.
+
+## Check 14: Gate Executability — SKIP
+
+Skipped — quick rigor tier.
 
 ---
 
-## Cross-repo dependency validation — N/A
+## Commit hygiene
 
-No workspace detected; the spec declares no cross-repo `depends-on` references.
-
----
-
-## Advisory: shared claim on `docs/cli-reference.md`
-
-Task 10 added an `eval` row and an `### eval` section to `docs/cli-reference.md`. That file is
-claimed by the `source-manifest` of **nine** specs, including
-`.context-index/specs/features/implementation/batched-task-dispatch.spec.md`. The framework
-therefore stamped a `code_drift_detected` event on that spec:
-
-```
-{"event":"code_drift_detected","drift_source":"docs/cli-reference.md","drift_at":"2026-08-20T16:28:59.323Z"}
-```
-
-**This is correct bookkeeping, not a problem.** The hook fired exactly as designed; the diff to
-`docs/cli-reference.md` is purely additive (one table row plus a new section) and touches nothing
-batched-related, so `batched-task-dispatch.spec.md` still describes its implementation
-accurately. Its `drift_detected: true` flag was already set before this run by two earlier
-events (2026-08-18, on `skills/implement/SKILL.md` and `lib/implement/batching.mjs`), so this run
-did not newly flip it.
-
-**No resolution of the shared claim is required for this spec to ship.** The structural
-observation worth recording separately: a per-file source manifest over a shared aggregate
-reference doc will emit a drift event on all nine claiming specs every time any one of them adds
-its own section. That is systemic noise in the drift signal, not a defect in this
-implementation, and is a candidate for a hygiene-level follow-up (e.g. section-scoped claims on
-aggregate docs).
+The seven commits `15cbb37b..e1f075d5` touch only eval-harness scoring files
+plus this spec. **No `.context-index/sessions/*` capture was committed**, and no
+other session's in-flight work appears in any of them. Nothing is staged. The
+working tree carries exactly the three deliberately-uncommitted pipeline-state
+files (`lifecycle-state/scoring-engine.jsonl`, `scoring-engine.plan.md`,
+`scoring-engine.routing.json`) plus the untracked session captures, which were
+never staged.
 
 ---
 
-## Heuristics — prior occurrences of this failure
+## Known, pre-existing, not this round's defects
 
-The following heuristics are lessons learned from past work in this module. Use them as guidance,
-not as hard rules.
+Confirmed and recorded; none fails this build.
 
-### Heuristic: Use session JSONL for token measurement, not file-size estimates (confidence: medium)
-- **Pattern:** When evaluating token consumption or cost of adev skills, parse real session JSONL files from `~/.claude/projects/` (`message.usage` fields). Dispatch paired A/B subagents and compare their JSONL data for controlled experiments.
-- **Anti-pattern:** Estimate tokens using bytes/4 or hardcoded assumptions about thinking budgets and cache hit rates. These overstate savings by 2-2.5x vs real measurements.
-- **Evidence:** 1 observation
-
----
-
-**Summary:** 2 passed (Check 1 with notes, Check 4), 1 failed (Check 2), 5 skipped
-(1.5, 1.6, 8, 9 by quick tier; 11 not applicable).
-
-Fix FAIL-1 and re-run: `/adev:validate --spec .context-index/specs/features/eval-harness/scoring-engine.spec.md`
+- **Issue board never updated.** `adev issues claim` fails with
+  `SHADOW_ISSUE_BOARD` plus a `br` payload exceeding the `execFileSync` default
+  buffer (`lib/issues/beads-adapter.mjs::_runBr` sets no `maxBuffer`). Tracked as
+  `adev-plugin-gjl4`.
+- **Stale projection plan-task ids.** The projection still carries `task-1..task-6`
+  as `pending` from the revision-5 plan; that work shipped in
+  `07b5ab04..ca32e1f3`. This round's ids are `t1..t6`, all done.
+- **Integration-tier gate knowingly red** — see Check 1b.
 
 ---
 
-> **Note for users comparing with historic reports:** Checks 3, 5, 6, 7, 10, 12 and 13 have been
-> relocated by `check-set-restructure.spec.md`. See `/adev:review-specs` (ADR compliance,
-> cross-cutting compliance, specialist review, charter consistency), `/adev:hygiene` Audit Pass 20
-> (platform drift), `/adev:reconcile` lifecycle-sync (lifecycle reconciliation), and
-> `hooks/post-validate-extract-heuristics.{sh,mjs}` (heuristic extraction). The gaps in the
-> surviving inventory are intentional.
+**Summary:** 3 passed (Check 1, Check 2, Check 4), 0 failed, 6 skipped
+(1.5, 1.6, 8, 9, 11, 14 — five by quick tier, Check 11 by trigger guard).
+Aggregate verdict **PASS_WITH_NOTES**. The defect the previous round FAILed on
+is closed at the level the spec demanded: verified end to end with the plugin
+root outside the project root, and guarded by a test proven to go red when the
+defect is reintroduced.
+
+---
+
+> **Note for users comparing with historic reports:** Checks 3, 5, 6, 7, 10, 11
+> (when no UI files), 12, and 13 have been relocated by
+> `check-set-restructure.spec.md`. See:
+>
+> - `/adev:review-specs` — ADR compliance (formerly Check 5), cross-cutting
+>   compliance (formerly Check 6), specialist review (formerly Check 7), and
+>   charter consistency (formerly Check 3, now covered by Check 2's
+>   scope-expansion sub-finding).
+> - `/adev:hygiene` Audit Pass 20 — platform drift (formerly Check 10).
+> - `/adev:reconcile` lifecycle-sync — lifecycle reconciliation (formerly Check 12).
+> - `hooks/post-validate-extract-heuristics.{sh,mjs}` — heuristic extraction
+>   (formerly Check 13), now a non-blocking Stop-event hook.

@@ -4,34 +4,49 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/eval-harness/charter.md
-> **Spec:** .context-index/specs/features/eval-harness/scoring-engine.spec.md
-> **Review:** PASS (2026-08-20) — revision 5, rounds 1-4 blocked; round 5 clean with one cosmetic suggestion (SA-4)
+> **Spec:** .context-index/specs/features/eval-harness/scoring-engine.spec.md (revision 9)
+> **Review:** PASS (2026-08-20) — round 9, 0 findings above suggestion
 > **Platform:** Node.js, JavaScript (ESM `.mjs`), npm, `node:test` — no framework, zero external dependencies
 
-**Goal:** Build `lib/evals/score.mjs` — `scoreRubric(rubric, verdicts)` and `buildJudgeContext(criterion)` — and expose it as `adev eval score`, so the Layer 3 arithmetic that currently lives as prose in `skills/eval/SKILL.md` exists in exactly one executable place, and so a half that could not be scored says so by name instead of reporting a `0` that reads as a result.
+**Goal:** Close the last two behaviours of the scoring-engine spec — make `--rubric default` resolve the plugin's shipped rubric from an unforgeable, module-derived plugin root (BEH-11), and make `skills/eval/SKILL.md` actually pass that keyword (BEH-12) — then prove the pair with a regression test whose four properties are each chosen because the weaker version of that property passed against the broken code.
 
-**Architecture:** The result contract is data; the engine is its executable expression — the same split the already-shipped sibling uses (`lib/evals/rubric-schema.mjs` beside `lib/evals/rubric.mjs`). `lib/evals/score-schema.mjs` holds the two half statuses and the error-code vocabulary as frozen constants, so the CLI renderer can name a status without importing the engine. `lib/evals/score.mjs` composes ordered passes over an already-loaded Rubric: rubric-origin and threshold validation → verdict-set validation → per-half tally with denominator exclusion → status assignment → result assembly. Validation completes before any arithmetic runs, which is how "a rejected verdict set produces no partial score" becomes structural rather than a discipline. The engine reads no file, parses nothing, spawns nothing, and reads no clock: `loadRubric` is its sole upstream and the caller supplies the verdicts. `lib/cli/eval.mjs` wraps it behind `adev eval score`, reusing `lib/path-safety.mjs` for containment on `--rubric`/`--input` exactly as the shipped loader does for `UNSAFE_RUBRIC_PATH`, and errors are built with `lib/errors.mjs::codedError` so both consumers branch on `.code`.
+**Architecture:** BEH-11 adds one branch to `cmdScore` in `lib/cli/eval.mjs`: the literal token `default` is a *keyword naming a known location*, not a path, so it skips project-root containment and is loaded with `getPluginRoot()`'s return value as its containment boundary instead — `loadRubric(<shipped path>, { projectRoot: pluginRoot })`, reusing the shipped loader's own containment sequence rather than adding a second one. `getPluginRoot()` (`lib/profiles/index.mjs`) derives that root from `__dirname` two levels up; nothing in the branch reads `process.env`. Every other `--rubric` value falls through to the unchanged BEH-9 path. BEH-12 is a prose change in `skills/eval/SKILL.md` propagated to both provider mirrors by `scripts/sync-provider-skills.mjs`, plus the matching correction to `docs/cli-reference.md`, which `CLAUDE.md` names as the authority an agent reads for verb signatures.
 
-**Critical implementation constraint carried from review round 5 — do not let an implementer "simplify" this away:**
+---
 
-> **BEH-10 does NOT make BEH-3's first clause redundant.** BEH-10 validates that `insufficient_evidence_threshold_percent` is numeric and within `[0, 100]` — and `100` is explicitly *in range*. At `threshold: 100`, BEH-3's second clause ("`unknown` share **exceeds** the threshold") can never fire, because a share of 100 does not exceed 100. BEH-3's **first** clause ("every declared criterion resolved `unknown` → `INSUFFICIENT_EVIDENCE`, regardless of threshold") is therefore the *sole* path that catches an all-`unknown` judged half at that threshold. An implementer reasoning "the threshold is validated now, so the threshold-independent clause is belt-and-braces" would delete it and reopen the exact zero-denominator defect that blocked review round 3. Task 5 carries this as a comment at the implementation site and its suite includes a `threshold: 100` case.
+## This is a re-plan. Ten of twelve behaviours are already shipped.
 
-**The verified partition the implementation must preserve** (re-derived twice during review; `N_j` = declared criteria, `U` = `unknown` count, `N_d` = declared elements, `NA` = `not_applicable` count, `t` = threshold):
+Spec revision 5 was planned as 11 tasks, implemented across 12 commits (`07b5ab04..ca32e1f3`), and then **failed `/adev:validate` on a reproduced integration defect**: `adev eval score --rubric <path>` refused the shipped default rubric in every real install, because the plugin root and the project root are different directories everywhere except this repository. Spec revisions 6-9 fixed the spec. This plan covers **only** the work revision 9 added.
 
-| Half | Precondition | Outcome |
-|---|---|---|
-| Judged | `N_j == 0` | `NOT_SCORED` (BEH-4) |
-| Judged | `N_j >= 1` and `U == N_j` | `INSUFFICIENT_EVIDENCE` (BEH-3 clause 1) |
-| Judged | `N_j >= 1`, `U < N_j`, `unknown share > t` | `INSUFFICIENT_EVIDENCE` (BEH-3 clause 2) |
-| Judged | otherwise | numeric; denominator `N_j - U >= 1` |
-| Deterministic | `N_d == 0` or `NA == N_d` | `NOT_SCORED` (BEH-4) |
-| Deterministic | otherwise | numeric; denominator `N_d - NA >= 1` |
+**Already shipped — do not re-plan, do not re-implement, do not re-test:**
 
-The preconditions are disjoint and exhaustive over the zero-denominator case: no half satisfies two rows, and no half reaches a numeric row with nothing to divide by. Task 7 asserts that property directly rather than trusting the ordering of `if` branches.
+| Behaviour | Shipped as |
+|---|---|
+| BEH-1 result shape with separately addressable halves | `lib/evals/score.mjs` |
+| BEH-2 denominator exclusion | `lib/evals/score.mjs` |
+| BEH-3 insufficient-evidence guard incl. the threshold-independent clause | `lib/evals/score.mjs` |
+| BEH-4 not-scored handling | `lib/evals/score.mjs` |
+| BEH-5 empty-evidence rejection | `lib/evals/score.mjs` |
+| BEH-6 verdict-set id mismatch | `lib/evals/score.mjs` |
+| BEH-7 `buildJudgeContext` isolation | `lib/evals/score.mjs` |
+| BEH-8 `adev eval score` output shape | `lib/cli/eval.mjs` |
+| BEH-9 path containment on `--rubric`/`--input` | `lib/cli/eval.mjs` |
+| BEH-10 threshold type/range validation | `lib/evals/score.mjs` |
 
-**Review-note disposition:**
+Plus `lib/evals/score-schema.mjs`, 18 files under `tests/lib/evals/` and `tests/cli/`, 9 fixtures under `tests/fixtures/evals/`, and the `skills/eval/SKILL.md` Layer 3 rewrite with both provider mirrors. `npm test` is green at 7270 pass / 0 fail. **A task below that touches `lib/evals/score.mjs` arithmetic is out of scope and should be rejected in review.**
 
-- **SA-4** (BEH-10 is engine-level but sits after CLI-level BEH-9 — a topic break in the Behaviors list) — **declined, no plan action.** The Behaviors list is deliberately unordered per the spec convention, and behaviour ids are never renumbered once assigned, so the ordering carries no meaning that reordering would improve. Renumbering to satisfy a reading-order preference would break every reference to BEH-9 and BEH-10 in this plan, in the review, and in the test suite names below, for no correctness gain.
+**Not yet built — the six tasks in this plan:** BEH-11, BEH-12, the docs correction, the re-anchored prose-derived test, the end-to-end regression test, and two housekeeping items `/adev:validate` flagged.
+
+---
+
+## The regression test is the point of this round
+
+The spec mandates four properties for the end-to-end test (Task 5). Each exists because the weaker version of it **already passed against the broken code**. Weakening any one of them reintroduces the defect class, so they are restated here verbatim as acceptance conditions on that task, not as guidance:
+
+1. **Run through the real `dispatch()` → verb-module wiring, not a stubbed internal helper** — otherwise the test proves nothing about how the plugin root is actually obtained. A test that imports `cmdScore` and hands it a `pluginRoot` argument asserts the argument, not the derivation.
+2. **Plugin root OUTSIDE the project root** — in this repository `<ADEV_ROOT>` and the project root are the *same directory*, which is precisely why the original defect passed 7270 tests and five review rounds. A same-root test is green against broken code.
+3. **Assert on the argument `skills/eval/SKILL.md`'s documented flow actually passes** — otherwise a test that calls `--rubric default` directly stays green while the real caller still sends a resolved path. The test must *derive* the argument from the skill prose and feed that derived value to the CLI.
+4. **Set `CLAUDE_PLUGIN_ROOT` to a decoy and assert the SHIPPED rubric still loads**, passed through a spawned process's `env:` rather than by mutating `process.env` in-process (20 of the repository's 21 env-reading test files already do this). The decoy must carry a *different, distinguishable* rubric so "the shipped one loaded" is asserted positively rather than inferred from the absence of an error.
 
 ---
 
@@ -39,1193 +54,572 @@ The preconditions are disjoint and exhaustive over the zero-denominator case: no
 
 **Create:**
 
-- `lib/evals/score-schema.mjs` — frozen result-contract constants: `HALF_STATUSES` (`INSUFFICIENT_EVIDENCE`, `NOT_SCORED`), `SCORE_ERROR_CODES`, `VERDICT_KINDS`
-- `lib/evals/score.mjs` — `scoreRubric(rubric, verdicts)`, `buildJudgeContext(criterion)`, and the named passes they compose
-- `lib/cli/eval.mjs` — the `adev eval score` verb (`run({ projectRoot, argv })` / `help()`), table and `--json` rendering, path containment
-- `tests/lib/evals/score-schema-contract.test.mjs` — the constants are the single source of truth
-- `tests/lib/evals/score-rubric-and-threshold.test.mjs` — BEH-10 + `SCORE_INVALID_RUBRIC`
-- `tests/lib/evals/score-verdict-validation.test.mjs` — BEH-5, BEH-6, `SCORE_INVALID_VERDICT`, `SCORE_DUPLICATE_VERDICT`
-- `tests/lib/evals/score-tally.test.mjs` — BEH-2
-- `tests/lib/evals/score-insufficient-evidence.test.mjs` — BEH-3 (both clauses, including `threshold: 100`)
-- `tests/lib/evals/score-not-scored.test.mjs` — BEH-4
-- `tests/lib/evals/score-status-partition.test.mjs` — the BEH-3 × BEH-4 disjointness and exhaustiveness invariant
-- `tests/lib/evals/score-result-assembly.test.mjs` — BEH-1 + the determinism and no-partial-score postconditions
-- `tests/lib/evals/score-judge-context.test.mjs` — BEH-7
-- `tests/cli/eval-score.test.mjs` — BEH-8, BEH-9
-- `tests/skills/eval-layer3-scoring-verb.test.mjs` — `skills/eval/SKILL.md` Layer 3 names the verb and reports half-level statuses
-- `tests/fixtures/evals/rubrics/threshold-100.yaml` — conforming but with `insufficient_evidence_threshold_percent: 100`
-- `tests/fixtures/evals/rubrics/threshold-50.yaml` — conforming but with `insufficient_evidence_threshold_percent: 50`, for the at-the-boundary case
-- `tests/fixtures/evals/rubrics/threshold-non-numeric.yaml` — threshold declared as a word
-- `tests/fixtures/evals/rubrics/threshold-out-of-range.yaml` — threshold `140`
-- `tests/fixtures/evals/rubrics/no-quality-dimensions.yaml` — `quality_dimensions: []`, elements declared
-- `tests/fixtures/evals/rubrics/no-required-elements.yaml` — `required_elements: []`, criteria declared
-- `tests/fixtures/evals/verdicts/complete.json` — a full, valid verdict set for `conforming.yaml`
-- `tests/fixtures/evals/verdicts/elements-only.json` — the two element verdicts, for the `no-quality-dimensions` rubric
-- `tests/fixtures/evals/verdicts/unsafe-input.json` — a verdict set the engine rejects, for the CLI error-propagation case
+- `tests/cli/eval-default-rubric-keyword.test.mjs` — BEH-11 in-process suite: the keyword branch resolves the shipped rubric, non-`default` values keep the BEH-9 project-root branch, and `SCORE_DEFAULT_RUBRIC_MISSING` fires when the shipped file is absent
+- `tests/skills/eval-rubric-keyword-emission.test.mjs` — BEH-12: `skills/eval/SKILL.md` and both provider mirrors emit the literal `default`, plus the no-live-emitter sweep over `skills/**`, `providers/**`, `docs/**`
+- `tests/cli/eval-default-rubric-e2e.test.mjs` — the four-property end-to-end regression test
 
 **Modify:**
 
-- `cli/index.mjs:1985` — register `["eval", () => import("../lib/cli/eval.mjs")]` in `VERB_REGISTRY`
-- `docs/cli-reference.md` — document `adev eval score --rubric <path> --input <path> [--json]` under the agent-facing verb section
-- `skills/eval/SKILL.md:154-161` — replace the in-prose aggregate formula and the whole-layer discard in "Step 3 — Aggregate for trend tracking" with a call to `adev eval score` and half-level status reporting
-- `skills/eval/SKILL.md:215` and `:181` — the report template and the attainable-maximum prose, which both currently assume Layer 3 is discarded wholesale on `INSUFFICIENT_EVIDENCE`
+- `lib/cli/eval.mjs:202-241` — the `default` keyword branch in `cmdScore`, plus the `help()` text that currently states both flags are project-root contained
+- `lib/evals/score-schema.mjs:60-88` — add `SCORE_DEFAULT_RUBRIC_MISSING` to `SCORE_ERROR_CODES`; correct the two stale comments that claim the table "enumerates nine"
+- `skills/eval/SKILL.md:112-120,164,288` — the Rubric resolution list, the `adev eval score` invocation line, and the config-block comment
+- `providers/codex/skills/eval/SKILL.md` — regenerated by `scripts/sync-provider-skills.mjs`, never hand-edited
+- `providers/opencode/skills/eval/SKILL.md` — likewise
+- `docs/cli-reference.md:821-852` — the `--rubric` signature prose and both example lines
+- `tests/skills/eval-default-rubric.test.mjs:44-56` — re-anchor `documentedRubricPath()` to the prose BEH-12 rewrites
+- `tests/lib/evals/score-schema-contract.test.mjs:10-20` — extend the code-vocabulary assertion to the two codes appended beyond the original nine
+- `.context-index/specs/features/eval-harness/scoring-engine.spec.md` (frontmatter `source-manifest` only) — add the 11 files the stamp omits
 
 **Reference (read, do not modify):**
 
-- `lib/evals/rubric.mjs:827` — `loadRubric` is this module's sole upstream and its **only** export; the engine consumes its return value and must not duplicate or contradict any of its ten validation passes
-- `lib/evals/rubric-schema.mjs` — `ELEMENT_VERDICTS`, `CRITERION_VERDICTS`, `REQUIRED_TOP_LEVEL_KEYS`, `REQUIRED_CRITERION_FIELDS`; the engine imports these rather than restating either enum
-- `tests/fixtures/evals/rubrics/conforming.yaml` — 2 elements, 2 criteria, `threshold: 40`, `layer3_max_points: 25`, `required_element_points: 10`, `judged_criterion_points: 15`; the canonical input every new fixture is derived from
-- `lib/path-safety.mjs` — `resolveContained`, `lenientRealpath`, `isContained`
-- `lib/errors.mjs:25` — `codedError(code, message)`
-- `lib/cli/partial.mjs:48,443` — the `run({ projectRoot, argv })` / `help()` CLI-module shape to follow
-- `skills/eval/SKILL.md:98-161` — Layer 3 as it stands today, including the formula block being relocated
-- `.context-index/samples/general-library-module-graph.md` — module-boundary and export conventions for `lib/`
-- `.context-index/samples/general-test-helpers.md`, `tests/helpers.mjs` — `createTempDir` / `cleanupTempDir` / `writeFixture`
-- `.context-index/specs/features/eval-harness/rubric-schema-and-loader.plan.md` — the sibling plan whose decomposition and suite-naming conventions this one follows
+- `lib/profiles/index.mjs:28-30` — `getPluginRoot()`, the `__dirname`-derived root BEH-11 requires
+- `lib/evals/rubric.mjs:827-880` — `loadRubric(path, { projectRoot })`; the keyword branch reuses this containment sequence rather than adding a second one
+- `cli/index.mjs:1974,2006-2081` — `VERB_REGISTRY` and `dispatch()`; `projectRoot` is `process.cwd()`, which is what lets the e2e test separate the two roots
+- `tests/helpers.mjs:156-171` — `runCLI()`; the existing spawn-with-`env:` precedent
+- `tests/cli-hooks-path-symlink-containment.test.mjs` — the repo's containment-test idiom
+- `scripts/sync-provider-skills.mjs` + `tests/sync/provider-skill-parity.test.mjs` — the mirror transform and its quality gate
+
+---
 
 ## Context Packets
 
-The spec carries no `source-manifest.files[]` (it is new), so packets fall back to the charter Dependencies table, the shipped sibling module that establishes the in-directory conventions, and the orientation file for module placement. Every packet below is additive to a shared base, listed once rather than repeated eleven times.
+### Task 1 Context — `--rubric default` keyword resolution
+- Spec: `scoring-engine.spec.md` — BEH-11, BEH-9, and the `SCORE_DEFAULT_RUBRIC_MISSING` row of the Error Cases table
+- Charter: `eval-harness/charter.md` (capability: Scoring engine and `adev eval score`)
+- Source (full read): `lib/cli/eval.mjs`, `lib/evals/score-schema.mjs`
+- Source (signatures only): `lib/profiles/index.mjs` (`getPluginRoot`), `lib/evals/rubric.mjs` (`loadRubric`), `lib/path-safety.mjs`
+- Test structure: `tests/cli/eval-score.test.mjs` (existing BEH-8/BEH-9 suite — the sibling this one sits beside)
+- Constitution: "Minimize external dependencies", "Pure ESM", "No hardcoded paths to `~/.claude/` — use the plugin root resolution from `cli/index.mjs`"
+- Boundary rules: `governance/boundaries.yaml` — content-matched rules only (CommonJS, inline-Node, `~/.claude/` literals); this task adds none of them
 
-**Base packet (every task):**
-- Spec: `.context-index/specs/features/eval-harness/scoring-engine.spec.md` (Behavioral Contract, the behaviour(s) the task owns, the Error Cases rows it owns)
-- Charter: `.context-index/specs/features/eval-harness/charter.md` (capability: *Scoring engine and `adev eval score`*; the Invariants list, which states denominator exclusion, empty-evidence rejection, and `buildJudgeContext` isolation)
-- Constitution: `.context-index/constitution.md` (Non-Negotiable Principles 1 and 3; the two SKILL.md anti-patterns)
-- Plan: this file's **Critical implementation constraint** and **verified partition** table
+### Task 2 Context — pass the keyword from the skill
+- Spec: `scoring-engine.spec.md` — BEH-12 in full, including its closing sentence on why the mirrors need no separate clause
+- Source (full read): `skills/eval/SKILL.md` sections "Rubric resolution" and "Step 3 — Aggregate for trend tracking"
+- Source (read, do not edit): `providers/codex/skills/eval/SKILL.md`, `providers/opencode/skills/eval/SKILL.md`
+- Tooling: `scripts/sync-provider-skills.mjs`, `tests/sync/provider-skill-parity.test.mjs` (the gate that makes hand-editing a mirror fail)
+- Constitution: "No executable logic inside SKILL.md files"; "Fenced JavaScript in SKILL.md must be descriptive-reference only"
 
-### Task 1 Context — Score result contract constants
-- `lib/evals/rubric-schema.mjs` (full read — the data-module pattern being mirrored)
-- Spec: Error Cases table (all nine codes)
+### Task 3 Context — correct the documented invocation
+- Spec: `scoring-engine.spec.md` — the "Correct the documented invocation" task row and the no-live-emitter acceptance criterion, which names the exact sweep scope
+- Source (full read): `docs/cli-reference.md` § `eval` (lines 812-856)
+- Reference: `CLAUDE.md` Context Routing table — the line that makes `docs/cli-reference.md` the authority an agent reads instead of the source
+- Heuristic: `universal-claim-needs-a-predicate` (below) — this task is the predicate half of that criterion
 
-### Task 2 Context — Rubric origin and threshold validation
-- `lib/evals/rubric.mjs:827-900` (`loadRubric`'s signature and return: it returns the validated parsed document, **not** a branded object — so origin checking is structural, against `REQUIRED_TOP_LEVEL_KEYS`)
-- `lib/evals/rubric-schema.mjs` → `REQUIRED_TOP_LEVEL_KEYS`
-- Spec: BEH-10 in full (its second half explains *why* the loader's present-key check is not enough)
+### Task 4 Context — re-anchor the prose-derived rubric test
+- Source (full read): `tests/skills/eval-default-rubric.test.mjs`, especially its header comment stating *why* it derives the path from prose
+- Source (read): `skills/eval/SKILL.md` post-Task-2 prose
+- Spec: `scoring-engine.spec.md` — the "Re-anchor the prose-derived rubric test" task row
 
-### Task 3 Context — Verdict-set validation
-- `lib/evals/rubric-schema.mjs` → `ELEMENT_VERDICTS`, `CRITERION_VERDICTS` (the two enums are deliberately different sets)
-- Spec: BEH-5, BEH-6; Error Cases rows for `SCORE_INVALID_VERDICT` and `SCORE_DUPLICATE_VERDICT`
-- Charter Invariants: "A `RequiredElement` never resolves to `unknown`; a `QualityCriterion` never resolves to `not_applicable`"
+### Task 5 Context — end-to-end regression test
+- Spec: `scoring-engine.spec.md` — BEH-11, BEH-12, and the four regression-test acceptance criteria; **read the Task Map's "End-to-end regression test" row verbatim**
+- Source (full read): `cli/index.mjs` `dispatch()` (lines 2006-2081) and `VERB_REGISTRY` (line 1974)
+- Source (full read): `lib/cli/eval.mjs` after Task 1
+- Test structure: `tests/helpers.mjs` (`runCLI`, `createTempDir`, `cleanupTempDir`), `tests/cli-hooks-path-symlink-containment.test.mjs`
+- Fixtures: `tests/fixtures/evals/verdicts/*.json`, `skills/eval/default-rubric.yaml`
+- Runner: `scripts/run-tests.mjs` — confirms `tests/cli/**` is inside the default `npm test` partition (only `tests/evals/**` and nested-project suites are excluded)
 
-### Task 4 Context — Tally with denominator exclusion
-- Spec: BEH-2; `tests/fixtures/evals/rubrics/conforming.yaml` (point budgets)
-- `skills/eval/SKILL.md:146-158` (the prose formula being relocated — read to confirm the arithmetic transfers unchanged)
+### Task 6 Context — housekeeping
+- Source (full read): `lib/evals/score-schema.mjs` comment block at lines 60-88
+- Spec: `scoring-engine.spec.md` frontmatter `source-manifest`, and the "Every error code the implementation can raise appears in the Error Cases table" criterion
+- Tooling: `adev source-manifest compute --files <p1>,<p2>,…` and `adev source-manifest verify --spec <path>`
+- Prior validate report: `.context-index/specs/features/eval-harness/scoring-engine.validate.md`
 
-### Task 5 Context — Insufficient-evidence guard
-- Spec: BEH-3 in full, including the closing paragraph on threshold-independence
-- Plan: the **Critical implementation constraint** block above — required reading, not optional
-- `.context-index/specs/features/eval-harness/scoring-engine.review.md` (round 3 blocker, which is what the clause exists to prevent)
-
-### Task 6 Context — Not-scored handling
-- Spec: BEH-4; the two "Not an error" rows in Error Cases
-
-### Task 7 Context — Disjoint status assignment
-- Spec: BEH-3, BEH-4, and the acceptance criterion on mutual exclusivity and exhaustiveness
-- Plan: the **verified partition** table above
-
-### Task 8 Context — Result assembly
-- Spec: BEH-1, Postconditions in full
-- Charter Invariants: "A numeric aggregate is never reported without its verdict table"; charter Quality Attributes → Determinism, Observability
-
-### Task 9 Context — buildJudgeContext
-- Spec: BEH-7
-- Charter Invariants: the `buildJudgeContext` isolation invariant
-- `skills/eval/SKILL.md:128-142` ("Give each judge only:" — the field list the builder must emit, and the running-total prohibition)
-
-### Task 10 Context — `adev eval score` verb
-- Spec: BEH-8, BEH-9; Error Cases rows for `UNSAFE_SCORE_PATH` and `SCORE_INPUT_NOT_FOUND`
-- `lib/cli/partial.mjs:48-70,443` (verb module shape), `cli/index.mjs:1952-1988` (`VERB_REGISTRY`)
-- `lib/evals/rubric.mjs:827-845` (the `UNSAFE_RUBRIC_PATH` containment precedent this verb matches)
-- `docs/cli-reference.md` (the section layout the new verb entry joins)
-
-### Task 11 Context — `skills/eval/SKILL.md` Layer 3
-- `skills/eval/SKILL.md` in full (Layer 3, the Scoring section at `:179-181`, and the report template at `:215`)
-- Spec: the Behavioral Contract's fourth paragraph ("This changes `/adev:eval` Layer 3's observable behaviour"), BEH-8
-- Constitution: both SKILL.md anti-patterns (no executable logic; fenced JavaScript is descriptive-reference only)
-- `tests/skills/eval-default-rubric.test.mjs` (the existing convention for asserting against this SKILL.md)
+---
 
 ## Heuristics
 
 > These heuristics are a snapshot from plan generation for review convenience.
 > At execution time, `/adev:implement` reads from the live heuristic store.
 
-`adev heuristics retrieve --module eval-harness --format text` returned three entries, all from the token-measurement line of work: use session JSONL rather than byte estimates for token measurement; cache reads dominate session cost; summarized skill output preserves artifact quality. None bears on verdict tallying, status assignment, or CLI rendering — they belong to the *Run-cost record* capability. Recorded here for traceability only.
+### Heuristic: A universal coverage claim must ship with the predicate that checks it (confidence: medium)
+- **Pattern:** When closing a coverage gap in a spec or acceptance criterion, state the executable check alongside the claim — the exact command or match, and the paths it runs over. Scope it to live surfaces (`skills/`, `providers/`, `docs/`) and exclude directories that archive review and validate artifacts, since those necessarily quote the pattern being forbidden. Match on the meaningful component rather than an exact string, so equivalent forms (absolute vs repo-relative) are both caught.
+- **Anti-pattern:** Answer a repeatedly-missed surface by widening the assertion — "no occurrence anywhere in the repository". An unbounded universal followed by a bounded list of examples cannot be discharged, and reads as coverage while providing none. The failure is self-demonstrating: a criterion forbidding a pattern must quote that pattern to describe itself, so a literal grep fails on the criterion's own document.
+- **Evidence:** 1 observation
+- **Applies to:** Task 3 — this heuristic *is* the shape of the no-live-emitter sweep. Its scope (`skills/**`, `providers/**`, `docs/**`, excluding `.context-index/`) and its match-on-path-component rule are both taken directly from it.
 
-One of the three does have a bearing on **Task 10's output design**: "summarized skill output produces equivalent artifact quality" argues for the default (non-`--json`) rendering staying a compact table rather than an echo of every rubric field, since `/adev:eval` will paste that output into a conversation on every run.
+### Heuristic: Use session JSONL for token measurement, not file-size estimates (confidence: medium)
+- **Pattern:** When evaluating token consumption or cost of adev skills, parse real session JSONL files from `~/.claude/projects/` (`message.usage` fields).
+- **Anti-pattern:** Estimate tokens using bytes/4 or hardcoded assumptions.
+- **Evidence:** 1 observation
+- **Applies to:** none of the six tasks. Recorded for module completeness; the Run-cost record capability is a later spec.
+
+### Heuristic: Cache reads are 71% of session cost — minimize context accumulation (confidence: medium)
+- **Pattern:** When optimizing token cost, focus on reducing what accumulates in conversation context.
+- **Anti-pattern:** Focus on reducing input token counts.
+- **Evidence:** 1 observation
+- **Applies to:** Task 5 indirectly — the e2e test copies a plugin tree into a temp directory; keep the copy to `cli/`, `lib/`, `package.json`, and `skills/eval/default-rubric.yaml` rather than the whole repo, and never echo the copied tree into output.
+
+---
 
 ## Parallelization
 
-- **Group A (sequential):** Task 1 → Task 2 → Task 3 → Task 4 → Task 5 → Task 6 → Task 7 → Task 8 — every one of these edits `lib/evals/score.mjs` (Task 1 creates the constants module the rest import), adding one pass to a single composed function. They share a file and must run in order; the order is also the pass order, so each task's tests exercise a pipeline that is correct as far as it has been built.
-- **Group B (independent, after Task 1):** Task 9 (`buildJudgeContext`) — it touches `lib/evals/score.mjs` too, but at a separate top-level export with no shared helper, and depends only on the constants module. It can run concurrently with Group A **only** if the implementer is willing to merge two edits to one file; the safer default is to slot it after Task 8.
-- **Group C (after Task 8):** Task 10 (`adev eval score`) — new file `lib/cli/eval.mjs` plus two one-line touches elsewhere. Needs the engine complete.
-- **Group D (after Task 10):** Task 11 (`skills/eval/SKILL.md`) — the skill cannot name a verb that does not dispatch yet.
+- **Group A (sequential):** Task 1 → Task 2 → Task 3. Task 2 changes the prose Task 3's sweep asserts is clean; Task 3's sweep fails while `docs/cli-reference.md` still carries the two live emitters. Task 1 must land first because Task 2's prose instructs an invocation that does not yet work.
+- **Group B (after Task 2):** Task 4 — re-anchors a test against Task 2's new prose. No file overlap with Task 3.
+- **Group C (after Tasks 1 and 2):** Task 5 — reads Task 2's prose and exercises Task 1's branch. Creates one new file, modifies none.
+- **Group D (last):** Task 6 — its source-manifest stamp must cover every file the other five tasks touched, so it cannot run before them.
 
-Effectively sequential, which is a property of the design rather than a scheduling failure: the engine is one composed function behind one export, exactly as the shipped sibling loader is. Splitting the passes across files to unlock parallelism would trade a real design property (one engine, one file) for a scheduling convenience.
+Groups B and C may run in parallel with each other once Task 2 is committed. Group D is strictly last.
+
+---
 
 ## Task Summary
 
 | # | Title | Complexity | Strategy | Depends On | Files |
 |---|-------|-----------|----------|------------|-------|
-| 1 | Score result contract constants | small | unit | — | 2 create, 0 modify |
-| 2 | Rubric origin and threshold validation | medium | unit | Task 1 | 5 create, 0 modify |
-| 3 | Verdict-set validation | medium | unit | Task 2 | 2 create, 1 modify |
-| 4 | Tally with denominator exclusion | medium | unit | Task 3 | 1 create, 1 modify |
-| 5 | Insufficient-evidence guard | medium | unit | Task 4 | 2 create, 1 modify |
-| 6 | Not-scored handling | small | unit | Task 5 | 3 create, 1 modify |
-| 7 | Disjoint status assignment | small | unit | Task 6 | 1 create, 1 modify |
-| 8 | Result assembly | medium | unit | Task 7 | 1 create, 1 modify |
-| 9 | `buildJudgeContext` | small | unit | Task 1 | 1 create, 3 modify |
-| 10 | `adev eval score` verb | medium | unit | Task 8 | 4 create, 2 modify |
-| 11 | Update `skills/eval/SKILL.md` Layer 3 | medium | unit | Task 10 | 1 create, 1 modify |
+| 1 | `--rubric default` keyword resolution (BEH-11) | medium | unit | — | 1 create, 3 modify |
+| 2 | Pass the keyword from the skill (BEH-12) | small | unit | Task 1 | 1 create, 3 modify |
+| 3 | Correct the documented invocation + no-live-emitter sweep | small | unit | Task 2 | 0 create, 2 modify |
+| 4 | Re-anchor the prose-derived rubric test | small | unit | Task 2 | 0 create, 1 modify |
+| 5 | End-to-end regression test (four properties) | large | unit | Task 1, Task 2 | 1 create, 0 modify |
+| 6 | Housekeeping: source-manifest completion + stale comments | small | unit | Tasks 1-5 | 0 create, 2 modify |
 
-All eleven tasks resolve to `strategy: unit` (source: fallback — the spec declares no `test_strategy`, `manifest.yaml` declares no `test_strategies` globs, and detection returns `unit` for `lib/**`, `tests/**`, `cli/**` and `skills/**` paths). Per the Strategy Summary rule that section is omitted. The spec declares no `infra_requirements:` and no task carries a non-unit strategy, so the Test Infrastructure Requirements section is omitted as well — the engine reads nothing, spawns nothing, and opens no socket, and the CLI verb reads two local files.
+All six tasks resolve to `strategy: unit` (source: fallback — the spec declares no `test_strategy`, `manifest.yaml` declares no `test_strategies` globs, and detection returns `unit` for `lib/**`, `tests/**`, `cli/**`, `skills/**`, and `docs/**` paths). Per the Strategy Summary rule that section is omitted. The spec declares no `infra_requirements:` and no task carries a non-unit strategy, so the Test Infrastructure Requirements section is omitted as well. Task 5 spawns a child `node` process and writes into `os.tmpdir()`, which is process-local and hermetic — it needs no external system, no credential, and no network, so it is a unit test that happens to fork.
 
-**Test granularity:** `per-behavior` (source: manifest — `test_policy.granularity`). One suite per spec behaviour; a task implementing a behaviour already covered *extends* that suite rather than creating one. Two suites here are not per-behaviour and say so: `score-schema-contract.test.mjs` (Task 1) asserts a constant rather than a behaviour, and `score-status-partition.test.mjs` (Task 7) asserts a joint invariant spanning BEH-3 and BEH-4 that neither single-behaviour suite can express. Every `**Tests:**` field below therefore reads *create*; `tests/lib/evals/` already exists from the sibling loader, and its nine-suite split is the convention this follows.
+**Test granularity:** `per-behavior` (source: manifest — `test_policy.granularity`). One suite per spec behaviour. BEH-11 and BEH-12 are each new, so Tasks 1 and 2 each *create* a suite. Task 3 *extends* Task 2's BEH-12 suite rather than creating a third, because the no-live-emitter sweep is a BEH-12 assertion. Task 5 creates a suite that is not per-behaviour and says so: it asserts the BEH-11 × BEH-12 *integration*, a joint property neither single-behaviour suite can express in-process. Tasks 4 and 6 modify existing suites only.
 
 **Specialist routing:** `manifest.yaml` declares `specialists: []`, so every task is `[specialist: none]`. No routing tags are available to assign.
 
-**Constitution boundary check:** no task creates a service, touches auth, changes the hook protocol, alters the CLI installation path structure, changes the plugin registration format, or adds a dependency. Task 10 adds a verb to `VERB_REGISTRY`, which is additive to the dispatcher rather than a change to the installation path structure. No task requires human approval. `governance/boundaries.yaml` rules are content-matched (CommonJS, inline-Node, `~/.claude/` paths, version fields); Task 11 is the only task touching a `skills/**/SKILL.md` and is written specifically to *remove* an executable-prose block, so it moves that file toward the rule rather than against it.
+**Constitution boundary check:** no task creates a service, touches auth, changes the hook protocol (stdin/stdout JSON contract), alters the CLI installation path structure, changes the plugin registration format, or adds a dependency. Task 1 adds a *branch* to an already-registered verb, not a registry entry. Task 2 edits skill markdown (explicitly autonomous). Tasks 3 and 6 update documentation and a spec's source manifest (explicitly autonomous, and required rather than optional). No task requires human approval. `governance/boundaries.yaml` rules are content-matched (CommonJS, inline-Node, `~/.claude/` literals, version fields): Task 2 is the only task touching a `skills/**/SKILL.md`, and it adds no inline-Node and no hardcoded `~/.claude/` path. **No task bumps `package.json`, `.claude-plugin/plugin.json`, or `.cursor-plugin/plugin.json`** — release-please owns those (ADR-0008).
 
 ---
 
-## Tasks
-
-All tasks share one branch: `feat/lib/evals-scoring-engine`. Every commit carries the `Spec:` and `Plan-task:` trailers the constitution requires, alongside the hook-injected `Author-type` and `Operator` trailers.
-
-**Shared result shape** (settled here so eleven tasks do not each invent one). `scoreRubric` returns:
-
-```javascript
-// Descriptive reference only — the authoritative definition is the JSDoc on
-// scoreRubric in lib/evals/score.mjs.
-{
-  verdicts: [ { id, kind: "element" | "criterion", verdict, evidence } ],  // the verdict table, rubric-declaration order
-  deterministic: { status: null, points: 8, max: 10 },                     // or { status: "NOT_SCORED", points: null, max: null }
-  judged:        { status: "INSUFFICIENT_EVIDENCE", points: null, max: null },
-  total:         null                                                      // or { points, max } when BOTH halves are numeric
-}
-```
-
-Each half is discriminated by `status`: `null` means scored (and `points` may legitimately be `0`), a string means not scored and `points` is `null`, never `0`. That is the spec's "`0` means scored and earned nothing" rule expressed structurally — a consumer cannot read a status half as a zero without going through a `null`.
-
-### Task 1: Score result contract constants [specialist: none]
+### Task 1: `--rubric default` keyword resolution (BEH-11) [specialist: none]
 
 **Charter capability:** Scoring engine and `adev eval score`
 **Strategy:** unit (source: fallback, confidence: high)
 **Files:**
-- Create: `lib/evals/score-schema.mjs`
-- Test: `tests/lib/evals/score-schema-contract.test.mjs`
+- Create: `tests/cli/eval-default-rubric-keyword.test.mjs`
+- Modify: `lib/cli/eval.mjs:202-241` (the `cmdScore` body) and `lib/cli/eval.mjs:262-271` (`help()`)
+- Modify: `lib/evals/score-schema.mjs:60-88` — append `SCORE_DEFAULT_RUBRIC_MISSING` to `SCORE_ERROR_CODES`
+- Modify: `tests/lib/evals/score-schema-contract.test.mjs:10-20`
+- Test: `tests/cli/eval-default-rubric-keyword.test.mjs`
 
-**Tests:** create `tests/lib/evals/score-schema-contract.test.mjs` — this task declares the contract rather than implementing a behaviour, so its suite asserts the constants' shape and their agreement with the spec's Error Cases table.
+**Tests:** create `tests/cli/eval-default-rubric-keyword.test.mjs` — the BEH-11 suite. BEH-11 is a new behaviour, so under `per-behavior` granularity it gets its own suite rather than extending `tests/cli/eval-score.test.mjs` (which owns BEH-8 and BEH-9).
 
-**Context to load:** Task 1 Context packet.
+**Context to load:** the Task 1 Context Packet above.
 
 - [ ] **Write failing test**
 
+Four cases, all driving the exported `run({ projectRoot, argv })` from `lib/cli/eval.mjs` with `process.exit` and `console.log` captured (the existing `tests/cli/eval-score.test.mjs` already establishes that idiom — reuse it, do not invent a second one):
+
 ```javascript
-import { test } from "node:test";
-import assert from "node:assert/strict";
-import { HALF_STATUSES, SCORE_ERROR_CODES, VERDICT_KINDS } from "../../../lib/evals/score-schema.mjs";
-
-test("the half-status set is closed and holds exactly the two spec statuses", () => {
-  assert.deepEqual([...HALF_STATUSES].sort(), ["INSUFFICIENT_EVIDENCE", "NOT_SCORED"]);
-  assert.ok(Object.isFrozen(HALF_STATUSES));
-});
-
-test("every error code named in the spec's Error Cases table is declared", () => {
-  for (const code of [
-    "SCORE_EMPTY_EVIDENCE", "SCORE_UNKNOWN_VERDICT_ID", "SCORE_MISSING_VERDICT",
-    "SCORE_INVALID_VERDICT", "SCORE_DUPLICATE_VERDICT", "SCORE_INVALID_RUBRIC",
-    "SCORE_INVALID_THRESHOLD", "UNSAFE_SCORE_PATH", "SCORE_INPUT_NOT_FOUND",
-  ]) {
-    assert.ok(SCORE_ERROR_CODES.includes(code), `missing code ${code}`);
-  }
-});
-
-test("the two verdict kinds name the two rubric lists and nothing else", () => {
-  assert.deepEqual([...VERDICT_KINDS].sort(), ["criterion", "element"]);
-});
+// 1. the keyword resolves the shipped rubric from a project root that is NOT
+//    the plugin root, and scores successfully
+// 2. a project root outside the plugin root does not make the keyword unsafe:
+//    no UNSAFE_SCORE_PATH is raised for --rubric default
+// 3. a non-`default` --rubric value is still contained against the project
+//    root: `../../etc/passwd` still exits non-zero with UNSAFE_SCORE_PATH
+// 4. the branch reads no environment variable: assert the module source of
+//    lib/cli/eval.mjs contains no `process.env` reference at all
 ```
+
+Case 4 is a source-level assertion on purpose. It is cheap, it cannot be satisfied by accident, and it states the prohibition BEH-11 makes ("never from a caller-settable environment variable") as a property of the file rather than of one code path a later refactor might add a second branch beside. The behavioural half of the same prohibition is Task 5's property 4.
+
+Also extend `tests/lib/evals/score-schema-contract.test.mjs` in the same commit so the code vocabulary stays the single source of truth: add `SCORE_DEFAULT_RUBRIC_MISSING` and `SCORE_INPUT_PARSE_ERROR` to the list the "every error code named in the spec's Error Cases table is declared" test iterates. Both are in the revision-9 table; the test still checks only the original nine.
 
 - [ ] **Verify test fails**
 
-Run: `node --test tests/lib/evals/score-schema-contract.test.mjs`
-Expected: FAIL — `Cannot find module '.../lib/evals/score-schema.mjs'`
+Run: `node --test tests/cli/eval-default-rubric-keyword.test.mjs tests/lib/evals/score-schema-contract.test.mjs`
+Expected: FAIL — case 1 exits non-zero with `UNSAFE_SCORE_PATH: path "default" escapes the project root.` (today `default` is treated as a relative path and contained against the project root); the schema-contract addition fails with `missing code SCORE_DEFAULT_RUBRIC_MISSING`.
 
 - [ ] **Implement**
 
-Create `lib/evals/score-schema.mjs` holding frozen constants only — no functions, no I/O, no imports, mirroring `lib/evals/rubric-schema.mjs`. Its module doc states that it is the single place a reviewer reads to learn the result contract, and that `lib/evals/score.mjs` consumes these constants rather than restating them. It does **not** re-declare `ELEMENT_VERDICTS` or `CRITERION_VERDICTS`: those already live in `rubric-schema.mjs`, and a second copy would be the exact duplication the charter's Naming attribute prohibits.
+In `lib/evals/score-schema.mjs`, append the code to `SCORE_ERROR_CODES` with a one-line comment tying it to BEH-11.
+
+In `lib/cli/eval.mjs`, import `getPluginRoot` from `../profiles/index.mjs` and branch in `cmdScore` **before** `containPath(absRoot, rubricArg)` is reached:
+
+```javascript
+// Descriptive reference — the shape the implementation takes, not an
+// instruction to run this snippet:
+//
+//   const isDefaultKeyword = rubricArg === "default";
+//   if (isDefaultKeyword) {
+//     const pluginRoot = lenientRealpath(resolve(getPluginRoot()));
+//     const shipped = join(pluginRoot, "skills", "eval", "default-rubric.yaml");
+//     if (!existsSync(shipped)) throw codedError("SCORE_DEFAULT_RUBRIC_MISSING", ...);
+//     rubric = loadRubric(shipped, { projectRoot: pluginRoot });
+//   } else {
+//     containPath(absRoot, rubricArg);
+//     rubric = loadRubric(rubricArg, { projectRoot: absRoot });
+//   }
+```
+
+Constraints an implementer must not "simplify" away:
+
+- **The plugin root comes from `getPluginRoot()` and nowhere else.** No `process.env.CLAUDE_PLUGIN_ROOT`, no `opts.pluginRoot` parameter threaded in from the caller, no `--plugin-root` flag. The keyword's entire safety argument is that its location is unforgeable: it is the one branch permitted to skip project-root containment, so a caller-settable root would make it a weaker posture than the containment it skips.
+- **`--input` containment is unchanged.** The keyword affects `--rubric` only. `containPath(absRoot, inputArg)` still runs, and still runs before any file is opened.
+- **The exact literal `default` only.** Not `Default`, not `default.yaml`, not a `default:` prefix. Anything else is a path and takes the BEH-9 branch.
+- **`loadRubric` does the reading.** Do not add a second containment sequence or a second `readFileSync` — pass `{ projectRoot: pluginRoot }` and let the shipped loader apply its own resolve, realpath, and re-check, exactly as the BEH-9 branch does with `absRoot`.
+
+Then correct `help()`: it currently states that "`--rubric` and `--input` are both containment-checked against the project root", which becomes false for the keyword. Add the keyword to the usage line and one sentence naming its plugin-root boundary.
 
 - [ ] **Verify test passes**
 
-Run: `node --test tests/lib/evals/score-schema-contract.test.mjs`
-Expected: PASS
+Run: `node --test tests/cli/eval-default-rubric-keyword.test.mjs tests/lib/evals/score-schema-contract.test.mjs tests/cli/eval-score.test.mjs`
+Expected: PASS, including the pre-existing BEH-8/BEH-9 suite unchanged.
 
 - [ ] **Commit**
 
-Branch (if not already created): `feat/lib/evals-scoring-engine`
+Branch (if not already created): `feat/eval-harness/default-rubric-keyword`
 
-Stage `lib/evals/score-schema.mjs` and `tests/lib/evals/score-schema-contract.test.mjs`, then commit as
-`feat(evals): declare the scoring result contract as frozen constants`
-with the `Spec:` and `Plan-task: 1` trailers.
+Stage `lib/cli/eval.mjs`, `lib/evals/score-schema.mjs`, `tests/cli/eval-default-rubric-keyword.test.mjs`, and `tests/lib/evals/score-schema-contract.test.mjs`, then commit with:
 
-### Task 2: Rubric origin and threshold validation [specialist: none]
+```text
+feat(eval-harness): resolve --rubric default against the module-derived plugin root
 
+Spec: .context-index/specs/features/eval-harness/scoring-engine.spec.md
+Plan-task: 1
+```
+
+---
+
+### Task 2: Pass the keyword from the skill (BEH-12) [specialist: none]
+
+**Charter capability:** Scoring engine and `adev eval score`
+**Strategy:** unit (source: fallback, confidence: high)
 **Depends on:** Task 1
-**Charter capability:** Scoring engine and `adev eval score`
-**Strategy:** unit (source: fallback, confidence: high)
 **Files:**
-- Create: `lib/evals/score.mjs`
-- Create: `tests/fixtures/evals/rubrics/threshold-100.yaml`
-- Create: `tests/fixtures/evals/rubrics/threshold-non-numeric.yaml`
-- Create: `tests/fixtures/evals/rubrics/threshold-out-of-range.yaml`
-- Test: `tests/lib/evals/score-rubric-and-threshold.test.mjs`
+- Create: `tests/skills/eval-rubric-keyword-emission.test.mjs`
+- Modify: `skills/eval/SKILL.md:112-120` (Rubric resolution), `:164` (the `adev eval score` invocation), `:288` (config-block comment)
+- Modify: `providers/codex/skills/eval/SKILL.md` — **regenerated, never hand-edited**
+- Modify: `providers/opencode/skills/eval/SKILL.md` — **regenerated, never hand-edited**
+- Test: `tests/skills/eval-rubric-keyword-emission.test.mjs`
 
-**Tests:** create `tests/lib/evals/score-rubric-and-threshold.test.mjs` — BEH-10's suite, which also owns the `SCORE_INVALID_RUBRIC` Error Cases row, because both are pre-tally origin checks and neither has a home elsewhere.
+**Tests:** create `tests/skills/eval-rubric-keyword-emission.test.mjs` — the BEH-12 suite. Task 3 extends this same file rather than creating a third.
 
-**Context to load:** Task 2 Context packet.
+**Context to load:** the Task 2 Context Packet above.
 
 - [ ] **Write failing test**
 
 ```javascript
-import { test } from "node:test";
-import assert from "node:assert/strict";
-import { loadRubric } from "../../../lib/evals/rubric.mjs";
-import { scoreRubric } from "../../../lib/evals/score.mjs";
-
-const load = (name) => loadRubric(`tests/fixtures/evals/rubrics/${name}.yaml`);
-
-test("a non-numeric threshold is rejected before any tallying, naming the value", () => {
-  const err = assert.throws(() => scoreRubric(load("threshold-non-numeric"), []));
-  assert.equal(err.code, "SCORE_INVALID_THRESHOLD");
-  assert.match(err.message, /forty/);
-});
-
-test("a threshold outside [0, 100] is rejected, naming the value", () => {
-  const err = assert.throws(() => scoreRubric(load("threshold-out-of-range"), []));
-  assert.equal(err.code, "SCORE_INVALID_THRESHOLD");
-  assert.match(err.message, /140/);
-});
-
-test("the boundary values 0 and 100 are in range and do not throw here", () => {
-  // threshold: 100 is explicitly legal — see BEH-3 clause 1, which is the only
-  // path that catches an all-unknown judged half at this threshold (Task 5).
-  assert.doesNotThrow(() => scoreRubric(load("threshold-100"), []), /SCORE_INVALID_THRESHOLD/);
-});
-
-test("threshold validation runs before verdict-set validation", () => {
-  // A rubric with a bad threshold AND a verdict set that is also invalid must
-  // report the threshold: "before any tallying" is an ordering claim, not a hint.
-  const err = assert.throws(() =>
-    scoreRubric(load("threshold-non-numeric"), [{ id: "no_such_id", value: "met", evidence: "x" }]));
-  assert.equal(err.code, "SCORE_INVALID_THRESHOLD");
-});
-
-test("an object that did not come from loadRubric is rejected by origin", () => {
-  const err = assert.throws(() => scoreRubric({ rubric_id: "hand-rolled" }, []));
-  assert.equal(err.code, "SCORE_INVALID_RUBRIC");
-  assert.match(err.message, /loadRubric/);
-});
+// For skills/eval/SKILL.md AND each providers/*/skills/eval/SKILL.md:
+//   a. the Step 3 `adev eval score` invocation line passes `--rubric default`
+//      (the literal token), not `<resolved rubric path>` and not an
+//      <ADEV_ROOT>-prefixed path
+//   b. the Rubric resolution section states that the shipped-default case
+//      passes the literal `default` and does NOT pre-resolve it
+//   c. no `--rubric` argument anywhere in the file is a path ending in
+//      default-rubric.yaml
 ```
+
+Case (c) is the per-file form of Task 3's repo-wide sweep; keeping it here as well means a mirror regression is attributed to this suite rather than only to the sweep.
 
 - [ ] **Verify test fails**
 
-Run: `node --test tests/lib/evals/score-rubric-and-threshold.test.mjs`
-Expected: FAIL — `Cannot find module '.../lib/evals/score.mjs'`
+Run: `node --test tests/skills/eval-rubric-keyword-emission.test.mjs`
+Expected: FAIL — case (a) fails on all three files: line 164 reads `adev eval score --rubric <resolved rubric path> --input <verdict file path>`.
 
 - [ ] **Implement**
 
-Create `lib/evals/score.mjs` with the `scoreRubric` entry point and its first two passes. Note for the implementer: **`loadRubric` returns the validated parsed document itself, with no brand or marker** (`lib/evals/rubric.mjs:895-900` explains why — the validated document *is* the Rubric). So the origin check is necessarily structural: assert the argument is a plain object declaring every key in `REQUIRED_TOP_LEVEL_KEYS` with both entry lists present as arrays. Do not add a brand to the loader's return to make this check easier — that would change a shipped, validated module's contract for the convenience of its consumer.
+Edit `skills/eval/SKILL.md` only:
 
-The threshold pass reads `insufficient_evidence_threshold_percent` and rejects it unless `Number.isFinite(value) && value >= 0 && value <= 100`. The module doc records *why* one field of an already-validated Rubric is re-checked: the loader validates that top-level keys are *present*, not well-typed, and a non-numeric threshold is the one corruption that fails silently — it coerces to `NaN`, every share comparison against it returns `false`, and BEH-3's second clause would never fire while the rubric still looked valid.
+1. **Rubric resolution section (lines ~112-120).** Keep the three-step resolution order. Change what step 3 and the shipped-rubric sentence *instruct*: when the shipped default is selected (no `--rubric`, or `rubric: default` in config), pass the literal token `default` to `adev eval score --rubric` and let the verb resolve it against the plugin root. State plainly that the skill must **not** expand it to an `<ADEV_ROOT>`-relative path, and say why in one clause — a resolved path takes the verb's project-root branch and is refused in every real install. Keep the sentence naming `<ADEV_ROOT>/skills/eval/default-rubric.yaml` as *what the keyword resolves to*; it is Task 4's anchor, and it is a description of the keyword's target rather than a `--rubric` value.
+2. **Step 3 invocation (line ~164).** Replace `--rubric <resolved rubric path>` with `--rubric default` for the shipped case, and note in one line that a user-supplied `--rubric <path>` is passed through unchanged.
+3. **Config block comment (line ~288).** Keep `rubric: default`; keep the comment describing what it resolves to.
+4. **Mirrors.** Run `node scripts/sync-provider-skills.mjs`, then commit what it wrote. Do not hand-edit either provider file — `tests/sync/provider-skill-parity.test.mjs` runs the real sync script as a quality gate, which is exactly why BEH-12 needs no separate clause for the mirrors.
+
+Do not add any inline-Node block, any `node -e`, or any fenced JavaScript carrying control flow — `hooks/pre-commit-no-inline-node.sh` rejects the commit, and the constitution's anti-pattern list forbids it independently.
 
 - [ ] **Verify test passes**
 
-Run: `node --test tests/lib/evals/score-rubric-and-threshold.test.mjs`
-Expected: PASS
+Run: `node --test tests/skills/eval-rubric-keyword-emission.test.mjs tests/sync/provider-skill-parity.test.mjs tests/skills-extension-coverage.test.mjs`
+Expected: PASS — including parity, which proves the mirrors were regenerated rather than edited.
 
 - [ ] **Commit**
 
-Stage `lib/evals/score.mjs`, the three threshold fixtures, and the suite, then commit as
-`feat(evals): validate rubric origin and threshold before any tallying`
-with the `Spec:` and `Plan-task: 2` trailers.
+Run `node scripts/sync-provider-skills.mjs`, stage `skills/eval/SKILL.md`, both `providers/*/skills/eval/SKILL.md` mirrors, and `tests/skills/eval-rubric-keyword-emission.test.mjs`, then commit with:
 
-### Task 3: Verdict-set validation [specialist: none]
+```text
+fix(eval-harness): pass the literal default keyword from the eval skill
 
+Spec: .context-index/specs/features/eval-harness/scoring-engine.spec.md
+Plan-task: 2
+```
+
+---
+
+### Task 3: Correct the documented invocation + no-live-emitter sweep [specialist: none]
+
+**Charter capability:** Scoring engine and `adev eval score`
+**Strategy:** unit (source: fallback, confidence: high)
 **Depends on:** Task 2
-**Charter capability:** Scoring engine and `adev eval score`
-**Strategy:** unit (source: fallback, confidence: high)
 **Files:**
-- Modify: `lib/evals/score.mjs` — add the verdict-set pass after the threshold pass
-- Create: `tests/fixtures/evals/verdicts/complete.json`
-- Test: `tests/lib/evals/score-verdict-validation.test.mjs`
+- Modify: `docs/cli-reference.md:821-852` — the `--rubric` signature bullet, the containment paragraph, and both example lines
+- Modify: `tests/skills/eval-rubric-keyword-emission.test.mjs` — add the repo-wide sweep
+- Test: `tests/skills/eval-rubric-keyword-emission.test.mjs`
 
-**Tests:** create `tests/lib/evals/score-verdict-validation.test.mjs` — the shared suite for BEH-5 and BEH-6, which also owns the `SCORE_INVALID_VERDICT` and `SCORE_DUPLICATE_VERDICT` Error Cases rows. The grouping is deliberate: all four are one pass over the same list, and splitting them would create four suites reading one fixture apiece.
+**Tests:** extend `tests/skills/eval-rubric-keyword-emission.test.mjs` (created by Task 2). The sweep is a BEH-12 assertion, so under `per-behavior` granularity it belongs in the BEH-12 suite rather than in a new file.
 
-**Context to load:** Task 3 Context packet.
+**Context to load:** the Task 3 Context Packet above.
 
 - [ ] **Write failing test**
 
+Add the no-live-emitter sweep the spec's acceptance criterion specifies, with its scope taken verbatim from that criterion:
+
 ```javascript
-import { test } from "node:test";
-import assert from "node:assert/strict";
-import { loadRubric } from "../../../lib/evals/rubric.mjs";
-import { scoreRubric } from "../../../lib/evals/score.mjs";
-
-const rubric = () => loadRubric("tests/fixtures/evals/rubrics/conforming.yaml");
-// conforming.yaml: elements spec_criteria_referenced, tests_accompany_source;
-//                  criteria readability_naming, separation_of_concerns.
-const complete = () => [
-  { id: "spec_criteria_referenced", value: "met", evidence: "tests/x.test.mjs:12 names criterion 1" },
-  { id: "tests_accompany_source", value: "met", evidence: "the diff pairs every source file" },
-  { id: "readability_naming", value: "met", evidence: "lib/x.mjs:4 names the export" },
-  { id: "separation_of_concerns", value: "not_met", evidence: "lib/x.mjs:30 mixes two responsibilities" },
-];
-
-test("met with empty evidence is rejected, naming the entry", () => {
-  const v = complete();
-  v[0].evidence = "   ";
-  const err = assert.throws(() => scoreRubric(rubric(), v));
-  assert.equal(err.code, "SCORE_EMPTY_EVIDENCE");
-  assert.match(err.message, /spec_criteria_referenced/);
-});
-
-test("unknown with empty evidence is legal — absence is expressible only as unknown", () => {
-  const v = complete();
-  v[2] = { id: "readability_naming", value: "unknown", evidence: "" };
-  assert.doesNotThrow(() => scoreRubric(rubric(), v));
-});
-
-test("a verdict id the rubric does not declare is rejected, naming the id", () => {
-  const err = assert.throws(() =>
-    scoreRubric(rubric(), [...complete(), { id: "ghost", value: "met", evidence: "e" }]));
-  assert.equal(err.code, "SCORE_UNKNOWN_VERDICT_ID");
-  assert.match(err.message, /ghost/);
-});
-
-test("a declared id the verdict set omits is rejected, naming the id", () => {
-  const err = assert.throws(() => scoreRubric(rubric(), complete().slice(0, 3)));
-  assert.equal(err.code, "SCORE_MISSING_VERDICT");
-  assert.match(err.message, /separation_of_concerns/);
-});
-
-test("an element resolving unknown is illegal; a criterion resolving not_applicable is illegal", () => {
-  const asElement = complete();
-  asElement[0].value = "unknown";
-  const e1 = assert.throws(() => scoreRubric(rubric(), asElement));
-  assert.equal(e1.code, "SCORE_INVALID_VERDICT");
-  assert.match(e1.message, /spec_criteria_referenced[\s\S]*unknown/);
-
-  const asCriterion = complete();
-  asCriterion[2].value = "not_applicable";
-  const e2 = assert.throws(() => scoreRubric(rubric(), asCriterion));
-  assert.equal(e2.code, "SCORE_INVALID_VERDICT");
-  assert.match(e2.message, /readability_naming[\s\S]*not_applicable/);
-});
-
-test("a repeated verdict for one id is rejected, naming the id", () => {
-  const err = assert.throws(() => scoreRubric(rubric(), [...complete(), complete()[0]]));
-  assert.equal(err.code, "SCORE_DUPLICATE_VERDICT");
-  assert.match(err.message, /spec_criteria_referenced/);
-});
+// Walk skills/**, providers/** and docs/** — EXCLUDING .context-index/,
+// which archives review and validate artifacts that necessarily quote the
+// forbidden pattern. For every occurrence of a `--rubric <value>` argument,
+// fail if the value's PATH COMPONENT ends in `default-rubric.yaml`. Match
+// both repo-relative (`skills/eval/default-rubric.yaml`) and absolute
+// plugin-cache (`/…/agentic-development/adev/<v>/skills/eval/default-rubric.yaml`)
+// forms. Expected result: zero matches.
+//
+// Assert on the match LIST, not just the count, so a failure names the file
+// and line rather than only a number.
 ```
+
+Two properties this sweep must have, both from the `universal-claim-needs-a-predicate` heuristic:
+
+- **It is scoped, not unbounded.** "No occurrence anywhere in the repository" cannot be discharged — the acceptance criterion itself quotes the forbidden pattern to describe itself, so `.context-index/` must be excluded or the criterion's own document fails the check it states.
+- **It matches on the path component, not an exact string.** A future absolute plugin-cache path must be caught by the same predicate as the repo-relative one.
 
 - [ ] **Verify test fails**
 
-Run: `node --test tests/lib/evals/score-verdict-validation.test.mjs`
-Expected: FAIL — nothing rejects the malformed sets, so `err.code` is `undefined` on every rejection assertion
+Run: `node --test tests/skills/eval-rubric-keyword-emission.test.mjs`
+Expected: FAIL — **exactly two matches, both in `docs/cli-reference.md`** (lines 851 and 852). This count is the pre-state recorded by the previous `/adev:validate`; a run that reports a different number before the fix means something else drifted and should be investigated rather than absorbed.
 
 - [ ] **Implement**
 
-Add one validation pass to `lib/evals/score.mjs`, run after the threshold pass and before any tally. It builds the declared-id index from the rubric's two lists (recording each id's kind), then walks the supplied verdicts once in a fixed order: duplicate → unknown id → illegal enum value for its kind → empty evidence on `met`/`not_met`; then diffs the declared index against the supplied ids for `SCORE_MISSING_VERDICT`. Enum membership is tested against `ELEMENT_VERDICTS` / `CRITERION_VERDICTS` **imported from `rubric-schema.mjs`** — never a literal list. Evidence emptiness means empty or whitespace-only. The pass returns nothing and either throws or falls through, so no arithmetic can observe a partially validated set.
+In `docs/cli-reference.md` § `eval`, make three coordinated edits. Fixing the examples while leaving the prose leaves the page self-contradictory, which is why the spec's task row names both:
 
-`tests/fixtures/evals/verdicts/complete.json` carries the same four verdicts in the array-of-objects form the CLI's `--input` will read (Task 10), so the engine suite and the CLI suite assert against one shape.
+1. **Signature bullet (line ~823).** `--rubric <path>` becomes `--rubric <path|default>`: a rubric YAML file containment-checked against the project root, **or** the literal keyword `default`, which resolves the plugin's shipped `skills/eval/default-rubric.yaml`.
+2. **Containment paragraph (lines ~829-836).** It currently opens "Both `--rubric` and `--input` are contained against the project root". Qualify it: that holds for every `--rubric` *path* value, and is unchanged; the `default` keyword is not a path and is contained against the **plugin root** instead, derived from the verb module's own location on disk and never from an environment variable. Name `SCORE_DEFAULT_RUBRIC_MISSING` as the error when the shipped file is absent.
+3. **Examples (lines ~851-852).** Both become `--rubric default`.
 
 - [ ] **Verify test passes**
 
-Run: `node --test tests/lib/evals/score-verdict-validation.test.mjs`
-Expected: PASS
+Run: `node --test tests/skills/eval-rubric-keyword-emission.test.mjs`
+Expected: PASS — the sweep returns zero matches.
+
+Then confirm the docs suite still passes: `node --test tests/docs/` and `node --test tests/repomap/doc-references.test.mjs`.
 
 - [ ] **Commit**
 
-Stage `lib/evals/score.mjs`, the verdict fixture, and the suite, then commit as
-`feat(evals): reject malformed verdict sets before scoring`
-with the `Spec:` and `Plan-task: 3` trailers.
+Stage `docs/cli-reference.md` and `tests/skills/eval-rubric-keyword-emission.test.mjs`, then commit with:
 
-### Task 4: Tally with denominator exclusion [specialist: none]
+```text
+docs(eval-harness): document --rubric default and drop the refused example
 
-**Depends on:** Task 3
+Spec: .context-index/specs/features/eval-harness/scoring-engine.spec.md
+Plan-task: 3
+```
+
+---
+
+### Task 4: Re-anchor the prose-derived rubric test [specialist: none]
+
 **Charter capability:** Scoring engine and `adev eval score`
 **Strategy:** unit (source: fallback, confidence: high)
+**Depends on:** Task 2
 **Files:**
-- Modify: `lib/evals/score.mjs` — add the per-half tally after validation
-- Test: `tests/lib/evals/score-tally.test.mjs`
+- Modify: `tests/skills/eval-default-rubric.test.mjs:44-56` (`documentedRubricPath()` and the constants it feeds)
+- Test: `tests/skills/eval-default-rubric.test.mjs`
 
-**Tests:** create `tests/lib/evals/score-tally.test.mjs` — BEH-2's suite.
+**Tests:** extend `tests/skills/eval-default-rubric.test.mjs`. It is a pre-existing suite guarding the rubric *contract* (the file exists, parses, stays flat, carries every documented key); this task keeps that guard pointed at the right file after Task 2 rewrites the prose it reads.
 
-**Context to load:** Task 4 Context packet.
+**Context to load:** the Task 4 Context Packet above.
 
 - [ ] **Write failing test**
 
+This suite's own header states why it derives the rubric path from `SKILL.md` rather than hardcoding it: *"a test that only asserts `skills/eval/default-rubric.yaml` exists would still pass if the skill later pointed somewhere else, which is the exact drift being fixed."* Task 2 rewrites that prose, so the test either breaks or silently stops testing what it was written to guard. Re-anchor it, and add the assertion that makes the new silent-pass mode impossible:
+
 ```javascript
-import { test } from "node:test";
-import assert from "node:assert/strict";
-import { loadRubric } from "../../../lib/evals/rubric.mjs";
-import { scoreRubric } from "../../../lib/evals/score.mjs";
-
-const rubric = () => loadRubric("tests/fixtures/evals/rubrics/conforming.yaml");
-// conforming.yaml budgets: required_element_points 10, judged_criterion_points 15.
-
-test("not_applicable leaves the element denominator, so one met of one answered is full points", () => {
-  const result = scoreRubric(rubric(), [
-    { id: "spec_criteria_referenced", value: "met", evidence: "tests/x.test.mjs:3" },
-    { id: "tests_accompany_source", value: "not_applicable", evidence: "" },
-    { id: "readability_naming", value: "met", evidence: "lib/x.mjs:4" },
-    { id: "separation_of_concerns", value: "met", evidence: "lib/x.mjs:9" },
-  ]);
-  assert.equal(result.deterministic.status, null);
-  assert.equal(result.deterministic.points, 10);   // 1/1 * 10, NOT 1/2 * 10
-  assert.equal(result.deterministic.max, 10);
-});
-
-test("unknown leaves the criterion denominator, so one met of one answered is full points", () => {
-  const result = scoreRubric(rubric(), [
-    { id: "spec_criteria_referenced", value: "met", evidence: "tests/x.test.mjs:3" },
-    { id: "tests_accompany_source", value: "not_met", evidence: "lib/y.mjs has no test" },
-    { id: "readability_naming", value: "met", evidence: "lib/x.mjs:4" },
-    { id: "separation_of_concerns", value: "unknown", evidence: "" },
-  ]);
-  assert.equal(result.judged.status, null);
-  assert.equal(result.judged.points, 15);          // 1/1 * 15, NOT 1/2 * 15
-  assert.equal(result.judged.max, 15);
-});
-
-test("not_met stays in the denominator and earns nothing", () => {
-  const result = scoreRubric(rubric(), [
-    { id: "spec_criteria_referenced", value: "met", evidence: "tests/x.test.mjs:3" },
-    { id: "tests_accompany_source", value: "not_met", evidence: "lib/y.mjs has no test" },
-    { id: "readability_naming", value: "not_met", evidence: "lib/x.mjs:4 is opaque" },
-    { id: "separation_of_concerns", value: "not_met", evidence: "lib/x.mjs:9 mixes concerns" },
-  ]);
-  assert.equal(result.deterministic.points, 5);    // 1/2 * 10
-  assert.equal(result.judged.points, 0);           // 0/2 * 15 — scored, earned nothing
-  assert.equal(result.judged.status, null);        // and NOT a status: 0 is a real score
-});
-
-test("a half's max is its own budget, never the layer total", () => {
-  const result = scoreRubric(rubric(), [
-    { id: "spec_criteria_referenced", value: "met", evidence: "a" },
-    { id: "tests_accompany_source", value: "met", evidence: "b" },
-    { id: "readability_naming", value: "met", evidence: "c" },
-    { id: "separation_of_concerns", value: "met", evidence: "d" },
-  ]);
-  assert.equal(result.deterministic.max, 10);
-  assert.equal(result.judged.max, 15);
-});
+// 1. documentedRubricPath() anchors on the sentence that DEFINES what the
+//    `default` keyword resolves to, not on any incidental path mention
+// 2. a new assertion: SKILL.md must actually contain that defining sentence.
+//    Without it the regex falls back to "" and every downstream assertion
+//    degrades to a vacuous pass on a `__missing__` path — the same silent
+//    stop-testing mode the header warns about, one level up
+// 3. the derived path still resolves to a real, parseable, key-complete file
 ```
+
+Assertion 2 is the load-bearing addition. The current `assert.notEqual(RUBRIC_REL, "")` catches an *empty* match; it does not catch a match that landed on a different sentence than intended.
 
 - [ ] **Verify test fails**
 
-Run: `node --test tests/lib/evals/score-tally.test.mjs`
-Expected: FAIL — `scoreRubric` returns `undefined`; reading `.deterministic` throws
+Run: `node --test tests/skills/eval-default-rubric.test.mjs`
+Expected: FAIL on assertion 2 before the anchor is updated. To confirm the guard is real rather than incidentally green, also falsify it: temporarily remove the keyword-definition sentence from `skills/eval/SKILL.md`, re-run, confirm RED, then restore. A passing test is not evidence until it has been watched to fail.
 
 - [ ] **Implement**
 
-Add a `tallyHalf(entries, verdictsById, { pointsBudget, excluded })` helper and call it twice: once over `required_elements` excluding `not_applicable`, once over `quality_dimensions` excluding `unknown`. Each call returns `{ met, answered, declared, excluded, points, max }` where `points = (met / answered) * pointsBudget` and `max = pointsBudget`. **This helper does not decide statuses** — it is called only on the numeric rows of the partition table, and Tasks 5-7 own the precondition that routes a half here. Keeping the branch out of the tally is what lets Task 7 assert the partition on the routing function alone.
+Update `documentedRubricPath()` so its regex is anchored to the keyword-definition sentence Task 2 leaves in place (the one naming what `default` resolves to), rather than to the first `skills/eval/*.yaml` substring anywhere in the file. Keep the optional `<ADEV_ROOT>/` prefix handling and the plugin-root-relative return value — `PLUGIN_ROOT` from `tests/helpers.mjs` stays the join base. Add assertion 2. Change nothing else: the flatness, key-completeness, verdict-vocabulary, and no-numeric-scale assertions are all still correct and still passing.
 
-`answered === 0` is not defended against here. It cannot reach this helper once Tasks 5 and 6 land, and adding a guard would create a second, silent status path competing with the explicit one — which is the defect BEH-4 exists to prevent. Until Task 6 lands the suite above never constructs that case.
+**Division of labour with Task 2's suite, so the two do not drift into duplicates:** `eval-rubric-keyword-emission.test.mjs` owns *what the skill emits* (the literal `default` reaches `--rubric`). `eval-default-rubric.test.mjs` owns *what the documented default resolves to* (a real, conforming, flat rubric file exists there). Neither should grow assertions belonging to the other.
 
 - [ ] **Verify test passes**
 
-Run: `node --test tests/lib/evals/score-tally.test.mjs`
-Expected: PASS
+Run: `node --test tests/skills/eval-default-rubric.test.mjs`
+Expected: PASS.
 
 - [ ] **Commit**
 
-Stage `lib/evals/score.mjs` and the suite, then commit as
-`feat(evals): tally each half with its own denominator exclusion`
-with the `Spec:` and `Plan-task: 4` trailers.
+Stage `tests/skills/eval-default-rubric.test.mjs`, then commit with:
 
-### Task 5: Insufficient-evidence guard [specialist: none]
+```text
+test(eval-harness): re-anchor the prose-derived default-rubric guard
 
-**Depends on:** Task 4
+Spec: .context-index/specs/features/eval-harness/scoring-engine.spec.md
+Plan-task: 4
+```
+
+---
+
+### Task 5: End-to-end regression test (four properties) [specialist: none]
+
 **Charter capability:** Scoring engine and `adev eval score`
 **Strategy:** unit (source: fallback, confidence: high)
+**Depends on:** Task 1, Task 2
 **Files:**
-- Modify: `lib/evals/score.mjs` — add the judged-half precondition
-- Create: `tests/fixtures/evals/rubrics/threshold-50.yaml` — conforming, threshold `50`, for the at-the-boundary case
-- Reference: `tests/fixtures/evals/rubrics/threshold-100.yaml` *(created in Task 2; reused here)*
-- Test: `tests/lib/evals/score-insufficient-evidence.test.mjs`
+- Create: `tests/cli/eval-default-rubric-e2e.test.mjs`
+- Test: `tests/cli/eval-default-rubric-e2e.test.mjs`
 
-**Tests:** create `tests/lib/evals/score-insufficient-evidence.test.mjs` — BEH-3's suite. It must include a `threshold: 100` case; see the constraint below.
+**Tests:** create `tests/cli/eval-default-rubric-e2e.test.mjs`. Deliberately **not** per-behaviour: it asserts the BEH-11 × BEH-12 integration — a joint property neither single-behaviour suite can express, because each of them can pass in full while the pair stays broken. That is not a hypothetical: it is the exact state `/adev:validate` reproduced after spec revision 5 shipped 11 green tasks.
 
-**Context to load:** Task 5 Context packet — including this plan's **Critical implementation constraint** block, which is required reading for this task.
+`tests/cli/**` is inside the default `npm test` partition (`scripts/run-tests.mjs` excludes only `tests/evals/**` and nested-project suites), so this test runs on the ordinary quality gate. Do not place it under `tests/evals/` or `tests/integration/`.
 
-> **Do not delete BEH-3's first clause.** Task 2 validated that the threshold is numeric and within `[0, 100]`. That does **not** make the threshold-independent clause redundant, and the reasoning that it does is the specific mistake this note exists to block. `100` is an in-range threshold. At `threshold: 100` the second clause (`share > threshold`) can never fire, because 100 does not exceed 100 — so the first clause (`every declared criterion resolved unknown`) is the *only* thing standing between an all-`unknown` judged half and the numeric path with a zero denominator. That defect blocked review round 3. The implementation carries this as a comment at the site, and the suite carries it as a test.
+**Context to load:** the Task 5 Context Packet above.
 
 - [ ] **Write failing test**
 
-```javascript
-import { test } from "node:test";
-import assert from "node:assert/strict";
-import { loadRubric } from "../../../lib/evals/rubric.mjs";
-import { scoreRubric } from "../../../lib/evals/score.mjs";
+The four properties below are acceptance conditions on this task, not suggestions. **A review that finds any one of them weakened must reject the task.** Each is here because the weaker version already passed against the broken code.
 
-const load = (n) => loadRubric(`tests/fixtures/evals/rubrics/${n}.yaml`);
-const elementsMet = [
-  { id: "spec_criteria_referenced", value: "met", evidence: "tests/x.test.mjs:3" },
-  { id: "tests_accompany_source", value: "met", evidence: "the diff pairs every file" },
-];
+**Property 1 — through the real `dispatch()` → verb-module wiring.** Spawn a child process running the CLI entrypoint (`node <pluginCopy>/cli/index.mjs eval score …`), exactly as `runCLI()` in `tests/helpers.mjs` already does. `dispatch()` sets `projectRoot = process.cwd()` and resolves the verb through `VERB_REGISTRY`, so a spawn with a chosen `cwd` exercises the real derivation. **Forbidden:** importing `cmdScore` (or any internal helper) and passing it a `pluginRoot` argument. That asserts the argument, not how the root is obtained.
 
-test("clause 2: an unknown share above the threshold sets the judged half to a status", () => {
-  // conforming.yaml threshold is 40; 1 unknown of 2 criteria is 50% > 40%.
-  const result = scoreRubric(load("conforming"), [
-    ...elementsMet,
-    { id: "readability_naming", value: "met", evidence: "lib/x.mjs:4" },
-    { id: "separation_of_concerns", value: "unknown", evidence: "" },
-  ]);
-  assert.equal(result.judged.status, "INSUFFICIENT_EVIDENCE");
-  assert.equal(result.judged.points, null);
-});
+**Property 2 — plugin root OUTSIDE the project root.** Build two sibling temp directories under `os.tmpdir()`:
 
-test("the deterministic half is unaffected and keeps its points and maximum", () => {
-  const result = scoreRubric(load("conforming"), [
-    ...elementsMet,
-    { id: "readability_naming", value: "unknown", evidence: "" },
-    { id: "separation_of_concerns", value: "unknown", evidence: "" },
-  ]);
-  assert.equal(result.deterministic.status, null);
-  assert.equal(result.deterministic.points, 10);
-  assert.equal(result.deterministic.max, 10);
-  assert.equal(result.total, null, "no blended total when one half carries a status");
-});
-
-test("clause 1 at threshold 100: an all-unknown judged half is INSUFFICIENT_EVIDENCE anyway", () => {
-  // REGRESSION GUARD — review round 3. threshold: 100 is in range (Task 2), and
-  // an unknown share of 100 does NOT exceed 100, so clause 2 cannot fire. Only
-  // the threshold-independent clause 1 keeps this half off the numeric path.
-  // If this test fails with NaN or a division-by-zero value, clause 1 was deleted.
-  const result = scoreRubric(load("threshold-100"), [
-    ...elementsMet,
-    { id: "readability_naming", value: "unknown", evidence: "" },
-    { id: "separation_of_concerns", value: "unknown", evidence: "" },
-  ]);
-  assert.equal(result.judged.status, "INSUFFICIENT_EVIDENCE");
-  assert.equal(result.judged.points, null);
-  assert.notEqual(result.judged.points, 0, "a status half is never reported as 0");
-});
-
-test("a share exactly at the threshold does not trip clause 2", () => {
-  // 1 unknown of 2 is 50%; a rubric with threshold 50 must still score numerically,
-  // because the spec says "exceeds", not "reaches".
-  const result = scoreRubric(load("threshold-50"), [
-    ...elementsMet,
-    { id: "readability_naming", value: "met", evidence: "lib/x.mjs:4" },
-    { id: "separation_of_concerns", value: "unknown", evidence: "" },
-  ]);
-  assert.equal(result.judged.status, null);
-  assert.equal(result.judged.points, 15);
-});
+```text
+<tmp>/plugin-root/     copy of cli/, lib/, package.json, skills/eval/default-rubric.yaml
+<tmp>/project-root/    a bare project: the verdict-set JSON, nothing else
 ```
+
+Spawn with `cwd: <tmp>/project-root` and the entrypoint under `<tmp>/plugin-root`. Neither contains the other. **This is the single property the repository's own layout cannot supply** — here `<ADEV_ROOT>` and the project root are the same directory, which is why the defect survived 7270 tests and five review rounds. Copy only the four paths listed; a whole-repo copy is slow and pulls in `.context-index/`, which changes what the verb sees.
+
+**Property 3 — assert on the argument the skill's documented flow actually passes.** Read `skills/eval/SKILL.md`, extract the `--rubric` argument from its Step 3 `adev eval score` invocation line, and **feed that extracted value to the spawned CLI**. Do not hardcode `"default"` in the spawn arguments. Assert separately that the extracted value equals `default`, so a failure distinguishes "the skill emits the wrong thing" from "the verb mishandles the right thing". A test that calls `--rubric default` directly stays green while the real caller still sends a resolved path — that is precisely the failure mode this property exists to close.
+
+**Property 4 — decoy `CLAUDE_PLUGIN_ROOT`, asserted positively.** Create a third temp directory `<tmp>/decoy-root/skills/eval/default-rubric.yaml` holding a **valid but distinguishable** rubric — same schema, different `rubric_id` and a different criterion id set. Pass `CLAUDE_PLUGIN_ROOT: <tmp>/decoy-root` through the spawn's `env:` option. Assert the output carries the **shipped** rubric's ids and not the decoy's. Passing the decoy through `env:` rather than mutating `process.env` in-process follows the repository's dominant idiom (20 of its 21 env-reading test files) and keeps the assertion honest: an in-process mutation could be defeated by module-load ordering rather than by the code being correct.
+
+Asserting the decoy's *content* is absent — rather than merely asserting exit code 0 — is what makes this positive evidence. An exit-0 assertion alone passes if the env var is read and happens to point at a readable rubric.
+
+Run the composed invocation and assert: exit code 0, the verdict table lists the shipped rubric's ids, and the aggregate line is present.
 
 - [ ] **Verify test fails**
 
-Run: `node --test tests/lib/evals/score-insufficient-evidence.test.mjs`
-Expected: FAIL — the judged half is a number (or `NaN` in the all-`unknown` cases); `status` is `null`
+Run: `node --test tests/cli/eval-default-rubric-e2e.test.mjs`
+
+Expected before Tasks 1-2: FAIL — the spawned CLI exits 1 with `UNSAFE_SCORE_PATH: path "default" escapes the project root.`
+
+**Falsification is mandatory for this task, not optional.** After Tasks 1-2 have landed and the test is green, reintroduce each defect one at a time and confirm the test goes RED for each:
+
+| Reintroduced defect | Property that must catch it |
+|---|---|
+| Revert `lib/cli/eval.mjs` to treat `default` as a path | 1, 2 |
+| Change `getPluginRoot()` use to `process.env.CLAUDE_PLUGIN_ROOT ?? getPluginRoot()` | 4 |
+| Revert `skills/eval/SKILL.md` line 164 to `--rubric <resolved rubric path>` | 3 |
+
+Record the three RED confirmations in the commit body. A green test that has never been watched to fail is not evidence — and this suite exists because a whole plan's worth of green tests were not evidence.
 
 - [ ] **Implement**
 
-Add the judged-half precondition to `lib/evals/score.mjs`, expressed as the two clauses of BEH-3 joined by `||`, with the clause-1 comment reproduced at the site verbatim enough that a later reader meets the argument before deleting it:
+No production code. Task 1 and Task 2 supply everything this test exercises; if it cannot be made green without editing `lib/` or `skills/`, that is a defect in Task 1 or Task 2 and belongs there, not here.
 
-```javascript
-// Descriptive reference for the plan reader; the shipped code carries this
-// comment and this shape.
-const share = declared === 0 ? 0 : (unknownCount / declared) * 100;
-// Clause 1 is NOT redundant with the threshold validation in assertThresholdValid().
-// `threshold: 100` is in range, and a share of 100 does not EXCEED 100 — so at that
-// threshold clause 2 never fires and clause 1 is the ONLY thing keeping an
-// all-unknown half off the numeric path, where it would divide by zero.
-// Review round 3 blocked on exactly this. Do not simplify it away.
-const insufficient = (declared >= 1 && unknownCount === declared) || share > threshold;
-```
-
-Also add `tests/fixtures/evals/rubrics/threshold-50.yaml` (conforming, `insufficient_evidence_threshold_percent: 50`) for the boundary case.
+Use `createTempDir()` / `cleanupTempDir()` from `tests/helpers.mjs`, `cpSync` for the plugin-root copy, and `spawnSync(process.execPath, [...], { cwd, env, encoding: "utf8", timeout: 30_000 })`. Clean up all three temp directories in a `finally`.
 
 - [ ] **Verify test passes**
 
-Run: `node --test tests/lib/evals/score-insufficient-evidence.test.mjs`
-Expected: PASS
+Run: `node --test tests/cli/eval-default-rubric-e2e.test.mjs`
+Expected: PASS, with the three falsification runs above recorded.
+
+Then the full gate: `npm test`.
 
 - [ ] **Commit**
 
-Stage `lib/evals/score.mjs`, `tests/fixtures/evals/rubrics/threshold-50.yaml`, and the suite, then commit as
-`feat(evals): guard the judged half with the two-clause insufficient-evidence rule`
-with the `Spec:` and `Plan-task: 5` trailers.
+Stage `tests/cli/eval-default-rubric-e2e.test.mjs`, then commit with (filling in the falsification results):
 
-### Task 6: Not-scored handling [specialist: none]
+```text
+test(eval-harness): prove --rubric default from a plugin root outside the project
 
-**Depends on:** Task 5
+Falsified: path-treatment revert -> RED; env-var read -> RED; skill prose revert -> RED.
+
+Spec: .context-index/specs/features/eval-harness/scoring-engine.spec.md
+Plan-task: 5
+```
+
+---
+
+### Task 6: Housekeeping — source-manifest completion and stale comments [specialist: none]
+
 **Charter capability:** Scoring engine and `adev eval score`
 **Strategy:** unit (source: fallback, confidence: high)
+**Depends on:** Tasks 1-5
 **Files:**
-- Modify: `lib/evals/score.mjs` — add the nothing-to-answer precondition for both halves
-- Create: `tests/fixtures/evals/rubrics/no-quality-dimensions.yaml`
-- Create: `tests/fixtures/evals/rubrics/no-required-elements.yaml`
-- Test: `tests/lib/evals/score-not-scored.test.mjs`
+- Modify: `lib/evals/score-schema.mjs:60-88` — the two stale comment blocks
+- Modify: `.context-index/specs/features/eval-harness/scoring-engine.spec.md` — frontmatter `source-manifest` only
+- Test: `tests/lib/evals/score-schema-contract.test.mjs` (already extended in Task 1) plus `adev source-manifest verify`
 
-**Tests:** create `tests/lib/evals/score-not-scored.test.mjs` — BEH-4's suite.
+**Tests:** no new suite. The comment correction is documentation inside a module whose contract is already asserted by `score-schema-contract.test.mjs`; the manifest completion is verified by a CLI verb, not by a unit test.
 
-**Context to load:** Task 6 Context packet.
+**Context to load:** the Task 6 Context Packet above.
 
 - [ ] **Write failing test**
 
-```javascript
-import { test } from "node:test";
-import assert from "node:assert/strict";
-import { loadRubric } from "../../../lib/evals/rubric.mjs";
-import { scoreRubric } from "../../../lib/evals/score.mjs";
+**Intentional TDD-structure deviation, noted for a reviewer scanning tasks mechanically:** this step runs a CLI verb rather than authoring a red unit test. The defect being fixed is a stamped manifest that is *incomplete*, not code that is wrong — there is no behaviour to assert. The red-then-green discipline is preserved by the pre-state / post-state file count below, which is falsifiable in the same way a test is.
 
-const load = (n) => loadRubric(`tests/fixtures/evals/rubrics/${n}.yaml`);
+The verification step here is a command, not a new assertion:
 
-test("a half the rubric declares no entries for is NOT_SCORED", () => {
-  const result = scoreRubric(load("no-quality-dimensions"), [
-    { id: "spec_criteria_referenced", value: "met", evidence: "tests/x.test.mjs:3" },
-    { id: "tests_accompany_source", value: "met", evidence: "the diff pairs every file" },
-  ]);
-  assert.equal(result.judged.status, "NOT_SCORED");
-  assert.equal(result.judged.points, null);
-  assert.equal(result.judged.max, null);
-  assert.equal(result.deterministic.points, 10);
-  assert.equal(result.total, null);
-});
-
-test("the mirror case: no required_elements makes the deterministic half NOT_SCORED", () => {
-  const result = scoreRubric(load("no-required-elements"), [
-    { id: "readability_naming", value: "met", evidence: "lib/x.mjs:4" },
-    { id: "separation_of_concerns", value: "met", evidence: "lib/x.mjs:9" },
-  ]);
-  assert.equal(result.deterministic.status, "NOT_SCORED");
-  assert.equal(result.judged.points, 15);
-});
-
-test("a deterministic half where every entry is not_applicable is NOT_SCORED", () => {
-  const result = scoreRubric(load("conforming"), [
-    { id: "spec_criteria_referenced", value: "not_applicable", evidence: "" },
-    { id: "tests_accompany_source", value: "not_applicable", evidence: "" },
-    { id: "readability_naming", value: "met", evidence: "lib/x.mjs:4" },
-    { id: "separation_of_concerns", value: "met", evidence: "lib/x.mjs:9" },
-  ]);
-  assert.equal(result.deterministic.status, "NOT_SCORED");
-  assert.equal(result.deterministic.points, null);
-  assert.equal(result.judged.points, 15);
-});
-
-test("no NaN and no division-by-zero value reaches the caller in any not-scored case", () => {
-  for (const fixture of ["no-quality-dimensions", "no-required-elements"]) {
-    const rubric = load(fixture);
-    const verdicts = [...(rubric.required_elements ?? []), ...(rubric.quality_dimensions ?? [])]
-      .map((e) => ({ id: e.id, value: "met", evidence: "e" }));
-    const result = scoreRubric(rubric, verdicts);
-    for (const half of [result.deterministic, result.judged]) {
-      assert.ok(half.points === null || Number.isFinite(half.points), `${fixture}: ${half.points}`);
-    }
-  }
-});
+```bash
+adev source-manifest verify --spec .context-index/specs/features/eval-harness/scoring-engine.spec.md
 ```
 
-- [ ] **Verify test fails**
-
-Run: `node --test tests/lib/evals/score-not-scored.test.mjs`
-Expected: FAIL — the empty half yields `NaN` points and `status: null`
+Expected before the fix: it reports PASS over an **incomplete** file list — which is the defect. The stamped manifest omits 11 files the implementation actually produced, so drift in any of them is invisible to `/adev:validate` and `/adev:hygiene`. Record the current file count (17) as the pre-state.
 
 - [ ] **Implement**
 
-Add the nothing-to-answer precondition ahead of the numeric path for both halves: `declared === 0 || answered === 0` → `NOT_SCORED`. For the deterministic half `answered === 0` with `declared >= 1` means every entry resolved `not_applicable`; for the judged half that same shape is already claimed by BEH-3 clause 1, so the judged precondition is evaluated in the partition-table order (Task 7 asserts that the two never both claim a half). Write the fixtures by copying `conforming.yaml` and emptying one list (`quality_dimensions: []` / `required_elements: []`); the shipped loader accepts an empty list, since its required-key pass checks presence and its completeness pass iterates zero entries.
+**a. Complete the source manifest.** Add the 11 omitted paths to the spec's frontmatter `source-manifest.files[]`, keeping the list alphabetically sorted as it already is:
 
-- [ ] **Verify test passes**
-
-Run: `node --test tests/lib/evals/score-not-scored.test.mjs`
-Expected: PASS
-
-- [ ] **Commit**
-
-Stage `lib/evals/score.mjs`, both fixtures, and the suite, then commit as
-`feat(evals): report a half with nothing to answer as NOT_SCORED`
-with the `Spec:` and `Plan-task: 6` trailers.
-
-### Task 7: Disjoint status assignment [specialist: none]
-
-**Depends on:** Task 6
-**Charter capability:** Scoring engine and `adev eval score`
-**Strategy:** unit (source: fallback, confidence: high)
-**Files:**
-- Modify: `lib/evals/score.mjs` — extract the two preconditions into one named resolver
-- Test: `tests/lib/evals/score-status-partition.test.mjs`
-
-**Tests:** create `tests/lib/evals/score-status-partition.test.mjs` — this suite asserts a joint invariant spanning BEH-3 and BEH-4 that neither single-behaviour suite can express, so it is one of the two deliberate departures from per-behaviour granularity noted in the Task Summary.
-
-**Context to load:** Task 7 Context packet — including this plan's **verified partition** table.
-
-- [ ] **Write failing test**
-
-```javascript
-import { test } from "node:test";
-import assert from "node:assert/strict";
-import { resolveHalfStatus } from "../../../lib/evals/score.mjs";
-
-// The partition, stated as data, exactly as the plan's table states it.
-const judged = (declared, unknownCount, threshold) =>
-  resolveHalfStatus({ kind: "criterion", declared, excluded: unknownCount, threshold });
-const deterministic = (declared, naCount) =>
-  resolveHalfStatus({ kind: "element", declared, excluded: naCount, threshold: 40 });
-
-test("the judged rows of the partition resolve as the table says", () => {
-  assert.equal(judged(0, 0, 40), "NOT_SCORED");
-  assert.equal(judged(2, 2, 40), "INSUFFICIENT_EVIDENCE");
-  assert.equal(judged(2, 2, 100), "INSUFFICIENT_EVIDENCE"); // clause 1, threshold-independent
-  assert.equal(judged(4, 3, 40), "INSUFFICIENT_EVIDENCE");  // 75% > 40%
-  assert.equal(judged(4, 1, 40), null);                     // 25% <= 40% → numeric
-});
-
-test("the deterministic rows of the partition resolve as the table says", () => {
-  assert.equal(deterministic(0, 0), "NOT_SCORED");
-  assert.equal(deterministic(2, 2), "NOT_SCORED");
-  assert.equal(deterministic(2, 1), null);
-});
-
-test("exhaustive sweep: every half either carries a status or has a denominator >= 1", () => {
-  for (const kind of ["element", "criterion"]) {
-    for (let declared = 0; declared <= 6; declared++) {
-      for (let excluded = 0; excluded <= declared; excluded++) {
-        for (const threshold of [0, 40, 50, 99, 100]) {
-          const status = resolveHalfStatus({ kind, declared, excluded, threshold });
-          if (status === null) {
-            assert.ok(declared - excluded >= 1,
-              `numeric with zero denominator at ${kind}/${declared}/${excluded}/${threshold}`);
-          } else {
-            assert.ok(["INSUFFICIENT_EVIDENCE", "NOT_SCORED"].includes(status));
-          }
-        }
-      }
-    }
-  }
-});
-
-test("mutual exclusivity: the resolver returns one status, never a set", () => {
-  // INSUFFICIENT_EVIDENCE requires declared >= 1; NOT_SCORED requires nothing
-  // answerable. No input satisfies both, so a single return value is sound.
-  assert.equal(judged(0, 0, 100), "NOT_SCORED", "an empty judged half is never INSUFFICIENT_EVIDENCE");
-  assert.equal(deterministic(0, 0), "NOT_SCORED");
-  assert.notEqual(judged(3, 3, 40), "NOT_SCORED", "declared-but-unanswered is not the same as nothing to answer");
-});
+```text
+providers/codex/skills/eval/SKILL.md
+providers/opencode/skills/eval/SKILL.md
+tests/fixtures/evals/rubrics/no-quality-dimensions.yaml
+tests/fixtures/evals/rubrics/no-required-elements.yaml
+tests/fixtures/evals/rubrics/threshold-100.yaml
+tests/fixtures/evals/rubrics/threshold-50.yaml
+tests/fixtures/evals/rubrics/threshold-non-numeric.yaml
+tests/fixtures/evals/rubrics/threshold-out-of-range.yaml
+tests/fixtures/evals/verdicts/complete.json
+tests/fixtures/evals/verdicts/elements-only.json
+tests/fixtures/evals/verdicts/unsafe-input.json
 ```
 
-- [ ] **Verify test fails**
+Plus the files Tasks 1-5 created: `tests/cli/eval-default-rubric-keyword.test.mjs`, `tests/cli/eval-default-rubric-e2e.test.mjs`, `tests/skills/eval-rubric-keyword-emission.test.mjs`, and `tests/skills/eval-default-rubric.test.mjs`. Recompute `sha` and `computed-at` with `adev source-manifest compute --files <comma-separated list>` and stamp the result. Do **not** hand-write the SHA.
 
-Run: `node --test tests/lib/evals/score-status-partition.test.mjs`
-Expected: FAIL — `resolveHalfStatus is not a function` (the branches currently live inline)
+This is why Task 6 runs last: its stamp must cover every file the other five tasks touched.
 
-- [ ] **Implement**
+**b. Correct the two stale comments in `lib/evals/score-schema.mjs`.** Both were written against spec revision 5 and became false at revision 6:
 
-Extract the preconditions written inline in Tasks 5 and 6 into one exported `resolveHalfStatus({ kind, declared, excluded, threshold })` returning `"INSUFFICIENT_EVIDENCE" | "NOT_SCORED" | null`, and call it from both halves. The point of the extraction is testability of the partition itself: with the branches inline, the sweep above could only be run through full `scoreRubric` calls and would need a fixture per cell. The function's doc reproduces the partition table so the code and the spec state the same thing in the same shape, and repeats the clause-1 warning from Task 5 — this is now the only site where that clause lives.
+- The `SCORE_INVALID_VERDICT_CONTEXT` comment says the code "is not in the spec's Error Cases table, which enumerates nine", then instructs a reader to "add a one-line row for it to the spec rather than dropping the check". **That row now exists.** The comment is not merely stale — it directs a future maintainer to perform a change that has already been made, so acting on it produces a duplicate row. Replace both sentences with a one-line statement of what the code covers and a pointer to its table row.
+- The `SCORE_INPUT_PARSE_ERROR` comment likewise says "The spec's Error Cases table does not enumerate this case". It does, at revision 6. Replace with the same shape. Keep the sentence distinguishing it from `SCORE_INPUT_NOT_FOUND` — that one is still true and still useful.
 
-Order the checks to match the table: nothing-declared → all-excluded (judged: clause 1; deterministic: `NOT_SCORED`) → share above threshold → `null`. Do not "simplify" the judged all-excluded case into the deterministic one: they return different statuses for the same shape, which is the whole content of BEH-3 versus BEH-4.
+Do not touch the code, only the comments. `SCORE_ERROR_CODES` membership is settled by Task 1.
 
 - [ ] **Verify test passes**
 
-Run: `node --test tests/lib/evals/score-status-partition.test.mjs`
-Expected: PASS
+Run: `adev source-manifest verify --spec .context-index/specs/features/eval-harness/scoring-engine.spec.md`
+Expected: PASS over the complete list (17 + 11 + 4 = 32 files), with no missing-file FAIL.
+
+Run: `npm test`
+Expected: PASS — full suite, 7270+ tests, 0 failures.
 
 - [ ] **Commit**
 
-Stage `lib/evals/score.mjs` and the suite, then commit as
-`refactor(evals): resolve half status through one disjoint partition function`
-with the `Spec:` and `Plan-task: 7` trailers.
+Stage `lib/evals/score-schema.mjs` and the spec file, then commit with:
 
-### Task 8: Result assembly [specialist: none]
+```text
+chore(eval-harness): complete the source manifest and retire two stale comments
 
-**Depends on:** Task 7
-**Charter capability:** Scoring engine and `adev eval score`
-**Strategy:** unit (source: fallback, confidence: high)
-**Files:**
-- Modify: `lib/evals/score.mjs` — assemble and return the result object
-- Test: `tests/lib/evals/score-result-assembly.test.mjs`
-
-**Tests:** create `tests/lib/evals/score-result-assembly.test.mjs` — BEH-1's suite, which also owns the Postconditions (determinism, no partial score, no filesystem or network access).
-
-**Context to load:** Task 8 Context packet.
-
-- [ ] **Write failing test**
-
-```javascript
-import { test } from "node:test";
-import assert from "node:assert/strict";
-import { loadRubric } from "../../../lib/evals/rubric.mjs";
-import { scoreRubric } from "../../../lib/evals/score.mjs";
-
-const rubric = () => loadRubric("tests/fixtures/evals/rubrics/conforming.yaml");
-const allMet = () => [
-  { id: "spec_criteria_referenced", value: "met", evidence: "tests/x.test.mjs:3" },
-  { id: "tests_accompany_source", value: "met", evidence: "the diff pairs every file" },
-  { id: "readability_naming", value: "met", evidence: "lib/x.mjs:4" },
-  { id: "separation_of_concerns", value: "met", evidence: "lib/x.mjs:9" },
-];
-
-test("a complete verdict set returns the table and both halves as distinct fields", () => {
-  const result = scoreRubric(rubric(), allMet());
-  assert.equal(result.verdicts.length, 4);
-  assert.deepEqual(result.verdicts.map((v) => v.kind), ["element", "element", "criterion", "criterion"]);
-  assert.deepEqual(result.deterministic, { status: null, points: 10, max: 10 });
-  assert.deepEqual(result.judged, { status: null, points: 15, max: 15 });
-});
-
-test("the blended total appears only when both halves are numeric, rounded and capped", () => {
-  const both = scoreRubric(rubric(), allMet());
-  assert.deepEqual(both.total, { points: 25, max: 25 });   // 10 + 15, capped at layer3_max_points
-
-  const oneStatus = scoreRubric(rubric(), [
-    ...allMet().slice(0, 2),
-    { id: "readability_naming", value: "unknown", evidence: "" },
-    { id: "separation_of_concerns", value: "unknown", evidence: "" },
-  ]);
-  assert.equal(oneStatus.total, null);
-});
-
-test("the total is rounded, and a status half never contributes a 0", () => {
-  const result = scoreRubric(rubric(), [
-    { id: "spec_criteria_referenced", value: "met", evidence: "a" },
-    { id: "tests_accompany_source", value: "not_met", evidence: "b" },
-    { id: "readability_naming", value: "met", evidence: "c" },
-    { id: "separation_of_concerns", value: "not_met", evidence: "d" },
-  ]);
-  assert.equal(result.total.points, Math.round(5 + 7.5));
-  assert.ok(Number.isInteger(result.total.points));
-});
-
-test("the verdict table always accompanies the numbers", () => {
-  const result = scoreRubric(rubric(), allMet());
-  assert.ok(Array.isArray(result.verdicts) && result.verdicts.length > 0,
-    "a numeric aggregate is never returned without its verdict table");
-});
-
-test("identical inputs produce a deeply identical result across runs", () => {
-  const a = scoreRubric(rubric(), allMet());
-  const b = scoreRubric(rubric(), allMet());
-  assert.deepEqual(a, b);
-  assert.equal(JSON.stringify(a), JSON.stringify(b), "key order is stable, so output is byte-identical");
-});
-
-test("a rejected verdict set produces no partial score", () => {
-  assert.throws(() => scoreRubric(rubric(), allMet().slice(0, 2)), (err) => {
-    assert.equal(err.code, "SCORE_MISSING_VERDICT");
-    assert.equal(err.result, undefined, "no half-built result rides along on the error");
-    return true;
-  });
-});
+Spec: .context-index/specs/features/eval-harness/scoring-engine.spec.md
+Plan-task: 6
 ```
-
-- [ ] **Verify test fails**
-
-Run: `node --test tests/lib/evals/score-result-assembly.test.mjs`
-Expected: FAIL — the returned object has no `verdicts` table and no `total`
-
-- [ ] **Implement**
-
-Assemble the result last, from values the earlier passes produced: the verdict table in rubric-declaration order (elements then criteria, each carrying `id`, `kind`, `verdict`, `evidence`), then both halves, then `total`. `total` is `{ points: Math.min(Math.round(d.points + j.points), layer3_max_points), max: layer3_max_points }` when both halves have `status === null`, and `null` otherwise — never a number synthesised from one half. Construct object literals with a fixed key order so `JSON.stringify` is stable; read no clock and call no random source anywhere in the module (the charter's Determinism attribute).
-
-Round only at the blend, not per half: rounding each half first and then summing can differ from rounding the sum, and the spec's formula rounds once.
-
-- [ ] **Verify test passes**
-
-Run: `node --test tests/lib/evals/score-result-assembly.test.mjs`
-Expected: PASS. Then run the whole engine suite — `node --test tests/lib/evals/` — to confirm Tasks 2-7 still pass against the assembled result.
-
-- [ ] **Commit**
-
-Stage `lib/evals/score.mjs` and the suite, then commit as
-`feat(evals): assemble the verdict table, both halves, and the blended total`
-with the `Spec:` and `Plan-task: 8` trailers.
-
-### Task 9: `buildJudgeContext` [specialist: none]
-
-**Depends on:** Task 1
-**Charter capability:** Scoring engine and `adev eval score`
-**Strategy:** unit (source: fallback, confidence: high)
-**Files:**
-- Modify: `lib/evals/score.mjs` — add the `buildJudgeContext` export
-- Modify: `lib/evals/score-schema.mjs` — add `SCORE_INVALID_VERDICT_CONTEXT` to `SCORE_ERROR_CODES`
-- Modify: `tests/lib/evals/score-schema-contract.test.mjs` — extend the code list with the new code
-- Test: `tests/lib/evals/score-judge-context.test.mjs`
-
-**Tests:** create `tests/lib/evals/score-judge-context.test.mjs` — BEH-7's suite.
-
-**Context to load:** Task 9 Context packet.
-
-- [ ] **Write failing test**
-
-```javascript
-import { test } from "node:test";
-import assert from "node:assert/strict";
-import { loadRubric } from "../../../lib/evals/rubric.mjs";
-import { buildJudgeContext } from "../../../lib/evals/score.mjs";
-
-const rubric = loadRubric("tests/fixtures/evals/rubrics/conforming.yaml");
-const [first, second] = rubric.quality_dimensions;
-
-test("the context carries the criterion's own fields", () => {
-  const ctx = buildJudgeContext(first);
-  for (const field of ["id", "criterion", "reference", "met_when", "not_met_when", "unknown_when"]) {
-    assert.equal(ctx[field], first[field], `missing or altered ${field}`);
-  }
-});
-
-test("no other criterion's id, verdict, or wording appears anywhere in the output", () => {
-  const serialized = JSON.stringify(buildJudgeContext(first));
-  assert.ok(!serialized.includes(second.id), "leaked a sibling criterion id");
-  assert.ok(!serialized.includes(second.criterion), "leaked a sibling criterion's wording");
-});
-
-test("no running total and no verdict field is present", () => {
-  const ctx = buildJudgeContext(first);
-  const keys = Object.keys(ctx);
-  for (const forbidden of ["total", "points", "score", "verdict", "verdicts", "deterministic", "judged"]) {
-    assert.ok(!keys.includes(forbidden), `context exposes ${forbidden}`);
-  }
-});
-
-test("the builder takes one criterion and cannot be handed the whole rubric", () => {
-  const err = assert.throws(() => buildJudgeContext(rubric));
-  assert.equal(err.code, "SCORE_INVALID_VERDICT_CONTEXT");
-});
-
-test("mutating the returned context cannot reach back into the rubric", () => {
-  const ctx = buildJudgeContext(first);
-  ctx.criterion = "tampered";
-  assert.notEqual(rubric.quality_dimensions[0].criterion, "tampered");
-});
-```
-
-- [ ] **Verify test fails**
-
-Run: `node --test tests/lib/evals/score-judge-context.test.mjs`
-Expected: FAIL — `buildJudgeContext is not a function`
-
-- [ ] **Implement**
-
-Add `buildJudgeContext(criterion)` to `lib/evals/score.mjs`. It copies exactly the fields in `REQUIRED_CRITERION_FIELDS` (imported from `rubric-schema.mjs`) into a fresh object and nothing else — an allow-list, never a delete-list, so a field added to the rubric schema later cannot leak by default. It rejects an argument that is not a single criterion (missing any required criterion field) with `SCORE_INVALID_VERDICT_CONTEXT`, added to `SCORE_ERROR_CODES` in `lib/evals/score-schema.mjs` alongside the codes Task 1 declared; the suite in Task 1 is extended with that code in the same commit.
-
-The isolation is a property of the allow-list copy, which is what BEH-7 asks for: the guarantee lives in the builder rather than in prose a judge is trusted to honour.
-
-> **Note on `SCORE_INVALID_VERDICT_CONTEXT`.** This code is not in the spec's Error Cases table, which enumerates nine. It is a defensive addition serving BEH-7's isolation guarantee — handing the whole rubric to a builder that copies an allow-list would otherwise return an object of `undefined`s rather than fail — not a contradiction of the spec. If a later reading treats the Error Cases table as closed over the code vocabulary, add a one-line row for it to the spec rather than dropping the check.
-
-- [ ] **Verify test passes**
-
-Run: `node --test tests/lib/evals/score-judge-context.test.mjs tests/lib/evals/score-schema-contract.test.mjs`
-Expected: PASS
-
-- [ ] **Commit**
-
-Stage `lib/evals/score.mjs`, `lib/evals/score-schema.mjs`, and both suites, then commit as
-`feat(evals): build single-criterion judge context by allow-list`
-with the `Spec:` and `Plan-task: 9` trailers.
-
-### Task 10: `adev eval score` verb [specialist: none]
-
-**Depends on:** Task 8
-**Charter capability:** Scoring engine and `adev eval score`
-**Strategy:** unit (source: fallback, confidence: high)
-**Files:**
-- Create: `lib/cli/eval.mjs`
-- Create: `tests/fixtures/evals/verdicts/unsafe-input.json`
-- Create: `tests/fixtures/evals/verdicts/elements-only.json`
-- Modify: `cli/index.mjs:1985` — add `["eval", () => import("../lib/cli/eval.mjs")]` to `VERB_REGISTRY`
-- Modify: `docs/cli-reference.md` — document the verb, its flags, and its error codes
-- Test: `tests/cli/eval-score.test.mjs`
-
-**Tests:** create `tests/cli/eval-score.test.mjs` — the shared suite for BEH-8 and BEH-9, following the `tests/cli/` convention for verb-level suites.
-
-**Context to load:** Task 10 Context packet.
-
-- [ ] **Write failing test**
-
-```javascript
-import { test } from "node:test";
-import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
-
-const runVerb = (args, opts = {}) => {
-  try {
-    const stdout = execFileSync(process.execPath, ["cli/index.mjs", "eval", "score", ...args],
-      { encoding: "utf8", ...opts });
-    return { code: 0, stdout, stderr: "" };
-  } catch (err) {
-    return { code: err.status, stdout: err.stdout ?? "", stderr: err.stderr ?? "" };
-  }
-};
-
-const RUBRIC = "tests/fixtures/evals/rubrics/conforming.yaml";
-const INPUT = "tests/fixtures/evals/verdicts/complete.json";
-
-test("the default rendering emits the verdict table together with the aggregate", () => {
-  const { code, stdout } = runVerb(["--rubric", RUBRIC, "--input", INPUT]);
-  assert.equal(code, 0);
-  assert.match(stdout, /spec_criteria_referenced/);
-  assert.match(stdout, /separation_of_concerns/);
-  assert.match(stdout, /deterministic/i);
-  assert.match(stdout, /judged/i);
-});
-
-test("--json carries the table, both halves, and the total in one object", () => {
-  const { code, stdout } = runVerb(["--rubric", RUBRIC, "--input", INPUT, "--json"]);
-  assert.equal(code, 0);
-  const parsed = JSON.parse(stdout);
-  assert.equal(parsed.verdicts.length, 4);
-  assert.ok("deterministic" in parsed && "judged" in parsed && "total" in parsed);
-});
-
-test("a half carrying a status renders by name, never as 0", () => {
-  const { stdout } = runVerb(["--rubric", "tests/fixtures/evals/rubrics/no-quality-dimensions.yaml",
-    "--input", "tests/fixtures/evals/verdicts/elements-only.json"]);
-  assert.match(stdout, /NOT_SCORED/);
-  assert.doesNotMatch(stdout, /judged\s*[:|]\s*0\b/i);
-});
-
-test("a traversal path on --rubric exits non-zero, names the path, and reads nothing", () => {
-  const { code, stderr } = runVerb(["--rubric", "../../../etc/passwd", "--input", INPUT]);
-  assert.notEqual(code, 0);
-  assert.match(stderr, /UNSAFE_SCORE_PATH/);
-  assert.match(stderr, /\.\.\/\.\.\/\.\.\/etc\/passwd/, "the offending path is reported verbatim");
-});
-
-test("a traversal path on --input is refused the same way", () => {
-  const { code, stderr } = runVerb(["--rubric", RUBRIC, "--input", "../../../etc/passwd"]);
-  assert.notEqual(code, 0);
-  assert.match(stderr, /UNSAFE_SCORE_PATH/);
-});
-
-test("a contained but missing --input exits non-zero with SCORE_INPUT_NOT_FOUND", () => {
-  const { code, stderr } = runVerb(["--rubric", RUBRIC, "--input", "tests/fixtures/evals/verdicts/absent.json"]);
-  assert.notEqual(code, 0);
-  assert.match(stderr, /SCORE_INPUT_NOT_FOUND/);
-  assert.match(stderr, /absent\.json/);
-});
-
-test("an engine rejection surfaces its code and exits non-zero", () => {
-  const { code, stderr } = runVerb(["--rubric", RUBRIC, "--input", "tests/fixtures/evals/verdicts/unsafe-input.json"]);
-  assert.notEqual(code, 0);
-  assert.match(stderr, /SCORE_(EMPTY_EVIDENCE|MISSING_VERDICT|UNKNOWN_VERDICT_ID)/);
-});
-```
-
-- [ ] **Verify test fails**
-
-Run: `node --test tests/cli/eval-score.test.mjs`
-Expected: FAIL — `eval` is not a registered verb; the dispatcher prints the verb registry and exits 1
-
-- [ ] **Implement**
-
-Create `lib/cli/eval.mjs` exporting `run({ projectRoot, argv })` and `help()`, following `lib/cli/partial.mjs`. `run` dispatches on `argv[0]` (`score` today; the module is named `eval` so the *Run-cost record* capability can add `adev eval cost` beside it without a second registry entry). The `score` subcommand:
-
-1. Parses `--rubric`, `--input`, `--json`. Both paths are required; a missing flag prints usage and exits 1.
-2. Contains **both** paths with `resolveContained` + `lenientRealpath` + `isContained` against the real-pathed project root, before reading either — `UNSAFE_SCORE_PATH` naming the path exactly as supplied. This is the shipped `UNSAFE_RUBRIC_PATH` sequence in `lib/evals/rubric.mjs:827-845`; follow it rather than reinventing it. `loadRubric` will contain `--rubric` again on its own; the duplicate check is deliberate, so `--input` and `--rubric` are refused by one uniform code before either file is opened.
-3. Reads and `JSON.parse`s the verdict input (an array of `{ id, value, evidence }`). A missing or unreadable file is `SCORE_INPUT_NOT_FOUND` naming the resolved path; unparseable JSON exits non-zero with its own message.
-4. Calls `loadRubric` then `scoreRubric`, and prints. Default rendering is a compact table plus the aggregate line; a half with a status prints that status name, never `0`. `--json` prints `JSON.stringify(result, null, 2)` — one object, table and halves and total together, since BEH-8 forbids an aggregate without its table in either mode.
-5. Errors: print `<CODE>: <message>` to stderr and exit non-zero. Never print a partial table alongside an error.
-
-Add `tests/fixtures/evals/verdicts/elements-only.json` (the two element verdicts, for the `no-quality-dimensions` rubric) and `tests/fixtures/evals/verdicts/unsafe-input.json` (a verdict set the engine rejects, for the error-propagation case). Add the verb to `docs/cli-reference.md` in the same commit — a verb that ships undocumented is drift `/adev:hygiene` will file next run.
-
-- [ ] **Verify test passes**
-
-Run: `node --test tests/cli/eval-score.test.mjs`
-Expected: PASS
-
-- [ ] **Commit**
-
-Stage `lib/cli/eval.mjs`, `cli/index.mjs`, `docs/cli-reference.md`, the verdict fixtures, and the suite, then commit as
-`feat(cli): add adev eval score wrapping the rubric scoring engine`
-with the `Spec:` and `Plan-task: 10` trailers.
-
-### Task 11: Update `skills/eval/SKILL.md` Layer 3 [specialist: none]
-
-**Depends on:** Task 10
-**Charter capability:** Scoring engine and `adev eval score`
-**Strategy:** unit (source: fallback, confidence: high)
-**Files:**
-- Modify: `skills/eval/SKILL.md:146-161` — Step 3 calls the verb; the whole-layer discard becomes half-level status reporting
-- Modify: `skills/eval/SKILL.md:179-181, 215` — the Scoring section and the report template, which both assume the discard
-- Test: `tests/skills/eval-layer3-scoring-verb.test.mjs`
-
-**Tests:** create `tests/skills/eval-layer3-scoring-verb.test.mjs` — asserts the skill's observable Layer 3 contract, following `tests/skills/eval-default-rubric.test.mjs`.
-
-**Context to load:** Task 11 Context packet.
-
-> **This task is required, not optional.** The spec says so in its Behavioral Contract and again in its Actionable Task Map. `skills/eval/SKILL.md` is the engine's only in-repo consumer today; leaving it discarding all of Layer 3 on `INSUFFICIENT_EVIDENCE` while the engine keeps the deterministic half numeric would ship a consumer that contradicts the module it calls. Do not defer it to a follow-up.
-
-- [ ] **Write failing test**
-
-```javascript
-import { test } from "node:test";
-import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-
-const skill = readFileSync("skills/eval/SKILL.md", "utf8");
-const layer3 = skill.slice(skill.indexOf("## Layer 3"), skill.indexOf("## Layer 4"));
-
-test("Layer 3 names the CLI verb that owns the arithmetic", () => {
-  assert.match(layer3, /adev eval score/);
-});
-
-test("the aggregate formula no longer sits in the skill as an executable directive", () => {
-  assert.doesNotMatch(layer3, /^\s*Layer 3 score\s*=\s*round\(/m,
-    "the formula must document what the verb computes, not instruct the agent to compute it");
-  assert.doesNotMatch(layer3, /element points\s*=\s*\(elements MET/,
-    "the in-prose computation was relocated to lib/evals/score.mjs");
-});
-
-test("Layer 3 reports half-level statuses instead of discarding the whole layer", () => {
-  assert.match(layer3, /INSUFFICIENT_EVIDENCE/);
-  assert.match(layer3, /NOT_SCORED/);
-  assert.match(layer3, /deterministic/i);
-  assert.doesNotMatch(layer3, /report Layer 3 as `INSUFFICIENT_EVIDENCE`, contribute 0 points/,
-    "the whole-layer discard contradicts the engine, which keeps the deterministic half numeric");
-});
-
-test("the report template renders a status half by name, never as 0", () => {
-  const report = skill.slice(skill.indexOf("## Layer 3: Reference-Anchored Judgement —"));
-  assert.match(report, /INSUFFICIENT_EVIDENCE|NOT_SCORED/);
-});
-
-test("the skill remains free of inline-Node directives", () => {
-  assert.doesNotMatch(skill, /Run inline Node|node\s+--input-type=module\s+-e|node\s+-e/);
-});
-```
-
-- [ ] **Verify test fails**
-
-Run: `node --test tests/skills/eval-layer3-scoring-verb.test.mjs`
-Expected: FAIL — the formula block and the "contribute 0 points" discard are still present; `adev eval score` is not named
-
-- [ ] **Implement**
-
-Rewrite Step 3 of Layer 3 to: assemble the verdict set from Steps 1 and 2, write it to a verdict file, then run `adev eval score --rubric <resolved rubric> --input <verdict file>` and report what it returns. The formula stays in the file only as a `text` block explaining *what the verb computes*, explicitly framed as descriptive reference — the constitution's second SKILL.md anti-pattern permits that framing and forbids the directive form. Then:
-
-- Replace the insufficient-evidence paragraph: the judged half reports `INSUFFICIENT_EVIDENCE` and the deterministic half reports its points and maximum unchanged; the layer contributes the deterministic half and the attainable maximum is reduced by the judged budget only, not by `layer3_max_points`.
-- Update the Scoring section (`:179-181`) so the reduced-attainable convention is stated at half granularity for Layer 3, leaving Layer 4's whole-layer skip convention as it is.
-- Update the report template (`:215`) to render each half on its own line, by status name when it carries one.
-
-Confirm afterwards that no H3 section of this SKILL.md carries both an inline-Node block and an `adev <verb>` invocation (the per-step boundary the pre-commit hook enforces) — this edit adds the verb call to a section that has no inline-Node block, so it stays clean, but run `node --test tests/skills-no-inline-node.test.mjs` to be sure.
-
-- [ ] **Verify test passes**
-
-Run: `node --test tests/skills/eval-layer3-scoring-verb.test.mjs tests/skills-no-inline-node.test.mjs tests/skills/eval-default-rubric.test.mjs`
-Expected: PASS
-
-- [ ] **Commit**
-
-Stage `skills/eval/SKILL.md` and the suite, then commit as
-`feat(eval): call adev eval score from Layer 3 and report half-level statuses`
-with the `Spec:` and `Plan-task: 11` trailers.
-
-> **Provider mirrors.** `providers/codex/skills/` and `providers/opencode/skills/` carry mirrors of some skills, but neither mirrors `eval`. Confirm with a directory listing before assuming no mirror edit is needed; if one has appeared since this plan was written, mirror the same change rather than leaving the copies divergent.
 
 ---
 
@@ -1233,14 +627,12 @@ with the `Spec:` and `Plan-task: 11` trailers.
 
 After all tasks are complete, `/adev:validate` verifies the full quality gate suite. Results are recorded in the validation report (`.validate.md`), not in this plan.
 
-Gates are taken from `.context-index/governance/gates.yaml`, which supersedes the constitution's Quality Gates block:
+- Tests pass: `npm test` (`node scripts/run-tests.mjs`) — the project's single gate; there is no separate lint or typecheck command in the constitution's Quality Gates block
+- Provider mirrors in sync: `tests/sync/provider-skill-parity.test.mjs` (inside `npm test`) — a hand-edited mirror fails here
+- No inline Node added to any SKILL.md: `.githooks/pre-commit` → `hooks/pre-commit-no-inline-node.sh` (exit 2 = policy violation)
+- Source manifest complete and stamped: `adev source-manifest verify --spec .context-index/specs/features/eval-harness/scoring-engine.spec.md`
+- No live emitter of a path to the shipped rubric: the Task 3 sweep over `skills/**`, `providers/**`, `docs/**` (excluding `.context-index/`) returns zero matches
+- All acceptance criteria from spec revision 9 satisfied — including the ten already discharged by commits `07b5ab04..ca32e1f3`
+- Zero new external dependencies (constitution Principle 1); no version bump in `package.json`, `.claude-plugin/plugin.json`, or `.cursor-plugin/plugin.json` (ADR-0008 — release-please owns those)
 
-| Gate | Tier | Command | Severity |
-|---|---|---|---|
-| `test` / `quality-gate` | fast | `npm test` | error |
-| `integration-test` | integration | `npm run test:evals` | warning (`required: false` until the eval tier is green again) |
-
-- Tests pass: `npm test` — the new suites live in `tests/lib/evals/`, `tests/cli/`, and `tests/skills/`, all inside the default bucket (`scripts/run-tests.mjs` splits only `tests/evals/` into the opt-in tier), so they run on every `npm test`.
-- No lint or typecheck gate is declared for this repository; there is no command to run.
-- All acceptance criteria from the spec satisfied — the mapping is one criterion per suite, with the two multi-criterion suites (`score-verdict-validation`, `score-status-partition`) named in the File Structure section.
-- Zero new external dependencies (constitution principle 1): every module added here imports only `node:` built-ins and existing `lib/` modules.
+`.context-index/governance/gates.yaml` exists; where its definitions differ from the constitution's Quality Gates block, `gates.yaml` wins. Probabilistic gates with no command are noted as skipped by `/adev:validate` rather than run here.
