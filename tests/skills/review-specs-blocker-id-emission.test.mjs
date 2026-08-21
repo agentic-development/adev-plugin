@@ -59,10 +59,13 @@ test('review-specs SKILL.md documents aggregator validation rules', () => {
     'must document the MISSING_SECTION_ANCHOR advisory');
 });
 
-test('review-specs SKILL.md references lib/blockers-writer.mjs', () => {
+test('review-specs SKILL.md invokes the blockers write CLI verb (adev-plugin-heba)', () => {
   const body = readSkill('SKILL.md');
-  assert.ok(body.includes('lib/blockers-writer.mjs') || body.includes('writeBlockers'),
-    'must reference the canonical .blockers.md writer');
+  // The skill was migrated off a bare lib-function reference to the CLI
+  // driver surface per CLAUDE.md — SKILL.md must name the `adev` verb an
+  // agent actually invokes, not the lib internals behind it.
+  assert.ok(body.includes('adev blockers write'),
+    'must invoke the blockers write CLI verb, not name the lib writer directly');
 });
 
 test('referent-integrity prompt documents section_anchor + finding-type, no hash instruction', () => {

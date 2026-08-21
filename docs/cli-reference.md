@@ -330,6 +330,19 @@ adev manifest lint --json
 
 **Implementation:** `lib/cli/manifest.mjs`. **Called by:** `/adev:hygiene` (Audit Pass 8, Governance Policy Health).
 
+### `blockers`
+
+**Purpose:** Write `<spec-stem>.blockers.md` — the canonical, machine-consumable sidecar for a BLOCK verdict — from a reviewer findings array. Refuses the write (exit 2, `BLOCKER_BODY_EMPTY`) rather than silently completing it when a finding's prose renders empty, e.g. because the finding text landed under the wrong key when the array was assembled.
+
+**Signature:** `blockers write --spec <path> --findings <json|@path> [--revision <n>] [--json]`
+
+**Example:**
+```
+adev blockers write --spec <p> --findings @findings.json --revision 3 --json
+```
+
+**Implementation:** `lib/cli/blockers.mjs` (wraps `lib/blockers-writer.mjs::writeBlockers`). **Called by:** `/adev:review-specs` Step 6b-bis.
+
 ### `diagnose`
 
 **Purpose:** Run registered diagnostics over lifecycle artifacts (write-time integrity checks). Exit 2 if any error-severity diagnostic fires.
