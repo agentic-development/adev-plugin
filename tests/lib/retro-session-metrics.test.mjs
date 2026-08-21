@@ -4,6 +4,9 @@
 
 import { test, describe } from 'node:test';
 import { strict as assert } from 'node:assert';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 import {
   parseToolUseDistribution,
   countPerSpec,
@@ -11,6 +14,9 @@ import {
   joinClosedIssueXref,
   scanContextGaps,
 } from '../../lib/retro/session-metrics.mjs';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const SESSION_METRICS_SOURCE = join(__dirname, '..', '..', 'lib', 'retro', 'session-metrics.mjs');
 
 describe('parseToolUseDistribution', () => {
   test('counts ### Tool headings (hook-mode only)', () => {
@@ -756,5 +762,35 @@ describe('scanContextGaps', () => {
     assert.equal(r.length, 10);
     // First row should have count 12 (m01).
     assert.equal(r[0].count, 12);
+  });
+
+  test('the composite key still round-trips through indexOf/slice unambiguously when a spec path contains a literal space', () => {
+    // The join separator must be a character that cannot appear in either
+    // half of the key. A real spec path can contain a space; the gap marker
+    // is drawn from the fixed GAP_MARKERS set and never does. This is the
+    // scenario a plain " " separator would corrupt.
+    const spec = '.context-index/specs/features/x/has space.spec.md';
+    const sessions = [{
+      format: 'hook',
+      frontmatter: { kind: 'session-end', spec },
+      body: ['```output', 'no matches', '```'].join('\n'),
+    }];
+    const r = scanContextGaps(sessions);
+    assert.equal(r.length, 1);
+    assert.equal(r[0].spec, spec, 'the full spec path, space included, must survive the split intact');
+  });
+});
+
+describe('lib/retro/session-metrics.mjs source hygiene', () => {
+  test('the source file contains no raw NUL bytes (issue: binary-to-grep-and-diff)', () => {
+    // scanContextGaps joins spec+marker with a NUL as an unambiguous
+    // separator (neither half can contain one). Writing that literal as a
+    // raw 0x00 byte in the .mjs file makes the whole file classify as binary
+    // to `file`, `grep`, and `git diff` — the escape sequence `\0` produces
+    // the identical runtime character without that cost.
+    const buf = readFileSync(SESSION_METRICS_SOURCE);
+    const nulOffsets = [];
+    for (let i = 0; i < buf.length; i++) if (buf[i] === 0) nulOffsets.push(i);
+    assert.deepEqual(nulOffsets, [], `raw NUL byte(s) at offset(s) ${nulOffsets.join(', ')} — use the \\0 escape sequence instead`);
   });
 });
