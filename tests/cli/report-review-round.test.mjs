@@ -311,8 +311,8 @@ test("the --type vocabulary is derived from one exported constant, not four stri
     .filter(Boolean);
   assert.deepStrictEqual(
     types.slice().sort(),
-    ["intervention", "plan-task", "review-round", "reviewer", "step", "validator"],
-    "exactly the six types the dispatcher accepts",
+    ["intervention", "plan-task", "recovery", "review-round", "reviewer", "step", "validator"],
+    "exactly the seven types the dispatcher accepts (adev-plugin/issue-513 added recovery)",
   );
   assert.ok(
     !/plan-task\|intervention(?!\s*['"]?\s*\])/.test(
@@ -340,7 +340,7 @@ test("the documented report --type enum matches the implemented one", () => {
 
   assert.ok(documented.includes("review-round"), "docs must list review-round");
   assert.ok(implemented.includes("review-round"), "the CLI must accept review-round");
-  assert.strictEqual(documented.length, 7, "exactly seven documented values");
+  assert.strictEqual(documented.length, 8, "exactly eight documented values (issue-513 added recovery)");
 
   for (const type of implemented) {
     assert.ok(documented.includes(type), `implemented type ${type} is undocumented`);

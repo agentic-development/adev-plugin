@@ -303,7 +303,7 @@ adev governance materialize --registry gates --dry-run
 
 **Purpose:** Append a lifecycle event to `.context-index/lifecycle-state/<slug>.jsonl`. Replaces the inline `reportValidator` / `reportStep` / `reportReviewer` / `reportPlanTask` / `reportIntervention` calls.
 
-**Signature:** `report --type <validator|step|reviewer|plan-task|intervention|cost-checkpoint|review-round> --spec <path> [type-specific flags]`
+**Signature:** `report --type <validator|step|reviewer|plan-task|intervention|recovery|cost-checkpoint|review-round> --spec <path> [type-specific flags]`
 
 **Example:**
 ```
