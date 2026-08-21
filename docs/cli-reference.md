@@ -664,18 +664,29 @@ Unlike `claim`/`release`, `next` is not yet called from any skill's preflight �
 
 ### `bugfix-loop`
 
-**Purpose:** Persist and drive one `BugfixLoopRun`'s state across `/adev:bugfix-loop`'s self-re-invoking turns — resolving the run, guarding status/budget before each bug selection, recording attempts, and finishing with the terminal token the skill prints.
+**Purpose:** Persist and drive one `BugfixLoopRun`'s state across `/adev:bugfix-loop`'s self-re-invoking turns — resolving the run, checking branch freshness, guarding status/budget before each bug selection, isolating per-bug worktrees, recording attempts, automating commit/PR on `FIXED` verdicts, and finishing with the terminal token (plus a running summary table) the skill prints.
 
-**Signature:** `bugfix-loop <create|guard|record-attempt|complete-turn|finish|latest> [flags]`
+**Signature:** `bugfix-loop <create|guard|record-attempt|complete-turn|finish|latest|check-freshness|commit-pr> [flags]`
 
 **Example:**
 ```
-adev bugfix-loop create --max-bugs 20 --max-turns 20 --json
+adev bugfix-loop create --max-bugs 20 --max-turns 20 --starting-branch main --json
+adev bugfix-loop check-freshness --json
 adev bugfix-loop guard --run-id <id> --json
+adev bugfix-loop record-attempt --run-id <id> --issue <id> --verdict FIXED --files-touched 3 --tests-added 1 --priority-bound P3
+adev bugfix-loop commit-pr --run-id <id> --issue <id> --title "Fix the bug" --pr-base main --json
 adev bugfix-loop finish --run-id <id> --status complete --json
 ```
 
-**Implementation:** `lib/cli/bugfix-loop.mjs`. **Called by:** `/adev:bugfix-loop`, every turn.
+**`create`** accepts `--starting-branch <ref>`, persisted as the run's worktree base-ref fallback for the first bug of a `--worktree-per-bug` run. **`guard`**'s JSON result always includes `worktree_base_ref` (the previous bug's completed branch this run, or `starting_branch`) alongside `proceed`/`reason`/`status`/`budget_reason`.
+
+**`check-freshness [--json]`:** reports how far HEAD is behind/ahead of the remote default branch. Stdout: `{status: "ok"|"warn"|"blocked"|"degraded", ahead?, behind?, reason?}`. Reads `tasks.bugfix_loop.freshness.{soft_threshold,hard_threshold}` from the manifest (defaults: soft=50, hard=unset/warn-only). Always exits 0 — a hard-threshold breach is reported via `status: "blocked"` in the JSON, not a non-zero exit; the calling skill halts on that value itself.
+
+**`record-attempt`** accepts `--verdict <FIXED|PARKED|UNREPRODUCIBLE>` (optional — presence gates whether a summary row is appended), `--files-touched <n>`, `--tests-added <n>`, and `--priority-bound <P0-P4>`. When `--verdict` is given, it appends a row to the run's running summary table (issue id, verdict, files touched, tests added, priority bound, turn) and prints the table; when omitted, no summary row is appended. **`finish`**'s JSON result includes a `summary_table` field (the full markdown table) so the calling skill can reprint it before the terminal token without a second read.
+
+**`commit-pr --run-id <id> --issue <id> [--title <t>] [--notes <n>] [--spec-path <p>] [--pr-base <ref>] [--json]`:** commits the isolated diff, pushes `adev/bugfix-<issue-id>`, and opens a PR against `--pr-base`. On success, updates the run's `last_worktree_branch` so the next bug's worktree stacks on this one. `--title`/`--notes` are untrusted WorkItem content — unsafe content (shell metacharacters, over-length, etc.) is refused, never sanitized, and falls back to a generic templated message keyed only by the issue id. Degrades to `{skipped: true, reason}` on any commit/push/`gh` failure — always exits 0, never blocks the loop.
+
+**Implementation:** `lib/cli/bugfix-loop.mjs` (+ `lib/bugfix-loop-run.mjs`, `lib/bugfix-loop-freshness.mjs`, `lib/bugfix-loop-commit.mjs`). **Called by:** `/adev:bugfix-loop`, every turn.
 
 ### `tracker-sync`
 

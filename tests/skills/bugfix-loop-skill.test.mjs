@@ -239,6 +239,15 @@ test('bugfix-loop SKILL.md Step 2 documents stderr must not be redirected/suppre
   assert.match(step2Text, /BEH-12/);
 });
 
+test('every new bugfix-loop subverb (check-freshness, commit-pr) and skill arg (--worktree-per-bug, --auto-commit, --max-priority) appears in docs/cli-reference.md and/or docs/skill-reference.md (Plan-task 15)', () => {
+  const cliDocs = read('docs/cli-reference.md');
+  const skillDocs = read('docs/skill-reference.md');
+  const combined = cliDocs + skillDocs;
+  for (const term of ['check-freshness', 'commit-pr', '--worktree-per-bug', '--auto-commit', '--max-priority']) {
+    assert.ok(combined.includes(term), `docs must mention "${term}" somewhere (cli-reference.md or skill-reference.md)`);
+  }
+});
+
 test('using-adev gateway table lists /adev:bugfix-loop', () => {
   const md = read('skills/using-adev/SKILL.md');
   assert.match(md, /\/adev:bugfix-loop/);
