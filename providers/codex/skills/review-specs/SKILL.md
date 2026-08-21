@@ -351,13 +351,23 @@ The verb resolves source (`<spec-path>.review.md.tmp`) and destination (`<spec-p
 
 **Write-state suffix choice (`.tmp` not `.partial`).** Per the write-state suffix taxonomy invariant in `agent-reliable-state-artifacts/charter.md` (Invariant #10) and `incremental-artifact-writes.spec.md` Integration Point 4, the review report keeps `.tmp` (byte-level, ms-scale, never recovered) rather than `.partial` (artifact-level, minutes-to-hours, durable): the entire report is computed in memory and written in a single Write call, so there is no incremental-checkpoint surface for `.partial` to protect.
 
-**6b-bis. Write the `.blockers.md` sidecar (BLOCK only).** When the consolidated verdict is BLOCK, also write a `<spec-stem>.blockers.md` sidecar via `lib/blockers-writer.mjs::writeBlockers` (the canonical writer for the `.blockers.md` artifact). Entries are keyed by the canonical `blocker_id` emitted by reviewers (see Task 6 of review-block-auto-retry); each entry carries `section_anchor` per SA-1 to drive byte-identical preservation in `/adev:specify --revise`. Collisions (same `blocker_id` from two reviewers) are deduplicated with a `BLOCKER_ID_COLLISION` advisory in the writer's return value. The SEC-3 redaction set is applied per prose blob; each blob is truncated at 8 KiB.
+**6b-bis. Write the `.blockers.md` sidecar (BLOCK only).** When the consolidated verdict is BLOCK, build the findings array from the dispatched reviewers' output — each entry's finding text goes under the `prose` key, exactly as read (never paraphrased, never left empty when the reviewer's own field is labeled something else, e.g. "Finding:").
 
-**Aggregator `blocker_id` validation:** For every reviewer finding with severity `blocker`, the aggregator validates the emitted `blocker_id` and `section_anchor` fields:
+**Aggregator `blocker_id` construction (before writing):** A reviewer LLM cannot compute a SHA-256 hash deterministically, so it never emits `blocker_id` directly — it emits the SEMANTIC half (`finding_type`, `section_anchor`) and the aggregator builds the canonical `blocker_id` from those plus the dispatched reviewer's own registry id, via `buildBlockerId({ reviewer, type: finding_type, sectionAnchor: section_anchor, findingText: prose })` (`lib/blocker-id.mjs`), and attaches it to that finding entry before it goes in the array below. For every reviewer finding with severity `blocker`:
 
-1. **Missing `blocker_id`** on a BLOCK finding → log `LEGACY_REVIEWER_OUTPUT` advisory and exclude the finding from the sidecar. The build skill's caller (e.g., `/adev:build --full`) detects the legacy-output marker and falls through to the pre-loop sidecar+fail-loud path; no `/adev:specify --revise` dispatch occurs.
-2. **Malformed `blocker_id`** (parsing via `parseBlockerId` from `lib/blocker-id.mjs` throws `INVALID_BLOCKER_ID`) → log `INVALID_BLOCKER_ID` advisory, treat the finding as legacy (same fallback as above).
-3. **Missing `section_anchor`** on a well-formed `blocker_id` → log `MISSING_SECTION_ANCHOR` advisory, write the entry to the sidecar with `section_anchor: (none)`. `/adev:specify --revise` then patches the spec body conservatively (it cannot pinpoint the implicated section).
+1. **Missing `finding_type`** on a BLOCK finding → log `LEGACY_REVIEWER_OUTPUT` advisory and exclude the finding from the array. The build skill's caller (e.g., `/adev:build --full`) detects the legacy-output marker and falls through to the pre-loop sidecar+fail-loud path; no `/adev:specify --revise` dispatch occurs.
+2. **Malformed `finding_type`** (`buildBlockerId` throws `INVALID_BLOCKER_ID` — not kebab-case, or `section_anchor`/`prose` empty) → log `INVALID_BLOCKER_ID` advisory, treat the finding as legacy (same fallback as above).
+3. **Missing `section_anchor`** → log `MISSING_SECTION_ANCHOR` advisory, include the entry with `section_anchor: (none)`. `/adev:specify --revise` then patches the spec body conservatively (it cannot pinpoint the implicated section).
+
+Never accept a `blocker_id` supplied directly by a reviewer, even if one is present and well-formed — it did not come from `buildBlockerId`, so it is not guaranteed reproducible across revisions and would silently poison the auto-retry loop's addressed/persistent/new partition (adev-plugin-xf5d). Always (re)construct it from `finding_type` + `section_anchor`.
+
+With every surviving finding now carrying its constructed `blocker_id`, write the sidecar:
+
+```bash
+adev blockers write --spec <specPath> --findings '<json-array>' --revision <specRevision>
+```
+
+For a large findings array, write it to a temp JSON file first and pass `--findings @<path>` instead of an inline literal. Entries are keyed by the `blocker_id` constructed above (see Task 6 of review-block-auto-retry); each entry carries `section_anchor` per SA-1 to drive byte-identical preservation in `/adev:specify --revise`. Collisions (same `blocker_id` from two reviewers) are deduplicated with a `BLOCKER_ID_COLLISION` advisory in the verb's output. The SEC-3 redaction set is applied per prose blob; each blob is truncated at 8 KiB. Exit 2 with `BLOCKER_BODY_EMPTY` means a finding's prose rendered empty — the reviewer's finding text landed under the wrong key when this array was assembled; fix the mapping and retry, never paper over it with placeholder text.
 
 The sidecar revision is included in the `.blockers.md` header so `/adev:specify --revise` can verify it matches the spec's current `revision:` frontmatter before producing rev N+1.
 
