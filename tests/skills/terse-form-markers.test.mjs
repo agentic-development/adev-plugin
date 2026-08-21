@@ -526,3 +526,46 @@ test("provider mirrors carry the same markers as the canonical skills/ files", (
   }
   assert.deepEqual(violations, []);
 });
+
+// ---------------------------------------------------------------------------
+// Charter capability row: describes the four-skill increment, not a
+// 17-section connection (plan-task 8)
+// ---------------------------------------------------------------------------
+
+test("charter capability row describes the four-skill increment, not a 17-section connection", () => {
+  const charterPath = join(
+    PLUGIN_ROOT,
+    ".context-index",
+    "specs",
+    "features",
+    "output-personas",
+    "charter.md",
+  );
+  const charterText = readFileSync(charterPath, "utf8");
+
+  // Locate the row by capability name, not by line number — every prior
+  // task in this plan lost work to line-number pinning.
+  const row = charterText
+    .split("\n")
+    .find((line) => line.trim().startsWith("|") && line.includes("Skill output rules wiring"));
+
+  assert.ok(
+    row,
+    `expected a Capability Map row for "Skill output rules wiring" in ${charterPath}, found none`,
+  );
+
+  assert.ok(
+    !row.includes("17"),
+    `capability row must not carry the old 17-section count, found: ${JSON.stringify(row)}`,
+  );
+
+  const nameSkill = (skill) =>
+    row.includes(`\`${skill}\``) || row.includes(skill);
+  const namesFourSkills = ["status", "route", "sample", "learn"].every(nameSkill);
+  const namesNineteen = row.includes("19");
+
+  assert.ok(
+    namesNineteen && namesFourSkills,
+    `capability row must name the four-skill, nineteen-section increment (19 and status/route/sample/learn), found: ${JSON.stringify(row)}`,
+  );
+});
