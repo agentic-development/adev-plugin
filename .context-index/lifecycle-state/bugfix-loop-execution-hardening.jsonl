@@ -89,3 +89,4 @@
 {"event":"review_round","plan":".context-index/specs/features/autonomous-bugfix-loop/bugfix-loop-execution-hardening.plan.md","task_id":"task-16","stage":"code-quality","cycles":2,"findings":1,"ts":"2026-08-21T20:02:50.368Z"}
 {"event":"plan_task","plan":".context-index/specs/features/autonomous-bugfix-loop/bugfix-loop-execution-hardening.plan.md","task_id":"task-16","status":"done","notes":"Isolation/stacking/table/priority-band verified; fixed worktree-cwd run-state resolution bug","ts":"2026-08-21T20:02:50.412Z"}
 {"event":"step_completed","step":"implement","verdict":"PASS","ts":"2026-08-21T20:10:13.224Z"}
+{"event":"lifecycle_step","step":"validate","status":"started","ts":"2026-08-21T20:10:50.239Z"}
