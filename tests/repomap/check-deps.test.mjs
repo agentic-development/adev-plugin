@@ -76,3 +76,40 @@ describe('check-deps', () => {
     });
   });
 });
+
+// ── parse.test.mjs guards its tree-sitter-dependent suite (adev-plugin-mok9) ──
+//
+// A fresh `git worktree` has no node_modules/ (gitignored, materialized only
+// by `npm ci`). Before this fix, tests/repomap/parse.test.mjs's "AST Parser"
+// describe block unconditionally dynamic-imported lib/repomap/parse.mjs
+// (itself a static `import ... from 'web-tree-sitter'`) inside an unguarded
+// before() hook — ERR_MODULE_NOT_FOUND there cascaded "test did not finish
+// ... was cancelled" across every sibling test in the block, rather than a
+// clear, actionable skip. lib/repomap/index.mjs's own production code
+// already treats a missing web-tree-sitter as expected (regex-mode fallback,
+// check-deps.mjs, 2026-03-23) — this pins the test suite to the same
+// discipline.
+describe('parse.test.mjs guards its tree-sitter suite on isTreeSitterAvailable', () => {
+  it('imports isTreeSitterAvailable and branches the AST Parser suite on it', async () => {
+    const { readFileSync } = await import('node:fs');
+    const source = readFileSync(
+      join(PLUGIN_ROOT, 'tests', 'repomap', 'parse.test.mjs'),
+      'utf8'
+    );
+    assert.match(
+      source,
+      /import\s*\{\s*isTreeSitterAvailable\s*\}\s*from\s*['"]\.\.\/\.\.\/lib\/repomap\/check-deps\.mjs['"]/,
+      'parse.test.mjs must import the existing dependency checker rather than assuming web-tree-sitter is present'
+    );
+    assert.match(
+      source,
+      /if\s*\(\s*TREE_SITTER_AVAILABLE\s*\)\s*\{/,
+      'the tree-sitter-dependent describe block must be gated behind an availability check'
+    );
+    assert.match(
+      source,
+      /it\(['"]skipped:/,
+      'the unavailable branch must register a real (assertion-bearing) skip-notice test, not silently register nothing'
+    );
+  });
+});

@@ -731,7 +731,7 @@ Batching and `--parallel` operate at different scopes: batching groups cohesive,
 /adev:repomap --path lib/
 ```
 
-**Expected Output:** Symbol index files at `.context-index/repomap/` including `dependency-graph.json` and `symbol-ranks.json`.
+**Expected Output:** Symbol index files at `.context-index/hygiene/` including `dependency-graph.json` and `symbol-ranks.json`.
 
 **Related Guides:** [Maintain](maintain.md)
 

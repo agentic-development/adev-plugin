@@ -25,10 +25,10 @@ Produce a list of findings. Each finding must include:
 
 For every BLOCK finding (severity = `blocker`), also emit:
 
-- **`blocker_id`:** canonical `<reviewer-slug>:<finding-type>:<8-hex-sha-prefix>` (computed via `lib/blocker-id.mjs::buildBlockerId`). Reviewer-slug for this prompt is `structural-architect`. `finding-type` is a stable kebab-case category (e.g., `missing-precondition`, `ambiguous-behavior`, `adr-conflict`, `module-boundary-violation`). `<location-hash>` is the first 8 hex chars of `sha256(<spec-section-anchor>:<truncated-finding-text>)`.
+- **`finding_type`:** a stable kebab-case category (e.g., `missing-precondition`, `ambiguous-behavior`, `adr-conflict`, `module-boundary-violation`). Do NOT compute `blocker_id` yourself — you cannot produce a SHA-256 hash deterministically. Emit `finding_type` here; the aggregator builds the canonical `blocker_id` (`structural-architect:<finding-type>:<location-hash>`) from your `finding_type` and `section_anchor` via `lib/blocker-id.mjs::buildBlockerId`.
 - **`section_anchor`:** the spec-section anchor the finding implicates (e.g., `preconditions`, `behaviors-3`, `error-cases`). Drives byte-identical preservation of unaffected sections in `/adev:specify --revise`.
 
-The aggregator in `skills/review-specs/SKILL.md` validates `blocker_id` shape; malformed IDs produce an `INVALID_BLOCKER_ID` advisory and fall through to the `LEGACY_REVIEWER_OUTPUT` path (no auto-retry).
+The aggregator in `skills/review-specs/SKILL.md` constructs and validates `blocker_id` from your `finding_type` + `section_anchor`; a malformed `finding_type` produces an `INVALID_BLOCKER_ID` advisory and falls through to the `LEGACY_REVIEWER_OUTPUT` path (no auto-retry).
 
 ## Rules
 

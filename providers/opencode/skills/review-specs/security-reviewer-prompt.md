@@ -25,10 +25,10 @@ Produce a list of findings. Each finding must include:
 
 For every BLOCK finding (severity = `blocker`), also emit:
 
-- **`blocker_id`:** canonical `<reviewer-slug>:<finding-type>:<8-hex-sha-prefix>` computed via `lib/blocker-id.mjs::buildBlockerId`. Reviewer-slug for this prompt is `security-reviewer`. `finding-type` is a stable kebab-case category aligned with the **Category** field above (e.g., `authentication`, `authorization`, `data-exposure`, `input-validation`, `secrets`, `rate-limiting`, `path-traversal`). `<location-hash>` is the first 8 hex chars of `sha256(<spec-section-anchor>:<truncated-finding-text>)`.
+- **`finding_type`:** a stable kebab-case category aligned with the **Category** field above (e.g., `authentication`, `authorization`, `data-exposure`, `input-validation`, `secrets`, `rate-limiting`, `path-traversal`). Do NOT compute `blocker_id` yourself — you cannot produce a SHA-256 hash deterministically. Emit `finding_type` here; the aggregator builds the canonical `blocker_id` (`security-reviewer:<finding-type>:<location-hash>`) from your `finding_type` and `section_anchor` via `lib/blocker-id.mjs::buildBlockerId`.
 - **`section_anchor`:** the spec-section anchor the finding implicates (e.g., `preconditions`, `behaviors-3`, `error-cases`).
 
-The aggregator validates `blocker_id` shape; malformed IDs produce `INVALID_BLOCKER_ID` advisory and fall through to `LEGACY_REVIEWER_OUTPUT` (no auto-retry).
+The aggregator constructs and validates `blocker_id` from your `finding_type` + `section_anchor`; a malformed `finding_type` produces `INVALID_BLOCKER_ID` advisory and falls through to `LEGACY_REVIEWER_OUTPUT` (no auto-retry).
 
 ## Rules
 

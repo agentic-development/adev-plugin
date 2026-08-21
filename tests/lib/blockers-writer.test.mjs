@@ -198,3 +198,89 @@ test('writeBlockers rejects malformed blocker_id with INVALID_BLOCKER_ID', () =>
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+// ─── Empty prose refusal (adev-plugin-heba) ────────────────────────────────
+//
+// writeBlockers() read only `e.prose`, defaulting to '' with no validation.
+// A reviewer output shape that supplied finding text under a different key
+// (message/finding/body) produced a well-formed-looking sidecar entry — valid
+// blocker_id, section_anchor, reviewer name — with an EMPTY fenced body.
+// Confirmed live 2026-08-18 on review-provenance.spec.md rev 2: both
+// consistency-analyzer blocker entries wrote clean headers over blank fences,
+// recoverable only from the sibling .review.md, defeating the whole point of
+// .blockers.md being the machine-consumable source of truth.
+//
+// Fix direction 1 (the issue's own top recommendation): refuse the write
+// rather than silently completing it — turn silent data loss into a loud,
+// fixable error.
+
+test('writeBlockers throws BLOCKER_BODY_EMPTY when a finding has no prose', () => {
+  const { root, specPath } = makeRepo();
+  try {
+    const findings = [
+      {
+        blocker_id: 'consistency-analyzer:contract:e0ba7211',
+        section_anchor: 'output-contract-b',
+        reviewer: 'consistency-analyzer',
+        // prose supplied under the wrong key — the writer never reads `message`
+        message: 'The output contract is ambiguous.',
+      },
+    ];
+    assert.throws(
+      () => writeBlockers(root, specPath, findings, { revision: 1 }),
+      (e) => e.code === 'BLOCKER_BODY_EMPTY' && /consistency-analyzer:contract:e0ba7211/.test(e.message),
+    );
+    assert.equal(existsSync(join(root, specPath.replace(/\.spec\.md$/, '.blockers.md'))), false,
+      'a refused write must not leave a partial/prior sidecar in place');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('writeBlockers throws BLOCKER_BODY_EMPTY when prose is whitespace-only', () => {
+  const { root, specPath } = makeRepo();
+  try {
+    const findings = [
+      { blocker_id: 'r:t:aaaaaaaa', section_anchor: 'x', reviewer: 'r', prose: '   \n  ' },
+    ];
+    assert.throws(
+      () => writeBlockers(root, specPath, findings, { revision: 1 }),
+      (e) => e.code === 'BLOCKER_BODY_EMPTY',
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('writeBlockers still succeeds when every finding has real prose', () => {
+  const { root, specPath } = makeRepo();
+  try {
+    const findings = [
+      { blocker_id: 'r:t:aaaaaaaa', section_anchor: 'x', reviewer: 'r', prose: 'Real finding text.' },
+    ];
+    const result = writeBlockers(root, specPath, findings, { revision: 1 });
+    assert.equal(result.entries, 1);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('writeBlockers reports every empty-prose finding, not just the first', () => {
+  const { root, specPath } = makeRepo();
+  try {
+    const findings = [
+      { blocker_id: 'r:a:aaaaaaaa', section_anchor: 'x', reviewer: 'r', prose: '' },
+      { blocker_id: 'r:b:bbbbbbbb', section_anchor: 'y', reviewer: 'r', prose: 'fine' },
+      { blocker_id: 'r:c:cccccccc', section_anchor: 'z', reviewer: 'r', message: 'wrong key' },
+    ];
+    assert.throws(
+      () => writeBlockers(root, specPath, findings, { revision: 1 }),
+      (e) => e.code === 'BLOCKER_BODY_EMPTY'
+        && /r:a:aaaaaaaa/.test(e.message)
+        && /r:c:cccccccc/.test(e.message)
+        && !/r:b:bbbbbbbb/.test(e.message),
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});

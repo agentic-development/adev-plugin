@@ -1,9 +1,25 @@
 import { describe, it } from 'node:test';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import assert from 'node:assert';
 
 const DOCS_DIR = join(import.meta.dirname, '..', '..', 'docs');
+const SKILLS_DIR = join(import.meta.dirname, '..', '..', 'skills');
+
+/**
+ * Every top-level skills/ subdirectory that carries a SKILL.md — the
+ * plugin's real, current skill set. Derived from the filesystem, not
+ * hardcoded (issue-zpkzl0): a hardcoded allowlist already fell one skill
+ * behind once, silently — 'deploy' was added, the docs happened to
+ * document it anyway, and the coverage test never noticed the mismatch
+ * because it was checking its own hardcoded list against itself.
+ */
+function currentSkillDirs() {
+  return readdirSync(SKILLS_DIR).filter((name) =>
+    statSync(join(SKILLS_DIR, name)).isDirectory() &&
+    existsSync(join(SKILLS_DIR, name, 'SKILL.md'))
+  );
+}
 
 describe('docs/skill-reference.md — Skill Reference', () => {
   it('should exist', () => {
@@ -29,15 +45,8 @@ describe('docs/skill-reference.md — Skill Reference', () => {
 
   it('should have an entry for every skill in the plugin', () => {
     const content = readFileSync(join(DOCS_DIR, 'skill-reference.md'), 'utf-8');
-    const expectedSkills = [
-      'init', 'sync', 'using-adev', 'work',
-      'brainstorm', 'specify', 'review-specs', 'prototype',
-      'plan', 'route', 'implement', 'write-test', 'build',
-      'validate', 'debug', 'eval', 'recover',
-      'issues', 'status', 'hygiene', 'retro', 'codehealth',
-      'repomap', 'reconcile', 'sample', 'document',
-      'research', 'learn', 'assess'
-    ];
+    const expectedSkills = currentSkillDirs();
+    assert.ok(expectedSkills.length >= 29, `expected a real skill corpus, found ${expectedSkills.length}`);
     for (const skill of expectedSkills) {
       assert.ok(
         content.includes(`adev:${skill}`) || content.includes(`/adev:${skill}`),
@@ -249,5 +258,38 @@ describe('Cross-page links in reference pages', () => {
         }
       }
     }
+  });
+});
+
+// ─── docs/cli-reference.md verb coverage (issue-w1t5ed) ───────────────────
+//
+// The expected verb list is derived from cli/index.mjs's own VERB_REGISTRY
+// at test time — NOT hardcoded — so this guard cannot go stale the same way
+// skill-reference.md's own hardcoded expectedSkills array already has
+// (adev-plugin-clf2, filed separately, still open as of this writing: 29
+// names asserted, 30 skill directories present). A verb missing from the
+// docs is exactly what let `skill-ext` — invoked by 30 of 30 SKILL.md files
+// and constitutionally mandated — go completely undocumented.
+describe('docs/cli-reference.md — CLI Reference verb coverage', () => {
+  const CLI_INDEX_PATH = join(import.meta.dirname, '..', '..', 'cli', 'index.mjs');
+
+  function dispatchedVerbs() {
+    const source = readFileSync(CLI_INDEX_PATH, 'utf-8');
+    const start = source.indexOf('const VERB_REGISTRY = new Map([');
+    assert.notEqual(start, -1, 'cli/index.mjs must declare VERB_REGISTRY — update this test if it is renamed');
+    const end = source.indexOf(']);', start);
+    const block = source.slice(start, end);
+    const verbs = [];
+    const RE = /^\s*\[\s*"([a-z][a-z-]*)"/gm;
+    let m;
+    while ((m = RE.exec(block)) !== null) verbs.push(m[1]);
+    assert.ok(verbs.length > 20, `expected a real dispatch table, found ${verbs.length} verbs`);
+    return verbs;
+  }
+
+  it('documents every dispatched top-level verb', () => {
+    const content = readFileSync(join(DOCS_DIR, 'cli-reference.md'), 'utf-8');
+    const missing = dispatchedVerbs().filter((v) => !content.includes(`### \`${v}\``));
+    assert.deepEqual(missing, [], `verb(s) dispatched by cli/index.mjs but missing a ### \`<verb>\` section in docs/cli-reference.md:\n${missing.join('\n')}`);
   });
 });

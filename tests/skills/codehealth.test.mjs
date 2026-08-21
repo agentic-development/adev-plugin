@@ -161,3 +161,48 @@ describe("manifest registration", () => {
     );
   });
 });
+
+// ─── issue-u1jtc0: index.* is not a blanket orphan-detection exemption ────
+//
+// `lib/repomap/index.mjs` had zero real callers (only tests invoke it, as a
+// subprocess — invisible to the import graph) but read as alive because
+// Pass 2 unconditionally exempted every `**/index.*` file from orphan
+// detection. An entry point with no caller IS the bug the pass exists to
+// catch, not a reason to exempt it.
+describe("adev:codehealth Pass 2 — index.* is verified, not blanket-exempted", () => {
+  it("does not unconditionally exclude **/index.* from orphan detection", () => {
+    const content = readFileSync(SKILL_PATH, "utf8");
+    assert.doesNotMatch(
+      content,
+      /Files matching `\*\*\/index\.\*` \(barrel files \/ entry points\)/,
+      "index.* must not be a blanket exclusion bullet"
+    );
+  });
+
+  it("verifies index.* candidates against real consumers (CLI registry, package.json scripts) before exempting", () => {
+    const content = readFileSync(SKILL_PATH, "utf8");
+    assert.match(content, /Do NOT blanket-exclude `\*\*\/index\.\*`/);
+    assert.match(content, /cli\/index\.mjs/);
+    assert.match(content, /package\.json.*scripts/s);
+  });
+});
+
+// ─── issue-u1jtc0: hygiene Pass 13 gates on repomap staleness, not just existence ──
+//
+// Pass 13 previously SKIPped only when symbol-ranks.json/dependency-graph.json
+// were absent — a stale-but-present pair (the exact case that would surface
+// repomap being broken) was silently analyzed as current. Pass 5 already
+// staleness-checks repo-map.md against HEAD; Pass 13 consumes the JSON
+// siblings of that same repomap run but never checked their own `commit`
+// field.
+describe("hygiene Pass 13 — staleness gate on repomap artifacts", () => {
+  it("Pass 13's prerequisite checks dependency-graph.json's commit field, not just file existence", () => {
+    const content = readFileSync(HYGIENE_PATH, "utf8");
+    const start = content.indexOf("## Audit Pass 13: Code Health");
+    const end = content.indexOf("## Audit Pass 14", start);
+    assert.notEqual(start, -1);
+    const section = content.slice(start, end === -1 ? undefined : end);
+    assert.match(section, /commit/, "must check the artifacts' commit marker");
+    assert.match(section, /50 commits/, "must apply the same 50-commit threshold Pass 5 uses");
+  });
+});

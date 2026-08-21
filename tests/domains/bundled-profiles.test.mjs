@@ -51,10 +51,10 @@ describe('software profile', () => {
     }
   });
 
-  it('reviewers.yaml has 7 entries: 5 active + 2 disabled', () => {
+  it('reviewers.yaml has 8 entries: 5 active + 2 disabled + 1 severity-only (adev-plugin-j7pq.10)', () => {
     const content = readFileSync(join(SW_DIR, 'reviewers.yaml'), 'utf8');
     const parsed = parseYaml(content);
-    assert.equal(parsed.reviewers.length, 7);
+    assert.equal(parsed.reviewers.length, 8);
     const ids = parsed.reviewers.map(r => r.id);
     for (const id of ['referent-integrity', 'wiring-reviewer', 'consistency-analyzer', 'boundary-reviewer', 'termination-reviewer']) {
       assert.ok(ids.includes(id), `missing active reviewer: ${id}`);
@@ -67,11 +67,20 @@ describe('software profile', () => {
       assert.ok(typeof r.disabled_reason === 'string' && r.disabled_reason.trim().length > 0,
         `${r.id} must carry a non-empty disabled_reason`);
     }
-    const active = parsed.reviewers.filter(r => r.enabled !== false);
+    // quick-synthesized-reviewer is dispatch: never — declared for severity
+    // resolution only (lib/lifecycle-state.mjs::_resolveActorSeverity), never
+    // looped through the context-pack-rendering dispatch path, so it
+    // legitimately carries no context_pack.
+    const active = parsed.reviewers.filter(r => r.enabled !== false && r.dispatch !== 'never');
     for (const r of active) {
       assert.ok(r.profile, `${r.id} must declare an explicit profile`);
       assert.ok(r.context_pack, `${r.id} must declare an explicit context_pack`);
     }
+    const quickSynthesized = parsed.reviewers.find(r => r.id === 'quick-synthesized-reviewer');
+    assert.ok(quickSynthesized, 'missing severity-only reviewer: quick-synthesized-reviewer');
+    assert.equal(quickSynthesized.dispatch, 'never');
+    assert.equal(quickSynthesized.severity_cap, 'blocker');
+    assert.ok(quickSynthesized.profile, 'quick-synthesized-reviewer must declare an explicit profile');
     const termination = parsed.reviewers.find(r => r.id === 'termination-reviewer');
     assert.ok(termination.dispatch && typeof termination.dispatch === 'object' && termination.dispatch.triggered,
       'termination-reviewer must use the nested-object triggered form, not a bare string');

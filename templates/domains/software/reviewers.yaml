@@ -77,3 +77,17 @@ reviewers:
     severity_cap: blocker
     enabled: false
     disabled_reason: "Disabled as part of the reviewer-domain-fit initiative. OWASP-scoped review relocated to the web-service domain extension (opt-in via adev extension install web-service) where it fits the artifact class. Prompt retained on disk."
+
+  # Not dispatched through the loop above — the `quick` rigor tier dispatches
+  # this reviewer directly by prompt path (skills/review-specs/SKILL.md Step
+  # 2.5), skipping the registry entirely. Declared here ONLY so severity
+  # resolution (lib/lifecycle-state.mjs::_resolveActorSeverity) has an entry
+  # to find; without it, every quick-tier reviewer_report — including a real
+  # BLOCK — was silently stamped severity: warning via the
+  # UNKNOWN_REVIEWER_DEFAULTED fallback (adev-plugin-j7pq.10).
+  - id: quick-synthesized-reviewer
+    name: "Quick Synthesized Reviewer"
+    dispatch: never
+    prompt: "plugin:review-specs/quick-synthesized-reviewer-prompt.md"
+    profile: reviewer-capable
+    severity_cap: blocker
