@@ -391,6 +391,16 @@ hygiene:
       # update + its own revert, not content drift.
       - "452f1de4dc0a005d68988e83a9d4a01d1934bd61"
       - "87a47b3ee0fd6904cbc453db188879752c161064"
+      # eval-harness/scoring-engine: /adev:validate FAILed the first build
+      # round on a reproduced install-shape defect (the verb refused its own
+      # shipped default rubric outside this repo). Spec rev 5 -> 9 added
+      # BEH-11/BEH-12, so the plan was regenerated for the 6-task delta and
+      # the artifact-landing commit recorded it. Same shape as the
+      # copilot-adapter entry above: documented spec-rev refinement during
+      # /adev:build, not silent drift. Splitting the plan was rejected -- the
+      # plan_task events carry the plan path, so a rename would leave t1..t6
+      # pointing at a file holding the other 11 tasks.
+      - "d7443afb"
     # Rewrite-durable form of the exemptions above, in the same order. Each
     # was derived from its `exempt_commits` sibling, so the rationale comments
     # there remain the documentation of record. These keep matching after the
@@ -428,6 +438,10 @@ hygiene:
       # one had no `exempt_commits` predecessor; every other entry here is a
       # rewrite-durable restatement of a previously approved decision.
       - "d31e2d4433fd3ab0b22a73870e1a1df07f23e561"
+      # eval-harness/scoring-engine re-plan after spec rev 5 -> 9 (see the
+      # exempt_commits rationale above). Rewrite-durable form -- this branch
+      # merges to a protected main, so the SHA will not survive.
+      - "da2d2cf8f31c82cba4a10c6886e68f78d5130b4d"
 
 domain: software
 

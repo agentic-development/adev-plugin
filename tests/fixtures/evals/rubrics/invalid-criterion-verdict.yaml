@@ -1,0 +1,32 @@
+# Invalid criterion verdict fixture — a quality_dimensions entry that pins
+# `verdict: not_applicable`, which is legal for a deterministic element but
+# never for a judged criterion. Modelled on conforming.yaml and otherwise
+# complete (all six required criterion fields), so it survives parse, nesting,
+# required-keys and completeness to reach the verdict pass.
+
+rubric_id: "fixture-invalid-criterion-verdict"
+version: 1
+layer: 3
+verdict_values: "met | not_met | unknown (judged criteria) | not_applicable (deterministic elements)"
+
+required_elements:
+  - id: tests_accompany_source
+    description: "Every changed non-test source file has an added or modified test in the same diff"
+    source: "the diff file list"
+    met_when: "no changed source file lacks a corresponding test change"
+
+quality_dimensions:
+  - id: separation_of_concerns
+    criterion: "Does each changed file hold a single responsibility, at the same boundary the reference draws?"
+    reference: "the matched golden sample's file/module split, else the Architecture Boundaries section of the constitution"
+    met_when: "no changed file mixes responsibilities the reference keeps apart"
+    not_met_when: "at least one changed file merges responsibilities the reference separates"
+    unknown_when: "the diff touches no file the reference covers"
+    verdict: not_applicable
+
+layer3_max_points: 25
+required_element_points: 10
+judged_criterion_points: 15
+unknown_policy: "exclude_from_denominator"
+not_applicable_policy: "exclude_from_denominator"
+insufficient_evidence_threshold_percent: 40
