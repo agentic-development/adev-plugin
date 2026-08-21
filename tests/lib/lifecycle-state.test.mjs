@@ -412,6 +412,62 @@ test('_resolveActorSeverity returns "warning" for an unknown reviewer', () => {
   assert.equal(sev, 'warning');
 });
 
+// ── quick-tier severity resolution (adev-plugin-j7pq.10) ───────────────────
+//
+// review-specs Step 2.5 dispatches quick-synthesized-reviewer directly by
+// prompt path for the `quick` rigor tier, bypassing the registry dispatch
+// loop entirely — but severity resolution still looks the actor id up in the
+// SAME registry. No domain declared it, so every quick-tier reviewer_report
+// (including a real BLOCK) was stamped severity: warning via the
+// UNKNOWN_REVIEWER_DEFAULTED fallback. repoRoot points at a directory with
+// no `.context-index/governance/review.yaml`, so resolution falls straight
+// through to the domain overlay (`templates/domains/<domain>/reviewers.yaml`)
+// — the file the issue's fix direction targets.
+
+test('_resolveActorSeverity resolves quick-synthesized-reviewer to blocker for the software domain', () => {
+  const sev = _resolveActorSeverity({
+    domain: 'software',
+    actorKind: 'reviewer',
+    actorName: 'quick-synthesized-reviewer',
+    repoRoot: '/tmp/__lifecycle_severity_quick_tier__',
+    pluginRoot: PLUGIN_ROOT,
+  });
+  assert.equal(sev, 'blocker', 'a quick-tier BLOCK must not be projected as warning');
+});
+
+test('every bundled/extension domain reviewers.yaml declares quick-synthesized-reviewer as severity_cap: blocker, dispatch: never', () => {
+  // Full resolution-path assertion only for `software` — the sole BUNDLED
+  // domain name (lib/domains/constants.mjs::BUNDLED_DOMAIN_NAMES).
+  // `extensions/<name>/domain/` is a different, not-yet-wired resolution
+  // mechanism (tracked separately as adev-plugin-xg1f.6, "resolveTemplate
+  // cannot see CLI-installed extensions") — `_resolveActorSeverity` cannot
+  // reach those files by domain name today, so only their file CONTENT is
+  // asserted below, keeping them correct for when that wiring lands.
+  const sev = _resolveActorSeverity({
+    domain: 'software',
+    actorKind: 'reviewer',
+    actorName: 'quick-synthesized-reviewer',
+    repoRoot: '/tmp/__lifecycle_severity_quick_tier_sweep__',
+    pluginRoot: PLUGIN_ROOT,
+  });
+  assert.equal(sev, 'blocker');
+
+  const registries = [
+    join(PLUGIN_ROOT, 'templates', 'domains', 'software', 'reviewers.yaml'),
+    join(PLUGIN_ROOT, 'extensions', 'data-engineering', 'domain', 'reviewers.yaml'),
+    join(PLUGIN_ROOT, 'extensions', 'process-automation', 'domain', 'reviewers.yaml'),
+  ];
+  for (const path of registries) {
+    const raw = readFileSync(path, 'utf8');
+    const idIdx = raw.indexOf('id: quick-synthesized-reviewer');
+    assert.notEqual(idIdx, -1, `${path} must declare an id: quick-synthesized-reviewer entry`);
+    const entryEnd = raw.indexOf('\n  - id:', idIdx + 1);
+    const entryBlock = raw.slice(idIdx, entryEnd === -1 ? raw.length : entryEnd);
+    assert.match(entryBlock, /dispatch:\s*never/, `${path}'s quick-synthesized-reviewer entry must be dispatch: never — it is invoked directly by prompt path, never through the registry dispatch loop`);
+    assert.match(entryBlock, /severity_cap:\s*blocker/, `${path}'s quick-synthesized-reviewer entry must declare severity_cap: blocker`);
+  }
+});
+
 test('_resolveActorSeverity returns validator severity for a known check in validate.yaml', () => {
   // The bundled software validate.yaml declares "validate.check-2-spec-compliance"
   // with severity: error. Validator severities now resolve from validate.yaml
