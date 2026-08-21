@@ -309,11 +309,13 @@ adev governance materialize --registry gates --dry-run
 ```
 adev report --type validator --spec <p> --step validate --validator check-2-spec-compliance --verdict PASS
 
+adev report --type step --spec <p> --step review --status completed --verdict PASS --revision 3
+
 adev report --type review-round --spec <p> --plan <p>.plan.md --task-id t1 \
   --stage code-quality --cycles 2 --findings 1
 ```
 
-`--findings` is omitted for `--stage spec-compliance` — that review stage has no stable finding-id convention to count against. As with the other `report` types, omitting an event entirely means "not recorded", never "zero". `cost-checkpoint` remains documented above but is not yet an implemented `--type`; this is a pre-existing gap, tracked separately, and left untouched here.
+`--type step`'s `--revision <n>` (integer >= 1) tags the event with the spec revision it belongs to — omit it and `currentState().steps.review.byRevision` folds the event into bucket 1 regardless of which revision actually produced it (adev-plugin-656e). `--findings` is omitted for `--stage spec-compliance` — that review stage has no stable finding-id convention to count against. As with the other `report` types, omitting an event entirely means "not recorded", never "zero". `cost-checkpoint` remains documented above but is not yet an implemented `--type`; this is a pre-existing gap, tracked separately, and left untouched here.
 
 **Implementation:** `lib/cli/report.mjs`. **Called by:** `/adev:plan`, `/adev:specify`, `/adev:review-specs`, `/adev:implement`, `/adev:validate`.
 
