@@ -12,6 +12,7 @@ import {
   createRun, readRunState, resolveRunStatePath, checkStatusGuard, checkBudget,
   appendAttempt, completeTurn, finishRun, tokenForStatus, findLatestRunState,
   recordSyncRetry, resetSyncRetry, recordStaleLinkNotice, hasStaleLinkNoticeFired,
+  resolveWorktreeBaseRef, recordWorktreeBranch,
 } from '../../lib/bugfix-loop-run.mjs';
 
 test('createRun writes a run-state file with all BugfixLoopRun fields, defaults intact', () => {
@@ -233,5 +234,32 @@ test('a fresh run_id starts stale_link_notices_surfaced empty (fresh-per-run sco
   recordStaleLinkNotice(root, run1, 'github:1');
   const { run_id: run2 } = createRun(root, {});
   assert.equal(hasStaleLinkNoticeFired(root, run2, 'github:1'), false);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('createRun accepts startingBranch and persists it; resolveWorktreeBaseRef falls back to it when last_worktree_branch is null (Plan-task 4)', () => {
+  const root = mkdtempSync(join(tmpdir(), 'bfl-run-'));
+  const state = createRun(root, { startingBranch: 'main' });
+  assert.equal(state.starting_branch, 'main');
+  assert.equal(state.last_worktree_branch, null);
+  assert.equal(resolveWorktreeBaseRef(state), 'main');
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('createRun defaults starting_branch to null when not provided (Plan-task 4)', () => {
+  const root = mkdtempSync(join(tmpdir(), 'bfl-run-'));
+  const state = createRun(root, {});
+  assert.equal(state.starting_branch, null);
+  assert.equal(resolveWorktreeBaseRef(state), null);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('recordWorktreeBranch updates last_worktree_branch; resolveWorktreeBaseRef then prefers it over starting_branch (Plan-task 4)', () => {
+  const root = mkdtempSync(join(tmpdir(), 'bfl-run-'));
+  const state = createRun(root, { startingBranch: 'main' });
+  recordWorktreeBranch(root, state.run_id, 'adev/bugfix-issue-1');
+  const updated = readRunState(root, state.run_id);
+  assert.equal(updated.last_worktree_branch, 'adev/bugfix-issue-1');
+  assert.equal(resolveWorktreeBaseRef(updated), 'adev/bugfix-issue-1');
   rmSync(root, { recursive: true, force: true });
 });
