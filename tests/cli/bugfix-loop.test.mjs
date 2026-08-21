@@ -230,3 +230,77 @@ test('adev bugfix-loop guard --json includes worktree_base_ref on a proceed:fals
   assert.equal(out.worktree_base_ref, 'main');
   rmSync(dir, { recursive: true, force: true });
 });
+
+// Writes a fake `gh` shim onto PATH so commit-pr's real `gh pr create` call
+// (the CLI always uses the real execFileSync — it has no injection point)
+// prints a canned PR URL and exits 0, without ever touching a real GitHub
+// account. Returns the env to pass to spawnSync.
+function envWithFakeGh(binDir, prUrl = 'https://github.com/org/repo/pull/1') {
+  mkdirSync(binDir, { recursive: true });
+  const ghPath = join(binDir, 'gh');
+  writeFileSync(ghPath, `#!/bin/sh\necho "${prUrl}"\nexit 0\n`, { mode: 0o755 });
+  return { ...process.env, PATH: `${binDir}:${process.env.PATH}` };
+}
+
+function makeCommitPrProject() {
+  const dir = makeTempProject();
+  initGitRepo(dir);
+  commitFile(dir, 'README.md', 'init');
+  const bareDir = mkdtempSync(join(tmpdir(), 'bfl-cli-commitpr-bare-'));
+  execSync('git init --bare -b main', { cwd: bareDir, stdio: 'ignore' });
+  execSync(`git remote add origin ${bareDir}`, { cwd: dir, stdio: 'ignore' });
+  execSync('git push origin main', { cwd: dir, stdio: 'ignore' });
+  return { dir, bareDir };
+}
+
+test('adev bugfix-loop commit-pr --run-id <id> --issue <id> commits, opens a PR, and updates run-state last_worktree_branch on success (Plan-task 10)', () => {
+  const { dir, bareDir } = makeCommitPrProject();
+  const create = spawnSync('node', [CLI, 'bugfix-loop', 'create', '--starting-branch', 'main', '--json'], { encoding: 'utf8', cwd: dir });
+  const { run_id } = JSON.parse(create.stdout);
+
+  writeFileSync(join(dir, 'fix.txt'), 'the fix\n');
+
+  const binDir = mkdtempSync(join(tmpdir(), 'bfl-cli-fakebin-'));
+  const r = spawnSync(
+    'node',
+    [CLI, 'bugfix-loop', 'commit-pr', '--run-id', run_id, '--issue', 'issue-1', '--title', 'Fix the bug', '--pr-base', 'main', '--json'],
+    { encoding: 'utf8', cwd: dir, env: envWithFakeGh(binDir) },
+  );
+  assert.equal(r.status, 0, r.stderr);
+  const out = JSON.parse(r.stdout);
+  assert.equal(out.skipped, false);
+  assert.equal(out.branch, 'adev/bugfix-issue-1');
+  assert.equal(out.prUrl, 'https://github.com/org/repo/pull/1');
+
+  const runState = JSON.parse(readFileSync(
+    // direct read to avoid another CLI round trip
+    join(dir, '.context-index', 'lifecycle-state', `bugfix-loop-runs-${run_id}.json`), 'utf8',
+  ));
+  assert.equal(runState.last_worktree_branch, 'adev/bugfix-issue-1');
+
+  rmSync(dir, { recursive: true, force: true });
+  rmSync(bareDir, { recursive: true, force: true });
+  rmSync(binDir, { recursive: true, force: true });
+});
+
+test('adev bugfix-loop commit-pr exits 0 with { skipped: true } on a degrade path (push rejected — no remote configured), never non-zero (Plan-task 10)', () => {
+  const dir = makeTempProject();
+  initGitRepo(dir);
+  commitFile(dir, 'README.md', 'init');
+  // deliberately no `origin` remote configured — push will fail.
+
+  const create = spawnSync('node', [CLI, 'bugfix-loop', 'create', '--starting-branch', 'main', '--json'], { encoding: 'utf8', cwd: dir });
+  const { run_id } = JSON.parse(create.stdout);
+  writeFileSync(join(dir, 'fix.txt'), 'the fix\n');
+
+  const r = spawnSync(
+    'node',
+    [CLI, 'bugfix-loop', 'commit-pr', '--run-id', run_id, '--issue', 'issue-1', '--title', 'Fix the bug', '--pr-base', 'main', '--json'],
+    { encoding: 'utf8', cwd: dir },
+  );
+  assert.equal(r.status, 0, r.stderr);
+  const out = JSON.parse(r.stdout);
+  assert.equal(out.skipped, true);
+  assert.equal(typeof out.reason, 'string');
+  rmSync(dir, { recursive: true, force: true });
+});
