@@ -262,7 +262,14 @@ test("the marker is the last block of its governed section", () => {
 // BEH-2: no absolute filesystem path in a terse-form block
 // ---------------------------------------------------------------------------
 
-const UNIX_ABS_PATH_RE = /(^|[\s(`"'])\/[A-Za-z0-9._\-/]+/g;
+// The character class must include ":" — without it, a match on "/adev:status"
+// truncates at "/adev" (stopping before the colon), so `afterSlash` below can
+// never equal "adev:..." and the adev-slash-command exemption a few lines
+// down is unreachable dead code. Keep ":" in the class so the exemption can
+// actually fire; this does not weaken absolute-path detection since a bare
+// "/" followed by path-shaped text (with or without a colon inside it) is
+// still captured and still flagged unless it is specifically the adev: form.
+const UNIX_ABS_PATH_RE = /(^|[\s(`"'])\/[A-Za-z0-9._:\-/]+/g;
 const WINDOWS_ABS_PATH_RE = /[A-Za-z]:\\/;
 
 function findAbsolutePathLines(blockText) {
