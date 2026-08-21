@@ -189,7 +189,7 @@ approval per Architecture Boundaries — approved during brainstorm.
 | ADEV-DEBUG Completion Token | `/adev:debug` emits `ADEV-DEBUG: FIXED \| PARKED \| UNREPRODUCIBLE` per `completion-tokens.spec.md` grammar | must-have | 1 | validated |
 | `--auto` Mode on `/adev:debug` | Non-interactive mode skipping the Phase 6 ADR-drafting prompt | must-have | 1 | validated |
 | Per-Issue Attempt Cap | Reused `loop-convergence.mjs` bounding, keyed per issue, persisted in `lifecycle-state/` | must-have | 1 | validated |
-| `/adev:bugfix-loop` Skill | Self-re-invoking, one-bug-per-turn loop draining eligible bugs; Load Skill Extensions block included | must-have | 1 | validated (execution-hardening extension review-passed) |
+| `/adev:bugfix-loop` Skill | Self-re-invoking, one-bug-per-turn loop draining eligible bugs; Load Skill Extensions block included | must-have | 1 | implemented (execution-hardening extension: `bugfix-loop-execution-hardening.spec.md`) |
 | Eligibility Filter | Operator-configurable priority band (`--max-priority`, P0-P4, default P3) + fixed single-module blast-radius/excluded-module list — the latter is the actual safety boundary, not configurable | must-have | 1 | implemented |
 | Tracker Provider Adapter Interface | `TrackerProviderAdapter` contract + registry; GitHub is the only shipped implementation | must-have | 2 | validated |
 | GitHub Triage-Gated Inbound Sync | Issues labeled `bug`+`help wanted` become local WorkItems, via the GitHub adapter | must-have | 2 | validated |
