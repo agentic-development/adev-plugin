@@ -9,7 +9,11 @@ Query and display the current status of adev lifecycle artifacts. This skill is 
 
 **Announcement:** "I'm using the adev:status skill to query project status."
 
-**Persona adaptation:** All output formats below are defaults for the Developer persona. If a different persona is active, adapt the chat output to its output rules (e.g., Product persona: show counts and status summaries only, omit file paths and technical detail).
+**Persona adaptation:** All output formats below are defaults for the Developer persona; adapt the chat output to the active persona's output rules. Verbosity is resolved separately across `templates/verbosity/terse.md`, `templates/verbosity/normal.md`, and `templates/verbosity/deep.md`: when the resolved verbosity is terse and a section below carries a `**Terse form:**` block, that block is the section's declared rendering at terse verbosity.
+
+> **Terse-form convention.** The marker `**Terse form:**` (used verbatim, never rephrased) is the last block of a governed section: its content runs from the marker line to the end of that section. A section's extent is its heading line through the line before the next heading of equal or shallower depth (depth = leading `#` count), or end of file; heading detection is fence-aware and frontmatter-aware, so a `#`-prefixed line inside a fenced code block or the leading YAML frontmatter is not a heading. Exactly one marker per governed section.
+>
+> **Table substitution inside a terse form (BEH-3).** A terse form contains at most one table of the section's own data. Every further table is replaced by a count plus a pointer: the repo-relative path of the artifact already holding the data, or — when no artifact holds it — the narrower invocation of the same skill that renders detail for one item. When neither exists, state the count alone with nothing named.
 
 ## Arguments
 
@@ -90,6 +94,8 @@ Review revisions (when present):
 
 **Review revisions section** — only render when `currentState(spec).steps.review.byRevision` is populated with more than one revision (i.e., the BLOCK→revise auto-retry loop ran at least once for this spec). The per-revision projection is produced by `lib/lifecycle-state.mjs` Task 3 of review-block-auto-retry; consume `byRevision[N]` directly without re-folding the log. Each entry carries `verdict`, `completed_at`, and a `blockers[]` list of canonical `blocker_id`s. Order by ascending revision integer. If only one revision exists, the standard `Revision: <N>` line covers it — no separate section needed (non-breaking output for specs that never blocked).
 
+**Terse form:** Renders the header lines — spec path, status, revision, updated date, tracker ref, charter-revision staleness — and the source-manifest, commit, session, and plan/task-assignment counts. Substitutes the per-file source-manifest listing with the file count and `/adev:status --file <path>` for detail on any one file. Skips the per-commit and per-session listings, and the review-revisions history beyond noting whether any revision blocked.
+
 ### Mode: `--charter <name>`
 
 1. Find the charter file by name under `.context-index/specs/features/` or `.context-index/specs/cross-cutting/`
@@ -122,6 +128,8 @@ Specs (<N total>):
   - <spec-path>: <status> (rev <revision>)
   ...
 ```
+
+**Terse form:** Renders the charter header line and the capability-progress summary — implemented/validated/not-started counts, one line per capability, showing its status. Substitutes the per-spec listing with a count of specs and `/adev:status --spec <path>` for detail on any one spec.
 
 ### Mode: `--milestone <name>`
 
@@ -158,6 +166,8 @@ Summary:
   Total issues: 10 (6 open, 1 in_progress, 3 closed)
   Percentage complete: 30%
 ```
+
+**Terse form:** Renders the milestone header and the aggregate progress line (closed/total issues, percentage complete). Substitutes the per-epic issue and spec breakdown with a count of epics and `/adev:status --epic <id>` for detail on any one epic.
 
 ### Mode: `--all` (default)
 
@@ -246,6 +256,20 @@ Recent sessions (last 10):
   - <date> [<type>] <summary>
 ```
 
+**Terse form:** Renders one counts roll-up table — charters by status, specs by status, and capability progress — and substitutes every other grouping with a count plus a narrower pointer:
+
+| Grouping | Counts |
+|---|---|
+| Charters | draft / active / completed / archived |
+| Specs | draft / review-pending / review-passed / review-blocked / implemented / validated |
+| Capabilities | implemented (of total) / validated |
+
+- Drifted specs: count, then `/adev:status --spec <path>` for detail on any one spec
+- Specs needing re-review: count, then `/adev:status --spec <path>` for detail on any one spec
+- Milestone progress: count, then `/adev:status --milestone <name>` for detail on any one milestone
+- Stale claims: count, then `/adev:status --issue <id>` for detail on any one issue
+- Recent sessions: count alone
+
 ### Mode: `--issue <id>`
 
 Trace the full lifecycle chain for a single issue.
@@ -276,6 +300,8 @@ Files touched:
 Post-close changes: <N commits after close>
 ```
 
+**Terse form:** Renders the issue header line, epic reference, plan/task pointer, and spec status, plus the commit and post-close-change counts. Substitutes the files-touched listing with a count of files and `/adev:status --file <path>` for detail on any one file. Skips the per-commit listing.
+
 ### Mode: `--epic <id>`
 
 Show comprehensive epic status with child issues and code coverage.
@@ -299,6 +325,8 @@ Completeness: <closed>/<total> issues closed
 Recommendation: <close epic / create missing issues / review deferred>
 ```
 
+**Terse form:** Renders the epic header line and the completeness summary (closed/total issues, recommendation). Substitutes the per-issue table with a count of child issues and `/adev:status --issue <id>` for detail on any one issue.
+
 ### Mode: `--file <path>`
 
 Reverse lookup from a source file to its lifecycle context.
@@ -320,6 +348,8 @@ Recent commits:
   <sha> <subject> (Spec: <yes/no>, Author-type: <type>)
   ...
 ```
+
+**Terse form:** Renders the file's claim status, drift status, and issue/epic linkage, plus a count of recent commits touching the file. Skips the per-commit listing.
 
 ### Mode: `--backlog`
 
@@ -375,6 +405,14 @@ Charter Deferred/Future Capabilities (<n>):
 Untraced Code: <N files> (run /adev:hygiene --check provenance for details)
 ```
 
+**Terse form:** Renders the total item count and the by-priority breakdown (critical/high/medium/low). Substitutes each category listing with a count plus its narrower pointer, in the order the default output presents them:
+
+- Unplanned and draft specs: count, then `/adev:status --spec <path>` for detail on any one spec
+- Open and deferred issues: count, then `/adev:status --issue <id>` for detail on any one issue
+- Stale epics: count, then `/adev:status --epic <id>` for detail on any one epic
+- Charter deferred/future capabilities: count, then `/adev:status --charter <name>` for detail on any one charter
+- Untraced code: count, then `.context-index/hygiene/drift-report.md`
+
 ### Mode: `--milestone <name>`
 
 Show all capabilities in a specific milestone across all charters.
@@ -393,6 +431,8 @@ Show all capabilities in a specific milestone across all charters.
 | auth | SSO Integration | should-have | — | — | — | untraced (lib/orphan.mjs) |
 | dashboard | Metrics Overview | must-have | draft | — | — | — |
 ```
+
+**Terse form:** Renders the milestone header and a count of capabilities found across charters, broken out by spec/plan/issue/code completeness state. Substitutes the per-capability table with the count plus `/adev:status --charter <name>` for detail on any one charter's capabilities.
 
 ### Mode: Workspace Aggregation (workspace root)
 
@@ -449,6 +489,8 @@ repo: frontend
 ```
 Advisory: running repo-scoped inside workspace at <workspace-path>. Run /adev:status at the workspace root for cross-repo aggregation.
 ```
+
+**Terse form:** Renders the workspace header and the number of registered repos, with one line per repo naming its context status (configured or not). Substitutes the per-repo charter/spec/capability counts and the Stale Charter References listing with `/adev:status --all` run from within that repo for full single-repo detail.
 
 ## Important Notes
 
