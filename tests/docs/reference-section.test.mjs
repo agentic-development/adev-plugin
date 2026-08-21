@@ -1,9 +1,25 @@
 import { describe, it } from 'node:test';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import assert from 'node:assert';
 
 const DOCS_DIR = join(import.meta.dirname, '..', '..', 'docs');
+const SKILLS_DIR = join(import.meta.dirname, '..', '..', 'skills');
+
+/**
+ * Every top-level skills/ subdirectory that carries a SKILL.md — the
+ * plugin's real, current skill set. Derived from the filesystem, not
+ * hardcoded (issue-zpkzl0): a hardcoded allowlist already fell one skill
+ * behind once, silently — 'deploy' was added, the docs happened to
+ * document it anyway, and the coverage test never noticed the mismatch
+ * because it was checking its own hardcoded list against itself.
+ */
+function currentSkillDirs() {
+  return readdirSync(SKILLS_DIR).filter((name) =>
+    statSync(join(SKILLS_DIR, name)).isDirectory() &&
+    existsSync(join(SKILLS_DIR, name, 'SKILL.md'))
+  );
+}
 
 describe('docs/skill-reference.md — Skill Reference', () => {
   it('should exist', () => {
@@ -29,15 +45,8 @@ describe('docs/skill-reference.md — Skill Reference', () => {
 
   it('should have an entry for every skill in the plugin', () => {
     const content = readFileSync(join(DOCS_DIR, 'skill-reference.md'), 'utf-8');
-    const expectedSkills = [
-      'init', 'sync', 'using-adev', 'work',
-      'brainstorm', 'specify', 'review-specs', 'prototype',
-      'plan', 'route', 'implement', 'write-test', 'build',
-      'validate', 'debug', 'eval', 'recover',
-      'issues', 'status', 'hygiene', 'retro', 'codehealth',
-      'repomap', 'reconcile', 'sample', 'document',
-      'research', 'learn', 'assess'
-    ];
+    const expectedSkills = currentSkillDirs();
+    assert.ok(expectedSkills.length >= 29, `expected a real skill corpus, found ${expectedSkills.length}`);
     for (const skill of expectedSkills) {
       assert.ok(
         content.includes(`adev:${skill}`) || content.includes(`/adev:${skill}`),
