@@ -30,6 +30,7 @@
     "test:evals": "node scripts/run-tests.mjs --evals",
     "test:all": "node scripts/run-tests.mjs --all",
     "test:list": "node scripts/run-tests.mjs --list",
+    "test:integration": "node scripts/run-tests.mjs --live-infra --test-name-pattern integration",
     "eval": "node tests/evals/repomap/run-eval.mjs",
     "eval:generate": "node tests/evals/repomap/run-eval.mjs --generate-only",
     "eval:skill-compression": "node tests/evals/skill-compression/run-eval.mjs"

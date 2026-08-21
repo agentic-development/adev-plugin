@@ -17,9 +17,15 @@
  * is derived from the tree rather than hardcoded, so adding a fixture project
  * does not require editing this list.
  *
- * Infra-dependent suites (docker, live API) are NOT excluded: they declare
- * `{ skip: <reason> }` at the suite level, so they report an honest, visible
- * skip rather than disappearing from the run.
+ * Infra-dependent suites fall into two buckets, both excluded from the
+ * default `files` set by directory/filename convention (never a runtime
+ * `{ skip: <reason> }` decided at test time — see `isEvalFile`/
+ * `isLiveInfraFile` below for why): `evals` (local machine state — docker,
+ * an API key, local session data; `npm run test:evals`) and `liveInfra`
+ * (real side effects on a live external account, e.g. creating a GitHub
+ * repo; `npm run test:integration`). Once explicitly selected via
+ * `--evals`/`--live-infra`, a suite whose infra is actually missing must
+ * fail hard naming the gap, not skip silently — see each file's own guard.
  *
  * Zero external dependencies (Constitution Principle 1).
  */
@@ -105,13 +111,38 @@ export function isEvalFile(file) {
   return file.startsWith(EVALS_DIR + '/');
 }
 
+const LIVE_INFRA_SUFFIX = '-live.test.mjs';
+
 /**
- * Partition every test file on disk into exactly three buckets.
+ * True when `file` requires REAL external infrastructure with genuine
+ * side effects on a live third-party service (as opposed to `evals`, which
+ * need local machine state like docker/API keys but stay within this
+ * machine). `tests/integration/bugfix-loop-commit-pr-live.test.mjs`
+ * (bugfix-loop-execution-hardening.spec.md BEH-4/BEH-7, Migration Path
+ * Step 3 Verification) is the first instance: it creates/deletes a real
+ * GitHub repo via an authenticated `gh` CLI. Same rationale as
+ * {@link isEvalFile} — default `npm test` must not depend on, or act on,
+ * machine/account state, and here that state is a live external account,
+ * not just a local docker container. Selected by the `-live.test.mjs`
+ * filename suffix, mirroring `evals`' directory-based convention with a
+ * suffix instead (a directory-wide `tests/integration/` exclusion would be
+ * wrong — most files there use only local temp git repos, no live infra).
  *
- * @returns {{ files: string[], evals: string[], excluded: string[] }}
+ * @param {string} file Absolute path to a test file.
+ * @returns {boolean}
+ */
+export function isLiveInfraFile(file) {
+  return file.endsWith(LIVE_INFRA_SUFFIX);
+}
+
+/**
+ * Partition every test file on disk into exactly four buckets.
+ *
+ * @returns {{ files: string[], evals: string[], excluded: string[], liveInfra: string[] }}
  *   `files` — the default `npm test` set.
  *   `evals` — opt-in harnesses (`npm run test:evals`).
  *   `excluded` — nested fixture projects' own suites; never run by us.
+ *   `liveInfra` — opt-in, real-external-side-effect suites (`npm run test:integration`).
  *   All repo-relative and sorted.
  */
 export function discoverTests() {
@@ -119,25 +150,44 @@ export function discoverTests() {
   const files = [];
   const evals = [];
   const excluded = [];
+  const liveInfra = [];
   for (const abs of all) {
     const rel = relative(REPO_ROOT, abs);
     if (isNestedProjectFile(abs)) excluded.push(rel);
+    // isEvalFile checked first: tests/evals/**/*-live.test.mjs (e.g.
+    // configurable-governance/tier3-live.test.mjs, "live-runner" as opposed
+    // to a stub dispatcher — nothing to do with a live EXTERNAL account)
+    // stays an eval, not a liveInfra suite. The `-live` suffix only means
+    // "real external side effects" outside tests/evals/.
     else if (isEvalFile(abs)) evals.push(rel);
+    else if (isLiveInfraFile(abs)) liveInfra.push(rel);
     else files.push(rel);
   }
   files.sort();
   evals.sort();
   excluded.sort();
-  return { files, evals, excluded };
+  liveInfra.sort();
+  return { files, evals, excluded, liveInfra };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const { files, evals, excluded } = discoverTests();
+  const { files, evals, excluded, liveInfra } = discoverTests();
   const argv = process.argv.slice(2);
 
   const wantEvals = argv.includes('--evals');
   const wantAll = argv.includes('--all');
-  const selected = wantEvals ? evals : wantAll ? [...files, ...evals].sort() : files;
+  const wantLiveInfra = argv.includes('--live-infra');
+  // `--all` deliberately does NOT include `liveInfra` — unlike evals (local
+  // machine state only), live-infra suites create real side effects on a
+  // live external account. Only the explicit `--live-infra` flag runs them,
+  // never a broad-sweep flag someone might reach for casually.
+  const selected = wantLiveInfra
+    ? liveInfra
+    : wantEvals
+      ? evals
+      : wantAll
+        ? [...files, ...evals].sort()
+        : files;
 
   if (argv.includes('--list')) {
     for (const f of selected) console.log(f);
@@ -146,18 +196,19 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 
   if (selected.length === 0) {
     console.error(
-      `run-tests: no test files selected${wantEvals ? ' (--evals)' : ''} — refusing to report success.`,
+      `run-tests: no test files selected${wantEvals ? ' (--evals)' : wantLiveInfra ? ' (--live-infra)' : ''} — refusing to report success.`,
     );
     process.exit(1);
   }
 
   console.error(
-    `run-tests: running ${selected.length} of ${files.length + evals.length + excluded.length} files ` +
+    `run-tests: running ${selected.length} of ${files.length + evals.length + excluded.length + liveInfra.length} files ` +
       `[default ${files.length} | evals ${evals.length} (npm run test:evals) | ` +
+      `live-infra ${liveInfra.length} (npm run test:integration) | ` +
       `nested fixture projects ${excluded.length} (never run)]`,
   );
 
-  const passthrough = argv.filter((a) => !['--list', '--evals', '--all'].includes(a));
+  const passthrough = argv.filter((a) => !['--list', '--evals', '--all', '--live-infra'].includes(a));
   // `selected`, not `files` — `--evals` and `--all` announce their bucket in
   // the banner above and then have to actually run it. Spawning `files` here
   // made both flags silently re-run the default set: `npm run test:evals`
