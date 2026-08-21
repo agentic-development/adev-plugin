@@ -3,7 +3,7 @@
 ---
 charter: eval-harness
 kind: behavioral
-status: review-passed
+status: implemented
 risk_level: medium
 milestone: v1
 revision: 9
@@ -11,7 +11,7 @@ charter-revision: 4
 created: 2026-08-20
 updated: 2026-08-20
 source-manifest:
-  sha: "40f24e5"
+  sha: "428bd5d"
   files:
     - cli/index.mjs
     - docs/cli-reference.md
@@ -46,7 +46,7 @@ source-manifest:
     - tests/skills/eval-default-rubric.test.mjs
     - tests/skills/eval-layer3-scoring-verb.test.mjs
     - tests/skills/eval-rubric-keyword-emission.test.mjs
-  computed-at: "2026-08-21T00:06:43.787Z"
+  computed-at: "2026-08-21T00:35:25.760Z"
 ---
 
 # Live Spec: Rubric scoring engine and adev eval score verb

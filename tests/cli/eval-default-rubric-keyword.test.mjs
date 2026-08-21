@@ -2,9 +2,9 @@
 //
 // BEH-11: `--rubric default` is a KEYWORD naming the plugin's shipped
 // skills/eval/default-rubric.yaml, not a path. It resolves against the plugin
-// root — derived from the verb module's own location on disk — and is never
-// containment-checked against the project root. Every other --rubric value
-// stays a path, contained per BEH-9.
+// root — derived from `getPluginRoot()` in lib/profiles/index.mjs, which reads
+// its own `__dirname` — and is never containment-checked against the project
+// root. Every other --rubric value stays a path, contained per BEH-9.
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -138,7 +138,7 @@ test("the verb module reads no environment variable at all", () => {
 test("SCORE_DEFAULT_RUBRIC_MISSING fires when the shipped rubric file is absent", () => {
   // A plugin copy carrying cli/ and lib/ but deliberately NOT
   // skills/eval/default-rubric.yaml. Spawning ITS entrypoint makes
-  // getPluginRoot() — which derives from the verb module's own location on
+  // getPluginRoot() — which derives from its own module's location on
   // disk — name a tree where the shipped rubric does not exist.
   const pluginCopy = createTempDir();
   const projectRoot = makeProjectRoot();
