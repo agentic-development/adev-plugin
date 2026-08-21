@@ -89,6 +89,36 @@ test('bugfix-loop SKILL.md documents BRANCH_STALE_BLOCKED halting before bug sel
   assert.match(md, /FRESHNESS_CHECK_DEGRADED/);
 });
 
+test('bugfix-loop SKILL.md documents --worktree-per-bug and --auto-commit arguments, default OFF (Plan-task 6)', () => {
+  const md = read('skills/bugfix-loop/SKILL.md');
+  assert.match(md, /--worktree-per-bug/);
+  assert.match(md, /--auto-commit/);
+  const worktreeIdx = md.indexOf('--worktree-per-bug');
+  const nearbyText = md.slice(worktreeIdx, worktreeIdx + 400);
+  assert.match(nearbyText, /default OFF/i);
+});
+
+test('bugfix-loop SKILL.md Step 3 calls adev worktree add --slug bugfix-<issue-id> --base <ref> before claim, when --worktree-per-bug is set (Plan-task 6)', () => {
+  const md = read('skills/bugfix-loop/SKILL.md');
+  const step3Idx = md.indexOf('## Step 3: Claim');
+  const step4Idx = md.indexOf('## Step 4: Attempt');
+  const step3Text = md.slice(step3Idx, step4Idx);
+  const addIdx = step3Text.indexOf('adev worktree add');
+  const claimIdx = step3Text.indexOf('adev issues claim <id>');
+  assert.ok(step3Idx !== -1 && addIdx !== -1 && claimIdx !== -1, 'both calls must appear within Step 3');
+  assert.ok(addIdx < claimIdx, 'worktree add must be documented within Step 3, before the claim call');
+  assert.match(step3Text, /--slug bugfix-<issue-id>/);
+  assert.match(step3Text, /--base <worktree_base_ref>|--base <ref>/);
+});
+
+test('bugfix-loop SKILL.md Step 3 documents ADD_FAILED handling: no attempt this turn, continue to Step 2 (Plan-task 6)', () => {
+  const md = read('skills/bugfix-loop/SKILL.md');
+  assert.match(md, /ADD_FAILED/);
+  const addFailedIdx = md.indexOf('ADD_FAILED');
+  const nearbyText = md.slice(addFailedIdx, addFailedIdx + 300);
+  assert.match(nearbyText, /Step 2/);
+});
+
 test('using-adev gateway table lists /adev:bugfix-loop', () => {
   const md = read('skills/using-adev/SKILL.md');
   assert.match(md, /\/adev:bugfix-loop/);

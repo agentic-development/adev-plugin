@@ -13,6 +13,8 @@ description: "Self-re-invoking, one-bug-per-turn loop that drains eligible P2/P3
 - `--max-turns <N>`: caps self-re-invocation turns. Default: 20 — a conservative bound preventing an unbounded run when neither flag is set.
 - `--github-sync`: enables the tracker-provider-bridge's inbound pull before each bug selection and outbound writeback after each attempt (`tracker-provider-bridge.spec.md`). Inbound sync runs once per turn in Step 0, before the status/budget guard; outbound writeback runs once per completed attempt in Step 4. Both degrade gracefully (never error the loop) when GitHub or `gh` is unreachable — see Failure Modes below.
 - `--resume [--resume-run-id <id>]` (internal): used only by this skill's own self-re-invocation, mirroring `/adev:build --resume`. Not intended for direct user invocation. `--resume-run-id` is always passed explicitly by the re-invocation call — the skill always knows its own `run_id` from the turn that just completed. A manual `--resume` without `--resume-run-id` falls back to `adev bugfix-loop latest` (the rare case of a manual `--resume` after a crash where the exact `run_id` wasn't captured).
+- `--worktree-per-bug`: default OFF. When set, each bug's claim, `/adev:debug --auto` attempt (Step 4), and any resulting commit happen inside a dedicated `adev`-managed worktree (`adev worktree add --slug bugfix-<issue-id> --base <ref>`) instead of the shared working tree — isolating each bug's diff from every other bug's in-flight changes (spec BEH-3).
+- `--auto-commit`: default OFF. When set (with or without `--worktree-per-bug`), a `FIXED` verdict triggers Step 4.5's commit/push/PR automation (spec BEH-4). Without either `--worktree-per-bug` or `--auto-commit`, Step 4.5 is skipped entirely and behavior is unchanged from before this capability existed.
 
 **Load Skill Extensions:**
 
@@ -84,6 +86,18 @@ adev issues next --type bug --max-priority P3 --json
 If the result's `bug` is `null`: the board is drained. Go to Step 5 with `--status complete`.
 
 ## Step 3: Claim (bounded 3-retry)
+
+- **`--worktree-per-bug` worktree setup (before claim):** when `--worktree-per-bug` is set, before claiming this bug, read `worktree_base_ref` from the Step 1 `guard --json` result (the previous bug's completed branch this run, or the loop's starting branch for the first bug), then:
+
+  ```bash
+  adev worktree add --slug bugfix-<issue-id> --base <worktree_base_ref>
+  ```
+
+  On success (exit 0, worktree info printed as JSON on stdout): the claim below, the `/adev:debug --auto` attempt (Step 4), and any resulting commit (Step 4.5) all happen inside that worktree's path (`<mainRoot>/.adev/worktrees/bugfix-<issue-id>`, on branch `adev/bugfix-<issue-id>`) — isolated from every other bug's in-flight changes (BEH-3).
+
+  On failure (non-zero exit; stderr carries an `ADD_FAILED: <message>` line — there is no JSON status field to branch on, unlike the freshness guard's `check-freshness`): this bug is not attempted this turn — no lease change, skip straight back to Step 2 for the next-eligible bug (mirrors the claim-retry path below; an `ADD_FAILED` bug does not consume one of the 3 claim-retry attempts, since no claim was ever attempted for it).
+
+  Without `--worktree-per-bug`, skip this bullet entirely — claim, attempt, and any commit all happen in the shared working tree, exactly as before this capability existed.
 
 ```bash
 adev issues claim <id> --owner bugfix-loop --branch "$(git branch --show-current)"
