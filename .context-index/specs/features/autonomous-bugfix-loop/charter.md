@@ -1,8 +1,8 @@
 ---
 status: approved
 kind: feature
-revision: 11
-updated: 2026-08-20
+revision: 12
+updated: 2026-08-21
 ---
 
 # Feature Charter: Autonomous Bugfix Loop
@@ -42,11 +42,22 @@ approval per Architecture Boundaries — approved during brainstorm.
   drains eligible bugs from the board, copying `/adev:build`'s proven continuation
   discipline (fresh context per turn, explicit re-invocation, no shortcut pressure).
   Includes a Load Skill Extensions block per constitution requirement for new skills.
-- **Eligibility filter (the safety boundary)** — a fixed heuristic (P2/P3 priority,
-  single-module blast radius) gating which bugs the loop may attempt; anything outside
-  it is parked, not attempted. This is load-bearing, not advisory — it is what stops
-  the loop from auto-closing governance bugs in machinery it depends on (review gate,
-  convergence detector, retry loop).
+- **Eligibility filter** — two independent gates on which bugs the loop may attempt;
+  anything excluded by either is parked, not attempted.
+  - **Priority band (operator-configurable)** — `--max-priority` selects the eligible
+    band, `P0`-`P4`, defaulting to `P3` (today's P2/P3 behavior unchanged when the
+    flag is omitted). As of revision 12 this is no longer a fixed P2/P3-only heuristic;
+    an operator may explicitly widen it to include `P0`/`P1` (see
+    `bug-selection-and-eligibility-rev-8-configurable-priority-floor.spec.md`, the
+    amendment that carries this change — the base spec's shipped P0/P1 rejection is
+    unchanged in place, per the amendment mechanism).
+  - **Single-module blast-radius / excluded-module list (fixed — the safety boundary)**
+    — unconditional and *not* configurable via `--max-priority` or any other flag. This
+    is what actually stops the loop from auto-closing governance bugs in machinery it
+    depends on (review gate, convergence detector, retry loop, and the loop skill
+    itself, via the reserved safety tags). Load-bearing, not advisory. Widening the
+    priority band does **not** widen this list — a `P0` bug tagged against one of the
+    reserved modules remains permanently excluded regardless of `--max-priority`.
 - **GitHub Issues bridge** — triage-gated bidirectional sync using GitHub's default
   label set: an issue becomes a local WorkItem only once both `bug` and `help wanted`
   are applied (manifest-overridable pair). Outbound writeback posts comments on
@@ -178,8 +189,8 @@ approval per Architecture Boundaries — approved during brainstorm.
 | ADEV-DEBUG Completion Token | `/adev:debug` emits `ADEV-DEBUG: FIXED \| PARKED \| UNREPRODUCIBLE` per `completion-tokens.spec.md` grammar | must-have | 1 | validated |
 | `--auto` Mode on `/adev:debug` | Non-interactive mode skipping the Phase 6 ADR-drafting prompt | must-have | 1 | validated |
 | Per-Issue Attempt Cap | Reused `loop-convergence.mjs` bounding, keyed per issue, persisted in `lifecycle-state/` | must-have | 1 | validated |
-| `/adev:bugfix-loop` Skill | Self-re-invoking, one-bug-per-turn loop draining eligible bugs; Load Skill Extensions block included | must-have | 1 | validated |
-| Eligibility Filter | Fixed priority/blast-radius heuristic (P2/P3, single-module) gating loop attempts — the safety boundary | must-have | 1 | validated |
+| `/adev:bugfix-loop` Skill | Self-re-invoking, one-bug-per-turn loop draining eligible bugs; Load Skill Extensions block included | must-have | 1 | validated (execution-hardening extension review-passed) |
+| Eligibility Filter | Operator-configurable priority band (`--max-priority`, P0-P4, default P3) + fixed single-module blast-radius/excluded-module list — the latter is the actual safety boundary, not configurable | must-have | 1 | implemented |
 | Tracker Provider Adapter Interface | `TrackerProviderAdapter` contract + registry; GitHub is the only shipped implementation | must-have | 2 | validated |
 | GitHub Triage-Gated Inbound Sync | Issues labeled `bug`+`help wanted` become local WorkItems, via the GitHub adapter | must-have | 2 | validated |
 | GitHub Outbound Comment Writeback | Claim/fix/park state posted as GitHub comments, via the GitHub adapter | must-have | 2 | validated |
@@ -189,7 +200,7 @@ approval per Architecture Boundaries — approved during brainstorm.
 
 | Capability | Reason | Target Milestone | Depends On |
 |-----------|--------|-------------|------------|
-| Route-Based Eligibility Scoring | Extends `/adev:route`'s blast-radius/novelty scoring to board issues, replacing the fixed P2/P3 heuristic filter | 3 | Eligibility Filter |
+| Route-Based Eligibility Scoring | Extends `/adev:route`'s blast-radius/novelty scoring to board issues, replacing the fixed single-module blast-radius heuristic | 3 | Eligibility Filter |
 | Auto-Retry Policy for Parked Bugs | Whether/when parked bugs re-enter the loop automatically vs. staying parked until a human clears them — deferred to avoid a slow-motion grinding failure | — | — |
 | GitHub Issue State Mirroring | Auto-close/reopen/relabel GitHub issues based on loop state, beyond comment writeback | — | GitHub Outbound Comment Writeback |
 | Cross-Harness Outer Drivers | Equivalents to Claude Code's `/goal` for opencode/codex/cursor/copilot hands-off runs | — | — |
@@ -223,7 +234,7 @@ approval per Architecture Boundaries — approved during brainstorm.
 
 | Attribute | Requirement |
 |-----------|-------------|
-| Safety | The eligibility filter (priority + blast radius) is the primary safety boundary; must default to parking anything outside P2/P3 single-module scope, and must never attempt issues touching its own dependency machinery |
+| Safety | The eligibility filter's single-module blast-radius/excluded-module list is the primary safety boundary — it must never attempt issues touching its own dependency machinery (review gate, convergence detector, retry loop, itself), regardless of priority. The priority band defaults to parking anything outside P2/P3 and is operator-configurable (`--max-priority`, P0-P4) as of revision 12; widening it is a deliberate operator choice bounded by, not a substitute for, the blast-radius floor |
 | Determinism | The loop never marks a bug fixed except via `/adev:debug`'s own deterministic quality-gate pass; no self-reported success |
 | Portability | The core loop mechanism (self-re-invocation) works in every harness adev supports; `/goal` is an optional Claude-Code-only enhancement, never a dependency |
 | Resilience | GitHub API failures (rate limit, outage) degrade to local-board-only operation; the loop must never block on bridge availability |
