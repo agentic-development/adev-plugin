@@ -4,7 +4,7 @@
 // Plan-task: 5
 import { test } from 'node:test';
 import assert from 'node:assert';
-import { spawnSync } from 'node:child_process';
+import { spawnSync, execSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, realpathSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
@@ -113,5 +113,112 @@ test('adev bugfix-loop latest returns null (exit 0, empty result) when no runs e
   const r = spawnSync('node', [CLI, 'bugfix-loop', 'latest', '--json'], { encoding: 'utf8', cwd: dir });
   assert.equal(r.status, 0);
   assert.deepEqual(JSON.parse(r.stdout), { run: null });
+  rmSync(dir, { recursive: true, force: true });
+});
+
+function initGitRepo(dir) {
+  execSync('git init -b main', { cwd: dir, stdio: 'ignore' });
+  execSync('git config user.email "test@test.com"', { cwd: dir, stdio: 'ignore' });
+  execSync('git config user.name "Test"', { cwd: dir, stdio: 'ignore' });
+  execSync('git config commit.gpgsign false', { cwd: dir, stdio: 'ignore' });
+}
+
+function commitFile(dir, filename, message) {
+  writeFileSync(join(dir, filename), `${message}\n`);
+  execSync(`git add ${filename} && git commit -m "${message}"`, { cwd: dir, stdio: 'ignore' });
+}
+
+// Builds a temp project (adev scaffold + real git repo) that is `behindCount`
+// commits behind a bare "origin", so check-freshness has a real ahead/behind
+// count to compute. Mirrors the bare-origin/seed/pusher fixture pattern from
+// tests/lib/bugfix-loop-freshness.test.mjs (Task 1).
+function makeFreshnessProject(behindCount, freshnessThresholds) {
+  const dir = makeTempProject();
+  if (freshnessThresholds) {
+    const lines = Object.entries(freshnessThresholds)
+      .map(([key, value]) => `      ${key}: ${value}`)
+      .join('\n');
+    writeFileSync(
+      join(dir, '.context-index', 'manifest.yaml'),
+      `project:\n  name: t\n  adev_version: "0.28.0"\ntasks:\n  bugfix_loop:\n    freshness:\n${lines}\n`,
+    );
+  }
+
+  const bareDir = mkdtempSync(join(tmpdir(), 'bfl-cli-fresh-bare-'));
+  const pusherDir = mkdtempSync(join(tmpdir(), 'bfl-cli-fresh-pusher-'));
+
+  execSync('git init --bare -b main', { cwd: bareDir, stdio: 'ignore' });
+
+  initGitRepo(dir);
+  commitFile(dir, 'README.md', 'init');
+  execSync(`git remote add origin ${bareDir}`, { cwd: dir, stdio: 'ignore' });
+  execSync('git push origin main', { cwd: dir, stdio: 'ignore' });
+  // check-freshness's computeFreshness() auto-resolves the default branch
+  // via refs/remotes/origin/HEAD (see resolveDefaultRemoteBranch); a plain
+  // `remote add` + `push` never sets that symbolic ref the way `git clone`
+  // does, so set it explicitly.
+  execSync('git remote set-head origin main', { cwd: dir, stdio: 'ignore' });
+
+  execSync(`git clone ${bareDir} ${pusherDir}`, { stdio: 'ignore' });
+  execSync('git config user.email "test@test.com"', { cwd: pusherDir, stdio: 'ignore' });
+  execSync('git config user.name "Test"', { cwd: pusherDir, stdio: 'ignore' });
+  execSync('git config commit.gpgsign false', { cwd: pusherDir, stdio: 'ignore' });
+  for (let i = 0; i < behindCount; i += 1) {
+    commitFile(pusherDir, `f${i}.txt`, `commit-${i}`);
+  }
+  execSync('git push origin main', { cwd: pusherDir, stdio: 'ignore' });
+
+  rmSync(pusherDir, { recursive: true, force: true });
+  return { dir, bareDir };
+}
+
+test('adev bugfix-loop check-freshness reports "warn" above soft threshold and "ok" below it', () => {
+  const { dir, bareDir } = makeFreshnessProject(1, { soft_threshold: 1 });
+  const r = spawnSync('node', [CLI, 'bugfix-loop', 'check-freshness', '--json'], { encoding: 'utf8', cwd: dir });
+  assert.equal(r.status, 0);
+  const out = JSON.parse(r.stdout);
+  assert.equal(out.status, 'warn');
+  assert.equal(out.behind, 1);
+  assert.equal(out.ahead, 0);
+  rmSync(dir, { recursive: true, force: true });
+  rmSync(bareDir, { recursive: true, force: true });
+});
+
+test('adev bugfix-loop check-freshness reports "blocked" above hard threshold (exit 0 either way)', () => {
+  const { dir, bareDir } = makeFreshnessProject(3, { soft_threshold: 1, hard_threshold: 2 });
+  const r = spawnSync('node', [CLI, 'bugfix-loop', 'check-freshness', '--json'], { encoding: 'utf8', cwd: dir });
+  assert.equal(r.status, 0);
+  const out = JSON.parse(r.stdout);
+  assert.equal(out.status, 'blocked');
+  assert.equal(out.behind, 3);
+  assert.equal(out.ahead, 0);
+  rmSync(dir, { recursive: true, force: true });
+  rmSync(bareDir, { recursive: true, force: true });
+});
+
+test('adev bugfix-loop check-freshness reports "ok" when no threshold is crossed and hard_threshold defaults to unset', () => {
+  const { dir, bareDir } = makeFreshnessProject(0, null);
+  const r = spawnSync('node', [CLI, 'bugfix-loop', 'check-freshness', '--json'], { encoding: 'utf8', cwd: dir });
+  assert.equal(r.status, 0);
+  const out = JSON.parse(r.stdout);
+  assert.equal(out.status, 'ok');
+  assert.equal(out.behind, 0);
+  assert.equal(out.ahead, 0);
+  rmSync(dir, { recursive: true, force: true });
+  rmSync(bareDir, { recursive: true, force: true });
+});
+
+test('adev bugfix-loop check-freshness degrades to a warning JSON when origin is unreachable, never exits non-zero', () => {
+  const dir = makeTempProject();
+  initGitRepo(dir);
+  commitFile(dir, 'README.md', 'init');
+  execSync('git remote add origin /nonexistent/path/that/does/not/exist', { cwd: dir, stdio: 'ignore' });
+
+  const r = spawnSync('node', [CLI, 'bugfix-loop', 'check-freshness', '--json'], { encoding: 'utf8', cwd: dir });
+  assert.equal(r.status, 0);
+  const out = JSON.parse(r.stdout);
+  assert.equal(out.status, 'degraded');
+  assert.equal(typeof out.reason, 'string');
+  assert.ok(out.reason.length > 0);
   rmSync(dir, { recursive: true, force: true });
 });
