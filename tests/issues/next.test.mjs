@@ -336,6 +336,26 @@ describe("adev issues next — CLI", () => {
     }
   });
 
+  it("--max-priority P0/P1 print the effective excluded-module set to stderr (BEH-12)", () => {
+    for (const p of ["P0", "P1"]) {
+      const result = runCli(["--max-priority", p, "--json"], emptyBoardDir);
+      assert.equal(result.status, 0);
+      assert.deepEqual(JSON.parse(result.stdout), { bug: null });
+      assert.match(result.stderr, /review-gate/);
+      assert.match(result.stderr, /convergence-detector/);
+      assert.match(result.stderr, /retry-loop/);
+      assert.match(result.stderr, /bugfix-loop/);
+    }
+  });
+
+  it("--max-priority P2/P3/P4 and the default do NOT print the excluded-module set (BEH-12 — only widened invocations get it)", () => {
+    for (const args of [["--type", "bug", "--json"], ["--max-priority", "P3", "--json"], ["--max-priority", "P4", "--json"]]) {
+      const result = runCli(args, emptyBoardDir);
+      assert.equal(result.status, 0);
+      assert.equal(result.stderr, "");
+    }
+  });
+
   it('returns {"bug": null} exit 0 when nothing eligible', () => {
     const result = runCli(["--type", "bug", "--json"], emptyBoardDir);
     assert.equal(result.status, 0);
