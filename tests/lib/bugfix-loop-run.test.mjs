@@ -12,7 +12,7 @@ import {
   createRun, readRunState, resolveRunStatePath, checkStatusGuard, checkBudget,
   appendAttempt, completeTurn, finishRun, tokenForStatus, findLatestRunState,
   recordSyncRetry, resetSyncRetry, recordStaleLinkNotice, hasStaleLinkNoticeFired,
-  resolveWorktreeBaseRef, recordWorktreeBranch,
+  resolveWorktreeBaseRef, recordWorktreeBranch, appendSummaryRow, formatSummaryTable,
 } from '../../lib/bugfix-loop-run.mjs';
 
 test('createRun writes a run-state file with all BugfixLoopRun fields, defaults intact', () => {
@@ -261,5 +261,51 @@ test('recordWorktreeBranch updates last_worktree_branch; resolveWorktreeBaseRef 
   const updated = readRunState(root, state.run_id);
   assert.equal(updated.last_worktree_branch, 'adev/bugfix-issue-1');
   assert.equal(resolveWorktreeBaseRef(updated), 'adev/bugfix-issue-1');
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('createRun initializes summary_rows to [] (Plan-task 12)', () => {
+  const root = mkdtempSync(join(tmpdir(), 'bfl-run-'));
+  const state = createRun(root, {});
+  assert.deepEqual(state.summary_rows, []);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('appendSummaryRow appends a row and formatSummaryTable renders it with the priority-bound column (Plan-task 12)', () => {
+  const root = mkdtempSync(join(tmpdir(), 'bfl-run-'));
+  const state = createRun(root, {});
+  appendSummaryRow(root, state.run_id, { issueId: 'issue-1', verdict: 'FIXED', filesTouched: 3, testsAdded: 1, priorityBound: 'P3', turn: 1 });
+  const updated = readRunState(root, state.run_id);
+  assert.equal(updated.summary_rows.length, 1);
+  assert.deepEqual(updated.summary_rows[0], { issueId: 'issue-1', verdict: 'FIXED', filesTouched: 3, testsAdded: 1, priorityBound: 'P3', turn: 1 });
+  const table = formatSummaryTable(updated);
+  assert.match(table, /issue-1/);
+  assert.match(table, /FIXED/);
+  assert.match(table, /P3/);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('appendSummaryRow accumulates multiple rows in order; formatSummaryTable renders one row per attempt (Plan-task 12)', () => {
+  const root = mkdtempSync(join(tmpdir(), 'bfl-run-'));
+  const state = createRun(root, {});
+  appendSummaryRow(root, state.run_id, { issueId: 'issue-1', verdict: 'FIXED', filesTouched: 3, testsAdded: 1, priorityBound: 'P3', turn: 1 });
+  appendSummaryRow(root, state.run_id, { issueId: 'issue-2', verdict: 'PARKED', filesTouched: 0, testsAdded: 0, priorityBound: 'P2', turn: 2 });
+  const updated = readRunState(root, state.run_id);
+  assert.equal(updated.summary_rows.length, 2);
+  const table = formatSummaryTable(updated);
+  const issue1Idx = table.indexOf('issue-1');
+  const issue2Idx = table.indexOf('issue-2');
+  assert.ok(issue1Idx !== -1 && issue2Idx !== -1 && issue1Idx < issue2Idx);
+  assert.match(table, /PARKED/);
+  assert.match(table, /P2/);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('formatSummaryTable on a run with no attempts yet renders a table with headers and no data rows (Plan-task 12)', () => {
+  const root = mkdtempSync(join(tmpdir(), 'bfl-run-'));
+  const state = createRun(root, {});
+  const table = formatSummaryTable(state);
+  assert.match(table, /issue/i);
+  assert.match(table, /verdict/i);
   rmSync(root, { recursive: true, force: true });
 });
