@@ -1,5 +1,3 @@
-# Cross-Cutting Spec: Lifecycle Gate
-
 ---
 mode: cross-cutting
 status: validated
@@ -26,6 +24,8 @@ source-manifest:
   computed-at: "2026-08-13T00:36:08.194Z"
 drift_detected: true
 ---
+
+# Cross-Cutting Spec: Lifecycle Gate
 
 ## Behavioral Contract
 

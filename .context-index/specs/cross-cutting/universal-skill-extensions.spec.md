@@ -1,6 +1,5 @@
-<!-- partial_schema: spec@1 -->
-
 ---
+partial_schema: spec@1
 mode: cross-cutting
 kind: behavioral
 status: validated
