@@ -122,7 +122,7 @@ If no specialist is associated with the file, score based on general constitutio
 
 #### Present Results
 
-Rank candidates by total score. Present the top 10 (or fewer if less exist) to the user. **Persona adaptation:** The format below is the default for the Developer persona. If a different persona is active, adapt the display to its output rules.
+Rank candidates by total score. Present the top 10 (or fewer if less exist) to the user. **Persona adaptation:** The format below is the default for the Developer persona; adapt the display to the active persona's output rules. Verbosity is resolved separately across `templates/verbosity/terse.md`, `templates/verbosity/normal.md`, and `templates/verbosity/deep.md`: when the resolved verbosity is terse and this section carries a `**Terse form:**` block, that block is the section's declared rendering at terse verbosity. See `skills/status/SKILL.md:12` for the full terse-form marker grammar and table-substitution recipe.
 
 ```
 ## Sample Candidates

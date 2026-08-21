@@ -194,7 +194,7 @@ When `--list` is provided:
 
 1. Read all heuristics using the store API.
 2. If `--module` is provided, filter to that scope.
-3. Display as a table. **Persona adaptation:** If a different persona is active, adapt the display to its output rules.
+3. Display as a table. **Persona adaptation:** Adapt the display to the active persona's output rules. Verbosity is resolved separately across `templates/verbosity/terse.md`, `templates/verbosity/normal.md`, and `templates/verbosity/deep.md`: when the resolved verbosity is terse and this section carries a `**Terse form:**` block, that block is the section's declared rendering at terse verbosity. See `skills/status/SKILL.md:12` for the full terse-form marker grammar and table-substitution recipe.
 
 ```
 Heuristics (scope: hooks)

@@ -9,7 +9,11 @@ Query and display the current status of adev lifecycle artifacts. This skill is 
 
 **Announcement:** "I'm using the adev:status skill to query project status."
 
-**Persona adaptation:** All output formats below are defaults for the Developer persona. If a different persona is active, adapt the chat output to its output rules (e.g., Product persona: show counts and status summaries only, omit file paths and technical detail).
+**Persona adaptation:** All output formats below are defaults for the Developer persona; adapt the chat output to the active persona's output rules. Verbosity is resolved separately across `templates/verbosity/terse.md`, `templates/verbosity/normal.md`, and `templates/verbosity/deep.md`: when the resolved verbosity is terse and a section below carries a `**Terse form:**` block, that block is the section's declared rendering at terse verbosity.
+
+> **Terse-form convention.** The marker `**Terse form:**` (used verbatim, never rephrased) is the last block of a governed section: its content runs from the marker line to the end of that section. A section's extent is its heading line through the line before the next heading of equal or shallower depth (depth = leading `#` count), or end of file; heading detection is fence-aware and frontmatter-aware, so a `#`-prefixed line inside a fenced code block or the leading YAML frontmatter is not a heading. Exactly one marker per governed section.
+>
+> **Table substitution inside a terse form (BEH-3).** A terse form contains at most one table of the section's own data. Every further table is replaced by a count plus a pointer: the repo-relative path of the artifact already holding the data, or — when no artifact holds it — the narrower invocation of the same skill that renders detail for one item. When neither exists, state the count alone with nothing named.
 
 ## Arguments
 

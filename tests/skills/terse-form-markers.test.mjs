@@ -56,8 +56,8 @@ const FENCE_RE = /^(\s*)(`{3,}|~{3,})/;
  * Extent = heading line .. line before the next heading of equal-or-shallower
  * depth, else EOF. Returns EVERY heading in the document (governed or not) —
  * governedSections() below filters the result. Keyed by (file, startLine),
- * never by heading text, so two sections that share heading text (status
- * L126 and L378) remain distinct entries.
+ * never by heading text, so two sections that share heading text (status's
+ * two `--milestone` Mode sections) remain distinct entries.
  */
 function scanSections(text, file) {
   const lines = text.split("\n");
@@ -439,29 +439,51 @@ test("BEH-8: no terse-form block uses a sentence/paragraph count as its only con
 });
 
 // ---------------------------------------------------------------------------
-// status L126 and L378 are two distinct governed sections
+// status's two identically-titled Mode sections are two distinct governed
+// sections
 // ---------------------------------------------------------------------------
+//
+// Derived, never hardcoded (plan-task 2 correction, per Task 1's "derive,
+// never hardcode" mandate): status/SKILL.md has two
+// "### Mode: `--milestone <name>`" sections. An earlier revision of this
+// guard pinned their absolute line numbers, which churns every time a later
+// task in this plan adds content earlier in the file (task 3 alone adds ten
+// **Terse form:** blocks to this file). This version derives the duplicate
+// pair by grouping governed sections on heading text at scan time, so it is
+// insensitive to line-number drift while still catching a text-keyed map
+// that conflates the two sections.
 
-test("status L126 and L378 are two distinct governed sections", () => {
+test("status's two identically-titled Mode sections are two distinct governed sections", () => {
   const file = skillPath("canonical", "status");
   const text = readFileSync(file, "utf8");
   const sections = scanSections(text, file);
   const governed = governedSections(file, sections);
 
-  const s126 = governed.find((s) => s.startLine === 126);
-  const s378 = governed.find((s) => s.startLine === 378);
+  const byHeading = new Map();
+  for (const section of governed) {
+    if (!byHeading.has(section.heading)) byHeading.set(section.heading, []);
+    byHeading.get(section.heading).push(section);
+  }
+  const duplicated = [...byHeading.entries()].filter(([, group]) => group.length > 1);
 
-  assert.ok(s126, "expected a governed section starting at status/SKILL.md L126");
-  assert.ok(s378, "expected a governed section starting at status/SKILL.md L378");
   assert.equal(
-    s126.heading,
-    s378.heading,
-    "L126 and L378 should share identical heading text — that identical-text collision is exactly what this regression guards against a text-keyed map",
+    duplicated.length,
+    1,
+    `expected exactly one heading text to occur more than once among status's governed sections, found ${duplicated.length}`,
   );
-  assert.notEqual(s126.startLine, s378.startLine);
+
+  const [heading, group] = duplicated[0];
+  assert.equal(
+    group.length,
+    2,
+    `expected "${heading}" to occur exactly twice among status's governed sections, found ${group.length}`,
+  );
+
+  const [a, b] = group.slice().sort((x, y) => x.startLine - y.startLine);
+  assert.notEqual(a.startLine, b.startLine);
   assert.ok(
-    s126.endLine < s378.startLine,
-    `L126 section (ends L${s126.endLine}) must not swallow the L378 section`,
+    a.endLine < b.startLine,
+    `earlier "${heading}" section (ends L${a.endLine}) must not swallow the later one (starts L${b.startLine})`,
   );
 });
 

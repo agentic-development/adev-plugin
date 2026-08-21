@@ -208,7 +208,7 @@ flagged by `lib/plan-immutability.mjs` as `PLAN_MUTATED_WITHOUT_SIDECAR`.
 
 ## Step 5: Report to User
 
-Present a summary table of all routed tasks. **Persona adaptation:** The format below is the default for the Developer persona. If a different persona is active, adapt the chat summary to its output rules (e.g., Product persona: show route distribution only, omit score columns and dimension breakdowns).
+Present a summary table of all routed tasks. **Persona adaptation:** The format below is the default for the Developer persona; adapt the chat summary to the active persona's output rules. Verbosity is resolved separately across `templates/verbosity/terse.md`, `templates/verbosity/normal.md`, and `templates/verbosity/deep.md`: when the resolved verbosity is terse and this section carries a `**Terse form:**` block, that block is the section's declared rendering at terse verbosity. See `skills/status/SKILL.md:12` for the full terse-form marker grammar and table-substitution recipe.
 
 ```
 Task Routing Summary for <plan file>
