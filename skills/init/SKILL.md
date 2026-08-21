@@ -133,8 +133,8 @@ After saving the stack, prompt for model tiers:
   Defaults (from model-routing spec):
 
     fast:      claude-haiku-4-5-20251001  # diffs, pattern matching, gaming detection
-    capable:   claude-sonnet-4-6          # code generation, test authoring
-    reasoning: claude-opus-4-7            # architecture review, cross-cutting analysis
+    capable:   claude-sonnet-5            # code generation, test authoring
+    reasoning: claude-opus-5              # architecture review, cross-cutting analysis
 
   → Accept defaults / enter custom model IDs / skip
 ```
@@ -927,9 +927,9 @@ Would modify:
 Run /adev:init to proceed.
 ```
 
-## Persona Configuration (optional)
+## Persona and Verbosity Configuration (optional)
 
-After all context files are created, ask the user if they want a project-specific persona override:
+After all context files are created, ask the user if they want project-specific output overrides. Both axes are asked together — `verbosity` has no other interactive adoption surface in adev, so skipping it here leaves it at its per-persona default forever.
 
 ```
 Would you like to set a project-specific output persona? (product/developer/architect/skip)
@@ -937,14 +937,27 @@ This creates .context-index/user-config with your persona preference for this pr
 Your global default will be used if you skip.
 ```
 
-If the user selects a persona (`product`, `developer`, or `architect`), write `.context-index/user-config`:
+If the user selects a persona (`product`, `developer`, or `architect`), follow up with the verbosity question:
+
+```
+How much detail should adev put in chat? (terse/normal/deep/default)
+  terse   — 1-3 sentence responses; artifacts summarized in one line and linked
+  normal  — standard depth
+  deep    — full reasoning and intermediate steps
+  default — use the persona's default (product=terse, developer=normal, architect=normal)
+```
+
+Then write `.context-index/user-config`:
 
 ```
 # Project-specific adev user config
 persona=<selected>
+verbosity=<selected>
 ```
 
-If the user enters `skip` or presses enter without a value, do not create the file.
+Omit the `verbosity=` line entirely if the user chose `default` — an absent key resolves to the per-persona default, whereas an invalid value is discarded with a warning.
+
+If the user enters `skip` or presses enter without a value at the persona prompt, do not create the file and do not ask about verbosity.
 
 Ensure `.context-index/user-config` is listed in the project's `.gitignore` (the CLI already handles this during installation, but verify it is present).
 
