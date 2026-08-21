@@ -387,3 +387,66 @@ describe("session-capture hook — context-read-tracker fold-in (.context-prefli
     assert.ok(stdout.includes("{}"));
   });
 });
+
+// ── flag anchored to the real project root, not a bare relative cwd ────────
+// (adev-plugin-2bn6)
+//
+// A subagent that `cd`'d into `.context-index/specs/features/x/` mid-task
+// and then touched a .context-index/* file left the PostToolUse hook
+// running with THAT cwd. The old `mkdir -p .context-index && touch
+// .context-index/.context-preflight-ok` (bare relative path) created a
+// bogus SECOND .context-index/ tree nested inside the spec directory —
+// observed live as `.context-index/specs/features/implementation/
+// .context-index/.context-preflight-ok` — instead of touching the real
+// root's flag. `find_context_index()` (already sourced from
+// _parse-stdin.sh, already used by session-start.sh for the same flag)
+// walks up from cwd to the nearest directory that already contains
+// `.context-index/` and anchors both mkdir and touch there.
+describe("session-capture hook — .context-preflight-ok is anchored to the resolved context root (adev-plugin-2bn6)", () => {
+  let projectRoot;
+
+  beforeEach(() => {
+    projectRoot = createTempDir();
+  });
+
+  afterEach(() => {
+    cleanupTempDir(projectRoot);
+  });
+
+  it("anchors the flag to the real root when cwd is a nested subdirectory that already contains .context-index/", () => {
+    // Reproduce the live failure exactly: a real .context-index/ tree at
+    // the project root, and a hook cwd two levels inside a spec directory
+    // under it — mirroring the observed
+    // .context-index/specs/features/implementation/ nesting.
+    writeFixture(projectRoot, ".context-index/constitution.md", "# Constitution\n");
+    const nestedCwd = join(projectRoot, ".context-index", "specs", "features", "implementation");
+    writeFixture(projectRoot, ".context-index/specs/features/implementation/.gitkeep", "");
+
+    const { exitCode } = runHook("session-capture.sh", {
+      env: { CLAUDE_TOOL_INPUT_file_path: ".context-index/specs/features/implementation/foo.spec.md" },
+      cwd: nestedCwd,
+    });
+
+    assert.equal(exitCode, 0);
+    assert.ok(
+      existsSync(join(projectRoot, ".context-index/.context-preflight-ok")),
+      "the flag must land at the real project root",
+    );
+    assert.ok(
+      !existsSync(join(nestedCwd, ".context-index/.context-preflight-ok")),
+      "no second, bogus .context-index/ tree must be created inside the nested cwd",
+    );
+  });
+
+  it("still creates .context-index/ at cwd when no .context-index/ exists anywhere walkable (fresh bootstrap)", () => {
+    // find_context_index() cannot find what does not exist yet — cwd is the
+    // only information available on a brand-new project, matching today's
+    // behavior for this specific case.
+    const { exitCode } = runHook("session-capture.sh", {
+      env: { CLAUDE_TOOL_INPUT_file_path: ".context-index/constitution.md" },
+      cwd: projectRoot,
+    });
+    assert.equal(exitCode, 0);
+    assert.ok(existsSync(join(projectRoot, ".context-index/.context-preflight-ok")));
+  });
+});
