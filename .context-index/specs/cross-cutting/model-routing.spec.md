@@ -1,9 +1,3 @@
-# Live Spec: Model Routing
-
-<!-- Cross-cutting spec for provider-agnostic model tier selection.
-     Applies to all skills that dispatch subagents.
-     This defines a behavioral contract for how skills select models — never a specific model name. -->
-
 ---
 mode: cross-cutting
 status: validated
@@ -30,6 +24,12 @@ source-manifest:
   computed-at: "2025-04-25T00:00:00.000Z"
 drift_detected: true
 ---
+
+# Live Spec: Model Routing
+
+<!-- Cross-cutting spec for provider-agnostic model tier selection.
+     Applies to all skills that dispatch subagents.
+     This defines a behavioral contract for how skills select models — never a specific model name. -->
 
 ## Behavioral Contract
 

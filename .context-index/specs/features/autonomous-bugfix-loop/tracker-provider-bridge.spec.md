@@ -1,6 +1,5 @@
-<!-- partial_schema: spec@1 -->
-
 ---
+partial_schema: spec@1
 charter: autonomous-bugfix-loop
 kind: integration
 status: validated

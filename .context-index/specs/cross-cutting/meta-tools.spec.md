@@ -1,9 +1,3 @@
-# Cross-Cutting Spec: Meta-Tools
-
-<!-- Cross-cutting spec for deterministic helper functions that replace multi-turn
-     Read/Grep/Glob sequences with single Bash calls. Reduces subagent turn count
-     by collapsing file-scanning operations into Node.js scripts. -->
-
 ---
 mode: cross-cutting
 status: validated
@@ -24,6 +18,12 @@ source-manifest:
     - tests/lib/meta-tools.test.mjs
 drift_detected: true
 ---
+
+# Cross-Cutting Spec: Meta-Tools
+
+<!-- Cross-cutting spec for deterministic helper functions that replace multi-turn
+     Read/Grep/Glob sequences with single Bash calls. Reduces subagent turn count
+     by collapsing file-scanning operations into Node.js scripts. -->
 
 ## Behavioral Contract
 
