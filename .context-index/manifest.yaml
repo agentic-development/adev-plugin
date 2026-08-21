@@ -152,14 +152,6 @@ completion:
 # Task Management
 # ============================================================================
 
-# Build pipeline. `max_review_retries` bounds the BLOCK -> revise loop in
-# `/adev:build --full`. Raised from the default 2 on 2026-08-15: high-risk
-# specs reviewed at full tier converge monotonically but need more than two
-# rounds, and the loop was halting at BUDGET_EXHAUSTED mid-convergence
-# (heuristics Phase 3 went 6 -> 2 -> 1 blockers across three rounds).
-build:
-  max_review_retries: 9
-
 # implement:
 #   batch_mode: on          # on | off — default on (Requires Human Approval; see
 #                            # batched-task-dispatch.spec.md System Constitution Reference)
@@ -399,6 +391,16 @@ hygiene:
       # update + its own revert, not content drift.
       - "452f1de4dc0a005d68988e83a9d4a01d1934bd61"
       - "87a47b3ee0fd6904cbc453db188879752c161064"
+      # eval-harness/scoring-engine: /adev:validate FAILed the first build
+      # round on a reproduced install-shape defect (the verb refused its own
+      # shipped default rubric outside this repo). Spec rev 5 -> 9 added
+      # BEH-11/BEH-12, so the plan was regenerated for the 6-task delta and
+      # the artifact-landing commit recorded it. Same shape as the
+      # copilot-adapter entry above: documented spec-rev refinement during
+      # /adev:build, not silent drift. Splitting the plan was rejected -- the
+      # plan_task events carry the plan path, so a rename would leave t1..t6
+      # pointing at a file holding the other 11 tasks.
+      - "d7443afb"
     # Rewrite-durable form of the exemptions above, in the same order. Each
     # was derived from its `exempt_commits` sibling, so the rationale comments
     # there remain the documentation of record. These keep matching after the
@@ -436,6 +438,10 @@ hygiene:
       # one had no `exempt_commits` predecessor; every other entry here is a
       # rewrite-durable restatement of a previously approved decision.
       - "d31e2d4433fd3ab0b22a73870e1a1df07f23e561"
+      # eval-harness/scoring-engine re-plan after spec rev 5 -> 9 (see the
+      # exempt_commits rationale above). Rewrite-durable form -- this branch
+      # merges to a protected main, so the SHA will not survive.
+      - "da2d2cf8f31c82cba4a10c6886e68f78d5130b4d"
 
 domain: software
 
@@ -454,4 +460,15 @@ build:
   # validated the lower cap at -22% cost with "3rd iteration added no value".
   # Raising it bought one additional regression and no convergence. Fix the stall
   # guards before touching the budget again.
+  #
+  # Rejected alternative (adev-plugin-gkfv.2): a separate same-day edit raised
+  # this to 9, reasoning that high-risk specs at full tier converge
+  # monotonically but need more than two rounds, and the loop was halting at
+  # BUDGET_EXHAUSTED mid-convergence (heuristics Phase 3 went 6 -> 2 -> 1
+  # blockers across three rounds). That edit landed in a second, duplicate
+  # top-level `build:` block earlier in this file and was silently dead —
+  # YAML's last-wins semantics meant this block always won. The 9-value
+  # reasoning may still be worth revisiting if BUDGET_EXHAUSTED-mid-convergence
+  # recurs, but do so deliberately, in this one block, not by re-adding a
+  # second `build:` section.
   max_review_retries: 2

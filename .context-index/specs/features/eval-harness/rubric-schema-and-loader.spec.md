@@ -1,6 +1,5 @@
-<!-- partial_schema: spec@1 -->
-
 ---
+partial_schema: spec@1
 charter: eval-harness
 kind: behavioral
 status: validated

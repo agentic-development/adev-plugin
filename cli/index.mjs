@@ -1955,6 +1955,7 @@ const VERB_REGISTRY = new Map([
   ["diagnose",        () => import("../lib/cli/diagnose.mjs")],
   ["heuristics",      () => import("../lib/cli/heuristics.mjs")],
   ["report",          () => import("../lib/cli/report.mjs")],
+  ["manifest",        () => import("../lib/cli/manifest.mjs")],
   ["source-manifest", () => import("../lib/cli/source-manifest.mjs")],
   ["domain",          () => import("../lib/cli/domain.mjs")],
   // Registered so /adev:init can run the picker. The module always exported a
@@ -1967,6 +1968,8 @@ const VERB_REGISTRY = new Map([
   ["state",           () => import("../lib/cli/state.mjs")],
   ["execution-state", () => import("../lib/cli/execution-state.mjs")],
   ["build-state",     () => import("../lib/cli/build-state.mjs")],
+  ["bugfix-loop",     () => import("../lib/cli/bugfix-loop.mjs")],
+  ["tracker-sync",    () => import("../lib/cli/tracker-sync.mjs")],
   ["preflight",       () => import("../lib/cli/preflight.mjs")],
   ["prototype",       () => import("../lib/cli/prototype.mjs")],
   ["artifact",        () => import("../lib/cli/artifact.mjs")],

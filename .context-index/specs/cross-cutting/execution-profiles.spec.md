@@ -1,5 +1,3 @@
-# Cross-Cutting Spec: Execution Profiles
-
 ---
 status: validated
 risk_level: medium
@@ -9,6 +7,8 @@ updated: 2026-05-04
 depends-on:
   - .context-index/adrs/0004-execution-profiles.md
 ---
+
+# Cross-Cutting Spec: Execution Profiles
 
 ## Behavioral Contract
 

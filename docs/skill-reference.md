@@ -25,6 +25,7 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 | `/adev:build` | Build | End-to-end pipeline chaining review through validate | Spec exists |
 | `/adev:validate` | Validation | Post-implementation validation with 13 ordered checks | Implementation complete |
 | `/adev:debug` | Validation | Context-aware systematic debugging | Bug or test failure |
+| `/adev:bugfix-loop` | Validation | Self-re-invoking loop draining eligible bugs unattended via `/adev:debug --auto` | Task backend configured |
 | `/adev:eval` | Validation | Graduated evaluation harness scoring 0-100 | Implementation complete |
 | `/adev:recover` | Validation | Structured diagnosis when agents get stuck | Active implementation |
 | `/adev:deploy` | Operations | Run a structured deployment pipeline from deploy.yaml | deploy.yaml exists |
@@ -323,6 +324,9 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 - `--fresh`: with `--parallel`, on a re-run collision auto-remove the retained worktree and continue instead of aborting with `RERUN_COLLISION`. No effect without `--parallel`.
 - `--no-batch`: force solo dispatch for every task, restoring today's strict one-subagent-per-task behavior. Rejected with `CONFLICTING_BATCH_FLAGS` when combined with `--parallel`.
 - `--max-batch <n>`: per-run override of `implement.max_batch_size` (default 4). `1` is equivalent to `--no-batch`.
+- `--tier full`: absolute — forces `full` review depth for every task in the run, no exceptions.
+- `--tier quick`: not absolute — authorizes evaluating the quick-grant predicate for this run even when the policy baseline is `full`; each task still must independently satisfy every quick-grant condition to actually resolve `quick`. A task failing any condition resolves `full`. Still subject to the floor pass.
+- `--review-cycles <n>`: per-run override of `implement.max_review_cycles`. Must be an integer `>= 1`; `0` is rejected with `INVALID_REVIEW_CYCLES`. Precedence: `--review-cycles` (highest) → `implement.max_review_cycles` (manifest) → `3` (default).
 - `--no-infra`: skip infrastructure preflight checks (user-only)
 - `--verbose`: enable step-by-step narration for debugging
 
@@ -439,6 +443,8 @@ Batching and `--parallel` operate at different scopes: batching groups cohesive,
 - No arguments: interactive (asks for symptoms)
 - `--error <message>`: the error message or symptom description
 - `--spec <path>`: scope debugging to a specific spec's domain
+- `--issue <id>`: the board issue tracking this bug — claimed in Phase 1.6 so a second agent cannot fix it in parallel. Claims/releases ownership using `ADEV_ISSUE_OWNER` when set in the environment, falling back to `"${USER}/local"` otherwise. `/adev:bugfix-loop` sets `ADEV_ISSUE_OWNER=bugfix-loop` for its own invocations so its own claim and `/adev:debug`'s internal re-claim/release resolve to the same owner.
+- `--auto`: non-interactive mode — no step blocks waiting for user input
 - `--apply`: apply the fix after diagnosis (prompts for confirmation)
 - `--no-infra`: skip infrastructure preflight checks (user-only)
 
@@ -450,6 +456,32 @@ Batching and `--parallel` operate at different scopes: batching groups cohesive,
 ```
 
 **Expected Output:** A structured diagnosis with root cause analysis, fix recommendation, and optionally the applied fix with updated tests.
+
+**Related Guides:** [Validate & Debug](validate-debug.md)
+
+---
+
+### `/adev:bugfix-loop`
+
+**Purpose:** Self-re-invoking, one-bug-per-turn loop that drains eligible P2/P3 bugs from the issue board unattended, using `/adev:debug --auto` for each attempt. Each turn selects the next eligible bug (`adev issues next`), claims it, attempts a fix, records the outcome, and — unless the run is terminal — immediately self-re-invokes for the next turn via the Skill tool, so a single top-level invocation can drain many bugs across many turns without manual re-entry.
+
+**Prerequisites:** `tasks.backend` configured (JSON or beads) and reachable.
+
+**Arguments:**
+- `--max-bugs <N>`: caps bugs attempted across the whole run, across all self-re-invoked turns. Default: unbounded — the loop drains until no eligible bug remains or `--max-turns` is hit.
+- `--max-turns <N>`: caps self-re-invocation turns. Default: 20, to keep an unattended run bounded when neither flag is set.
+- `--github-sync`: enables the tracker-provider bridge's inbound pull before bug selection and outbound comment writeback after each attempt. Degrades gracefully to local-board-only operation if GitHub/`gh` is unreachable — never halts the run.
+- `--resume [--resume-run-id <id>]`: internal, used only by the skill's own self-re-invocation between turns. Not intended for direct invocation.
+
+**Eligibility filter:** only bugs with `priority` P2/P3, a single `affected_modules` entry that isn't empty or on the excluded-module safety list (`review-gate`, `convergence-detector`, `retry-loop`, `bugfix-loop`, plus any manifest-configured additions), and an `AttemptRecord.last_verdict` that isn't `NO_PROGRESS`/`REGRESSED`/`BUDGET_EXHAUSTED` are selected. P0/P1 bugs are never selectable by this loop, regardless of flags — tag a bug's `affected_modules` via `adev issues set-modules <id> <slug>` to make it loop-eligible.
+
+**Example:**
+```
+/adev:bugfix-loop --max-bugs 5
+/adev:bugfix-loop --max-turns 10 --github-sync
+```
+
+**Expected Output:** One line per turn's outcome (bug attempted, verdict) as the loop progresses across self-re-invocations, ending with the final line `ADEV-BUGFIXLOOP: COMPLETE | BUDGET_EXHAUSTED | BLOCKED` — `COMPLETE` means the board was drained with no eligible bugs remaining, `BUDGET_EXHAUSTED` means `--max-bugs`/`--max-turns` was hit while eligible bugs remain, `BLOCKED` means a structural failure (e.g. an unreachable issue board) halted the run before any bug was attempted.
 
 **Related Guides:** [Validate & Debug](validate-debug.md)
 

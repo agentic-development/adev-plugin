@@ -60,7 +60,7 @@ Use when the spec already exists with a valid `.review.md` (PASS or PASS_WITH_NO
 
 Use when starting from scratch or when the spec needs authoring. Step 0 dispatches `/adev:specify` only when no spec file exists AND the lifecycle log has no completed `specify` event for this spec; otherwise Step 0 is recorded as `skipped` (the prior session's spec work is authoritative — `review-specs` and downstream gates catch any drift). Step 1 runs `/adev:review-specs`; on BLOCK with `build.max_review_retries > 0`, the build dispatches the BLOCK→revise auto-retry loop documented under "Blocker handling" below — `/adev:specify --revise <spec>` re-authors the spec, `/adev:review-specs` re-evaluates, and the convergence detector (`lib/loop-convergence.mjs`) decides PASS / CONTINUE / NO_PROGRESS / REGRESSED / BUDGET_EXHAUSTED. With `--require-human-final-pass`, a PASS verdict halts the build at `PASS_PENDING_HUMAN` for operator acknowledgement. Includes the validate→implement retry loop if `build.max_retries > 0`.
 
-**Model:** The build orchestrator pins `claude-sonnet-4-6` via the skill's frontmatter `model:` field. The orchestrator's work is mechanical (gate-check, dispatch, record), and the 2026-05-16 validation-charter retro found Opus on the orchestrator was ~5× the Sonnet cost on cache reads — the dominant cost class. Per-step worker skills still resolve their own tier from `platform-context.yaml:model_tiers` (see `.context-index/specs/cross-cutting/model-routing.spec.md`). This is a temporary hardcode; the config-driven binding via `/adev:sync` is tracked by issue-538.
+**Model:** The build orchestrator carries no `model:` frontmatter pin — it runs on the session's active model (the hardcode was removed in `42294cf7`/`170f8837`; no spec tracks that key). Its own work is mechanical (gate-check, dispatch, record); a cheaper model there was floated in the 2026-05-16 validation-charter retro (Opus was ~5x Sonnet's cost on cache reads) but isn't enforced. Worker skills resolve their own tier from `platform-context.yaml:model_tiers` (see `.context-index/specs/cross-cutting/model-routing.spec.md`). Config-driven binding via `/adev:sync` is tracked by `issue-538`.
 
 ---
 
@@ -532,6 +532,8 @@ This is the longest-running step. The implement skill manages TDD loops, special
 **After subagent returns:**
 - If verdict indicates quality gate or integration gate failure: run `recordStepResult()` with `status: "failed"` and the failure details (including tier-specific context: tier name, failing command, severity). Report the failures to the user and stop the build for this spec.
 - Otherwise: run the `recordStepResult()` call from Dispatch Loop step 4 with `stepName="implement"`. Then follow Dispatch Loop step 5 (re-invoke or stop). Do NOT stop here.
+
+**Rigor tier propagation:** Read `skills/build/step4-tier-propagation.md` for the `--tier` handoff to `/adev:implement`.
 
 ### Step 5: Validate
 

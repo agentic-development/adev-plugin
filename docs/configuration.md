@@ -360,7 +360,7 @@ lifecycle state, hygiene reports, atomic-write temps, partial-artifact
 writes, the prototype workspace, and similar. The canonical path list
 lives in `lib/gitignore-paths.mjs` and is the single source of truth: the
 installer renders it verbatim, and a dogfood parity test
-(`tests/lib/gitignore-paths-dogfood.test.mjs`) pins this repo's own
+(`tests/lib/gitignore-installer.test.mjs`) pins this repo's own
 `.gitignore` block to it.
 
 ### Knob
@@ -724,8 +724,8 @@ deployment: vercel
 
 model_tiers:
   fast: claude-haiku-4-5-20251001
-  capable: claude-sonnet-4-6
-  reasoning: claude-opus-4-6
+  capable: claude-sonnet-5
+  reasoning: claude-opus-5
 ```
 
 ---
@@ -741,7 +741,7 @@ model_tiers:
 | Global | `<plugin-root>/user-config` | All projects using this plugin install | No (lives outside any repo) |
 | Local | `.context-index/user-config` | One project (overrides global) | **No** — added to `.gitignore` by `/adev:init` |
 
-The plugin-root location is set during `npx @adev-org/adev-cli install` (the installer prompts for a default persona). The local override is created on-demand by `/adev:init` or by manual edit.
+The plugin-root directory is established by `npx @adev-org/adev-cli install`, but the installer does not prompt for a persona and writes no `user-config` — the global file must be created by hand if you want one. The local override is created on-demand by `/adev:init` or by manual edit.
 
 ### Schema
 
@@ -776,7 +776,15 @@ Both keys are validated at parse time and again at resolve time (defense-in-dept
 
 ### Adoption guide (for projects new to adev or upgrading)
 
-**Step 1 — confirm or set the global persona.** During `npx @adev-org/adev-cli install` the installer prompts for a default persona and writes the global `user-config`. To change later, edit the file at the plugin root (path is printed by the installer) or re-run the installer.
+**Step 1 — set the global default (optional).** The installer does **not** prompt for a persona and writes no `user-config`. To set a global default, create the file by hand at the plugin root — the same directory the hook resolves as `<PLUGIN_ROOT>/user-config`:
+
+```bash
+# <PLUGIN_ROOT>/user-config (global default for every project)
+persona=developer
+verbosity=normal
+```
+
+If no `user-config` exists at either layer — the default state after a fresh install — resolution falls through to `persona=developer` with `verbosity=normal`.
 
 **Step 2 — set a project-local override (optional).** Create or edit `.context-index/user-config` in the project root:
 

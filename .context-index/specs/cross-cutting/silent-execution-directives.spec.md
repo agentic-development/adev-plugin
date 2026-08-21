@@ -1,5 +1,3 @@
-# Cross-Cutting Spec: Silent Execution Directives
-
 ---
 mode: cross-cutting
 status: review-pending
@@ -17,6 +15,8 @@ affects:
   - maintenance
 tracker-ref: issue-226
 ---
+
+# Cross-Cutting Spec: Silent Execution Directives
 
 ## Behavioral Contract
 

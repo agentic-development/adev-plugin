@@ -122,6 +122,64 @@ describe("BeadsAdapter — dependencies read back (issue-bum897)", () => {
   });
 });
 
+describe("BeadsAdapter — affected_modules round-trip (RI-2 fix, bug-selection-and-eligibility round-3 review)", () => {
+  // Round-3 review found `IssueManager.update(id, { affected_modules })`
+  // silently dropped on this backend: update() forwarded neither a br
+  // column arg nor a context field for it, so the call appeared to succeed
+  // (the returned object echoed `...changes`) but nothing persisted. br has
+  // no native column for it, so — like branch/spec_ref/pr — it must ride in
+  // agent_context.adev via CONTEXT_FIELDS.
+
+  it("update() writes affected_modules into agent_context, not dropped", async () => {
+    const adapter = new BeadsAdapter("/tmp/nonexistent-beads", { checkBr: false });
+    const calls = [];
+    const item = {
+      id: "br-1",
+      external_ref: "issue-1",
+      agent_context: JSON.stringify({ adev: { branch: "feat/x" } }),
+    };
+    adapter._scan = () => [item];
+    adapter._runBr = (args) => {
+      calls.push(args);
+      return JSON.stringify({ id: "br-1" });
+    };
+
+    await adapter.update("issue-1", { affected_modules: ["cli"] });
+
+    const update = calls.find((c) => c[0] === "update");
+    assert.ok(update, "update() must call br update");
+    const i = update.indexOf("--agent-context");
+    assert.notEqual(i, -1, "affected_modules must ride in agent_context — br has no native column for it");
+    const written = JSON.parse(update[i + 1]);
+    assert.deepEqual(written.adev.affected_modules, ["cli"]);
+    // Read-modify-write must preserve sibling context, not clobber it.
+    assert.equal(written.adev.branch, "feat/x");
+  });
+
+  it("_toIssue reads affected_modules back from agent_context", () => {
+    const adapter = new BeadsAdapter("/tmp/nonexistent-beads", { checkBr: false });
+    const issue = adapter._toIssue({
+      id: "br-1",
+      external_ref: "issue-1",
+      agent_context: JSON.stringify({ adev: { affected_modules: ["cli", "hooks"] } }),
+    });
+    assert.deepEqual(issue.affected_modules, ["cli", "hooks"]);
+  });
+
+  it("_toIssue treats a missing or non-array affected_modules as undefined, not a crash", () => {
+    const adapter = new BeadsAdapter("/tmp/nonexistent-beads", { checkBr: false });
+    assert.equal(adapter._toIssue({ id: "x", external_ref: "issue-1" }).affected_modules, undefined);
+    assert.equal(
+      adapter._toIssue({
+        id: "x",
+        external_ref: "issue-1",
+        agent_context: JSON.stringify({ adev: { affected_modules: "not-an-array" } }),
+      }).affected_modules,
+      undefined,
+    );
+  });
+});
+
 // ─── merged from tests/issues/beads-adapter-id-preservation.test.mjs ──────────────────────────────────────────────
 {
   /**
@@ -308,6 +366,199 @@ describe("BeadsAdapter — dependencies read back (issue-bum897)", () => {
         assert.equal(typeof adapter[method], "function",
           `Expected method '${method}' to exist on BeadsAdapter`);
       }
+    });
+  });
+}
+
+// ─── claim()/release() status symmetry (adev-plugin-idqa) ─────────────────
+{
+  /**
+   * `claim()` sets status: open -> in_progress. `release()` cleared only
+   * `owner`/`claimed_at`, never touching status — so a released issue that
+   * was merely probed (claimed then released, never worked) was left
+   * permanently in_progress with no owner and no lease to expire it.
+   * Confirmed live 2026-08-18: two claimed-then-released issues stayed
+   * in_progress, corrupting their parent epic's rollup, until manually
+   * repaired with `br update --status open`.
+   *
+   * Fix: `claim()` records the pre-claim status in agent_context, write-once
+   * (an idempotent re-claim or a takeover on a stale lease must not clobber
+   * the ORIGINAL pre-claim status with "in_progress"). `release()` restores
+   * it — but only when status is still exactly what claim() left it in
+   * (nothing else moved it in the meantime) — and always clears the marker.
+   */
+
+  function agentContext(meta) {
+    return JSON.stringify({ adev: meta });
+  }
+
+  function makeScanRecord({ status, owner, meta }) {
+    return {
+      id: "br-1",
+      external_ref: "issue-1",
+      title: "t",
+      status,
+      assignee: owner,
+      agent_context: agentContext(meta),
+    };
+  }
+
+  describe("BeadsAdapter — claim() records pre-claim status (adev-plugin-idqa)", () => {
+    it("claiming an open issue writes pre_claim_status: open into agent_context", async () => {
+      const c = makeAdapter();
+      c.adapter._scan = () => [makeScanRecord({ status: "open", owner: undefined, meta: {} })];
+      await c.adapter.claim("issue-1", "agent-a", {});
+      const update = c.calls.find((call) => call.includes("--claim")) || c.calls.find((call) => call[0] === "update");
+      const i = update.indexOf("--agent-context");
+      assert.notEqual(i, -1);
+      const ctx = JSON.parse(update[i + 1]);
+      assert.equal(ctx.adev.pre_claim_status, "open");
+    });
+
+    it("claiming an already-in_progress issue (not via a prior claim) records pre_claim_status: in_progress", async () => {
+      const c = makeAdapter();
+      c.adapter._scan = () => [makeScanRecord({ status: "in_progress", owner: undefined, meta: {} })];
+      await c.adapter.claim("issue-1", "agent-a", {});
+      const update = c.calls.find((call) => call.includes("--claim")) || c.calls.find((call) => call[0] === "update");
+      const ctx = JSON.parse(update[update.indexOf("--agent-context") + 1]);
+      assert.equal(ctx.adev.pre_claim_status, "in_progress");
+    });
+
+    it("an idempotent re-claim (same owner) does not overwrite an existing pre_claim_status", async () => {
+      const c = makeAdapter();
+      c.adapter._scan = () => [
+        makeScanRecord({ status: "in_progress", owner: "agent-a", meta: { pre_claim_status: "open", claimed_at: "2026-01-01T00:00:00.000Z" } }),
+      ];
+      await c.adapter.claim("issue-1", "agent-a", {});
+      const update = c.calls.find((call) => call[0] === "update");
+      const ctx = JSON.parse(update[update.indexOf("--agent-context") + 1]);
+      assert.equal(ctx.adev.pre_claim_status, "open", "the original pre-claim status must survive an idempotent re-claim");
+    });
+  });
+
+  describe("BeadsAdapter — release() restores pre-claim status (adev-plugin-idqa)", () => {
+    it("releasing an issue claimed from open restores status to open", async () => {
+      const c = makeAdapter();
+      c.adapter._scan = () => [
+        makeScanRecord({ status: "in_progress", owner: "agent-a", meta: { pre_claim_status: "open", claimed_at: "2026-01-01T00:00:00.000Z" } }),
+      ];
+      await c.adapter.release("issue-1", "agent-a", {});
+      const update = c.calls.find((call) => call[0] === "update");
+      assert.ok(update, "release must emit a br update call");
+      const si = update.indexOf("--status");
+      assert.notEqual(si, -1, "release must restore status");
+      assert.equal(update[si + 1], "open");
+    });
+
+    it("releasing an issue claimed from deferred restores status to deferred, not open", async () => {
+      const c = makeAdapter();
+      c.adapter._scan = () => [
+        makeScanRecord({ status: "in_progress", owner: "agent-a", meta: { pre_claim_status: "deferred", claimed_at: "2026-01-01T00:00:00.000Z" } }),
+      ];
+      await c.adapter.release("issue-1", "agent-a", {});
+      const update = c.calls.find((call) => call[0] === "update");
+      const si = update.indexOf("--status");
+      assert.notEqual(si, -1);
+      assert.equal(update[si + 1], "deferred");
+    });
+
+    it("releasing an issue that was already in_progress before the claim leaves it in_progress", async () => {
+      const c = makeAdapter();
+      c.adapter._scan = () => [
+        makeScanRecord({ status: "in_progress", owner: "agent-a", meta: { pre_claim_status: "in_progress", claimed_at: "2026-01-01T00:00:00.000Z" } }),
+      ];
+      const result = await c.adapter.release("issue-1", "agent-a", {});
+      assert.equal(result.status, "in_progress");
+    });
+
+    it("release clears the pre_claim_status marker from agent_context", async () => {
+      const c = makeAdapter();
+      c.adapter._scan = () => [
+        makeScanRecord({ status: "in_progress", owner: "agent-a", meta: { pre_claim_status: "open", claimed_at: "2026-01-01T00:00:00.000Z" } }),
+      ];
+      await c.adapter.release("issue-1", "agent-a", {});
+      const update = c.calls.find((call) => call[0] === "update");
+      const ctx = JSON.parse(update[update.indexOf("--agent-context") + 1]);
+      assert.ok(!("pre_claim_status" in ctx.adev), "the marker must not survive release");
+    });
+
+    it("releasing an issue with no pre_claim_status marker (pre-fix legacy claim) does not touch status", async () => {
+      // Backward compatibility: an issue claimed by an older build before
+      // this fix shipped has no marker. Must not regress by guessing.
+      const c = makeAdapter();
+      c.adapter._scan = () => [
+        makeScanRecord({ status: "in_progress", owner: "agent-a", meta: { claimed_at: "2026-01-01T00:00:00.000Z" } }),
+      ];
+      await c.adapter.release("issue-1", "agent-a", {});
+      const update = c.calls.find((call) => call[0] === "update");
+      assert.equal(update.indexOf("--status"), -1, "no marker means no restore — status is left exactly as today");
+    });
+  });
+}
+
+// ─── BeadsAdapter.update() body/description alias (issue-80m9s2) ──────────
+{
+  /**
+   * `update()` reads only `changes.notes`, unlike `create()` which goes
+   * through `validateIssue` (which resolves `body`/`description` aliases
+   * into `notes` via `resolveNotes`, per issue-484). `interface.mjs` ships
+   * `normalizeNotesAliases(changes)` specifically to close this gap for
+   * update() call sites — `json-adapter.mjs` calls it, but `beads-adapter.mjs`
+   * never did, so `update(id, { body: "..." })` silently dropped the text on
+   * the beads backend. Confirmed live: 11 topic epics created with
+   * `updateEpic(id, { description: "..." })`-shaped calls during the
+   * 2026-08-14 board restructure landed with zero-length notes.
+   */
+  function makeUpdateAdapter() {
+    const c = makeAdapter();
+    // update() resolves via `_scan()` (not `_scanRaw()`, which only backs the
+    // create-time follow-up calls) — give it a resolvable record.
+    c.adapter._scan = () => [{ id: "br-1", external_ref: "issue-1" }];
+    return c;
+  }
+
+  describe("BeadsAdapter — update() resolves body/description aliases into notes (issue-80m9s2)", () => {
+    it("update(id, { body }) reaches br as --description", async () => {
+      const c = makeUpdateAdapter();
+      await c.adapter.update("issue-1", { body: "restored epic scope" });
+      const update = c.calls.find((call) => call[0] === "update");
+      assert.ok(update, "update() must emit a br update call");
+      const i = update.indexOf("--description");
+      assert.notEqual(i, -1, "body alias must reach --description, not be dropped");
+      assert.equal(update[i + 1], "restored epic scope");
+    });
+
+    it("update(id, { description }) reaches br as --description", async () => {
+      const c = makeUpdateAdapter();
+      await c.adapter.update("issue-1", { description: "restored epic scope" });
+      const update = c.calls.find((call) => call[0] === "update");
+      const i = update.indexOf("--description");
+      assert.notEqual(i, -1);
+      assert.equal(update[i + 1], "restored epic scope");
+    });
+
+    it("update(id, { notes }) is unchanged (canonical field keeps working)", async () => {
+      const c = makeUpdateAdapter();
+      await c.adapter.update("issue-1", { notes: "canonical text" });
+      const update = c.calls.find((call) => call[0] === "update");
+      const i = update.indexOf("--description");
+      assert.notEqual(i, -1);
+      assert.equal(update[i + 1], "canonical text");
+    });
+
+    it("update(id, { body, title }) resolves the alias without dropping sibling fields", async () => {
+      const c = makeUpdateAdapter();
+      await c.adapter.update("issue-1", { body: "text", title: "new title" });
+      const update = c.calls.find((call) => call[0] === "update");
+      assert.notEqual(update.indexOf("--description"), -1);
+      assert.notEqual(update.indexOf("--title"), -1);
+    });
+
+    it("update(id, {}) with no alias emits no --description flag", async () => {
+      const c = makeUpdateAdapter();
+      await c.adapter.update("issue-1", { title: "only a title" });
+      const update = c.calls.find((call) => call[0] === "update");
+      assert.equal(update.indexOf("--description"), -1);
     });
   });
 }

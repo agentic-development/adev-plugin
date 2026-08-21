@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "BEH-5/Postconditions/Error-Cases fully specify the fail-open read helper; exact appendEvent/readEvents fold-on-read precedent in lib/lifecycle-state.mjs plus codedError in lib/errors.mjs; two new files, single module, mechanical."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.6,
+        "novelty": 1
+      },
+      "rationale": "Preconditions bullet 4 and Error Cases row 3 pin the default-of-2 contract; resolveGateMode in lib/lifecycle-state.mjs is an almost identical manifest-default-with-warning precedent; touches lib/ plus templates/manifest-template.yaml (two modules, no boundary-rule crossing)."
+    },
+    {
+      "task_id": "t3",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Error Cases row 1 and BD-6 fully specify the bounded-hash fallback; lib/blocker-id.mjs already establishes the exact 8-hex-char SHA-256 truncation convention this task reuses; single-file extension, mechanical."
+    },
+    {
+      "task_id": "t4",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "BEH-1, BEH-3, and Postconditions bullet 1 give exact field-level outcomes for FIXED/UNREPRODUCIBLE; extends the Task 1 append pattern directly; single-file extension, mechanical mapping of two closed-set outcomes."
+    },
+    {
+      "task_id": "t5",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "BEH-2/BEH-6 and AC bullets 3-4 precisely define the unconditional partitionBlockers/evaluateStopCondition call and the cap-1 edge case; composes several precedented pieces rather than one direct match, so pattern coverage is moderate; loop-convergence.mjs is read-only, so blast radius stays single-file."
+    },
+    {
+      "task_id": "t6",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.6,
+        "novelty": 1
+      },
+      "rationale": "Postconditions bullet 2 and Acceptance Criteria bullet 9 require the ADR-0015 registration; tests/adrs/0012-status.test.mjs is a near-exact style precedent for the new test file; touches tests/ and .context-index/adrs/ (two modules, no boundary-rule crossing), documentation-only risk."
+    }
+  ]
+}
