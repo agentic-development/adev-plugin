@@ -9,6 +9,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, realpathSy
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { initGitRepo, commitFile, createBehindOriginFixture } from '../helpers.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(__dirname, '..', '..');
@@ -116,22 +117,11 @@ test('adev bugfix-loop latest returns null (exit 0, empty result) when no runs e
   rmSync(dir, { recursive: true, force: true });
 });
 
-function initGitRepo(dir) {
-  execSync('git init -b main', { cwd: dir, stdio: 'ignore' });
-  execSync('git config user.email "test@test.com"', { cwd: dir, stdio: 'ignore' });
-  execSync('git config user.name "Test"', { cwd: dir, stdio: 'ignore' });
-  execSync('git config commit.gpgsign false', { cwd: dir, stdio: 'ignore' });
-}
-
-function commitFile(dir, filename, message) {
-  writeFileSync(join(dir, filename), `${message}\n`);
-  execSync(`git add ${filename} && git commit -m "${message}"`, { cwd: dir, stdio: 'ignore' });
-}
-
 // Builds a temp project (adev scaffold + real git repo) that is `behindCount`
 // commits behind a bare "origin", so check-freshness has a real ahead/behind
-// count to compute. Mirrors the bare-origin/seed/pusher fixture pattern from
-// tests/lib/bugfix-loop-freshness.test.mjs (Task 1).
+// count to compute. Delegates the bare-origin/pusher-clone bootstrapping to
+// the shared `createBehindOriginFixture()` helper (also used, in its lower-
+// level form, by tests/lib/bugfix-loop-freshness.test.mjs, Task 1).
 function makeFreshnessProject(behindCount, freshnessThresholds) {
   const dir = makeTempProject();
   if (freshnessThresholds) {
@@ -144,31 +134,7 @@ function makeFreshnessProject(behindCount, freshnessThresholds) {
     );
   }
 
-  const bareDir = mkdtempSync(join(tmpdir(), 'bfl-cli-fresh-bare-'));
-  const pusherDir = mkdtempSync(join(tmpdir(), 'bfl-cli-fresh-pusher-'));
-
-  execSync('git init --bare -b main', { cwd: bareDir, stdio: 'ignore' });
-
-  initGitRepo(dir);
-  commitFile(dir, 'README.md', 'init');
-  execSync(`git remote add origin ${bareDir}`, { cwd: dir, stdio: 'ignore' });
-  execSync('git push origin main', { cwd: dir, stdio: 'ignore' });
-  // check-freshness's computeFreshness() auto-resolves the default branch
-  // via refs/remotes/origin/HEAD (see resolveDefaultRemoteBranch); a plain
-  // `remote add` + `push` never sets that symbolic ref the way `git clone`
-  // does, so set it explicitly.
-  execSync('git remote set-head origin main', { cwd: dir, stdio: 'ignore' });
-
-  execSync(`git clone ${bareDir} ${pusherDir}`, { stdio: 'ignore' });
-  execSync('git config user.email "test@test.com"', { cwd: pusherDir, stdio: 'ignore' });
-  execSync('git config user.name "Test"', { cwd: pusherDir, stdio: 'ignore' });
-  execSync('git config commit.gpgsign false', { cwd: pusherDir, stdio: 'ignore' });
-  for (let i = 0; i < behindCount; i += 1) {
-    commitFile(pusherDir, `f${i}.txt`, `commit-${i}`);
-  }
-  execSync('git push origin main', { cwd: pusherDir, stdio: 'ignore' });
-
-  rmSync(pusherDir, { recursive: true, force: true });
+  const { bareDir } = createBehindOriginFixture(dir, { behindCount });
   return { dir, bareDir };
 }
 
@@ -220,5 +186,47 @@ test('adev bugfix-loop check-freshness degrades to a warning JSON when origin is
   assert.equal(out.status, 'degraded');
   assert.equal(typeof out.reason, 'string');
   assert.ok(out.reason.length > 0);
+  rmSync(dir, { recursive: true, force: true });
+});
+
+test('adev bugfix-loop create --starting-branch main persists starting_branch (Plan-task 5)', () => {
+  const dir = makeTempProject();
+  const r = spawnSync('node', [CLI, 'bugfix-loop', 'create', '--starting-branch', 'main', '--json'], { encoding: 'utf8', cwd: dir });
+  assert.equal(r.status, 0);
+  const out = JSON.parse(r.stdout);
+  assert.equal(out.starting_branch, 'main');
+  assert.equal(out.last_worktree_branch, null);
+  rmSync(dir, { recursive: true, force: true });
+});
+
+test('adev bugfix-loop create without --starting-branch persists starting_branch: null (Plan-task 5)', () => {
+  const dir = makeTempProject();
+  const r = spawnSync('node', [CLI, 'bugfix-loop', 'create', '--json'], { encoding: 'utf8', cwd: dir });
+  assert.equal(r.status, 0);
+  const out = JSON.parse(r.stdout);
+  assert.equal(out.starting_branch, null);
+  rmSync(dir, { recursive: true, force: true });
+});
+
+test('adev bugfix-loop guard --json always includes worktree_base_ref, even on proceed:true (Plan-task 5)', () => {
+  const dir = makeTempProject();
+  const create = spawnSync('node', [CLI, 'bugfix-loop', 'create', '--starting-branch', 'main', '--json'], { encoding: 'utf8', cwd: dir });
+  const { run_id } = JSON.parse(create.stdout);
+  const r = spawnSync('node', [CLI, 'bugfix-loop', 'guard', '--run-id', run_id, '--json'], { encoding: 'utf8', cwd: dir });
+  const out = JSON.parse(r.stdout);
+  assert.equal(out.proceed, true);
+  assert.equal(out.worktree_base_ref, 'main');
+  rmSync(dir, { recursive: true, force: true });
+});
+
+test('adev bugfix-loop guard --json includes worktree_base_ref on a proceed:false (terminal) result too (Plan-task 5)', () => {
+  const dir = makeTempProject();
+  const create = spawnSync('node', [CLI, 'bugfix-loop', 'create', '--starting-branch', 'main', '--json'], { encoding: 'utf8', cwd: dir });
+  const { run_id } = JSON.parse(create.stdout);
+  spawnSync('node', [CLI, 'bugfix-loop', 'finish', '--run-id', run_id, '--status', 'complete'], { cwd: dir });
+  const r = spawnSync('node', [CLI, 'bugfix-loop', 'guard', '--run-id', run_id, '--json'], { encoding: 'utf8', cwd: dir });
+  const out = JSON.parse(r.stdout);
+  assert.equal(out.proceed, false);
+  assert.equal(out.worktree_base_ref, 'main');
   rmSync(dir, { recursive: true, force: true });
 });

@@ -75,6 +75,20 @@ test('bugfix-loop SKILL.md calls tracker-sync outbound after the Step 4 attempt 
   assert.ok(step4Idx < outboundIdx && outboundIdx < step5Idx, 'outbound writeback must run within Step 4, before Step 5');
 });
 
+test('bugfix-loop SKILL.md Step 0/1 calls adev bugfix-loop check-freshness before the status/budget guard (Plan-task 3)', () => {
+  const md = read('skills/bugfix-loop/SKILL.md');
+  assert.match(md, /adev bugfix-loop check-freshness/);
+  const freshnessIdx = md.indexOf('adev bugfix-loop check-freshness');
+  const guardIdx = md.indexOf('adev bugfix-loop guard');
+  assert.ok(freshnessIdx !== -1 && guardIdx !== -1 && freshnessIdx < guardIdx, 'check-freshness must be called before the guard');
+});
+
+test('bugfix-loop SKILL.md documents BRANCH_STALE_BLOCKED halting before bug selection (Plan-task 3)', () => {
+  const md = read('skills/bugfix-loop/SKILL.md');
+  assert.match(md, /BRANCH_STALE_BLOCKED/);
+  assert.match(md, /FRESHNESS_CHECK_DEGRADED/);
+});
+
 test('using-adev gateway table lists /adev:bugfix-loop', () => {
   const md = read('skills/using-adev/SKILL.md');
   assert.match(md, /\/adev:bugfix-loop/);

@@ -40,6 +40,19 @@ The following skill extension instructions apply to this invocation (source: ins
 
   If the result's `run` is `null`, there is nothing to resume — tell the user and stop. Otherwise use the returned `run.run_id`.
 
+- **Freshness guard:** once `run_id` is resolved (fresh or resumed), check branch freshness before the Step 1 status/budget guard:
+
+  ```bash
+  adev bugfix-loop check-freshness --json
+  ```
+
+  In every branch below, "`BRANCH_STALE_BLOCKED`" and "`FRESHNESS_CHECK_DEGRADED`" are internal behavior-id/log-tags for this table's own rows (BEH-2 and the Error Cases table), not literal `ADEV-BUGFIXLOOP:` values — the only strings ever printed as the final `ADEV-BUGFIXLOOP:` token are `COMPLETE`, `BUDGET_EXHAUSTED`, and `BLOCKED` (Step 5).
+
+  - `{"status": "ok", "ahead": <n>, "behind": <n>}`: continue to the `--github-sync` inbound pull below (or Step 1 if `--github-sync` was not passed).
+  - `{"status": "warn", "ahead": <n>, "behind": <n>}`: print a warning naming the ahead/behind counts — `local branch is <behind> commits behind origin/<default-branch> (soft threshold)` — without halting the run (BEH-1). Continue to the `--github-sync` inbound pull below (or Step 1 if `--github-sync` was not passed) — same routing as `ok`.
+  - `{"status": "blocked", "ahead": <n>, "behind": <n>}`: halt before bug selection (internal tag `BRANCH_STALE_BLOCKED`). Go straight to Step 5 (Finish) with `--status blocked`, naming the freshness gap in the finish note (e.g. `local branch is <behind> commits behind origin/<default-branch>, exceeding the configured hard threshold`); Step 5 then prints the literal `ADEV-BUGFIXLOOP: BLOCKED` token (BEH-2). Do not select or attempt any bug this turn, and do not run the `--github-sync` inbound pull.
+  - `{"status": "degraded", "reason": "<reason>"}`: print a logged warning — `freshness check skipped — <reason>` — (internal tag `FRESHNESS_CHECK_DEGRADED`; this degrade path is total, not limited to the origin-unreachable case) and continue to the `--github-sync` inbound pull below (or Step 1 if `--github-sync` was not passed) — same routing as `ok`/`warn`. A degraded freshness check is not itself a reason to skip inbound sync.
+
 - **`--github-sync` inbound pull:** once `run_id` is resolved (fresh or resumed), and only when `--github-sync` was passed, run inbound sync for this turn before the Step 1 guard:
 
   ```bash
