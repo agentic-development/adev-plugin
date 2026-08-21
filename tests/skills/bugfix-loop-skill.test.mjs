@@ -198,6 +198,47 @@ test('bugfix-loop SKILL.md Step 5 reprints the full summary table before the ADE
   assert.ok(tableIdx !== -1 && tokenIdx !== -1 && tableIdx < tokenIdx, 'summary table reprint must come before the terminal token');
 });
 
+test('bugfix-loop SKILL.md documents --max-priority <P0-P4>, default P3, and rejects malformed values at Step 0 before bug selection (Plan-task 14)', () => {
+  const md = read('skills/bugfix-loop/SKILL.md');
+  assert.match(md, /--max-priority <P0-P4>/);
+  const argsIdx = md.indexOf('## Arguments');
+  const step0Idx = md.indexOf('## Step 0: Resolve the run');
+  const argsText = md.slice(argsIdx, step0Idx);
+  assert.match(argsText, /--max-priority/);
+  assert.match(argsText, /Default: `P3`/);
+
+  const step1Idx = md.indexOf('## Step 1: Turn guard');
+  const step0Text = md.slice(step0Idx, step1Idx);
+  assert.match(step0Text, /--max-priority.*fail-fast validation/);
+  assert.match(step0Text, /INVALID_PRIORITY_BOUND/);
+  const validationIdx = step0Text.indexOf('fail-fast validation');
+  const step2Idx = md.indexOf('## Step 2: Select a bug');
+  assert.ok(step0Idx + validationIdx < step2Idx, 'validation must happen before Step 2 bug selection');
+});
+
+test('bugfix-loop SKILL.md Step 2 uses the resolved --max-priority value instead of the literal P3 (Plan-task 14)', () => {
+  const md = read('skills/bugfix-loop/SKILL.md');
+  assert.doesNotMatch(md, /adev issues next --type bug --max-priority P3/);
+  const step2Idx = md.indexOf('## Step 2: Select a bug');
+  const step3Idx = md.indexOf('## Step 3: Claim');
+  const step2Text = md.slice(step2Idx, step3Idx);
+  assert.match(step2Text, /adev issues next --type bug --max-priority <resolved-max-priority>/);
+});
+
+test('bugfix-loop SKILL.md Step 4 passes --priority-bound <resolved> to record-attempt (Plan-task 14)', () => {
+  const md = read('skills/bugfix-loop/SKILL.md');
+  assert.match(md, /record-attempt.*--priority-bound <resolved-max-priority>/);
+});
+
+test('bugfix-loop SKILL.md Step 2 documents stderr must not be redirected/suppressed so BEH-12 excluded-module output reaches the transcript (Plan-task 14)', () => {
+  const md = read('skills/bugfix-loop/SKILL.md');
+  const step2Idx = md.indexOf('## Step 2: Select a bug');
+  const step3Idx = md.indexOf('## Step 3: Claim');
+  const step2Text = md.slice(step2Idx, step3Idx);
+  assert.match(step2Text, /stderr/);
+  assert.match(step2Text, /BEH-12/);
+});
+
 test('using-adev gateway table lists /adev:bugfix-loop', () => {
   const md = read('skills/using-adev/SKILL.md');
   assert.match(md, /\/adev:bugfix-loop/);
