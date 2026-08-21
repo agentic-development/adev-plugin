@@ -251,3 +251,36 @@ describe('Cross-page links in reference pages', () => {
     }
   });
 });
+
+// ─── docs/cli-reference.md verb coverage (issue-w1t5ed) ───────────────────
+//
+// The expected verb list is derived from cli/index.mjs's own VERB_REGISTRY
+// at test time — NOT hardcoded — so this guard cannot go stale the same way
+// skill-reference.md's own hardcoded expectedSkills array already has
+// (adev-plugin-clf2, filed separately, still open as of this writing: 29
+// names asserted, 30 skill directories present). A verb missing from the
+// docs is exactly what let `skill-ext` — invoked by 30 of 30 SKILL.md files
+// and constitutionally mandated — go completely undocumented.
+describe('docs/cli-reference.md — CLI Reference verb coverage', () => {
+  const CLI_INDEX_PATH = join(import.meta.dirname, '..', '..', 'cli', 'index.mjs');
+
+  function dispatchedVerbs() {
+    const source = readFileSync(CLI_INDEX_PATH, 'utf-8');
+    const start = source.indexOf('const VERB_REGISTRY = new Map([');
+    assert.notEqual(start, -1, 'cli/index.mjs must declare VERB_REGISTRY — update this test if it is renamed');
+    const end = source.indexOf(']);', start);
+    const block = source.slice(start, end);
+    const verbs = [];
+    const RE = /^\s*\[\s*"([a-z][a-z-]*)"/gm;
+    let m;
+    while ((m = RE.exec(block)) !== null) verbs.push(m[1]);
+    assert.ok(verbs.length > 20, `expected a real dispatch table, found ${verbs.length} verbs`);
+    return verbs;
+  }
+
+  it('documents every dispatched top-level verb', () => {
+    const content = readFileSync(join(DOCS_DIR, 'cli-reference.md'), 'utf-8');
+    const missing = dispatchedVerbs().filter((v) => !content.includes(`### \`${v}\``));
+    assert.deepEqual(missing, [], `verb(s) dispatched by cli/index.mjs but missing a ### \`<verb>\` section in docs/cli-reference.md:\n${missing.join('\n')}`);
+  });
+});
