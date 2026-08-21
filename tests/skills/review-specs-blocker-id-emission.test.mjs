@@ -39,12 +39,20 @@ test('security-reviewer prompt documents blocker_id + section_anchor for BLOCK f
   assert.ok(body.includes('security-reviewer'));
 });
 
-test('consistency-analyzer prompt documents section_anchor + finding-type, no hash instruction', () => {
+test('consistency-analyzer prompt documents section_anchor + finding_type, no hash instruction TO the reviewer (adev-plugin-xf5d)', () => {
   const body = readSkill('consistency-analyzer-prompt.md');
   assert.ok(body.includes('section_anchor'));
   assert.ok(body.includes('finding-type') || body.includes('finding_type'));
-  assert.ok(!body.includes('lib/blocker-id.mjs'), 'must not instruct hash computation');
-  assert.ok(!/sha-?256/i.test(body), 'must not name a cryptographic digest');
+  // lib/blocker-id.mjs and SHA-256 ARE named — informationally, as part of
+  // explaining that the AGGREGATOR (not the reviewer) computes the hash, the
+  // same consistent pattern the other three reviewer prompts use. What must
+  // never appear is an INSTRUCTION for the reviewer itself to compute one.
+  assert.ok(body.includes('lib/blocker-id.mjs'), 'must reference the aggregator-side constructor');
+  assert.match(
+    body,
+    /do not compute `?blocker_id`? yourself/i,
+    'must explicitly tell the reviewer not to compute blocker_id',
+  );
   assert.ok(body.includes('consistency-analyzer'));
 });
 
@@ -97,4 +105,57 @@ test('termination-reviewer prompt flags missing iteration cap, cap-trip verdict,
   assert.ok(/cap-trip/i.test(body) || /trip/i.test(body));
   assert.ok(/unattended/i.test(body));
   assert.ok(!body.includes('lib/blocker-id.mjs'));
+});
+
+// ── adev-plugin-xf5d: reviewers emit finding_type, never compute blocker_id ──
+//
+// The reviewer prompts used to instruct an LLM to compute the 8-hex-char
+// SHA-256 location-hash itself — something an LLM cannot do deterministically.
+// Live evidence: round 1 of a real review, all 5 blockers omitted blocker_id
+// entirely (LEGACY_REVIEWER_OUTPUT, no auto-retry armed). Round 2 fixed it by
+// having the ORCHESTRATOR construct the id from reviewer-supplied finding_type
+// + section_anchor via buildBlockerId() — the reviewer never touches the hash.
+
+const XF5D_REVIEWER_PROMPTS = [
+  'structural-architect-prompt.md',
+  'security-reviewer-prompt.md',
+  'consistency-analyzer-prompt.md',
+  'quick-synthesized-reviewer-prompt.md',
+];
+
+for (const name of XF5D_REVIEWER_PROMPTS) {
+  test(`${name} asks for finding_type, not a computed blocker_id`, () => {
+    const body = readSkill(name);
+    assert.ok(body.includes('finding_type'), `${name} must require finding_type`);
+    assert.doesNotMatch(
+      body,
+      /computed via `?lib\/blocker-id\.mjs::buildBlockerId`?\s*\)?\s*\.\s*Reviewer-slug/,
+      `${name} must not instruct the reviewer to compute blocker_id itself`,
+    );
+    assert.match(
+      body,
+      /do not compute `?blocker_id`? yourself/i,
+      `${name} must explicitly tell the reviewer not to compute blocker_id`,
+    );
+  });
+}
+
+test('review-specs SKILL.md documents the aggregator CONSTRUCTING blocker_id, not accepting one from reviewers', () => {
+  const body = readSkill('SKILL.md');
+  assert.ok(body.includes('buildBlockerId'), 'must reference the constructor function');
+  assert.ok(body.includes('finding_type'), 'must document finding_type as the reviewer-supplied field');
+  assert.match(
+    body,
+    /never accept a `?blocker_id`? supplied directly by a reviewer/i,
+    'must explicitly refuse a reviewer-supplied blocker_id even when well-formed — a fabricated-but-plausible id is not reproducible across revisions and silently poisons the retry partition',
+  );
+});
+
+test('lib/blocker-id.mjs module doc does not claim reviewers emit blocker_id', () => {
+  const body = readFileSync(resolve(__dirname, '../../lib/blocker-id.mjs'), 'utf8');
+  assert.doesNotMatch(
+    body,
+    /Reviewer subagents emit findings with a stable, deterministic/,
+    'the module doc must not claim reviewer subagents emit blocker_id directly',
+  );
 });
