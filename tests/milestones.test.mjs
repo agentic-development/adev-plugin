@@ -1089,10 +1089,14 @@ describe("milestoneShip (Task 7)", () => {
   it("ships milestone: updates status, closes epic, creates tag", async () => {
     saveMilestones(dir, [{ name: "v1.0.0", status: "planned", epic_id: "epic-1", target_date: null, release: { strategy: "tag-only" }, ship_criteria: [] }]);
     const closedEpics = [];
+    // Simulates the JSON backend: close() can't find an epic id (separate
+    // stores) and throws NOT_FOUND; ship must fall back to updateEpic()
+    // rather than swallow the failure (issue-1vwwea).
     const mockManager = {
       listEpics: async () => [{ id: "epic-1" }],
       list: async () => [],
-      close: async (id, reason) => { closedEpics.push({ id, reason }); },
+      close: async () => { const e = new Error("Issue not found"); e.code = "NOT_FOUND"; throw e; },
+      updateEpic: async (id, changes) => { closedEpics.push({ id, ...changes }); },
     };
     let tagCreated = null;
     const result = await milestoneShip(dir, "v1.0.0", {
@@ -1105,6 +1109,7 @@ describe("milestoneShip (Task 7)", () => {
     assert.equal(result.tag, "v1.0.0");
     assert.equal(tagCreated, "v1.0.0");
     assert.equal(closedEpics[0].id, "epic-1");
+    assert.equal(closedEpics[0].status, "closed");
     const ms = findMilestone(dir, "v1.0.0");
     assert.equal(ms.status, "shipped");
   });
@@ -1219,6 +1224,70 @@ describe("milestoneShip (Task 7)", () => {
     });
     assert.equal(result.shipped, false);
     assert.equal(result.confirmRejected, "CHANGELOG updated");
+  });
+
+  // Every ship test above hand-rolls a mockManager with a `close` method —
+  // which trivially "succeeds" no matter what id it's called with, so it
+  // never exercises the real store-split defect (issue-1vwwea). JsonAdapter
+  // keeps epics and issues in SEPARATE arrays (board.epics vs board.issues);
+  // close() only searches board.issues, so closing an epic id throws
+  // NOT_FOUND — caught and swallowed at line ~944, so ship reports success
+  // while the epic silently stays open forever. Using the real adapter here,
+  // as milestoneCreate's own "create + list integration" describe block
+  // above already does, is what surfaces it.
+  it("closes the epic on the REAL json backend (issue-1vwwea)", async () => {
+    const { JsonAdapter } = await import("../lib/issues/json-adapter.mjs");
+    const shipDir = makeProject("milestone-ship-real-adapter-");
+    const adapter = new JsonAdapter(shipDir);
+    const epic = await adapter.createEpic({ title: "v6.0.0 epic" });
+
+    saveMilestones(shipDir, [{
+      name: "v6.0.0", status: "planned", epic_id: epic.id,
+      target_date: null, release: null, ship_criteria: [],
+    }]);
+
+    const result = await milestoneShip(shipDir, "v6.0.0", {
+      issueManager: adapter,
+      manifest: {},
+    });
+    assert.equal(result.shipped, true);
+
+    const reread = new JsonAdapter(shipDir);
+    const epics = await reread.listEpics();
+    const shippedEpic = epics.find((e) => e.id === epic.id);
+    assert.ok(shippedEpic, "the epic must still exist");
+    assert.equal(
+      shippedEpic.status,
+      "closed",
+      "the epic must actually be closed on the real json backend, not silently left open"
+    );
+
+    rmSync(shipDir, { recursive: true, force: true });
+  });
+
+  it("uses close() directly on a backend where it succeeds (beads shape) and never falls back to updateEpic", async () => {
+    // `br` REFUSES a terminal status via `update` (must go through `br
+    // close` for close-policy/attribution) — so the fix must not blindly
+    // prefer updateEpic() over close(); it must try close() first and only
+    // fall back on the JSON-specific NOT_FOUND signal. Confirmed live
+    // against a real `br` binary: `br update <epic> --status closed`
+    // returns VALIDATION_FAILED with exactly this message.
+    saveMilestones(dir, [{
+      name: "v7.0.0", status: "planned", epic_id: "epic-7",
+      target_date: null, release: null, ship_criteria: [],
+    }]);
+    let closeCalled = false;
+    let updateEpicCalled = false;
+    const mockManager = {
+      listEpics: async () => [{ id: "epic-7" }],
+      list: async () => [],
+      close: async () => { closeCalled = true; },
+      updateEpic: async () => { updateEpicCalled = true; },
+    };
+    const result = await milestoneShip(dir, "v7.0.0", { issueManager: mockManager, manifest: {} });
+    assert.equal(result.shipped, true);
+    assert.equal(closeCalled, true, "close() must be tried first");
+    assert.equal(updateEpicCalled, false, "updateEpic() must not be called when close() already succeeded");
   });
 });
 
@@ -1451,7 +1520,8 @@ describe("milestoneShip strategy: manual", () => {
     const mockManager = {
       listEpics: async () => [{ id: "epic-1" }],
       list: async () => [],
-      close: async (id, reason) => { closedEpics.push({ id, reason }); },
+      close: async () => { const e = new Error("Issue not found"); e.code = "NOT_FOUND"; throw e; },
+      updateEpic: async (id, changes) => { closedEpics.push({ id, ...changes }); },
     };
     const result = await milestoneShip(dir, "v1.0.0", {
       issueManager: mockManager,
