@@ -631,13 +631,11 @@ Charters scanned: <N>
 
 **Goal:** Detect dead exports, orphan files, unused dependencies, stale code, and duplicate logic in source code by dispatching `/adev:codehealth`.
 
-**Prerequisite check:** Verify that `.context-index/hygiene/symbol-ranks.json` and `.context-index/hygiene/dependency-graph.json` exist. If either is missing, output SKIP:
+**Prerequisite check:** Verify `symbol-ranks.json`/`dependency-graph.json` exist AND `dependency-graph.json`'s `commit` is <50 commits behind HEAD (Pass 5's threshold, issue-u1jtc0). Either failing → SKIP; do not invoke codehealth:
 
 ```
-| Code Health | SKIP | Repomap artifacts not found — run `/adev:repomap` first |
+| Code Health | SKIP | Repomap artifacts not found/stale — run `/adev:repomap` |
 ```
-
-Do not invoke `/adev:codehealth`. Proceed to the report.
 
 **Steps:**
 

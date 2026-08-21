@@ -446,7 +446,10 @@ materialized_at: 2026-08-16T00:00:00.000Z
     const repo = tmp();
     const domainPath = join(PLUGIN_ROOT, "templates/domains/software/reviewers.yaml");
     const domain = parseYaml(readFileSync(domainPath, "utf8"));
-    const active = domain.reviewers.filter((r) => r.enabled !== false);
+    // `dispatch: never` entries (adev-plugin-j7pq.10's quick-synthesized-reviewer)
+    // are declared for severity resolution only — never looped through the
+    // context-pack-rendering dispatch path this test is asserting against.
+    const active = domain.reviewers.filter((r) => r.enabled !== false && r.dispatch !== "never");
     const byId = Object.fromEntries(active.map((r) => [r.id, r.context_pack]));
     assert.deepEqual(byId, {
       "referent-integrity": "referent-integrity",

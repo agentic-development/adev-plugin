@@ -149,13 +149,15 @@ describe('backward-compat: software profile through overlay pipeline', () => {
     // (templates/domains/software/reviewers.yaml), so this test pins
     // identity against THAT file instead — the current source of truth for
     // what "the software domain's reviewers" means. `mergeReviewers` does
-    // not filter on `enabled`, so all 7 declared entries are expected here;
-    // enablement is applied downstream by lib/governance/review-config.mjs.
+    // not filter on `enabled`, so all 8 declared entries are expected here
+    // (the 8th, quick-synthesized-reviewer, is `dispatch: never` — declared
+    // for severity resolution only, adev-plugin-j7pq.10); enablement is
+    // applied downstream by lib/governance/review-config.mjs.
     const expectedDefaults = parseYaml(
       readFileSync(join(PLUGIN_ROOT, 'templates', 'domains', 'software', 'reviewers.yaml'), 'utf8')
     );
 
-    assert.equal(reviewers.length, 7, 'Should have 7 reviewers (5 active + 2 disabled)');
+    assert.equal(reviewers.length, 8, 'Should have 8 reviewers (5 active + 2 disabled + 1 severity-only)');
 
     for (const expected of expectedDefaults.reviewers) {
       const actual = reviewers.find(r => r.id === expected.id);

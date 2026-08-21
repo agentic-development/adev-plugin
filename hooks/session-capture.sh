@@ -23,11 +23,28 @@ source "$(dirname "$0")/_parse-stdin.sh"
 # run BEFORE (and independently of) the provider=="native" gate inside the
 # lib capture path, since the original context-read-tracker.sh had no such
 # gate.
+#
+# Anchored to find_context_index()'s result (sourced above from
+# _parse-stdin.sh — the same helper session-start.sh uses for this flag),
+# not a bare relative path: this hook's cwd is whatever the triggering tool
+# call inherited, which is not necessarily the project root. A bare
+# relative `.context-index/...` write created a bogus SECOND .context-index/
+# tree nested inside whatever directory a subagent happened to `cd` into
+# (adev-plugin-2bn6, observed live as
+# .context-index/specs/features/implementation/.context-index/.context-preflight-ok).
+# When no .context-index/ exists anywhere walkable from cwd yet (a brand-new
+# project bootstrap), cwd is the best information available — same as today.
 FILE_PATH="${CLAUDE_TOOL_INPUT_file_path:-}"
 case "$FILE_PATH" in
   *.context-index/*|*/.context-index/*)
-    mkdir -p .context-index
-    touch .context-index/.context-preflight-ok
+    CONTEXT_ROOT=$(find_context_index 2>/dev/null || true)
+    if [ -n "$CONTEXT_ROOT" ]; then
+      mkdir -p "$CONTEXT_ROOT/.context-index"
+      touch "$CONTEXT_ROOT/.context-index/.context-preflight-ok"
+    else
+      mkdir -p .context-index
+      touch .context-index/.context-preflight-ok
+    fi
     ;;
 esac
 

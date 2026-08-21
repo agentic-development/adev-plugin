@@ -119,15 +119,20 @@ Execute passes in this fixed order. If `--check` is provided, skip passes not in
 2. For each node in `nodes[]` within the resolved file scope:
    - If the node's `path` does NOT appear in the "imported files" set, it is an orphan candidate.
 3. **Exclude entry points** from orphan detection:
-   - Files matching `**/index.*` (barrel files / entry points)
    - Files matching `**/cli.*` or `**/main.*` (CLI entry points)
    - Files listed as hook scripts in `hooks/hooks.json`
    - Files whose FileNode `tags` includes `"public-api-entry"` (rev-2 schema — these files are declared as the package's public API surface via `package.json:exports` and are consumed by external dependents not visible in the local graph).
    - Test files matching `hygiene.coverage_exclude` patterns
-4. **Verify candidates against hook scripts:** Before reporting an orphan, grep hook shell scripts (`hooks/*.sh`) for the module's filename or its exported symbol names. Hooks often contain inline Node.js blocks with dynamic `import()` calls that reference library modules — these are invisible in the static `.mjs` dependency graph but are real consumers.
+
+   **Do NOT blanket-exclude `**/index.*`.** A file named `index.mjs` because it *is* the entry point, having zero inbound edges, is exactly the failure this pass exists to catch — not a reason to exempt it (issue-u1jtc0, motivated by `lib/repomap/index.mjs`: a 1,973-line subtree with zero real callers that read as alive purely because the old exclusion hid it). An `index.*` candidate goes through step 4's verification like any other file; it is excluded only if that verification actually finds a consumer.
+4. **Verify candidates against real consumers** (required for every orphan candidate, `index.*` files included — this step is what step 3's `public-api-entry` and hook exclusions used to skip past for `index.*` files without checking):
+   - Grep hook shell scripts (`hooks/*.sh`) for the module's filename or its exported symbol names. Hooks often contain inline Node.js blocks with dynamic `import()` calls that reference library modules — these are invisible in the static `.mjs` dependency graph but are real consumers.
+   - Grep `package.json`'s `scripts` section for the file's path.
+   - Grep `cli/index.mjs`'s verb dispatch table (and `lib/cli/*.mjs`) for an `import(...)` referencing the file's containing module — a lib subtree with a real CLI verb is not orphaned even if the entry point itself has no in-repo importer.
+   - A candidate cleared by any of the three checks above is not an orphan. A candidate that clears NONE of them is a genuine finding — do not exempt it just because its name matches `**/index.*`.
 5. **Severity classification:**
    - **high:** The orphan file has no outgoing edges either (imports nothing and is imported by nothing — fully isolated).
-   - **medium:** The orphan file has outgoing edges (imports others but nobody imports it — possible unused entry point).
+   - **medium:** The orphan file has outgoing edges (imports others but nobody imports it — possible unused entry point). An `index.*` file that fails step 4's verification lands here: it typically imports its own submodules (outgoing edges) while nothing imports it back.
 6. Emit findings: `{ pass: "orphan-files", severity, file_path, description }`.
 
 ### Pass 3: Unused Dependency Detection (`unused-deps`)

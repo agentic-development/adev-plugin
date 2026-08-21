@@ -41,10 +41,10 @@ Produce a list of findings. Each finding must include:
 For every BLOCK finding (severity = `blocker`), also emit (reviewer-slug for this prompt is
 `consistency-analyzer`):
 
+- **`finding_type`:** a stable kebab-case category aligned with the **Category** field above (e.g., `naming`, `pattern`, `contract`, `domain-model`, `terminology`, `adr-compliance`, `module-boundary`). Do NOT compute `blocker_id` yourself — you cannot produce a SHA-256 hash deterministically. Emit `finding_type` here; the aggregator builds the canonical `blocker_id` (`consistency-analyzer:<finding-type>:<location-hash>`) from your `finding_type` and `section_anchor` via `lib/blocker-id.mjs::buildBlockerId`.
 - **`section_anchor`:** the spec-section anchor the finding implicates (e.g., `preconditions`, `behaviors-3`, `error-cases`). Drives byte-identical preservation of unaffected sections in `/adev:specify --revise`.
-- **`finding-type`:** a stable kebab-case category aligned with the **Category** field above (e.g., `naming`, `pattern`, `contract`, `domain-model`, `terminology`, `adr-compliance`, `module-boundary`).
 
-**Do not emit a `blocker_id` field.** See the note below on why, and what to do instead.
+The aggregator constructs and validates `blocker_id` from your `finding_type` + `section_anchor`; a malformed `finding_type` produces `INVALID_BLOCKER_ID` advisory and falls through to `LEGACY_REVIEWER_OUTPUT` (no auto-retry).
 
 ## Rules
 
@@ -60,36 +60,3 @@ Verify: (1) every finding cites the conflicting file and section, (2) you have n
 ## Output Constraint
 
 Keep your response under 1,500 tokens. Focus on findings, not restating the input.
-
-## On `blocker_id`
-
-Some other reviewer prompts in this pipeline (`structural-architect-prompt.md`,
-`security-reviewer-prompt.md`) instruct their model to mint a `blocker_id` by hashing
-`<section-anchor>:<truncated-finding-text>` with a cryptographic digest function and taking the
-first 8 hex characters of the result. **You must not do this, and you must not approximate it by
-typing out something that looks like a digest.**
-
-You are running under the `reviewer-fast` execution profile (`templates/governance/profiles.yaml`),
-which extends `read-only`: `filesystem: { write: deny, execute: deny }`, and its tool allowlist is
-limited to `filesystem-read`, `search`, and `agent`. There is no shell category and no way to invoke
-a CLI command or a hashing routine from inside this review. Any 8-hex-character string you wrote by
-hand would not be a real cryptographic digest — it would be fabricated, and reviewers that
-fabricate identifiers under `execute: deny` are exactly the failure mode this pipeline is designed
-to catch.
-
-`adev heuristics signature --origin review-specs --blocker-id <id>` is a real command
-(`lib/cli/heuristics.mjs`), and it does appear in this pipeline — but it is run by the
-*orchestrating skill* (`skills/review-specs/SKILL.md`, Step "6b-ter. Heuristics on BLOCK"), not by
-you, and only *after* a reviewer has already emitted a well-formed `blocker_id`. In that inherited
-mode the command hashes nothing at all — it reuses the hash component of the `blocker_id` you pass
-it. It has no mode that mints a `blocker_id` from scratch, so it is not a tool you could call to
-"get" one even if your profile allowed shell execution.
-
-Leave `blocker_id` off your findings entirely. The documented aggregator behavior for a finding
-with no `blocker_id` (`skills/review-specs/SKILL.md`, aggregator validation rules) is to log a
-`LEGACY_REVIEWER_OUTPUT` advisory and skip that finding for the auto-retry sidecar
-(`.blockers.md`) — it does **not** drop the finding from the `.review.md` output, and it does not
-downgrade the severity. Your `blocker` verdict and citation are what carry the weight: a
-`finding-type`, a `section_anchor`, and a specific, cited conflict (file + section) are sufficient
-for this finding to be actionable by a human or by downstream tooling. A well-formed but fabricated
-`blocker_id` would be strictly worse than no `blocker_id` at all.

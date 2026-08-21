@@ -8,3 +8,14 @@ reviewers:
     profile: reviewer-capable
     context_pack: base
     severity_cap: blocker
+
+  # Declared for severity resolution only — the `quick` rigor tier dispatches
+  # this reviewer directly by prompt path, bypassing this registry's dispatch
+  # loop entirely. See templates/domains/software/reviewers.yaml for the
+  # full rationale (adev-plugin-j7pq.10).
+  - id: quick-synthesized-reviewer
+    name: "Quick Synthesized Reviewer"
+    dispatch: never
+    prompt: "plugin:review-specs/quick-synthesized-reviewer-prompt.md"
+    profile: reviewer-capable
+    severity_cap: blocker
