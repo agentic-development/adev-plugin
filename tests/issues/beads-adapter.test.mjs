@@ -495,3 +495,70 @@ describe("BeadsAdapter — affected_modules round-trip (RI-2 fix, bug-selection-
     });
   });
 }
+
+// ─── BeadsAdapter.update() body/description alias (issue-80m9s2) ──────────
+{
+  /**
+   * `update()` reads only `changes.notes`, unlike `create()` which goes
+   * through `validateIssue` (which resolves `body`/`description` aliases
+   * into `notes` via `resolveNotes`, per issue-484). `interface.mjs` ships
+   * `normalizeNotesAliases(changes)` specifically to close this gap for
+   * update() call sites — `json-adapter.mjs` calls it, but `beads-adapter.mjs`
+   * never did, so `update(id, { body: "..." })` silently dropped the text on
+   * the beads backend. Confirmed live: 11 topic epics created with
+   * `updateEpic(id, { description: "..." })`-shaped calls during the
+   * 2026-08-14 board restructure landed with zero-length notes.
+   */
+  function makeUpdateAdapter() {
+    const c = makeAdapter();
+    // update() resolves via `_scan()` (not `_scanRaw()`, which only backs the
+    // create-time follow-up calls) — give it a resolvable record.
+    c.adapter._scan = () => [{ id: "br-1", external_ref: "issue-1" }];
+    return c;
+  }
+
+  describe("BeadsAdapter — update() resolves body/description aliases into notes (issue-80m9s2)", () => {
+    it("update(id, { body }) reaches br as --description", async () => {
+      const c = makeUpdateAdapter();
+      await c.adapter.update("issue-1", { body: "restored epic scope" });
+      const update = c.calls.find((call) => call[0] === "update");
+      assert.ok(update, "update() must emit a br update call");
+      const i = update.indexOf("--description");
+      assert.notEqual(i, -1, "body alias must reach --description, not be dropped");
+      assert.equal(update[i + 1], "restored epic scope");
+    });
+
+    it("update(id, { description }) reaches br as --description", async () => {
+      const c = makeUpdateAdapter();
+      await c.adapter.update("issue-1", { description: "restored epic scope" });
+      const update = c.calls.find((call) => call[0] === "update");
+      const i = update.indexOf("--description");
+      assert.notEqual(i, -1);
+      assert.equal(update[i + 1], "restored epic scope");
+    });
+
+    it("update(id, { notes }) is unchanged (canonical field keeps working)", async () => {
+      const c = makeUpdateAdapter();
+      await c.adapter.update("issue-1", { notes: "canonical text" });
+      const update = c.calls.find((call) => call[0] === "update");
+      const i = update.indexOf("--description");
+      assert.notEqual(i, -1);
+      assert.equal(update[i + 1], "canonical text");
+    });
+
+    it("update(id, { body, title }) resolves the alias without dropping sibling fields", async () => {
+      const c = makeUpdateAdapter();
+      await c.adapter.update("issue-1", { body: "text", title: "new title" });
+      const update = c.calls.find((call) => call[0] === "update");
+      assert.notEqual(update.indexOf("--description"), -1);
+      assert.notEqual(update.indexOf("--title"), -1);
+    });
+
+    it("update(id, {}) with no alias emits no --description flag", async () => {
+      const c = makeUpdateAdapter();
+      await c.adapter.update("issue-1", { title: "only a title" });
+      const update = c.calls.find((call) => call[0] === "update");
+      assert.equal(update.indexOf("--description"), -1);
+    });
+  });
+}
