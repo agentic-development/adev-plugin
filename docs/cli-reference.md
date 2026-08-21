@@ -317,6 +317,19 @@ adev report --type review-round --spec <p> --plan <p>.plan.md --task-id t1 \
 
 **Implementation:** `lib/cli/report.mjs`. **Called by:** `/adev:plan`, `/adev:specify`, `/adev:review-specs`, `/adev:implement`, `/adev:validate`.
 
+### `manifest`
+
+**Purpose:** Lint `.context-index/manifest.yaml`'s raw text for structural defects silent YAML last-wins parsing hides — currently, duplicate top-level keys (e.g. two `build:` blocks, where the later one silently wins and the earlier is dead config with no signal).
+
+**Signature:** `manifest lint [--json]`
+
+**Example:**
+```
+adev manifest lint --json
+```
+
+**Implementation:** `lib/cli/manifest.mjs`. **Called by:** `/adev:hygiene` (Audit Pass 8, Governance Policy Health).
+
 ### `diagnose`
 
 **Purpose:** Run registered diagnostics over lifecycle artifacts (write-time integrity checks). Exit 2 if any error-severity diagnostic fires.
