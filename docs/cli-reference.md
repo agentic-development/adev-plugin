@@ -661,6 +661,35 @@ Unlike `claim`/`release`, `next` is not yet called from any skill's preflight �
 
 **Implementation:** `lib/cli/issues.mjs` (+ `issues-migrate.mjs`, `issues-claim.mjs`, `issues-stale.mjs`, `issues-set-modules.mjs`, `issues-next.mjs`). **Called by:** `/adev:issues` (`claim`/`release`/`stale`/`set-modules`/`next`); `claim`/`release` also run in preflight by `/adev:implement` and `/adev:debug`.
 
+### `bugfix-loop`
+
+**Purpose:** Persist and drive one `BugfixLoopRun`'s state across `/adev:bugfix-loop`'s self-re-invoking turns — resolving the run, guarding status/budget before each bug selection, recording attempts, and finishing with the terminal token the skill prints.
+
+**Signature:** `bugfix-loop <create|guard|record-attempt|complete-turn|finish|latest> [flags]`
+
+**Example:**
+```
+adev bugfix-loop create --max-bugs 20 --max-turns 20 --json
+adev bugfix-loop guard --run-id <id> --json
+adev bugfix-loop finish --run-id <id> --status complete --json
+```
+
+**Implementation:** `lib/cli/bugfix-loop.mjs`. **Called by:** `/adev:bugfix-loop`, every turn.
+
+### `tracker-sync`
+
+**Purpose:** The two-way bridge between the local issue board and an external GitHub tracker, used only when `/adev:bugfix-loop --github-sync` is passed. `inbound` pulls candidates once per turn before selection; `outbound` posts the outcome comment for a completed attempt.
+
+**Signature:** `tracker-sync <inbound|outbound> [flags]`
+
+**Example:**
+```
+adev tracker-sync inbound --run-id <id> --json
+adev tracker-sync outbound --local-issue-id <id> --verdict FIXED --completed-at <iso-ts> --json
+```
+
+**Implementation:** `lib/cli/tracker-sync.mjs`. **Called by:** `/adev:bugfix-loop --github-sync`.
+
 ### `retro`
 
 **Purpose:** Gather session activity for a retrospective analysis window (feeds `/adev:retro`).
@@ -690,6 +719,19 @@ A `--signature` retrieval is by definition error-time, so it caps injection with
 
 **Implementation:** `lib/cli/heuristics.mjs`. **Called by:** `/adev:validate`, `/adev:implement`, `/adev:plan`, `/adev:brainstorm`, `/adev:specify`, `/adev:review-specs`, `/adev:debug`, `/adev:recover`, `/adev:prototype`. Both error-time (`--signature`) calls are made from skill prose: `/adev:validate` on FAIL and `/adev:review-specs` on BLOCK.
 
+### `skill-ext`
+
+**Purpose:** Read skill extension content from `.context-index/skill-extensions/` (extension-pack layers plus a project-level layer) and write the concatenated result to stdout, or the literal sentinel `__NONE__` when there is none. The single most universally-invoked verb in the system — every SKILL.md is constitutionally required (CLAUDE.md) to open with a Load Skill Extensions block calling it, enforced by `tests/skills-extension-coverage.test.mjs`.
+
+**Signature:** `skill-ext load --skill <name>`
+
+**Example:**
+```
+adev skill-ext load --skill review-specs
+```
+
+**Implementation:** `lib/cli/skill-ext.mjs`. **Called by:** every skill in `skills/` (30 of 30).
+
 ### `domain`
 
 **Purpose:** Resolve the active domain for a module and load domain-aware config (gates, reviewers, test-config, verification), merging project governance on top.
@@ -704,6 +746,19 @@ adev domain load-gates --module auth
 ```
 
 **Implementation:** `lib/cli/domain.mjs`. **Called by:** `/adev:validate`, `/adev:review-specs`, `/adev:implement`, `/adev:specify`, `/adev:brainstorm`, `/adev:write-test`.
+
+### `domain-picker`
+
+**Purpose:** Run the init-time domain-extension picker against a project root, standalone. Prompts interactively and emits the picker result JSON to stdout. Primarily for debugging — the picker is normally invoked during `adev install` / `adev upgrade`, not called directly.
+
+**Signature:** `domain-picker run [--project-root <p>] [--plugin-root <p>]`
+
+**Example:**
+```
+adev domain-picker run --project-root .
+```
+
+**Implementation:** `lib/cli/domain-extension-picker.mjs`. **Called by:** `adev install`, `adev upgrade`.
 
 ### `cost`
 
