@@ -656,7 +656,7 @@ adev issues set-modules issue-42 cli,hooks
 
 **`set-modules <id> <slug>[,<slug>...] [--json]`:** sets `WorkItem.affected_modules` — the module-safety tag `adev issues next` (bug-selection-and-eligibility.spec.md) consults for its blast-radius and reserved-tag safety checks. This is v1's only producer for the field: a direct, scriptable verb, deliberately unpolished (no validation against `manifest.modules[]`, no GitHub-label sync — both remain charter Deferred Capabilities). Works identically on the `json` and `beads` backends. An issue with no `affected_modules` set fails closed and is never autonomously selected.
 
-**`next [--type bug] [--max-priority P0-P4] [--json]`:** read-only bug-selection verb for the autonomous bugfix loop. Returns the single highest-priority eligible `type: "bug"` WorkItem within the resolved priority bound, or `{"bug": null}` if none qualify — never a partial or ambiguous result, and never a write (no claim, no close, no AttemptRecord mutation). `--type` currently only accepts `"bug"` (the default); any other value exits non-zero with `UNSUPPORTED_TYPE`. `--max-priority` defaults to `P3` (covering `P2`/`P3`) and rejects `P0`/`P1` with `INVALID_PRIORITY_BOUND` — those priorities are outside the eligibility filter's safety boundary by design, not merely deprioritized, and can never be selected via this verb regardless of flags. Eligibility also requires: `status` other than `closed`/`deferred`; a single `affected_modules` entry that is a real `manifest.modules[].slug` and not a reserved safety tag (`review-gate`, `convergence-detector`, `retry-loop`, `bugfix-loop`) or a manifest-configured `tasks.bugfix_loop.excluded_modules` entry; no live (non-expired) claim; no open blocking dependencies; and no `AttemptRecord.last_verdict` of `NO_PROGRESS`, `REGRESSED`, or `BUDGET_EXHAUSTED`. Ties within a priority band resolve FIFO by oldest `created`. Exits non-zero with `ISSUE_BOARD_NOT_CONFIGURED` if `tasks.backend` is unset.
+**`next [--type bug] [--max-priority P0-P4] [--json]`:** read-only bug-selection verb for the autonomous bugfix loop. Returns the single highest-priority eligible `type: "bug"` WorkItem within the resolved priority bound, or `{"bug": null}` if none qualify — never a partial or ambiguous result, and never a write (no claim, no close, no AttemptRecord mutation). `--type` currently only accepts `"bug"` (the default); any other value exits non-zero with `UNSUPPORTED_TYPE`. `--max-priority` defaults to `P3` (covering `P2`/`P3`) and accepts the full `P0`-`P4` range — a malformed value (not `P0`-`P4`) still exits non-zero with `INVALID_PRIORITY_BOUND`. The module-exclusion floor below (reserved safety tags and any manifest-configured `tasks.bugfix_loop.excluded_modules`) is the actual safety boundary, not the priority band — it is unconditional and applies regardless of `--max-priority`. When `--max-priority P0` or `P1` is used, `adev issues next` additionally prints the effective excluded-module set to stderr before returning, so the operator can see what remains protected at the widened bound. Eligibility also requires: `status` other than `closed`/`deferred`; a single `affected_modules` entry that is a real `manifest.modules[].slug` and not a reserved safety tag (`review-gate`, `convergence-detector`, `retry-loop`, `bugfix-loop`) or a manifest-configured `tasks.bugfix_loop.excluded_modules` entry; no live (non-expired) claim; no open blocking dependencies; and no `AttemptRecord.last_verdict` of `NO_PROGRESS`, `REGRESSED`, or `BUDGET_EXHAUSTED`. Ties within a priority band resolve FIFO by oldest `created`. Exits non-zero with `ISSUE_BOARD_NOT_CONFIGURED` if `tasks.backend` is unset.
 
 Unlike `claim`/`release`, `next` is not yet called from any skill's preflight — no skill invokes `adev issues next` today; it is a standalone verb for the (separately specified) autonomous bugfix loop to call once that loop exists.
 
@@ -664,18 +664,29 @@ Unlike `claim`/`release`, `next` is not yet called from any skill's preflight �
 
 ### `bugfix-loop`
 
-**Purpose:** Persist and drive one `BugfixLoopRun`'s state across `/adev:bugfix-loop`'s self-re-invoking turns — resolving the run, guarding status/budget before each bug selection, recording attempts, and finishing with the terminal token the skill prints.
+**Purpose:** Persist and drive one `BugfixLoopRun`'s state across `/adev:bugfix-loop`'s self-re-invoking turns — resolving the run, checking branch freshness, guarding status/budget before each bug selection, isolating per-bug worktrees, recording attempts, automating commit/PR on `FIXED` verdicts, and finishing with the terminal token (plus a running summary table) the skill prints.
 
-**Signature:** `bugfix-loop <create|guard|record-attempt|complete-turn|finish|latest> [flags]`
+**Signature:** `bugfix-loop <create|guard|record-attempt|complete-turn|finish|latest|check-freshness|commit-pr> [flags]`
 
 **Example:**
 ```
-adev bugfix-loop create --max-bugs 20 --max-turns 20 --json
+adev bugfix-loop create --max-bugs 20 --max-turns 20 --starting-branch main --json
+adev bugfix-loop check-freshness --json
 adev bugfix-loop guard --run-id <id> --json
+adev bugfix-loop record-attempt --run-id <id> --issue <id> --verdict FIXED --files-touched 3 --tests-added 1 --priority-bound P3
+adev bugfix-loop commit-pr --run-id <id> --issue <id> --title "Fix the bug" --pr-base main --json
 adev bugfix-loop finish --run-id <id> --status complete --json
 ```
 
-**Implementation:** `lib/cli/bugfix-loop.mjs`. **Called by:** `/adev:bugfix-loop`, every turn.
+**`create`** accepts `--starting-branch <ref>`, persisted as the run's worktree base-ref fallback for the first bug of a `--worktree-per-bug` run. **`guard`**'s JSON result always includes `worktree_base_ref` (the previous bug's completed branch this run, or `starting_branch`) alongside `proceed`/`reason`/`status`/`budget_reason`.
+
+**`check-freshness [--json]`:** reports how far HEAD is behind/ahead of the remote default branch. Stdout: `{status: "ok"|"warn"|"blocked"|"degraded", ahead?, behind?, reason?}`. Reads `tasks.bugfix_loop.freshness.{soft_threshold,hard_threshold}` from the manifest (defaults: soft=50, hard=unset/warn-only). Always exits 0 — a hard-threshold breach is reported via `status: "blocked"` in the JSON, not a non-zero exit; the calling skill halts on that value itself.
+
+**`record-attempt`** accepts `--verdict <FIXED|PARKED|UNREPRODUCIBLE>` (optional — presence gates whether a summary row is appended), `--files-touched <n>`, `--tests-added <n>`, and `--priority-bound <P0-P4>`. When `--verdict` is given, it appends a row to the run's running summary table (issue id, verdict, files touched, tests added, priority bound, turn) and prints the table; when omitted, no summary row is appended. **`finish`**'s JSON result includes a `summary_table` field (the full markdown table) so the calling skill can reprint it before the terminal token without a second read.
+
+**`commit-pr --run-id <id> --issue <id> [--title <t>] [--notes <n>] [--spec-path <p>] [--pr-base <ref>] [--json]`:** commits the isolated diff, pushes `adev/bugfix-<issue-id>`, and opens a PR against `--pr-base`. On success, updates the run's `last_worktree_branch` so the next bug's worktree stacks on this one. `--title`/`--notes` are untrusted WorkItem content — unsafe content (shell metacharacters, over-length, etc.) is refused, never sanitized, and falls back to a generic templated message keyed only by the issue id. Degrades to `{skipped: true, reason}` on any commit/push/`gh` failure — always exits 0, never blocks the loop.
+
+**Implementation:** `lib/cli/bugfix-loop.mjs` (+ `lib/bugfix-loop-run.mjs`, `lib/bugfix-loop-freshness.mjs`, `lib/bugfix-loop-commit.mjs`). **Called by:** `/adev:bugfix-loop`, every turn.
 
 ### `tracker-sync`
 

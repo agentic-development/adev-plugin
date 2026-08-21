@@ -37,12 +37,11 @@ test("resolvePriorityBound: omitted --max-priority defaults to P3 (BEH-8 safety 
   assert.equal(result.error, null);
 });
 
-test("resolvePriorityBound: P0 and P1 are rejected (BEH-8)", () => {
-  for (const p of ["P0", "P1"]) {
-    const result = resolvePriorityBound(p);
-    assert.equal(result.bound, null);
-    assert.equal(result.error?.code, "INVALID_PRIORITY_BOUND");
-  }
+test("resolvePriorityBound: P0 and P1 are accepted (BEH-8 amendment — configurable priority band)", () => {
+  assert.equal(resolvePriorityBound("P0").bound, 0);
+  assert.equal(resolvePriorityBound("P0").error, null);
+  assert.equal(resolvePriorityBound("P1").bound, 1);
+  assert.equal(resolvePriorityBound("P1").error, null);
 });
 
 test("resolvePriorityBound: malformed value is rejected", () => {
@@ -194,12 +193,27 @@ test("selectNextEligibleBug: priority above bound excluded", () => {
   assert.equal(result.bug, null);
 });
 
-test("selectNextEligibleBug: P0/P1 bugs are NEVER returned even though maxPriorityBound (2 or 3) would numerically admit them (BEH-8 safety boundary — round-1 review blocker)", () => {
-  // maxPriorityBound can only ever resolve to 2 or 3 (Task 1 rejects P0/P1 at the flag),
-  // but a P0/P1 bug could still exist on the board — the ceiling check `priority > bound`
-  // does not exclude a priority NUMERICALLY BELOW the bound. An explicit floor is required.
-  const issues = [bug({ id: "p0-bug", priority: 0 }), bug({ id: "p1-bug", priority: 1 })];
-  const result = selectNextEligibleBug({ issues, manifest: { modules: [{ slug: "cli" }] }, maxPriorityBound: 3, attemptRecords: new Map() });
+test("selectNextEligibleBug: an eligible P0 bug is returned when maxPriorityBound admits it (BEH-8 amendment)", () => {
+  const issues = [bug({ id: "p0-bug", priority: 0 })];
+  const result = selectNextEligibleBug({ issues, manifest: { modules: [{ slug: "cli" }] }, maxPriorityBound: 0, attemptRecords: new Map() });
+  assert.equal(result.bug.id, "p0-bug");
+});
+
+test("selectNextEligibleBug: a P0 bug tagged against a reserved safety module is still excluded (BEH-7 unaffected by BEH-8 widening)", () => {
+  const issues = [bug({ id: "p0-bug", priority: 0, affected_modules: ["review-gate"] })];
+  const result = selectNextEligibleBug({ issues, manifest: { modules: [] }, maxPriorityBound: 0, attemptRecords: new Map() });
+  assert.equal(result.bug, null);
+});
+
+test("selectNextEligibleBug: a P0 bug with empty affected_modules is still excluded (BEH-10 unaffected by BEH-8 widening)", () => {
+  const issues = [bug({ id: "p0-bug", priority: 0, affected_modules: [] })];
+  const result = selectNextEligibleBug({ issues, manifest: { modules: [{ slug: "cli" }] }, maxPriorityBound: 0, attemptRecords: new Map() });
+  assert.equal(result.bug, null);
+});
+
+test("selectNextEligibleBug: a P0 bug with an unrecognized module slug is still excluded (BEH-11 unaffected by BEH-8 widening)", () => {
+  const issues = [bug({ id: "p0-bug", priority: 0, affected_modules: ["typo-slug"] })];
+  const result = selectNextEligibleBug({ issues, manifest: { modules: [{ slug: "cli" }] }, maxPriorityBound: 0, attemptRecords: new Map() });
   assert.equal(result.bug, null);
 });
 
@@ -308,11 +322,37 @@ describe("adev issues next — CLI", () => {
     assert.match(result.stderr, /UNSUPPORTED_TYPE/);
   });
 
-  it("INVALID_PRIORITY_BOUND for P0/P1/malformed", () => {
-    for (const p of ["P0", "P1", "P9"]) {
+  it("INVALID_PRIORITY_BOUND for malformed --max-priority", () => {
+    const result = runCli(["--max-priority", "P9", "--json"], emptyBoardDir);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /INVALID_PRIORITY_BOUND/);
+  });
+
+  it("--max-priority P0/P1 succeed end-to-end (BEH-8 amendment — configurable priority band)", () => {
+    for (const p of ["P0", "P1"]) {
       const result = runCli(["--max-priority", p, "--json"], emptyBoardDir);
-      assert.notEqual(result.status, 0);
-      assert.match(result.stderr, /INVALID_PRIORITY_BOUND/);
+      assert.equal(result.status, 0);
+      assert.deepEqual(JSON.parse(result.stdout), { bug: null });
+    }
+  });
+
+  it("--max-priority P0/P1 print the effective excluded-module set to stderr (BEH-12)", () => {
+    for (const p of ["P0", "P1"]) {
+      const result = runCli(["--max-priority", p, "--json"], emptyBoardDir);
+      assert.equal(result.status, 0);
+      assert.deepEqual(JSON.parse(result.stdout), { bug: null });
+      assert.match(result.stderr, /review-gate/);
+      assert.match(result.stderr, /convergence-detector/);
+      assert.match(result.stderr, /retry-loop/);
+      assert.match(result.stderr, /bugfix-loop/);
+    }
+  });
+
+  it("--max-priority P2/P3/P4 and the default do NOT print the excluded-module set (BEH-12 — only widened invocations get it)", () => {
+    for (const args of [["--type", "bug", "--json"], ["--max-priority", "P3", "--json"], ["--max-priority", "P4", "--json"]]) {
+      const result = runCli(args, emptyBoardDir);
+      assert.equal(result.status, 0);
+      assert.equal(result.stderr, "");
     }
   });
 

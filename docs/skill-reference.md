@@ -463,7 +463,7 @@ Batching and `--parallel` operate at different scopes: batching groups cohesive,
 
 ### `/adev:bugfix-loop`
 
-**Purpose:** Self-re-invoking, one-bug-per-turn loop that drains eligible P2/P3 bugs from the issue board unattended, using `/adev:debug --auto` for each attempt. Each turn selects the next eligible bug (`adev issues next`), claims it, attempts a fix, records the outcome, and — unless the run is terminal — immediately self-re-invokes for the next turn via the Skill tool, so a single top-level invocation can drain many bugs across many turns without manual re-entry.
+**Purpose:** Self-re-invoking, one-bug-per-turn loop that drains eligible bugs from the issue board unattended, using `/adev:debug --auto` for each attempt. Each turn checks branch freshness, selects the next eligible bug (`adev issues next`), claims it (optionally inside a dedicated per-bug worktree), attempts a fix, records the outcome in a running summary table, optionally commits and opens a PR on a `FIXED` verdict, and — unless the run is terminal — immediately self-re-invokes for the next turn via the Skill tool, so a single top-level invocation can drain many bugs across many turns without manual re-entry.
 
 **Prerequisites:** `tasks.backend` configured (JSON or beads) and reachable.
 
@@ -472,16 +472,20 @@ Batching and `--parallel` operate at different scopes: batching groups cohesive,
 - `--max-turns <N>`: caps self-re-invocation turns. Default: 20, to keep an unattended run bounded when neither flag is set.
 - `--github-sync`: enables the tracker-provider bridge's inbound pull before bug selection and outbound comment writeback after each attempt. Degrades gracefully to local-board-only operation if GitHub/`gh` is unreachable — never halts the run.
 - `--resume [--resume-run-id <id>]`: internal, used only by the skill's own self-re-invocation between turns. Not intended for direct invocation.
+- `--worktree-per-bug`: default OFF. Each bug's claim, attempt, and any resulting commit run inside a dedicated `adev`-managed worktree instead of the shared working tree, isolating each bug's diff from every other bug's in-flight changes. The second and later bugs' worktrees stack on the previous bug's completed branch.
+- `--auto-commit`: default OFF. A `FIXED` verdict commits the isolated diff, pushes `adev/bugfix-<issue-id>`, and opens a PR (also triggered automatically when `--worktree-per-bug` is set). Without either flag, nothing is committed by the loop.
+- `--max-priority <P0-P4>`: caps the priority band bugs are selected from. Default: `P3` (covers `P2`/`P3`, the loop's original behavior). `P0`/`P1` are now reachable by explicit operator choice — a malformed value (anything other than `P0`-`P4`) halts the run before any bug is selected. The excluded-module safety floor (below) applies at every value, including `P0`.
 
-**Eligibility filter:** only bugs with `priority` P2/P3, a single `affected_modules` entry that isn't empty or on the excluded-module safety list (`review-gate`, `convergence-detector`, `retry-loop`, `bugfix-loop`, plus any manifest-configured additions), and an `AttemptRecord.last_verdict` that isn't `NO_PROGRESS`/`REGRESSED`/`BUDGET_EXHAUSTED` are selected. P0/P1 bugs are never selectable by this loop, regardless of flags — tag a bug's `affected_modules` via `adev issues set-modules <id> <slug>` to make it loop-eligible.
+**Eligibility filter:** only bugs with `priority` within the resolved `--max-priority` band (default `P2`/`P3`), a single `affected_modules` entry that isn't empty or on the excluded-module safety list (`review-gate`, `convergence-detector`, `retry-loop`, `bugfix-loop`, plus any manifest-configured additions), and an `AttemptRecord.last_verdict` that isn't `NO_PROGRESS`/`REGRESSED`/`BUDGET_EXHAUSTED` are selected. The excluded-module safety list is unconditional — it still excludes a matching bug even when `--max-priority P0` widens the priority band — tag a bug's `affected_modules` via `adev issues set-modules <id> <slug>` to make it loop-eligible.
 
 **Example:**
 ```
 /adev:bugfix-loop --max-bugs 5
 /adev:bugfix-loop --max-turns 10 --github-sync
+/adev:bugfix-loop --worktree-per-bug --auto-commit --max-priority P1
 ```
 
-**Expected Output:** One line per turn's outcome (bug attempted, verdict) as the loop progresses across self-re-invocations, ending with the final line `ADEV-BUGFIXLOOP: COMPLETE | BUDGET_EXHAUSTED | BLOCKED` — `COMPLETE` means the board was drained with no eligible bugs remaining, `BUDGET_EXHAUSTED` means `--max-bugs`/`--max-turns` was hit while eligible bugs remain, `BLOCKED` means a structural failure (e.g. an unreachable issue board) halted the run before any bug was attempted.
+**Expected Output:** One line per turn's outcome (bug attempted, verdict) as the loop progresses across self-re-invocations, plus a running summary table (issue id, verdict, files touched, tests added, priority bound, turn) reprinted before the terminal line, ending with the final line `ADEV-BUGFIXLOOP: COMPLETE | BUDGET_EXHAUSTED | BLOCKED` — `COMPLETE` means the board was drained with no eligible bugs remaining, `BUDGET_EXHAUSTED` means `--max-bugs`/`--max-turns` was hit while eligible bugs remain, `BLOCKED` means a structural failure (e.g. an unreachable issue board, a stale local branch past the configured hard threshold, or a malformed `--max-priority` value) halted the run before any bug was attempted.
 
 **Related Guides:** [Validate & Debug](validate-debug.md)
 
