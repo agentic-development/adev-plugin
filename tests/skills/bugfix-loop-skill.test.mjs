@@ -174,6 +174,30 @@ test('bugfix-loop SKILL.md documents Step 4.5 is skipped entirely for PARKED/UNR
   assert.match(step45Text, /BEH-5/);
 });
 
+test('bugfix-loop SKILL.md Step 4 computes --files-touched/--tests-added via git diff --stat immediately before record-attempt (Plan-task 13)', () => {
+  const md = read('skills/bugfix-loop/SKILL.md');
+  const step4Idx = md.indexOf('## Step 4: Attempt via /adev:debug --auto');
+  const step45Idx = md.indexOf('## Step 4.5: Commit and open a PR');
+  const step4Text = md.slice(step4Idx, step45Idx);
+  const diffStatIdx = step4Text.indexOf('git diff --stat');
+  const recordAttemptIdx = step4Text.indexOf('adev bugfix-loop record-attempt');
+  assert.ok(diffStatIdx !== -1 && recordAttemptIdx !== -1 && diffStatIdx < recordAttemptIdx, 'git diff --stat must run before record-attempt');
+  assert.match(step4Text, /--files-touched/);
+  assert.match(step4Text, /--tests-added/);
+  assert.match(step4Text, /--priority-bound/);
+  assert.match(step4Text, /--verdict/);
+});
+
+test('bugfix-loop SKILL.md Step 5 reprints the full summary table before the ADEV-BUGFIXLOOP token (Plan-task 13)', () => {
+  const md = read('skills/bugfix-loop/SKILL.md');
+  const step5Idx = md.indexOf('## Step 5: Finish');
+  const step6Idx = md.indexOf('## Step 6: Self-re-invoke');
+  const step5Text = md.slice(step5Idx, step6Idx);
+  const tableIdx = step5Text.indexOf('summary_table');
+  const tokenIdx = step5Text.indexOf('ADEV-BUGFIXLOOP: <token-from-result>');
+  assert.ok(tableIdx !== -1 && tokenIdx !== -1 && tableIdx < tokenIdx, 'summary table reprint must come before the terminal token');
+});
+
 test('using-adev gateway table lists /adev:bugfix-loop', () => {
   const md = read('skills/using-adev/SKILL.md');
   assert.match(md, /\/adev:bugfix-loop/);

@@ -304,3 +304,69 @@ test('adev bugfix-loop commit-pr exits 0 with { skipped: true } on a degrade pat
   assert.equal(typeof out.reason, 'string');
   rmSync(dir, { recursive: true, force: true });
 });
+
+test('adev bugfix-loop record-attempt --verdict FIXED --files-touched 3 --tests-added 1 --priority-bound P3 appends a summary row and prints the running table (Plan-task 13)', () => {
+  const dir = makeTempProject();
+  const create = spawnSync('node', [CLI, 'bugfix-loop', 'create', '--json'], { encoding: 'utf8', cwd: dir });
+  const { run_id } = JSON.parse(create.stdout);
+
+  const r = spawnSync(
+    'node',
+    [CLI, 'bugfix-loop', 'record-attempt', '--run-id', run_id, '--issue', 'issue-1', '--verdict', 'FIXED', '--files-touched', '3', '--tests-added', '1', '--priority-bound', 'P3', '--json'],
+    { encoding: 'utf8', cwd: dir },
+  );
+  assert.equal(r.status, 0, r.stderr);
+  const out = JSON.parse(r.stdout);
+  assert.equal(out.summary_rows.length, 1);
+  assert.deepEqual(out.summary_rows[0], { issueId: 'issue-1', verdict: 'FIXED', filesTouched: 3, testsAdded: 1, priorityBound: 'P3', turn: 1 });
+
+  const textRun = spawnSync(
+    'node',
+    [CLI, 'bugfix-loop', 'record-attempt', '--run-id', run_id, '--issue', 'issue-2', '--verdict', 'PARKED', '--priority-bound', 'P3'],
+    { encoding: 'utf8', cwd: dir },
+  );
+  assert.equal(textRun.status, 0, textRun.stderr);
+  assert.match(textRun.stdout, /issue-1/);
+  assert.match(textRun.stdout, /issue-2/);
+  assert.match(textRun.stdout, /PARKED/);
+  rmSync(dir, { recursive: true, force: true });
+});
+
+test('adev bugfix-loop record-attempt without --verdict still works exactly as before Task 13 (no summary row appended)', () => {
+  const dir = makeTempProject();
+  const create = spawnSync('node', [CLI, 'bugfix-loop', 'create', '--json'], { encoding: 'utf8', cwd: dir });
+  const { run_id } = JSON.parse(create.stdout);
+  const r = spawnSync('node', [CLI, 'bugfix-loop', 'record-attempt', '--run-id', run_id, '--issue', 'issue-1', '--json'], { encoding: 'utf8', cwd: dir });
+  assert.equal(r.status, 0);
+  const out = JSON.parse(r.stdout);
+  assert.deepEqual(out.summary_rows, []);
+  assert.equal(out.bugs_attempted.length, 1);
+  rmSync(dir, { recursive: true, force: true });
+});
+
+test('adev bugfix-loop finish --json includes a summary_table field reprinting every attempt this run (Plan-task 13)', () => {
+  const dir = makeTempProject();
+  const create = spawnSync('node', [CLI, 'bugfix-loop', 'create', '--json'], { encoding: 'utf8', cwd: dir });
+  const { run_id } = JSON.parse(create.stdout);
+  spawnSync('node', [CLI, 'bugfix-loop', 'record-attempt', '--run-id', run_id, '--issue', 'issue-1', '--verdict', 'FIXED', '--files-touched', '2', '--tests-added', '1', '--priority-bound', 'P3'], { cwd: dir });
+  const r = spawnSync('node', [CLI, 'bugfix-loop', 'finish', '--run-id', run_id, '--status', 'complete', '--json'], { encoding: 'utf8', cwd: dir });
+  assert.equal(r.status, 0);
+  const out = JSON.parse(r.stdout);
+  assert.equal(typeof out.summary_table, 'string');
+  assert.match(out.summary_table, /issue-1/);
+  assert.match(out.summary_table, /FIXED/);
+  rmSync(dir, { recursive: true, force: true });
+});
+
+test('adev bugfix-loop finish (non-JSON) prints the summary table before the ADEV-BUGFIXLOOP token', () => {
+  const dir = makeTempProject();
+  const create = spawnSync('node', [CLI, 'bugfix-loop', 'create', '--json'], { encoding: 'utf8', cwd: dir });
+  const { run_id } = JSON.parse(create.stdout);
+  spawnSync('node', [CLI, 'bugfix-loop', 'record-attempt', '--run-id', run_id, '--issue', 'issue-1', '--verdict', 'FIXED', '--priority-bound', 'P3'], { cwd: dir });
+  const r = spawnSync('node', [CLI, 'bugfix-loop', 'finish', '--run-id', run_id, '--status', 'complete'], { encoding: 'utf8', cwd: dir });
+  assert.equal(r.status, 0);
+  const lines = r.stdout.trim().split('\n');
+  assert.equal(lines[lines.length - 1], 'ADEV-BUGFIXLOOP: COMPLETE', 'token must be the literal last line');
+  assert.match(r.stdout, /issue-1/);
+  rmSync(dir, { recursive: true, force: true });
+});

@@ -137,10 +137,20 @@ adev issues release <id> --owner bugfix-loop
 
 Regardless of outcome:
 
+- **Summary-table row (BEH-6):** immediately before `record-attempt`, compute this attempt's file/test counts via `git diff --stat` against the working tree — already the correct tree (the per-bug worktree when `--worktree-per-bug` is active, else the loop's shared tree), since Step 3 already set `cwd` accordingly; no extra resolution needed here:
+
+  ```bash
+  git diff --stat HEAD
+  ```
+
+  Each line of `git diff --stat`'s output (except the trailing ` N files changed...` summary line) names one changed file, with a **leading space** before the path — e.g. ` lib/foo.mjs | 12 +++++--` or ` tests/foo.test.mjs | 8 ++++` (that leading space is real; strip it, or use a whitespace-tolerant match, before checking the prefix below — a literal `line.startsWith('tests/')` on the raw line always reads 0). `--files-touched` is the count of those per-file lines; `--tests-added` is the count of those lines whose path, after stripping the leading space, starts with `tests/`. Both are plain line counts from this one `git diff --stat` call, never parsed from `/adev:debug --auto`'s own output.
+
 ```bash
-adev bugfix-loop record-attempt --run-id <run_id> --issue <id>
+adev bugfix-loop record-attempt --run-id <run_id> --issue <id> --verdict <token-from-Step-4> --files-touched <n> --tests-added <n> --priority-bound <resolved-max-priority>
 adev bugfix-loop complete-turn --run-id <run_id>
 ```
+
+`--priority-bound` is the resolved `--max-priority` value already available from Step 2 (Improvement 5) — no new computation, just the same value passed through. `record-attempt` prints the running summary table (one row per attempt so far this run) to stdout as a side effect of this call — no separate print step.
 
 - **`--github-sync` outbound writeback:** only when `--github-sync` was passed, after the AttemptRecord above is written, post the outcome comment for this attempt:
 
@@ -178,6 +188,8 @@ adev bugfix-loop finish --run-id <run_id> --status <complete|budget_exhausted|bl
 ```
 
 Read `degraded_sync_note` from the JSON result — this reflects whatever `adev tracker-sync inbound` (Step 0) wrote into the same run-state file over the course of this run, not a placeholder. If non-null, print `GitHub sync degraded during this run: <degraded_sync_note>` as the line immediately before the token — the token itself is still unconditionally the literal last line.
+
+Reprint the full running summary table (BEH-6) from the result's `summary_table` field — one row per bug attempted this run — before the token. This is a full reprint of everything Step 4 already printed incrementally, not a new computation.
 
 Print `ADEV-BUGFIXLOOP: <token-from-result>` as the **final line** (the last line, verbatim, with no trailing prose) of this turn's output — one of:
 
