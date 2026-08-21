@@ -44,11 +44,11 @@ drift_detected: true
 
    | Tier | Hardcoded Default |
    |------|-------------------|
-   | `capable` | `claude-sonnet-4-6` |
+   | `capable` | `claude-sonnet-5` |
    | `fast` | `claude-haiku-4-5` |
-   | `reasoning` | `claude-opus-4-7` |
+   | `reasoning` | `claude-opus-5` |
 
-5. **When** a tier key exists in `model_tiers` but its value is empty or null **then** the skill falls back to the `capable` tier value; if `capable` is also empty, falls back to the hardcoded default `claude-sonnet-4-6`. Resolution order: tier-specific value → `capable` value → hardcoded default `claude-sonnet-4-6`.
+5. **When** a tier key exists in `model_tiers` but its value is empty or null **then** the skill falls back to the `capable` tier value; if `capable` is also empty, falls back to the hardcoded default `claude-sonnet-5`. Resolution order: tier-specific value → `capable` value → hardcoded default `claude-sonnet-5`.
 
 6. **When** `platform-context.yaml` is unreadable (permission error, malformed YAML) **then** the skill uses hardcoded defaults and logs a warning with the file path and error.
 

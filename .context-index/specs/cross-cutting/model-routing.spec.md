@@ -47,8 +47,8 @@ drift_detected: true
    | Tier | Hardcoded Default |
    |------|-------------------|
    | `fast` | `claude-haiku-4-5` |
-   | `capable` | `claude-sonnet-4-6` |
-   | `reasoning` | `claude-opus-4-7` |
+   | `capable` | `claude-sonnet-5` |
+   | `reasoning` | `claude-opus-5` |
 
 3. **When** a tier key is present in `model_tiers` but its value is empty or null **then** the skill falls back to the `capable` tier value (or the `capable` hardcoded default if `capable` is also unset).
 
@@ -75,7 +75,7 @@ drift_detected: true
 ### Postconditions
 
 - Every subagent dispatch uses a model ID resolved from `platform-context.yaml` or a documented fallback
-- No SKILL.md file contains a hardcoded model name (e.g., `claude-sonnet-4-6`, `gpt-4o`)
+- No SKILL.md file contains a hardcoded model name (e.g., `claude-sonnet-5`, `gpt-4o`)
 - Changing the provider requires editing only `platform-context.yaml`, not any skill file
 
 ### Error Cases
@@ -124,7 +124,7 @@ drift_detected: true
 ## Acceptance Criteria
 
 - [ ] `templates/platform-context.yaml` contains `model_tiers` with `fast`, `capable`, and `reasoning` keys, blank values, and explanatory comments
-- [ ] No SKILL.md file in `skills/` contains a hardcoded model ID (e.g., `claude-sonnet-4-6`, `gpt-4o`, `gemini`)
+- [ ] No SKILL.md file in `skills/` contains a hardcoded model ID (e.g., `claude-sonnet-5`, `gpt-4o`, `gemini`)
 - [ ] `adev:implement` SKILL.md reads `model_tiers` in its Load Context step
 - [ ] `adev:eval` SKILL.md Layer 3 dispatch references `reasoning` tier, not a model name
 - [ ] `adev:review-specs` SKILL.md dispatches reference tier names
