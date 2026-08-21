@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.28.0-next.6](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.28.0-next.5...adev-cli-v0.28.0-next.6) (2026-08-21)
+
+
+### Bug Fixes
+
+* **codehealth:** stop blanket-exempting index.* files from orphan detection ([ae406f5](https://github.com/agentic-development/adev-plugin/commit/ae406f572793b2cff143638f6c50aaccdf33b571))
+* **codehealth:** stop blanket-exempting index.* files from orphan detection ([be63d45](https://github.com/agentic-development/adev-plugin/commit/be63d455d6203263de0a7c3ef5cda629c392391f))
+* **docs:** derive skill-coverage test's expected list from the filesystem ([458ff09](https://github.com/agentic-development/adev-plugin/commit/458ff091989f2bed215056b14e17f21ea1f9abc6))
+* **docs:** derive skill-coverage test's expected list from the filesystem ([f0382c3](https://github.com/agentic-development/adev-plugin/commit/f0382c36f3655de8d19f865ef73ab43be8d8dd33))
+* **docs:** document skill-ext, domain-picker, bugfix-loop, tracker-sync verbs ([c8cc7ed](https://github.com/agentic-development/adev-plugin/commit/c8cc7ed834e5b0b5cd48c672733e29d45f0dd0b8))
+* **hooks:** anchor .context-preflight-ok write to the real project root ([b1bc46b](https://github.com/agentic-development/adev-plugin/commit/b1bc46b11dcaecbc09e3fc8967bf1152b4261f84))
+* **issues:** release() restores the exact pre-claim status, not a hardcoded open ([1f5f5df](https://github.com/agentic-development/adev-plugin/commit/1f5f5df2437615fb00c26c8280ee80186edbaf3d))
+* **issues:** release() restores the exact pre-claim status, not a hardcoded open ([b1229c2](https://github.com/agentic-development/adev-plugin/commit/b1229c22a2dee77afac17019e0fa802cf83a6336))
+* **issues:** resolve body/description aliases in BeadsAdapter.update() ([51dd3fe](https://github.com/agentic-development/adev-plugin/commit/51dd3fe76766e05f858afdfade8b1ec21549e242))
+* **issues:** resolve body/description aliases in BeadsAdapter.update() ([48ae301](https://github.com/agentic-development/adev-plugin/commit/48ae301945b6fb1661de2fa6ce21adcf9f20ed32))
+* **lifecycle:** add reportRecoveryRecord producer, closing the recovery_record gap ([84af425](https://github.com/agentic-development/adev-plugin/commit/84af425c3fb536fa26f60ddd904ea1d47fdf7690))
+* **lifecycle:** add reportRecoveryRecord producer, closing the recovery_record gap ([45c793a](https://github.com/agentic-development/adev-plugin/commit/45c793a8d27210a1b2df0bb0eed759ebbafd71ec))
+* **manifest:** detect and eliminate duplicate top-level manifest.yaml keys ([9ee8984](https://github.com/agentic-development/adev-plugin/commit/9ee8984a4d89ec315924edbea9d558ee3dccbcfc))
+* **manifest:** detect and eliminate duplicate top-level manifest.yaml keys ([dc7273a](https://github.com/agentic-development/adev-plugin/commit/dc7273a5f33ebd7a43411108489f1e49a760d4d3))
+* **milestones:** milestoneShip falls back to updateEpic on the JSON backend ([4fac851](https://github.com/agentic-development/adev-plugin/commit/4fac851fdd1ba4dbc56e005ff32c63b96ae87e11))
+* **model-routing:** replace stale model IDs with current ones ([5d921a3](https://github.com/agentic-development/adev-plugin/commit/5d921a3439156565c8a5f416e081ebc172846b8f))
+* **repomap:** guard the AST Parser test suite on isTreeSitterAvailable ([37c64ec](https://github.com/agentic-development/adev-plugin/commit/37c64ec0181124b89c602881320df4134662ebb6))
+* **review-specs:** add --revision to adev report --type step ([9ba1735](https://github.com/agentic-development/adev-plugin/commit/9ba1735beed424e1736c5db9761a44ac63982196))
+* **review-specs:** declare quick-synthesized-reviewer for severity resolution ([f230c65](https://github.com/agentic-development/adev-plugin/commit/f230c658fd081fc14b255573fa102fd5b9f50de3))
+* **review-specs:** refuse to write .blockers.md with empty finding prose ([13c57f3](https://github.com/agentic-development/adev-plugin/commit/13c57f3fa430685f93ece0dae4703bba16cc9fe8))
+* **review-specs:** reviewers emit finding_type, never compute blocker_id ([1189564](https://github.com/agentic-development/adev-plugin/commit/1189564967ae973f3404081e92bd736d86b6912b))
+* **specify:** drop model-id substitution that leaked from the staleness fix ([05a7f69](https://github.com/agentic-development/adev-plugin/commit/05a7f69d26670a12bbe530d9c71eceead48108c9))
+* **specify:** move partial_schema marker into frontmatter, not an HTML comment above it ([dedabe2](https://github.com/agentic-development/adev-plugin/commit/dedabe240424a4566fdb357deb8324cea801e4a9))
+* **specify:** move partial_schema marker into frontmatter, not an HTML comment above it ([fc4d742](https://github.com/agentic-development/adev-plugin/commit/fc4d7422a4a3d6e1ee9f4b15567e7a88f8683980))
+
 ## [0.28.0-next.5](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.28.0-next.4...adev-cli-v0.28.0-next.5) (2026-08-20)
 
 
