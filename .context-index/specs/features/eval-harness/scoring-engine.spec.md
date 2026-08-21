@@ -11,15 +11,29 @@ charter-revision: 4
 created: 2026-08-20
 updated: 2026-08-20
 source-manifest:
-  sha: "ca85164"
+  sha: "40f24e5"
   files:
     - cli/index.mjs
     - docs/cli-reference.md
     - lib/cli/eval.mjs
     - lib/evals/score-schema.mjs
     - lib/evals/score.mjs
+    - providers/codex/skills/eval/SKILL.md
+    - providers/opencode/skills/eval/SKILL.md
     - skills/eval/SKILL.md
+    - tests/cli/eval-default-rubric-e2e.test.mjs
+    - tests/cli/eval-default-rubric-keyword.test.mjs
     - tests/cli/eval-score.test.mjs
+    - tests/fixtures/evals/rubrics/no-quality-dimensions.yaml
+    - tests/fixtures/evals/rubrics/no-required-elements.yaml
+    - tests/fixtures/evals/rubrics/threshold-100.yaml
+    - tests/fixtures/evals/rubrics/threshold-50.yaml
+    - tests/fixtures/evals/rubrics/threshold-non-numeric.yaml
+    - tests/fixtures/evals/rubrics/threshold-out-of-range.yaml
+    - tests/fixtures/evals/verdicts/complete.json
+    - tests/fixtures/evals/verdicts/default-rubric-complete.json
+    - tests/fixtures/evals/verdicts/elements-only.json
+    - tests/fixtures/evals/verdicts/unsafe-input.json
     - tests/lib/evals/score-insufficient-evidence.test.mjs
     - tests/lib/evals/score-judge-context.test.mjs
     - tests/lib/evals/score-not-scored.test.mjs
@@ -29,8 +43,10 @@ source-manifest:
     - tests/lib/evals/score-status-partition.test.mjs
     - tests/lib/evals/score-tally.test.mjs
     - tests/lib/evals/score-verdict-validation.test.mjs
+    - tests/skills/eval-default-rubric.test.mjs
     - tests/skills/eval-layer3-scoring-verb.test.mjs
-  computed-at: "2026-08-20T17:22:00.580Z"
+    - tests/skills/eval-rubric-keyword-emission.test.mjs
+  computed-at: "2026-08-21T00:06:43.787Z"
 ---
 
 # Live Spec: Rubric scoring engine and adev eval score verb
