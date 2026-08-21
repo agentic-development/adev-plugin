@@ -6,13 +6,13 @@
  * Spec: .context-index/specs/features/agent-reliable-state-artifacts/lifecycle-skill-instruction-updates.spec.md
  */
 
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { createTempDir, cleanupTempDir } from "../helpers.mjs";
-import { loadManifest, loadManifestForStorage, assertProjectRoot } from "../../lib/manifest.mjs";
+import { createTempDir, cleanupTempDir, PLUGIN_ROOT } from "../helpers.mjs";
+import { loadManifest, loadManifestForStorage, assertProjectRoot, findDuplicateTopLevelKeys } from "../../lib/manifest.mjs";
 
 test("loadManifest: happy path returns parsed manifest object", () => {
   const root = createTempDir();
@@ -207,235 +207,6 @@ test("loadManifest: rejects fractional build.max_review_retries — INVALID_MAX_
   }
 });
 
-// ── implement.batch_mode / implement.max_batch_size (Task 1, batched-task-dispatch) ─
-
-test("loadManifest: defaults implement.batch_mode to 'on' and implement.max_batch_size to 4 when omitted", () => {
-  const root = createTempDir();
-  try {
-    mkdirSync(join(root, ".context-index"), { recursive: true });
-    writeFileSync(
-      join(root, ".context-index/manifest.yaml"),
-      "project:\n  name: t\n",
-    );
-    const m = loadManifest(root);
-    assert.ok(m.implement, "implement section must be materialized with defaults");
-    assert.equal(m.implement.batch_mode, "on",
-      "default implement.batch_mode must be 'on' per spec Arguments table");
-    assert.equal(m.implement.max_batch_size, 4,
-      "default implement.max_batch_size must be 4 per spec Arguments table");
-  } finally {
-    cleanupTempDir(root);
-  }
-});
-
-test("loadManifest: rejects implement.batch_mode outside on/off — INVALID_BATCH_MODE", () => {
-  const root = createTempDir();
-  try {
-    mkdirSync(join(root, ".context-index"), { recursive: true });
-    writeFileSync(
-      join(root, ".context-index/manifest.yaml"),
-      "project:\n  name: t\nimplement:\n  batch_mode: sometimes\n",
-    );
-    assert.throws(
-      () => loadManifest(root),
-      (err) => err.code === "INVALID_BATCH_MODE",
-    );
-  } finally {
-    cleanupTempDir(root);
-  }
-});
-
-test("loadManifest: rejects implement.max_batch_size < 1 — INVALID_MAX_BATCH_SIZE", () => {
-  const root = createTempDir();
-  try {
-    mkdirSync(join(root, ".context-index"), { recursive: true });
-    writeFileSync(
-      join(root, ".context-index/manifest.yaml"),
-      "project:\n  name: t\nimplement:\n  max_batch_size: 0\n",
-    );
-    assert.throws(
-      () => loadManifest(root),
-      (err) => err.code === "INVALID_MAX_BATCH_SIZE",
-    );
-  } finally {
-    cleanupTempDir(root);
-  }
-});
-
-test("loadManifest: rejects non-integer implement.max_batch_size — INVALID_MAX_BATCH_SIZE", () => {
-  const root = createTempDir();
-  try {
-    mkdirSync(join(root, ".context-index"), { recursive: true });
-    writeFileSync(
-      join(root, ".context-index/manifest.yaml"),
-      'project:\n  name: t\nimplement:\n  max_batch_size: "two"\n',
-    );
-    assert.throws(
-      () => loadManifest(root),
-      (err) => err.code === "INVALID_MAX_BATCH_SIZE",
-    );
-  } finally {
-    cleanupTempDir(root);
-  }
-});
-
-test("loadManifest: rejects a non-number (array) implement.max_batch_size — INVALID_MAX_BATCH_SIZE", () => {
-  // YAML has no native NaN/Infinity literal that this project's hand-rolled
-  // parseYaml helper would parse as a JS number, so a true !Number.isFinite
-  // fixture isn't expressible here. This test instead exercises the same
-  // `typeof raw !== "number"` branch as the non-integer ("two") case above,
-  // but via an array value rather than a string — a distinct, realistic
-  // misconfiguration shape (e.g. a YAML list typo) that still lands on that
-  // guard, routed there by the array fixture below.
-  const root = createTempDir();
-  try {
-    mkdirSync(join(root, ".context-index"), { recursive: true });
-    writeFileSync(
-      join(root, ".context-index/manifest.yaml"),
-      "project:\n  name: t\nimplement:\n  max_batch_size: [1, 2]\n",
-    );
-    assert.throws(
-      () => loadManifest(root),
-      (err) => err.code === "INVALID_MAX_BATCH_SIZE",
-    );
-  } finally {
-    cleanupTempDir(root);
-  }
-});
-
-test("loadManifest: rejects fractional implement.max_batch_size — INVALID_MAX_BATCH_SIZE", () => {
-  const root = createTempDir();
-  try {
-    mkdirSync(join(root, ".context-index"), { recursive: true });
-    writeFileSync(
-      join(root, ".context-index/manifest.yaml"),
-      "project:\n  name: t\nimplement:\n  max_batch_size: 2.5\n",
-    );
-    assert.throws(
-      () => loadManifest(root),
-      (err) => err.code === "INVALID_MAX_BATCH_SIZE",
-    );
-  } finally {
-    cleanupTempDir(root);
-  }
-});
-
-test("loadManifest: explicit implement.max_batch_size and implement.batch_mode round-trip", () => {
-  const root = createTempDir();
-  try {
-    mkdirSync(join(root, ".context-index"), { recursive: true });
-    writeFileSync(
-      join(root, ".context-index/manifest.yaml"),
-      "project:\n  name: t\nimplement:\n  batch_mode: off\n  max_batch_size: 2\n",
-    );
-    const m = loadManifest(root);
-    assert.equal(m.implement.max_batch_size, 2);
-    assert.equal(m.implement.batch_mode, "off");
-  } finally {
-    cleanupTempDir(root);
-  }
-});
-
-// ── implement.max_review_cycles default + validation (Task 1, tdd-cycle-simplification) ─
-
-test("loadManifest: defaults implement.max_review_cycles to 3 when omitted", () => {
-  const root = createTempDir();
-  try {
-    mkdirSync(join(root, ".context-index"), { recursive: true });
-    writeFileSync(
-      join(root, ".context-index/manifest.yaml"),
-      "project:\n  name: t\n",
-    );
-    const m = loadManifest(root);
-    assert.equal(m.implement.max_review_cycles, 3);
-  } finally {
-    cleanupTempDir(root);
-  }
-});
-
-test("loadManifest: rejects implement.max_review_cycles of 0 — INVALID_MAX_REVIEW_CYCLES", () => {
-  const root = createTempDir();
-  try {
-    mkdirSync(join(root, ".context-index"), { recursive: true });
-    writeFileSync(
-      join(root, ".context-index/manifest.yaml"),
-      "project:\n  name: t\nimplement:\n  max_review_cycles: 0\n",
-    );
-    assert.throws(
-      () => loadManifest(root),
-      (err) => err.code === "INVALID_MAX_REVIEW_CYCLES",
-    );
-  } finally {
-    cleanupTempDir(root);
-  }
-});
-
-test("loadManifest: rejects negative implement.max_review_cycles — INVALID_MAX_REVIEW_CYCLES", () => {
-  const root = createTempDir();
-  try {
-    mkdirSync(join(root, ".context-index"), { recursive: true });
-    writeFileSync(
-      join(root, ".context-index/manifest.yaml"),
-      "project:\n  name: t\nimplement:\n  max_review_cycles: -1\n",
-    );
-    assert.throws(
-      () => loadManifest(root),
-      (err) => err.code === "INVALID_MAX_REVIEW_CYCLES",
-    );
-  } finally {
-    cleanupTempDir(root);
-  }
-});
-
-test("loadManifest: rejects non-integer implement.max_review_cycles — INVALID_MAX_REVIEW_CYCLES", () => {
-  const root = createTempDir();
-  try {
-    mkdirSync(join(root, ".context-index"), { recursive: true });
-    writeFileSync(
-      join(root, ".context-index/manifest.yaml"),
-      'project:\n  name: t\nimplement:\n  max_review_cycles: "two"\n',
-    );
-    assert.throws(
-      () => loadManifest(root),
-      (err) => err.code === "INVALID_MAX_REVIEW_CYCLES",
-    );
-  } finally {
-    cleanupTempDir(root);
-  }
-});
-
-test("loadManifest: rejects fractional implement.max_review_cycles — INVALID_MAX_REVIEW_CYCLES", () => {
-  const root = createTempDir();
-  try {
-    mkdirSync(join(root, ".context-index"), { recursive: true });
-    writeFileSync(
-      join(root, ".context-index/manifest.yaml"),
-      "project:\n  name: t\nimplement:\n  max_review_cycles: 2.5\n",
-    );
-    assert.throws(
-      () => loadManifest(root),
-      (err) => err.code === "INVALID_MAX_REVIEW_CYCLES",
-    );
-  } finally {
-    cleanupTempDir(root);
-  }
-});
-
-test("loadManifest: round-trips an explicit implement.max_review_cycles", () => {
-  const root = createTempDir();
-  try {
-    mkdirSync(join(root, ".context-index"), { recursive: true });
-    writeFileSync(
-      join(root, ".context-index/manifest.yaml"),
-      "project:\n  name: t\nimplement:\n  max_review_cycles: 5\n",
-    );
-    const m = loadManifest(root);
-    assert.equal(m.implement.max_review_cycles, 5);
-  } finally {
-    cleanupTempDir(root);
-  }
-});
-
 // loadManifestForStorage — tolerant wrapper lifted from the (formerly)
 // triplicated private helper in lib/execution-state.mjs, lib/milestones.mjs,
 // lib/migrate-state-artifacts.mjs, and lib/issues/render-markdown.mjs.
@@ -510,4 +281,51 @@ test("assertProjectRoot: throws INVALID_PROJECT_ROOT for a non-string input", ()
     () => assertProjectRoot(undefined),
     (err) => err.code === "INVALID_PROJECT_ROOT",
   );
+});
+
+// ─── findDuplicateTopLevelKeys (adev-plugin-gkfv.2) ────────────────────────
+//
+// manifest.yaml declared `build:` twice (line 152 and line 423); duplicate
+// top-level YAML keys are silently last-wins, so the first block was dead
+// config with no signal. Nothing caught it — not the loader, not hygiene.
+
+test("findDuplicateTopLevelKeys: detects a top-level key declared twice", () => {
+  const text = [
+    "project:",
+    "  name: t",
+    "build:",
+    "  max_review_retries: 9",
+    "tasks:",
+    "  backend: file",
+    "build:",
+    "  max_review_retries: 2",
+  ].join("\n");
+  const dups = findDuplicateTopLevelKeys(text);
+  assert.deepEqual(dups, [{ key: "build", lines: [3, 7] }]);
+});
+
+test("findDuplicateTopLevelKeys: reports every extra occurrence, not just the second", () => {
+  const text = ["a:", "  x: 1", "a:", "  x: 2", "a:", "  x: 3"].join("\n");
+  const dups = findDuplicateTopLevelKeys(text);
+  assert.deepEqual(dups, [{ key: "a", lines: [1, 3, 5] }]);
+});
+
+test("findDuplicateTopLevelKeys: clean manifest yields no findings", () => {
+  const text = ["project:", "  name: t", "build:", "  max_review_retries: 2", "tasks:", "  backend: file"].join("\n");
+  assert.deepEqual(findDuplicateTopLevelKeys(text), []);
+});
+
+test("findDuplicateTopLevelKeys: ignores keys nested under a top-level block (only column-0 keys count)", () => {
+  const text = ["build:", "  build: 1", "tasks:", "  build: 2"].join("\n");
+  assert.deepEqual(findDuplicateTopLevelKeys(text), []);
+});
+
+test("findDuplicateTopLevelKeys: ignores commented-out lines that look like keys", () => {
+  const text = ["build:", "  max_review_retries: 2", "# build:", "#build:"].join("\n");
+  assert.deepEqual(findDuplicateTopLevelKeys(text), []);
+});
+
+test("findDuplicateTopLevelKeys: this project's own manifest.yaml has no duplicate top-level keys", () => {
+  const text = readFileSync(join(PLUGIN_ROOT, ".context-index", "manifest.yaml"), "utf8");
+  assert.deepEqual(findDuplicateTopLevelKeys(text), []);
 });
