@@ -227,4 +227,22 @@ describe("adev issues board migrate", () => {
     const worktrees = git(["worktree", "list", "--porcelain"], repoDir);
     assert.match(worktrees, /worktree .*\.beads/);
   });
+
+  it("adev issues board migrate dispatches through the issues sub-verb router", async () => {
+    ({ bareDir, repoDir } = createMainTrackedRepo());
+    const { run: issuesRun } = await import("../../lib/cli/issues.mjs");
+    const code = await issuesRun({
+      projectRoot: repoDir,
+      argv: ["board", "migrate"],
+      manifest: { tasks: { backend: "beads" } },
+    });
+    assert.equal(code, 0);
+  });
+
+  it("adev issues board with no sub-verb prints usage and exits 1", async () => {
+    ({ bareDir, repoDir } = createMainTrackedRepo());
+    const { run: issuesRun } = await import("../../lib/cli/issues.mjs");
+    const code = await issuesRun({ projectRoot: repoDir, argv: ["board"], manifest: {} });
+    assert.equal(code, 1);
+  });
 });
