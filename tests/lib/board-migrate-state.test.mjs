@@ -1,4 +1,4 @@
-// tests/lib/issues-board-state.test.mjs
+// tests/lib/board-migrate-state.test.mjs
 //
 // Round-trip + atomic-write-safety + best-effort-clear coverage for the
 // board-migrate resumable checkpoint helper.
@@ -14,7 +14,7 @@ import {
   writeBoardMigrateCheckpoint,
   readBoardMigrateCheckpoint,
   clearBoardMigrateCheckpoint,
-} from "../../lib/cli/issues-board-state.mjs";
+} from "../../lib/issues/board-migrate-state.mjs";
 
 describe("board-migrate checkpoint", () => {
   let root;

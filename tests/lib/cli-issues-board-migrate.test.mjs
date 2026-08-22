@@ -19,7 +19,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { run } from "../../lib/cli/issues-board.mjs";
-import { writeBoardMigrateCheckpoint, readBoardMigrateCheckpoint } from "../../lib/cli/issues-board-state.mjs";
+import { writeBoardMigrateCheckpoint, readBoardMigrateCheckpoint } from "../../lib/issues/board-migrate-state.mjs";
 import { ensureManagedBlock } from "../../lib/gitignore-installer.mjs";
 
 function git(args, cwd) {
