@@ -96,6 +96,64 @@ test('adev specify revise (Task 6 real-diff): CLI does not yet wire authoredSect
   }
 });
 
+test('adev specify revise --authored-sections (JSON literal) splices an authored body and reports it addressed', () => {
+  const { root, specPath } = makeBlockedSpec({ revision: 1 });
+  try {
+    // This fixture's spec only has a "## Behaviors" heading and the sidecar's
+    // blocker anchors to "preconditions" (no match) — swap in a spec whose
+    // heading actually matches the blocker's section_anchor.
+    writeFileSync(join(root, specPath), [
+      '# Live Spec', '', '---', 'revision: 1', 'created: 2026-05-01',
+      'updated: 2026-05-01', 'status: review-blocked', '---', '',
+      '## Preconditions', '', 'Original text.', '',
+    ].join('\n'));
+    const result = runCli(root, [
+      'revise', '--spec', specPath,
+      '--authored-sections', JSON.stringify({ preconditions: 'Newly authored text.' }),
+    ]);
+    assert.equal(result.status, 0, `expected exit 0, got ${result.status}; stderr: ${result.stderr}`);
+    const payload = JSON.parse(result.stdout.trim());
+    assert.deepStrictEqual(payload.addressed_blocker_ids, ['sa:x:11111111']);
+    assert.deepStrictEqual(payload.unresolved_blocker_ids, []);
+    const body = readFileSync(join(root, specPath), 'utf8');
+    assert.ok(body.includes('Newly authored text.'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('adev specify revise --authored-sections @<path> reads the map from a JSON file', () => {
+  const { root, specPath } = makeBlockedSpec({ revision: 1 });
+  try {
+    writeFileSync(join(root, specPath), [
+      '# Live Spec', '', '---', 'revision: 1', 'created: 2026-05-01',
+      'updated: 2026-05-01', 'status: review-blocked', '---', '',
+      '## Preconditions', '', 'Original text.', '',
+    ].join('\n'));
+    const sectionsPath = join(root, 'sections.json');
+    writeFileSync(sectionsPath, JSON.stringify({ preconditions: 'From a file.' }));
+    const result = runCli(root, [
+      'revise', '--spec', specPath, '--authored-sections', '@sections.json',
+    ]);
+    assert.equal(result.status, 0, `stderr: ${result.stderr}`);
+    const body = readFileSync(join(root, specPath), 'utf8');
+    assert.ok(body.includes('From a file.'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('adev specify revise --authored-sections rejects invalid JSON — INVALID_AUTHORED_SECTIONS', () => {
+  const { root, specPath } = makeBlockedSpec({ revision: 1 });
+  try {
+    const result = runCli(root, ['revise', '--spec', specPath, '--authored-sections', 'not json']);
+    assert.equal(result.status, 1);
+    assert.ok(result.stderr.includes('INVALID_AUTHORED_SECTIONS'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('adev specify revise rejects path-traversal — INVALID_SPEC_PATH (exit 1)', () => {
   const { root } = makeBlockedSpec();
   try {

@@ -19,7 +19,7 @@ import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, existsSync, rmSync
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 
-import { reviseSpec, resolveSectionAnchors, groupBlockersByAnchor, assertFrontmatterIntact } from '../../lib/specify-revise.mjs';
+import { reviseSpec, resolveSectionAnchors, groupBlockersByAnchor, assertFrontmatterIntact, parseBlockersSidecar } from '../../lib/specify-revise.mjs';
 import { readEvents } from '../../lib/lifecycle-state.mjs';
 
 function makeBlockedSpec({ revision = 1, status = 'review-blocked' } = {}) {
@@ -579,4 +579,63 @@ test('resolveSectionAnchors resolves a heading to a byte range bounded by the ne
   const sectionText = body.slice(pre.start, pre.end);
   assert.ok(sectionText.includes('Pre text.'));
   assert.ok(!sectionText.includes('Beh text.'));
+});
+
+// ── Task 7: groupBlockersByAnchor finding_class filtering ──────────────────
+
+test('(h) groupBlockersByAnchor excludes decision/external-classed blockers from authoring groups', () => {
+  const entries = [
+    { blocker_id: 'A:1', section_anchor: 'beh-1', finding_class: 'defect' },
+    { blocker_id: 'B:2', section_anchor: 'beh-1', finding_class: 'decision' },
+    { blocker_id: 'C:3', section_anchor: 'beh-1', finding_class: 'external' },
+  ];
+  const { grouped } = groupBlockersByAnchor(entries);
+  assert.deepStrictEqual(grouped.get('beh-1'), ['A:1']);
+});
+
+test('(i) groupBlockersByAnchor treats an entry with no finding_class field as defect (default, backward compat)', () => {
+  const entries = [
+    { blocker_id: 'A:1', section_anchor: 'beh-1' }, // no finding_class at all
+  ];
+  const { grouped } = groupBlockersByAnchor(entries);
+  assert.deepStrictEqual(grouped.get('beh-1'), ['A:1']);
+});
+
+test('(j) parseBlockersSidecar extracts finding_class per entry from the real sidecar YAML block', () => {
+  const text = [
+    '## X:1:aaaaaaaa',
+    '',
+    '```yaml',
+    'blocker_id: X:1:aaaaaaaa',
+    'section_anchor: beh-1',
+    'finding_class: decision',
+    '```',
+    '',
+    '```',
+    'body',
+    '```',
+    '',
+  ].join('\n');
+  const entries = parseBlockersSidecar(text);
+  assert.strictEqual(entries.length, 1);
+  assert.strictEqual(entries[0].finding_class, 'decision');
+});
+
+test('(k) parseBlockersSidecar defaults finding_class to defect when the sidecar entry omits it (legacy/pre-Task-2 sidecar)', () => {
+  const text = [
+    '## X:1:aaaaaaaa',
+    '',
+    '```yaml',
+    'blocker_id: X:1:aaaaaaaa',
+    'section_anchor: beh-1',
+    '```',
+    '',
+    '```',
+    'body',
+    '```',
+    '',
+  ].join('\n');
+  const entries = parseBlockersSidecar(text);
+  assert.strictEqual(entries.length, 1);
+  assert.strictEqual(entries[0].finding_class, 'defect');
 });
