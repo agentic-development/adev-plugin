@@ -1,7 +1,7 @@
 ---
 partial_schema: spec@1
 charter: task-management
-status: implemented
+status: validated
 kind: behavioral
 risk_level: low
 milestone:
