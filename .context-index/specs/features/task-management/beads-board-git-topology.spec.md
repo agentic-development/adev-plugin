@@ -1,10 +1,10 @@
 ---
 charter: task-management
 kind: behavioral
-status: review-blocked
+status: review-pending
 risk_level: medium
 milestone: 5
-revision: 1
+revision: 2
 charter-revision: 9
 created: 2026-08-22
 updated: 2026-08-22
@@ -21,8 +21,9 @@ Topology** and **Beads Board Migration Tool**. Grouped per the charter's Spec
 Organization Plan (dependency-chain + blast-radius: the migration tool applies the
 topology's own git mechanics to convert an existing repo's board; both touch
 git-worktree plumbing and `cli/index.mjs`'s bootstrap path). Explicitly excludes safe
-reconciliation of concurrent pushes from independent clones/CI — tracked separately as
-`issue-vtj7lp` and covered by the sibling `beads-board-direct-sync` spec, not this one.
+reconciliation of concurrent pushes from independent clones/CI — tracked as `issue-vtj7lp`
+and will be covered by a forthcoming `beads-board-direct-sync` spec (not yet written; the
+charter's Capability Map lists it with Status `—`), not this one.
 
 Every behavior below was empirically validated in the brainstorm's prototype spike: real
 `git`/`br` commands run against a scratch repo (a bare `origin.git`, a primary clone, a
@@ -75,9 +76,15 @@ fresh second clone, and a second independent clone), not inferred from documenta
   `.beads/issues.jsonl` is currently tracked inside `main`'s tree (this repo's state before
   this spec ships), **then** it: creates the `beads-board` orphan branch, replays the
   current board content onto it as a new commit, removes `.beads/` from `main`'s tracked
-  tree, adds a `.beads/` entry to `main`'s `.gitignore`, and re-provisions `.beads/` as a
-  linked worktree against `beads-board` — leaving the board's logical content unchanged
-  and none of `main`'s prior commit history rewritten.
+  tree, adds a `.beads/` entry to `main`'s `.gitignore` (via `lib/gitignore-installer.mjs`,
+  the same helper the fresh-install path in BEH-5 uses — an append-only, existence-checked
+  write that skips the edit if `.beads/` or an equivalent pattern is already present, and
+  creates `.gitignore` if it does not yet exist rather than erroring), and re-provisions
+  `.beads/` as a linked worktree against `beads-board` — leaving the board's logical
+  content unchanged and none of `main`'s prior commit history rewritten. The `.gitignore`
+  edit is never a whole-file rewrite: it is a single-line append guarded by a pre-check for
+  an existing `.beads/`-matching pattern, so a second run (or a repo that already ignores
+  `.beads/`) is a no-op on this step, not a duplicate or conflicting entry.
 - **BEH-8** — **When** `adev issues board migrate --dry-run` runs, **then** it reports the
   planned steps (branch creation, file removal, gitignore edit, worktree provisioning)
   without mutating the repository.
@@ -100,13 +107,14 @@ fresh second clone, and a second independent clone), not inferred from documenta
 
 | Condition | Expected Behavior | Exit |
 |-----------|-------------------|------|
-| `git worktree add .beads beads-board` run when `.beads/` already exists as a non-empty plain directory (an un-migrated repo) | Fails with git's own "already exists" error; the operator is directed to `adev issues board migrate` instead of a raw `git worktree add` | non-zero |
-| `git worktree add .beads beads-board` run when no `beads-board` branch exists yet, locally or on the remote | Fails with git's own "invalid reference" error; the CLI bootstrap flow (BEH-6) must create the orphan branch first via `--orphan` when none is found | non-zero |
-| `adev issues board migrate` run on a repo where `.beads/` is already a linked worktree against `beads-board` | No mutation; reports already-migrated (BEH-9) | 0 |
-| `adev issues board migrate --dry-run` run on an already-migrated repo | Reports nothing-to-do; no mutation | 0 |
-| `adev issues board migrate` run on a repo where `.beads/issues.jsonl` does not exist on `main` at all (nothing to migrate) | Fails with a clear "nothing to migrate" error rather than silently creating an empty `beads-board` | non-zero |
+| `git worktree add .beads beads-board` run when `.beads/` already exists as a non-empty plain directory (an un-migrated repo) | `BOARD_ALREADY_EXISTS`; fails with git's own "already exists" error surfaced under this code; the operator is directed to `adev issues board migrate` instead of a raw `git worktree add` | non-zero |
+| `git worktree add .beads beads-board` run when no `beads-board` branch exists yet, locally or on the remote | `BOARD_NO_BRANCH`; fails with git's own "invalid reference" error surfaced under this code; the CLI bootstrap flow (BEH-6) must create the orphan branch first via `--orphan` when none is found | non-zero |
+| `adev issues board migrate` run on a repo where `.beads/` is already a linked worktree against `beads-board` | `BOARD_ALREADY_MIGRATED`; no mutation; reports already-migrated (BEH-9) | 0 |
+| `adev issues board migrate --dry-run` run on an already-migrated repo | `BOARD_ALREADY_MIGRATED`; reports nothing-to-do; no mutation | 0 |
+| `adev issues board migrate` run on a repo where `.beads/issues.jsonl` does not exist on `main` at all (nothing to migrate) | `BOARD_NOTHING_TO_MIGRATE`; fails with a clear "nothing to migrate" error rather than silently creating an empty `beads-board` | non-zero |
 | `br` commands run inside a freshly bootstrapped `.beads/` worktree with no `*.db` present | Falls back to `--no-db` mode per the existing issue-i0ji37 fix — not a new error case; cross-referenced here because BEH-1 depends on it | 0 |
 | `adev issues board migrate` fails partway (e.g., interrupted push) | `main`'s tree is left untouched until the final step (removing `.beads/` from `main` and adding the `.gitignore` entry happens only after the `beads-board` push succeeds), so a partial failure never leaves `main` with a missing, un-gitignored `.beads/` | non-zero |
+| `adev issues board migrate` fails between physically removing `.beads/` from disk and the subsequent `git worktree add .beads beads-board` re-provisioning step (e.g., permissions error, git version skew, disk error) | `BOARD_MIGRATE_PARTIAL_FAILURE`. A `.board-migrate-state.json` checkpoint (written immediately after the `beads-board` push succeeds and immediately before `.beads/` is removed, mirroring `backend-migration.spec.md`'s `.migrate-state.json` pattern) records that the push landed and `.beads/` is about to be removed. On next invocation, `adev issues board migrate` detects the checkpoint, skips the already-completed push/removal steps, and retries only `git worktree add .beads beads-board` — the pushed `beads-board` content is never lost even if this exact step fails, so `.beads/` is always recoverable by re-running the same command | non-zero, resumable on retry |
 
 ## System Constitution Reference
 
@@ -121,6 +129,15 @@ fresh second clone, and a second independent clone), not inferred from documenta
   the change does touch `cli/index.mjs`.
 - **Pure ESM (Principle 3)** — Applies to the `adev issues board migrate` CLI verb's
   implementation, which lives in `lib/cli/` per the existing per-verb module pattern.
+  `lib/cli/issues.mjs`'s existing subcommand dispatcher (`migrate`, `claim`, `release`,
+  `stale`, `next`, `show`) gains a `board` branch routing to `board migrate`, the same
+  pattern every existing subcommand already follows.
+- **Subprocess safety (established repo-wide convention, not a numbered principle)** —
+  Every `git`/`br` invocation this spec introduces uses `execFileSync` with argv arrays,
+  never shell-interpolated strings, matching the existing convention in
+  `lib/issues/resolve-root.mjs` and `lib/issues/beads-adapter.mjs`. No value in any
+  behavior above is externally supplied (branch name and paths are fixed literals), so
+  this is not a live escape today, but the convention applies uniformly regardless.
 
 ## Actionable Task Map
 
@@ -128,10 +145,11 @@ fresh second clone, and a second independent clone), not inferred from documenta
 |------|-------------|----------------------|
 | Orphan-branch bootstrap helper | Implement the git sequence behind BEH-2/BEH-3 (detect existing `beads-board` vs. create with `--orphan`) as a reusable helper in `lib/issues/` | small |
 | `resolveStorageRoot()` compatibility test | Add a regression test proving BEH-4 (no code change needed, worktree-inside-worktree resolves correctly) rather than assuming it | small |
-| `main` `.gitignore` provisioning | Add the `.beads/` entry as part of both fresh-install scaffolding and the migration tool | small |
+| `main` `.gitignore` provisioning via `lib/gitignore-installer.mjs` | Route both the fresh-install path (BEH-5) and the migrate tool's edit (BEH-7) through the existing installer helper — append-only, existence-checked, creates the file if absent | small |
 | `cli/index.mjs` bootstrap integration | Wire BEH-6 into the existing install flow | medium |
-| `adev issues board migrate` CLI verb | Implement BEH-7/BEH-8/BEH-9 — snapshot, branch creation, `main` tree removal, gitignore edit, worktree re-provisioning, dry-run, idempotency detection | large |
-| Error-case coverage | Implement and test every row in the Error Cases table above, including the partial-failure ordering guarantee | medium |
+| `adev issues board migrate` CLI verb | Implement BEH-7/BEH-8/BEH-9 — snapshot, branch creation, `main` tree removal, gitignore edit, worktree re-provisioning, dry-run, idempotency detection; register a `board` branch in `lib/cli/issues.mjs`'s existing subcommand dispatcher | large |
+| `.board-migrate-state.json` checkpoint | Write/read the resumable checkpoint (push-landed marker) that bounds the destructive removal→re-provision sequence, mirroring `backend-migration.spec.md`'s `.migrate-state.json` | medium |
+| Error-case coverage | Implement and test every row in the Error Cases table above, including the checkpoint-resume path | medium |
 
 ## Acceptance Criteria
 
@@ -145,6 +163,9 @@ fresh second clone, and a second independent clone), not inferred from documenta
       precondition state
 - [ ] A partial/interrupted migration never leaves `main` with `.beads/` removed from its
       tree but not yet gitignored (or vice versa)
+- [ ] A migration interrupted between `.beads/` removal and worktree re-provisioning is
+      recoverable by re-running `adev issues board migrate`, via the
+      `.board-migrate-state.json` checkpoint — `.beads/` is never left permanently absent
 - [ ] All quality gates pass (`npm test`)
 - [ ] No constitutional violations introduced; the CLI-installation-path boundary note
       above is confirmed accurate by implementation, not just asserted
