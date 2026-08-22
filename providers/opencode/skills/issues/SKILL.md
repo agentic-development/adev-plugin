@@ -87,6 +87,10 @@ If `--epic` is provided, set the `epicId` field. Validate the epic exists by che
 
 Assemble the three answers into a single `notes` string (the existing `description`/`body` → `notes` alias resolution in `lib/issues/interface.mjs::resolveNotes` handles it unchanged — no new field). When `--type task` (the default) is given, skip this prompt — accept a one-line `--notes` value as-is, since Tasks are typically short and already scoped by a parent Feature's spec.
 
+**Empty-body warning (BEH-4):** If the author skips or cancels the prompt above for a `feature`/`bug` issue, still create the issue (creation is never blocked — `validateIssue` is unchanged) and report an additional line after the normal "Created ..." confirmation:
+
+> Issue `<id>` was created without a body. Consider `/adev:issues update <id> --notes "..."` before work starts.
+
 Report: "Created `<id>`: <title> (status: open, priority: <N>)"
 
 ### Create Epic
