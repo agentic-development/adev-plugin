@@ -363,6 +363,16 @@ The verb resolves source (`<spec-path>.review.md.tmp`) and destination (`<spec-p
 
 Never accept a `blocker_id` supplied directly by a reviewer, even if one is present and well-formed — it did not come from `buildBlockerId`, so it is not guaranteed reproducible across revisions and would silently poison the auto-retry loop's addressed/persistent/new partition (adev-plugin-xf5d). Always (re)construct it from `finding_type` + `section_anchor`.
 
+**`finding_class` / `remedy_ref` passthrough.** Unlike `blocker_id`, `finding_class` and `remedy_ref` ARE accepted directly from the reviewer: when a BLOCK finding carries a `finding_class` field (`defect` | `decision` | `external`) and, for `external`, a `remedy_ref`, copy both onto that finding's entry in the array unmodified — do not drop, rename, or normalize them while assembling it. When `finding_class` is absent — including all legacy pre-amendment reviewer output produced before this field existed — omit the key from the entry entirely rather than inventing a value.
+
+```javascript
+// Reference only — this documents what adev blockers write / writeBlockers
+// already does; do not reimplement the defaulting logic here.
+import { writeBlockers } from '<ADEV_ROOT>/lib/blockers-writer.mjs';
+```
+
+`adev blockers write` (`lib/blockers-writer.mjs`'s `writeBlockers`) is the sole owner of the default/reject decision: an entry with no `finding_class` defaults to `defect` and logs a `FINDING_CLASS_DEFAULTED` advisory; an entry with a value outside the closed taxonomy, or containing an unsafe scalar character, is rejected back to `defect` with a `FINDING_CLASS_REJECTED` advisory. This step's only job is to not strip the field before the entry reaches that verb.
+
 With every surviving finding now carrying its constructed `blocker_id`, write the sidecar:
 
 ```bash
