@@ -78,6 +78,24 @@ test('adev specify revise succeeds on a properly-blocked spec (exit 0)', () => {
   }
 });
 
+test('adev specify revise (Task 6 real-diff): CLI does not yet wire authoredSections, so nothing is addressed by blanket acknowledgement', () => {
+  // Regression guard for the defect this task fixes: prior to Task 6,
+  // addressed_blocker_ids echoed the full blocker set unconditionally.
+  // The CLI verb does not pass `authoredSections` (that wiring is Task 7's
+  // job), so a plain `adev specify revise` must now report nothing
+  // addressed and everything unresolved — never a fabricated "addressed".
+  const { root, specPath } = makeBlockedSpec({ revision: 1 });
+  try {
+    const result = runCli(root, ['revise', '--spec', specPath]);
+    assert.equal(result.status, 0);
+    const payload = JSON.parse(result.stdout.trim());
+    assert.deepStrictEqual(payload.addressed_blocker_ids, []);
+    assert.deepStrictEqual(payload.unresolved_blocker_ids, ['sa:x:11111111']);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('adev specify revise rejects path-traversal — INVALID_SPEC_PATH (exit 1)', () => {
   const { root } = makeBlockedSpec();
   try {

@@ -19,7 +19,7 @@ import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, existsSync, rmSync
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 
-import { reviseSpec } from '../../lib/specify-revise.mjs';
+import { reviseSpec, resolveSectionAnchors, groupBlockersByAnchor, assertFrontmatterIntact } from '../../lib/specify-revise.mjs';
 import { readEvents } from '../../lib/lifecycle-state.mjs';
 
 function makeBlockedSpec({ revision = 1, status = 'review-blocked' } = {}) {
@@ -48,6 +48,49 @@ function makeBlockedSpec({ revision = 1, status = 'review-blocked' } = {}) {
     '',
     '1. **When** invoked **then** does X.',
     '',
+    '## Acceptance Criteria',
+    '',
+    '- [ ] X works',
+    ''
+  ].join('\n');
+  writeFileSync(join(root, specPath), specBody);
+  return { root, specPath };
+}
+
+// Fixture with real headings ("Preconditions", "Behaviors", "Notes") so
+// blocker section_anchors can resolve to actual heading ranges for the
+// real-diff / splice-validation tests.
+function makeBlockedSpecWithHeadings({ revision = 1, status = 'review-blocked', extraSection = '' } = {}) {
+  const root = mkdtempSync(join(tmpdir(), 'adev-revise-splice-'));
+  mkdirSync(join(root, '.context-index/specs/cross-cutting'), { recursive: true });
+  mkdirSync(join(root, '.context-index/lifecycle-state'), { recursive: true });
+  writeFileSync(join(root, '.context-index', 'manifest.yaml'),
+    'project:\n  name: test\nlifecycle:\n  event_diagnostics: off\n');
+  const specPath = '.context-index/specs/cross-cutting/sample.spec.md';
+  const specBody = [
+    '# Live Spec: Sample',
+    '',
+    '---',
+    `revision: ${revision}`,
+    'created: 2026-05-01',
+    'updated: 2026-05-01',
+    `status: ${status}`,
+    'risk_level: low',
+    '---',
+    '',
+    '## Behavioral Contract',
+    '',
+    'The sample feature does sample things.',
+    '',
+    '## Preconditions',
+    '',
+    'Original preconditions text.',
+    '',
+    '## Behaviors',
+    '',
+    '1. **When** invoked **then** does X.',
+    '',
+    extraSection,
     '## Acceptance Criteria',
     '',
     '- [ ] X works',
@@ -149,7 +192,7 @@ test('reviseSpec preserves spec body sections not implicated by blockers (byte-i
   }
 });
 
-test('reviseSpec emits a spec_revised event with correct payload', () => {
+test('reviseSpec emits a spec_revised event with correct payload (real-diff: no authored sections -> nothing addressed)', () => {
   const { root, specPath } = makeBlockedSpec({ revision: 1 });
   try {
     writeReviewSidecar(root, specPath);
@@ -166,10 +209,12 @@ test('reviseSpec emits a spec_revised event with correct payload', () => {
     assert.equal(ev.to_revision, 2);
     assert.ok(Array.isArray(ev.addressed_blocker_ids));
     assert.ok(Array.isArray(ev.unresolved_blocker_ids));
-    // All blockers from the input are flagged as addressed by default
-    // (the patch addresses them by acknowledgement; a later review will
-    // verify resolution).
-    assert.deepEqual(ev.addressed_blocker_ids.sort(), ['sa:x:11111111', 'sec:y:22222222']);
+    // Real-diff computation (Task 6): with no `authoredSections` supplied,
+    // zero bytes changed for any anchor, so nothing is addressed — this
+    // replaces the old blanket-acknowledgement defect the amendment exists
+    // to fix (addressed used to equal the full input set unconditionally).
+    assert.deepEqual(ev.addressed_blocker_ids, []);
+    assert.deepEqual(ev.unresolved_blocker_ids.sort(), ['sa:x:11111111', 'sec:y:22222222']);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -260,4 +305,278 @@ test('reviseSpec rejects path-traversal — INVALID_SPEC_PATH (SEC-1)', () => {
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+// ── Task 6: Real-diff addressed/unresolved + splice validation ─────────────
+
+test('(a) reviseSpec marks an anchor addressed when its authored body actually differs from prior text', () => {
+  const { root, specPath } = makeBlockedSpecWithHeadings({ revision: 1 });
+  try {
+    writeReviewSidecar(root, specPath);
+    writeBlockersSidecar(root, specPath, [
+      { blocker_id: 'con:missing-precond:aaaaaaaa', section_anchor: 'preconditions', prose: 'needs a precondition' },
+    ]);
+    const result = reviseSpec({
+      specPath, projectRoot: root,
+      authoredSections: new Map([['preconditions', 'A brand-new precondition sentence.']]),
+    });
+    assert.deepStrictEqual(result.addressed, ['con:missing-precond:aaaaaaaa']);
+    assert.deepStrictEqual(result.unresolved, []);
+    const body = readFileSync(join(root, specPath), 'utf8');
+    assert.ok(body.includes('A brand-new precondition sentence.'));
+    assert.ok(!body.includes('Original preconditions text.'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('(b) reviseSpec marks an anchor unresolved when its section text is unchanged', () => {
+  const { root, specPath } = makeBlockedSpecWithHeadings({ revision: 1 });
+  try {
+    writeReviewSidecar(root, specPath);
+    writeBlockersSidecar(root, specPath, [
+      { blocker_id: 'con:x:11111111', section_anchor: 'preconditions', prose: 'a' },
+      { blocker_id: 'con:y:22222222', section_anchor: 'behaviors', prose: 'b' },
+    ]);
+    const result = reviseSpec({
+      specPath, projectRoot: root,
+      authoredSections: new Map([
+        ['preconditions', 'Original preconditions text.'], // identical to prior text
+      ]),
+    });
+    // Unchanged authored text -> unresolved; "behaviors" never authored -> unresolved too.
+    assert.deepStrictEqual(result.addressed, []);
+    assert.deepStrictEqual(result.unresolved.sort(), ['con:x:11111111', 'con:y:22222222']);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('(c) reviseSpec refuses a splice containing a frontmatter-fence line (BEH-5a) and preserves prior text', () => {
+  const { root, specPath } = makeBlockedSpecWithHeadings({ revision: 1 });
+  try {
+    writeReviewSidecar(root, specPath);
+    writeBlockersSidecar(root, specPath, [
+      { blocker_id: 'con:x:11111111', section_anchor: 'preconditions', prose: 'a' },
+    ]);
+    const result = reviseSpec({
+      specPath, projectRoot: root,
+      authoredSections: new Map([['preconditions', '---\nmalicious: true\n---']]),
+    });
+    assert.ok(result.unresolved.includes('con:x:11111111'));
+    assert.deepStrictEqual(result.addressed, []);
+    assert.ok(result.advisories.some(a => a.code === 'SPLICE_VALIDATION_FAILED' && a.anchor === 'preconditions'));
+    const body = readFileSync(join(root, specPath), 'utf8');
+    assert.ok(body.includes('Original preconditions text.'), 'prior text must be preserved on refusal');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('(d) reviseSpec refuses a splice containing a control character (BEH-5a) and preserves prior text', () => {
+  const { root, specPath } = makeBlockedSpecWithHeadings({ revision: 1 });
+  try {
+    writeReviewSidecar(root, specPath);
+    writeBlockersSidecar(root, specPath, [
+      { blocker_id: 'con:x:11111111', section_anchor: 'preconditions', prose: 'a' },
+    ]);
+    const result = reviseSpec({
+      specPath, projectRoot: root,
+      authoredSections: new Map([['preconditions', 'Looks fine\x07but has a bell char.']]),
+    });
+    assert.ok(result.unresolved.includes('con:x:11111111'));
+    assert.deepStrictEqual(result.addressed, []);
+    assert.ok(result.advisories.some(a => a.code === 'SPLICE_VALIDATION_FAILED' && a.anchor === 'preconditions'));
+    const body = readFileSync(join(root, specPath), 'utf8');
+    assert.ok(body.includes('Original preconditions text.'), 'prior text must be preserved on refusal');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('(c2) reviseSpec independently processes anchors: one BEH-5a refusal does not abort a sibling anchor\'s valid splice', () => {
+  const { root, specPath } = makeBlockedSpecWithHeadings({ revision: 1 });
+  try {
+    writeReviewSidecar(root, specPath);
+    writeBlockersSidecar(root, specPath, [
+      { blocker_id: 'con:x:11111111', section_anchor: 'preconditions', prose: 'a' },
+      { blocker_id: 'con:y:22222222', section_anchor: 'behaviors', prose: 'b' },
+    ]);
+    const result = reviseSpec({
+      specPath, projectRoot: root,
+      authoredSections: new Map([
+        ['preconditions', '---\nmalicious: true\n---'], // refused
+        ['behaviors', 'A rewritten behaviors section.'], // valid, should still splice
+      ]),
+    });
+    assert.deepStrictEqual(result.addressed, ['con:y:22222222']);
+    assert.deepStrictEqual(result.unresolved, ['con:x:11111111']);
+    const body = readFileSync(join(root, specPath), 'utf8');
+    assert.ok(body.includes('A rewritten behaviors section.'));
+    assert.ok(body.includes('Original preconditions text.'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('(e) a pre-existing, legitimate horizontal rule elsewhere in the body does NOT falsely roll back an unrelated valid splice', () => {
+  // A `---` markdown horizontal rule in an untouched "## Notes" section is
+  // common in real specs (this repo has several) and must never be treated
+  // as frontmatter corruption: splices are always strictly bounded to
+  // content after the closing frontmatter fence, so a stray horizontal rule
+  // elsewhere cannot actually threaten the frontmatter block. Both anchors
+  // below individually pass BEH-5a validation and both textually differ
+  // from prior content — both must land as `addressed`, and the horizontal
+  // rule must survive untouched.
+  const { root, specPath } = makeBlockedSpecWithHeadings({
+    revision: 1,
+    extraSection: '## Notes\n\n---\n\nA horizontal rule above, not a frontmatter fence.\n\n',
+  });
+  try {
+    writeReviewSidecar(root, specPath);
+    writeBlockersSidecar(root, specPath, [
+      { blocker_id: 'con:x:11111111', section_anchor: 'preconditions', prose: 'a' },
+      { blocker_id: 'con:y:22222222', section_anchor: 'behaviors', prose: 'b' },
+    ]);
+    const result = reviseSpec({
+      specPath, projectRoot: root,
+      authoredSections: new Map([
+        ['preconditions', 'A perfectly valid new precondition.'],
+        ['behaviors', 'A perfectly valid new behaviors section.'],
+      ]),
+    });
+    assert.deepStrictEqual(result.addressed.sort(), ['con:x:11111111', 'con:y:22222222']);
+    assert.deepStrictEqual(result.unresolved, []);
+    assert.ok(!result.advisories.some(a => a.code === 'SPLICE_VALIDATION_FAILED'));
+    const afterBody = readFileSync(join(root, specPath), 'utf8');
+    assert.ok(afterBody.includes('A perfectly valid new precondition.'));
+    assert.ok(afterBody.includes('A perfectly valid new behaviors section.'));
+    // The unrelated horizontal rule survives untouched.
+    assert.ok(afterBody.includes('A horizontal rule above, not a frontmatter fence.'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+// ── assertFrontmatterIntact: direct unit tests on the atomicity gate ───────
+//
+// After the fix above, a genuine "per-anchor validation passed for every
+// anchor, yet the composed document's frontmatter fails to reparse" case is
+// not reachable through legitimate splicing — splices are always strictly
+// bounded to content after the closing fence (see resolveSectionAnchors),
+// so the frontmatter block itself is never touched by a splice. These tests
+// instead exercise the gate function directly, in isolation, to lock in its
+// contract (BEH-5: "re-parses the full post-splice file to confirm the
+// frontmatter still parses") without depending on a full reviseSpec splice.
+
+test('assertFrontmatterIntact: refuses when the candidate has no parseable frontmatter', () => {
+  const result = assertFrontmatterIntact('# No frontmatter here\n\njust prose\n', { revision: 2, status: 'review-pending' });
+  assert.deepStrictEqual(result, { ok: false, reason: 'frontmatter-missing' });
+});
+
+test('assertFrontmatterIntact: refuses when the reparsed revision does not match expected', () => {
+  const candidate = ['---', 'revision: 1', 'status: review-pending', '---', '', 'body'].join('\n');
+  const result = assertFrontmatterIntact(candidate, { revision: 2, status: 'review-pending' });
+  assert.deepStrictEqual(result, { ok: false, reason: 'revision-mismatch' });
+});
+
+test('assertFrontmatterIntact: refuses when the reparsed status does not match expected', () => {
+  const candidate = ['---', 'revision: 2', 'status: review-blocked', '---', '', 'body'].join('\n');
+  const result = assertFrontmatterIntact(candidate, { revision: 2, status: 'review-pending' });
+  assert.deepStrictEqual(result, { ok: false, reason: 'status-mismatch' });
+});
+
+test('assertFrontmatterIntact: passes for a well-formed candidate, even with extra horizontal rules in the body', () => {
+  const candidate = [
+    '---', 'revision: 2', 'status: review-pending', '---', '',
+    '## Notes', '', '---', '', 'a horizontal rule, not a fence', '',
+  ].join('\n');
+  const result = assertFrontmatterIntact(candidate, { revision: 2, status: 'review-pending' });
+  assert.deepStrictEqual(result, { ok: true });
+});
+
+test('(e2) reviseSpec marks a blocker unresolved and logs ANCHOR_NOT_FOUND when its section_anchor matches no heading', () => {
+  const { root, specPath } = makeBlockedSpecWithHeadings({ revision: 1 });
+  try {
+    writeReviewSidecar(root, specPath);
+    writeBlockersSidecar(root, specPath, [
+      { blocker_id: 'con:x:11111111', section_anchor: 'this-heading-does-not-exist', prose: 'a' },
+    ]);
+    const result = reviseSpec({ specPath, projectRoot: root });
+    assert.deepStrictEqual(result.addressed, []);
+    assert.deepStrictEqual(result.unresolved, ['con:x:11111111']);
+    assert.ok(result.advisories.some(a => a.code === 'ANCHOR_NOT_FOUND' && a.anchor === 'this-heading-does-not-exist'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('(e3) two blockers sharing the same addressed anchor both become addressed', () => {
+  const { root, specPath } = makeBlockedSpecWithHeadings({ revision: 1 });
+  try {
+    writeReviewSidecar(root, specPath);
+    writeBlockersSidecar(root, specPath, [
+      { blocker_id: 'con:x:11111111', section_anchor: 'preconditions', prose: 'a' },
+      { blocker_id: 'con:y:22222222', section_anchor: 'preconditions', prose: 'b' },
+    ]);
+    const result = reviseSpec({
+      specPath, projectRoot: root,
+      authoredSections: new Map([['preconditions', 'A rewritten precondition addressing both findings.']]),
+    });
+    assert.deepStrictEqual(result.addressed.sort(), ['con:x:11111111', 'con:y:22222222']);
+    assert.deepStrictEqual(result.unresolved, []);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('(f) groupBlockersByAnchor groups blocker ids by section_anchor', () => {
+  const { grouped } = groupBlockersByAnchor([
+    { blocker_id: 'a:1:11111111', section_anchor: 'preconditions' },
+    { blocker_id: 'a:2:22222222', section_anchor: 'preconditions' },
+    { blocker_id: 'a:3:33333333', section_anchor: 'behaviors' },
+  ]);
+  assert.deepStrictEqual(grouped.get('preconditions').sort(), ['a:1:11111111', 'a:2:22222222']);
+  assert.deepStrictEqual(grouped.get('behaviors'), ['a:3:33333333']);
+});
+
+test('(g) groupBlockersByAnchor reports anchorsNotFound against a resolved heading set', () => {
+  const fmBody = [
+    '## Preconditions',
+    '',
+    'Original preconditions text.',
+    '',
+    '## Behaviors',
+    '',
+    '1. **When** invoked **then** does X.',
+    '',
+  ].join('\n');
+  const knownAnchors = resolveSectionAnchors(fmBody);
+  assert.ok(knownAnchors.has('preconditions'));
+  const { grouped, anchorsNotFound } = groupBlockersByAnchor([
+    { blocker_id: 'a:1:11111111', section_anchor: 'preconditions' },
+    { blocker_id: 'a:2:22222222', section_anchor: 'nonexistent-section' },
+  ], knownAnchors);
+  assert.ok(grouped.has('nonexistent-section'), 'grouping still records the blocker even if its anchor is unresolved');
+  assert.deepStrictEqual(anchorsNotFound, ['nonexistent-section']);
+});
+
+test('resolveSectionAnchors resolves a heading to a byte range bounded by the next same-or-higher heading', () => {
+  const body = [
+    '## Preconditions',
+    '',
+    'Pre text.',
+    '',
+    '## Behaviors',
+    '',
+    'Beh text.',
+    '',
+  ].join('\n');
+  const anchors = resolveSectionAnchors(body);
+  assert.ok(anchors.has('preconditions'));
+  assert.ok(anchors.has('behaviors'));
+  const pre = anchors.get('preconditions');
+  const sectionText = body.slice(pre.start, pre.end);
+  assert.ok(sectionText.includes('Pre text.'));
+  assert.ok(!sectionText.includes('Beh text.'));
 });
