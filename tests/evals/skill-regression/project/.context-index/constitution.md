@@ -37,8 +37,9 @@ caller owns transport and persistence.
 - **Errors:** throw `TypeError` for a malformed payload shape; return a result
   object for field-level and business-rule rejections so callers can branch
   without `try`.
-- **Money:** integer minor units (cents) everywhere. Never floats. Rounding
-  happens once, at the end of pricing.
+- **Money:** integer minor units (cents) everywhere. Never floats, and no
+  rounding step exists — nothing is ever fractional, so there is nothing to
+  round (ADR-0001).
 - **JSDoc:** required on every exported function, with `@param` and
   `@returns`.
 - **Tests:** anything added under `src/` gets a `node:test` suite under

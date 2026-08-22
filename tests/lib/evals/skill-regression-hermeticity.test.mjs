@@ -10,8 +10,8 @@
  * Numbered tests carry the spec's Hermeticity Rules row numbers — keep them
  * stable so a reader can map a test to a spec row without a translation table.
  *
- *   present: 1, 2, 3, 4 (Task 1) and 5, 7 (Task 2)
- *   pending: 6, 9 (Task 3), 10, 11 (Task 8)
+ *   present: 1, 2, 3, 4 (Task 1), 5, 7 (Task 2) and 6, 9 (Task 3)
+ *   pending: 10, 11 (Task 8)
  *
  * A pending property is deliberately ABSENT rather than stubbed: a stubbed
  * property reads as covered.
@@ -32,7 +32,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, lstatSync, readFileSync, readdirSync } from "node:fs";
-import { join, relative, resolve, sep } from "node:path";
+import { dirname, join, relative, resolve, sep } from "node:path";
 
 import { PLUGIN_ROOT } from "../../helpers.mjs";
 import { parseYaml } from "../../../lib/profiles/yaml.mjs";
@@ -42,6 +42,7 @@ import { loadDeployConfig } from "../../../lib/deploy.mjs";
 import { loadValidateConfig } from "../../../lib/governance/validate-config.mjs";
 import { loadReviewConfig } from "../../../lib/governance/review-config.mjs";
 import { MARKED_REGISTRIES, readMarker } from "../../../lib/governance/registry-marker.mjs";
+import { CHARTER_KINDS, SPEC_KINDS } from "../../../lib/kinds.mjs";
 
 /** Repo-relative POSIX path of the fixture root — the string form globs match against. */
 const FIXTURE_REL = "tests/evals/skill-regression";
@@ -646,4 +647,280 @@ test("the fixture's minimum enabled checks and reviewers, read through the loade
   // prompt, which only holds while no entry is switched off.
   assert.deepEqual(validate.disabled.map((c) => c.id), [], "the fixture declares no disabled validate check");
   assert.deepEqual(review.disabled.map((r) => r.id), [], "the fixture declares no disabled reviewer");
+});
+
+// ---------------------------------------------------------------------------
+// Task 3 additions: the fixture's markdown corpus — the lifecycle artifacts.
+//
+// Properties 6 and 9 are the two hermeticity rules decided by CONTENT rather
+// than by tree shape, which is why they land with the corpus rather than with
+// Task 1's scaffolding: before there were specs, plans, a charter and a
+// product brief to read, both properties would have iterated an empty set.
+//
+// Helpers below are shared by properties 6 and 9 and by the `kind:` assertion
+// that ships with them. Same extension contract as above: helpers first, one
+// `test()` per property, zero cross-test state.
+// ---------------------------------------------------------------------------
+
+/** Absolute path to the fixture project's lifecycle-artifact library. */
+const SPECS = join(PROJECT, ".context-index", "specs");
+
+/**
+ * Every `.md` file under `dir`, depth-first, as absolute paths.
+ *
+ * Symlinks are never followed — recursion is gated on `dirent.isDirectory()`,
+ * which property 1 already keeps false for every entry under the fixture. A
+ * missing directory yields `[]`; each caller asserts non-emptiness itself.
+ *
+ * @param {string} dir
+ * @param {string[]} [out]
+ * @returns {string[]} Absolute paths, in walk order.
+ */
+function markdownUnder(dir, out = []) {
+  if (!existsSync(dir)) return out;
+  for (const dirent of readdirSync(dir, { withFileTypes: true })) {
+    const abs = join(dir, dirent.name);
+    if (dirent.isDirectory()) markdownUnder(abs, out);
+    else if (dirent.isFile() && dirent.name.endsWith(".md")) out.push(abs);
+  }
+  return out;
+}
+
+/** POSIX-style path of `abs` relative to the fixture project root. */
+function projectRel(abs) {
+  return relative(PROJECT, abs).split(sep).join("/");
+}
+
+/**
+ * The YAML frontmatter block of a markdown document, or `null` when absent.
+ *
+ * Deliberately the SAME leading-fence regex `lib/infra-preflight.mjs`
+ * (`parseInfraRequirements`) uses, so property 6 decides "is there
+ * frontmatter here" exactly the way the consumer it guards against decides
+ * it. A file this regex reads as frontmatter-less is a file the preflight
+ * would also skip.
+ *
+ * @param {string} text Full file contents.
+ * @returns {string|null} The block body, without its `---` fences.
+ */
+function frontmatterBlock(text) {
+  const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  return m ? m[1] : null;
+}
+
+/**
+ * Which lifecycle-artifact kind a project-relative markdown path denotes.
+ *
+ * Classification is by PATH, matching how the ADR-0009 taxonomy disambiguates
+ * layers ("the file path provides layer disambiguation"). Used only for
+ * property 6's coverage floor — a file that classifies as `null` is still
+ * scanned for the banned key.
+ *
+ * @param {string} rel POSIX path relative to `project/`.
+ * @returns {"charter"|"spec"|"plan"|"product"|null}
+ */
+function artifactKind(rel) {
+  if (rel === ".context-index/specs/product.md") return "product";
+  if (rel.endsWith("/charter.md")) return "charter";
+  if (rel.endsWith(".spec.md")) return "spec";
+  if (rel.endsWith(".plan.md")) return "plan";
+  return null;
+}
+
+/**
+ * Markdown with fenced blocks and inline code spans blanked out.
+ *
+ * Newlines are preserved so a reported line number still points at the right
+ * line. Blanking matters in both directions: Claude Code does not resolve an
+ * `@`-looking token inside code as an import (so scanning raw text would fire
+ * on `@anthropic-ai/foo` in a snippet), and the fixture's golden sample
+ * embeds annotated JSDoc — `@param`, `@returns` — that must not read as one.
+ *
+ * @param {string} text
+ * @returns {string}
+ */
+function blankCode(text) {
+  const blank = (s) => s.replace(/[^\n]/g, " ");
+  return text.replace(/^```[\s\S]*?^```/gm, blank).replace(/`[^`\n]*`/g, blank);
+}
+
+/**
+ * Claude Code `@`-import references in a markdown document.
+ *
+ * The construct is a bare `@` followed by a path, at a word boundary. The
+ * three alternatives are the three shapes that actually resolve to a file: an
+ * explicitly relative/absolute/home path (`@./x`, `@../x`, `@/x`, `@~/x`), any
+ * token carrying a `/` (`@docs/notes.md`), and a bare sibling document named
+ * by extension (`@notes.md`). A slash-free, extension-free token — `@param`,
+ * `@returns`, `@adev:eval` — is not an import and is not matched.
+ *
+ * @param {string} text Raw file contents; code is blanked internally.
+ * @returns {Array<{spec: string, line: number}>}
+ */
+function atImports(text) {
+  const re =
+    /(?:^|[\s(\[>|])@((?:\.{1,2}\/|~\/|\/)[^\s`)\]|]+|[A-Za-z0-9_.-]+\/[^\s`)\]|]*|[A-Za-z0-9_-]+\.(?:md|markdown|mdx|txt))/g;
+  const scanned = blankCode(text);
+  const found = [];
+  for (const m of scanned.matchAll(re)) {
+    // m.index points at the consumed leading delimiter, which is the newline
+    // itself when the import starts a line — offsetting to the `@` keeps the
+    // reported line honest. Diagnostic only; it never changes pass/fail.
+    const at = m.index + m[0].indexOf("@");
+    found.push({ spec: m[1], line: scanned.slice(0, at).split("\n").length });
+  }
+  return found;
+}
+
+test("hermeticity property 6 — no markdown under the fixture declares infra_requirements", () => {
+  const files = markdownUnder(PROJECT);
+
+  // Non-vacuity, first half: "no file carries the key" is true of no files.
+  assert.ok(
+    files.length > 0,
+    `expected markdown under ${FIXTURE_REL}/project/ to scan; found ${files.length}`,
+  );
+
+  // Non-vacuity, second half, and the stronger one: the four artifact kinds
+  // the preflight is actually pointed at. `adev preflight run --spec <path>
+  // [--plan <path>]` runs early in implement, validate, debug, eval, write-test
+  // and recover, and /adev:work reads the charter and product brief on the way
+  // in. A scan that walked only `docs/` would satisfy the count floor above
+  // while reading none of the files that matter.
+  const kinds = new Set(files.map((f) => artifactKind(projectRel(f))).filter(Boolean));
+  const missing = ["charter", "spec", "plan", "product"].filter((k) => !kinds.has(k));
+  assert.deepEqual(
+    missing,
+    [],
+    `property 6 must scan each lifecycle-artifact kind; none found for: ${missing.join(", ")}`,
+  );
+
+  // The ban is on the KEY, in frontmatter, in whichever YAML form. The block
+  // form (`infra_requirements:` alone on its line) is the only one
+  // `parseInfraRequirements` parses today, so matching only that would let an
+  // inline `infra_requirements: [postgres]` sit in the tree until the parser
+  // grew a flow-sequence branch and silently armed it.
+  const declaring = [];
+  for (const file of files) {
+    const fm = frontmatterBlock(readFileSync(file, "utf8"));
+    if (fm && /^infra_requirements\s*:/m.test(fm)) declaring.push(projectRel(file));
+  }
+  assert.deepEqual(
+    declaring,
+    [],
+    "an `infra_requirements:` block reaches `executeProbe`, which runs its `probe:` string " +
+      "through execFileSync with no consent gate — ban the field, not the specs",
+  );
+});
+
+test("hermeticity property 9 — the required instruction files exist and no markdown carries an `@`-import", () => {
+  // The four are REQUIRED, not banned: they are an accepted crossing, recorded
+  // rather than closed. Asserting their presence is what stops the content ban
+  // below from being satisfied by deleting the corpus.
+  const required = [
+    "CLAUDE.md",
+    "AGENTS.md",
+    ".context-index/memory/heuristics/orders.md",
+    ".context-index/samples",
+  ];
+  const absent = required.filter((rel) => !pathPresent(join(PROJECT, rel)));
+  assert.deepEqual(
+    absent,
+    [],
+    `these instruction surfaces are required under ${FIXTURE_REL}/project/`,
+  );
+  assert.ok(
+    markdownUnder(join(PROJECT, ".context-index", "samples")).length > 0,
+    "`.context-index/samples/` must hold at least one golden sample, not just exist",
+  );
+
+  // ONE assertion, not two, and the reason is worth stating: a flat "no
+  // `@`-import in any `.md` under project/" scan is a STRICT SUBSET of the
+  // walk below, because the walk seeds from exactly that file set and reports
+  // every hop-1 hit the flat scan would. Shipping both would leave one of them
+  // permanently unreachable by any perturbation — dead weight that reads as
+  // coverage. The walk is the one kept because it strictly dominates: it
+  // resolves each import and keeps following, to five hops (the documented
+  // depth of Claude Code's import resolution), so it also sees the hops a flat
+  // markdown scan structurally cannot — a target that is not `.md`
+  // (`@docs/notes.txt`) and a target that is not under `project/` at all. It
+  // also reports the CHAIN, so a failure names the route out of the fixture
+  // rather than one line.
+  const files = markdownUnder(PROJECT);
+  assert.ok(
+    files.length > 0,
+    `expected markdown under ${FIXTURE_REL}/project/ to seed the walk; found ${files.length}`,
+  );
+
+  const MAX_HOPS = 5;
+  const seen = new Set();
+  const escapes = [];
+  let frontier = files.map((f) => ({ abs: f, chain: [projectRel(f)] }));
+  for (let hop = 0; hop < MAX_HOPS && frontier.length > 0; hop += 1) {
+    const next = [];
+    for (const { abs, chain } of frontier) {
+      if (seen.has(abs)) continue;
+      seen.add(abs);
+      let text;
+      try {
+        if (!lstatSync(abs).isFile()) continue;
+        text = readFileSync(abs, "utf8");
+      } catch {
+        continue; // a dangling import target imports nothing further
+      }
+      for (const hit of atImports(text)) {
+        const target = hit.spec.startsWith("~/") ? null : resolve(dirname(abs), hit.spec);
+        const where = chain.length === 1 ? `${chain[0]}:${hit.line}` : chain.join(" → ");
+        escapes.push(`${where} → @${hit.spec} (hop ${hop + 1})`);
+        if (target) next.push({ abs: target, chain: [...chain, `@${hit.spec}`] });
+      }
+    }
+    frontier = next;
+  }
+  // The walk must have READ something for its silence to mean anything.
+  assert.ok(seen.size > 0, "the import walk visited no file — a silent pass over nothing");
+  assert.deepEqual(
+    escapes,
+    [],
+    "no markdown under the fixture, and nothing within " +
+      `${MAX_HOPS} hops of it, may carry an \`@\`-import — \`@../../../CLAUDE.md\` ` +
+      "feeds this repository's own constitution to a driven skill",
+  );
+});
+
+test("every lifecycle artifact under the fixture's specs/ carries a `kind:` (ADR-0009 §1)", () => {
+  const files = markdownUnder(SPECS);
+  assert.ok(
+    files.length > 0,
+    `expected lifecycle artifacts under ${FIXTURE_REL}/project/.context-index/specs/; found none`,
+  );
+
+  // Per file, never a spot check: the failure this guards is one artifact
+  // authored without the discriminator, which an "at least one has it"
+  // assertion reads as covered.
+  const missing = [];
+  const illegal = [];
+  for (const file of files) {
+    const rel = projectRel(file);
+    const fm = frontmatterBlock(readFileSync(file, "utf8"));
+    const m = fm && fm.match(/^kind:[ \t]*(\S+)[ \t]*$/m);
+    if (!m) {
+      missing.push(rel);
+      continue;
+    }
+    // Legality is asserted only where ADR-0009's closed enumerations apply.
+    // `*.plan.md` and `product.md` are neither of the two layers the ADR
+    // enumerates, so they carry a `kind:` without being bound to those values.
+    const kind = artifactKind(rel);
+    const enumeration = kind === "charter" ? CHARTER_KINDS : kind === "spec" ? SPEC_KINDS : null;
+    if (enumeration && !enumeration.includes(m[1])) {
+      illegal.push(`${rel}: kind: ${m[1]} (legal: ${enumeration.join(", ")})`);
+    }
+  }
+  assert.deepEqual(missing, [], "every artifact under specs/ must declare an explicit `kind:`");
+  assert.deepEqual(
+    illegal,
+    [],
+    "a charter or spec `kind:` must be a member of its closed enumeration",
+  );
 });

@@ -15,7 +15,7 @@ order record. No network, no database, no framework.
 2. Anything exported from `src/index.mjs` must appear in `docs/api.md`.
 3. Every file under `src/` must be reachable from `src/index.mjs`. An
    unreferenced module is dead code and should be deleted, not kept.
-4. Money is integer cents. Rounding happens once, at the end of pricing.
+4. Money is integer cents. Nothing is ever fractional, so no rounding step exists.
 5. Exported functions carry JSDoc with `@param` and `@returns`.
 
 ## Working on this repo
