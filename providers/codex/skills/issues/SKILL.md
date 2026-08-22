@@ -78,6 +78,15 @@ Call `create()` from the active adapter with provided fields. Defaults: type `ta
 
 If `--epic` is provided, set the `epicId` field. Validate the epic exists by checking if the ID starts with `epic-`.
 
+**Content template (BEH-1, BEH-2):** When `--type bug|feature` is given and no `--notes`/`--body`/`--description` was supplied, prompt the author before creating the issue:
+
+> This is a `<bug|feature>` issue — give it a short body:
+> **Problem / Intent:** what's wrong, or what capability is missing, and why it matters
+> **Acceptance Criteria:** concrete, checkable outcomes
+> **Out of Scope:** what this issue deliberately does not cover
+
+Assemble the three answers into a single `notes` string (the existing `description`/`body` → `notes` alias resolution in `lib/issues/interface.mjs::resolveNotes` handles it unchanged — no new field). When `--type task` (the default) is given, skip this prompt — accept a one-line `--notes` value as-is, since Tasks are typically short and already scoped by a parent Feature's spec.
+
 Report: "Created `<id>`: <title> (status: open, priority: <N>)"
 
 ### Create Epic
