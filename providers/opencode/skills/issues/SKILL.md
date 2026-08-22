@@ -12,7 +12,7 @@ Manage project issues and epics using the configured task backend.
 ## Arguments
 
 - No arguments: display the full issue board
-- `create "<title>" [--type bug|feature|task] [--epic <epic-id>] [--priority 0-4]`: create an issue
+- `create "<title>" [--type bug|feature|task] [--epic <epic-id>] [--priority 0-4] [--spec-ref <path>] [--next-action <text>]`: create an issue
 - `epic "<title>" [--milestone <name>]`: create a new epic, optionally assigning it to a milestone
 - `update <id> --status <open|in_progress|closed|deferred> [--milestone <name>]`: update issue status and/or milestone (for epics). `--status` and `--milestone` can be used together or independently — both fields are updated in a single call
 - `close <id> --reason "<text>"`: close an issue with a reason
@@ -92,6 +92,8 @@ Assemble the three answers into a single `notes` string (the existing `descripti
 > Issue `<id>` was created without a body. Consider `/adev:issues update <id> --notes "..."` before work starts.
 
 Report: "Created `<id>`: <title> (status: open, priority: <N>)"
+
+**Traceability (BEH-3):** When `--spec-ref <path>` is provided, or a `spec_ref` can be inferred from the active lifecycle context (e.g. invoked via `/adev:work` immediately after `/adev:specify`), pass it through to `create()` — the field already exists on the `Issue` model (`lib/issues/interface.mjs`). `spec_ref` is a descriptive string, not filesystem-validated.
 
 ### Create Epic
 
