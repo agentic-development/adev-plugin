@@ -97,6 +97,60 @@ test('adev specify group-blockers excludes decision/external-classed blockers', 
     assert.equal(result.status, 0);
     const payload = JSON.parse(result.stdout.trim());
     assert.deepStrictEqual(payload.anchors, {}, 'decision-classed blocker must not appear in any authoring group');
+    assert.deepStrictEqual(payload.decision_blocker_ids, ['a:1:11111111']);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('adev specify group-blockers reports external_blockers with remedy_ref for the build loop\'s External Remedies line', () => {
+  const blockersYaml = [
+    '# Blockers',
+    '## a:1:11111111',
+    '```yaml',
+    'blocker_id: a:1:11111111',
+    'section_anchor: preconditions',
+    'finding_class: external',
+    'remedy_ref: see ADR-0022',
+    '```',
+    '```',
+    'needs an external system change',
+    '```',
+  ].join('\n');
+  const { root, specPath } = makeSpecWithBlockers({ blockersYaml });
+  try {
+    const result = runCli(root, ['group-blockers', '--spec', specPath]);
+    assert.equal(result.status, 0);
+    const payload = JSON.parse(result.stdout.trim());
+    assert.deepStrictEqual(payload.anchors, {}, 'external-classed blocker must not appear in any authoring group');
+    assert.deepStrictEqual(payload.external_blockers, [
+      { blocker_id: 'a:1:11111111', section_anchor: 'preconditions', remedy_ref: 'see ADR-0022' },
+    ]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('adev specify group-blockers reports empty decision_blocker_ids/external_blockers when all blockers are defect-classed', () => {
+  const blockersYaml = [
+    '# Blockers',
+    '## a:1:11111111',
+    '```yaml',
+    'blocker_id: a:1:11111111',
+    'section_anchor: preconditions',
+    'finding_class: defect',
+    '```',
+    '```',
+    'prose',
+    '```',
+  ].join('\n');
+  const { root, specPath } = makeSpecWithBlockers({ blockersYaml });
+  try {
+    const result = runCli(root, ['group-blockers', '--spec', specPath]);
+    assert.equal(result.status, 0);
+    const payload = JSON.parse(result.stdout.trim());
+    assert.deepStrictEqual(payload.decision_blocker_ids, []);
+    assert.deepStrictEqual(payload.external_blockers, []);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
