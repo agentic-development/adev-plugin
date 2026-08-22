@@ -1,7 +1,7 @@
 ---
 charter: task-management
 kind: behavioral
-status: review-pending
+status: review-passed
 risk_level: medium
 milestone: 5
 revision: 4

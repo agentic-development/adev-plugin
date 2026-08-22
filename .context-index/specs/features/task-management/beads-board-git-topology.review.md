@@ -1,7 +1,7 @@
 ---
 spec: .context-index/specs/features/task-management/beads-board-git-topology.spec.md
 charter: .context-index/specs/features/task-management/charter.md
-verdict: BLOCK
+verdict: PASS
 reviewers:
   - id: consistency-analyzer
     mode: subagent
@@ -17,26 +17,26 @@ reviewers:
     mode: subagent
     profile: reviewer-capable
     prompt: plugin:review-specs/wiring-reviewer-prompt.md
-    verdict: PASS_WITH_NOTES
+    verdict: PASS
   - id: boundary-reviewer
     mode: subagent
     profile: reviewer-capable
     prompt: plugin:review-specs/boundary-reviewer-prompt.md
-    verdict: FAIL
-last-reviewed-revision: 3
-file-sha: 0b46e789361b119b587122816d10c0842082e75196340cdee090cf8419db75b1
+    verdict: PASS
+last-reviewed-revision: 4
+file-sha: 62d0f93e4597addf22f2789b652a3dd953ebc46e7b220a7c448088d181459684
 review-date: 2026-08-22
 rigor-tier: full
 ---
 
-# Architecture Review: beads-board-git-topology (revision 3)
+# Architecture Review: beads-board-git-topology (revision 4)
 
 > **Date:** 2026-08-22
 > **Spec:** `.context-index/specs/features/task-management/beads-board-git-topology.spec.md`
 > **Charter:** `.context-index/specs/features/task-management/charter.md`
-> **Verdict:** BLOCK
+> **Verdict:** PASS
 
-Real progress: revision 2's fixes were verified against source this time before writing, and it shows — 6 blocker findings down to 1. Both Consistency Analyzer and Referent Integrity independently confirmed every prior finding resolved with zero new issues. Boundary Reviewer confirmed its two prior blockers (BD-1 mismatch, BD-3 location) fixed, but caught one new gap: the corrupt-leftover `.beads/` cleanup step never states its deletion mechanism, and a plain filesystem delete would leave stale `.git/worktrees/.beads` metadata that blocks the very `git worktree add` retry this step exists to enable — grounded in this repo's own `lib/worktree.mjs::remove()` precedent (`git worktree remove`, not `rm -rf`).
+Clean pass. Revision 4's single targeted change — the corrupt-leftover `.beads/` recovery sequence (filesystem delete → `git worktree prune` → `git worktree add`) — was verified against `lib/worktree.mjs` by all four reviewers independently, including confirming that module has no `prune` call and no corrupt-recovery path of its own, so the spec's "new logic, not reused" framing is accurate rather than aspirational. Zero blockers, zero warnings across all four reviewers. This closes out a four-revision review arc: revision 1 (3 blockers), revision 2 (6 blocker findings — a partially-verified fix regressed), revision 3 (1 blocker, source verified this time), revision 4 (0 findings, fully source-verified).
 
 ## Reviewers Dispatched
 
@@ -60,45 +60,27 @@ Rigor tier: **full** (unchanged — `risk_level: medium`). `termination-reviewer
 
 **Verdict:** PASS
 
-Both revision-2 blockers confirmed resolved by direct source read: `ensureManagedBlock()`'s whole-block-splice/`"noop"` behavior matches `lib/gitignore-installer.mjs:234-241` exactly; the checkpoint's `.context-index/tasks/.board-migrate-state.json` location and lifecycle match the real `.migrate-state.json` precedent (`lib/gitignore-paths.mjs:62-65`, `lib/cli/issues-migrate.mjs:32`). Also independently verified: the 8-subcommand dispatcher list, the `setup/managed-gitignore-block.spec.md` owning-spec attribution, the `.adev/` precedent entry, and naming-convention consistency (`issues-board.mjs`, `BOARD_*` error codes). No findings.
+Confirmed `lib/worktree.mjs::remove()` only calls `git worktree remove`, zero `prune` hits repo-wide. `BOARD_MIGRATE_PARTIAL_FAILURE` naming and the Behaviors 17-18 checkpoint precedent both verified accurate. One suggestion (CON-1: name `lib/gitignore-paths.mjs` explicitly for the checkpoint's own gitignore registration) — already covered by an existing, unchanged Task Map row the reviewer's scoped pack didn't include; no action needed.
 
 ## Referent Integrity Reviewer (referent-integrity)
 
 **Verdict:** PASS
 
-Six referents checked, all verified accurate: `ensureManagedBlock()`'s real behavior, the 8-subcommand dispatcher (noting the spec correctly cites the `run()` body rather than the file's stale header comment), the `MANAGED_GITIGNORE_PATHS` precedent entries, `backend-migration.spec.md` Behaviors 17-18, the `setup/managed-gitignore-block.spec.md` owning-spec citation, and the subprocess-safety convention. No findings.
+All three factual claims in the revised recovery sequence verified: `git worktree prune` is a real, standard git subcommand; `lib/worktree.mjs::remove()` has zero `prune` calls (grepped and read in full); the "new logic, not reused" claim is accurate. No findings.
 
 ## Wiring Reviewer (wiring-reviewer)
 
-**Verdict:** PASS_WITH_NOTES
+**Verdict:** PASS
 
-All four revision-2 findings (WR-1 through WR-4) confirmed resolved by source. `lib/cli/issues-board.mjs` and its dispatcher branch correctly do not exist yet — the spec scopes this as Task Map work, not a false claim.
-
-- **WR-5** (suggestion) — The "Orphan-branch bootstrap helper" Task Map row doesn't explicitly name its two callers (`cli/index.mjs` bootstrap, `lib/cli/issues-board.mjs`), unlike every other row.
+Producer→consumer→trigger→test chain for the recovery sequence is complete and explicit — the delete-then-prune-then-add ordering is also correct (prune's own precondition requires the working tree to be confirmed absent first). No findings this round. WR-5 (naming callers in the "Orphan-branch bootstrap helper" row) remains open from revision 3, outside this revision's diff — non-blocking.
 
 ## Boundary Reviewer (boundary-reviewer)
 
-**Verdict:** FAIL
+**Verdict:** PASS
 
-Confirmed against `lib/worktree.mjs`, `lib/gitignore-installer.mjs`, `lib/gitignore-paths.mjs`, `lib/cli/issues-migrate.mjs`, and `backend-migration.spec.md`. Revision-2's BD-1 (`ensureManagedBlock` mismatch) and BD-3 (checkpoint location) are both genuinely fixed, field-for-field.
-
-- **BD-1 (new blocker, unstated-recovery-mechanism, section: error-cases)** — The partial-failure error case says a corrupt leftover `.beads/` "is deleted first, then `git worktree add` runs," but never states the deletion mechanism. This repo's only existing worktree-teardown code, `lib/worktree.mjs::remove()`, uses `git worktree remove [--force]` specifically because a plain filesystem delete leaves stale admin state in `.git/worktrees/.beads` that then makes a later `git worktree add` at that path fail — exactly the scenario this recovery step exists to handle. Neither the spec nor its Task Map mentions `git worktree prune` anywhere.
-  `blocker_id: boundary-reviewer:unstated-recovery-mechanism:ff4eb37d`
-
-Items 1–4 (path containment, subprocess interpolation, input trust, privilege posture) and item 5 (artifact leakage, fixed from revision 2) all pass cleanly.
-
-## Heuristics — related prior lessons (signature-ranked)
-
-The following heuristics are lessons learned from past work in this module, ranked with any exact matches for this blocker first. They are not necessarily prior occurrences of this blocker. Use them as guidance, not as hard rules.
-
-### Heuristic: A universal coverage claim must ship with the predicate that checks it (confidence: medium)
-- **Pattern:** When closing a coverage gap in a spec or acceptance criterion, state the executable check alongside the claim.
-- **Anti-pattern:** Answer a repeatedly-missed surface by widening the assertion.
-- **Evidence:** 1 observation
-
-*(Generic `_global`-scope entry, no signature-specific match. Not evidence this has occurred before.)*
+Re-verified the revision-3 blocker is resolved: `lib/worktree.mjs::remove()` genuinely has no corrupt-recovery fallback, confirming the spec's design decision was necessary, not just convenient. All six checklist items pass cleanly. No findings.
 
 ## Summary
 
-**Total findings:** 2 (1 blocker, 1 suggestion)
-**Action required:** One blocker remains. Fix: specify the exact recovery sequence for a corrupt leftover `.beads/` — raw filesystem removal followed by `git worktree prune` to clear stale `.git/worktrees/.beads` registration, before `git worktree add .beads beads-board` retries. Add a test fixture simulating the interrupted-removal state to prove the retry path actually succeeds. This is the last remaining gap; everything else has now been independently verified against source by all four reviewers.
+**Total findings:** 1 (0 blockers, 0 warnings, 1 suggestion — already addressed)
+**Action required:** None. The spec is ready for planning. Run `/adev:plan --spec <path>` to proceed, or continue via `/adev:build`.
