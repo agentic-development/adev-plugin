@@ -1,5 +1,5 @@
 ---
-status: evolving
+status: approved
 revision: 9
 updated: 2026-08-22
 ---
