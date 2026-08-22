@@ -1,13 +1,29 @@
 ---
 charter: task-management
 kind: behavioral
-status: review-passed
+status: implemented
 risk_level: medium
 milestone: 5
 revision: 4
 charter-revision: 9
 created: 2026-08-22
 updated: 2026-08-22
+source-manifest:
+  sha: "9c5902a"
+  files:
+    - cli/index.mjs
+    - lib/cli/issues-board.mjs
+    - lib/cli/issues.mjs
+    - lib/gitignore-paths.mjs
+    - lib/issues/board-migrate-state.mjs
+    - lib/issues/board-worktree.mjs
+    - tests/cli-install-board-bootstrap.test.mjs
+    - tests/lib/board-migrate-state.test.mjs
+    - tests/lib/board-worktree.test.mjs
+    - tests/lib/cli-issues-board-migrate.test.mjs
+    - tests/lib/gitignore-paths.test.mjs
+    - tests/lib/issues-resolve-root.test.mjs
+  computed-at: "2026-08-22T22:06:18.462Z"
 ---
 
 # Live Spec: Beads Board Git Topology
@@ -162,28 +178,28 @@ fresh second clone, and a second independent clone), not inferred from documenta
 
 ## Acceptance Criteria
 
-- [ ] All 9 behaviors (BEH-1 through BEH-9) have passing automated tests
-- [ ] All 8 error cases have passing automated tests
-- [ ] `resolveStorageRoot()` is proven compatible with `.beads/` as a linked worktree by a
+- [x] All 9 behaviors (BEH-1 through BEH-9) have passing automated tests
+- [x] All 8 error cases have passing automated tests
+- [x] `resolveStorageRoot()` is proven compatible with `.beads/` as a linked worktree by a
       real test, not by inspection alone
-- [ ] `adev issues board migrate` is idempotent: running it twice in a row produces no
+- [x] `adev issues board migrate` is idempotent: running it twice in a row produces no
       second mutation and no error
-- [ ] `adev issues board migrate --dry-run` never mutates the repository under any
+- [x] `adev issues board migrate --dry-run` never mutates the repository under any
       precondition state
-- [ ] A partial/interrupted migration never leaves `main` with `.beads/` removed from its
+- [x] A partial/interrupted migration never leaves `main` with `.beads/` removed from its
       tree but not yet gitignored (or vice versa)
-- [ ] A migration interrupted between `.beads/` removal and worktree re-provisioning is
+- [x] A migration interrupted between `.beads/` removal and worktree re-provisioning is
       recoverable by re-running `adev issues board migrate`, via the
       `.context-index/tasks/.board-migrate-state.json` checkpoint — `.beads/` is never left
       permanently absent
-- [ ] A corrupt leftover from an interrupted `git worktree add` — either a partial
+- [x] A corrupt leftover from an interrupted `git worktree add` — either a partial
       `.beads/` directory, a stale `.git/worktrees/.beads` admin entry, or both — is
       cleaned up (filesystem delete + `git worktree prune`) before every re-provisioning
       attempt, so a second interrupted retry never surfaces `BOARD_ALREADY_EXISTS` or an
       `already exists` error from a stale registration
-- [ ] `.context-index/tasks/.board-migrate-state.json` is removed on successful completion
+- [x] `.context-index/tasks/.board-migrate-state.json` is removed on successful completion
       of a resumed migration, and is covered by a `MANAGED_GITIGNORE_PATHS` entry so it is
       never committed to `main`
-- [ ] All quality gates pass (`npm test`)
-- [ ] No constitutional violations introduced; the CLI-installation-path boundary note
+- [x] All quality gates pass (`npm test`)
+- [x] No constitutional violations introduced; the CLI-installation-path boundary note
       above is confirmed accurate by implementation, not just asserted
