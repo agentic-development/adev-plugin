@@ -278,6 +278,8 @@ Produce one section per dispatched reviewer, in registry order. For each reviewe
 
 **Disabled reviewers get a report row, not silence.** `adev governance reviewers` keeps a reviewer declared with `enabled: false` in `reviewers` and also returns it on `disabled`, each entry carrying `disabled_reason`. Emit one `## Disabled Reviewers` table row per entry on that list, naming the reviewer id and its `disabled_reason` — or the literal text `no reason given` when the registry stated none (the loader also raises a `DISABLED_WITHOUT_REASON` warning in that case, which belongs in the report header with the other warnings). Omit the whole section when nothing is disabled. A reviewer that was deliberately switched off must read differently from one the project never declared; dropping it from the report collapses the two.
 
+**External Remedies (Task 11 — two-channel consistency with the build loop).** When any surviving BLOCK finding carries `finding_class: external` (Step 6b-bis below constructs this array), emit one `## External Remedies` table row per such finding: `blocker_id`, `section_anchor`, and `remedy_ref` — the SAME three fields, in the SAME order, that `skills/build/blocker-auto-retry-loop.md`'s "External remedies" progress line prints, and both route `remedy_ref` through the identical `lib/governance/remedy-ref-render.mjs::renderRemedyRef` helper (via `adev blockers write`'s already-validated sidecar, or directly for report rendering — never re-implement the stripping logic inline). This is what lets a human reading `.review.md` on disk and the loop's live console output agree byte-for-byte on the rendered `remedy_ref`. Omit the section when no finding is `external`-classed.
+
 ```markdown
 # Architecture Review: <spec-slug>
 
@@ -298,6 +300,12 @@ Produce one section per dispatched reviewer, in registry order. For each reviewe
 | ID | Reason |
 |----|--------|
 | <reviewer-id> | <disabled_reason, or "no reason given"> |
+
+## External Remedies
+
+| Blocker ID | Section Anchor | Remedy Ref |
+|------------|-----------------|------------|
+| <blocker_id> | <section_anchor> | <renderRemedyRef(remedy_ref)> |
 
 ## <Reviewer Name> (<id>)
 

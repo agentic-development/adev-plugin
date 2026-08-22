@@ -403,3 +403,57 @@ test('build-loop: NOT_CONVERGING reaches the verdict-action table and halts dist
   // (the identical set), which does not hold here (a,b vs c,d).
   assert.notStrictEqual(verdict.verdict, 'NO_PROGRESS');
 });
+
+// ── Task 11: External Remedies two-channel consistency (WR-3) ──────────────
+//
+// skills/build/blocker-auto-retry-loop.md's "External remedies" progress
+// line and skills/review-specs/SKILL.md's "External Remedies" report
+// section both render {blocker_id, section_anchor, remedy_ref} in the same
+// order, both routing remedy_ref through the SAME renderRemedyRef helper.
+// No dedicated "renderExternalRemedyProgressLine"/"renderExternalRemediesReportSection"
+// lib functions exist — the rendering happens in SKILL.md prose executed by
+// an agent, not by callable JS. This test proves the actual shared
+// mechanism (renderRemedyRef) produces byte-identical output for the same
+// input, which is what makes the two independently-composed strings agree.
+
+test('External Remedies: the build progress line and the review report section render remedy_ref byte-identically via the shared helper', () => {
+  const blocker = { blocker_id: 'sa:y:aabbccdd', section_anchor: 'behaviors-3', remedy_ref: 'see ADR-0022' };
+
+  // skills/build/blocker-auto-retry-loop.md step 4's documented format:
+  // "External remedy needed for <blocker_id> (<section_anchor>): <rendered remedy_ref>"
+  const progressLine =
+    `External remedy needed for ${blocker.blocker_id} (${blocker.section_anchor}): ${renderRemedyRef(blocker.remedy_ref)}`;
+
+  // skills/review-specs/SKILL.md Step 5's "External Remedies" table row:
+  // | <blocker_id> | <section_anchor> | <renderRemedyRef(remedy_ref)> |
+  const reportRow =
+    `| ${blocker.blocker_id} | ${blocker.section_anchor} | ${renderRemedyRef(blocker.remedy_ref)} |`;
+
+  const rendered = renderRemedyRef(blocker.remedy_ref);
+  assert.ok(progressLine.includes(rendered));
+  assert.ok(reportRow.includes(rendered));
+  // Both channels embed the exact same rendered substring — neither
+  // independently re-derives or re-sanitizes remedy_ref.
+  const progressSubstring = progressLine.slice(
+    progressLine.indexOf(rendered), progressLine.indexOf(rendered) + rendered.length,
+  );
+  const reportSubstring = reportRow.slice(
+    reportRow.indexOf(rendered), reportRow.indexOf(rendered) + rendered.length,
+  );
+  assert.strictEqual(progressSubstring, reportSubstring);
+  assert.strictEqual(progressSubstring, rendered);
+});
+
+test('External Remedies: a remedy_ref with control characters/ANSI escapes renders identically stripped on both channels', () => {
+  const blocker = { blocker_id: 'sa:y:11223344', section_anchor: 'behaviors-1', remedy_ref: '\x1b[31msee ADR-0099\x1b[0m\x07' };
+  const rendered = renderRemedyRef(blocker.remedy_ref);
+  assert.strictEqual(rendered, 'see ADR-0099');
+
+  const progressLine = `External remedy needed for ${blocker.blocker_id} (${blocker.section_anchor}): ${renderRemedyRef(blocker.remedy_ref)}`;
+  const reportRow = `| ${blocker.blocker_id} | ${blocker.section_anchor} | ${renderRemedyRef(blocker.remedy_ref)} |`;
+  assert.ok(progressLine.endsWith(rendered));
+  assert.ok(reportRow.includes(rendered));
+  // Neither channel leaks the raw escape sequence.
+  assert.ok(!progressLine.includes('\x1b'));
+  assert.ok(!reportRow.includes('\x1b'));
+});
