@@ -17,6 +17,7 @@ import {
   recoverBeforeAdd,
   BoardWorktreeError,
 } from "../../lib/issues/board-worktree.mjs";
+import { BeadsAdapter } from "../../lib/issues/beads-adapter.mjs";
 
 function git(args, cwd) {
   return execFileSync("git", args, { cwd, encoding: "utf8", stdio: "pipe" }).trim();
@@ -150,6 +151,71 @@ describe("provisionBoardWorktree", () => {
     const second = provisionBoardWorktree({ projectRoot: repo });
     assert.equal(second.mode, "already-provisioned");
     assert.equal(second.created, false);
+  });
+
+  it("never surfaces BOARD_NO_BRANCH itself — that code names a raw `git worktree add` failure this helper never reaches (Error Cases row 2)", () => {
+    // provisionBoardWorktree() always falls through to orphan-branch creation
+    // (BEH-3) when no beads-board branch exists anywhere, rather than
+    // attempting the doomed raw `git worktree add .beads beads-board`
+    // BEH-2's own command names — so the spec's BOARD_NO_BRANCH row describes
+    // a scenario this helper structurally cannot hit.
+    const result = provisionBoardWorktree({ projectRoot: repo });
+    assert.equal(result.mode, "orphan");
+
+    // Prove the raw-git path's failure mode directly, on a second fresh repo
+    // with no beads-board branch anywhere: the literal command the spec's
+    // Error Cases row 2 names fails with git's own "invalid reference" error
+    // — this is the actual BOARD_NO_BRANCH scenario, reachable only by
+    // bypassing the helper entirely.
+    const bareRepo = mkdtempSync(join(tmpdir(), "board-wt-no-branch-"));
+    git(["init", "-q", "-b", "main"], bareRepo);
+    git(["config", "user.email", "test@test.com"], bareRepo);
+    git(["config", "user.name", "Test"], bareRepo);
+    git(["config", "commit.gpgsign", "false"], bareRepo);
+    git(["commit", "--allow-empty", "-q", "-m", "init"], bareRepo);
+    try {
+      assert.throws(() => git(["worktree", "add", ".beads", "beads-board"], bareRepo));
+    } finally {
+      rmSync(bareRepo, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("BeadsAdapter --no-db fallback on a fresh board worktree (Error Cases row 6)", () => {
+  let repo;
+
+  beforeEach(() => {
+    repo = mkdtempSync(join(tmpdir(), "board-wt-nodb-"));
+    git(["init", "-q", "-b", "main"], repo);
+    git(["config", "user.email", "test@test.com"], repo);
+    git(["config", "user.name", "Test"], repo);
+    git(["config", "commit.gpgsign", "false"], repo);
+    git(["commit", "--allow-empty", "-q", "-m", "init"], repo);
+  });
+
+  afterEach(() => {
+    rmSync(repo, { recursive: true, force: true });
+  });
+
+  it("BeadsAdapter reads and writes against a worktree-provisioned .beads/ with no *.db present (issue-i0ji37 cross-reference)", async () => {
+    const provision = provisionBoardWorktree({ projectRoot: repo });
+    assert.equal(provision.mode, "orphan");
+    assert.ok(!existsSync(join(repo, ".beads", "beads.db")));
+
+    // checkBr defaults to true — this is a live `br` integration check, not a
+    // mock, matching the spec's own empirically-validated-against-real-git/br
+    // methodology.
+    const adapter = new BeadsAdapter(repo, { autoMigrate: false });
+    const before = await adapter.list();
+    assert.deepEqual(before, [], "no SYNC_CONFLICT on an empty, db-less worktree");
+
+    const created = await adapter.create({ title: "no-db fallback smoke test", type: "task" });
+    assert.ok(created.id);
+
+    const after = await adapter.list();
+    assert.ok(after.some((i) => i.id === created.id));
+    // Still no *.db — br's --no-db mode never creates one.
+    assert.ok(!existsSync(join(repo, ".beads", "beads.db")));
   });
 });
 

@@ -245,4 +245,31 @@ describe("adev issues board migrate", () => {
     const code = await issuesRun({ projectRoot: repoDir, argv: ["board"], manifest: {} });
     assert.equal(code, 1);
   });
+
+  it("main untouched until push succeeds (Error Cases row 7)", async () => {
+    // A main-tracked repo with NO origin remote configured at all: the
+    // beads-board push has nothing to push to and fails deterministically,
+    // before any of main's tree is touched (git rm --cached, gitignore edit,
+    // and the cleanup commit all live strictly after the push in run()).
+    repoDir = mkdtempSync(join(tmpdir(), "board-migrate-repo-"));
+    git(["init", "-q", "-b", "main"], repoDir);
+    git(["config", "user.email", "test@test.com"], repoDir);
+    git(["config", "user.name", "Test"], repoDir);
+    git(["config", "commit.gpgsign", "false"], repoDir);
+    mkdirSync(join(repoDir, ".beads"));
+    writeFileSync(join(repoDir, ".beads", "issues.jsonl"), '{"id":"issue-1","title":"seed"}\n');
+    git(["add", "."], repoDir);
+    git(["commit", "-q", "-m", "init"], repoDir);
+    // Deliberately no `git remote add origin` — push has nowhere to go.
+
+    const beforeHead = git(["rev-parse", "HEAD"], repoDir);
+    const code = await run({ projectRoot: repoDir, argv: ["migrate"], manifest: {} });
+
+    assert.equal(code, 1, "a failed push must return a clean non-zero exit, not throw uncaught");
+    assert.equal(git(["rev-parse", "HEAD"], repoDir), beforeHead, "main's HEAD must be unchanged");
+    assert.ok(!existsSync(join(repoDir, ".gitignore")), "main's .gitignore must not have been written");
+    const tracked = git(["ls-tree", "-r", "--name-only", "HEAD", "--", ".beads/issues.jsonl"], repoDir);
+    assert.notEqual(tracked, "", ".beads/issues.jsonl must still be tracked on main — cleanup never ran");
+    assert.equal(readBoardMigrateCheckpoint(repoDir), null, "no checkpoint written — push never landed");
+  });
 });
