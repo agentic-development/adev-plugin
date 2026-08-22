@@ -95,6 +95,8 @@ Report: "Created `<id>`: <title> (status: open, priority: <N>)"
 
 **Traceability (BEH-3):** When `--spec-ref <path>` is provided, or a `spec_ref` can be inferred from the active lifecycle context (e.g. invoked via `/adev:work` immediately after `/adev:specify`), pass it through to `create()` — the field already exists on the `Issue` model (`lib/issues/interface.mjs`). `spec_ref` is a descriptive string, not filesystem-validated.
 
+**Default `next_action` (BEH-6):** If `--next-action <text>` is not supplied for a newly created `feature` or `task` issue, look up a default from the next_action Convention Table in `skills/plan/epic-mode.md`, keyed on `type` and known state (e.g. a `feature` with no `spec_ref` yet gets `"Run /adev:specify --module <module> to author this Feature"`). Substitute real values for any `<token>` in the looked-up string. If no row matches, leave `next_action: null` — this is not an error. An explicit `--next-action` value is always stored verbatim and is never overridden by this lookup.
+
 ### Create Epic
 
 Call `createEpic({ title, milestone })` with the title and optional milestone. When `--milestone <name>` is provided, pass the `milestone` field to set it on the epic. When `--milestone` is omitted, the epic is created without a milestone (backward compatible).
