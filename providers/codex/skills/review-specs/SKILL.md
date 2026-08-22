@@ -15,7 +15,7 @@ Run an architecture review on one or more Live Specs using parallel specialist s
 - No arguments: review all unreviewed specs (specs without a `.review.md` file, or where the spec is newer than the review)
 - `--spec <path>`: review a specific spec file
 - `--charter <module>`: review all specs under a feature charter
-- `--tier <full|quick>`: rigor tier (graduated-rigor-tiers spec). `full` (default) dispatches the three parallel specialists; `quick` dispatches a single synthesized reviewer. Overrides any routing/risk-policy signal. Invalid value → `INVALID_TIER`.
+- `--tier <full|quick>`: rigor tier (graduated-rigor-tiers spec). `full` (default) dispatches whatever reviewer set `adev governance reviewers` resolves for the project (never a fixed count or named trio — the registry is project-configurable); `quick` dispatches a single synthesized reviewer instead. Overrides any routing/risk-policy signal. Invalid value → `INVALID_TIER`.
 
 ## Step 0: Specify-step gate (FIRST action)
 
@@ -142,7 +142,7 @@ Do not treat missing workspace as a blocking error; proceed with the rest of the
 
 ## Step 2.5: Resolve Rigor Tier
 
-Resolve the **rigor tier** (`full` | `quick`) that governs how this spec is reviewed. Per `graduated-rigor-tiers.spec.md`, `quick` never skips the gate — it dispatches a single synthesized reviewer instead of the three specialists, still producing the `.review.md` and the `review` lifecycle event.
+Resolve the **rigor tier** (`full` | `quick`) that governs how this spec is reviewed. Per `graduated-rigor-tiers.spec.md`, `quick` never skips the gate — it dispatches a single synthesized reviewer instead of the registry's reviewer set, still producing the `.review.md` and the `review` lifecycle event.
 
 Resolution precedence (highest first) — this is the `resolveRigorMode(...)` contract in `lib/governance/rigor-mode.mjs`:
 
@@ -199,9 +199,17 @@ Derive the module slug from the spec's `charter:` frontmatter field. Stdout is e
 
 When heuristics are present (output is not `__NONE__`), include them in each reviewer's context pack under a `## Heuristics` section, prepended with: "The following heuristics are lessons learned from past work in this module. Use them as guidance, not as hard rules."
 
-**Quick tier branch (Step 2.5).** If the resolved rigor tier is `quick`, **skip the registry loop below** and dispatch exactly one subagent — the synthesized reviewer — using the bundled prompt `plugin:review-specs/quick-synthesized-reviewer-prompt.md` under the `reviewer-capable` profile, with the same rendered context pack and target spec appended. Pass `run_in_background: false` on this dispatch, exactly as the full-tier reviewers do (see the parallel-dispatch note below): the harness backgrounds Agent dispatches by default, and review-specs frequently runs as a build-step subagent where a backgrounded dispatch never re-invokes the caller and stalls the review. It returns `SA-`/`SEC-`/`CON-` findings in the standard format plus a consolidated verdict. Apply the same severity cap, `blocker_id` validation, and parse-failure fallback as any other reviewer, then proceed to Step 5. Do not dispatch the three specialist defaults in `quick` mode. If the bundled prompt file is missing, fail loud (do not silently fall back to a weaker or empty review). Otherwise (tier `full`, the default), dispatch the registry reviewers as described next.
+**Quick tier branch (Step 2.5).** If the resolved rigor tier is `quick`, **skip the registry loop below** and dispatch exactly one subagent — the synthesized reviewer — using the bundled prompt `plugin:review-specs/quick-synthesized-reviewer-prompt.md` under the `reviewer-capable` profile, with the same rendered context pack and target spec appended. Pass `run_in_background: false` on this dispatch, exactly as the full-tier reviewers do (see the parallel-dispatch note below): the harness backgrounds Agent dispatches by default, and review-specs frequently runs as a build-step subagent where a backgrounded dispatch never re-invokes the caller and stalls the review. It returns `SA-`/`SEC-`/`CON-` findings in the standard format plus a consolidated verdict. Apply the same severity cap, `blocker_id` validation, and parse-failure fallback as any other reviewer, then proceed to Step 5. Do not dispatch the registry's reviewer set in `quick` mode. If the bundled prompt file is missing, fail loud (do not silently fall back to a weaker or empty review). Otherwise (tier `full`, the default), dispatch the registry reviewers as described next.
 
-For each reviewer returned by the registry, call `shouldDispatch(reviewer, { targetSpecPath, specContent })` from the same module. Reviewers with `dispatch: always` always dispatch; `triggered` compute a score (2 points per matching glob + 1 per path segment beyond root, 1 point per keyword) and dispatch when score ≥ `min_score` (default 1); `never` are skipped.
+**Diff-scoped dispatch (BEH-8).** Before the `shouldDispatch` loop, resolve whether this cycle should scope to just the changed sections:
+
+```bash
+adev governance diff-scope --spec <spec-path> --json
+```
+
+Reads the lifecycle log itself to decide — the skill never reasons about revision history inline. First review of any spec always uses full-context dispatch (`scoped: false, reason: "first-review"`), regardless of rigor tier. On any non-scoped result (also `git-unavailable` — a best-effort lookup that fails OPEN to full context, never a partial guess), use the full current spec body as `specContent` and as every reviewer's rendered context, exactly as before. On `scoped: true`, use the verb's `content` field as `specContent` for every `shouldDispatch` call below AND as the text each dispatched reviewer's rendered context pack is restricted to (`dispatch: always` reviewers are unaffected either way — `shouldDispatch` returns `dispatch: true` for them regardless of `specContent`).
+
+For each reviewer returned by the registry, call `shouldDispatch(reviewer, { targetSpecPath, specContent })` from the same module, where `specContent` is the diff-scoped `content` (or the full spec body on the first review / a failed scope attempt) resolved above. Reviewers with `dispatch: always` always dispatch; `triggered` compute a score (2 points per matching glob + 1 per path segment beyond root, 1 point per keyword) and dispatch when score ≥ `min_score` (default 1); `never` are skipped.
 
 Launch all dispatched reviewers in parallel. Each runs in a clean context window. Dispatch every reviewer with `run_in_background: false`, issuing the Agent calls in a single message so they still run concurrently. The harness backgrounds Agent dispatches by default, and background completion notifications do not re-invoke a nested caller (review-specs frequently runs as a build-step subagent) — a backgrounded reviewer therefore stalls the review. Synchronous parallel calls return all reviewer reports directly in the tool results.
 
@@ -223,7 +231,7 @@ For each subagent-mode reviewer:
 
    When the reviewer's context pack resolves to `delivery: manifest`, that same preamble additionally carries the **manifest read contract**: it states that a `role="path-manifest"` fence lists repository paths whose contents were not inlined, that the reviewer is expected to read them on demand, and which read tools its resolved profile grants (the names are derived through the harness adapter, so they are correct per harness). It also restates that only paths inside a fence carrying this render's token are repository-sourced. The wording lives in `buildReviewerDispatches`; do not restate or hand-assemble it.
 
-**What each reviewer actually receives** is exactly its `context_pack` (Step 3 registry entry) plus the target spec. The nine context categories in Step 2 are *not* uniformly forwarded — see the per-item labels there.
+**What each reviewer actually receives** is exactly its `context_pack` (Step 3 registry entry) plus the target spec — on a diff-scoped cycle (BEH-8, above), "the target spec" here is the `adev governance diff-scope` verb's `content` (changed + cross-referenced sections), not the full spec body; on the first review or a failed scope attempt, it is the full spec body as before. The nine context categories in Step 2 are *not* uniformly forwarded — see the per-item labels there.
 
 ### Package-mode reviewer (reviewer entry has `package`)
 
