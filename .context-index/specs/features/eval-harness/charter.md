@@ -1,8 +1,8 @@
 ---
 status: approved
 kind: feature
-revision: 4
-updated: 2026-08-20
+revision: 6
+updated: 2026-08-21
 ---
 
 # Feature Charter: eval-harness
@@ -11,7 +11,7 @@ updated: 2026-08-20
 
 adev scores work in two places with two incompatible implementations of one idea: `/adev:eval` Layer 3 scores a user's implementation of a spec, and `tests/evals/` scores adev's own skills. Both declare `required_elements` and `quality_dimensions`, but with different value shapes and different verdict semantics — and neither can report what a run cost.
 
-eval-harness owns one rubric contract, one scoring engine consumed by both, the run-cost record that prices a quality change, the fixtures those rubrics assert against, and the rubric set that gives every adev skill a regression baseline — so that a quality regression in any of the 30 skills is detectable by running a command, and priced when it is.
+eval-harness owns one rubric contract, one scoring engine consumed by both, the run-cost record that prices a quality change, the fixtures those rubrics assert against, and the rubric set that gives every adev skill a regression baseline — so that a quality regression in any of the 30 lifecycle skills is detectable by running a command, and priced when it is.
 
 ## Scope and Boundaries
 
@@ -25,8 +25,8 @@ eval-harness owns one rubric contract, one scoring engine consumed by both, the 
 - Budget thresholds expressed as flat rubric keys that resolve to failing verdicts, evaluated over a sample set using median plus spread
 - Baseline provenance and percent-regression comparison
 - A hermetic fixture project with planted ground truth at `tests/evals/skill-regression/` — known violations that must be caught, and known-clean artifacts that must not be flagged. The directory is new and unowned; it is deliberately not one of the domain-paired directories `eval-projects` covers
-- A rubric per skill for all 30 skills, conforming to the unified schema
-- Migration of the three existing skill-compression rubrics from 1-5 scales to binary verdicts
+- A rubric per skill for the 30 lifecycle skills, conforming to the unified schema. `skills/` holds 31 directories; `bugfix-loop` is a self-re-invoking wrapper over `/adev:debug --auto` rather than a lifecycle step, and is recorded in an explicit `uncovered` bucket so a coverage check can partition the tree exactly rather than silently omitting it. Whether it earns a rubric is deferred to v2
+- Retirement of the three existing skill-compression rubrics and their 4x3 variant matrix, replaced by skill-regression rubrics scored against the hermetic fixture
 - Tiered CI integration for the eval suite
 - Disclosure fidelity — an observed read trace as a deterministic `required_elements` source, so a rubric can assert which companion files a skill actually opened, plus pointer reachability and relocation fidelity as static checks
 
@@ -49,11 +49,11 @@ eval-harness owns one rubric contract, one scoring engine consumed by both, the 
 | Session JSONL under `~/.claude/projects/` | external service | Source of real token and duration data. Treated as untrusted input |
 | `.context-index/platform-context.yaml` | internal module | `model_tiers` supplies the judge tier for judged criteria |
 | `skills/eval` | internal module | Consumer of the shared schema and scoring engine via the CLI verb |
-| `tests/evals/skill-compression` | internal module | Consumer of the shared schema and scoring engine |
+| `tests/evals/skill-compression` | internal module | The 4x3 compression matrix and its three legacy rubrics are **retired** by the core-lifecycle tier: its drivers regex-match on `match_pattern`, a field the unified schema does not carry, so repointing them would score every input green. Its `token-budget-eval/` suites are unrelated to the matrix and are **relocated, not deleted** |
 | `tests/evals/token-optimization` | internal module | Supplies the session-JSONL collector this charter generalises |
 | `eval-projects` | internal module | Owns the domain submodule fixtures this charter must not duplicate |
 | `hooks/session-capture.sh` | internal module | Registered on `PostToolUse`; appends `{tool, files, timestamp}` to `.context-index/.session-tracking.jsonl`, including calls made by dispatched subagents. The ReadTrace source of record |
-| `skill-body-progressive-disclosure` | internal module | Created the 210 companion files whose conditional loading disclosure fidelity exists to verify. Its `tests/evals/skill-disclosure/` and `lib/eval/read-trace.mjs` move under this charter's directories on adoption |
+| `skill-body-progressive-disclosure` | internal module | Created the 189 companion files whose conditional loading disclosure fidelity exists to verify. **Pending, not landed:** its `lib/evals/read-trace.mjs` and `tests/evals/skill-disclosure/` exist only on the unmerged branch `chore/skills/progressive-disclosure` (commit `8368d8b6`) and are absent at `HEAD`. On merge, `read-trace.mjs` sits in this charter's module directory and `tests/evals/skill-disclosure/` stays where it is — the Naming attribute below fixes `tests/evals/skill-regression/` as the home for *this* charter's own fixtures, not as a claim over every eval directory the charter reads |
 
 ## Domain Model
 
@@ -68,9 +68,10 @@ eval-harness owns one rubric contract, one scoring engine consumed by both, the 
 | Fixture | A hermetic project tree with planted ground truth | `path`, `planted_violations`, `known_clean`, `scaffolding_manifest` |
 | RunRecord | The measured cost of one scored run | `duration_ms`, `input`, `output`, `cache_creation`, `cache_read`, `cost`, `total_turns`, `tool_turns`, `subagent_rollup`, `model_id`, `plugin_version`, `pricing_table` |
 | Budget | Cost and time thresholds evaluated over a sample set | `budget_max_turns`, `budget_max_duration_ms`, `budget_max_cost_usd`, `sample_count` |
-| Baseline | A stored RunRecord and score for regression comparison | `rubric_id`, `run_record`, `score`, `recorded_at`, `model_id`, `plugin_version` |
+| Baseline | A stored RunRecord and score for regression comparison | `rubric_id`, `rubric_version`, `run_record`, `score`, `recorded_at`, `model_id`, `plugin_version`. `rubric_version` is stored, not derived: without it a loaded baseline cannot answer whether the candidate was scored against the same rubric revision |
+| ScoredRun | One side of a comparison, assembled from parts no single existing function returns together | `rubric_id`, `rubric_version`, `score`, `run_record`, `trace_drift`. `lib/evals/score.mjs::scoreRubric` returns `{verdicts, deterministic, judged, total}` and carries no rubric identity or provenance, so a comparison takes this composite rather than a bare score |
 | ReadTrace | The set of files an agent actually opened during one scored run, observed rather than self-reported | `session_id`, `entries` (tool, absolute path, timestamp), `captured_at`, `pointer_set_digest` (the skill pointer structure this trace was captured against) |
-| ScoreComparison | The result of comparing two scored runs. Its outcome is a closed set, so a spec author never has to reconstruct it from prose | `deterministic_delta`, `judged_delta`, `outcome` (`regression` / `judge-attributable` / `incomparable` / `TRACE_FIXTURE_STALE`, plus `indistinguishable` once sampling lands at v2) |
+| ScoreComparison | The result of comparing two scored runs. Its outcome is a closed set, so a spec author never has to reconstruct it from prose | `deterministic_delta`, `judged_delta`, `outcome` (`regression` / `judge-attributable` / `no-regression` / `incomparable` / `TRACE_FIXTURE_STALE`, plus `indistinguishable` once sampling lands at v2), `findings` (every problem detected, including any not selected as the outcome), `baseline_verdicts` and `candidate_verdicts` (both sides' verdict tables, so the numeric-aggregate invariant holds for comparisons as it does for scores) |
 
 ### Relationships
 
@@ -106,7 +107,7 @@ eval-harness owns one rubric contract, one scoring engine consumed by both, the 
 | Unified rubric schema | One rubric contract serving both consumers: key set, flat-YAML rule, verdict enum, point budgets, budget keys | must-have | v1 | validated |
 | Rubric loader and validator | Parse and validate a rubric, failing loudly on nested maps, missing keys, and invalid verdicts | must-have | v1 | validated |
 | Scoring engine and `adev eval score` | Verdict tallying, denominator exclusion, insufficient-evidence guard, attainable-maximum reporting, exposed as a CLI verb | must-have | v1 | validated |
-| Hermetic fixture project and planted ground-truth catalog | An in-repo fixture tree carrying the scaffolding skills read, with a catalog of planted violations and known-clean artifacts | must-have | v1 | specified |
+| Hermetic fixture project and planted ground-truth catalog | An in-repo fixture tree carrying the scaffolding skills read, with a catalog of planted violations and known-clean artifacts | must-have | v1 | implementing |
 | Run-cost record | Generalise the session-JSONL collector so every scored run emits duration, token split, cost, turns, and subagent rollup | must-have | v1 | — |
 | Budget thresholds as failing verdicts | Flat budget keys resolving to verdicts, with median-plus-spread over a sample set so the gate does not flap | must-have | v1 | — |
 | Rubric set, change-imminent tier | Rubrics for the 11 skills queued for demotion, merge, or deletion: codehealth, repomap, document, deploy, sync, learn, issues, eval, assess, using-adev, prototype | must-have | v1 | specified |
@@ -138,7 +139,11 @@ Capability ordering is deliberate. The fixture project precedes every rubric tie
 | `scoreRubric(rubric, verdicts)` | function | Aggregate verdicts into a score with attainable maximum |
 | `collectRunRecord(sessionPath)` | function | Build a RunRecord from a session JSONL file, including subagent rollup. Takes a path so tests can pass synthetic fixture JSONL |
 | `buildJudgeContext(criterion)` | function | Assemble the single-criterion context handed to one judge dispatch, carrying no other criterion and no running total |
-| `snapshotReadTrace()` / `readTraceSince(marker)` / `compareReadTrace(observed, expected)` | function | Capture and diff the observed read set for one scored run, so a `required_elements` entry can name it as a `source` |
+| `snapshot()` / `since(marker)` / `compareToBaseline(observed, baseline)` | function | Capture and diff the observed read set for one scored run, so a `required_elements` entry can name it as a `source`. Names match `lib/evals/read-trace.mjs` as implemented on the pending branch above (not yet at `HEAD`); the earlier `snapshotReadTrace` / `readTraceSince` / `compareReadTrace` spelling in this table was aspirational and never implemented |
+| `buildScoredRun({rubric, score, runRecord, traceDrift})` | function | Assemble a ScoredRun and refuse a malformed one before any arithmetic reaches it. Pure; no I/O |
+| `recordBaseline(scoredRun, opts)` / `loadBaseline(rubricId, opts)` | function | Write and read a per-rubric Baseline. `opts.recordedAt` is caller-injected, never read from a clock inside the library; `opts.projectRoot` is required, so the containment base is never an implicit `process.cwd()` |
+| `compareScores(baseline, candidate)` | function | Produce a ScoreComparison. Named to avoid colliding with `read-trace.mjs`'s `compareToBaseline`, which compares traces rather than scores |
+| `adev eval baseline record` / `adev eval baseline show` / `adev eval compare` | CLI verb | Wrap the three functions above |
 | Unified rubric schema | file contract | The YAML shape every rubric in the repository conforms to |
 | `npm run test:evals` | command | Existing opt-in eval bucket, extended to cover the new harness |
 | Rubric conformance and coverage test | test | Default-bucket test asserting every skill has a conforming rubric |
@@ -158,7 +163,7 @@ Capability ordering is deliberate. The fixture project precedes every rubric tie
 | Performance | Scoring is pure computation with no network access and must run inside the existing `npm test` time budget. Tier A CI checks add no measurable wall-clock to a PR |
 | Determinism | The same rubric and the same verdicts produce a byte-identical score. No clock reads and no randomness anywhere in the scoring path |
 | Correctness | Denominator exclusion, the insufficient-evidence guard, empty-evidence rejection, and single-criterion isolation in `buildJudgeContext` are each covered by unit tests using verdict sets that exercise every enum value |
-| Security | Rubric and fixture paths are validated against traversal, following the `UNSAFE_TEMPLATE_PATH` precedent. Session JSONL is untrusted input: parsed defensively, never evaluated |
+| Security | Rubric, fixture and baseline paths are validated against traversal, following the `UNSAFE_RUBRIC_PATH` / `UNSAFE_SCORE_PATH` precedent in `lib/evals/` (itself modelled on `UNSAFE_TEMPLATE_PATH`). Any identifier interpolated into a path — a `rubric_id` becoming a baseline filename, a catalog slug becoming a directory segment — is refused against a fixed pattern *before* the join, then contained after it. Session JSONL is untrusted input: parsed defensively, never evaluated |
 | Observability | Every score reports its attainable maximum alongside the total. Every budget verdict reports its sample count and spread. Every score comparison reports its deterministic and judged deltas separately and names `judge-attributable` movement explicitly rather than folding it into a single number. Any capped or skipped coverage is logged rather than silently omitted |
 | Portability | Fixtures resolve with no network, no submodules, and no container runtime, so Tier A and Tier B run on a clean CI checkout. Any Tier A or Tier B test of `collectRunRecord` reads synthetic fixture JSONL committed to the repository, never a real `~/.claude/projects/` session directory, which does not exist on a CI runner |
 | Naming | This charter's code lives in `lib/evals/` and its fixtures and evals in `tests/evals/skill-regression/`. Sibling directories differing by one character (`lib/eval/` beside `lib/evals/`) are prohibited: adopted work is moved into the established directories rather than landing beside them. `lib/evals/` is the established name, having shipped with a validated spec behind it |
