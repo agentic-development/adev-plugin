@@ -50,6 +50,15 @@ diagnostics:
     tier: 2
     scope: spec
 
+  # Verifies file:line / file::symbol referents an authoring subagent cited
+  # in a spec's body actually resolve inside projectRoot. Invoked directly
+  # by `adev specify check-mechanisms` (also reachable via `adev diagnose`).
+  - id: adev/mechanism-existence
+    runner: plugin:tier2/mechanism-existence.mjs
+    severity: error
+    tier: 2
+    scope: spec
+
 # Stamped by 'adev governance materialize' — write-once. The entries above are
 # the complete effective set; nothing is contributed from anywhere else.
 materialized_at: 2026-08-15T19:35:31.037Z
