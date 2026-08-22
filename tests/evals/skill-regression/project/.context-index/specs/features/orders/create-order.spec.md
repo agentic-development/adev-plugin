@@ -94,7 +94,7 @@ behavior, with `MAX_LINE_ITEMS` read from the module rather than hardcoded.
 | Artifact | Path |
 |---|---|
 | Implementation | `src/orders/create-order.mjs` |
-| Public re-export | `src/index.mjs` |
+| Public re-export (not a change-bearing source) | `src/index.mjs` |
 | Tests | `tests/create-order.test.mjs` |
 | API reference | `docs/api.md` |
 | Plan | `.context-index/specs/features/orders/create-order.plan.md` |

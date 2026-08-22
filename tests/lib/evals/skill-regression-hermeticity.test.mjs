@@ -924,3 +924,545 @@ test("every lifecycle artifact under the fixture's specs/ carries a `kind:` (ADR
     "a charter or spec `kind:` must be a member of its closed enumeration",
   );
 });
+
+// ---------------------------------------------------------------------------
+// Task 4 additions: the dirty slice and the ten anchorable violation classes.
+//
+// Three obligations land here, and they are separate tests on purpose.
+//
+//   1. SLICE PARITY, three ways. The `shipping-rates` (dirty) and
+//      `create-order` (clean) slices must carry the same file KINDS, the same
+//      section HEADINGS, and the same TASK COUNT. The spec permits exactly
+//      three differences between them — the planted anchors, the two pinned
+//      `status:` values, and the two lifecycle chains — and nothing else. Two
+//      slices with matching filenames but divergent heading structure would let
+//      a rubric score the SHAPE difference instead of the planted defect, which
+//      is the confound the negative twin exists to remove. Three dimensions,
+//      three assertions: a single folded "the slices match" check could pass on
+//      two of the three and still read as covered.
+//
+//   2. TEN ANCHORABLE CLASSES. Each Seed Content class cites a file and an
+//      anchor, and the anchor must occur EXACTLY once — zero means the plant
+//      was never made or has moved, more than one means the catalog points at
+//      an ambiguous site (the spec's `CATALOG_ANCHOR_NOT_UNIQUE`, here as its
+//      fixture-side precondition).
+//
+//   3. NOT DISARMED. A class is a PLANTED violation only while the CLEAN side
+//      does not already satisfy it. That precondition lapsed twice during
+//      authoring — a charter row that charted the escaping capability, a board
+//      entry that supplied the "missing" binding — and both times review, not a
+//      test, caught it. The third test makes each precondition standing, so a
+//      later edit that disarms a plant goes red instead of scoring green over
+//      nothing.
+//
+// Helpers below are shared by those three tests only. Same extension contract
+// as above: helpers first, one `test()` per obligation, zero cross-test state.
+// ---------------------------------------------------------------------------
+
+/** Absolute path to the fixture project's lifecycle-state directory. */
+const LIFECYCLE = join(PROJECT, ".context-index", "lifecycle-state");
+
+/** Absolute path to the `orders` charter's artifact directory. */
+const ORDERS_SPECS = join(SPECS, "features", "orders");
+
+/**
+ * The two slices, declared rather than discovered.
+ *
+ * Discovery by directory cannot work: `src/orders/` holds the clean slice's
+ * module AND two of the dirty slice's plants (`legacy-loader.js`,
+ * `orphaned-helper.mjs`), so no path prefix partitions the tree. What IS
+ * slug-partitioned is the artifact library and the lifecycle log, and those two
+ * directories are SCANNED rather than listed — which is what lets a file added
+ * to one slice alone surface as a kind the other slice does not carry.
+ */
+const SLICES = [
+  {
+    name: "create-order",
+    slug: "create-order",
+    spec: ".context-index/specs/features/orders/create-order.spec.md",
+    plan: ".context-index/specs/features/orders/create-order.plan.md",
+    modules: ["src/orders/create-order.mjs"],
+  },
+  {
+    name: "shipping-rates",
+    slug: "shipping-rates",
+    spec: ".context-index/specs/features/orders/shipping-rates.spec.md",
+    plan: ".context-index/specs/features/orders/shipping-rates.plan.md",
+    modules: ["src/shipping/rates.mjs"],
+  },
+];
+
+/**
+ * The Seed Content catalog, one entry per violation class.
+ *
+ * `path` is project-relative; `anchor` is the literal text that must occur in
+ * it exactly once. Anchors are single-line by construction — a phrase that
+ * wraps across a line break is not findable by substring and would report as a
+ * missing plant the moment a paragraph reflowed.
+ */
+const CLASSES = [
+  {
+    id: "spec-code-drift",
+    path: ".context-index/specs/features/orders/shipping-rates.spec.md",
+    anchor: "rounded half up to the nearest whole cent",
+  },
+  {
+    id: "stale-spec-frontmatter",
+    path: ".context-index/specs/features/orders/shipping-rates.spec.md",
+    anchor: "updated: 2026-08-03",
+  },
+  {
+    id: "orphan-source-file",
+    path: "src/orders/orphaned-helper.mjs",
+    anchor: "export function orphanedTotalCents",
+  },
+  {
+    id: "dead-export",
+    path: "src/shipping/rates.mjs",
+    anchor: "export function formatLegacyTotal",
+  },
+  { id: "unused-dependency", path: "package.json", anchor: '"ajv":' },
+  { id: "esm-violation", path: "src/orders/legacy-loader.js", anchor: 'require("node:fs")' },
+  {
+    id: "charter-scope-escape",
+    path: ".context-index/specs/features/orders/shipping-rates.spec.md",
+    anchor: "Calculate a shipping rate",
+  },
+  {
+    id: "undocumented-public-api",
+    path: "src/shipping/rates.mjs",
+    anchor: "export function calculateRate",
+  },
+  {
+    id: "missing-issue-binding",
+    path: ".context-index/tasks/tasks.json",
+    anchor: '"id": "epic-2"',
+  },
+  {
+    id: "plan-task-without-test",
+    path: ".context-index/specs/features/orders/shipping-rates.plan.md",
+    anchor: "### Task 2: Apply the weight-band rounding rule",
+  },
+];
+
+/**
+ * Read a project-relative fixture file as UTF-8.
+ *
+ * @param {string} rel POSIX path relative to `project/`.
+ * @returns {string}
+ */
+function readProject(rel) {
+  return readFileSync(join(PROJECT, ...rel.split("/")), "utf8");
+}
+
+/**
+ * Count non-overlapping occurrences of a LITERAL substring.
+ *
+ * Literal, never a `RegExp`: several anchors carry regex metacharacters
+ * (`"ajv":`, `require("node:fs")`), and compiling them would silently change
+ * what is being counted.
+ *
+ * @param {string} haystack
+ * @param {string} needle
+ * @returns {number}
+ */
+function occurrences(haystack, needle) {
+  let count = 0;
+  for (
+    let at = haystack.indexOf(needle);
+    at !== -1;
+    at = haystack.indexOf(needle, at + needle.length)
+  ) {
+    count += 1;
+  }
+  return count;
+}
+
+/**
+ * The artifact kind a slice-member basename denotes.
+ *
+ * An unrecognised basename resolves to a distinguishable `unclassified:<name>`
+ * token rather than to `null`, so a file added to one slice alone FAILS the
+ * kind-set comparison instead of vanishing from it.
+ *
+ * @param {string} basename
+ * @returns {string}
+ */
+function memberKind(basename) {
+  if (basename.endsWith(".spec.md")) return "spec";
+  if (basename.endsWith(".plan.md")) return "plan";
+  if (basename.endsWith(".jsonl")) return "lifecycle-log";
+  if (basename.endsWith(".mjs") || basename.endsWith(".js")) return "source-module";
+  return `unclassified:${basename}`;
+}
+
+/**
+ * The sorted set of artifact kinds one slice carries.
+ *
+ * Scanned for the two slug-partitioned directories; the source modules come
+ * from the descriptor because `src/` is not slug-partitioned (see `SLICES`).
+ * Each declared module must exist — a descriptor naming a file that is gone
+ * would otherwise quietly drop `source-module` from BOTH sides and still
+ * compare equal, which is why absence maps to a `missing:` token.
+ *
+ * @param {{slug: string, modules: string[]}} slice
+ * @returns {string[]} Sorted, de-duplicated kind tokens.
+ */
+function sliceKinds(slice) {
+  const kinds = new Set();
+  for (const dir of [ORDERS_SPECS, LIFECYCLE]) {
+    if (!existsSync(dir)) continue;
+    for (const dirent of readdirSync(dir, { withFileTypes: true })) {
+      if (dirent.isFile() && dirent.name.startsWith(`${slice.slug}.`)) {
+        kinds.add(memberKind(dirent.name));
+      }
+    }
+  }
+  for (const rel of slice.modules) {
+    kinds.add(pathPresent(join(PROJECT, ...rel.split("/"))) ? memberKind(rel) : `missing:${rel}`);
+  }
+  return [...kinds].sort();
+}
+
+/**
+ * The `##` / `###` heading sequence of a markdown document, in document order.
+ *
+ * Fenced code and inline spans are blanked first (`blankCode`), so a `###`
+ * inside a sample block is not read as structure. Task headings are normalised
+ * to `### Task <n>`: the two slices implement different capabilities, so their
+ * task TITLES must differ — it is the task STRUCTURE that has to match, and
+ * comparing raw titles would make parity unachievable rather than strict.
+ *
+ * @param {string} text
+ * @returns {string[]}
+ */
+function headingOutline(text) {
+  return blankCode(text)
+    .split("\n")
+    .map((line) => /^(#{2,3})\s+(.+?)\s*$/.exec(line))
+    .filter(Boolean)
+    .map((m) => `${m[1]} ${m[2].replace(/^Task\s+(\d+):.*$/, "Task $1")}`);
+}
+
+/**
+ * The `### Task <n>: <title>` headings of a plan, in document order.
+ *
+ * @param {string} text
+ * @returns {string[]}
+ */
+function planTaskHeadings(text) {
+  return blankCode(text)
+    .split("\n")
+    .filter((line) => /^###\s+Task\s+\d+:/.test(line));
+}
+
+/**
+ * The body of one `### Task <n>:` section, up to the next heading or `---`.
+ *
+ * @param {string} text
+ * @param {number} taskNumber
+ * @returns {string|null} `null` when the plan declares no such task.
+ */
+function planTaskSection(text, taskNumber) {
+  const lines = blankCode(text).split("\n");
+  const start = lines.findIndex((line) => new RegExp(`^###\\s+Task\\s+${taskNumber}:`).test(line));
+  if (start === -1) return null;
+  const rest = lines.slice(start + 1);
+  const end = rest.findIndex((line) => /^#{1,3}\s/.test(line) || /^---\s*$/.test(line));
+  return (end === -1 ? rest : rest.slice(0, end)).join("\n");
+}
+
+/**
+ * Every non-markdown source file under `src/` and `tests/`, project-relative.
+ *
+ * Used by the disarm checks that must prove a symbol or module is referenced
+ * NOWHERE: an absence claim is only as wide as the set it searched, so this
+ * walks both trees in full rather than checking the two files an author
+ * happens to remember.
+ *
+ * @returns {string[]}
+ */
+function fixtureSources() {
+  const out = [];
+  const walk = (dir) => {
+    if (!existsSync(dir)) return;
+    for (const dirent of readdirSync(dir, { withFileTypes: true })) {
+      const abs = join(dir, dirent.name);
+      if (dirent.isDirectory()) walk(abs);
+      else if (dirent.isFile() && /\.(mjs|js|json)$/.test(dirent.name)) out.push(projectRel(abs));
+    }
+  };
+  walk(join(PROJECT, "src"));
+  walk(join(PROJECT, "tests"));
+  return out;
+}
+
+test("the two slices carry the same file kinds, the same headings, and the same task count", () => {
+  const [clean, dirty] = SLICES;
+
+  // Non-vacuity: both slices must resolve to real files first. Two empty kind
+  // sets compare equal, and two absent documents both outline to `[]`.
+  const cleanKinds = sliceKinds(clean);
+  const dirtyKinds = sliceKinds(dirty);
+  assert.ok(
+    cleanKinds.length >= 4 && dirtyKinds.length >= 4,
+    "each slice must carry at least spec, plan, lifecycle-log and source-module; " +
+      `${clean.name}=${cleanKinds.join(",")} ${dirty.name}=${dirtyKinds.join(",")}`,
+  );
+
+  // Dimension 1 — file kinds.
+  assert.deepEqual(
+    dirtyKinds,
+    cleanKinds,
+    `slice file-kind parity: ${dirty.name} and ${clean.name} must carry the same artifact ` +
+      "kinds. A kind present on one side only lets a rubric score the shape difference " +
+      "instead of the planted defect",
+  );
+  assert.deepEqual(
+    cleanKinds.filter((k) => k.startsWith("unclassified:") || k.startsWith("missing:")),
+    [],
+    "every slice member must classify to a known artifact kind and exist",
+  );
+
+  // Dimension 2 — task count. Checked BEFORE the heading outline, and the
+  // order is load-bearing rather than stylistic: a plan's task headings are
+  // PART of its outline, so a deleted task trips heading parity too. Running
+  // the outline first would mask the task-count assertion behind it — it could
+  // never be the assertion that reports a dropped task, and no perturbation
+  // could reach it. Renaming a non-task heading leaves the count intact and
+  // still reaches the outline check below, so neither dimension shadows the
+  // other once they are in this order.
+  const cleanTasks = planTaskHeadings(readProject(clean.plan));
+  const dirtyTasks = planTaskHeadings(readProject(dirty.plan));
+  assert.ok(cleanTasks.length > 0, `${clean.plan} declares no \`### Task <n>:\` headings`);
+  assert.equal(
+    dirtyTasks.length,
+    cleanTasks.length,
+    `slice task-count parity: ${dirty.plan} declares ${dirtyTasks.length} tasks and ` +
+      `${clean.plan} declares ${cleanTasks.length}`,
+  );
+
+  // Dimension 3 — section headings, spec against spec and plan against plan.
+  for (const doc of ["spec", "plan"]) {
+    const cleanOutline = headingOutline(readProject(clean[doc]));
+    const dirtyOutline = headingOutline(readProject(dirty[doc]));
+    assert.ok(
+      cleanOutline.length > 0,
+      `${clean[doc]} produced no \`##\`/\`###\` outline to compare against`,
+    );
+    assert.deepEqual(
+      dirtyOutline,
+      cleanOutline,
+      `slice heading parity (${doc}): ${dirty[doc]} must carry the same section structure as ` +
+        `${clean[doc]}, task titles excepted`,
+    );
+  }
+});
+
+test("each of the ten catalog classes cites a file that exists and an anchor occurring exactly once", () => {
+  // The count is asserted, never assumed: the Seed Content table is ten pairs,
+  // and a class dropped in a later edit would otherwise shrink this test's
+  // coverage without changing its verdict.
+  assert.equal(CLASSES.length, 10, "Seed Content declares exactly ten violation classes");
+  assert.equal(
+    new Set(CLASSES.map((c) => c.id)).size,
+    10,
+    "every class id must be distinct — a repeated id silently drops a class",
+  );
+
+  const missingFile = [];
+  const badCount = [];
+  for (const { id, path, anchor } of CLASSES) {
+    if (!pathPresent(join(PROJECT, ...path.split("/")))) {
+      missingFile.push(`${id} → ${path}`);
+      continue;
+    }
+    const count = occurrences(readProject(path), anchor);
+    if (count !== 1) {
+      badCount.push(`${id} → ${path}: anchor "${anchor}" occurs ${count}× (want exactly 1)`);
+    }
+  }
+
+  assert.deepEqual(missingFile, [], "every catalog class must cite a file that exists");
+  assert.deepEqual(
+    badCount,
+    [],
+    "every catalog anchor must occur exactly once in its file — zero means the plant moved or " +
+      "was never made, more than one means the citation is ambiguous",
+  );
+});
+
+test("no planted violation is disarmed by the clean side already satisfying it", () => {
+  const specText = readProject(".context-index/specs/features/orders/shipping-rates.spec.md");
+  const planText = readProject(".context-index/specs/features/orders/shipping-rates.plan.md");
+  const ratesText = readProject("src/shipping/rates.mjs");
+  const charterText = readProject(".context-index/specs/features/orders/charter.md");
+  const apiText = readProject("docs/api.md");
+  const indexText = readProject("src/index.mjs");
+  const board = JSON.parse(readProject(".context-index/tasks/tasks.json"));
+  const sources = fixtureSources();
+  assert.ok(sources.length > 0, "the source walk found no files — every absence check below would be vacuous");
+
+  const disarmed = [];
+  const record = (id, holds, why) => {
+    if (!holds) disarmed.push(`${id}: ${why}`);
+  };
+
+  // 1 — spec-code-drift: the rule the spec states must be ABSENT from the code.
+  record(
+    "spec-code-drift",
+    !ratesText.includes("rounded half up to the nearest whole cent"),
+    "src/shipping/rates.mjs implements the rounding rule the spec is supposed to drift from",
+  );
+
+  // 2 — stale-spec-frontmatter: the dirty spec's `updated:` must trail its
+  // module's recorded change date by more than the fortnight staleness window;
+  // the clean twin's must POSTDATE its own slice's last implementation event.
+  const specUpdated = Date.parse(/^updated:\s*(\S+)/m.exec(specText)?.[1] ?? "");
+  const ratesChanged = Date.parse(/last changed (\d{4}-\d{2}-\d{2})/.exec(ratesText)?.[1] ?? "");
+  record(
+    "stale-spec-frontmatter",
+    Number.isFinite(specUpdated) &&
+      Number.isFinite(ratesChanged) &&
+      ratesChanged - specUpdated > 14 * 86_400_000,
+    "shipping-rates.spec.md `updated:` is not more than 14 days behind rates.mjs",
+  );
+  const cleanSpecText = readProject(".context-index/specs/features/orders/create-order.spec.md");
+  const cleanUpdated = Date.parse(/^updated:\s*(\S+)/m.exec(cleanSpecText)?.[1] ?? "");
+  const lastDone = readProject(".context-index/lifecycle-state/create-order.jsonl")
+    .split("\n")
+    .filter((line) => line.includes('"status":"done"'))
+    .map((line) => Date.parse(JSON.parse(line).ts))
+    .pop();
+  record(
+    "stale-spec-frontmatter (twin)",
+    Number.isFinite(cleanUpdated) && Number.isFinite(lastDone) && cleanUpdated > lastDone,
+    "create-order.spec.md `updated:` does not postdate its own last implementation event",
+  );
+
+  // 3 — orphan-source-file: nothing may name the orphan; the twin must be
+  // imported by the entry point.
+  const namesOrphan = sources.filter(
+    (rel) => rel !== "src/orders/orphaned-helper.mjs" && readProject(rel).includes("orphaned-helper"),
+  );
+  record("orphan-source-file", namesOrphan.length === 0, `named by ${namesOrphan.join(", ")}`);
+  record(
+    "orphan-source-file (twin)",
+    indexText.includes("./shipping/rates.mjs"),
+    "src/index.mjs does not import src/shipping/rates.mjs",
+  );
+
+  // 4 — dead-export: the symbol may appear in its own module and nowhere else.
+  const namesDead = sources.filter(
+    (rel) => rel !== "src/shipping/rates.mjs" && readProject(rel).includes("formatLegacyTotal"),
+  );
+  record("dead-export", namesDead.length === 0, `referenced by ${namesDead.join(", ")}`);
+
+  // 5 — unused-dependency: `ajv` declared and imported by nothing; `nanoid`
+  // declared and imported. Only binding lines are searched, so the prose in
+  // `src/index.mjs` naming `ajv` as the plant does not read as a use of it.
+  const deps = Object.keys(JSON.parse(readProject("package.json")).dependencies ?? {});
+  const importersOf = (name) =>
+    sources.filter((rel) =>
+      readProject(rel)
+        .split("\n")
+        .filter((line) => /^\s*(import|const|let|var)\b/.test(line))
+        .some((line) => new RegExp(`["']${name}["']`).test(line)),
+    );
+  record(
+    "unused-dependency",
+    deps.includes("ajv") && importersOf("ajv").length === 0,
+    "`ajv` is either undeclared or actually imported",
+  );
+  record(
+    "unused-dependency (twin)",
+    deps.includes("nanoid") && importersOf("nanoid").length > 0,
+    "`nanoid` is declared but imported by nothing, so both dependencies are unused",
+  );
+
+  // 6 — esm-violation: the clean twin must stay pure ESM, or the two modules
+  // no longer contrast.
+  const cleanModule = readProject("src/orders/create-order.mjs");
+  record(
+    "esm-violation (twin)",
+    !cleanModule.includes("require(") && !cleanModule.includes("module.exports"),
+    "src/orders/create-order.mjs is no longer pure ESM",
+  );
+
+  // 7 — charter-scope-escape: the escaping capability must be absent from the
+  // charter's Capability Map, and the clean spec's capability present in it.
+  const mapStart = charterText.indexOf("## Capability Map");
+  assert.ok(mapStart >= 0, "orders/charter.md has no ## Capability Map heading to check");
+  const afterMap = charterText.slice(mapStart + "## Capability Map".length);
+  const nextH2 = afterMap.search(/^## /m);
+  const capabilityMap = nextH2 === -1 ? afterMap : afterMap.slice(0, nextH2);
+  record(
+    "charter-scope-escape",
+    charterText.includes("## Capability Map") &&
+      !capabilityMap.includes("shipping-rates.spec.md") &&
+      !capabilityMap.includes("Calculate a shipping rate"),
+    "orders/charter.md charts the shipping-rate capability, so the spec no longer escapes it",
+  );
+  record(
+    "charter-scope-escape (twin)",
+    capabilityMap.includes("create-order.spec.md"),
+    "orders/charter.md does not chart the create-order capability",
+  );
+
+  // 8 — undocumented-public-api: exported from the entry point, absent from the
+  // API reference; the twin is exported AND documented.
+  record(
+    "undocumented-public-api",
+    // Must match the RE-EXPORT, not the import: `includes` alone is satisfied by
+    // the import line, so dropping calculateRate from `export { ... }` would
+    // disarm the plant while this stayed green.
+    /^export\s*\{[^}]*\bcalculateRate\b/m.test(indexText) &&
+      !apiText.includes("calculateRate"),
+    "docs/api.md documents calculateRate, or src/index.mjs no longer exports it",
+  );
+  record(
+    "undocumented-public-api (twin)",
+    apiText.includes("createOrder"),
+    "docs/api.md no longer documents createOrder",
+  );
+
+  // 9 — missing-issue-binding: no Feature work item may reference the dirty
+  // spec, and exactly the clean spec must have one.
+  const featureIssues = (board.issues ?? []).filter((issue) => issue.type === "feature");
+  record(
+    "missing-issue-binding",
+    !featureIssues.some((i) => String(i.spec_ref ?? "").includes("shipping-rates.spec.md")),
+    "a Feature work item binds shipping-rates.spec.md, so the binding is no longer missing",
+  );
+  record(
+    "missing-issue-binding (twin)",
+    featureIssues.some((i) => String(i.spec_ref ?? "").includes("create-order.spec.md")),
+    "no Feature work item binds create-order.spec.md, so the twin proves nothing",
+  );
+
+  // 10 — plan-task-without-test: the named task declares no red-phase step, and
+  // every task in the clean plan does.
+  const dirtyTask = planTaskSection(planText, 2);
+  record(
+    "plan-task-without-test",
+    dirtyTask !== null && !dirtyTask.includes("Write failing test"),
+    "shipping-rates.plan.md Task 2 declares a TDD test expectation after all",
+  );
+  const cleanPlan = readProject(".context-index/specs/features/orders/create-order.plan.md");
+  const cleanTaskNumbers = planTaskHeadings(cleanPlan).map((h) => Number(/Task\s+(\d+):/.exec(h)[1]));
+  record(
+    "plan-task-without-test (twin)",
+    cleanTaskNumbers.length > 0 &&
+      cleanTaskNumbers.every((n) =>
+        (planTaskSection(cleanPlan, n) ?? "").includes("Write failing test"),
+      ),
+    "a task in create-order.plan.md declares no TDD test expectation, so the twin is not clean",
+  );
+
+  assert.deepEqual(
+    disarmed,
+    [],
+    "a planted violation whose precondition no longer holds is not planted — it scores green " +
+      "while measuring nothing",
+  );
+});

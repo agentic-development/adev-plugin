@@ -1,0 +1,69 @@
+# Project rubric for the fictional `orders-service` — fixture scaffolding.
+#
+# Named by `.context-index/evals/config.yaml`'s `rubric:` key. It must load
+# through `lib/evals/rubric.mjs::loadRubric` without error: /adev:eval refuses a
+# non-conforming rubric, so a broken file here would fail a tier scenario for a
+# reason that has nothing to do with the skill under test.
+#
+# All values are flat — top-level scalars, or 2-space list items with 4-space
+# properties. No nested maps: `assertNoNestedMaps` rejects them outright.
+
+rubric_id: "orders-service-project"
+version: 1
+layer: 3
+verdict_values: "met | not_met | unknown (judged criteria) | not_applicable (deterministic elements)"
+
+layer3_max_points: 30
+required_element_points: 15
+judged_criterion_points: 15
+unknown_policy: "excluded from the judged denominator; never counted as not_met"
+not_applicable_policy: "excluded from the deterministic denominator"
+insufficient_evidence_threshold_percent: 40
+
+# ---------------------------------------------------------------------------
+# Deterministic checks — decided by reading the diff. NO judge, NO subagent.
+# ---------------------------------------------------------------------------
+required_elements:
+  - id: money_stays_integer_cents
+    description: "No float arithmetic is introduced on any monetary path"
+    source: "the diff's changed lines under src/"
+    met_when: "every monetary value added or modified is an integer number of cents"
+    not_applicable_when: "the diff touches no monetary path — record NOT_APPLICABLE"
+
+  - id: public_export_documented
+    description: "Every symbol added to the src/index.mjs export surface has a docs/api.md entry"
+    source: "the diff's src/index.mjs export list, matched against docs/api.md headings"
+    met_when: "no symbol added to the export surface is absent from docs/api.md"
+    not_applicable_when: "the diff adds no export to src/index.mjs — record NOT_APPLICABLE"
+
+  - id: module_is_pure_esm
+    description: "Every module added or modified is .mjs and uses import/export only"
+    source: "the diff file list and the changed lines of each source file"
+    met_when: "no added or modified module carries a require() call or a module.exports assignment"
+    not_applicable_when: "never — the diff file list always answers this"
+
+# ---------------------------------------------------------------------------
+# Judged criteria — one judge per criterion, one reference-anchored yes/no
+# question, binary verdicts with an explicit `unknown`.
+# ---------------------------------------------------------------------------
+quality_dimensions:
+  - id: validation_precedes_pricing
+    criterion: "Pricing never runs on an unvalidated payload"
+    reference: ".context-index/constitution.md, Non-Negotiable Principles, principle 4"
+    met_when: "every pricing expression in the diff is reached only after validation has returned no errors"
+    not_met_when: "a total, subtotal or rate is computed on a path that skips validation"
+    unknown_when: "the diff shows a pricing expression whose guarding path is not visible"
+
+  - id: errors_are_collected_not_short_circuited
+    criterion: "Field-level problems are collected into one errors array rather than thrown one at a time"
+    reference: ".context-index/specs/features/orders/create-order.spec.md, behavior B4"
+    met_when: "validation appends every distinct problem and returns them together"
+    not_met_when: "validation returns or throws on the first problem it finds"
+    unknown_when: "the diff changes no validation path"
+
+  - id: spec_and_code_agree
+    criterion: "Every behavior the spec declares is implemented as the spec words it"
+    reference: "the Live Spec named in the diff's Spec: trailer"
+    met_when: "no declared behavior is absent from, or contradicted by, the changed source"
+    not_met_when: "a declared behavior names a rule the source does not implement"
+    unknown_when: "the diff carries no Spec: trailer, so no spec can be paired with it"

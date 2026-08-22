@@ -2,6 +2,10 @@
  * Order creation: validate a raw payload, price it, return a normalized record.
  *
  * Money is integer minor units (cents) throughout. Nothing here performs I/O.
+ *
+ * Source-of-truth change date, read by the `stale-spec-frontmatter` class:
+ * last changed 2026-07-20, which PREDATES `create-order.spec.md`'s `updated: 2026-07-28`
+ * frontmatter. This is the known-clean twin: the spec postdates its source.
  */
 
 /** Maximum number of line items a single order may carry. */
