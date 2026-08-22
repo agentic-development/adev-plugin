@@ -172,4 +172,59 @@ describe("adev issues board migrate", () => {
     assert.match(worktrees, /worktree .*\.beads/);
     assert.equal(readBoardMigrateCheckpoint(repoDir), null, "checkpoint cleared on successful resume");
   });
+
+  it("resumes from a checkpoint without re-touching main's tree (plan-review fix)", async () => {
+    ({ bareDir, repoDir } = createMainTrackedRepo());
+    landPushAndCleanMainTree(repoDir);
+    const beforeHead = git(["rev-parse", "HEAD"], repoDir);
+    const beforeGitignore = readFileSync(join(repoDir, ".gitignore"), "utf8");
+
+    const code = await run({ projectRoot: repoDir, argv: ["migrate"], manifest: {} });
+    assert.equal(code, 0);
+
+    // main's tree must be untouched by this invocation: no new commit, no
+    // second `git rm --cached` attempt.
+    assert.equal(git(["rev-parse", "HEAD"], repoDir), beforeHead);
+    assert.equal(readFileSync(join(repoDir, ".gitignore"), "utf8"), beforeGitignore);
+
+    const worktrees = git(["worktree", "list", "--porcelain"], repoDir);
+    assert.match(worktrees, /worktree .*\.beads/);
+  });
+
+  it("resumes from a checkpoint left by an interrupted migration, skipping snapshot/branch/push (Error Cases row 8)", async () => {
+    ({ bareDir, repoDir } = createMainTrackedRepo());
+    landPushAndCleanMainTree(repoDir);
+
+    const code = await run({ projectRoot: repoDir, argv: ["migrate"], manifest: {} });
+    assert.equal(code, 0);
+
+    const worktrees = git(["worktree", "list", "--porcelain"], repoDir);
+    assert.match(worktrees, /worktree .*\.beads/);
+
+    // A second interrupted-retry-style invocation (no checkpoint left this
+    // time, already fully migrated) must not surface BOARD_ALREADY_EXISTS.
+    const second = await run({ projectRoot: repoDir, argv: ["migrate"], manifest: {} });
+    assert.equal(second, 0);
+  });
+
+  it("a second corrupt-leftover retry never surfaces a stale-registration error", async () => {
+    ({ bareDir, repoDir } = createMainTrackedRepo());
+    landPushAndCleanMainTree(repoDir);
+
+    const first = await run({ projectRoot: repoDir, argv: ["migrate"], manifest: {} });
+    assert.equal(first, 0);
+
+    // Simulate a corrupt leftover from an interrupted `git worktree add`:
+    // stale plain directory on disk plus a stale admin entry, with the
+    // checkpoint re-written by hand to force the resumed path again.
+    rmSync(join(repoDir, ".beads"), { recursive: true, force: true });
+    mkdirSync(join(repoDir, ".beads"));
+    writeFileSync(join(repoDir, ".beads", "leftover.txt"), "stale\n");
+    writeBoardMigrateCheckpoint(repoDir, { step: "push-landed" });
+
+    const second = await run({ projectRoot: repoDir, argv: ["migrate"], manifest: {} });
+    assert.equal(second, 0);
+    const worktrees = git(["worktree", "list", "--porcelain"], repoDir);
+    assert.match(worktrees, /worktree .*\.beads/);
+  });
 });
