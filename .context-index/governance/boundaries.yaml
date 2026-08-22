@@ -56,6 +56,11 @@ boundaries:
       - '**/*.js'                        # not the ESM extension this project uses
       - '**/*.cjs'                       # CommonJS by declaration
       - '**/*.jsonl'                     # captured transcripts
+      # Quotes CommonJS as literal test DATA to prove this very rule matches it,
+      # then asserts the rule's excludes cover the fixture's planted file. Same
+      # class as tests/fixtures/governance/** above: the check has to name the
+      # pattern to check it.
+      - 'tests/lib/evals/skill-regression-hermeticity.test.mjs'
 
   # Constitution Anti-Pattern — no inline Node in SKILL.md. Same three shapes the
   # bespoke git hook `hooks/pre-commit-no-inline-node.sh` already rejects, and the
