@@ -1,0 +1,65 @@
+# manifest.yaml — orders-service (FIXTURE)
+#
+# Fixture content for the skill-regression eval suite: the manifest of a
+# fictional Node.js orders service, kept deliberately small.
+#
+# Three absences are load-bearing and are asserted by
+# tests/lib/evals/skill-regression-hermeticity.test.mjs:
+#
+#   1. NO `workspace:` key. A workspace key would make the fixture resolve
+#      state against a parent root outside itself.
+#   2. NO `tasks.db_path`. The committed tree leaves the issue-board path to
+#      the default resolver; the board-containment property covers the
+#      RESOLVER's output instead of a declared string.
+#   3. Every path-valued key below resolves INSIDE this directory
+#      (`project/`, the fixture_root). Adding a key whose value escapes it —
+#      or a value with a `../` segment — turns hermeticity property 7 red.
+
+project:
+  name: "orders-service"
+  description: "Creates customer orders and calculates shipping rates."
+  type: library
+
+sync:
+  targets:
+    - path: CLAUDE.md
+      format: claude
+    - path: AGENTS.md
+      format: agents
+
+modules:
+  - slug: orders
+    name: Orders
+    paths:
+      - src/orders/
+      - tests/create-order.test.mjs
+  - slug: shipping
+    name: Shipping
+    paths:
+      - src/shipping/
+
+external_contexts: []
+
+tasks:
+  # `json` keeps the board a plain file inside the fixture. No `db_path`: see
+  # note 2 above.
+  backend: json
+
+test_policy:
+  granularity: per-behavior
+  escalation: false
+
+lifecycle:
+  step_pairing: strict
+  # `partial_roots` WIDENS the containment allowlist for partial-artifact
+  # writes rather than merely naming a location, which is why property 7
+  # asserts this key by name and not only in aggregate. Both roots are inside
+  # the fixture.
+  partial_roots:
+    - .context-index/lifecycle-state
+    - .context-index/specs
+
+repomap:
+  exclude:
+    - "node_modules/**"
+    - "coverage/**"

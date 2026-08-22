@@ -1,0 +1,39 @@
+# validate.yaml — orders-service validate registry (FIXTURE)
+#
+# Command-FREE, not check-FREE. The distinction is the point of this file:
+#
+#   - No `command:` key appears anywhere. A `quality-gate` row REQUIRES an
+#     argv `command`, so this registry declares none — which is also why the
+#     fixture ships no governance/gates.yaml and why its constitution carries
+#     no Quality Gates block.
+#   - It still ADMITS real checks. A check-free registry would silently
+#     unscore the validate, review-specs and build rubrics and make the
+#     `esm-violation` planted-violation / known-clean pair unassertable.
+#
+# Every `prompt:` is a `plugin:` URI resolved against `<pluginRoot>/skills/`.
+# The hermeticity suite asserts the LOADER-resolved path for each, not the
+# string: `resolvePromptUri` drops an entry it cannot resolve, so a renamed
+# prompt file would otherwise read as "enabled" while admitting nothing.
+#
+# NO `materialized_at` marker. `validate.yaml` is EXEMPT from marking
+# (registry-marker.mjs: MARKED_REGISTRIES is review/diagnostics/gates), and
+# `assertMaterialized` throws MARKER_INPUT_INVALID when pointed at it.
+
+checks:
+  - id: validate.check-2-spec-compliance
+    name: "Spec Compliance"
+    kind: subagent-review
+    profile: reviewer-capable
+    context_pack: base
+    severity: error
+    prompt: plugin:validate/checks/validate.check-2-spec-compliance.md
+    description: "Does the implementation satisfy every behavior its spec declares?"
+
+  - id: validate.check-4-constitution
+    name: "Constitution Compliance"
+    kind: subagent-review
+    profile: reviewer-capable
+    context_pack: base
+    severity: error
+    prompt: plugin:validate/checks/validate.check-4-constitution.md
+    description: "Does the implementation honour the project constitution — ESM-only above all?"

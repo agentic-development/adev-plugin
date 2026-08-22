@@ -1,0 +1,43 @@
+# deploy.yaml — orders-service release pipeline (FIXTURE)
+#
+# Every step is `type: manual`, and that is a hermeticity requirement rather
+# than a stylistic choice. `lib/deploy.mjs` spawns `step.command` for `shell`,
+# `verify`, `ci-trigger` and `gate` (the last in a polling loop); `manual` is
+# the only step type whose executor runs nothing — it surfaces `instructions`
+# and records the operator's response.
+#
+# No step carries a `rollback:` body either. Rollback instructions are a
+# SECOND command surface: `executeRun` collects `stepConfig.rollback` from
+# every completed step whatever its type, so a `manual` step with a rollback
+# would still push fixture-authored instructions into the rollback path.
+#
+# Instructions are single-line quoted scalars, not block scalars: the
+# repository's minimal YAML reader (lib/profiles/yaml.mjs) has no `|` support.
+#
+# Enough steps that a `/adev:deploy --dry-run` transcript is worth scoring.
+
+steps:
+  - id: confirm-docs
+    name: "Confirm the public API docs"
+    type: manual
+    instructions: "Read docs/api.md and confirm every symbol src/index.mjs exports is documented there, then confirm no documented symbol has been removed from the export list."
+
+  - id: confirm-version
+    name: "Confirm the version bump"
+    type: manual
+    instructions: "Confirm package.json declares the version this release goes out as, and that its dependency list still matches what src/ imports."
+
+  - id: tag-release
+    name: "Tag the release"
+    type: manual
+    instructions: "Create the release tag for this version upstream and confirm it points at the reviewed commit."
+
+  - id: publish-package
+    name: "Publish the package"
+    type: manual
+    instructions: "Publish the package to the registry from a clean checkout, then confirm the published version resolves for a consumer."
+
+  - id: announce
+    name: "Announce the release"
+    type: manual
+    instructions: "Post the release notes to the consumers' channel and link the tag."
