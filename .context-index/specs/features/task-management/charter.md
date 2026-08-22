@@ -41,11 +41,11 @@ This charter retains ownership of *what* the issue board means: lifecycle, tiere
 - Sync block emitted by `/adev:sync` into agent files
 - **GitHub Issues bridge scope carve-out**: this charter permits bidirectional sync between the local issue board and GitHub Issues to exist — it does not implement it. Implementation (adapter interface, sync mechanics, field mapping, credentials) is owned by `autonomous-bugfix-loop/charter.md`, which this scope was carved out for. Carved out of the External Tracker Sync exclusion below by revision 7 (2026-08-19) — see Migration Notes.
 - **Orphan `beads-board` branch** as the git home for `.beads/` board data (`issues.jsonl`, `config.yaml`), decoupled from `main`'s history.
-- **`.beads/` as a linked git worktree** attached to `beads-board`, composing with `resolveStorageRoot()`'s existing worktree-sharing logic — every local worktree of the same clone still resolves to one physical board, unchanged.
+- **`.beads/` as a linked git worktree** attached to `beads-board`, composing with `resolveStorageRoot()`'s existing worktree-sharing logic — every local worktree of the same clone still resolves to one physical board, unchanged. Unrelated to `worktree-parallelization/charter.md`'s worktrees: that module's are ephemeral, task-execution-scoped, and merge back; `.beads/` is one permanent, never-merged infrastructure worktree.
 - **One-command fresh-clone bootstrap**: `git worktree add .beads beads-board` (validated live — a plain `git clone` already fetches the ref, no separate `git fetch` needed).
 - **`main`'s `.gitignore`** gains a `.beads/` entry so the linked worktree doesn't show as untracked noise on `main`.
 - **Direct push to `beads-board`** — CI/bots and interactive sessions alike, no PR, no branch-protection exception, since nothing ever merges into `main`.
-- **CLI install/bootstrap flow** (`cli/index.mjs`) provisions the linked worktree for new installs.
+- **CLI install/bootstrap flow** (`cli/index.mjs`) provisions the linked worktree for new installs. Scoped to project-local `.beads/` provisioning only — this does not change the adev-plugin CLI's own installation path structure (`~/.claude/` layout, plugin registration), so it does not trip that constitutional Requires-Human-Approval boundary.
 - **One-time migration** for this repo's existing `main`-tracked `.beads/issues.jsonl` onto the new topology.
 
 ### Out of Scope
