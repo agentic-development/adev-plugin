@@ -154,7 +154,7 @@ fresh second clone, and a second independent clone), not inferred from documenta
 ## Acceptance Criteria
 
 - [ ] All 9 behaviors (BEH-1 through BEH-9) have passing automated tests
-- [ ] All 7 error cases have passing automated tests
+- [ ] All 8 error cases have passing automated tests
 - [ ] `resolveStorageRoot()` is proven compatible with `.beads/` as a linked worktree by a
       real test, not by inspection alone
 - [ ] `adev issues board migrate` is idempotent: running it twice in a row produces no
