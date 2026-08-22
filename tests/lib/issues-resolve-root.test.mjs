@@ -1,8 +1,11 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { resolve } from "node:path";
-import { mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { resolve, join } from "node:path";
+import { mkdirSync, writeFileSync, rmSync, mkdtempSync, realpathSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { resolveStorageRoot } from "../../lib/issues/resolve-root.mjs";
+import { provisionBoardWorktree } from "../../lib/issues/board-worktree.mjs";
 
 describe("resolveStorageRoot", () => {
   it("returns explicit db_path when configured", () => {
@@ -54,5 +57,19 @@ describe("resolveStorageRoot", () => {
   it("handles manifest without tasks section", () => {
     const result = resolveStorageRoot({ project: { name: "test" } });
     assert.ok(result.length > 0);
+  });
+
+  it("resolves the main repo root from inside a .beads/ linked worktree (BEH-4)", () => {
+    const repo = mkdtempSync(join(tmpdir(), "resolve-root-"));
+    try {
+      execFileSync("git", ["init", "-q"], { cwd: repo });
+      execFileSync("git", ["commit", "--allow-empty", "-q", "-m", "init"], { cwd: repo });
+      provisionBoardWorktree({ projectRoot: repo });
+
+      const resolved = resolveStorageRoot(undefined, join(repo, ".beads"));
+      assert.equal(realpathSync(resolved), realpathSync(repo));
+    } finally {
+      rmSync(repo, { recursive: true, force: true });
+    }
   });
 });
