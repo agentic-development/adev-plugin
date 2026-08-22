@@ -7,7 +7,7 @@ reviewers:
     mode: subagent
     profile: reviewer-fast
     prompt: plugin:review-specs/consistency-analyzer-prompt.md
-    verdict: PASS_WITH_NOTES
+    verdict: FAIL
   - id: referent-integrity
     mode: subagent
     profile: reviewer-reasoning
@@ -23,18 +23,20 @@ reviewers:
     profile: reviewer-capable
     prompt: plugin:review-specs/boundary-reviewer-prompt.md
     verdict: FAIL
-last-reviewed-revision: 1
-file-sha: 6f4ac4abb234775592917b3e00654f77d4fc047c479fe271852c26c18193c6de
+last-reviewed-revision: 2
+file-sha: b90530ccd933e3c3794d9b4a52ed83627c79b630f491919f18aa9826e6e87fd3
 review-date: 2026-08-22
 rigor-tier: full
 ---
 
-# Architecture Review: beads-board-git-topology
+# Architecture Review: beads-board-git-topology (revision 2)
 
 > **Date:** 2026-08-22
 > **Spec:** `.context-index/specs/features/task-management/beads-board-git-topology.spec.md`
 > **Charter:** `.context-index/specs/features/task-management/charter.md`
 > **Verdict:** BLOCK
+
+This is a re-review of revision 2, which was written to address revision 1's BLOCK verdict (3 blockers: RI-7 scope-note tense, BD-1 gitignore mechanics, BD-2 no recovery path). Revision 2's fixes are only partially sound: the wording/scope fixes hold, but the *content* fixes cited a real function (`lib/gitignore-installer.mjs::ensureManagedBlock`) without verifying its actual API — three reviewers independently caught the same mismatch, and one surfaced a genuinely new design flaw (the checkpoint file's own location is unstated and could land inside `.beads/` itself).
 
 ## Reviewers Dispatched
 
@@ -45,70 +47,77 @@ rigor-tier: full
 | wiring-reviewer | Wiring Reviewer | subagent | reviewer-capable | plugin:review-specs/wiring-reviewer-prompt.md |
 | boundary-reviewer | Boundary Reviewer | subagent | reviewer-capable | plugin:review-specs/boundary-reviewer-prompt.md |
 
-Rigor tier: **full** (resolved from `risk_level: medium` → `policies.medium.review_mode: full` in `.context-index/governance/risk-policies.yaml`; no `--tier` override, no routing signal). `termination-reviewer` was not dispatched — its trigger keywords (loop, retry, poll, iterate, recurring, convergence, auto-retry) do not appear in this spec.
-
-**Note on consistency-analyzer's context pack:** this project's materialized `governance/review.yaml` wires `consistency-analyzer` to the minimal `base` context pack (constitution + platform-context only), which does not satisfy that reviewer's own stated Input contract (sibling specs, cross-cutting specs, ADRs, parent charter). This dispatch substituted the fuller `consistency` pack (review-base + ADRs + cross-cutting) so the review would not be hollow. See CON-3 below — likely worth a registry fix independent of this spec.
+Rigor tier: **full** (unchanged from revision 1 — `risk_level: medium`). `termination-reviewer` not dispatched (no trigger keywords).
 
 ## Disabled Reviewers
 
 | ID | Reason |
 |----|--------|
-| structural-architect | Disabled as part of the reviewer-domain-fit initiative. OWASP/structural scope was retargeted to referent-integrity/wiring-reviewer/consistency-analyzer/boundary-reviewer for the default (Node CLI/plugin) project shape. |
-| security-reviewer | Disabled as part of the reviewer-domain-fit initiative. OWASP-scoped review relocated to the web-service domain extension. |
+| structural-architect | Disabled as part of the reviewer-domain-fit initiative. |
+| security-reviewer | Disabled as part of the reviewer-domain-fit initiative. |
 
 ## Consistency Analyzer (consistency-analyzer)
 
-**Verdict:** PASS_WITH_NOTES
+**Verdict:** FAIL
 
-- **CON-1** (warning, pattern) — The Error Cases table describes every failure prose-only, with no named ADEV error code for any condition, unlike every other CLI-verb spec in this charter (`backend-migration.spec.md`'s `MIGRATE_NOOP`, `MIGRATE_PARTIAL_FAILURE`, etc.; `backend-adapters.spec.md`'s `BEADS_COMMAND_FAILED`, `NOT_FOUND`). Recommendation: add a code per row (e.g. `BOARD_ALREADY_EXISTS`, `BOARD_NO_BRANCH`, `BOARD_ALREADY_MIGRATED`, `BOARD_NOTHING_TO_MIGRATE`, `BOARD_MIGRATE_PARTIAL_FAILURE`) before `/adev:plan`.
-- **CON-2** (suggestion, module-boundary) — BEH-6 and the task map's `cli/index.mjs` bootstrap integration don't name a `lib/cli/<verb>.mjs` helper module, unlike this charter's own established shape (`cli-driver-surface` charter's 1:1 rule; `backend-migration.spec.md` names `lib/cli/issues-migrate.mjs` explicitly). Non-blocking — route the plan step's git calls through `lib/issues/` rather than inlining into the CLI entrypoint.
-- **CON-3** (suggestion, module-boundary / process) — Confirms the pack-assignment mismatch noted above: `consistency-analyzer`'s registry binding to the `base` pack cannot satisfy its own Input contract.
+Revision 1's CON-1 (missing error codes) is resolved — all error-case rows now carry named codes. CON-2 (unnamed CLI helper) only partially addressed.
 
-No blockers. Spec is otherwise well-aligned with the charter and sibling specs (BEH-1's `--no-db` dependency correctly cites `backend-adapters.spec.md` Behavior 15; BEH-4's `resolveStorageRoot()` claim matches the real algorithm; no ADR conflicts found).
+- **CON-1 (blocker, contract-mismatch, section: behaviors)** — BEH-7 claims the `.gitignore` edit happens via `lib/gitignore-installer.mjs`, described as append-only, existence-checked, skipping if `.beads/` is already present. The real `ensureManagedBlock(projectRoot)` takes no per-call entry argument — it always splices the entire fixed `MANAGED_GITIGNORE_PATHS` block, which does not contain `.beads/`. There is no mechanism in the named module to add a single conditional entry at call time.
+  `blocker_id: consistency-analyzer:contract-mismatch:fc210856`
+- **CON-2 (blocker, unspecified-checkpoint-location, section: error-cases)** — `.board-migrate-state.json`'s storage path, `.gitignore` treatment, and write mechanics are never stated. An implementer following "mirror the pattern" with no path given could plausibly place it under `.beads/` itself — deleting the checkpoint in the same step it's meant to survive, defeating its own purpose.
+  `blocker_id: consistency-analyzer:unspecified-checkpoint-location:8dd499c6`
+- **CON-3** (warning, naming) — `BOARD_MIGRATE_PARTIAL_FAILURE` is confusingly close to the sibling `MIGRATE_PARTIAL_FAILURE` for a semantically distinct failure.
+- **CON-4** (suggestion, module-boundary) — Task Map still doesn't name a dedicated implementation module for the `board migrate` verb, unlike the sibling `backend-migration.spec.md`'s explicit `lib/cli/issues-migrate.mjs`.
 
 ## Referent Integrity Reviewer (referent-integrity)
 
 **Verdict:** FAIL
 
-- **RI-1 through RI-6, RI-8, RI-9** (suggestion/warning) — 8 referents checked and verified clean by direct source read: `resolveStorageRoot()`, the `--no-db` fallback, `cli/index.mjs`'s existing install flow, `tasks.backend`, `MIN_BR_VERSION`, the pre-migration tracked state of `.beads/issues.jsonl`, `git worktree add --orphan` (external git behavior, not repo-verifiable but consistent with known git 2.42+ semantics), and both charter capability names.
-- **RI-7 (blocker, stale-file-path, section: scope-note)** — The spec's opening scope note says the excluded concurrent-write scope is "covered by the sibling `beads-board-direct-sync` spec, not this one" — phrased as present-tense coverage by an existing spec. No such spec file exists anywhere in the repo (confirmed by search); the charter lists that capability's Status as `—`, not `specified`. Recommendation: rephrase to future tense or remove the specific filename claim until that spec is authored.
-  `blocker_id: referent-integrity:stale-file-path:013f73f1`
+**RI-7 (revision-1 blocker): RESOLVED.** The scope note now reads in future tense and accurately reflects that no `beads-board-direct-sync` spec exists yet — confirmed by a fresh search and reading the charter's Capability Map (`Status: —`).
+
+Two new blockers surfaced in revision-2 content, both missing the required `finding_type`/`section_anchor` fields (logged as `LEGACY_REVIEWER_OUTPUT` — excluded from the auto-retry sidecar below, but real findings that must still be addressed):
+
+- **RI-2 (blocker)** — Same underlying issue as CON-1/BD-1: `ensureManagedBlock` doesn't do what BEH-7 claims. Independently confirmed by direct source read.
+- **RI-3 (blocker)** — The System Constitution Reference claims `lib/cli/issues.mjs`'s dispatcher has "exactly" 6 subcommands (`migrate`, `claim`, `release`, `stale`, `next`, `show`). The real dispatcher has 8 (`lib/cli/issues.mjs:39-108`) — also `set-modules` and `record-attempt`.
+- **RI-1** (suggestion) — The `.migrate-state.json` mirror claim was checked against `backend-migration.spec.md` directly and is accurate.
 
 ## Wiring Reviewer (wiring-reviewer)
 
 **Verdict:** PASS_WITH_NOTES
 
-- **WR-1, WR-2, WR-5, WR-6** (suggestion) — Fully wired: orphan branch → `BeadsAdapter`/`resolveStorageRoot()` consumers with named triggers and committed tests; `cli/index.mjs`'s existing install flow is a real, identifiable integration point.
-- **WR-3** (warning) — The `main` `.gitignore` `.beads/` entry (BEH-5/BEH-7) has a vague trigger — "fresh-install scaffolding and the migration tool" names no concrete call site. `lib/gitignore-installer.mjs` (referenced from `cli/index.mjs`) looks like the natural integration point but isn't named.
-- **WR-4** (warning) — `adev issues board migrate` (BEH-7/8/9) has no stated trigger for CLI reachability: `lib/cli/issues.mjs`'s existing dispatcher (`migrate`, `claim`, `release`, `stale`, `next`, `show`) has no `board` branch, and the spec never mentions adding one.
+No blockers. Confirms WR-4 (revision-1 warning) resolved — `lib/cli/issues.mjs`'s dispatch pattern is real and consistent. WR-3 (revision-1 warning) only partially resolved — same root cause as CON-1/RI-2/BD-1.
 
-No blockers. Both warnings concern under-specified registration into existing dispatch mechanisms the spec doesn't cite by name.
+- **WR-1** (warning) — `ensureManagedBlock`'s actual API doesn't match the per-path skip-if-present behavior BEH-7 describes.
+- **WR-2** (warning) — `.board-migrate-state.json`'s location is unstated; same root issue as CON-2/BD-3.
+- **WR-3** (suggestion) — No stated cleanup of `.board-migrate-state.json` after a successful resumed run (the sibling pattern removes it — `backend-migration.spec.md` BEH-18).
+- **WR-4** (suggestion) — No dedicated module named for the `board` verb's implementation, mirroring CON-4.
 
 ## Boundary Reviewer (boundary-reviewer)
 
 **Verdict:** FAIL
 
-- **BD-1 (blocker, destructive-operation, section: behaviors)** — BEH-7's `.gitignore` edit never specifies write mechanics (append-if-absent vs. open-truncate-rewrite) against a shared, hand-editable file with no existing content-merge-safety contract in this repo (`assertContained` in `exec-payload.mjs` only governs path safety, not this). No blast radius or idempotency guard against a duplicate/negated entry is stated.
-  `blocker_id: boundary-reviewer:destructive-operation:0d255ebd`
-- **BD-2 (blocker, destructive-operation, section: error-cases)** — Migrate's failure-ordering guarantee ("push before main removal") doesn't cover the gap between physically removing `.beads/` and the subsequent `git worktree add` re-provisioning step: if that step fails, `.beads/` is gone from disk with no recovery path stated. The sibling `backend-migration.spec.md` already solved this exact class of problem with `.migrate-state.json` (atomic temp-rename, resumable checkpoint); this spec adopts none of that pattern.
-  `blocker_id: boundary-reviewer:destructive-operation:223303cf`
-- **BD-3** (warning) — The spec never states that the git/br subprocess calls must use argv arrays (matching the existing `execFileSync(...)` convention in `resolve-root.mjs`/`beads-adapter.mjs`). Not a live escape today (no adversarial input), but should be stated explicitly.
-- **BD-4** (suggestion) — Consider requiring a dry-run report + explicit confirmation before the first live, irreversible push, mirroring `backend-migration`'s prompt-before-flipping-`tasks.backend` behavior.
+Verified against `lib/gitignore-installer.mjs`, `lib/gitignore-paths.mjs`, `lib/cli/issues-migrate.mjs` (the real `.migrate-state.json` implementation), and `backend-migration.spec.md` in full — the most thorough verification of the four.
 
-Checklist items 1 (path containment) and 3 (input trust) pass cleanly — no untrusted/extension-supplied input drives any path in this spec.
+- **BD-1 (blocker, unverified-integration-claim, section: behaviors)** — Same mismatch as CON-1/RI-2, confirmed with the most precision: `.beads/` is not in `MANAGED_GITIGNORE_PATHS` (grepped in full), and the write mechanic is a whole-block splice/replace, not a guarded single-line append. Fixing this for real requires an undisclosed cross-spec change (adding `.beads/` to `MANAGED_GITIGNORE_PATHS`, owned by `setup/managed-gitignore-block.spec.md`) that this spec's Task Map never names.
+  `blocker_id: boundary-reviewer:unverified-integration-claim:8ff7b6ff`
+- **BD-2 (downgraded from revision-1 blocker to warning)** — Real progress: a checkpoint now exists where revision 1 had none. But the mirror to `backend-migration.spec.md`'s pattern is only superficial — that pattern resumes an additive loop of idempotent creates, never a physical delete. Directory removal isn't atomic; a crash mid-removal can leave `.beads/` as a corrupt partial directory that the checkpoint doesn't detect or clean up.
+- **BD-3 (new blocker, unstated-artifact-location, section: error-cases)** — `.board-migrate-state.json` has no stated location or git-visibility, and no Task Map line registering it in the managed-gitignore list — unlike its sibling `.migrate-state.json`, which is explicit about both. Given BD-1's finding, there's a real risk this checkpoint gets committed to `main` — ironic for a spec whose whole point is removing board state from `main`'s tracked tree.
+  `blocker_id: boundary-reviewer:unstated-artifact-location:ccc81dea`
+
+Items 1–4 (path containment, subprocess interpolation, input trust, privilege posture) pass cleanly, unchanged from revision 1.
 
 ## Heuristics — related prior lessons (signature-ranked)
 
 The following heuristics are lessons learned from past work in this module, ranked with any exact matches for this blocker first. They are not necessarily prior occurrences of this blocker. Use them as guidance, not as hard rules.
 
 ### Heuristic: A universal coverage claim must ship with the predicate that checks it (confidence: medium)
-- **Pattern:** When closing a coverage gap in a spec or acceptance criterion, state the executable check alongside the claim — the exact command or match, and the paths it runs over.
-- **Anti-pattern:** Answer a repeatedly-missed surface by widening the assertion — "no occurrence anywhere in the repository."
+- **Pattern:** When closing a coverage gap in a spec or acceptance criterion, state the executable check alongside the claim.
+- **Anti-pattern:** Answer a repeatedly-missed surface by widening the assertion.
 - **Evidence:** 1 observation
 
-*(Same `_global`-scope entry returned for all three blockers — the module's heuristics store carries no signature-specific matches for any of them; this is not evidence any of the three has occurred before.)*
+*(Identical `_global`-scope entry returned for all four blockers — no signature-specific matches in the store. Not evidence any of these has occurred before.)*
 
 ## Summary
 
-**Total findings:** 16 (3 blockers, 5 warnings, 8 suggestions)
-**Action required:** This spec is BLOCKED. Run `/adev:specify --revise` against this spec to address the 3 blockers (RI-7, BD-1, BD-2) — the `.blockers.md` sidecar carries the canonical `blocker_id` for each. The 5 warnings and 8 suggestions are advisory; addressing them is not required to unblock, but several (CON-1's missing error codes, WR-3/WR-4's unnamed call sites) would strengthen the spec for `/adev:plan`.
+**Total findings:** 12 (4 well-formed blockers + 2 legacy-output blockers = 6 blocker-severity findings, 3 warnings, 3 suggestions)
+**Action required:** This spec is BLOCKED again. The root cause across CON-1/RI-2/BD-1/WR-1 is one thing: `lib/gitignore-installer.mjs::ensureManagedBlock()` does not support adding a single conditional `.beads/` entry — either `.beads/` needs to be added to `MANAGED_GITIGNORE_PATHS` (a cross-spec change, `setup/managed-gitignore-block.spec.md`) with that dependency named explicitly, or BEH-7/BEH-5 need a different, correctly-described write mechanism. The second root cause across CON-2/BD-3/WR-2 is: `.board-migrate-state.json` needs a stated location (outside `.beads/`) and its own gitignore registration. RI-3's incomplete subcommand list is a one-line fix. Run `/adev:specify --revise` again — this time verify every new source-code claim by reading the actual file before writing it into the spec, not asserting a plausible-sounding API.
