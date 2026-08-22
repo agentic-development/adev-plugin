@@ -123,6 +123,7 @@ This charter retains ownership of *what* the issue board means: lifecycle, tiere
 | **Specify Integration** | `/adev:specify` creates a Feature work item bound 1:1 to each Live Spec it authors | should-have | 3 | — |
 | **Closure Cascade Guard** | Closing an item is blocked while unclosed children exist (mirrors existing dependency guard) | should-have | 3 | — |
 | **Backend Migration** | One-shot CLI conversion of the issue board between configured backends (json ↔ beads, json ↔ file). Idempotent via `.beads-map.json` mapping or title-match fallback; supports `--dry-run` and `--include-closed`. Prompts before flipping `tasks.backend` in manifest.yaml. Operationalizes the Consistency quality attribute. | must-have | 4 | validated |
+| **Issue Content Contract** | Content template (Problem/Intent, Acceptance Criteria, Out of Scope) prompted on `/adev:issues create` for `feature`/`bug` types; `spec_ref` and `next_action` pass-through and defaulting; soft (non-blocking) empty-body warning; plan-level epic `notes` summary. Backfilled here from `issue-content-contract.spec.md`, authored directly via `/adev:specify` (`charter-extension: true`) — see Migration Notes. | should-have | — | planned |
 
 ## Deferred Capabilities
 
