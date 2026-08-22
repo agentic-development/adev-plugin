@@ -284,3 +284,127 @@ test('writeBlockers reports every empty-prose finding, not just the first', () =
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+// ─── finding_class / remedy_ref sidecar schema + section_anchor BD-1 fix ───
+//
+// BEH-1: finding_class taxonomy (defect|decision|external) that routes
+// blockers through different paths later in the pipeline. blockers-writer's
+// posture is "refuse, don't sanitize, don't throw" — a bad field is forced
+// to a safe default and logged as an advisory in the return value; the
+// write always completes.
+
+test('writeBlockers round-trips a present, valid finding_class into the YAML block', () => {
+  const { root, specPath } = makeRepo();
+  try {
+    const findings = [
+      {
+        blocker_id: 'r:t:aaaaaaaa',
+        section_anchor: 'beh-1',
+        reviewer: 'x',
+        prose: 'body',
+        finding_class: 'decision',
+      },
+    ];
+    const result = writeBlockers(root, specPath, findings, { revision: 1 });
+    const text = readFileSync(join(root, result.sidecarPath), 'utf8');
+    assert.match(text, /finding_class: decision/);
+    assert.ok(
+      !result.advisories.some((a) => a.code === 'FINDING_CLASS_DEFAULTED' || a.code === 'FINDING_CLASS_REJECTED'),
+      'a valid, present finding_class must not generate a defaulted/rejected advisory',
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('writeBlockers defaults finding_class to defect when absent and logs FINDING_CLASS_DEFAULTED', () => {
+  const { root, specPath } = makeRepo();
+  try {
+    const result = writeBlockers(root, specPath, [
+      { blocker_id: 'r:t:aaaaaaaa', section_anchor: 'beh-1', reviewer: 'x', prose: 'body' },
+    ], { revision: 1 });
+    const text = readFileSync(join(root, result.sidecarPath), 'utf8');
+    assert.match(text, /finding_class: defect/);
+    assert.ok(result.advisories.some((a) => a.code === 'FINDING_CLASS_DEFAULTED'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('writeBlockers forces defect and logs FINDING_CLASS_REJECTED on an invalid enum value, without dropping the entry', () => {
+  const { root, specPath } = makeRepo();
+  try {
+    const result = writeBlockers(root, specPath, [
+      { blocker_id: 'r:t:aaaaaaaa', section_anchor: 'beh-1', reviewer: 'x', prose: 'body', finding_class: 'bogus' },
+    ], { revision: 1 });
+    const text = readFileSync(join(root, result.sidecarPath), 'utf8');
+    assert.match(text, /finding_class: defect/);
+    assert.ok(result.advisories.some((a) => a.code === 'FINDING_CLASS_REJECTED'));
+    assert.equal(result.entries, 1, 'entry must not be dropped');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('writeBlockers omits an unsafe remedy_ref and logs REMEDY_REF_REJECTED, without dropping the entry', () => {
+  const { root, specPath } = makeRepo();
+  try {
+    const result = writeBlockers(root, specPath, [
+      {
+        blocker_id: 'r:t:aaaaaaaa',
+        section_anchor: 'beh-1',
+        reviewer: 'x',
+        prose: 'body',
+        finding_class: 'external',
+        remedy_ref: 'issue: {evil}',
+      },
+    ], { revision: 1 });
+    const text = readFileSync(join(root, result.sidecarPath), 'utf8');
+    assert.doesNotMatch(text, /\{evil\}/);
+    assert.doesNotMatch(text, /remedy_ref:/);
+    assert.ok(result.advisories.some((a) => a.code === 'REMEDY_REF_REJECTED'));
+    assert.equal(result.entries, 1, 'entry must not be dropped');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('writeBlockers preserves a safe remedy_ref when finding_class is external', () => {
+  const { root, specPath } = makeRepo();
+  try {
+    const result = writeBlockers(root, specPath, [
+      {
+        blocker_id: 'r:t:aaaaaaaa',
+        section_anchor: 'beh-1',
+        reviewer: 'x',
+        prose: 'body',
+        finding_class: 'external',
+        remedy_ref: 'ISSUE-123',
+      },
+    ], { revision: 1 });
+    const text = readFileSync(join(root, result.sidecarPath), 'utf8');
+    assert.match(text, /remedy_ref: ISSUE-123/);
+    assert.ok(!result.advisories.some((a) => a.code === 'REMEDY_REF_REJECTED'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('writeBlockers refuses an unsafe section_anchor and forces a safe default (BD-1)', () => {
+  const { root, specPath } = makeRepo();
+  try {
+    const result = writeBlockers(root, specPath, [
+      { blocker_id: 'r:t:aaaaaaaa', section_anchor: 'beh-1: {evil}', reviewer: 'x', prose: 'body' },
+    ], { revision: 1 });
+    const text = readFileSync(join(root, result.sidecarPath), 'utf8');
+    assert.doesNotMatch(text, /\{evil\}/);
+    assert.equal(result.entries, 1, 'entry must not be dropped');
+    // The sidecar must still parse as clean, single-value YAML lines — no
+    // stray unescaped colon-space sequence left in the section_anchor value.
+    const anchorLine = text.split('\n').find((l) => l.trim().startsWith('section_anchor:'));
+    assert.ok(anchorLine, 'section_anchor line must be present');
+    assert.doesNotMatch(anchorLine, /:\s*\{|beh-1:\s/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
