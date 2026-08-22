@@ -1,7 +1,7 @@
 ---
 partial_schema: spec@1
 charter: task-management
-status: review-passed
+status: implemented
 kind: behavioral
 risk_level: low
 milestone:
@@ -10,6 +10,17 @@ charter-revision: 8
 created: 2026-08-22
 updated: 2026-08-22
 charter-extension: true
+source-manifest:
+  sha: "c5203b3"
+  files:
+    - skills/issues/SKILL.md
+    - skills/plan/SKILL.md
+    - tests/skills/issue-content-contract-empty-notes-warning.test.mjs
+    - tests/skills/issue-content-contract-epic-notes.test.mjs
+    - tests/skills/issue-content-contract-next-action-default.test.mjs
+    - tests/skills/issue-content-contract-spec-ref.test.mjs
+    - tests/skills/issue-content-contract-template.test.mjs
+  computed-at: "2026-08-22T17:24:51.706Z"
 ---
 
 <!-- Charter divergence: "Issue Content Contract" is not yet a row in the
