@@ -32,7 +32,7 @@ Per-task Issue creation is removed entirely — the skill no longer constructs `
 **Issue creation (optional, board-granularity only):** Read `tasks.backend` from `manifest.yaml`.
 
 If `tasks.backend` is configured:
-1. Create an epic for the plan: call `createEpic({ title: "<plan title>", planRef: "<plan-file-path>" })` from `lib/issues/registry.mjs` (use `getIssueManager(manifest)` to get the active adapter).
+1. Create an epic for the plan: call `createEpic({ title: "<plan title>", planRef: "<plan-file-path>", notes: "<one-line summary drawn from the plan document's Goal line>" })` from `lib/issues/registry.mjs` (use `getIssueManager(manifest)` to get the active adapter). The `notes` value is a plain one-line summary — do not reuse the `"Charter: <module>"` / `"Release: <name>"` tag convention from feature-mode / release-mode; `"Charter: <module>"` is a lookup tag `/adev:specify` Step 5.6-3 queries to resolve a parent Epic, and `"Release: <name>"` is release-mode's own umbrella-Epic tag consumed only by its own `walkTree` flow — neither applies to this plan-level epic.
 2. **Do NOT create per-task Issues.** Plan-task state is tracked via `reportPlanTask` (above), not as Issues. Feature- and Epic-level Issues created by `--feature` / `--epic` / `--release` modes are unchanged — those are board-granularity items.
 3. Report: "Created epic `<epic-id>`. Plan-task state lives in the lifecycle log at `.context-index/lifecycle-state/<slug>.jsonl`."
 

@@ -8,7 +8,7 @@ import { strict as assert } from "node:assert";
 import { readFileSync } from "node:fs";
 
 const ISSUES_SKILL = "skills/issues/SKILL.md";
-const EPIC_MODE = "skills/plan/epic-mode.md";
+const EPIC_MODE = "skills/plan/references/epic-mode.md";
 const read = (p) => readFileSync(p, "utf8");
 
 test("BEH-6: Create Issue section references the epic-mode Convention Table by name, not by re-deriving it", () => {
