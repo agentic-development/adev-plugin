@@ -2,7 +2,7 @@
 
 # CLI Reference
 
-> Last updated: 2026-08-12
+> Last updated: 2026-08-19
 
 Reference for the `adev` command-line verbs. There are two audiences:
 
@@ -50,7 +50,7 @@ This file is the CLI counterpart to [`skill-reference.md`](skill-reference.md) (
 | `implement` | Read a task's routing entry from the sidecar | `lib/cli/implement.mjs` |
 | `specify` | Revise a BLOCKED spec (revision N → N+1) | `lib/cli/specify.mjs` |
 | `prototype` | Prototype helpers (charter discovery, preview server) | `lib/cli/prototype.mjs` |
-| `issues` | Issue-board subcommands (migrate, claim, release, stale, board) | `lib/cli/issues.mjs` |
+| `issues` | Issue-board subcommands (board, create, epic, update, close, dep, list, ready, milestone, migrate, claim, release, stale, set-modules, next, record-attempt, show) | `lib/cli/issues.mjs` |
 | `coordination` | Scan open PRs, remote branches, and issues owned elsewhere | `lib/cli/coordination.mjs` |
 | `retro` | Gather session activity for a retrospective window | `lib/cli/retro.mjs` |
 | `heuristics` | Retrieve/sign/write/rekey project heuristics | `lib/cli/heuristics.mjs` |
@@ -589,17 +589,64 @@ adev coordination scan --json --owner "$USER/local"
 
 ### `issues`
 
-**Purpose:** Issue-board subcommands. Most issue operations go through the `/adev:issues` skill; these are the ones that need atomic writes or run inside another skill's preflight.
+**Purpose:** The whole issue-board surface. `/adev:issues` is prose over these verbs — every board read and every board write the skill performs is one of the subcommands below, so anything the skill can do is scriptable, and nothing needs the backend binary.
 
-**Signature:** `issues <subcommand> [args]`
+**Signature:** `issues <subcommand> [args]` · `issues <subcommand> --help` for per-flag detail.
 
 | Subcommand | Purpose |
 |---|---|
+| `board [--milestone <name>] [--json]` | Print the whole board as canonical markdown on **stdout**. Read-only — never writes a file. `--milestone` restricts the epics section; `--json` emits `{ version, epics, issues }` unrendered |
+| `create <title> [--type <t>] [--priority 0-4] [--epic <id>] [--plan-ref <p>] [--spec-ref <p>] [--parent <id>] [--notes <text>] [--next-action <text>] [--id <id>] [--json]` | Create one board-granularity item in the **issue store**. Prints `Created <type> <id>: <title>`. `--type` defaults to `task`, `--priority` to `2`. **`--milestone` is refused here (exit 1)** — see `epic` |
+| `epic <title> [--plan-ref <path>] [--milestone <name>] [--json]` | Create one epic in the **epic store**. Pass `--plan-ref` when the epic backs a plan — `/adev:implement` and `/adev:reconcile` look the epic up by `planRef`, and an epic minted without it is re-created on every run. Prints `Created epic <id>: <title>`. Not the same as `create --type epic` — see below |
+| `update <id> [--status <s>] [--milestone <name>] [--title <text>] [--priority 0-4] [--notes <text>]` | Edit one item, issue or epic, **resolved from the id alone** by lookup — callers never read an id prefix. `--milestone` is epics-only, `--priority` issues-only. `--status closed` is refused (exit 1): close goes through `close` |
+| `close <id> --reason <text>` | Close one item through the dependency/cascade guards. `--reason` is required and recorded on the item's notes |
+| `dep <id> <depends-on-id>` | Record that `<id>` is blocked by `<depends-on-id>`. Both ids must exist; re-adding an existing edge is a no-op success |
+| `list [--status <s>] [--epic <id>] [--milestone <name>] [--json]` | List issues as a table, priority ascending (0 first). `--milestone` selects the epics carrying that milestone and their child issues. Read-only |
+| `ready [--json]` | List exactly the issues that are open **and** have every dependency closed, priority ascending. The unblocked filter lives in the verb, not in prose. A dependency id that resolves to nothing is treated as non-blocking and reported on stderr. Read-only, never refused |
+| `milestone <create\|list\|ship\|defer> [args]` | Milestone CRUD over `.context-index/milestones.json` — see the sub-table below |
 | `migrate` | Convert the board to a different backend |
 | `claim <id> --owner <name> [--branch <b>] [--pr <ref>] [--json]` | Take ownership via an atomic check-and-set. Exit `2` = refused (held by a live owner, or closed); exit `1` = usage error or `CLAIM_UNSUPPORTED_BACKEND` |
 | `release <id> --owner <name> [--force] [--json]` | Give up ownership. `branch`/`pr` are kept as the record of where the work went; `--force` releases another owner's claim |
 | `stale [--json]` | Report claims past their TTL, plus `unexpirable` rows (an owner with no `claimed_at`, which can never expire on their own). Read-only |
 | `board migrate [--dry-run]` | One-shot, resumable migration of `.beads/issues.jsonl` off `main`'s git history onto a dedicated `beads-board` orphan branch, checked out as a linked worktree at `.beads/` |
+
+#### `issues milestone`
+
+| Subcommand | Purpose |
+|---|---|
+| `milestone create <name> [--target <YYYY-MM-DD>] [--strategy <manual\|tag-only\|release-please>] [--check <type>]... [--confirm "<text>"]...` | Create a milestone and link a new epic to it. **Idempotent by name** — re-running updates in place and creates no second epic. `--strategy` defaults to `manual`; `--check` is repeatable (`all_issues_closed`, `gates_pass`); `--confirm` is a repeatable manual criterion |
+| `milestone list` | Print every milestone as a Name / Status / Target Date / Epic / Progress table. Progress counts open vs. total issues on the linked epic; an epic id that no longer exists shows as `<id> (broken)` |
+| `milestone ship <name> [--yes] [--gate-timeout <ms>]` | Evaluate the ship criteria and, if all pass, mark the milestone shipped, close its epic, and perform the release action its strategy names. `--gate-timeout` is a per-gate wall-clock budget (default `300000`) |
+| `milestone defer <name> --reason "<text>"` | Mark a milestone deferred, record why, and defer its linked epic. A shipped milestone cannot be deferred (`ALREADY_SHIPPED`, exit 1) |
+
+#### Exit codes
+
+Uniform across every `issues` subcommand, so callers branch on the code and never on the message:
+
+| Code | Meaning |
+|---|---|
+| `0` | Success. Read-only verbs (`board`, `list`, `ready`, `stale`, `milestone list`) exit 0 even when the result is empty — "nothing matched" is an answer, not a failure |
+| `1` | Usage error or adapter failure. Includes an unknown id, `create --milestone`, `update --status closed`, `MILESTONE_NOT_FOUND`, `BROKEN_EPIC`, `UNKNOWN_STRATEGY`, `CLAIM_UNSUPPORTED_BACKEND` |
+| `2` | **Refused by a guard, and nothing was written.** `close` with an open dependency or an unclosed child; `dep` that would close a direct or transitive cycle; `claim` on an issue held by a live owner or already closed; `milestone ship` when an auto-check failed, a quality gate failed or timed out, or a manual confirmation is unanswered |
+
+Exit 2 always names what refused, on stderr: the blocking issue ids, the cycle, the live claim holder, or the pending ship criteria. Without `--yes`, every manual confirmation on `milestone ship` counts as unanswered, so the pending items are listed for you to put to the user; re-run with `--yes` once they have confirmed.
+
+`--json` is available on `board`, `create`, `epic`, `list`, `ready`, `claim`, `release` and `stale`. It changes the stdout payload only — never the exit code, and never where a refusal is reported.
+
+#### `issues board` prints; `status --render` writes (INV-6)
+
+The two produce the same canonical markdown and are **not interchangeable**:
+
+- `adev issues board` writes the board to **stdout** and touches no file. It is safe to run anywhere, at any time, including inside a read-only review.
+- `adev status --render` is the only thing that persists that render to **`.context-index/tasks/tasks.md`**.
+
+INV-6 is what keeps the file from drifting: `tasks.md` is a rendered consumer view with exactly one writer, so nothing infers board state from it and no verb writes it as a side effect of being read. Reaching for `issues board` when you meant to refresh the file leaves `tasks.md` stale; reaching for `status --render` when you only wanted to look writes a file the caller did not ask for.
+
+#### `create --type epic` is not `epic`
+
+They write to different stores. `adev issues epic` writes the **epic store**, and that store is the only thing `listEpics()` reads — so only an epic created there is visible to `adev issues board`, to `adev issues list --milestone`, and to `adev issues update --milestone`. `adev issues create --type epic` writes an ordinary issue that happens to carry `type: epic`; it will not appear in the epics section of the board and cannot carry a milestone. Milestones live on epics, which is why `create --milestone` is refused with exit 1 pointing at `issues epic`.
+
+**Always create through this verb, never through the backend binary.** `br create` resolves `.beads/` from the current directory, and `git worktree add` materialises the git-tracked `issues.jsonl` into every linked worktree while the gitignored `beads.db` stays behind — so a raw `br` call from a worktree opens a JSONL with no database beside it and fails with `SYNC_CONFLICT`. `adev issues create` resolves the storage root through `resolveStorageRoot()` (the git common dir) and reaches the one real board from anywhere in the repo. Plan tasks are not issues — they live in the lifecycle log via `reportPlanTask` — so there is no `--plan-task` flag.
 
 Claims are **leases**, not locks: they expire after `tasks.claim_ttl_minutes` (default `240`, `0` disables expiry), and claiming an issue whose lease has expired takes it over and reports the displaced owner. Without expiry a crashed session would hold an issue forever, and an unreleasable gate is one people learn to bypass.
 
@@ -650,7 +697,28 @@ Live coverage for the beads path is `tests/evals/beads-live/`, an opt-in bucket 
 
 **Example:**
 ```
+# Look at the board (stdout only — tasks.md is untouched)
+adev issues board
+adev issues board --milestone v1.0 --json
+
+# Open work: an epic on a milestone, then issues under it
+adev issues epic "Graduated review depth" --milestone v1.0
+adev issues create "Score reviewer depth" --type feature --priority 1 --epic epic-7k3f9a \
+  --spec-ref .context-index/specs/features/implementation/x.spec.md
+adev issues dep issue-9m2q1c issue-7k3f9a          # exit 2 if this closes a cycle
+
+# Work it
+adev issues ready --json
 adev issues claim issue-42 --owner "$USER/local" --branch "$(git branch --show-current)"
+adev issues update issue-42 --status in_progress
+adev issues close issue-42 --reason "Landed in #293"   # exit 2 if a guard refuses
+
+# Ship
+adev issues milestone create v1.0 --target 2026-09-01 --strategy release-please \
+  --check all_issues_closed --check gates_pass --confirm "Changelog reviewed"
+adev issues milestone list
+adev issues milestone ship v1.0 --yes                  # exit 2 if criteria fail
+adev issues list --milestone v1.0 --status open
 adev issues stale --json
 adev issues set-modules issue-42 cli,hooks
 ```
@@ -700,9 +768,9 @@ Sequence: snapshot `.beads/issues.jsonl` → create `beads-board` as an orphan b
 
 **Corrupt-leftover recovery:** both the resumed-migration path and every fresh provisioning attempt run a recovery pass first — a plain filesystem delete of any existing `.beads/` (not `git worktree remove`, since an interrupted prior `git worktree add` may not have registered cleanly enough for git to recognize it) followed by `git worktree prune`.
 
-**Implementation:** `lib/cli/issues-board.mjs`, `lib/issues/board-worktree.mjs`, `lib/issues/board-migrate-state.mjs`; auto-provisioning hook in `cli/index.mjs` (`maybeProvisionBoardWorktree`). **Spec:** `.context-index/specs/features/task-management/beads-board-git-topology.spec.md`.
+**Implementation:** `lib/cli/issues-board.mjs` (shared with the read-only `board` print verb above — dispatches on `argv[0] === "migrate"`), `lib/issues/board-worktree.mjs`, `lib/issues/board-migrate-state.mjs`; auto-provisioning hook in `cli/index.mjs` (`maybeProvisionBoardWorktree`). **Spec:** `.context-index/specs/features/task-management/beads-board-git-topology.spec.md`.
 
-**Implementation:** `lib/cli/issues.mjs` (+ `issues-migrate.mjs`, `issues-claim.mjs`, `issues-stale.mjs`, `issues-set-modules.mjs`, `issues-next.mjs`, `issues-board.mjs`). **Called by:** `/adev:issues` (`claim`/`release`/`stale`/`set-modules`/`next`); `claim`/`release` also run in preflight by `/adev:implement` and `/adev:debug`; `board migrate` is run manually by the operator.
+**Implementation:** `lib/cli/issues.mjs` dispatches to `issues-board.mjs` (`board`, `board migrate`), `issues-create.mjs` (`create`), `issues-epic.mjs` (`epic`), `issues-mutate.mjs` (`update`, `close`, `dep`), `issues-list.mjs` (`list`, `ready`), `issues-milestone.mjs` (`milestone …`), `issues-migrate.mjs`, `issues-claim.mjs` (`claim`, `release`), `issues-stale.mjs`, `issues-set-modules.mjs`, and `issues-next.mjs`. **Called by:** `/adev:issues` (every step), `/adev:plan` and `/adev:reconcile` (epic creation), and in preflight by `/adev:implement` and `/adev:debug`; `claim`/`release` also run in preflight by `/adev:implement` and `/adev:debug`; `board migrate` is run manually by the operator.
 
 ### `bugfix-loop`
 

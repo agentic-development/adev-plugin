@@ -57,14 +57,14 @@ source-manifest:
 - **BEH-2** — **When** `/adev:issues create --type task` is invoked (task is the default type), **then** the skill does not force the full template — a one-line `--notes` value is accepted as-is, since Tasks are typically short and already scoped by a parent Feature's spec.
 - **BEH-3** — **When** an issue is created with `--spec-ref <path>`, or a `spec_ref` can be inferred from the active lifecycle context (e.g. invoked via `/adev:work` immediately after `/adev:specify`), **then** the created issue's `spec_ref` field is populated with that path so the issue traces back to its behavioral contract.
 - **BEH-4** — **When** `/adev:issues create` completes for a `feature` or `bug` type issue whose resolved `notes` is empty (author skipped the BEH-1 prompt), **then** `validateIssue` still returns the issue as created — creation is never blocked — but the skill prints a soft warning: `Issue <id> was created without a body. Consider /adev:issues update <id> --notes "..." before work starts.`
-- **BEH-5** — **When** `/adev:plan` (Step 7, standard mode) creates the plan-level epic, **then** `createEpic()` is called with a `notes` value summarizing the plan's stated goal (drawn from the plan document's opening section) in addition to the existing `title` and `planRef` fields, rather than leaving `notes` unset.
+- **BEH-5** — **When** `/adev:plan` (Step 7, standard mode) creates the plan-level epic, **then** `adev issues epic` is invoked with a `--notes` value summarizing the plan's stated goal (drawn from the plan document's opening section) in addition to the existing title and `--plan-ref`, rather than leaving `notes` unset.
 - **BEH-6** — **When** `/adev:issues create` or `update` is invoked without an explicit `--next-action <text>` for a newly created `feature` or `task` issue, **then** the skill looks up a default from the existing next_action Convention Table (`skills/plan/epic-mode.md`), keyed on `type` and known state, instead of leaving `next_action: null`. An explicit `--next-action` value, when supplied, is always stored verbatim and is never overridden by the lookup.
 
 ### Postconditions
 
 - `validateIssue`'s fixed-whitelist return literal is unchanged — no new fields are introduced by this spec
 - The `description`/`body` → `notes` alias resolution (`NOTES_ALIASES`, `resolveNotes`) is unchanged; BEH-1/BEH-2 build on it, they do not replace it
-- Epics created by feature-mode (`create({ type: "epic", notes: "Charter: <module>" })`) and release-mode keep their existing `"Charter: <module>"` / `"Release: <name>"` tag prefix in `notes` unchanged — that prefix is load-bearing for `/adev:specify` Step 5.6-3's parent-epic lookup. BEH-5 only changes the plan-level epic created at `skills/plan/SKILL.md:828`, which currently sets no `notes` at all
+- Epics created by feature-mode (`create({ type: "epic", notes: "Charter: <module>" })`) and release-mode keep their existing `"Charter: <module>"` / `"Release: <name>"` tag prefix in `notes` unchanged — that prefix is load-bearing for `/adev:specify` Step 5.6-3's parent-epic lookup. BEH-5 only changes the plan-level epic created in `skills/plan/SKILL.md`'s standard-mode Issue creation subsection, which currently sets no `notes` at all
 - Empty-body issue creation still succeeds (BEH-4 is a warning, not a block) — no new required field, no schema change
 
 ### Error Cases
@@ -90,7 +90,7 @@ source-manifest:
 | Add content-template prompt to Create Issue | Extend `skills/issues/SKILL.md`'s Create Issue section with the BEH-1/BEH-2 notes Q&A, gated on `--type` | medium |
 | Wire `--spec-ref` pass-through | Document the `--spec-ref` flag and lifecycle-context inference in `skills/issues/SKILL.md` (BEH-3) | small |
 | Add empty-notes soft warning | Extend the Create Issue report step with the BEH-4 warning text | small |
-| Populate plan-level epic notes | Update `skills/plan/SKILL.md` Step 7 to draw a one-line goal summary into `notes` on `createEpic()` (BEH-5) | small |
+| Populate plan-level epic notes | Update `skills/plan/SKILL.md` Step 7 to draw a one-line goal summary into `--notes` on the `adev issues epic` invocation (BEH-5) | small |
 | Default `next_action` lookup | Extend Create Issue to consult the `skills/plan/epic-mode.md` Convention Table when `--next-action` is omitted (BEH-6) | medium |
 
 ## Acceptance Criteria
