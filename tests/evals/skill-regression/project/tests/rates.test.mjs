@@ -1,13 +1,4 @@
-// Source-of-truth change date, read by the `stale-spec-frontmatter` class:
-// last changed 2026-08-19, alongside src/shipping/rates.mjs.
-//
-// One case per behavior id in shipping-rates.spec.md, B1 through B6. **B7 is
-// deliberately uncovered** — it is the behaviour that spec describes ("Rounds
-// the surcharged rate") and `calculateRate` no longer performs, i.e. the
-// planted `spec-code-drift` violation. A B7 case would either fail, turning a
-// static fixture red, or encode the drifted behaviour as correct; either way it
-// would remove the defect this slice exists to carry. Exactly one behavior is
-// unevidenced, which is what the ground-truth catalog claims.
+// One case per behavior id in shipping-rates.spec.md, B1 through B6.
 //
 // Imported from the module directly rather than through ../src/index.mjs: the
 // entry point pulls in `nanoid`, and this fixture's dependencies are declared

@@ -1,21 +1,7 @@
 /**
  * Shipping rate calculation for the fictional `orders-service` fixture.
  *
- * Source-of-truth change date, read by the `stale-spec-frontmatter` class:
- * last changed 2026-08-19, which postdates `shipping-rates.spec.md`'s
- * `updated: 2026-08-03` frontmatter by sixteen days.
- *
- * Two planted violations live here, each with its own anchor:
- *   - `spec-code-drift`   — the spec describes a half-up rounding rule to the
- *                           nearest whole cent; nothing below rounds anything.
- *                           Every rate is already an integer number of cents.
- *   - `dead-export`       — `formatLegacyTotal` is exported and referenced by
- *                           no file in the fixture.
- *   - `undocumented-public-api` — `calculateRate` is re-exported from
- *                           `src/index.mjs` and carries no `docs/api.md` entry.
- *
- * The file itself is the `orphan-source-file` KNOWN-CLEAN twin: `src/index.mjs`
- * imports it, so it is reachable from the entry point.
+ * Module change date: last changed 2026-08-19.
  */
 
 /** Flat per-gram surcharge applied above the base band, in integer cents. */
@@ -67,10 +53,6 @@ export function calculateRate(shipment) {
 
 /**
  * Render a rate the way the retired v0.2 invoice renderer did.
- *
- * Nothing calls this. It is the `dead-export` planted violation: exported from
- * a live, imported module so a dead-export scan can find it independently of
- * the `orphan-source-file` class.
  *
  * @param {number} rateCents Integer cents.
  * @returns {string} A legacy invoice line, e.g. `SHIP 5.00`.
