@@ -24,6 +24,7 @@ source-manifest:
     - tests/lib/gitignore-paths.test.mjs
     - tests/lib/issues-resolve-root.test.mjs
   computed-at: "2026-08-22T22:06:18.462Z"
+drift_detected: true
 ---
 
 # Live Spec: Beads Board Git Topology

@@ -17,7 +17,6 @@ import {
   recoverBeforeAdd,
   BoardWorktreeError,
 } from "../../lib/issues/board-worktree.mjs";
-import { BeadsAdapter } from "../../lib/issues/beads-adapter.mjs";
 
 function git(args, cwd) {
   return execFileSync("git", args, { cwd, encoding: "utf8", stdio: "pipe" }).trim();
@@ -181,43 +180,11 @@ describe("provisionBoardWorktree", () => {
   });
 });
 
-describe("BeadsAdapter --no-db fallback on a fresh board worktree (Error Cases row 6)", () => {
-  let repo;
-
-  beforeEach(() => {
-    repo = mkdtempSync(join(tmpdir(), "board-wt-nodb-"));
-    git(["init", "-q", "-b", "main"], repo);
-    git(["config", "user.email", "test@test.com"], repo);
-    git(["config", "user.name", "Test"], repo);
-    git(["config", "commit.gpgsign", "false"], repo);
-    git(["commit", "--allow-empty", "-q", "-m", "init"], repo);
-  });
-
-  afterEach(() => {
-    rmSync(repo, { recursive: true, force: true });
-  });
-
-  it("BeadsAdapter reads and writes against a worktree-provisioned .beads/ with no *.db present (issue-i0ji37 cross-reference)", async () => {
-    const provision = provisionBoardWorktree({ projectRoot: repo });
-    assert.equal(provision.mode, "orphan");
-    assert.ok(!existsSync(join(repo, ".beads", "beads.db")));
-
-    // checkBr defaults to true — this is a live `br` integration check, not a
-    // mock, matching the spec's own empirically-validated-against-real-git/br
-    // methodology.
-    const adapter = new BeadsAdapter(repo, { autoMigrate: false });
-    const before = await adapter.list();
-    assert.deepEqual(before, [], "no SYNC_CONFLICT on an empty, db-less worktree");
-
-    const created = await adapter.create({ title: "no-db fallback smoke test", type: "task" });
-    assert.ok(created.id);
-
-    const after = await adapter.list();
-    assert.ok(after.some((i) => i.id === created.id));
-    // Still no *.db — br's --no-db mode never creates one.
-    assert.ok(!existsSync(join(repo, ".beads", "beads.db")));
-  });
-});
+// BeadsAdapter --no-db fallback on a fresh board worktree (Error Cases row 6,
+// issue-i0ji37 cross-reference) is covered by
+// tests/lib/board-worktree-adapter-live.test.mjs — it requires a live `br`
+// CLI, which CI does not install, so it lives outside the default `npm test`
+// run per the `-live.test.mjs` convention.
 
 describe("recoverBeforeAdd", () => {
   let repo;

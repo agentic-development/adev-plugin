@@ -63,6 +63,9 @@ describe("resolveStorageRoot", () => {
     const repo = mkdtempSync(join(tmpdir(), "resolve-root-"));
     try {
       execFileSync("git", ["init", "-q"], { cwd: repo });
+      execFileSync("git", ["config", "user.email", "test@test.com"], { cwd: repo });
+      execFileSync("git", ["config", "user.name", "Test"], { cwd: repo });
+      execFileSync("git", ["config", "commit.gpgsign", "false"], { cwd: repo });
       execFileSync("git", ["commit", "--allow-empty", "-q", "-m", "init"], { cwd: repo });
       provisionBoardWorktree({ projectRoot: repo });
 
