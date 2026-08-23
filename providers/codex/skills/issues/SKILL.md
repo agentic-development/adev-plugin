@@ -12,7 +12,7 @@ Manage project issues and epics using the configured task backend.
 ## Arguments
 
 - No arguments: display the full issue board
-- `create "<title>" [--type bug|feature|task] [--epic <epic-id>] [--priority 0-4]`: create an issue
+- `create "<title>" [--type bug|feature|task] [--epic <epic-id>] [--priority 0-4] [--spec-ref <path>] [--next-action <text>]`: create an issue
 - `epic "<title>" [--milestone <name>]`: create a new epic, optionally assigning it to a milestone
 - `update <id> --status <open|in_progress|closed|deferred> [--milestone <name>]`: update issue status and/or milestone (for epics). `--status` and `--milestone` can be used together or independently — both fields are updated in a single call
 - `close <id> --reason "<text>"`: close an issue with a reason
@@ -77,6 +77,23 @@ Standalone issues (no epic) appear under "Unassigned." When any epic has a `mile
 Call `create()` from the active adapter with provided fields. Defaults: type `task`, priority `2`, status `open`.
 
 If `--epic` is provided, set the `epicId` field. Validate the epic exists by checking if the ID starts with `epic-`.
+
+**Content template (BEH-1, BEH-2):** When `--type bug|feature` is given and no `--notes`/`--body`/`--description` was supplied, prompt the author before creating the issue:
+
+> This is a `<bug|feature>` issue — give it a short body:
+> **Problem / Intent:** what's wrong, or what capability is missing, and why it matters
+> **Acceptance Criteria:** concrete, checkable outcomes
+> **Out of Scope:** what this issue deliberately does not cover
+
+Assemble the three answers into a single `notes` string (the existing `description`/`body` → `notes` alias resolution in `lib/issues/interface.mjs::resolveNotes` handles it unchanged — no new field). When `--type task` (the default) is given, skip this prompt — accept a one-line `--notes` value as-is, since Tasks are typically short and already scoped by a parent Feature's spec.
+
+**Empty-body warning (BEH-4):** If the author skips or cancels the prompt above for a `feature`/`bug` issue, still create the issue (creation is never blocked — `validateIssue` is unchanged) and report an additional line after the normal "Created ..." confirmation:
+
+> Issue `<id>` was created without a body. Consider `/adev:issues update <id> --notes "..."` before work starts.
+
+**Traceability (BEH-3):** When `--spec-ref <path>` is provided, or a `spec_ref` can be inferred from the active lifecycle context (e.g. invoked via `/adev:work` immediately after `/adev:specify`), pass it through to `create()` — the field already exists on the `Issue` model (`lib/issues/interface.mjs`). `spec_ref` is a descriptive string, not filesystem-validated.
+
+**Default `next_action` (BEH-6):** If `--next-action <text>` is not supplied for a newly created `feature` or `task` issue, look up a default from the next_action Convention Table in `skills/plan/epic-mode.md`, keyed on `type` and known state (e.g. a `feature` with no `spec_ref` yet gets `"Run /adev:specify --module <module> to author this Feature"`). Substitute real values for any `<token>` in the looked-up string. If no row matches, leave `next_action: null` — this is not an error. An explicit `--next-action` value is always stored verbatim and is never overridden by this lookup.
 
 Report: "Created `<id>`: <title> (status: open, priority: <N>)"
 
