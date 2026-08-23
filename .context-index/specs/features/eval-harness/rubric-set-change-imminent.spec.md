@@ -2,7 +2,7 @@
 partial_schema: spec@1
 charter: eval-harness
 kind: artifact
-status: review-pending
+status: review-passed
 risk_level: medium
 milestone: v1
 revision: 15

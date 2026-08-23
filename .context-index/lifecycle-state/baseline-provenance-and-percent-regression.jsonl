@@ -23,3 +23,13 @@
 {"event":"reviewer_report","step":"review","reviewer":"boundary-reviewer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"every round-2 gap closed; deterministic half must not admit INSUFFICIENT_EVIDENCE","ts":"2026-08-21T18:59:13.964Z"}
 {"event":"reviewer_report","step":"review","reviewer":"termination-reviewer","severity":"blocker","verdict":"PASS","notes":"Decision procedure still total; BEH-15 narrows the input domain without removing row 6's fallthrough","ts":"2026-08-21T18:59:14.020Z"}
 {"event":"step_completed","step":"review","verdict":"PASS_WITH_NOTES","revision":3,"ts":"2026-08-21T19:00:19.856Z"}
+{"event":"lifecycle_step","step":"plan","status":"started","ts":"2026-08-23T12:01:58.640Z"}
+{"event":"plan_task","plan":".context-index/specs/features/eval-harness/baseline-provenance-and-percent-regression.plan.md","task_id":"1","status":"pending","notes":null,"ts":"2026-08-23T12:57:26.930Z"}
+{"event":"plan_task","plan":".context-index/specs/features/eval-harness/baseline-provenance-and-percent-regression.plan.md","task_id":"2","status":"pending","notes":null,"ts":"2026-08-23T12:57:26.980Z"}
+{"event":"plan_task","plan":".context-index/specs/features/eval-harness/baseline-provenance-and-percent-regression.plan.md","task_id":"3","status":"pending","notes":null,"ts":"2026-08-23T12:57:27.023Z"}
+{"event":"plan_task","plan":".context-index/specs/features/eval-harness/baseline-provenance-and-percent-regression.plan.md","task_id":"4","status":"pending","notes":null,"ts":"2026-08-23T12:57:27.067Z"}
+{"event":"plan_task","plan":".context-index/specs/features/eval-harness/baseline-provenance-and-percent-regression.plan.md","task_id":"5","status":"pending","notes":null,"ts":"2026-08-23T12:57:27.111Z"}
+{"event":"plan_task","plan":".context-index/specs/features/eval-harness/baseline-provenance-and-percent-regression.plan.md","task_id":"6","status":"pending","notes":null,"ts":"2026-08-23T12:57:27.154Z"}
+{"event":"plan_task","plan":".context-index/specs/features/eval-harness/baseline-provenance-and-percent-regression.plan.md","task_id":"7","status":"pending","notes":null,"ts":"2026-08-23T12:57:27.199Z"}
+{"event":"plan_task","plan":".context-index/specs/features/eval-harness/baseline-provenance-and-percent-regression.plan.md","task_id":"8","status":"pending","notes":null,"ts":"2026-08-23T12:57:27.242Z"}
+{"event":"step_completed","step":"plan","verdict":"PASS_WITH_NOTES","ts":"2026-08-23T12:57:27.326Z"}

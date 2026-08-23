@@ -119,3 +119,14 @@
 {"event":"reviewer_report","step":"review","reviewer":"boundary-reviewer","severity":"blocker","verdict":"PASS","notes":"no blockers; one claimed round-14 remediation had not landed","ts":"2026-08-22T14:13:01.854Z"}
 {"event":"reviewer_report","step":"review","reviewer":"termination-reviewer","severity":"blocker","verdict":"PASS","notes":"no blockers, no warnings; both round-14 warnings closed","ts":"2026-08-22T14:13:01.916Z"}
 {"event":"step_completed","step":"review","verdict":"PASS_WITH_NOTES","revision":15,"ts":"2026-08-22T14:13:02.527Z"}
+{"event":"lifecycle_step","step":"plan","status":"started","ts":"2026-08-23T12:01:09.769Z"}
+{"event":"plan_task","plan":".context-index/specs/features/eval-harness/rubric-set-change-imminent.plan.md","task_id":"1","status":"pending","notes":null,"ts":"2026-08-23T12:57:25.040Z"}
+{"event":"plan_task","plan":".context-index/specs/features/eval-harness/rubric-set-change-imminent.plan.md","task_id":"2","status":"pending","notes":null,"ts":"2026-08-23T12:57:25.106Z"}
+{"event":"plan_task","plan":".context-index/specs/features/eval-harness/rubric-set-change-imminent.plan.md","task_id":"3","status":"pending","notes":null,"ts":"2026-08-23T12:57:25.151Z"}
+{"event":"plan_task","plan":".context-index/specs/features/eval-harness/rubric-set-change-imminent.plan.md","task_id":"4","status":"pending","notes":null,"ts":"2026-08-23T12:57:25.195Z"}
+{"event":"plan_task","plan":".context-index/specs/features/eval-harness/rubric-set-change-imminent.plan.md","task_id":"5","status":"pending","notes":null,"ts":"2026-08-23T12:57:25.238Z"}
+{"event":"plan_task","plan":".context-index/specs/features/eval-harness/rubric-set-change-imminent.plan.md","task_id":"6","status":"pending","notes":null,"ts":"2026-08-23T12:57:25.285Z"}
+{"event":"plan_task","plan":".context-index/specs/features/eval-harness/rubric-set-change-imminent.plan.md","task_id":"7","status":"pending","notes":null,"ts":"2026-08-23T12:57:25.330Z"}
+{"event":"plan_task","plan":".context-index/specs/features/eval-harness/rubric-set-change-imminent.plan.md","task_id":"8","status":"pending","notes":null,"ts":"2026-08-23T12:57:25.374Z"}
+{"event":"plan_task","plan":".context-index/specs/features/eval-harness/rubric-set-change-imminent.plan.md","task_id":"9","status":"pending","notes":null,"ts":"2026-08-23T12:57:25.419Z"}
+{"event":"step_completed","step":"plan","verdict":"PASS_WITH_NOTES","ts":"2026-08-23T12:57:25.526Z"}
