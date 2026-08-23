@@ -73,6 +73,11 @@ const FIXTURE_PATHS_TO_RESET = [
   FIXTURE_SPEC_REL.replace(/\.spec\.md$/, '.blockers.md'),
   FIXTURE_LIB_REL,
   `.context-index/lifecycle-state/${FIXTURE_SLUG}.jsonl`,
+  // /adev:build's own build-state snapshot — separate from the event log
+  // above (`<slug>.json`, not `.jsonl`). Found missing from this list via a
+  // real run: it survived a full reset cycle and would have made the next
+  // trial's build skill see stale prior progress instead of a clean start.
+  `.context-index/lifecycle-state/${FIXTURE_SLUG}.json`,
 ];
 
 // Session JSONL location is derived from the CWD used when running claude —
