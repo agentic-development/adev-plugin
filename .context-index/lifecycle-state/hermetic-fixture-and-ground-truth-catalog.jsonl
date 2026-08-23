@@ -187,3 +187,4 @@
 {"event":"validator_report","step":"validate","validator":"validate.check-9-transition-gates","severity":"warning","verdict":"PASS","notes":"implement-to-validate: every required gate fresh, attested, passing","ts":"2026-08-23T11:10:00.878Z"}
 {"event":"validator_report","step":"validate","validator":"validate.check-11-visual-verification","severity":"warning","verdict":"PASS","notes":"N/A — no UI files in the implementation diff","ts":"2026-08-23T11:10:00.941Z"}
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-08-23T11:10:01.147Z"}
+{"event":"code_drift_detected","drift_source":"tests/evals/skill-regression/project/src/shipping/rates.mjs","drift_at":"2026-08-23T13:34:16.836Z","ts":"2026-08-23T13:34:16.837Z"}

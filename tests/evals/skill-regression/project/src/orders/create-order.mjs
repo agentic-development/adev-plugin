@@ -3,9 +3,7 @@
  *
  * Money is integer minor units (cents) throughout. Nothing here performs I/O.
  *
- * Source-of-truth change date, read by the `stale-spec-frontmatter` class:
- * last changed 2026-07-20, which PREDATES `create-order.spec.md`'s `updated: 2026-07-28`
- * frontmatter. This is the known-clean twin: the spec postdates its source.
+ * Module change date: last changed 2026-07-20.
  */
 
 /** Maximum number of line items a single order may carry. */

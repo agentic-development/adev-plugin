@@ -50,6 +50,7 @@ source-manifest:
     - tests/lib/evals/skill-regression-catalog.test.mjs
     - tests/lib/evals/skill-regression-hermeticity.test.mjs
   computed-at: "2026-08-23T10:49:13.025Z"
+drift_detected: true
 ---
 
 # Artifact Spec: Hermetic Fixture Project and Planted Ground-Truth Catalog
@@ -223,6 +224,28 @@ charter invariant "every fixture assertion has a negative twin" expressed as a
 checkable bijection rather than as an aspiration. A rubric that cites `PV-03`
 without also citing `KC-03` is measuring sensitivity with no specificity
 control — it would score full marks for a skill that flags everything.
+
+### Source files under `project/` never name a catalog class
+
+`src/` and `tests/` content under `fixture_root` is what a skill under
+evaluation actually reads. A comment there that says "planted violation" or
+"known-clean twin", or that spells out a `class` slug, hands that skill the
+answer key: it can grep the label instead of doing the analysis the rubric
+means to score, which measures reading comprehension instead of the skill's
+detection ability. Rationale for why a file carries a given defect belongs in
+this section's table and in the entry's `detect_when` / `must_not_flag_when`
+— both already exist for exactly that purpose and have no machine consumer, so
+neither costs anything to keep current. A comment inside `project/` may state
+a plain fact that a static scan would need to verify anyway (an import list,
+a re-export, an accurate date), but never the catalog's own vocabulary.
+
+This also constrains `anchor`: an entry's anchor is a locator into real
+content, not an excuse to embed prose that gives the class away. `KC-03`
+originally anchored on the sentence "is reachable from the entry point",
+written into `rates.mjs`'s header specifically to be unique — which made that
+sentence itself an answer key, and coupled the anchor to prose a future
+edit-for-hermeticity pass would have every reason to delete. It now anchors on
+`function zoneBaseCents`, an unremarkable, pre-existing line of code.
 
 ## Seed Content
 

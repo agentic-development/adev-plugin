@@ -140,7 +140,7 @@ known_clean:
   - id: "KC-03"
     path: "src/shipping/rates.mjs"
     class: "orphan-source-file"
-    anchor: "is reachable from the entry point"
+    anchor: "function zoneBaseCents"
     covers_skills: "codehealth, repomap"
     twin: "PV-03"
     must_not_flag_when: "src/shipping/rates.mjs appears in the orphan list, when src/index.mjs imports calculateRate from it"

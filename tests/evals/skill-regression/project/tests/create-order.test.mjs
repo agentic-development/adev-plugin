@@ -1,6 +1,3 @@
-// Source-of-truth change date, read by the `stale-spec-frontmatter` class:
-// last changed 2026-07-20, which PREDATES `create-order.spec.md`'s
-// `updated: 2026-07-28` frontmatter — the known-clean twin.
 import test from "node:test";
 import assert from "node:assert/strict";
 
