@@ -1466,3 +1466,84 @@ test("no planted violation is disarmed by the clean side already satisfying it",
       "while measuring nothing",
   );
 });
+
+// ---------------------------------------------------------------------------
+// Task 6 additions: the fixture README's two operator-facing authoring rules.
+//
+// Both rules govern how a RUN is prepared, and neither has a runtime host: no
+// v1 scenario driver ships, so there is nothing to observe invoking
+// `/adev:deploy` or writing a run copy's manifest. What IS checkable today is
+// that the fixture's README records each rule — the same checkable-proxy
+// pattern the spec prescribes. A pin on the prose is not the property; it is
+// the only half of the property that exists before a driver does.
+//
+// The pins are literal because a rule that survives a reword is not pinned.
+// The README states that these sentences are test-pinned, so an editor who
+// rewords one is told, by the file itself, that they are changing a test.
+//
+// No helpers: both tests read one file. Same extension contract as above.
+// ---------------------------------------------------------------------------
+
+/** Absolute path to the fixture README — the artifact both rules live in. */
+const README = join(FIXTURE, "README.md");
+
+/** The `--dry-run` obligation, verbatim. */
+const README_DRY_RUN =
+  "Any run of `/adev:deploy` against this fixture passes `--dry-run`.";
+
+/**
+ * The disposition for the failure branch the obligation leaves open, verbatim.
+ *
+ * Separate from the obligation above because the two fail for different
+ * reasons: dropping the mode leaves a driver waiting on a human, dropping the
+ * disposition leaves an unattended driver with no stated answer for what to do
+ * when it is already waiting.
+ */
+const README_UNANSWERED_MANUAL_STEP =
+  "An unanswered manual step is treated as `abort` and reported, never waited on.";
+
+/** The run-copy `tasks.db_path` rule, verbatim — rule AND reason in one sentence. */
+const README_DB_PATH_RULE =
+  "Whoever prepares a run copy writes `tasks.db_path` as an absolute path inside that copy, because `resolveStorageRoot` returns the value verbatim (`lib/issues/resolve-root.mjs:30`) rather than resolving it against the manifest's directory, so a relative value resolves against the caller's `process.cwd()` — this repository's real board for a driver run from this checkout, letting `/adev:issues` create, claim or close live issues.";
+
+test("the README records the `/adev:deploy --dry-run` obligation and its abort disposition", () => {
+  assert.ok(existsSync(README), `expected ${FIXTURE_REL}/README.md to exist`);
+  const readme = readFileSync(README, "utf8");
+
+  // Property 5's step-type ban constrains what a step IS. It says nothing
+  // about the MODE the pipeline is invoked in, which is the half this pins.
+  assert.ok(
+    readme.includes(README_DRY_RUN),
+    "the README no longer states the --dry-run obligation verbatim — a reword here is a test change",
+  );
+  assert.ok(
+    readme.includes(README_UNANSWERED_MANUAL_STEP),
+    "the README no longer states the unanswered-manual-step disposition verbatim — a reword here is a test change",
+  );
+});
+
+test("the README records the run-copy `tasks.db_path` rule, and the committed manifest declares none", () => {
+  assert.ok(existsSync(README), `expected ${FIXTURE_REL}/README.md to exist`);
+  const readme = readFileSync(README, "utf8");
+
+  // The rule governs COPIES. It states its reason as well as itself, because a
+  // bare "use an absolute path" reads as style and gets simplified back.
+  assert.ok(
+    readme.includes(README_DB_PATH_RULE),
+    "the README no longer states the tasks.db_path run-copy rule verbatim — a reword here is a test change",
+  );
+
+  // A different failure entirely: the rule above can be stated perfectly while
+  // the COMMITTED manifest carries a `tasks.db_path`, at which point a driver
+  // run from this checkout resolves storage to a path this repository declared
+  // rather than to one the run copy owns. Property 7 walks the manifest for
+  // containment; this reads the key directly, so a change to that walk cannot
+  // take this assertion with it.
+  const manifestText = readFileSync(join(PROJECT, ".context-index", "manifest.yaml"), "utf8");
+  assert.ok(manifestText.includes("tasks:"), "no `tasks:` block — the absence below would be vacuous");
+  assert.equal(
+    /^\s*db_path\s*:/m.test(manifestText),
+    false,
+    "`tasks.db_path` must be absent from the committed fixture manifest — the rule governs run copies, not this tree",
+  );
+});

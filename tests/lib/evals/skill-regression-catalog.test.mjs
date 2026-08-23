@@ -30,7 +30,7 @@
  */
 
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 
@@ -132,11 +132,12 @@ test("the default rubric roots are non-vacuous — the scan reaches skills/eval/
 // ---------------------------------------------------------------------------
 
 /**
- * Every fixture file that exists as of Task 5. Task 6 adds README.md, and
- * extends this list, in the same commit that creates it.
+ * Every fixture file in the committed tree. Task 6 added `README.md` and
+ * extended this list in the same commit that created it.
  *
  * The plan's Task 5 says thirty-two, counting the spec's Required Files table
- * minus README.md. The tree holds thirty-three, because Task 4's review round
+ * minus README.md. With Task 6's README the tree holds thirty-four, because
+ * Task 4's review round
  * added `project/tests/rates.test.mjs` — the dirty slice was shipping
  * implemented code with no tests, a shape asymmetry a rubric could score
  * instead of the planted defect — and the spec's Required Files table was not
@@ -144,6 +145,7 @@ test("the default rubric roots are non-vacuous — the scan reaches skills/eval/
  * both-ways comparison is for; the table is the artifact that is behind.
  */
 const REQUIRED_FIXTURE_FILES = Object.freeze([
+  "README.md",
   "catalog.yaml",
   "project/AGENTS.md",
   "project/CLAUDE.md",
@@ -187,17 +189,62 @@ test("Required Files is enumerated both ways — every pinned path exists and th
   // tree without reaching the spec's Required Files table.
   const onDisk = walkFiles(FIXTURE_DIR).sort();
   assert.deepEqual(onDisk, [...REQUIRED_FIXTURE_FILES].sort());
-  assert.equal(REQUIRED_FIXTURE_FILES.length, 33, "README.md is Task 6's file and makes it 34");
-  assert.ok(!REQUIRED_FIXTURE_FILES.includes("README.md"));
+  assert.equal(REQUIRED_FIXTURE_FILES.length, 34, "Task 6's README.md took the count from 33 to 34");
+  assert.ok(REQUIRED_FIXTURE_FILES.includes("README.md"), "Task 6's README.md must be registered here");
 });
 
 test("catalog.yaml sits outside fixture_root", () => {
   // Trivially true today and trivially breakable by a reorganisation that moves
   // the catalog inside the tree it describes, at which point every entry path
-  // silently gains a level. (README.md's half lands in Task 6.)
+  // silently gains a level. (README.md's half is the next test.)
   const doc = parseYaml(readFileSync(CATALOG_PATH, "utf8"));
   const fixtureRootReal = lenientRealpath(join(FIXTURE_DIR, doc.fixture_root));
   assert.ok(!isContained(lenientRealpath(CATALOG_PATH), fixtureRootReal));
+});
+
+/**
+ * The README's growth rule, pinned verbatim.
+ *
+ * A rule stated only in prose holds until the next author disagrees with it.
+ * Pinning the sentence makes a reword a deliberate test change rather than a
+ * silent repeal — the README says so about itself, so the pin is not a
+ * surprise to whoever edits it.
+ */
+const README_GROWTH_RULE =
+  "Pair or do not add: every entry added to `planted_violations` ships with its known-clean twin in `known_clean`, because a planted violation without a known-clean twin is a sensitivity assertion with no specificity control.";
+
+test("the README states the growth rule, and the catalog obeys it", () => {
+  // Two failures, in one test because neither half means anything alone: the
+  // prose without the count is unenforced, the count without the prose is
+  // unexplained.
+  const readmePath = join(FIXTURE_DIR, "README.md");
+  assert.ok(existsSync(readmePath), `expected ${readmePath} to exist`);
+  const readme = readFileSync(readmePath, "utf8");
+  assert.ok(
+    readme.includes(README_GROWTH_RULE),
+    "the README no longer states the growth rule verbatim — a reword here is a test change",
+  );
+
+  const doc = parseYaml(readFileSync(CATALOG_PATH, "utf8"));
+  // Non-vacuity: two empty lists are equal in length and pair nothing.
+  assert.ok(doc.planted_violations.length > 0, "no planted_violations — the pairing check would be vacuous");
+  assert.equal(
+    doc.planted_violations.length,
+    doc.known_clean.length,
+    "the growth rule is violated: every planted violation needs a known-clean twin",
+  );
+});
+
+test("README.md sits outside fixture_root", () => {
+  // The other half of the criterion the previous test's neighbour covers for
+  // `catalog.yaml`. A README moved inside `project/` becomes content the
+  // fixture's own skills read as the mini-project's, and every catalog entry
+  // path silently gains a level.
+  const doc = parseYaml(readFileSync(CATALOG_PATH, "utf8"));
+  const fixtureRootReal = lenientRealpath(join(FIXTURE_DIR, doc.fixture_root));
+  const readmePath = join(FIXTURE_DIR, "README.md");
+  assert.ok(existsSync(readmePath), `expected ${readmePath} to exist`);
+  assert.ok(!isContained(lenientRealpath(readmePath), fixtureRootReal));
 });
 
 test("the fixture's evals/config.yaml names orders-rubric.yaml, and that rubric loads through loadRubric", () => {
