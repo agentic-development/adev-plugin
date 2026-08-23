@@ -10,11 +10,13 @@
  * Numbered tests carry the spec's Hermeticity Rules row numbers — keep them
  * stable so a reader can map a test to a spec row without a translation table.
  *
- *   present: 1, 2, 3, 4 (Task 1), 5, 7 (Task 2) and 6, 9 (Task 3)
- *   pending: 10, 11 (Task 8)
+ *   present: 1, 2, 3, 4 (Task 1), 5, 7 (Task 2), 6, 9 (Task 3),
+ *            10, 11 (Task 8)
+ *   pending: none — all eleven Hermeticity Rules rows are covered.
  *
- * A pending property is deliberately ABSENT rather than stubbed: a stubbed
- * property reads as covered.
+ * The convention held while rows were outstanding: a pending property was
+ * deliberately ABSENT rather than stubbed, because a stubbed property reads as
+ * covered. Keep that rule if the spec ever grows a twelfth row.
  *
  * Not every test is a numbered property. Task 2 added five unnumbered ones
  * covering the config layer — banned governance keys, banned governance files,
@@ -43,7 +45,13 @@ import {
 } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
-import { PLUGIN_ROOT, cleanupTempDir, createTempGitRepo } from "../../helpers.mjs";
+import {
+  PLUGIN_ROOT,
+  cleanupTempDir,
+  createTempDir,
+  createTempGitRepo,
+  writeFixture,
+} from "../../helpers.mjs";
 import { parseYaml } from "../../../lib/profiles/yaml.mjs";
 import { resolveStorageRoot } from "../../../lib/issues/resolve-root.mjs";
 import { resolveMainRoot } from "../../../lib/worktree.mjs";
@@ -54,6 +62,7 @@ import { loadValidateConfig } from "../../../lib/governance/validate-config.mjs"
 import { loadReviewConfig } from "../../../lib/governance/review-config.mjs";
 import { MARKED_REGISTRIES, readMarker } from "../../../lib/governance/registry-marker.mjs";
 import { CHARTER_KINDS, SPEC_KINDS } from "../../../lib/kinds.mjs";
+import { run } from "../../../lib/repomap/index.mjs";
 
 /** Repo-relative POSIX path of the fixture root — the string form globs match against. */
 const FIXTURE_REL = "tests/evals/skill-regression";
@@ -2050,4 +2059,162 @@ test("falsification artifact — property 9's walk rejects a copy whose CLAUDE.m
   } finally {
     cleanupTempDir(run.runRoot);
   }
+});
+
+// ---------------------------------------------------------------------------
+// Task 9 — isolation from THIS repository's own tooling.
+//
+// The fixture is a project tree inside a project tree, so this repo's own
+// walkers would otherwise treat its deliberately-planted defects as real
+// source. Two properties pin that they do not:
+//
+//   * `/adev:repomap` (and therefore `/adev:codehealth`, which only consumes
+//     repomap output) excludes the fixture — asserted in BOTH directions,
+//     declaration and effect.
+//   * `/adev:hygiene`'s `source_roots` never reaches into `tests/`.
+//
+// The effect half runs the real `run()` over a SYNTHETIC root, never over this
+// repository: a real run writes `.context-index/hygiene/repo-map.md`, which
+// would turn property 11's write-escape equality red in this same suite. The
+// synthetic root's exclude list is DERIVED from the real manifest rather than
+// hardcoded — otherwise deleting the line from the real manifest would leave
+// the effect half passing against a pattern the test supplied itself, which is
+// a guard that tests the test.
+//
+// Same extension contract as above: helpers first, one `test()` per property,
+// zero cross-test state.
+// ---------------------------------------------------------------------------
+
+/** The glob the root manifest must carry, and the precedent it is spliced beside. */
+const FIXTURE_REPOMAP_GLOB = `${FIXTURE_REL}/**`;
+const REPOMAP_GLOB_PRECEDENT = "tests/evals/adev-api-eval/dist/**";
+
+/** The exact `hygiene.source_roots` set — `tests/` is absent, verified not assumed. */
+const EXPECTED_SOURCE_ROOTS = ["cli/", "hooks/", "lib/", "providers/", "skills/", "templates/"];
+
+/** Absolute path to THIS repository's manifest — the one both halves read. */
+const ROOT_MANIFEST = join(PLUGIN_ROOT, ".context-index", "manifest.yaml");
+
+/**
+ * This repository's own manifest, parsed.
+ *
+ * @returns {{ text: string, manifest: any }}
+ */
+function readRootManifest() {
+  const text = readFileSync(ROOT_MANIFEST, "utf8");
+  return { text, manifest: parseYaml(text) };
+}
+
+/**
+ * A synthetic project root carrying the REAL manifest's `repomap.exclude`.
+ *
+ * Two source files, deliberately: one at an INCLUDED path and one under the
+ * fixture's repo-relative path. `run()` has an explicit `sourceFiles.length
+ * === 0` branch (`lib/repomap/index.mjs:300`) that writes a symbol-free map —
+ * so a root holding only the excluded file would satisfy "the fixture's
+ * symbols are absent" because nothing at all was indexed. The included file is
+ * what makes the absence mean something.
+ *
+ * @returns {{ root: string, includedSymbol: string, excludedSymbol: string,
+ *   includedRel: string, excludedRel: string, exclude: string[] }}
+ */
+function buildSyntheticRepomapRoot() {
+  const root = createTempDir();
+  const exclude = readRootManifest().manifest?.repomap?.exclude;
+  assert.ok(
+    Array.isArray(exclude) && exclude.length > 0,
+    "the real manifest must yield a non-empty repomap.exclude to derive from",
+  );
+
+  const excludeLines = exclude.map((pattern) => `    - "${pattern}"`).join("\n");
+  writeFixture(root, ".context-index/manifest.yaml", `repomap:\n  exclude:\n${excludeLines}\n`);
+
+  const includedRel = "lib/synthetic-included.mjs";
+  const excludedRel = `${FIXTURE_REL}/project/lib/synthetic-excluded.mjs`;
+  writeFixture(root, includedRel, "export function syntheticIncludedSymbol() {\n  return 1;\n}\n");
+  writeFixture(root, excludedRel, "export function syntheticExcludedSymbol() {\n  return 2;\n}\n");
+
+  return {
+    root,
+    exclude,
+    includedRel,
+    excludedRel,
+    includedSymbol: "syntheticIncludedSymbol",
+    excludedSymbol: "syntheticExcludedSymbol",
+  };
+}
+
+test("the fixture glob is declared in the root manifest's repomap.exclude, spliced into the existing list", () => {
+  const { text, manifest } = readRootManifest();
+  const exclude = manifest?.repomap?.exclude;
+
+  assert.ok(Array.isArray(exclude), "the root manifest must declare repomap.exclude as a list");
+  assert.ok(
+    exclude.includes(FIXTURE_REPOMAP_GLOB),
+    `repomap.exclude must contain ${FIXTURE_REPOMAP_GLOB}; got: ${JSON.stringify(exclude)}`,
+  );
+  // Spliced, not appended as a second block: the precedent entry is still in
+  // the SAME list, and the manifest declares exactly one top-level `repomap:`.
+  assert.ok(
+    exclude.includes(REPOMAP_GLOB_PRECEDENT),
+    `the ${REPOMAP_GLOB_PRECEDENT} precedent must remain in the same list; got: ${JSON.stringify(exclude)}`,
+  );
+  const repomapKeys = text.split("\n").filter((line) => /^repomap:\s*$/.test(line));
+  assert.equal(
+    repomapKeys.length,
+    1,
+    "the manifest must declare exactly one top-level `repomap:` block — a second block is a standalone splice",
+  );
+});
+
+test("the declared exclusion actually excludes — an included sibling is indexed and the fixture path is not", async () => {
+  const synthetic = buildSyntheticRepomapRoot();
+  try {
+    // The mode argument is a STRING. `run(root, {...})` falls through to the
+    // `else` branch and probes for tree-sitter, which on a machine that has it
+    // installed silently runs a different parser and writes different files.
+    await run(synthetic.root, "regex");
+
+    const mapPath = join(synthetic.root, ".context-index", "hygiene", "repo-map.md");
+    assert.ok(existsSync(mapPath), `repomap wrote no map at ${mapPath}`);
+    const map = readFileSync(mapPath, "utf8");
+
+    // Present half — the root was not empty, so the absence below is real.
+    assert.ok(
+      map.includes(synthetic.includedSymbol),
+      `the included file's symbol must appear in the map; got:\n${map}`,
+    );
+    assert.ok(
+      map.includes(synthetic.includedRel),
+      `the included file's path must appear in the map; got:\n${map}`,
+    );
+
+    // Absent half — the exclusion, derived from the real manifest, took effect.
+    assert.ok(
+      !map.includes(synthetic.excludedSymbol),
+      `the fixture path's symbol must be excluded from the map; got:\n${map}`,
+    );
+    assert.ok(
+      !map.includes(FIXTURE_REL),
+      `no path under ${FIXTURE_REL} may appear in the map; got:\n${map}`,
+    );
+  } finally {
+    cleanupTempDir(synthetic.root);
+  }
+});
+
+test("hygiene.source_roots is exactly the six source directories and never reaches into tests/", () => {
+  const { manifest } = readRootManifest();
+  const roots = manifest?.hygiene?.source_roots;
+
+  assert.ok(Array.isArray(roots), "the root manifest must declare hygiene.source_roots as a list");
+  assert.deepEqual(
+    [...roots].sort(),
+    [...EXPECTED_SOURCE_ROOTS].sort(),
+    `hygiene.source_roots must be exactly ${JSON.stringify(EXPECTED_SOURCE_ROOTS)}; got: ${JSON.stringify(roots)}`,
+  );
+  assert.ok(
+    !roots.some((entry) => entry.split("/")[0] === "tests"),
+    `hygiene.source_roots must not reach into tests/; got: ${JSON.stringify(roots)}`,
+  );
 });
