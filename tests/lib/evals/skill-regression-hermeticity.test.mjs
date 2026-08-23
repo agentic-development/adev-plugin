@@ -34,15 +34,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import {
-  cpSync,
-  existsSync,
-  lstatSync,
-  readFileSync,
-  readdirSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { cpSync, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
 import {
@@ -2003,11 +1995,24 @@ test("falsification artifact — property 11's equality goes RED for a write ins
   const roots = worktreeRoots();
   assertRootSetIsReal(roots);
 
-  // A single gitignored FILE (`*.log`, .gitignore:3), not a directory: nothing
-  // has to be created to hold it and nothing pre-existing can be removed with
-  // it, so the cleanup below cannot take anything else down with the probe.
-  const probe = join(PLUGIN_ROOT, ".hermeticity-probe.log");
+  // The probe lands inside a gitignored DIRECTORY (`.context-index/packets/`,
+  // .gitignore:106), not at a root-level `*.log`. The mode choice is the reason:
+  // property 11 captures with `--ignored=traditional`. Measured on this repo:
+  // `traditional` lists every file under an ignored directory individually (18
+  // entries under packets/), while `matching` collapses the whole directory to
+  // one `!! .context-index/packets/` entry that does not change when a file is
+  // added inside it. So a probe written HERE goes red under `traditional` and
+  // would be invisible under `matching` — which is what makes the flag choice
+  // load-bearing. A root-level ignored FILE is enumerated identically by both
+  // modes, so a probe there proves the equality can go red but leaves the mode
+  // itself unfalsified.
+  //
+  // Cleanup removes only the probe file, never the directory, so a pre-existing
+  // packets/ (this repo has one) cannot be taken down with it.
+  const probeDir = join(PLUGIN_ROOT, ".context-index", "packets");
+  const probe = join(probeDir, "hermeticity-falsification-probe.md");
   assert.equal(pathPresent(probe), false, `${probe} must not already exist`);
+  mkdirSync(probeDir, { recursive: true });
 
   const before = captureRepoState(roots);
   try {
@@ -2026,6 +2031,8 @@ test("falsification artifact — property 11's equality goes RED for a write ins
       `the probe write must be observed at ${PLUGIN_ROOT}; observed at: ${observed.join(", ")}`,
     );
   } finally {
+    // The file only. Removing probeDir would delete a directory this repo
+    // already had, which is the failure mode the file-scoped cleanup avoids.
     rmSync(probe, { force: true });
   }
 
