@@ -1372,10 +1372,10 @@ async function cmdUpgrade() {
   // --- Stamp adev_version ---
   stampVersion();
 
-  // Provenance enforcement used to be prompted for here. It writes a
-  // `provenance:` block into manifest.yaml — context-layer configuration owned
-  // by /adev:init, not the CLI. `adev upgrade` still needs the delta below for
-  // its own reporting, but it no longer asks the question or writes the block.
+  // The `provenance:` block in manifest.yaml is context-layer configuration
+  // owned by /adev:init, not the CLI. `adev upgrade` still needs the delta
+  // below for its own reporting, but it does not ask the question or write
+  // the block itself.
   const manifestPath = join(process.cwd(), ".context-index", "manifest.yaml");
   const delta = computeUpgradeDelta(state.version);
   if (delta.provenance && existsSync(manifestPath)) {
@@ -1954,7 +1954,7 @@ const VERB_REGISTRY = new Map([
   ["uninstall", () => ({ run: () => cmdUninstall(),              help: () => cmdHelp() })],
   ["init",      () => ({ run: async () => {
                           // Sub-verb: `adev init prompt session-capture` delegates to the
-                          // init-prompt-session-capture module (SA-5). This keeps the
+                          // init-prompt-session-capture module. This keeps the
                           // skills/init/SKILL.md prose readable as a 3-token verb while
                           // the dispatcher remains a single-token registry.
                           const sub = process.argv[3];
