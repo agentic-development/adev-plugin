@@ -31,11 +31,22 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, lstatSync, readFileSync, readdirSync } from "node:fs";
-import { dirname, join, relative, resolve, sep } from "node:path";
+import { execFileSync } from "node:child_process";
+import {
+  cpSync,
+  existsSync,
+  lstatSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
-import { PLUGIN_ROOT } from "../../helpers.mjs";
+import { PLUGIN_ROOT, cleanupTempDir, createTempGitRepo } from "../../helpers.mjs";
 import { parseYaml } from "../../../lib/profiles/yaml.mjs";
+import { resolveStorageRoot } from "../../../lib/issues/resolve-root.mjs";
+import { resolveMainRoot } from "../../../lib/worktree.mjs";
 import { globToRegExp } from "../../../lib/hygiene/test-debt.mjs";
 import { isContained, lenientRealpath } from "../../../lib/path-safety.mjs";
 import { loadDeployConfig } from "../../../lib/deploy.mjs";
@@ -772,6 +783,55 @@ function atImports(text) {
   return found;
 }
 
+/** How far Claude Code resolves a chain of `@`-imports. */
+const MAX_IMPORT_HOPS = 5;
+
+/**
+ * Follow every `@`-import reachable from the markdown under `projectRoot`.
+ *
+ * Parameterised by root rather than closed over `PROJECT` because Task 8's
+ * durable falsification artifact runs this exact walk against a TEMP COPY with
+ * an `@`-import planted in it. Duplicating the walk there would falsify a copy
+ * of the logic instead of the logic property 9 relies on.
+ *
+ * Every hit is an escape: the fixture's own corpus is required to carry none,
+ * so there is no in-scope destination to allow. A dangling target simply
+ * imports nothing further.
+ *
+ * @param {string} projectRoot Absolute path to the fixture project (or a copy).
+ * @returns {{ escapes: string[], seeds: number, visited: number }}
+ *   `escapes` names the CHAIN, so a failure reports the route out of the tree.
+ */
+function atImportEscapes(projectRoot) {
+  const rel = (abs) => relative(projectRoot, abs).split(sep).join("/");
+  const files = markdownUnder(projectRoot);
+  const seen = new Set();
+  const escapes = [];
+  let frontier = files.map((f) => ({ abs: f, chain: [rel(f)] }));
+  for (let hop = 0; hop < MAX_IMPORT_HOPS && frontier.length > 0; hop += 1) {
+    const next = [];
+    for (const { abs, chain } of frontier) {
+      if (seen.has(abs)) continue;
+      seen.add(abs);
+      let text;
+      try {
+        if (!lstatSync(abs).isFile()) continue;
+        text = readFileSync(abs, "utf8");
+      } catch {
+        continue; // a dangling import target imports nothing further
+      }
+      for (const hit of atImports(text)) {
+        const target = hit.spec.startsWith("~/") ? null : resolve(dirname(abs), hit.spec);
+        const where = chain.length === 1 ? `${chain[0]}:${hit.line}` : chain.join(" → ");
+        escapes.push(`${where} → @${hit.spec} (hop ${hop + 1})`);
+        if (target) next.push({ abs: target, chain: [...chain, `@${hit.spec}`] });
+      }
+    }
+    frontier = next;
+  }
+  return { escapes, seeds: files.length, visited: seen.size };
+}
+
 test("hermeticity property 6 — no markdown under the fixture declares infra_requirements", () => {
   const files = markdownUnder(PROJECT);
 
@@ -846,44 +906,18 @@ test("hermeticity property 9 — the required instruction files exist and no mar
   // (`@docs/notes.txt`) and a target that is not under `project/` at all. It
   // also reports the CHAIN, so a failure names the route out of the fixture
   // rather than one line.
-  const files = markdownUnder(PROJECT);
+  const { escapes, seeds, visited } = atImportEscapes(PROJECT);
   assert.ok(
-    files.length > 0,
-    `expected markdown under ${FIXTURE_REL}/project/ to seed the walk; found ${files.length}`,
+    seeds > 0,
+    `expected markdown under ${FIXTURE_REL}/project/ to seed the walk; found ${seeds}`,
   );
-
-  const MAX_HOPS = 5;
-  const seen = new Set();
-  const escapes = [];
-  let frontier = files.map((f) => ({ abs: f, chain: [projectRel(f)] }));
-  for (let hop = 0; hop < MAX_HOPS && frontier.length > 0; hop += 1) {
-    const next = [];
-    for (const { abs, chain } of frontier) {
-      if (seen.has(abs)) continue;
-      seen.add(abs);
-      let text;
-      try {
-        if (!lstatSync(abs).isFile()) continue;
-        text = readFileSync(abs, "utf8");
-      } catch {
-        continue; // a dangling import target imports nothing further
-      }
-      for (const hit of atImports(text)) {
-        const target = hit.spec.startsWith("~/") ? null : resolve(dirname(abs), hit.spec);
-        const where = chain.length === 1 ? `${chain[0]}:${hit.line}` : chain.join(" → ");
-        escapes.push(`${where} → @${hit.spec} (hop ${hop + 1})`);
-        if (target) next.push({ abs: target, chain: [...chain, `@${hit.spec}`] });
-      }
-    }
-    frontier = next;
-  }
   // The walk must have READ something for its silence to mean anything.
-  assert.ok(seen.size > 0, "the import walk visited no file — a silent pass over nothing");
+  assert.ok(visited > 0, "the import walk visited no file — a silent pass over nothing");
   assert.deepEqual(
     escapes,
     [],
     "no markdown under the fixture, and nothing within " +
-      `${MAX_HOPS} hops of it, may carry an \`@\`-import — \`@../../../CLAUDE.md\` ` +
+      `${MAX_IMPORT_HOPS} hops of it, may carry an \`@\`-import — \`@../../../CLAUDE.md\` ` +
       "feeds this repository's own constitution to a driven skill",
   );
 });
@@ -1546,4 +1580,474 @@ test("the README records the run-copy `tasks.db_path` rule, and the committed ma
     false,
     "`tasks.db_path` must be absent from the committed fixture manifest — the rule governs run copies, not this tree",
   );
+});
+
+// ---------------------------------------------------------------------------
+// Task 8 additions: the two properties that only a RUN COPY can decide, plus
+// the file's two durable falsification artifacts.
+//
+// Properties 10 and 11 are rules about what a RUN does, not about what the
+// committed tree contains, so neither can be decided by reading
+// `tests/evals/skill-regression/` in place. Both work against a per-scenario
+// copy: one copy per test, never shared, cleaned in a `finally` so a failing
+// assertion cannot leave a tree behind that the NEXT run's property 11 then
+// reports as a write escape.
+//
+// The copy is made with `createTempGitRepo()` on purpose. That gives it its own
+// git root, which is what makes property 10's non-vacuity check meaningful:
+// without a `tasks.db_path`, `resolveStorageRoot` falls through to
+// `git rev-parse --git-common-dir` and lands INSIDE the copy anyway, so a bare
+// containment assertion would pass on the FALLBACK and prove nothing about the
+// field.
+//
+// Same extension contract as above: helpers first, one `test()` per property,
+// zero cross-test state.
+// ---------------------------------------------------------------------------
+
+/** Where a run copy's issue board belongs, relative to the copied project root. */
+const RUN_COPY_BOARD_REL = join(".context-index", "tasks");
+
+/**
+ * Make a fresh run copy of the fixture and write its `tasks.db_path`.
+ *
+ * ONE copy per scenario — never shared. The copy is a git repo of its own
+ * (`createTempGitRepo`), which is what lets property 10 tell a containment
+ * decided by the declared field from one decided by the resolver's git
+ * fallback.
+ *
+ * Writing the field is the step the committed tree deliberately omits and a
+ * scenario driver must perform, per the fixture README's run-copy rule. It is
+ * written TEXTUALLY, into the existing `tasks:` block, so the copy stays a
+ * byte-for-byte copy everywhere else.
+ *
+ * @param {object} [opts]
+ * @param {string} [opts.dbPath] Value to declare. Defaults to an ABSOLUTE path
+ *   inside the copy — the only correct form, since `resolveStorageRoot`
+ *   returns it verbatim. Pass a relative value to model the rejecting case.
+ * @returns {{ runRoot: string, projectRoot: string, manifestPath: string, manifest: any }}
+ */
+function copyFixtureForRun({ dbPath } = {}) {
+  const runRoot = createTempGitRepo();
+  cpSync(FIXTURE, runRoot, { recursive: true });
+  const projectRoot = join(runRoot, "project");
+  const manifestPath = join(projectRoot, ".context-index", "manifest.yaml");
+
+  const value = dbPath ?? join(projectRoot, RUN_COPY_BOARD_REL);
+  const original = readFileSync(manifestPath, "utf8");
+  const patched = original.replace(/^tasks:$/m, `tasks:\n  db_path: ${value}`);
+  // A silent no-op replace would hand every caller a manifest with no field,
+  // and property 10's non-vacuity check would then compare two fallbacks.
+  if (patched === original) {
+    throw new Error(`no top-level \`tasks:\` block to patch in ${manifestPath}`);
+  }
+  writeFileSync(manifestPath, patched);
+
+  const manifest = parseYaml(readFileSync(manifestPath, "utf8"));
+  if (manifest?.tasks?.db_path !== value) {
+    throw new Error(`the patched manifest did not parse back a tasks.db_path of ${value}`);
+  }
+  return { runRoot, projectRoot, manifestPath, manifest };
+}
+
+/**
+ * Every working-tree root this repository owns, main repo first.
+ *
+ * Anchored at `resolveMainRoot(cwd)` rather than run from `cwd` directly: a
+ * `git worktree list` taken from inside some OTHER repository (a temp copy, for
+ * instance) answers about that repository and returns a root set that is
+ * non-empty, self-consistent, and completely wrong. The main repo is the only
+ * vantage point from which the list is the whole list.
+ *
+ * @param {string} [cwd]
+ * @returns {string[]} Absolute paths, as git prints them.
+ */
+function worktreeRoots(cwd = PLUGIN_ROOT) {
+  const out = execFileSync(
+    "git",
+    ["-C", resolveMainRoot(cwd), "worktree", "list", "--porcelain"],
+    { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
+  );
+  return out
+    .split("\n")
+    .filter((line) => line.startsWith("worktree "))
+    .map((line) => line.slice("worktree ".length).trim());
+}
+
+/**
+ * The root set is real, not merely non-empty.
+ *
+ * A comparison over zero roots is equal for the wrong reason, and so is one
+ * over a single root that is not ours — property 11's whole claim is about
+ * THIS repository's trees.
+ *
+ * @param {string[]} roots
+ */
+function assertRootSetIsReal(roots) {
+  assert.ok(roots.length > 0, "`git worktree list` enumerated no root — property 11 would be vacuous");
+  const here = lenientRealpath(PLUGIN_ROOT);
+  assert.ok(
+    roots.some((r) => lenientRealpath(r) === here),
+    `the enumerated roots must include the worktree this test runs in (${PLUGIN_ROOT}); got: ${roots.join(", ")}`,
+  );
+}
+
+/**
+ * A comparable snapshot of each root's working tree.
+ *
+ * `--ignored=traditional --untracked-files=all` is what makes a write into a
+ * gitignored directory visible; plain `--porcelain` would report nothing for
+ * exactly the paths a stray run copy or cache is most likely to land in. The
+ * HEAD is captured alongside because a commit changes no status line.
+ *
+ * @param {string[]} roots
+ * @returns {Record<string, string>} Keyed by REALPATHED root.
+ */
+function captureRepoState(roots) {
+  const state = {};
+  for (const root of roots) {
+    const head = execFileSync("git", ["-C", root, "rev-parse", "HEAD"], {
+      encoding: "utf8",
+      maxBuffer: 64 * 1024 * 1024,
+    }).trim();
+    const status = execFileSync(
+      "git",
+      ["-C", root, "status", "--porcelain", "--ignored=traditional", "--untracked-files=all"],
+      { encoding: "utf8", maxBuffer: 256 * 1024 * 1024 },
+    );
+    state[lenientRealpath(root)] = `HEAD ${head}\n${status}`;
+  }
+  return state;
+}
+
+/**
+ * Which roots changed between two captures, and how.
+ *
+ * Reports the differing LINES rather than a bare "not equal", so a failure
+ * names the file that escaped instead of leaving a reader to diff two
+ * multi-thousand-line strings by eye.
+ *
+ * @param {Record<string, string>} before
+ * @param {Record<string, string>} after
+ * @returns {string[]} One entry per changed root; empty when nothing moved.
+ */
+function diffRepoState(before, after) {
+  const diffs = [];
+  for (const root of Object.keys(before)) {
+    if (before[root] === after[root]) continue;
+    const beforeLines = new Set(before[root].split("\n"));
+    const afterLines = new Set(after[root].split("\n"));
+    const added = [...afterLines].filter((l) => l && !beforeLines.has(l));
+    const removed = [...beforeLines].filter((l) => l && !afterLines.has(l));
+    diffs.push(`${root}: appeared ${JSON.stringify(added)}, vanished ${JSON.stringify(removed)}`);
+  }
+  return diffs;
+}
+
+/**
+ * The test files `scripts/run-tests.mjs` would select, as repo-relative paths.
+ *
+ * Runs the real runner rather than importing `discoverTests`: the bucket claim
+ * is about what `npm test` and `npm run test:evals` actually execute, and the
+ * argv parsing that maps `--evals` onto a bucket lives in the entry block, not
+ * in the exported function.
+ *
+ * @param {string[]} args Extra flags, e.g. `["--evals"]`.
+ * @returns {string[]}
+ */
+function runTestsList(args) {
+  const out = execFileSync(
+    "node",
+    [join(PLUGIN_ROOT, "scripts", "run-tests.mjs"), ...args, "--list"],
+    { cwd: PLUGIN_ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
+  );
+  return out
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+test("hermeticity property 10 — the run copy's board resolves inside the copy, by the field and not by the fallback", () => {
+  const run = copyFixtureForRun();
+  try {
+    // (a) The field is what a driver must write, and it must be ABSOLUTE.
+    // `resolveStorageRoot` returns `manifest.tasks.db_path` verbatim
+    // (`lib/issues/resolve-root.mjs:30`) rather than resolving it against the
+    // manifest's directory, so a relative value is a value resolved against the
+    // CALLER's cwd. The rejecting case below is the other half of this.
+    const declared = run.manifest.tasks.db_path;
+    assert.equal(typeof declared, "string", "the run copy's manifest must declare tasks.db_path");
+    assert.equal(isAbsolute(declared), true, `tasks.db_path must be absolute; got ${declared}`);
+
+    // Realpathed on both sides: the macOS temp base is symlinked
+    // (`/var` -> `/private/var`), which a raw prefix check fails.
+    const copyReal = lenientRealpath(run.runRoot);
+    const withField = resolveStorageRoot(run.manifest, run.projectRoot);
+    assert.equal(withField, declared, "resolveStorageRoot must return the declared value verbatim");
+    assert.equal(
+      isContained(lenientRealpath(withField), copyReal),
+      true,
+      `the resolved board root ${withField} must sit inside the run copy ${run.runRoot}`,
+    );
+
+    // (b) Non-vacuity. Without the field the resolver falls back to the copy's
+    // own git root, which is ALSO inside the copy — so (a) alone is satisfied by
+    // a manifest that declares nothing. The two resolutions must differ, or the
+    // rule was never tested.
+    const withoutField = resolveStorageRoot(
+      { ...run.manifest, tasks: { ...run.manifest.tasks, db_path: undefined } },
+      run.projectRoot,
+    );
+    assert.equal(
+      isContained(lenientRealpath(withoutField), copyReal),
+      true,
+      "sanity: the git fallback also lands inside the copy — this is why (a) alone is not enough",
+    );
+    assert.notEqual(
+      lenientRealpath(withField),
+      lenientRealpath(withoutField),
+      "the with-field and without-field resolutions are equal, so containment was decided by the " +
+        "git fallback and the `tasks.db_path` rule is untested",
+    );
+  } finally {
+    cleanupTempDir(run.runRoot);
+  }
+});
+
+test("hermeticity property 10 (rejecting) — a relative `tasks.db_path` resolves into THIS repository", () => {
+  // A separate copy, per the one-copy-per-scenario rule.
+  const run = copyFixtureForRun({ dbPath: ".context-index/tasks" });
+  try {
+    const declared = run.manifest.tasks.db_path;
+    assert.equal(isAbsolute(declared), false, "this scenario requires a RELATIVE declared value");
+
+    // Verbatim return means the value reaches the caller unresolved, and the
+    // caller's cwd decides where it lands. A driver run from this checkout has
+    // cwd here, so that is the cwd this case models.
+    const resolvedByCaller = resolve(
+      PLUGIN_ROOT,
+      resolveStorageRoot(run.manifest, run.projectRoot),
+    );
+    assert.equal(
+      isContained(lenientRealpath(resolvedByCaller), lenientRealpath(run.runRoot)),
+      false,
+      "a relative tasks.db_path must NOT be accepted as contained in the run copy",
+    );
+    // Naming this repository is the point: "not in the copy" is also true of
+    // /etc/anything and would not show that the failure mode is a LIVE board.
+    assert.equal(
+      isContained(lenientRealpath(resolvedByCaller), lenientRealpath(PLUGIN_ROOT)),
+      true,
+      `a relative tasks.db_path resolves against the caller's cwd — it lands at ${resolvedByCaller}, ` +
+        "this repository's own board, where /adev:issues can create, claim or close live issues",
+    );
+  } finally {
+    cleanupTempDir(run.runRoot);
+  }
+});
+
+test("hermeticity property 11 — copying and loading the fixture writes nothing to any worktree root", () => {
+  const roots = worktreeRoots();
+  assertRootSetIsReal(roots);
+
+  const before = captureRepoState(roots);
+  let run = null;
+  try {
+    // The work a scenario driver does before it dispatches anything: make the
+    // copy, write the board path, and load every config layer through this
+    // repository's own loaders.
+    run = copyFixtureForRun();
+    loadDeployConfig(run.projectRoot);
+    loadValidateConfig(run.projectRoot, { pluginRoot: PLUGIN_ROOT });
+    loadReviewConfig(run.projectRoot, { pluginRoot: PLUGIN_ROOT });
+    resolveStorageRoot(run.manifest, run.projectRoot);
+  } finally {
+    if (run) cleanupTempDir(run.runRoot);
+  }
+  const after = captureRepoState(roots);
+
+  assert.deepEqual(
+    diffRepoState(before, after),
+    [],
+    "the copy-and-load wrote into a repository worktree",
+  );
+});
+
+test("the run copy's manifest declares no `workspace` key", () => {
+  // Standalone, not inferred from property 7's path walk: that walk reports
+  // path-VALUED leaves and says nothing about key presence, so `workspace: ../..`
+  // would be caught there while `workspace: {root: x}` would not be seen at all.
+  //
+  // The spec phrases this against the FIXTURE manifest; asserting it on the copy
+  // is equivalent, because the copy is a byte copy, and it is where the rule
+  // bites — a driver reads the copy. Task 2 authored this absence with no
+  // falsification of its own; this test's perturbation is its only proof.
+  const run = copyFixtureForRun();
+  try {
+    assert.equal(
+      Object.prototype.hasOwnProperty.call(run.manifest, "workspace"),
+      false,
+      "a `workspace:` key makes the copy resolve state against a parent root outside itself",
+    );
+    const nested = walkKeys(run.manifest)
+      .filter((e) => e.key === "workspace")
+      .map((e) => e.keyPath);
+    assert.deepEqual(nested, [], "no `workspace` key may appear at any depth of the copy's manifest");
+  } finally {
+    cleanupTempDir(run.runRoot);
+  }
+});
+
+test("the run copy's manifest declares `tasks.backend: json`", () => {
+  // Asserted on the PARSED value, deliberately: the failure this guards is a
+  // copy that names the `beads` backend, and discovering that by watching
+  // `execFileSync("br", …)` be attempted means the run has already reached out
+  // of the copy, to a binary and a board the fixture does not own. Same
+  // provenance as the `workspace` assertion above — Task 2 authored the value,
+  // this test's perturbation is its only proof.
+  const run = copyFixtureForRun();
+  try {
+    assert.equal(
+      run.manifest?.tasks?.backend,
+      "json",
+      "the copy's board must be a plain JSON file inside the copy",
+    );
+  } finally {
+    cleanupTempDir(run.runRoot);
+  }
+});
+
+test("the default test bucket lists both skill-regression guards and no fixture file", () => {
+  const listed = runTestsList([]);
+  assert.ok(listed.length > 0, "`run-tests.mjs --list` selected nothing — every claim below is vacuous");
+
+  // Half one: the fixture tree is DATA. `tests/evals/**` is the opt-in bucket,
+  // so nothing under it may appear in a default `npm test`.
+  const fixtureFiles = listed.filter((f) => f.startsWith(`${FIXTURE_REL}/`));
+  assert.deepEqual(fixtureFiles, [], "no file under the fixture may run in the default bucket");
+
+  // Half two, and the reason half one is not enough: moving the GUARDS under
+  // `tests/evals/` would satisfy half one perfectly while stopping the
+  // hermeticity checks from running on `npm test` at all.
+  for (const guard of [
+    "tests/lib/evals/skill-regression-hermeticity.test.mjs",
+    "tests/lib/evals/skill-regression-catalog.test.mjs",
+  ]) {
+    assert.ok(listed.includes(guard), `${guard} must run in the DEFAULT bucket; it was not listed`);
+  }
+});
+
+test("the opt-in eval bucket does not list the fixture project's own suite", () => {
+  const suiteRel = `${FIXTURE_REL}/project/tests/create-order.test.mjs`;
+  // Non-vacuity: the absence below is trivially true of a file that is not on
+  // disk, and this one is exactly the kind a later task might relocate.
+  assert.ok(
+    pathPresent(join(PLUGIN_ROOT, suiteRel)),
+    `${suiteRel} must exist for this check to mean anything`,
+  );
+
+  const listed = runTestsList(["--evals"]);
+  assert.ok(listed.length > 0, "`run-tests.mjs --evals --list` selected nothing");
+
+  // A DIFFERENT mechanism from the default-bucket check above: this one is
+  // `isNestedProjectFile` seeing `project/package.json` and classifying
+  // `project/tests/` as a nested project's own suite. The `tests/evals/` path
+  // rule cannot fire here — `--evals` selects that bucket on purpose — so losing
+  // this exclusion starts EXECUTING fixture code inside our runner.
+  assert.equal(
+    listed.includes(suiteRel),
+    false,
+    "the fixture project's own suite is test DATA; `--evals` must not execute it",
+  );
+});
+
+test("createTempGitRepo is callable with no arguments", () => {
+  // The shape property 11's capture depends on: every run copy in this file is
+  // made by calling it bare. A signature that grew a required parameter would
+  // otherwise surface as a confusing failure inside an unrelated property.
+  assert.equal(
+    createTempGitRepo.length,
+    0,
+    "createTempGitRepo must declare no required parameter — every caller here invokes it bare",
+  );
+
+  const dir = createTempGitRepo();
+  try {
+    assert.equal(pathPresent(join(dir, ".git")), true, "createTempGitRepo() must produce a git root");
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Durable falsification artifacts.
+//
+// Both encode a perturbation that would otherwise be a one-time manual check.
+// They ship as tests because the properties they falsify are NEGATIVES, and a
+// negative nobody has watched go red is a comparison nobody has shown can fail.
+// ---------------------------------------------------------------------------
+
+test("falsification artifact — property 11's equality goes RED for a write inside the window", () => {
+  const roots = worktreeRoots();
+  assertRootSetIsReal(roots);
+
+  // A single gitignored FILE (`*.log`, .gitignore:3), not a directory: nothing
+  // has to be created to hold it and nothing pre-existing can be removed with
+  // it, so the cleanup below cannot take anything else down with the probe.
+  const probe = join(PLUGIN_ROOT, ".hermeticity-probe.log");
+  assert.equal(pathPresent(probe), false, `${probe} must not already exist`);
+
+  const before = captureRepoState(roots);
+  try {
+    writeFileSync(probe, "hermeticity falsification probe\n");
+    const observed = diffRepoState(before, captureRepoState(roots));
+    assert.notDeepEqual(
+      observed,
+      [],
+      "a file written into this repository did NOT change the captured state — property 11 " +
+        "cannot go red, and its silence means nothing",
+    );
+    // It must go red at THIS worktree, not merely somewhere: a diff produced by
+    // a concurrent write in another worktree would satisfy the assertion above.
+    assert.ok(
+      observed.some((d) => d.startsWith(`${lenientRealpath(PLUGIN_ROOT)}:`)),
+      `the probe write must be observed at ${PLUGIN_ROOT}; observed at: ${observed.join(", ")}`,
+    );
+  } finally {
+    rmSync(probe, { force: true });
+  }
+
+  assert.deepEqual(
+    diffRepoState(before, captureRepoState(roots)),
+    [],
+    "removing the probe must restore the captured state",
+  );
+});
+
+test("falsification artifact — property 9's walk rejects a copy whose CLAUDE.md carries an `@`-import", () => {
+  const run = copyFixtureForRun();
+  try {
+    // Clean first: the copy is a byte copy of a tree property 9 passes on, so a
+    // walk reporting an escape here would be reporting its own bug.
+    assert.deepEqual(
+      atImportEscapes(run.projectRoot).escapes,
+      [],
+      "the untouched copy must pass property 9's walk",
+    );
+
+    const claudeMd = join(run.projectRoot, "CLAUDE.md");
+    writeFileSync(claudeMd, `${readFileSync(claudeMd, "utf8")}\n@../../../CLAUDE.md\n`);
+
+    const { escapes } = atImportEscapes(run.projectRoot);
+    assert.notDeepEqual(
+      escapes,
+      [],
+      "an `@`-import added to the copy's CLAUDE.md did not fail property 9's walk",
+    );
+    assert.ok(
+      escapes.some((e) => e.includes("@../../../CLAUDE.md")),
+      `the walk must name the planted import; reported: ${escapes.join(" | ")}`,
+    );
+  } finally {
+    cleanupTempDir(run.runRoot);
+  }
 });
