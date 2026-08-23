@@ -284,6 +284,7 @@ repomap:
     # legitimately shares a name with the DEFAULT_EXCLUDE "build/**" entry),
     # so this nested dist/ needs its own explicit entry.
     - "tests/evals/adev-api-eval/dist/**"
+    - "tests/evals/skill-regression/**"
 
 # ============================================================================
 # Hygiene
