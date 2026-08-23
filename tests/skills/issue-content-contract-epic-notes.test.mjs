@@ -20,9 +20,9 @@ function issueCreationSubsection(md) {
   return end === -1 ? rest : rest.slice(0, end);
 }
 
-test("BEH-5: standard-mode createEpic() call passes a notes summary, not title+planRef only", () => {
+test("BEH-5: standard-mode adev issues epic invocation passes a notes summary, not title+plan-ref only", () => {
   const section = issueCreationSubsection(read(PLAN_SKILL));
-  assert.match(section, /createEpic\(\{\s*title:.*notes:/s);
+  assert.match(section, /adev issues epic ".*--plan-ref .*--notes /s);
 });
 
 test("Postconditions: feature-mode's Charter: <module> notes tag is unchanged", () => {

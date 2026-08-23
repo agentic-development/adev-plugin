@@ -824,11 +824,13 @@ Per-task Issue creation is removed entirely — the skill no longer constructs `
 
 **Issue creation (optional, board-granularity only):** Read `tasks.backend` from `manifest.yaml`.
 
-If `tasks.backend` is configured, create an epic for the plan:
+If `tasks.backend` is configured, create an epic for the plan, passing a one-line summary drawn from the plan document's Goal line as `--notes`:
 
 ```bash
-adev issues epic "<plan title>" --plan-ref "<plan-file-path>"
+adev issues epic "<plan title>" --plan-ref "<plan-file-path>" --notes "<one-line summary of the plan's stated goal>"
 ```
+
+Do not reuse the `"Charter: <module>"` / `"Release: <name>"` tag convention from feature-mode / release-mode for this `--notes` value — `"Charter: <module>"` is a lookup tag `/adev:specify` Step 5.6-3 queries to resolve a parent Epic, and `"Release: <name>"` is release-mode's own umbrella-Epic tag consumed only by its own `walkTree` flow; neither applies to this plan-level epic.
 
 `adev issues epic` is the only verb that writes to the epic store the board reads. `adev issues create` lands the record in the issue store instead, where `/adev:implement` and `/adev:reconcile` will never find it — so they mint a duplicate epic on every run.
 
