@@ -1064,12 +1064,16 @@ const CLASSES = [
     path: "src/shipping/rates.mjs",
     anchor: "export function formatLegacyTotal",
   },
-  { id: "unused-dependency", path: "package.json", anchor: '"ajv":' },
+  // Literals here MUST match catalog.yaml's `anchor:` values byte for byte.
+  // Two hand-maintained tables describing the same defect will drift, and the
+  // drift is silent: the surviving anchor stays unique, so one suite goes green
+  // on a string the other no longer finds.
+  { id: "unused-dependency", path: "package.json", anchor: '"ajv": "^8.17.1"' },
   { id: "esm-violation", path: "src/orders/legacy-loader.js", anchor: 'require("node:fs")' },
   {
     id: "charter-scope-escape",
     path: ".context-index/specs/features/orders/shipping-rates.spec.md",
-    anchor: "Calculate a shipping rate",
+    anchor: "# Live Spec: Calculate a shipping rate",
   },
   {
     id: "undocumented-public-api",
