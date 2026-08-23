@@ -1,14 +1,55 @@
 ---
-partial_schema: spec@1
 charter: eval-harness
 kind: artifact
-status: review-pending
+status: implemented
 risk_level: medium
 milestone: v1
 revision: 15
 charter-revision: 6
 created: 2026-08-21
-updated: 2026-08-22
+updated: 2026-08-23
+source-manifest:
+  sha: "bd58e48"
+  files:
+    - lib/evals/catalog-codes.mjs
+    - tests/evals/skill-regression/README.md
+    - tests/evals/skill-regression/catalog.yaml
+    - tests/evals/skill-regression/project/.context-index/adrs/0001-esm-only.md
+    - tests/evals/skill-regression/project/.context-index/constitution.md
+    - tests/evals/skill-regression/project/.context-index/deploy.yaml
+    - tests/evals/skill-regression/project/.context-index/evals/config.yaml
+    - tests/evals/skill-regression/project/.context-index/evals/orders-rubric.yaml
+    - tests/evals/skill-regression/project/.context-index/evals/orders-verdicts.json
+    - tests/evals/skill-regression/project/.context-index/governance/review.yaml
+    - tests/evals/skill-regression/project/.context-index/governance/validate.yaml
+    - tests/evals/skill-regression/project/.context-index/lifecycle-state/create-order.jsonl
+    - tests/evals/skill-regression/project/.context-index/lifecycle-state/shipping-rates.jsonl
+    - tests/evals/skill-regression/project/.context-index/manifest.yaml
+    - tests/evals/skill-regression/project/.context-index/memory/heuristics/orders.md
+    - tests/evals/skill-regression/project/.context-index/platform-context.yaml
+    - tests/evals/skill-regression/project/.context-index/samples/order-pipeline-create-order.md
+    - tests/evals/skill-regression/project/.context-index/specs/features/orders/charter.md
+    - tests/evals/skill-regression/project/.context-index/specs/features/orders/create-order.plan.md
+    - tests/evals/skill-regression/project/.context-index/specs/features/orders/create-order.spec.md
+    - tests/evals/skill-regression/project/.context-index/specs/features/orders/shipping-rates.plan.md
+    - tests/evals/skill-regression/project/.context-index/specs/features/orders/shipping-rates.spec.md
+    - tests/evals/skill-regression/project/.context-index/specs/product.md
+    - tests/evals/skill-regression/project/.context-index/tasks/tasks.json
+    - tests/evals/skill-regression/project/AGENTS.md
+    - tests/evals/skill-regression/project/CLAUDE.md
+    - tests/evals/skill-regression/project/docs/api.md
+    - tests/evals/skill-regression/project/package.json
+    - tests/evals/skill-regression/project/src/index.mjs
+    - tests/evals/skill-regression/project/src/orders/create-order.mjs
+    - tests/evals/skill-regression/project/src/orders/legacy-loader.js
+    - tests/evals/skill-regression/project/src/orders/orphaned-helper.mjs
+    - tests/evals/skill-regression/project/src/shipping/rates.mjs
+    - tests/evals/skill-regression/project/tests/create-order.test.mjs
+    - tests/evals/skill-regression/project/tests/rates.test.mjs
+    - tests/lib/evals/catalog-validator.mjs
+    - tests/lib/evals/skill-regression-catalog.test.mjs
+    - tests/lib/evals/skill-regression-hermeticity.test.mjs
+  computed-at: "2026-08-23T10:49:13.025Z"
 ---
 
 # Artifact Spec: Hermetic Fixture Project and Planted Ground-Truth Catalog
