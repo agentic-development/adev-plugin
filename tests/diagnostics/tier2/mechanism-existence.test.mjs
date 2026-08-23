@@ -123,8 +123,43 @@ test('run() extracts --flag and UPPER_SNAKE_ERROR_CODE tokens without filesystem
   try {
     const ctx = { projectRoot, authoredText: 'run with `--dry-run` and check for `INVALID_SPEC_PATH`' };
     const result = run(ctx);
-    // Neither token is filesystem-checkable, so neither can fire a MECHANISM_* refusal.
+    // Neither token is filesystem-checkable, so neither can fire a MECHANISM_* refusal...
     assert.strictEqual(result.fired, false);
+    // ...but both must actually be extracted, not silently dropped. This
+    // discriminates "checked and found nothing wrong" from "never extracted
+    // at all" — a bare `fired === false` assertion cannot tell them apart.
+    assert.deepStrictEqual(result.extracted, { flags: ['--dry-run'], errorCodes: ['INVALID_SPEC_PATH'] });
+  } finally {
+    rmSync(projectRoot, { recursive: true, force: true });
+  }
+});
+
+test('run() dedupes repeated --flag/error-code tokens and preserves first-seen order', () => {
+  const projectRoot = makeProject();
+  try {
+    const ctx = {
+      projectRoot,
+      authoredText: 'use `--tier` first, then `INVALID_TIER`, then `--tier` again, then `INVALID_TIER` again, then `--auto`',
+    };
+    const result = run(ctx);
+    assert.strictEqual(result.fired, false);
+    assert.deepStrictEqual(result.extracted, { flags: ['--tier', '--auto'], errorCodes: ['INVALID_TIER'] });
+  } finally {
+    rmSync(projectRoot, { recursive: true, force: true });
+  }
+});
+
+test('run() surfaces extracted flags/error-codes alongside a genuine unresolved file:line finding', () => {
+  const projectRoot = makeProject();
+  try {
+    const ctx = {
+      projectRoot,
+      authoredText: 'see `lib/nonexistent.mjs:1` and run with `--dry-run`, checking for `INVALID_SPEC_PATH`',
+    };
+    const result = run(ctx);
+    assert.strictEqual(result.fired, true);
+    assert.match(result.message, /MECHANISM_NOT_FOUND/);
+    assert.deepStrictEqual(result.extracted, { flags: ['--dry-run'], errorCodes: ['INVALID_SPEC_PATH'] });
   } finally {
     rmSync(projectRoot, { recursive: true, force: true });
   }
