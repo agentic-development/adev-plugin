@@ -6,10 +6,10 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { PLUGIN_ROOT } from '../helpers.mjs';
+import { PLUGIN_ROOT, readSkillSurface } from '../helpers.mjs';
 
 const SKILL_PATH = join(PLUGIN_ROOT, 'skills', 'write-test', 'SKILL.md');
-const skill = readFileSync(SKILL_PATH, 'utf8');
+const skill = readSkillSurface("write-test");
 
 describe('write-test SKILL.md — fail hard principle (issue-192)', () => {
   it("states default behavior is FAILURE not skip (+1 more contract assertions)", () => {

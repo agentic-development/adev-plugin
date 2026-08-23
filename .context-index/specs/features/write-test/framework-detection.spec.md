@@ -10,8 +10,8 @@ updated: 2026-05-04
 source-manifest:
   sha: "241a78f"
   files:
-    - skills/write-test/detect-framework.mjs
-    - skills/write-test/detect-framework.sh
+    - skills/write-test/scripts/detect-framework.mjs
+    - skills/write-test/scripts/detect-framework.sh
     - tests/write-test/detect-framework.test.mjs
   computed-at: "2025-04-25T00:00:00.000Z"
 ---

@@ -9,9 +9,10 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import { readSkillSurface } from "../../helpers.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SKILL = readFileSync(join(root, "skills/build/SKILL.md"), "utf8");
+const SKILL = readSkillSurface("build");
 
 describe("build SKILL.md cost ticker prose", () => {
   it("references adev cost summary --include-checkpoints with ADEV_BUILD_TICKER=1 (Behavior 8) (+3 more contract assertions)", () => {

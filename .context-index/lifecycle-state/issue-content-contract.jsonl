@@ -45,3 +45,4 @@
 {"event":"validator_report","step":"validate","validator":"validate.check-8-boundaries","severity":"error","verdict":"PASS","notes":"Skipped — quick rigor tier.","ts":"2026-08-22T17:39:29.377Z"}
 {"event":"validator_report","step":"validate","validator":"validate.check-9-transition-gates","severity":"warning","verdict":"PASS","notes":"Skipped — quick rigor tier.","ts":"2026-08-22T17:39:29.458Z"}
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-08-22T17:40:16.860Z"}
+{"event":"code_drift_detected","drift_source":"tests/skills/issue-content-contract-epic-notes.test.mjs","drift_at":"2026-08-23T13:10:10.739Z","ts":"2026-08-23T13:10:10.740Z"}

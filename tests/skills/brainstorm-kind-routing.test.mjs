@@ -2,7 +2,7 @@ import { describe, it, before } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { PLUGIN_ROOT } from "../helpers.mjs";
+import { PLUGIN_ROOT, readSkillSurface } from "../helpers.mjs";
 
 const SKILL_PATH = join(PLUGIN_ROOT, "skills", "brainstorm", "SKILL.md");
 
@@ -11,7 +11,7 @@ describe("adev:brainstorm SKILL.md — kind routing (Step 2 Clarify)", () => {
 
   before(() => {
     assert.ok(existsSync(SKILL_PATH), "skills/brainstorm/SKILL.md must exist");
-    content = readFileSync(SKILL_PATH, "utf8");
+    content = readSkillSurface("brainstorm");
   });
 
   it("SKILL.md documents the --kind flag in the Arguments section", () => {
@@ -33,8 +33,10 @@ describe("adev:brainstorm SKILL.md — kind routing (Step 2 Clarify)", () => {
   it("SKILL.md inserts kind prompt in Step 2 (Clarify) before approach selection", () => {
     // The kind prompt heading or text must appear within Step 2 (Clarify),
     // i.e. between '## Step 2: Clarify' and '## Step 3:'
-    const step2Idx = content.indexOf("## Step 2: Clarify");
-    const step3Idx = content.indexOf("## Step 3");
+    // Same reason as Step 5 below: read Step 2's companion, whose whole file is
+    // the section. lastIndexOf/slicing across the surface would hit the stubs.
+    const step2Idx = content.lastIndexOf("## Step 2: Clarify");
+    const step3Idx = content.indexOf("## Step 3", step2Idx);
     assert.ok(step2Idx !== -1, "Step 2 (Clarify) must exist");
     assert.ok(step3Idx !== -1, "Step 3 must exist");
     assert.ok(step2Idx < step3Idx, "Step 2 must precede Step 3");
@@ -114,7 +116,7 @@ describe("adev:brainstorm SKILL.md — cross-cutting path policy (Task 2)", () =
   let content;
 
   before(() => {
-    content = readFileSync(SKILL_PATH, "utf8");
+    content = readSkillSurface("brainstorm");
   });
 
   it("SKILL.md saves kind: cross-cutting charters to specs/cross-cutting/<slug>/charter.md", () => {
@@ -123,11 +125,15 @@ describe("adev:brainstorm SKILL.md — cross-cutting path policy (Task 2)", () =
       "Must reference the specs/cross-cutting/ save path"
     );
     // The Step 5 Write Charter section should describe path branching by kind.
-    const step5Idx = content.indexOf("## Step 5: Write Charter");
-    const step5bIdx = content.indexOf("## Step 5b");
-    assert.ok(step5Idx !== -1, "Step 5: Write Charter must exist");
-    assert.ok(step5bIdx !== -1, "Step 5b must exist");
-    const step5Block = content.slice(step5Idx, step5bIdx);
+    // Step 5's body is its own companion under progressive disclosure, so the
+    // whole file IS the block. Slicing the concatenated surface between the
+    // Step 5 and Step 5b headings would return SKILL.md's two stubs instead.
+    assert.ok(content.includes("## Step 5: Write Charter"), "Step 5: Write Charter must exist");
+    assert.ok(content.includes("## Step 5b"), "Step 5b must exist");
+    const step5Block = readFileSync(
+      join(PLUGIN_ROOT, "skills", "brainstorm", "references", "steps", "step-5-write-charter.md"),
+      "utf8",
+    );
     assert.ok(
       step5Block.includes("cross-cutting"),
       "Step 5 must branch on kind: cross-cutting for save path"

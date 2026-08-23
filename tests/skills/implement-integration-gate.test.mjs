@@ -3,12 +3,17 @@ import assert from "node:assert/strict";
 import { readFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+import { readSkillSurface } from "../helpers.mjs";
+import { resolveSkillPointer } from "../helpers.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 describe("implement SKILL.md — unified integration gate", () => {
-  const skillPath = join(__dirname, "..", "..", "skills", "implement", "SKILL.md");
-  const skill = readFileSync(skillPath, "utf8");
+  // Search the whole instruction surface: Step 2-post's pointer itself moved
+  // out of SKILL.md into a companion when the body was split further. The
+  // resolve-from-the-pointer discipline below is unchanged and still catches a
+  // rename or a dropped pointer.
+  const skill = readSkillSurface("implement");
 
   // The Step 2-post body was extracted to a conditional-loading companion when
   // implement/SKILL.md crossed the 65,536-byte cap the Copilot provider enforces.
@@ -21,7 +26,7 @@ describe("implement SKILL.md — unified integration gate", () => {
     pointer,
     "Step 2-post must carry a `Conditional loading:` pointer to its companion",
   );
-  const companionPath = join(__dirname, "..", "..", pointer[1]);
+  const companionPath = resolveSkillPointer(pointer[1]);
   const content = readFileSync(companionPath, "utf8");
 
   it("should read integration gates from governance/gates.yaml", () => {
@@ -62,8 +67,11 @@ describe("implement SKILL.md — unified integration gate", () => {
 });
 
 describe("implement SKILL.md — Step 2-post merged gate source and severity", () => {
-  const skillPath = join(__dirname, "..", "..", "skills", "implement", "SKILL.md");
-  const skill = readFileSync(skillPath, "utf8");
+  // Search the whole instruction surface: Step 2-post's pointer itself moved
+  // out of SKILL.md into a companion when the body was split further. The
+  // resolve-from-the-pointer discipline below is unchanged and still catches a
+  // rename or a dropped pointer.
+  const skill = readSkillSurface("implement");
 
   // Same extraction as the block above: Step 2-post's body now lives in a
   // conditional-loading companion. Resolved from the pointer, not hardcoded.
@@ -74,7 +82,7 @@ describe("implement SKILL.md — Step 2-post merged gate source and severity", (
     pointer,
     "Step 2-post must carry a `Conditional loading:` pointer to its companion",
   );
-  const content = readFileSync(join(__dirname, "..", "..", pointer[1]), "utf8");
+  const content = readFileSync(resolveSkillPointer(pointer[1]), "utf8");
 
   // Bounding used to be necessary because Step 2h sits in the same file and
   // legitimately reads governance/gates.yaml directly, so unbounded assertions

@@ -42,7 +42,7 @@ import { join, resolve, dirname } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 
-import { PLUGIN_ROOT } from "../helpers.mjs";
+import { PLUGIN_ROOT, readSkillSurface } from "../helpers.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -219,7 +219,7 @@ function execSkill(input, ctx) {
   if (name === "adev:build" || name === "build") {
     return {
       ok: true,
-      content: readFileSync(join(PLUGIN_ROOT, "skills/build/SKILL.md"), "utf8"),
+      content: readSkillSurface("build"),
     };
   }
   // Unknown skills return empty content; the orchestrator should not need

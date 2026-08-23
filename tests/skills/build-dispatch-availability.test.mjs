@@ -17,14 +17,25 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "fs";
 import { join } from "path";
-import { PLUGIN_ROOT } from "../helpers.mjs";
+import { PLUGIN_ROOT, readSkillSurface } from "../helpers.mjs";
 
 const SKILL_PATH = join(PLUGIN_ROOT, "skills", "build", "SKILL.md");
-const skill = readFileSync(SKILL_PATH, "utf8");
+const skill = readSkillSurface("build");
 
+/**
+ * Slice a heading's section out of `text`.
+ *
+ * Searches from the LAST matching heading, not the first. Under progressive
+ * disclosure the concatenated surface holds SKILL.md's stub for a heading
+ * before the companion that carries the real body; taking the first match
+ * would return the conditional-loading pointer and nothing else.
+ */
 function extractSection(text, headingPattern) {
   const lines = text.split("\n");
-  const startIdx = lines.findIndex((line) => headingPattern.test(line));
+  let startIdx = -1;
+  for (let i = lines.length - 1; i >= 0; i--) {
+    if (headingPattern.test(lines[i])) { startIdx = i; break; }
+  }
   if (startIdx === -1) return null;
   const headingLevel = lines[startIdx].match(/^#+/)?.[0]?.length ?? 2;
   const endIdx = lines.findIndex((line, i) => {

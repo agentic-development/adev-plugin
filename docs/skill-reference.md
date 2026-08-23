@@ -895,3 +895,75 @@ Batching and `--parallel` operate at different scopes: batching groups cohesive,
 **Expected Output:** A maturity scorecard with per-dimension scores, overall readiness rating, and prioritized improvement recommendations.
 
 **Related Guides:** [Getting Started Tutorial](getting-started.md), [Core Concepts](concepts.md)
+
+## How a skill is laid out on disk
+
+Each skill is a directory under `skills/`:
+
+```
+skills/<name>/
+├── SKILL.md          # the body — always loaded in full when the skill runs
+├── references/       # companions — loaded on demand, only when needed
+└── scripts/          # executable helpers the skill shells out to
+```
+
+**`SKILL.md` is the always-read part.** It is injected in full when the skill is
+invoked, and from then on it is re-read as part of the context prefix on every
+subsequent turn of that session. Its size is therefore multiplied by how long
+the session runs, not paid once.
+
+**`references/` is the on-demand part.** Material an agent needs only sometimes
+— one mode of a multi-mode skill, one audit pass, one pipeline step — lives
+here. The body keeps the heading, a one-line summary of what the section
+covers, and a pointer:
+
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/hygiene/references/audit-passes/pass-12-lifecycle-audit.md` for the full instructions.
+
+`<ADEV_ROOT>` is the **plugin root** — the directory containing `skills/`, `lib/`
+and `templates/` — resolved at runtime. Pointers **must** carry it.
+
+Where that is depends on how the skill was installed. It is the *plugin* root, not
+the directory the running skill happens to sit in, and for cursor those differ:
+
+| Surface | `<ADEV_ROOT>` resolves to |
+|---------|---------------------------|
+| Claude Code (plugin dir) | the plugin directory itself |
+| copilot | `<destRoot>/` — the skill tree is published under `<destRoot>/skills/<name>/` |
+| codex | symlinks `~/.agents/skills/<name>` into the live checkout, so `<ADEV_ROOT>` is that checkout |
+| opencode | `~/.config/opencode/plugins/cache/adev/` — install copies the plugin root into that cache, then symlinks `~/.config/opencode/skills/<name>` into it. Like cursor, the cache is the plugin root, **not** the checkout and not the skills dir |
+| cursor | `~/.cursor/plugins/local/adev/` — the plugin **cache**, NOT `~/.cursor/skills/` |
+
+Cursor is the one that catches people. It publishes a sanitized copy for discovery
+to `~/.cursor/skills/adev-<name>/`, with the directory renamed — so no root maps a
+`skills/<name>/references/...` pointer onto that layout. The cache is a full copy of
+the plugin root (`cpSync(PLUGIN_ROOT, cacheDir)`) and does contain a conforming
+`skills/<name>/references/...`, so a cursor-hosted agent resolves `<ADEV_ROOT>` to
+the cache.
+A bare `skills/...` path is repo-root-relative, and nothing anchors it once the
+skill is installed: cursor publishes to `~/.cursor/skills/adev-<name>/` with the
+directory renamed, copilot under `.github/` or `~/.copilot/`, codex to
+`~/.agents/skills/<name>/`. In a user project the agent's cwd is the *project*
+root, so a bare path resolves to nothing — or, worse, binds to a same-named file
+in a project-owned `skills/` tree, which the pointer prose then instructs the
+agent to treat as the authoritative instructions.
+
+The agent reads a companion immediately before it needs it, so a run that only
+touches one mode never loads the other six. `skills/hygiene/SKILL.md` is the
+clearest example: 23 audit passes live in `references/audit-passes/`, and the
+body carries a routing table mapping each pass to its `--check` slug and file.
+
+Some things stay in the body no matter how large it gets, because they govern
+the whole invocation rather than one branch: the Load Skill Extensions block,
+the dispatch-discipline rules, and `## Prerequisites`. A precondition behind a
+conditional-loading pointer is no longer unconditional.
+
+### Size limits
+
+| Limit | Value | What happens if you cross it |
+|-------|-------|------------------------------|
+| Copilot frontmatter cap | 65,536 bytes | Hard failure — `INVALID_SKILL_FRONTMATTER` breaks Copilot **install** (and its `--dry-run` branch) |
+| Agent Skills guidance | ~5,000 tokens | Soft — the body costs more on every turn of every session that loads it |
+
+Both are checked by `tests/skills/skill-size-cap.test.mjs`. If you trip either,
+move a section into `references/` — do not delete prose to fit.
+

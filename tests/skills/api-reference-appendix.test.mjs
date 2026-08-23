@@ -11,6 +11,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
+import { readSkillSurface } from "../helpers.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const PLUGIN_ROOT = join(__filename, "..", "..", "..");
@@ -49,13 +50,15 @@ test("api-reference-appendix: gate-bearing skills cite lifecycle-state APIs", ()
   // and emit step/intervention/validator/reviewer events.
   const GATE_SKILLS = ["plan", "implement", "build", "validate", "review-specs"];
   for (const skill of GATE_SKILLS) {
-    const path = join(PLUGIN_ROOT, "skills", skill, "SKILL.md");
-    const content = readFileSync(path, "utf8");
+    // Whole instruction surface: several appendices moved into
+    // references/api-reference.md under progressive disclosure. The heading
+    // test above still pins "## API reference" to SKILL.md itself.
+    const content = readSkillSurface(skill);
     assert.ok(
       /currentState|requireGate|reportStep|reportReviewer|reportValidator|reportIntervention/.test(
         content,
       ),
-      `skills/${skill}/SKILL.md missing lifecycle-state API references`,
+      `skills/${skill} missing lifecycle-state API references`,
     );
   }
 });
@@ -72,11 +75,10 @@ test("api-reference-appendix: issue-board skills cite the issue manager interfac
     "research",
   ];
   for (const skill of BOARD_SKILLS) {
-    const path = join(PLUGIN_ROOT, "skills", skill, "SKILL.md");
-    const content = readFileSync(path, "utf8");
+    const content = readSkillSurface(skill);
     assert.ok(
       /getIssueManager|IssueManagerInterface/.test(content),
-      `skills/${skill}/SKILL.md missing issue manager references`,
+      `skills/${skill} missing issue manager references`,
     );
   }
 });

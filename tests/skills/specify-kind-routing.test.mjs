@@ -20,6 +20,8 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
+import { dirname } from "node:path";
+import { readSkillSurfaceAt } from "../helpers.mjs";
 import { join } from "node:path";
 
 import { PLUGIN_ROOT } from "../helpers.mjs";
@@ -51,7 +53,26 @@ const OPENCODE_SKILL = join(
  */
 function readSkill(path) {
   assert.ok(existsSync(path), `${path} must exist`);
-  return readFileSync(path, "utf8");
+  // SKILL.md plus its references/ companions: mode bodies moved out of the
+  // body under progressive disclosure, and these assertions are about the
+  // instructions the skill ships, not about which file holds them.
+  return readSkillSurfaceAt(dirname(path));
+}
+
+/**
+ * Standard Mode's step body, which progressive disclosure moved out of
+ * SKILL.md into references/modes/standard-mode.md.
+ *
+ * Step-scoped assertions read THIS rather than the concatenated skill surface:
+ * every sibling mode file numbers its own steps 3/4/5 too, so offsets taken
+ * across the concatenation would compare headings from different modes and
+ * silently stop meaning what they say.
+ */
+function readStandardMode() {
+  return readFileSync(
+    join(PLUGIN_ROOT, "skills", "specify", "references", "modes", "standard-mode.md"),
+    "utf8",
+  );
 }
 
 describe("adev:specify SKILL.md — kind routing (Task 1)", () => {
@@ -74,7 +95,14 @@ describe("adev:specify SKILL.md — kind routing (Task 1)", () => {
   });
 
   it("introduces Step 3.5 (Resolve Kind) between Step 3 and Step 4", () => {
-    const c = readSkill(PRIMARY_SKILL);
+    // Ordering is a property of Standard Mode's own step sequence, so it is
+    // asserted against that one companion. Reading the concatenated surface
+    // would compare offsets across sibling mode files, which also number
+    // their steps 3/4 and would make the comparison meaningless.
+    const c = readFileSync(
+      join(dirname(PRIMARY_SKILL), "references", "modes", "standard-mode.md"),
+      "utf8",
+    );
     const step3 = c.indexOf("### Step 3:");
     const step35 = c.indexOf("### Step 3.5");
     const step4 = c.indexOf("### Step 4:");

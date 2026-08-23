@@ -1,5 +1,5 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync, rmSync, cpSync } from "fs";
-import { join, dirname } from "path";
+import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync, rmSync, cpSync, realpathSync } from "fs";
+import { join, dirname, resolve, sep } from "path";
 import { fileURLToPath } from "url";
 import { readJson } from "../../lib/provider/json-io.mjs";
 import { installCopyFilter } from "../../lib/provider/ship-filter.mjs";
@@ -50,6 +50,90 @@ function getPluginCacheDir() {
  * @param {string} content
  * @returns {{ content: string, sanitizedName: string | null }}
  */
+/**
+ * A published skill directory name: one path segment, no separators, no dots.
+ *
+ * Deliberately stricter than the frontmatter grammar. `name:` is matched with
+ * `\S+`, which is fine for a YAML scalar and wrong for something concatenated
+ * into a filesystem path.
+ */
+const SAFE_SKILL_DIRNAME = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+
+/**
+ * Resolve the directory a sanitized skill name may be published to, or throw.
+ *
+ * EXPORTED SO IT CAN BE TESTED. The guard used to live inline in
+ * `publishSkillsFromCache`, which is module-private and derives its own target
+ * from `getCursorHome()` — so the only way to exercise it was a full install
+ * against a poisoned plugin root, which a test cannot arrange. The regression
+ * test written for it therefore fell back to grepping this file for identifier
+ * names, which passes against a guard that is declared but never called, called
+ * after the write, or logically inverted. Pulling the decision into a pure
+ * function makes the real behaviour reachable.
+ *
+ * Two layers:
+ *
+ *  1. The name must be a single path segment. The frontmatter grammar is
+ *     `/^name:\s*(\S+)\s*$/`, and `\S+` admits `/` and `..` — fine for a YAML
+ *     scalar, wrong for something concatenated into a filesystem path.
+ *  2. The resolved destination must sit inside the root, compared through
+ *     `realpathSync`. A lexical `resolve()` + `startsWith` check is NOT enough:
+ *     if the root is itself a symlink — dotfile managers commonly do this, and
+ *     it can be planted before install — `resolve()` never dereferences it, so
+ *     the check reports containment while `ensureDir`/`cpSync`/`writeFileSync`,
+ *     which all follow symlinks, land at the link's real target. This is the
+ *     `/var` -> `/private/var` class of gap that
+ *     `lib/extensions/exec-payload.mjs::assertContained` documents in its own
+ *     header, and the reason that primitive realpaths both sides.
+ *
+ * @param {string} skillsRoot directory published skills live under
+ * @param {string} name sanitized skill name from SKILL.md frontmatter
+ * @returns {string} absolute destination directory
+ * @throws {Error} SKILL_NAME_UNSAFE | SKILL_PATH_ESCAPE
+ */
+export function resolvePublishTarget(skillsRoot, name) {
+  if (!SAFE_SKILL_DIRNAME.test(name)) {
+    throw new Error(
+      `SKILL_NAME_UNSAFE: ${JSON.stringify(name)} must match ${SAFE_SKILL_DIRNAME}`,
+    );
+  }
+
+  // The root exists by construction (ensureDir runs before publishing), so it can
+  // be realpath'd directly. The destination itself may not exist yet, which is why
+  // the root is the side that gets dereferenced.
+  let base;
+  try {
+    base = realpathSync(resolve(skillsRoot));
+  } catch (err) {
+    throw new Error(`SKILL_PATH_ESCAPE: cannot resolve skills root ${skillsRoot}: ${err.message}`);
+  }
+
+  const dest = resolve(base, name);
+  if (dest !== base && !dest.startsWith(base + sep)) {
+    throw new Error(`SKILL_PATH_ESCAPE: ${dest} is outside the skills root ${base}`);
+  }
+
+  // If the destination ALREADY exists, it must still be inside the root once
+  // dereferenced. Checking only the base is not enough: a pre-existing symlink at
+  // <root>/<name> pointing outside passes the lexical prefix test above, and the
+  // ensureDir/cpSync/writeFileSync that follow all traverse symlinks — so the write
+  // lands at the link's target. Needs prior write access to the user's own skills
+  // dir, so it is a narrow vector, but it is the one case the base-only realpath
+  // leaves open.
+  try {
+    const realDest = realpathSync(dest);
+    if (realDest !== base && !realDest.startsWith(base + sep)) {
+      throw new Error(
+        `SKILL_PATH_ESCAPE: existing ${dest} resolves to ${realDest}, outside ${base}`,
+      );
+    }
+  } catch (err) {
+    // ENOENT is the normal case — the destination has not been created yet.
+    if (err.code !== "ENOENT") throw err;
+  }
+  return dest;
+}
+
 export function sanitizeSkillName(content) {
   if (!content.startsWith("---\n") && !content.startsWith("---\r\n")) {
     return { content, sanitizedName: null };
@@ -115,7 +199,19 @@ async function publishSkillsFromCache(cacheDir) {
       const { content: sanitizedMd, sanitizedName } = sanitizeSkillName(raw);
       if (!sanitizedName) continue; // No name: frontmatter — skip silently.
 
-      const targetDir = join(targetSkillsDir, sanitizedName);
+      // The name becomes a DIRECTORY NAME under targetSkillsDir, so it must be a
+      // single path segment. The frontmatter match is `/^name:\s*(\S+)\s*$/`, and
+      // `\S+` admits `/` and `..` — a skill declaring `name: adev:../../x` would
+      // otherwise escape ~/.cursor/skills/ before the recursive copy below.
+      // Rejected rather than re-sanitized: a name that needs path-stripping is
+      // malformed, and silently rewriting it would publish a skill under a name
+      // that is not the one it declares.
+      // MUST precede every write below. resolvePublishTarget applies both the
+      // single-path-segment allowlist and the realpath containment check, and
+      // throws rather than returning a sanitized fallback — a name that needs
+      // path-stripping is malformed, and rewriting it would publish a skill
+      // under a name it does not declare.
+      const targetDir = resolvePublishTarget(targetSkillsDir, sanitizedName);
       ensureDir(targetDir);
 
       // Copy all sibling files verbatim first, then overwrite SKILL.md

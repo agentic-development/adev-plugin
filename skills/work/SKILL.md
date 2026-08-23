@@ -14,6 +14,18 @@ Two things distinguish this skill from a plain router:
 
 **Announce at start:** "I'm using the adev:work skill as your front door — I'll figure out the right step and can drive it through."
 
+### Load Skill Extensions
+
+**Load Skill Extensions:** Load any skill extension instructions before proceeding:
+
+```bash
+adev skill-ext load --skill work
+```
+
+If the output is not `__NONE__`, incorporate it as additional standing instructions that apply to this skill's entire execution. Frame it as: *"The following skill extension instructions apply to this invocation (source: installed domain extensions and/or project-level overrides)."* If the output is `__NONE__`, continue normally.
+
+---
+
 ## Arguments
 
 - No arguments: interactive triage (scans state, asks what you are working on)
@@ -31,172 +43,27 @@ Stop processing. No other steps run.
 
 ## Step 1: Project State Scan
 
-Scan for in-progress work using **parallel** tool calls in a single round:
+Reads in-progress lifecycle state before classifying anything.
 
-1. **In-progress execution state:** Call `readExecutionState(projectRoot)` from `<ADEV_ROOT>/lib/execution-state.mjs`. If `status === "active"` or `status === "blocked"`, the project has resumable work — surface the `planRef`, `currentTask`, and any `blockers` to the user.
-
-2. **Plan task projection:** For each plan referenced by an existing lifecycle log, call `currentState(projectRoot, specPath)` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` and inspect `state.planTasks`. Tasks with `status === "pending"` or `status === "in_progress"` are open. **Do not grep plan files for `- [ ]` checkboxes** — the plan file is read-only after authoring; canonical task status lives in the lifecycle log. (Plan-task channel ownership is defined in `plan-task-events.spec.md`; redirect plan-task work to `/adev:implement`, which is the only writer.)
-
-3. **Pipeline status overview:** Call `listLifecycleStates(projectRoot)` from `<ADEV_ROOT>/lib/lifecycle-state.mjs` to aggregate per-spec lifecycle states across the project. Specs whose `currentStep` is `specify` with `status: "completed"` but no `review` step are "unreviewed."
-
-4. **Recent sessions:** Glob for `.context-index/sessions/*.md`. Read the 3 most recent files (sorted by filename date prefix, descending). Extract the session summary line.
-
-5. **Concurrent work by others (pre-flight scan):** Signals 1-4 are worktree-local and cannot see another agent. Run the shared-signal scan:
-
-   ```bash
-   adev coordination scan
-   ```
-
-   It reports open PRs, recently-active remote branches, and issues sitting at `in_progress` under an owner other than yours (add `--json` when you need the structured report, `--owner <name>` when `$ADEV_ISSUE_OWNER` is not set). Interpret the result:
-   - **Anything listed that overlaps the work at hand** — an open PR, a branch, or an in-progress issue on the same subject — must be surfaced to the user *before* routing, naming the PR number / branch / issue id. Someone may already be doing this.
-   - **`none detected`** — proceed.
-   - **`(not scanned — …)`** — a signal degraded (no `gh`, unauthenticated, no GitHub remote, no git). This is normal and never blocks the scan; treat the missing signal as unknown, not as absence of concurrent work.
-
-   The verb always exits 0 when the scan completes; a non-zero exit means a usage error, not a finding.
-
-### If in-progress work is found
-
-Surface it, and **propose the concrete next step** — not just "resume?". For each in-progress item, compute its next lifecycle action using the Next-Step Projection table (Step 3), then lead with the single most relevant one:
-
-> I found in-progress work:
-> - **hooks** plan: 3/7 tasks incomplete → next: **`/adev:implement`** (continue the plan)
-> - **design** spec `drag-drop.md`: specified but unreviewed → next: **`/adev:review-specs`**
-> - Recent session (2026-03-28): "Implemented auth login flow"
-> - Concurrent: PR #214 `fix/issue-582` (agent-a) and `issue-582` in progress under owner `agent-a`
->
-> Want me to continue with `/adev:implement` on **hooks**, pick another, or start something new?
-
-Wait for the user's response before proceeding. If the user says "continue", "resume", "what's next", or gives no new description, route directly to the projected next step for the most recently active item (see Step 3) — do not re-ask what to work on.
-
-### If no in-progress work is found
-
-Proceed directly to Step 2.
-
-### Error handling
-
-- If a file is missing during the scan, skip it silently (normal — not all projects have sessions or plans).
-- If a file is present but malformed or unreadable, skip it and emit a visible warning: "Skipped one file that could not be read: `<path>`."
-
-**Load Skill Extensions:** Load any skill extension instructions before proceeding:
-
-```bash
-adev skill-ext load --skill work
-```
-
-If the output is not `__NONE__`, incorporate it as additional standing instructions that apply to this skill's entire execution. Frame it as: *"The following skill extension instructions apply to this invocation (source: installed domain extensions and/or project-level overrides)."* If the output is `__NONE__`, continue normally.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/work/references/steps/step-1-project-state-scan.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Step 2: Classify Work
 
-If the user provided a description (as an argument, or in response to the state scan prompt, or as their initial message), classify it into exactly one work type.
+Classifies the incoming request into a lifecycle entry point.
 
-### Work Type Classification Table
-
-This table covers the full skill surface — route any intent to exactly one target. Grouped by lifecycle area; the first several rows are the common path.
-
-| Intent | Signal Keywords / Patterns | Target Skill |
-|--------|---------------------------|-------------|
-| New feature / capability | "new feature", "add capability", "build X", "I want to create" | `/adev:brainstorm` |
-| New spec (charter exists) | "write a spec", "specify", "define behavior for" | `/adev:specify` |
-| Update / refactor a spec | "update the spec", "revise", "refactor", "clean up", "tech debt" | `/adev:specify --module <m>` / `--refactor` |
-| Review specs | "review specs", "architecture review", "are the specs ready" | `/adev:review-specs` |
-| Plan work | "plan", "break into tasks", "create tasks" | `/adev:plan` |
-| Ship a spec end-to-end | "build it", "end to end", "run the pipeline", "review through validate" | `/adev:build` |
-| Implement a plan | "implement", "start coding", "build the plan" | `/adev:implement` |
-| Write tests first | "write tests", "TDD", "failing test for" | `/adev:write-test` |
-| Bug / broken behavior | "bug", "broken", "failing test", "error", "not working" | `/adev:debug` |
-| Drain P2/P3 bugs unattended | "drain the bug backlog", "bugfix loop", "run the loop unattended" | `/adev:bugfix-loop` |
-| Validate an implementation | "validate", "check it works", "verify the feature" | `/adev:validate` |
-| Score / grade quality | "eval", "score", "grade", "how good is" | `/adev:eval` |
-| Project status | "status", "where do things stand", "progress", "what's done" | `/adev:status` |
-| Context health / drift | "audit", "staleness", "drift", "hygiene", "context health" | `/adev:hygiene` |
-| Fix lifecycle mismatches | "reconcile", "orphaned", "stale epics", "untraced code" | `/adev:reconcile` |
-| Dead / stale code | "dead code", "unused exports", "orphan files" | `/adev:codehealth` |
-| Manage work items | "create an issue", "file a bug", "issue board", "what needs doing" | `/adev:issues` |
-| Research a topic | "research", "investigate", "compare", "best practices for" | `/adev:research` |
-| Generate docs | "generate docs", "document the codebase", "architecture docs" | `/adev:document` |
-| Deploy / release | "deploy", "publish", "push to production", "release" | `/adev:deploy` |
-| Retrospective | "retro", "what went well", "delivery metrics", "review the sprint" | `/adev:retro` |
-| Curate golden samples | "find good examples", "reference code", "golden samples" | `/adev:sample` |
-| Capture a lesson | "remember this", "save this lesson", "heuristic" | `/adev:learn` |
-| Set up / repair adev | "set up adev", "initialize", "diagnose context-index" | `/adev:init` |
-| Sync agent files | "sync agent files", "constitution changed", "update CLAUDE.md" | `/adev:sync` |
-| Sketch UI / API | "prototype", "mockup", "sketch the screen" | `/adev:prototype` |
-| Map the repo | "map the codebase", "symbol index", "repomap" | `/adev:repomap` |
-
-### Classification rules
-
-- Use both keyword matching and semantic understanding of the user's intent.
-- Match against the table above. If multiple types match, prefer the most specific one (e.g., "fix the failing spec review test" matches both `bug-fix` and `review` — choose `bug-fix` because the user describes a broken test, not a review request).
-- Context from the state scan can refine classification (see Step 3).
-
-### If no description is provided
-
-Ask a single classifying question:
-
-> What are you working on? For example:
-> - A new feature or idea
-> - A bug or failing test
-> - Implementing an existing plan
-> - Reviewing or planning specs
-> - Something else
-
-Wait for the user's response, then classify.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/work/references/steps/step-2-classify-work.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Step 3: State-Aware Routing Refinement
 
-### Next-Step Projection
+Adjusts the route using what the state scan found.
 
-Map each in-progress spec's lifecycle position to its next action. Derive position from `currentState(projectRoot, specPath).steps` and `readExecutionState` (Step 1) — do not guess from file presence.
-
-| Current lifecycle position | Next step |
-|---|---|
-| Execution state `active` with a `currentTask` | `/adev:implement` (resume the current task) |
-| Execution state `blocked` | `/adev:recover` (or `/adev:debug` if it is a code fault) |
-| `specify` completed, no `review` step | `/adev:review-specs` |
-| `review` passed (PASS / PASS_WITH_NOTES), no `plan` | `/adev:plan` |
-| `plan` completed, no `route` and no `implement` | `/adev:route` (or `/adev:implement` if routing is skipped) |
-| `implement` completed for all tasks, no `validate` | `/adev:validate` |
-| `validate` passed | Done — offer `/adev:deploy`, `/adev:retro`, or new work |
-| `review` verdict BLOCK | `/adev:specify --revise` (address the blockers) |
-
-**When invoked with no description, or when the user says "continue" / "next" / "resume", route directly to the projected next step for the most recently active spec — do not re-ask what to work on.** This is the no-argument conductor path: `/adev:work` alone means "advance my current work."
-
-Then apply the refinements below before proposing a route:
-
-Before proposing a route, check whether the state scan (Step 1) should override or refine the classification:
-
-1. **Resume override:** If the user says "work on X" and the state scan found an incomplete plan for module X, route to `/adev:implement` (not `/adev:brainstorm`):
-
-   > Module **X** has an active plan with incomplete tasks. Routing to `/adev:implement` to continue the plan.
-
-2. **Gate warning:** If the user says "plan X" but the lifecycle projection shows specs for module X have not passed review (`state.steps.review` missing or `verdict: BLOCK`), warn:
-
-   > Specs for **X** haven't been reviewed yet. Want to run `/adev:review-specs` first, or proceed to planning anyway?
-
-   Wait for the user's response.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/work/references/steps/step-3-routing-refinement.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Step 4: Route Proposal
 
-### High confidence (clear keywords or unambiguous context)
+Presents the proposed route and gets confirmation.
 
-Propose the route directly with one-line reasoning:
-
-> **Route:** `/adev:debug`
-> **Reason:** You described a failing test in the hooks module.
-> **Context:** Will pre-load the hooks charter and recent session.
->
-> Proceed? (yes / change route)
-
-### Low confidence (ambiguous description, multiple matches)
-
-Ask one clarifying question with numbered options:
-
-> This could be a few things. Which fits best?
-> 1. New feature (needs a charter first) --> `/adev:brainstorm`
-> 2. New spec within the **auth** charter --> `/adev:specify`
-> 3. Update the existing `login-flow.md` spec --> `/adev:specify --module auth`
-
-Wait for the user to choose.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/work/references/steps/step-4-route-proposal.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Step 5: Invoke Skill
 
@@ -229,87 +96,72 @@ If the user rejects the proposal or requests a different route, ask what they wo
 
 The goal: a user can start at `/adev:work` and never need to pick another command unless they *want* fine-grained control.
 
+### Do not re-enter a skill whose body is already loaded
+
+Conducting the arc means carrying the work forward **from the instructions
+already in this context** — not re-invoking skills to get them back.
+
+- **Never re-invoke `/adev:work` to advance the arc.** Once this body has loaded,
+  the classification table, the routing refinements, and Conductor Mode are all
+  in context for the rest of the session. Re-invoking the front door to pick the
+  next stage re-injects this entire file to learn something already present.
+- **Never re-invoke a target skill you have already invoked in this session for
+  the same unit of work.** If a stage must run a second time — a review came back
+  BLOCK, a validate failed and implement must re-run — either continue from that
+  skill's instructions already in context, or dispatch it as a subagent
+  (`Agent({...})`), which runs in its own context rather than appending to this
+  one.
+
+  **Loading a companion is a continuation, not a re-entry.** After progressive
+  disclosure, what is in context for an already-invoked skill is its body plus
+  only the companions the first branch happened to load. A re-run that takes a
+  different branch — `implement` under `--parallel`, whose instructions live in
+  `<ADEV_ROOT>/skills/implement/references/parallel-mode.md` — has no in-context
+  instructions for that branch. Read the companion the body points at. That is
+  required by the conditional-loading contract, costs one file, and is not
+  covered by the prohibition above, which is about re-injecting a whole SKILL.md.
+
+- **Bound the re-runs. Three per stage, per unit of work.** Conductor-driven
+  re-runs are NOT counted by `build.max_retries` or `build.max_review_retries` —
+  those are read and decremented inside `/adev:build`'s own state, so a stage you
+  re-run yourself spends none of that budget and nothing stops you. Keep the
+  count yourself, per stage, and treat 3 as a hard ceiling.
+
+  **On the third failure, stop and report.** Do not try a fourth time, do not
+  switch strategy and continue, and do not escalate rigor and continue. Emit what
+  you have — the failing stage, its verdict, the artifacts it wrote, and what you
+  changed between attempts — and hand back to the operator. A stage that has
+  failed three times with the context you already hold is not going to pass on
+  the fourth; continuing past that point burns budget to produce the same result
+  with more turns behind it.
+
+  **Unattended runs stop at the first failure, not the third.** Under
+  `/adev:work --intake --file` or any session with no operator answering, the
+  "Propose, don't assume" confirmation gate does not fire — it gates *invocation*,
+  and an in-context continuation is not an invocation. So there is no human in the
+  loop to notice a repeat. Re-run only when an operator is present to see it;
+  otherwise report the failure and stop. If a multi-stage arc genuinely needs
+  unattended retries, route it to `/adev:build`, which has real ceilings, real
+  state, and `--resume`.
+- **Prefer `/adev:build` for multi-stage arcs.** It dispatches each stage as a
+  fresh subagent with gate checks and resume, so no stage body ever lands in the
+  orchestrator's context at all. That is the cheapest shape available, and it is
+  why Conductor Mode routes full builds there rather than invoking each stage by
+  hand.
+
+**Why this rule exists, so it is not edited away as redundant.** A loaded
+SKILL.md is not paid for once. It joins the context prefix and is re-read on
+every subsequent turn for the rest of the session. In one measured lifecycle
+(`adev-plugin-04jr.1`) `specify` was loaded three times and `work` twice —
+about 31K tokens of pure duplication, re-read on every turn that followed. The
+skill cannot detect from inside itself that its body is already present, so
+this instruction is the only place the duplication can be prevented.
+
 ## Step 6: Intake Mode
 
-If `--intake` is present, branch here after the prerequisite check (Step 1 is skipped — intake mode does not perform the project state scan).
+Applies when the request needs structured intake before routing.
 
-### 6.1: Prerequisites
-
-1. Check that `.context-index/` exists. If not, print "Run `/adev:init` first" and stop.
-2. Check that `tasks.backend` is configured in `.context-index/manifest.yaml`. If not, print "Issue board not configured. Add `tasks.backend` to manifest.yaml." and stop. (This is mandatory — intake mode creates issues.)
-
-### 6.2: Intake Classification Table
-
-Classify each request by scanning for signal keywords:
-
-| Type | Signal Keywords | Default Priority |
-|------|----------------|-----------------|
-| `bug` | "bug", "broken", "crash", "error", "regression" | 1 |
-| `feature` | "feature", "add", "new", "enhance", "support" | 2 |
-| `task` | "task", "chore", "update", "migrate", "refactor" | 3 |
-
-Adjust priority based on urgency signals: "urgent", "critical", "blocker" shift priority toward 0.
-
-### 6.3: Epic Matching Algorithm
-
-Match each request to an existing epic using the following strategy (first match wins):
-
-1. **Exact match:** Check if the request description contains a substring matching an existing epic title
-2. **Charter scope match:** Compare the request against charter scope sections for keyword overlap
-3. **Milestone feature list match:** Compare the request against milestone feature lists for keyword overlap
-
-If no match is found, propose creating a new epic or filing under "Unassigned." If no charters or epics exist, file all requests as "Unassigned" and suggest running `/adev:brainstorm` first to charter the work (which will bootstrap `product.md` on its first invocation).
-
-### 6.4: Single Request Processing
-
-When `--intake "<description>"` is provided (or the user provides a description interactively):
-
-1. Classify the work type using the classification table
-2. Estimate priority based on keywords and context
-3. Match to an existing epic using the epic matching algorithm
-4. Present the proposed issue with all fields:
-
-   > **Proposed issue:**
-   > - Title: <derived title>
-   > - Type: <bug|feature|task>
-   > - Priority: <0-4>
-   > - Epic: <epic-id or Unassigned>
-   >
-   > Create this issue? (yes / edit / cancel)
-
-5. On confirmation, create the issue via the issue manager: `getIssueManager(manifest).create({ title, type, priority, epicId })`.
-6. Report: "Created `<id>`: <title> (type: <type>, priority: <N>, epic: <epic-id or Unassigned>)"
-
-When `--intake` is provided without a description, prompt the user interactively:
-
-> Describe the incoming work request:
-
-Then process as above.
-
-### 6.5: Batch File Processing
-
-When `--intake --file <path>` is provided:
-
-1. Verify the file exists. If not, print "File not found: <path>" and stop.
-2. Verify the file is UTF-8 text and does not exceed 100KB. If it exceeds the limit, print "File exceeds 100KB limit" and stop.
-3. Read the file contents. Parse one request per paragraph — paragraphs are separated by blank lines. Empty lines are treated as separators.
-4. Process each request through the classification and epic matching pipeline (Steps 6.2-6.3).
-5. Present a summary table of all proposed issues:
-
-   ```
-   | # | Title | Type | Priority | Epic | Milestone |
-   |---|-------|------|----------|------|-----------|
-   | 1 | Fix login crash | bug | 1 | epic-3 | v1 |
-   | 2 | Add dark mode | feature | 2 | Unassigned | — |
-   ```
-
-6. Ask for user confirmation:
-
-   > Create all N issues? (yes / edit / cancel)
-
-7. On "yes": create all issues and report "Created N issues on issue board."
-8. On "edit": allow the user to modify individual entries before creation.
-9. On "cancel": abort without creating any issues.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/work/references/steps/step-6-intake-mode.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Key Principles
 

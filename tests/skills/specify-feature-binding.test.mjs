@@ -2,9 +2,25 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
-import { PLUGIN_ROOT } from "../helpers.mjs";
+import { PLUGIN_ROOT, readSkillSurface } from "../helpers.mjs";
 
 const SKILL_PATH = join(PLUGIN_ROOT, "skills", "specify", "SKILL.md");
+
+/**
+ * Standard Mode's step body, which progressive disclosure moved out of
+ * SKILL.md into references/modes/standard-mode.md.
+ *
+ * Step-scoped assertions read THIS rather than the concatenated skill surface:
+ * every sibling mode file numbers its own steps 3/4/5 too, so offsets taken
+ * across the concatenation would compare headings from different modes and
+ * silently stop meaning what they say.
+ */
+function readStandardMode() {
+  return readFileSync(
+    join(PLUGIN_ROOT, "skills", "specify", "references", "modes", "standard-mode.md"),
+    "utf8",
+  );
+}
 
 describe("adev:specify SKILL.md — Feature work item binding (Step 5.6)", () => {
   it("SKILL.md exists at the correct path", () => {
@@ -12,7 +28,7 @@ describe("adev:specify SKILL.md — Feature work item binding (Step 5.6)", () =>
   });
 
   it("SKILL.md includes a Step 5.6 heading for Create Feature Work Item", () => {
-    const c = readFileSync(SKILL_PATH, "utf8");
+    const c = readStandardMode();
     assert.ok(
       c.includes("Step 5.6") || c.includes("### Step 5.6"),
       "Must include Step 5.6 heading"
@@ -24,7 +40,7 @@ describe("adev:specify SKILL.md — Feature work item binding (Step 5.6)", () =>
   });
 
   it("Step 5.6 is placed after Step 5.5 (Update Spec Status) and before Step 6 (Summary)", () => {
-    const c = readFileSync(SKILL_PATH, "utf8");
+    const c = readStandardMode();
     const step55Idx = c.indexOf("Step 5.5");
     const step56Idx = c.indexOf("Step 5.6");
     const step6Idx = c.indexOf("### Step 6: Summary");
@@ -36,7 +52,7 @@ describe("adev:specify SKILL.md — Feature work item binding (Step 5.6)", () =>
   });
 
   it("Step 5.6 documents the tasks.backend skip-if-missing behavior", () => {
-    const c = readFileSync(SKILL_PATH, "utf8");
+    const c = readStandardMode();
     // Extract the Step 5.6 section
     const step56Start = c.indexOf("Step 5.6");
     assert.ok(step56Start !== -1, "Step 5.6 must exist");
@@ -49,7 +65,7 @@ describe("adev:specify SKILL.md — Feature work item binding (Step 5.6)", () =>
   });
 
   it("Step 5.6 documents the Epic lookup convention using Charter: <module-slug>", () => {
-    const c = readFileSync(SKILL_PATH, "utf8");
+    const c = readStandardMode();
     assert.ok(
       c.includes("Charter: <module-slug>") || c.includes('Charter: <module'),
       'Must document Epic lookup convention with "Charter: <module-slug>" prefix in notes'
@@ -61,7 +77,7 @@ describe("adev:specify SKILL.md — Feature work item binding (Step 5.6)", () =>
   });
 
   it("Step 5.6 documents spec_ref as the binding key between Feature and spec", () => {
-    const c = readFileSync(SKILL_PATH, "utf8");
+    const c = readStandardMode();
     assert.ok(
       c.includes("spec_ref"),
       "Must mention spec_ref as the binding field"
@@ -73,7 +89,7 @@ describe("adev:specify SKILL.md — Feature work item binding (Step 5.6)", () =>
   });
 
   it("Step 5.6 documents idempotency: update if Feature with same spec_ref exists", () => {
-    const c = readFileSync(SKILL_PATH, "utf8");
+    const c = readStandardMode();
     const step56Start = c.indexOf("Step 5.6");
     const step56Section = c.slice(step56Start);
     assert.ok(
@@ -89,7 +105,7 @@ describe("adev:specify SKILL.md — Feature work item binding (Step 5.6)", () =>
   });
 
   it("Step 5.6 documents cross-cutting variant (no parent_id, notes flag cross-cutting)", () => {
-    const c = readFileSync(SKILL_PATH, "utf8");
+    const c = readStandardMode();
     const step56Start = c.indexOf("Step 5.6");
     const step56Section = c.slice(step56Start);
     assert.ok(
@@ -99,7 +115,7 @@ describe("adev:specify SKILL.md — Feature work item binding (Step 5.6)", () =>
   });
 
   it("Step 5.6 documents refactor variant (Feature with migration notes)", () => {
-    const c = readFileSync(SKILL_PATH, "utf8");
+    const c = readStandardMode();
     const step56Start = c.indexOf("Step 5.6");
     const step56Section = c.slice(step56Start);
     assert.ok(
@@ -109,7 +125,7 @@ describe("adev:specify SKILL.md — Feature work item binding (Step 5.6)", () =>
   });
 
   it("Step 5.6 documents the next_action value for review-pending specs", () => {
-    const c = readFileSync(SKILL_PATH, "utf8");
+    const c = readStandardMode();
     const step56Start = c.indexOf("Step 5.6");
     const step56Section = c.slice(step56Start);
     assert.ok(
@@ -124,7 +140,7 @@ describe("adev:specify SKILL.md — Feature work item binding (Step 5.6)", () =>
   });
 
   it("Step 5.6 documents that spec create failure does not block spec completion", () => {
-    const c = readFileSync(SKILL_PATH, "utf8");
+    const c = readStandardMode();
     const step56Start = c.indexOf("Step 5.6");
     const step56Section = c.slice(step56Start);
     assert.ok(
@@ -135,7 +151,7 @@ describe("adev:specify SKILL.md — Feature work item binding (Step 5.6)", () =>
   });
 
   it("Step 5.6 uses getIssueManager and create() with required fields", () => {
-    const c = readFileSync(SKILL_PATH, "utf8");
+    const c = readStandardMode();
     const step56Start = c.indexOf("Step 5.6");
     const step56Section = c.slice(step56Start);
     assert.ok(

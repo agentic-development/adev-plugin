@@ -2,7 +2,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
-import { PLUGIN_ROOT } from "../helpers.mjs";
+import { PLUGIN_ROOT, readSkillSurface } from "../helpers.mjs";
 
 const SKILL_PATH = join(PLUGIN_ROOT, "skills", "brainstorm", "SKILL.md");
 
@@ -11,11 +11,11 @@ describe("adev:brainstorm SKILL.md — product.md bootstrap (Step 5b)", () => {
 
   it("SKILL.md exists at the correct path", () => {
     assert.ok(existsSync(SKILL_PATH), "skills/brainstorm/SKILL.md must exist");
-    content = readFileSync(SKILL_PATH, "utf8");
+    content = readSkillSurface("brainstorm");
   });
 
   it("SKILL.md documents the --no-bootstrap flag in the Arguments section", () => {
-    const c = readFileSync(SKILL_PATH, "utf8");
+    const c = readSkillSurface("brainstorm");
     assert.ok(
       c.includes("--no-bootstrap"),
       "Must document --no-bootstrap flag"
@@ -27,7 +27,7 @@ describe("adev:brainstorm SKILL.md — product.md bootstrap (Step 5b)", () => {
   });
 
   it("SKILL.md includes a Step 5b heading for Product.md Bootstrap", () => {
-    const c = readFileSync(SKILL_PATH, "utf8");
+    const c = readSkillSurface("brainstorm");
     assert.ok(
       c.includes("Step 5b") || c.includes("## Step 5b"),
       "Must include Step 5b heading"
@@ -39,7 +39,7 @@ describe("adev:brainstorm SKILL.md — product.md bootstrap (Step 5b)", () => {
   });
 
   it("SKILL.md Step 5b is placed after Step 5 (Write Charter) and before Step 6 (Charter Review Loop)", () => {
-    const c = readFileSync(SKILL_PATH, "utf8");
+    const c = readSkillSurface("brainstorm");
     const step5Idx = c.indexOf("## Step 5: Write Charter");
     const step5bIdx = c.indexOf("## Step 5b");
     const step6Idx = c.indexOf("## Step 6: Charter Review Loop");
@@ -51,7 +51,7 @@ describe("adev:brainstorm SKILL.md — product.md bootstrap (Step 5b)", () => {
   });
 
   it("SKILL.md Step 5b includes the bootstrap question text", () => {
-    const c = readFileSync(SKILL_PATH, "utf8");
+    const c = readSkillSurface("brainstorm");
     assert.ok(
       c.includes("What is the product trying to do, in one sentence"),
       "Must include the one-sentence vision question"
@@ -63,7 +63,7 @@ describe("adev:brainstorm SKILL.md — product.md bootstrap (Step 5b)", () => {
   });
 
   it("SKILL.md Step 5b documents first-charter detection via glob", () => {
-    const c = readFileSync(SKILL_PATH, "utf8");
+    const c = readSkillSurface("brainstorm");
     assert.ok(
       c.includes("charter.md") && (c.includes("Glob") || c.includes("glob")),
       "Must describe globbing for charter.md files to detect first charter"
@@ -75,7 +75,7 @@ describe("adev:brainstorm SKILL.md — product.md bootstrap (Step 5b)", () => {
   });
 
   it("SKILL.md Step 5b describes Module Map append for subsequent charters", () => {
-    const c = readFileSync(SKILL_PATH, "utf8");
+    const c = readSkillSurface("brainstorm");
     assert.ok(
       c.includes("Module Map Append") || c.includes("module map append") || c.includes("5b-4"),
       "Must include Module Map Append sub-step"
@@ -87,7 +87,7 @@ describe("adev:brainstorm SKILL.md — product.md bootstrap (Step 5b)", () => {
   });
 
   it("SKILL.md Step 5b states that --module (revision mode) skips bootstrap and Module Map append", () => {
-    const c = readFileSync(SKILL_PATH, "utf8");
+    const c = readSkillSurface("brainstorm");
     assert.ok(
       c.includes("--module") && (c.includes("revision mode") || c.includes("revising")),
       "Must mention --module revision mode skip"
@@ -95,7 +95,7 @@ describe("adev:brainstorm SKILL.md — product.md bootstrap (Step 5b)", () => {
   });
 
   it("SKILL.md Step 5b handles malformed product.md gracefully", () => {
-    const c = readFileSync(SKILL_PATH, "utf8");
+    const c = readSkillSurface("brainstorm");
     assert.ok(
       c.includes("malformed") || c.includes("cannot be parsed"),
       "Must handle malformed product.md edge case"
@@ -107,7 +107,7 @@ describe("adev:brainstorm SKILL.md — product.md bootstrap (Step 5b)", () => {
   });
 
   it("SKILL.md Step 5b describes auto-creation of Module Map section if missing", () => {
-    const c = readFileSync(SKILL_PATH, "utf8");
+    const c = readSkillSurface("brainstorm");
     assert.ok(
       c.includes("no `## Module Map` section") || c.includes("no ## Module Map") || c.includes("has no `## Module Map`"),
       "Must describe behavior when Module Map section is absent"
@@ -119,7 +119,7 @@ describe("adev:brainstorm SKILL.md — product.md bootstrap (Step 5b)", () => {
   });
 
   it("SKILL.md Step 5b describes the product.md template with title, vision, Module Map, and Milestones", () => {
-    const c = readFileSync(SKILL_PATH, "utf8");
+    const c = readSkillSurface("brainstorm");
     assert.ok(
       c.includes("# Product Vision:") || c.includes("Product Vision:"),
       "Must include title format with 'Product Vision:'"
@@ -139,7 +139,7 @@ describe("adev:brainstorm SKILL.md — product.md bootstrap (Step 5b)", () => {
   });
 
   it("SKILL.md Step 5b describes the bootstrap completion message", () => {
-    const c = readFileSync(SKILL_PATH, "utf8");
+    const c = readSkillSurface("brainstorm");
     assert.ok(
       c.includes("Bootstrapped product.md"),
       "Must include the 'Bootstrapped product.md' completion message"
@@ -151,7 +151,7 @@ describe("adev:brainstorm SKILL.md — product.md bootstrap (Step 5b)", () => {
   });
 
   it("SKILL.md checklist includes Step 5b entry", () => {
-    const c = readFileSync(SKILL_PATH, "utf8");
+    const c = readSkillSurface("brainstorm");
     const checklistMatch = c.match(/## Checklist[\s\S]*?---/);
     assert.ok(checklistMatch, "Must have a Checklist section");
     assert.ok(

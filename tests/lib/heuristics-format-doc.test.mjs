@@ -9,6 +9,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
+import { readSkillSurface } from "../helpers.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -216,7 +217,10 @@ describe("heuristics _format.md — corrected ID Namespace Convention", () => {
 
 describe("heuristics _format.md — recover category slugs", () => {
   it("matches exactly the six categories in skills/recover/SKILL.md", async () => {
-    const skill = await readFile(recoverSkillPath, "utf8");
+    // The six `#### Category N:` headings live in recover's Step 3 companion
+    // under progressive disclosure; read the whole instruction surface so this
+    // still tracks them.
+    const skill = readSkillSurface("recover");
     // `#### Category N: NAME` headings are the authoritative source.
     const fromSkill = [...skill.matchAll(/^#### Category \d+: ([A-Z_]+)\s*$/gm)]
       .map((m) => m[1].toLowerCase().replace(/_/g, "-"));

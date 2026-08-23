@@ -3,11 +3,12 @@ import assert from "node:assert/strict";
 import { readFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+import { readSkillSurface } from "../helpers.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 describe("review-specs SKILL.md — cross-repo references", () => {
-  const content = readFileSync(join(__dirname, "..", "..", "skills", "review-specs", "SKILL.md"), "utf8");
+  const content = readSkillSurface("review-specs");
 
   it("validates cross-repo depends-on references (+2 more contract assertions)", () => {
     // validates cross-repo depends-on references

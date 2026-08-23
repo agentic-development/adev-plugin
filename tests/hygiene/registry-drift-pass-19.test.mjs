@@ -24,7 +24,7 @@ import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 
-import { createTempDir, cleanupTempDir, writeFixture, PLUGIN_ROOT } from "../helpers.mjs";
+import { createTempDir, cleanupTempDir, writeFixture, PLUGIN_ROOT, readSkillSurface } from "../helpers.mjs";
 import { runRegistryDriftPass, REGISTRY_NAMES } from "../../lib/hygiene/registry-drift.mjs";
 
 const DOMAIN = "acme";
@@ -379,12 +379,16 @@ test("adev governance drift refuses a registry outside the pass's remit", async 
   }
 });
 
-test("skills/hygiene/SKILL.md names the verb rather than carrying the logic", () => {
-  const skill = readFileSync(join(PLUGIN_ROOT, "skills", "hygiene", "SKILL.md"), "utf8");
-  const start = skill.indexOf("## Audit Pass 19");
-  const end = skill.indexOf("## Audit Pass 20");
-  assert.ok(start >= 0 && end > start, "Pass 19 and Pass 20 headings must both be present");
-  const section = skill.slice(start, end);
+test("hygiene Pass 19 names the verb rather than carrying the logic", () => {
+  // Pass 19's body lives in its own companion (progressive disclosure); the
+  // whole file IS the section, so no heading-slicing is needed. SKILL.md must
+  // still route to it, which the following test asserts.
+  const section = readFileSync(
+    join(PLUGIN_ROOT, "skills", "hygiene", "references", "audit-passes",
+         "pass-19-governance-registry-drift.md"),
+    "utf8",
+  );
+  assert.ok(section.startsWith("## Audit Pass 19"), "companion must open with the Pass 19 heading");
   assert.ok(section.includes("adev governance drift"), "Pass 19 must name the CLI verb");
   for (const reg of REGISTRY_NAMES) {
     assert.ok(section.includes(`\`${reg}.yaml\``), `Pass 19 must name ${reg}.yaml in its remit`);
@@ -393,6 +397,28 @@ test("skills/hygiene/SKILL.md names the verb rather than carrying the logic", ()
   assert.ok(section.includes("hygiene/non-project-execution-field"));
   assert.ok(!section.includes("node -e"), "no inline Node in a SKILL section");
   assert.ok(!section.includes("```javascript"), "no fenced JavaScript directive in a SKILL section");
+});
+
+test("skills/hygiene/SKILL.md routes to the Pass 19 companion", () => {
+  // The body must still point at the pass; a companion nothing references is
+  // dead weight, and that is precisely what the split could silently create.
+  //
+  // Reads SKILL.md DIRECTLY, never readSkillSurface(). This asserts WHERE a
+  // pointer lives, and the surface concatenates the body with all 23 pass
+  // companions — against that, both assertions below are satisfied by any
+  // companion in the tree and the test stops meaning what it says. It passed
+  // that way for one commit purely because neither string happened to appear
+  // under references/. See the scope note on readSkillSurface in
+  // tests/helpers.mjs, which states this rule.
+  const body = readFileSync(join(PLUGIN_ROOT, "skills", "hygiene", "SKILL.md"), "utf8");
+  assert.ok(
+    body.includes("<ADEV_ROOT>/skills/hygiene/references/audit-passes/pass-19-governance-registry-drift.md"),
+    "SKILL.md must name the Pass 19 companion by its anchored full path",
+  );
+  assert.ok(
+    /Conditional loading/.test(body),
+    "SKILL.md must carry the conditional-loading directive for the pass catalogue",
+  );
 });
 
 test("the pass runs against this repository without throwing", async () => {

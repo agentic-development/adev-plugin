@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
 
 import { loadDomainConfig } from '../../lib/domains/domain-config.mjs';
-import { createTempDir, cleanupTempDir, writeFixture } from '../helpers.mjs';
+import { createTempDir, cleanupTempDir, writeFixture, readSkillSurface } from '../helpers.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PLUGIN_ROOT = join(__dirname, '..', '..');
@@ -28,6 +28,18 @@ function tmp() {
 afterEach(() => {
   while (tempDirs.length) cleanupTempDir(tempDirs.pop());
 });
+
+/**
+ * Audit Pass 19's body, which progressive disclosure moved out of
+ * skills/hygiene/SKILL.md into its own companion. Assertions about the pass's
+ * remit and emission rules read this; assertions about SKILL.md routing to the
+ * pass keep reading SKILL.md.
+ */
+const PASS_19 = readFileSync(
+  join(PLUGIN_ROOT, 'skills', 'hygiene', 'references', 'audit-passes',
+       'pass-19-governance-registry-drift.md'),
+  'utf8',
+);
 
 describe("init scaffold simulation: governance/validate.yaml", () => {
   it("software starter is available via loadDomainConfig", () => {
@@ -95,20 +107,21 @@ describe("hygiene Validate Config Drift audit (SKILL.md content + simulation)", 
   // spec's requirement — that validate.yaml drift is audited by Pass 19 — is
   // unchanged and is asserted on the widened heading plus the registry name.
   it("skills/hygiene/SKILL.md declares Audit Pass 19 covering validate.yaml drift", () => {
-    const content = readFileSync(join(PLUGIN_ROOT, 'skills', 'hygiene', 'SKILL.md'), 'utf8');
+    // The body keeps the pass in its routing table; the remit lives in the
+    // companion the table points at.
+    const content = readSkillSurface("hygiene");
     assert.ok(
-      content.includes("Audit Pass 19: Governance Registry Drift"),
+      content.includes("Governance Registry Drift"),
       "hygiene SKILL.md must declare the audit pass"
     );
-    const passIdx = content.indexOf("Audit Pass 19");
     assert.ok(
-      content.slice(passIdx, passIdx + 4000).includes("`validate.yaml`"),
+      PASS_19.includes("`validate.yaml`"),
       "Audit Pass 19 must still name validate.yaml in its remit"
     );
   });
 
   it("skills/hygiene/SKILL.md describes SEC-4 value-type emission for prompt/context_pack", () => {
-    const content = readFileSync(join(PLUGIN_ROOT, 'skills', 'hygiene', 'SKILL.md'), 'utf8');
+    const content = PASS_19;
     assert.ok(
       content.includes("SEC-4"),
       "hygiene SKILL.md must reference SEC-4 emission rules"
@@ -120,11 +133,10 @@ describe("hygiene Validate Config Drift audit (SKILL.md content + simulation)", 
   });
 
   it("skills/hygiene/SKILL.md emits INFO (not WARN) for drift findings", () => {
-    const content = readFileSync(join(PLUGIN_ROOT, 'skills', 'hygiene', 'SKILL.md'), 'utf8');
-    // The Audit Pass 19 section must state INFO severity for drift findings.
-    const passIdx = content.indexOf("Audit Pass 19");
-    assert.ok(passIdx >= 0);
-    const passContent = content.slice(passIdx, passIdx + 4000);
+    // Pass 19's body is its own companion under progressive disclosure, so the
+    // whole file IS the section; a fixed-width slice of SKILL.md would only
+    // catch the routing table row.
+    const passContent = PASS_19;
     assert.ok(
       /INFO.*not WARN|INFO.*not\s+WARN|All findings.*INFO/i.test(passContent),
       "drift findings must be INFO severity"
@@ -326,7 +338,7 @@ describe("acceptance criteria: full coverage", () => {
 
 describe("SKILL.md content: init Step 7d.0", () => {
   it("skills/init/SKILL.md mentions loadDomainConfig with 'validate' configType", () => {
-    const content = readFileSync(join(PLUGIN_ROOT, 'skills', 'init', 'SKILL.md'), 'utf8');
+    const content = readSkillSurface("init");
     assert.ok(
       content.includes("loadDomainConfig(resolvedDomain, 'validate'"),
       "init SKILL.md must call loadDomainConfig with 'validate' configType"
@@ -334,7 +346,7 @@ describe("SKILL.md content: init Step 7d.0", () => {
   });
 
   it("skills/init/SKILL.md mentions software fallback for unknown domains", () => {
-    const content = readFileSync(join(PLUGIN_ROOT, 'skills', 'init', 'SKILL.md'), 'utf8');
+    const content = readSkillSurface("init");
     assert.ok(
       content.includes("scaffolded from 'software' as fallback"),
       "init SKILL.md must include the software-fallback advisory message"
@@ -342,7 +354,7 @@ describe("SKILL.md content: init Step 7d.0", () => {
   });
 
   it("skills/init/SKILL.md describes idempotency for governance/validate.yaml scaffold", () => {
-    const content = readFileSync(join(PLUGIN_ROOT, 'skills', 'init', 'SKILL.md'), 'utf8');
+    const content = readSkillSurface("init");
     assert.ok(
       /governance\/validate\.yaml already exists.*no-op|idempotent/i.test(content),
       "init SKILL.md must describe idempotency for the scaffold step"

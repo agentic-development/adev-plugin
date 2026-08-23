@@ -28,6 +28,7 @@ import { join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
+import { readSkillSurface } from "../helpers.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const PLUGIN_ROOT = join(__filename, "..", "..", "..");
@@ -35,10 +36,10 @@ const SKILLS_ROOT = join(PLUGIN_ROOT, "skills");
 
 const PLAN_SKILL_FILES = [
   "skills/plan/SKILL.md",
-  "skills/plan/feature-mode.md",
-  "skills/plan/epic-mode.md",
-  "skills/plan/release-mode.md",
-  "skills/plan/milestone-mode.md",
+  "skills/plan/references/feature-mode.md",
+  "skills/plan/references/epic-mode.md",
+  "skills/plan/references/release-mode.md",
+  "skills/plan/references/milestone-mode.md",
 ];
 
 // ────────────────────────────────────────────────────────────────────
@@ -59,7 +60,7 @@ test("no-stale-format-refs / /adev:plan SKILL.md references reportPlanTask", () 
   // The canonical reportPlanTask block lives in the base SKILL.md. The mode
   // files inherit task emission behavior; we do not require every mode file
   // to spell it out, but the base must.
-  const content = readFileSync("skills/plan/SKILL.md", "utf8");
+  const content = readSkillSurface("plan");
   assert.ok(
     /reportPlanTask/.test(content),
     "skills/plan/SKILL.md does not reference reportPlanTask",
@@ -71,7 +72,7 @@ test("no-stale-format-refs / /adev:plan SKILL.md references reportPlanTask", () 
 // ────────────────────────────────────────────────────────────────────
 
 test("no-stale-format-refs / /adev:implement reads from planTasks projection", () => {
-  const content = readFileSync("skills/implement/SKILL.md", "utf8");
+  const content = readSkillSurface("implement");
   assert.ok(
     !/check the box|update the issue for this task|tick the checkbox/i.test(
       content,
@@ -90,7 +91,7 @@ test("no-stale-format-refs / /adev:implement reads from planTasks projection", (
 });
 
 test("no-stale-format-refs / /adev:implement does not mutate plan checkboxes", () => {
-  const content = readFileSync("skills/implement/SKILL.md", "utf8");
+  const content = readSkillSurface("implement");
   assert.ok(
     !/Update plan file checkboxes/i.test(content),
     "/adev:implement still instructs the agent to update plan file checkboxes",
@@ -107,7 +108,7 @@ test("no-stale-format-refs / /adev:implement does not mutate plan checkboxes", (
 // ────────────────────────────────────────────────────────────────────
 
 test("skills/plan/SKILL.md: clarifying note about lifecycle log status tracking", () => {
-  const content = readFileSync("skills/plan/SKILL.md", "utf8");
+  const content = readSkillSurface("plan");
   assert.match(
     content,
     /(status .*lifecycle event log|checkboxes? are authoring guides only|not mutated by skills)/i,
@@ -221,6 +222,13 @@ const ALLOW_FILE_PATTERNS_AUDIT = {
   "status/SKILL.md": ["tasks.md parsing outside render/issues"],
   "sync/SKILL.md": ["tasks.md parsing outside render/issues"],
   "review-specs/SKILL.md": [
+    "last-reviewed-revision field manipulation",
+    "file-sha field manipulation",
+  ],
+  // Same ownership, different file: Step 6's body moved out of
+  // review-specs/SKILL.md into this companion under progressive disclosure.
+  // review-specs still owns these field writes; only the prose relocated.
+  "review-specs/references/steps/step-6-events-and-report.md": [
     "last-reviewed-revision field manipulation",
     "file-sha field manipulation",
   ],

@@ -12,10 +12,10 @@ source-manifest:
   sha: "dc37ad7"
   files:
     - skills/research/SKILL.md
-    - skills/research/github-researcher-prompt.md
-    - skills/research/internal-researcher-prompt.md
-    - skills/research/synthesis-prompt.md
-    - skills/research/web-researcher-prompt.md
+    - skills/research/references/github-researcher-prompt.md
+    - skills/research/references/internal-researcher-prompt.md
+    - skills/research/references/synthesis-prompt.md
+    - skills/research/references/web-researcher-prompt.md
     - templates/research-template.md
     - tests/skills/research.test.mjs
   computed-at: "2026-04-09T17:22:23.021Z"
@@ -68,10 +68,10 @@ drift_detected: true
 | File | Role | Notes |
 |------|------|-------|
 | `skills/research/SKILL.md` | Lead orchestrator: decomposes topic, verifies researcher tool surface, dispatches researchers in parallel, collects condensed summaries, synthesizes, performs sanitization pass, writes artifact | **Modified** — adds `allowed-tools`, `context: fork`, Agent-tool dispatch section, injection sanitization pass |
-| `skills/research/internal-researcher-prompt.md` | Subagent prompt for the internal codebase researcher (fast tier). Contains: content-fence rule, read-budget cap, sensitive-file exclusion list, attribution requirement, anti-overengineering, self-check | **New** |
-| `skills/research/web-researcher-prompt.md` | Subagent prompt for the web researcher (capable tier). Contains: content-fence rule (primary defense against hostile web content), attribution requirement, anti-overengineering, self-check | **New** |
-| `skills/research/github-researcher-prompt.md` | Subagent prompt for the GitHub code researcher (capable tier). Contains: content-fence rule (primary defense against hostile repo content), attribution requirement, anti-overengineering, self-check | **New** |
-| `skills/research/synthesis-prompt.md` | Subagent prompt for cross-source synthesis used in `--compare` mode (reasoning tier, prefixed with `ultrathink`). Contains: content-fence rule, anti-overengineering, "Before Finalizing" self-check | **New** |
+| `skills/research/references/internal-researcher-prompt.md` | Subagent prompt for the internal codebase researcher (fast tier). Contains: content-fence rule, read-budget cap, sensitive-file exclusion list, attribution requirement, anti-overengineering, self-check | **New** |
+| `skills/research/references/web-researcher-prompt.md` | Subagent prompt for the web researcher (capable tier). Contains: content-fence rule (primary defense against hostile web content), attribution requirement, anti-overengineering, self-check | **New** |
+| `skills/research/references/github-researcher-prompt.md` | Subagent prompt for the GitHub code researcher (capable tier). Contains: content-fence rule (primary defense against hostile repo content), attribution requirement, anti-overengineering, self-check | **New** |
+| `skills/research/references/synthesis-prompt.md` | Subagent prompt for cross-source synthesis used in `--compare` mode (reasoning tier, prefixed with `ultrathink`). Contains: content-fence rule, anti-overengineering, "Before Finalizing" self-check | **New** |
 | `templates/research-template.md` | Artifact template | **Modified** — adds optional `injection_warnings: bool` frontmatter field for auditable signal to downstream consumers |
 | `tests/skills/research.test.mjs` | Verifies SKILL.md + all prompt files | **Modified** — adds assertions for frontmatter hardening, dispatch instructions, and prompt-file contents (content fence, read budget, sensitive-file exclusion, self-check) |
 
@@ -101,7 +101,7 @@ Each step leaves the system in a working state (all existing tests pass).
 
 ### Step 1: Extract researcher subagent prompts
 
-- **What:** Create `skills/research/{internal,web,github}-researcher-prompt.md` and `skills/research/synthesis-prompt.md`. Each prompt is a self-contained instruction block containing the core fields below, plus source-specific hardening where noted.
+- **What:** Create `skills/research/{internal,web,github}-researcher-prompt.md` and `skills/research/references/synthesis-prompt.md`. Each prompt is a self-contained instruction block containing the core fields below, plus source-specific hardening where noted.
 
   **Core fields (all four prompts):**
   1. Role statement.
@@ -266,10 +266,10 @@ Properties that must remain true at every migration step.
 
 | Task | Description | Estimated Complexity |
 |------|-------------|---------------------|
-| Create internal researcher prompt | `skills/research/internal-researcher-prompt.md`: role, Glob/Grep/Read strategy, tool-availability probe, return format, size cap, attribution, anti-overengineering, self-check, content-fence rule, read-budget cap (20 files / 50K tokens), sensitive-file exclusion list | medium |
-| Create web researcher prompt | `skills/research/web-researcher-prompt.md`: role, WebSearch strategy, tool-availability probe, return format, size cap, attribution, anti-overengineering, self-check, content-fence rule | small |
-| Create GitHub researcher prompt | `skills/research/github-researcher-prompt.md`: role, MCP tool strategy, tool-availability probe, `owner/repo` handling, return format, size cap, attribution, anti-overengineering, self-check, content-fence rule | small |
-| Create synthesis prompt | `skills/research/synthesis-prompt.md`: reasoning-tier instructions, `ultrathink` prefix, comparison matrix construction, anti-overengineering, "Before Finalizing" self-check, content-fence rule | small |
+| Create internal researcher prompt | `skills/research/references/internal-researcher-prompt.md`: role, Glob/Grep/Read strategy, tool-availability probe, return format, size cap, attribution, anti-overengineering, self-check, content-fence rule, read-budget cap (20 files / 50K tokens), sensitive-file exclusion list | medium |
+| Create web researcher prompt | `skills/research/references/web-researcher-prompt.md`: role, WebSearch strategy, tool-availability probe, return format, size cap, attribution, anti-overengineering, self-check, content-fence rule | small |
+| Create GitHub researcher prompt | `skills/research/references/github-researcher-prompt.md`: role, MCP tool strategy, tool-availability probe, `owner/repo` handling, return format, size cap, attribution, anti-overengineering, self-check, content-fence rule | small |
+| Create synthesis prompt | `skills/research/references/synthesis-prompt.md`: reasoning-tier instructions, `ultrathink` prefix, comparison matrix construction, anti-overengineering, "Before Finalizing" self-check, content-fence rule | small |
 | Rewrite SKILL.md | Add `allowed-tools` + `context: fork` frontmatter; rewrite Step 4 (dispatch with context packet + tool-surface verification via probe); rewrite Step 5 (synthesize); insert new Step 5.5 (sanitization pass); extend self-check; modify Step 6 to emit optional `injection_warnings` frontmatter | medium |
 | Update research template | Add documentation of the optional `injection_warnings` frontmatter field to `templates/research-template.md` | small |
 | Update tests | Add assertions for SKILL.md frontmatter (`allowed-tools`, `context: fork`), SKILL.md body (Step 5.5 sanitization, `injection_warnings`), each prompt file's content (size cap, attribution, content fence), internal-researcher prompt's read-budget and sensitive-file list, synthesis prompt's `ultrathink` and "Before Finalizing" self-check, and template's `injection_warnings` documentation | small |
@@ -283,10 +283,10 @@ Properties that must remain true at every migration step.
 ## Acceptance Criteria
 
 - [ ] `skills/research/SKILL.md` frontmatter declares `allowed-tools: [Read, Glob, Grep, Agent, Write]` and `context: fork`.
-- [ ] `skills/research/internal-researcher-prompt.md` exists and contains: size cap (1,500 tokens), attribution requirement, anti-overengineering clause, content-fence rule, read-budget cap (20 files / 50,000 tokens), sensitive-file exclusion list (`.env`, `*.pem`, `*.key`, `*.p12`, `*secret*`, `*credential*`, `*token*`, `id_rsa*`, `id_ed25519*`).
-- [ ] `skills/research/web-researcher-prompt.md` exists and contains: size cap, attribution requirement, anti-overengineering clause, content-fence rule.
-- [ ] `skills/research/github-researcher-prompt.md` exists and contains: size cap, attribution requirement, anti-overengineering clause, content-fence rule, `owner/repo` validation language.
-- [ ] `skills/research/synthesis-prompt.md` exists and contains: `ultrathink` keyword, instructions to build a comparison matrix, "Before Finalizing" self-check section, content-fence rule.
+- [ ] `skills/research/references/internal-researcher-prompt.md` exists and contains: size cap (1,500 tokens), attribution requirement, anti-overengineering clause, content-fence rule, read-budget cap (20 files / 50,000 tokens), sensitive-file exclusion list (`.env`, `*.pem`, `*.key`, `*.p12`, `*secret*`, `*credential*`, `*token*`, `id_rsa*`, `id_ed25519*`).
+- [ ] `skills/research/references/web-researcher-prompt.md` exists and contains: size cap, attribution requirement, anti-overengineering clause, content-fence rule.
+- [ ] `skills/research/references/github-researcher-prompt.md` exists and contains: size cap, attribution requirement, anti-overengineering clause, content-fence rule, `owner/repo` validation language.
+- [ ] `skills/research/references/synthesis-prompt.md` exists and contains: `ultrathink` keyword, instructions to build a comparison matrix, "Before Finalizing" self-check section, content-fence rule.
 - [ ] Each of the four prompt files includes the literal token `[adversarial content detected and omitted]` as the content-fence replacement pattern.
 - [ ] Each of the four prompt files instructs the subagent to probe its required tool with a no-op call before doing real work, and to return `status: SKIPPED, reason: "<tool> unavailable"` if the probe fails.
 - [ ] `SKILL.md` Step 4 dispatches researchers in parallel via the `Agent` tool, one per enabled source.

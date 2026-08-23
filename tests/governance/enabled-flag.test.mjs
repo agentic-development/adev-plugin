@@ -50,7 +50,7 @@ import {
   FIELD_ALLOWLIST,
   validateEntryFields,
 } from "../../lib/extensions/governance-registry.mjs";
-import { PLUGIN_ROOT, createTempDir, cleanupTempDir, writeFixture } from "../helpers.mjs";
+import { PLUGIN_ROOT, createTempDir, cleanupTempDir, writeFixture, readSkillSurface } from "../helpers.mjs";
 
 const MARKED_AT = "2026-08-15T00:00:00Z";
 
@@ -490,7 +490,7 @@ describe("disabled entries reach a REPORT, not only a loaded config", () => {
     // emitted one section per DISPATCHED reviewer — so the disabled one
     // vanished from the report entirely, which is the half of Behavior 5 that
     // says "the REPORT records it as deliberately disabled".
-    const md = readFileSync(join(PLUGIN_ROOT, "skills/review-specs/SKILL.md"), "utf8");
+    const md = readSkillSurface("review-specs");
     assert.match(md, /Disabled Reviewers/i);
     assert.match(md, /disabled_reason/);
     assert.match(md, /no reason given/i);

@@ -24,7 +24,7 @@ source-manifest:
     - lib/implement/batching.mjs
     - lib/manifest.mjs
     - skills/implement/SKILL.md
-    - skills/implement/batched-mode.md
+    - skills/implement/references/batched-mode.md
     - tests/cli/implement-batches.test.mjs
     - tests/docs/batched-task-dispatch-docs.test.mjs
     - tests/evals/batched-task-dispatch/fixture/example.plan.md
@@ -48,7 +48,7 @@ drift_detected: true
 
 <!-- THE CORE OBSERVATION.
      Batched dispatch is not a new capability for this framework — it already
-     runs in production, but only inside `--parallel`. skills/implement/parallel-mode.md
+     runs in production, but only inside `--parallel`. skills/implement/references/parallel-mode.md
      dispatches ONE subagent per task group, and instructs it to "run the group's
      tasks sequentially with full TDD + 2-stage review; commit each task to branch
      adev/<plan-slug>-<group>". So one agent handling N tasks with N commits is
@@ -270,7 +270,7 @@ is worse, the reviews are still running and should say so.
 - **Commit-per-task recovery contract (`incremental-artifact-writes.spec.md` Integration Point 2, via SKILL.md step 2h)** — Applies as a preserved constraint, and is the single most important boundary in this spec. That contract forbids "multi-task implementations with a single combined commit" because the commit *is* the crash checkpoint. This spec batches dispatch while leaving commit granularity untouched, which is the shape `--parallel` already ships and `adev parallel verify` already enforces. Any future move toward one commit per batch would violate this contract and is out of scope.
 - **Requires Human Approval (constitution, Architecture Boundaries)** — Applies to the *default*, and is discharged explicitly. Turning batching on by default changes the dispatch shape of the framework's most load-bearing skill for every plan, which is a decision beyond the "Autonomous (Agent May Decide)" list. The project owner authorized default-on with `--no-batch` opt-out on 2026-08-17, after being shown the alternative of shipping opt-in first. Recorded here so review does not have to re-derive the provenance of that choice.
 - **Principle 1 (Minimize external dependencies)** — Applies. Batch resolution is plain parsing of a plan section plus manifest validation, in `lib/implement/batching.mjs`, using Node built-ins only.
-- **Principle 2 (Skills are primarily markdown) and the cli-driver-surface rules** — Applies. Batch composition is a CLI verb (`adev implement batches`), not logic in SKILL.md prose; the batched orchestration narrative goes in a conditionally-loaded companion (`skills/implement/batched-mode.md`), following the precedent set by `parallel-mode.md`, which was extracted because implement already exceeds the 65,536-byte cap the Copilot provider enforces.
+- **Principle 2 (Skills are primarily markdown) and the cli-driver-surface rules** — Applies. Batch composition is a CLI verb (`adev implement batches`), not logic in SKILL.md prose; the batched orchestration narrative goes in a conditionally-loaded companion (`skills/implement/references/batched-mode.md`), following the precedent set by `parallel-mode.md`, which was extracted because implement already exceeds the 65,536-byte cap the Copilot provider enforces.
 - **Autonomous — "Refactoring within a module's boundaries"** — Applies to the mechanism itself, which reuses parallel mode's proven group-agent shape inside `implementation`'s own boundary and touches no hook protocol, lifecycle skill order, install path, or plugin manifest.
 
 ## Acceptance Criteria

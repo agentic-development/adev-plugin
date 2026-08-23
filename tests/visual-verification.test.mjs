@@ -2,10 +2,12 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "fs";
 import { join } from "path";
-import { PLUGIN_ROOT } from "./helpers.mjs";
+import { PLUGIN_ROOT, readSkillSurface } from "./helpers.mjs";
 
+// Reads SKILL.md plus its references/ companions: these assertions are about
+// instructions the skill ships, which progressive disclosure moved one file out.
 function readSkill(name) {
-  return readFileSync(join(PLUGIN_ROOT, "skills", name, "SKILL.md"), "utf8");
+  return readSkillSurface(name);
 }
 
 function readTemplate(name) {
@@ -77,13 +79,28 @@ describe("visual verification in adev:validate", () => {
     assert.ok(skill.includes("### Check 11: Visual Verification"));
   });
 
+  it("SKILL.md routes to the Check 11 companion", () => {
+    // A companion nothing references is dead weight -- exactly what splitting
+    // a body into references/ can silently create.
+    const body = readFileSync(
+      join(PLUGIN_ROOT, "skills", "validate", "SKILL.md"), "utf8",
+    );
+    assert.ok(
+      body.includes("checks-orchestration/check-11-visual-verification.md"),
+      "validate/SKILL.md must name the Check 11 companion",
+    );
+  });
+
   it("BLOCKs when UI files match AND Playwright is absent (Case B); SKIPs when no UI files (Cases A/D)", () => {
     // check-set-restructure.spec.md Behaviors 5 + 6: BLOCK preserved only when
     // UI files are in the diff. The Case A SKIP path is new; before the
     // restructure this case BLOCKed even on non-UI specs.
-    const check11 = skill.slice(
-      skill.indexOf("### Check 11"),
-      skill.indexOf("## Report Format")
+    // Check 11's body lives in its own companion (progressive disclosure), so
+    // the whole file IS the section -- no heading-slicing needed.
+    const check11 = readFileSync(
+      join(PLUGIN_ROOT, "skills", "validate", "references",
+           "checks-orchestration", "check-11-visual-verification.md"),
+      "utf8",
     );
     assert.ok(/BLOCK/i.test(check11), "should still cite BLOCK for the UI+no-Playwright case");
     assert.ok(/SKIP/.test(check11), "should permit SKIP for the no-UI-files case after the trigger-guard restructure");

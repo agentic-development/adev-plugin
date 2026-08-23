@@ -39,6 +39,7 @@ source-manifest:
     - tests/lib/evals/rubric-schema-contract.test.mjs
     - tests/lib/evals/rubric-verdict-enums.test.mjs
   computed-at: "2026-08-20T02:09:30.855Z"
+drift_detected: true
 ---
 
 # Live Spec: Unified rubric schema and loader

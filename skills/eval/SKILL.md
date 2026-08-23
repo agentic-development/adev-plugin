@@ -121,7 +121,7 @@ The skill must never expand it to an `<ADEV_ROOT>`-relative path first: a resolv
 argument, is contained against the project root, and is refused in every real install where the
 plugin lives outside the project — the keyword branch is never entered.
 
-The shipped default rubric is `<ADEV_ROOT>/skills/eval/default-rubric.yaml` — that is what the
+The shipped default rubric is `<ADEV_ROOT>/skills/eval/references/default-rubric.yaml` — that is what the
 `default` keyword resolves to, not a value to type on the command line. It carries these top-level keys, which any custom rubric must also provide: `rubric_id`, `version`, `layer`, `verdict_values`, `required_elements`, `quality_dimensions`, `layer3_max_points`, `required_element_points`, `judged_criterion_points`, `unknown_policy`, `not_applicable_policy`, `insufficient_evidence_threshold_percent`.
 
 If the resolved rubric file is missing or lacks any required top-level key, block with: "Layer 3 rubric could not be resolved: <reason>. Pass a valid `--rubric <path>` or restore the default rubric."
@@ -295,7 +295,7 @@ thresholds:
   minimum_score: 60         # Below this triggers a warning
   exemplary_score: 90       # Above this flags as golden sample candidate
 
-rubric: default             # `default` resolves to <ADEV_ROOT>/skills/eval/default-rubric.yaml
+rubric: default             # `default` resolves to <ADEV_ROOT>/skills/eval/references/default-rubric.yaml
                             # Or a path to a custom rubric with the same top-level keys
 ```
 

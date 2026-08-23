@@ -1,6 +1,10 @@
 import { readFile } from "node:fs/promises";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+// SKILL.md plus its references/ companions: progressive disclosure moved
+// several of these instructions one file out of the body without changing
+// the contract, and these are content-presence checks on the instruction.
+import { readSkillSurface } from "../helpers.mjs";
 
 // Note: the validate-side "Check 13" contradiction-tracking block was removed
 // by check-set-restructure.spec.md (the entire ### Check 13: Success Heuristic
@@ -27,16 +31,16 @@ describe("contradiction tracking in post-validate hook (migrated from validate C
 });
 
 describe("contradiction tracking in recover SKILL.md", () => {
-  it("Step 7 includes contradiction scan before writeHeuristic", async () => {
-    const content = await readFile("skills/recover/SKILL.md", "utf8");
+  it("Step 7 includes contradiction scan before writeHeuristic", () => {
+    const content = readSkillSurface("recover");
     const step7Start = content.indexOf("### Step 7");
     const step7Content = content.slice(step7Start);
     assert.ok(step7Content.includes("addContradiction"), "Step 7 must reference addContradiction");
     assert.ok(step7Content.includes("readHeuristics"), "Step 7 must read existing heuristics");
   });
 
-  it("contradiction scan appears before writeHeuristic in Step 7", async () => {
-    const content = await readFile("skills/recover/SKILL.md", "utf8");
+  it("contradiction scan appears before writeHeuristic in Step 7", () => {
+    const content = readSkillSurface("recover");
     const step7Start = content.indexOf("### Step 7");
     const step7Content = content.slice(step7Start);
     const contradictionIdx = step7Content.indexOf("Contradiction Scan");
@@ -50,13 +54,13 @@ describe("consistency: recover SKILL.md retains contradiction-scan semantics", (
   // The validate-side prose was relocated by check-set-restructure.spec.md.
   // The remaining cross-skill invariants here apply to recover only — recover
   // is the canonical home for contradiction tracking semantics post-migration.
-  it("recover references best-effort semantic comparison", async () => {
-    const recover = await readFile("skills/recover/SKILL.md", "utf8");
+  it("recover references best-effort semantic comparison", () => {
+    const recover = readSkillSurface("recover");
     assert.ok(recover.includes("best-effort"), "Recover must say best-effort");
   });
 
-  it("recover mentions retro as backstop", async () => {
-    const recover = await readFile("skills/recover/SKILL.md", "utf8");
+  it("recover mentions retro as backstop", () => {
+    const recover = readSkillSurface("recover");
     assert.ok(
       recover.includes("retro") || recover.includes("backstop"),
       "Recover must mention retro backstop",

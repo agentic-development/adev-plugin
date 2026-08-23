@@ -1,13 +1,14 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { readSkillSurface } from "../helpers.mjs";
 
 const skills = {
-  debug: readFileSync(new URL("../../skills/debug/SKILL.md", import.meta.url), "utf8"),
-  brainstorm: readFileSync(new URL("../../skills/brainstorm/SKILL.md", import.meta.url), "utf8"),
-  specify: readFileSync(new URL("../../skills/specify/SKILL.md", import.meta.url), "utf8"),
-  "review-specs": readFileSync(new URL("../../skills/review-specs/SKILL.md", import.meta.url), "utf8"),
-  validate: readFileSync(new URL("../../skills/validate/SKILL.md", import.meta.url), "utf8"),
+  debug: readSkillSurface("debug"),
+  brainstorm: readSkillSurface("brainstorm"),
+  specify: readSkillSurface("specify"),
+  "review-specs": readSkillSurface("review-specs"),
+  validate: readSkillSurface("validate"),
 };
 
 for (const [name, content] of Object.entries(skills)) {

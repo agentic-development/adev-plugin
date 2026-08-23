@@ -13,10 +13,19 @@ import { readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { readSkillSurface } from "../helpers.mjs";
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..", "..");
 
+/**
+ * Read a skill's full instruction surface when `rel` names a SKILL.md, so that
+ * assertions still find prose that progressive disclosure moved into
+ * references/ companions. Any other path is read verbatim.
+ */
 function read(rel) {
+  const m = /^skills\/([^/]+)\/SKILL\.md$/.exec(rel);
+  if (m) return readSkillSurface(m[1]);
   return readFileSync(join(ROOT, rel), "utf8");
 }
 
@@ -61,8 +70,12 @@ test("write-test has a required RED-phase inventory step naming the verb", () =>
 });
 
 test("write-test passes the inventory block into the Step 4 authoring subagent", () => {
-  const skill = read("skills/write-test/SKILL.md");
-  const step4 = section(skill, "## Step 4: Test Authoring (RED Phase)");
+  // Step 4's body is its own companion under progressive disclosure. Reading
+  // the concatenated surface would match SKILL.md's Step 4 STUB first, which
+  // carries only the conditional-loading pointer.
+  const step4 = readFileSync(
+    join(ROOT, "skills/write-test/references/steps/step-4-test-authoring.md"), "utf8",
+  );
   const dispatchList = step4.slice(0, step4.indexOf("### "));
   assert.match(
     dispatchList,
@@ -72,13 +85,23 @@ test("write-test passes the inventory block into the Step 4 authoring subagent",
 });
 
 test("write-test runs the duplication check before the Handoff Block, advisory only", () => {
-  const skill = read("skills/write-test/SKILL.md");
-  const step4 = section(skill, "## Step 4: Test Authoring (RED Phase)");
+  // Step 4's body is its own companion under progressive disclosure. Reading
+  // the concatenated surface would match SKILL.md's Step 4 STUB first, which
+  // carries only the conditional-loading pointer.
+  const step4 = readFileSync(
+    join(ROOT, "skills/write-test/references/steps/step-4-test-authoring.md"), "utf8",
+  );
   assert.match(step4, /adev test-helpers check/);
   assert.match(step4, /advisory/i);
   assert.match(step4, /Do \*\*not\*\* block the Handoff Block/);
+  // Ordering: the check lives inside Step 4, and Step 4 precedes Step 5 in the
+  // body's step sequence. Comparing an offset within step4 against an offset in
+  // the concatenated surface would compare positions in different files.
+  const body = readFileSync(join(ROOT, "skills/write-test/SKILL.md"), "utf8");
   assert.ok(
-    step4.indexOf("adev test-helpers check") < skill.indexOf("## Step 5: Handoff Block Production"),
+    body.indexOf("## Step 4: Test Authoring (RED Phase)") <
+      body.indexOf("## Step 5: Handoff Block Production"),
+    "Step 4 must precede Step 5 in the body, so its advisory check runs first",
   );
 });
 

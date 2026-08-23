@@ -11,8 +11,8 @@ source-manifest:
   sha: "794bc64"
   files:
     - skills/write-test/SKILL.md
-    - skills/write-test/write-handoff.mjs
-    - skills/write-test/write-handoff.sh
+    - skills/write-test/scripts/write-handoff.mjs
+    - skills/write-test/scripts/write-handoff.sh
   computed-at: "2025-04-25T00:00:00.000Z"
 drift_detected: true
 ---

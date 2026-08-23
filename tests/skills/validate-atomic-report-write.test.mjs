@@ -15,12 +15,13 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readSkillSurface } from "../helpers.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SKILL_PATH = resolve(__dirname, "../../skills/validate/SKILL.md");
 
 describe("validate SKILL.md — atomic .validate.md write protocol (issue-496)", () => {
-  const content = readFileSync(SKILL_PATH, "utf-8");
+  const content = readSkillSurface("validate");
 
   it("instructs the skill to write to a .tmp file before committing (+3 more contract assertions)", () => {
     // instructs the skill to write to a .tmp file before committing

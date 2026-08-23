@@ -90,3 +90,4 @@
 {"event":"plan_task","plan":".context-index/specs/features/autonomous-bugfix-loop/bugfix-loop-execution-hardening.plan.md","task_id":"task-16","status":"done","notes":"Isolation/stacking/table/priority-band verified; fixed worktree-cwd run-state resolution bug","ts":"2026-08-21T20:02:50.412Z"}
 {"event":"step_completed","step":"implement","verdict":"PASS","ts":"2026-08-21T20:10:13.224Z"}
 {"event":"lifecycle_step","step":"validate","status":"started","ts":"2026-08-21T20:10:50.239Z"}
+{"event":"code_drift_detected","drift_source":"tests/helpers.mjs","drift_at":"2026-08-23T12:26:43.766Z","ts":"2026-08-23T12:26:43.767Z"}

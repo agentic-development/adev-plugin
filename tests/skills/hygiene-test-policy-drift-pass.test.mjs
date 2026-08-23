@@ -1,8 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { readSkillSurface } from "../helpers.mjs";
 
-const skill = readFileSync(new URL("../../skills/hygiene/SKILL.md", import.meta.url), "utf8");
+const skill = readSkillSurface("hygiene");
 
 test("hygiene SKILL.md adds an Audit Pass reporting floor_inputs: unavailable tasks (+1 more contract assertions)", () => {
   // hygiene SKILL.md adds an Audit Pass reporting floor_inputs: unavailable tasks

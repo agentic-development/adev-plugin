@@ -137,7 +137,7 @@ for (const target of TARGETS) {
       // a description of the keyword's target, not a --rubric value.
       assert.match(
         section,
-        /<ADEV_ROOT>\/skills\/eval\/default-rubric\.yaml/,
+        /<ADEV_ROOT>\/skills\/eval\/(?:references\/)?default-rubric\.yaml/,
         `${target.label}: Rubric resolution must still name the shipped rubric the keyword resolves to`,
       );
     });

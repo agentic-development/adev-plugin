@@ -57,19 +57,14 @@ describe("bundled consistency pack glob (BEH-1)", () => {
     );
   });
 
-  test("rendered against this repo, the pack names 19 cross-cutting specs, not 55 files", () => {
+  test("rendered against this repo, the pack names 20 cross-cutting specs, not 67 entries", () => {
     // LIVE COUNT against this repository's own .context-index/specs/cross-cutting/.
-    // 19 `*.spec.md` files: 18 at the top level plus
-    // `completion-tokens/completion-tokens.spec.md` one level down. Everything
-    // else there is a lifecycle sidecar that must never reach a reviewer
-    // prompt (`.review.md`, `.plan.md`, `.validate.md`, `.blockers.md`), plus
-    // a bare `lifecycle-gate-validation.md` and the nested `charter.md`.
+    // 67 entries live there; 20 are `*.spec.md`. The other 47 must never reach a
+    // reviewer prompt: 14 `.review.md`, 12 `.plan.md`, 10 `.validate.md`,
+    // 3 `.blockers.md`, 6 `.routing.json`, 1 bare `lifecycle-gate-validation.md`,
+    // and the `completion-tokens/` subdirectory.
     //
-    // Raised 18 -> 19 on 2026-08-20 when the glob became recursive. The 19th
-    // is a genuine spec that already existed; it was simply unreachable while
-    // the glob was single-level.
-    //
-    // FUTURE CONTRIBUTOR: bump this when you add or remove a cross-cutting
+    // FUTURE CONTRIBUTOR: bump 20 when you add or remove a cross-cutting
     // *spec*. NEVER bump it because a sidecar appeared — a sidecar reaching
     // this count means the glob regressed, which is the bug this test exists
     // to catch.
@@ -82,7 +77,7 @@ describe("bundled consistency pack glob (BEH-1)", () => {
     const crossCuttingMatches = namedFiles(r.rendered, r.files, r.nonce).filter((f) =>
       f.startsWith(CROSS_CUTTING_PREFIX)
     );
-    assert.equal(crossCuttingMatches.length, 19);
+    assert.equal(crossCuttingMatches.length, 20);
   });
 
   test("no lifecycle sidecar reaches any bundled pack", () => {
