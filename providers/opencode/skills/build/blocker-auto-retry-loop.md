@@ -63,10 +63,12 @@ Full instructions for `skills/build/SKILL.md` Step 1's Blocker handling. Loaded 
      retries_remaining,
      verdict: <latest review verdict>,
      human_final_pass: <--require-human-final-pass flag>,
-     blocker_count_history: <per-cycle blocker counts so far, this spec>,
+     blocker_count_history: <this cycle's count appended to prior cycles' counts, this spec>,
      not_converging_window: <manifest build.not_converging_window, default 2>,
    })
    ```
+
+   **`blocker_count_history`'s per-cycle count is `curr_blockers.length` — the SAME already-`external_blockers`-excluded set used for `partitionBlockers` above, never the raw `.blockers.md` entry count.** BEH-9 defines `NOT_CONVERGING` over the "loop-eligible" blocker count specifically so a real, correctly-unfixable `external` blocker that legitimately persists cycle over cycle (step 4's design: rewriting the spec can never resolve it) doesn't itself inflate the trend and falsely trip `NOT_CONVERGING` while genuine `defect`-blocker progress is happening underneath. Append this cycle's count to the running array in order — do not recompute or reorder prior entries.
 
 8. **Act on the verdict:**
 
