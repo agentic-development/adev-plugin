@@ -61,6 +61,7 @@ source-manifest:
     - tests/skills/implement-synthesized-prompt.test.mjs
     - tests/skills/implement.test.mjs
   computed-at: "2026-08-19T20:27:40.286Z"
+drift_detected: true
 ---
 
 # Skill Spec: Graduated Review Depth in /adev:implement

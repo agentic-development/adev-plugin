@@ -18,6 +18,7 @@ source-manifest:
     - lib/issues/eligibility.mjs
     - tests/issues/next.test.mjs
   computed-at: "2026-08-21T17:52:06.100Z"
+drift_detected: true
 ---
 
 # Amendment: Live Spec: Bug Selection Verb and Eligibility Filter (targeting rev 8)

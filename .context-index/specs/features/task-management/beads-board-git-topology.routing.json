@@ -1,0 +1,116 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Fully-specified bootstrap helper with exact git commands and code; 2 files in lib/issues/, direct in-repo precedent but no curated golden sample."
+    },
+    {
+      "task_id": "t10",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 1,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Standard full quality-gate run (npm test) with regression fixes as needed; mechanical verification step."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Pure test-only addition extending an existing suite; no production code change, exact test given, single file."
+    },
+    {
+      "task_id": "t3",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 1,
+        "blast_radius": 0.8,
+        "novelty": 1
+      },
+      "rationale": "Two mechanical entries added to an established frozen array following its own convention; minor cross-spec coordination with managed-gitignore-block.spec.md."
+    },
+    {
+      "task_id": "t4",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.6,
+        "novelty": 0.8
+      },
+      "rationale": "Mirrors existing maybeEnsureManagedGitignore pattern exactly at two call sites; touches cli/index.mjs install/upgrade flow, a constitutionally-flagged area though explicitly confirmed out of scope for that boundary. Tier kept full out of caution despite meeting the quick threshold mechanically."
+    },
+    {
+      "task_id": "t5",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 1,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Direct one-to-one precedent in lib/cli/issues-migrate.mjs's checkpoint pattern; fully mechanical, isolated to a new small module."
+    },
+    {
+      "task_id": "t6",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.8,
+        "novelty": 0.6
+      },
+      "rationale": "Large orchestration combining snapshot/branch/push/checkpoint/cleanup/reprovision across several existing helpers; well-specified but the composition and ordering are novel enough to warrant a mid-point checkpoint."
+    },
+    {
+      "task_id": "t7",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Mostly regression-test authoring to lock in Task 6's already-correct checkpoint-gating structure; review-verified sequence, minimal new production logic."
+    },
+    {
+      "task_id": "t8",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 1,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Exact mirror of 8 existing dispatcher subcommands in lib/cli/issues.mjs; fully mechanical pattern application."
+    },
+    {
+      "task_id": "t9",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 0.8
+      },
+      "rationale": "Systematic gap-closing sweep across 3 existing test suites against the spec's 8-row error case table; mostly test-only additions with a clear row-by-row checklist."
+    }
+  ]
+}
