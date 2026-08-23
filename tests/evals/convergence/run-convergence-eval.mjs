@@ -82,9 +82,14 @@ const FIXTURE_PATHS_TO_RESET = [
 
 // Session JSONL location is derived from the CWD used when running claude —
 // Claude hashes the absolute project path to build the session directory
-// name (slashes become dashes). Computed, not hardcoded, so this runs on
-// any machine's checkout.
-const SANDBOX_PROJECT_KEY = SANDBOX.replace(/\//g, '-');
+// name by replacing every non-alphanumeric character with a dash, not just
+// slashes. A slash-only replacement silently mismatches on any checkout
+// path containing another special character (this repo's own worktree path
+// contains a literal `.claude` segment, whose dot collapses into an extra
+// dash the naive replacement misses) — verified against the real directory
+// Claude Code creates for this exact checkout, not assumed. Computed, not
+// hardcoded, so this runs on any machine's checkout.
+const SANDBOX_PROJECT_KEY = SANDBOX.replace(/[^a-zA-Z0-9]/g, '-');
 const SESSIONS_DIR = join(homedir(), '.claude', 'projects', SANDBOX_PROJECT_KEY);
 
 // ─── CLI args ───────────────────────────────────────────────────────────────
@@ -170,10 +175,15 @@ function readLifecycleEvents() {
 // compatible with the amendment's new verdicts (NOT_CONVERGING,
 // DECISION_REQUIRED, EXTERNAL_REMEDY) even before they're implemented —
 // an unamended run simply never emits them, and the field reads as null.
+// `BLOCK` is the unamended (pre-this-spec) loop's own terminal verdict: the
+// base spec's sidecar+fail-loud path on the first BLOCK never rewrites the
+// step_completed event to one of the loop-convergence verdicts below, so a
+// baseline-arm trial's true terminal state IS a plain `BLOCK` — omitting it
+// here left every baseline trial's terminalVerdict silently null.
 const TERMINAL_VERDICTS = [
   'PASS', 'PASS_WITH_NOTES', 'PASS_PENDING_HUMAN',
   'NO_PROGRESS', 'REGRESSED', 'BUDGET_EXHAUSTED',
-  'NOT_CONVERGING', 'DECISION_REQUIRED',
+  'NOT_CONVERGING', 'DECISION_REQUIRED', 'EXTERNAL_REMEDY', 'BLOCK',
 ];
 
 function summarizeTrial(events) {
