@@ -2,6 +2,7 @@
  * Shared test utilities for adev-plugin E2E tests.
  */
 
+import assert from "node:assert/strict";
 import { mkdtempSync, rmSync, mkdirSync, writeFileSync, chmodSync } from "fs";
 import { join, resolve, dirname } from "path";
 import { execSync, spawnSync } from "child_process";
@@ -13,6 +14,27 @@ const __dirname = dirname(__filename);
 
 /** Resolved path to the plugin repository root. */
 export const PLUGIN_ROOT = resolve(__dirname, "..");
+
+/**
+ * Run `fn`, assert that it threw, and return the thrown error.
+ *
+ * `assert.throws()` is a void assertion — it returns `undefined` and cannot
+ * hand the error back for further inspection, so `const err = assert.throws(fn)`
+ * is always `undefined`. Wrapping it this way preserves its strictness (a call
+ * that throws nothing still fails the assertion) while exposing the error so
+ * `.code` / `.message` assertions can run against it.
+ *
+ * @param {() => any} fn - the call expected to throw.
+ * @returns {Error} the error `fn` threw.
+ */
+export function captureThrow(fn) {
+  let thrown;
+  assert.throws(fn, (err) => {
+    thrown = err;
+    return true;
+  });
+  return thrown;
+}
 
 /**
  * Create an isolated temp directory for a single test.
@@ -96,6 +118,76 @@ export function createTempGitRepo({ branch = "main" } = {}) {
     execSync(`git checkout -b ${branch}`, { cwd: dir, stdio: "ignore" });
   }
   return dir;
+}
+
+/**
+ * Initialize an existing directory as a git repo with test-safe config
+ * (no user commit yet). Unlike `createTempGitRepo()`, this operates on a
+ * directory the caller already created/populated (e.g. an adev-scaffolded
+ * temp project), so it does not create the directory or an initial commit.
+ * @param {string} dir - Existing directory to `git init` in place.
+ */
+export function initGitRepo(dir) {
+  execSync("git init -b main", { cwd: dir, stdio: "ignore" });
+  execSync('git config user.email "test@test.com"', { cwd: dir, stdio: "ignore" });
+  execSync('git config user.name "Test"', { cwd: dir, stdio: "ignore" });
+  execSync("git config commit.gpgsign false", { cwd: dir, stdio: "ignore" });
+}
+
+/**
+ * Write a file and commit it in a git repo.
+ * @param {string} dir - Git repo working directory.
+ * @param {string} filename - File to write (relative to `dir`).
+ * @param {string} message - File content and commit message (both set to this value).
+ */
+export function commitFile(dir, filename, message) {
+  writeFileSync(join(dir, filename), `${message}\n`);
+  execSync(`git add ${filename} && git commit -m "${message}"`, { cwd: dir, stdio: "ignore" });
+}
+
+/**
+ * Turn an existing directory into a git repo that is `behindCount` commits
+ * behind a freshly-created bare "origin" remote — the fixture shape used to
+ * exercise ahead/behind freshness checks against a real git remote.
+ *
+ * Bootstraps: a bare origin repo, an initial commit + push from `dir` (with
+ * `origin/HEAD` set so default-branch resolution works the way `git clone`
+ * sets it up), then a disposable "pusher" clone that pushes `behindCount`
+ * additional commits to origin — leaving `dir` behind by exactly that many.
+ * The pusher clone is cleaned up before returning; `dir` and the bare repo
+ * are left for the caller to clean up (the bare repo's path is returned).
+ *
+ * @param {string} dir - Existing directory to turn into the "local" repo (not yet a git repo).
+ * @param {object} [opts]
+ * @param {number} [opts.behindCount] - Commits to push to origin beyond `dir`'s HEAD (default: 0).
+ * @returns {{ bareDir: string }} Absolute path to the bare origin repo.
+ */
+export function createBehindOriginFixture(dir, { behindCount = 0 } = {}) {
+  const bareDir = mkdtempSync(join(tmpdir(), "adev-behind-origin-bare-"));
+  const pusherDir = mkdtempSync(join(tmpdir(), "adev-behind-origin-pusher-"));
+
+  execSync("git init --bare -b main", { cwd: bareDir, stdio: "ignore" });
+
+  initGitRepo(dir);
+  commitFile(dir, "README.md", "init");
+  execSync(`git remote add origin ${bareDir}`, { cwd: dir, stdio: "ignore" });
+  execSync("git push origin main", { cwd: dir, stdio: "ignore" });
+  // Default-branch resolution (e.g. computeFreshness's
+  // resolveDefaultRemoteBranch) reads refs/remotes/origin/HEAD, which a
+  // plain `remote add` + `push` never sets the way `git clone` does.
+  execSync("git remote set-head origin main", { cwd: dir, stdio: "ignore" });
+
+  execSync(`git clone ${bareDir} ${pusherDir}`, { stdio: "ignore" });
+  execSync('git config user.email "test@test.com"', { cwd: pusherDir, stdio: "ignore" });
+  execSync('git config user.name "Test"', { cwd: pusherDir, stdio: "ignore" });
+  execSync("git config commit.gpgsign false", { cwd: pusherDir, stdio: "ignore" });
+  for (let i = 0; i < behindCount; i += 1) {
+    commitFile(pusherDir, `f${i}.txt`, `commit-${i}`);
+  }
+  execSync("git push origin main", { cwd: pusherDir, stdio: "ignore" });
+
+  cleanupTempDir(pusherDir);
+  return { bareDir };
 }
 
 /**

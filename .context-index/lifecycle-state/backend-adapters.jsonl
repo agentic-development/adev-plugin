@@ -1,1 +1,2 @@
 {"event":"code_drift_detected","drift_source":"lib/issues/file-adapter.mjs","drift_at":"2026-05-12T00:31:48.524Z","ts":"2026-05-18T13:50:21.113Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"debug_intervention","kind":"debug","note":"Fresh clone with no *.db: br refuses SYNC_CONFLICT on every verb. Fixed by passing --no-db instead of omitting --db when no db file resolves.","ts":"2026-08-21T21:01:56.807Z"}

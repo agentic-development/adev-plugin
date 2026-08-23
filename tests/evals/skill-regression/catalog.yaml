@@ -1,0 +1,330 @@
+# catalog.yaml — the skill-regression fixture's ground truth, as data.
+#
+# Spec: .context-index/specs/features/eval-harness/hermetic-fixture-and-ground-truth-catalog.spec.md
+# Guarded by: tests/lib/evals/skill-regression-catalog.test.mjs (Tier A)
+#
+# FLAT YAML ONLY. Every entry field value is a scalar — never a map, never a
+# list. `covers_skills` and `read_by` are comma-joined scalars: the minimal
+# reader (lib/profiles/yaml.mjs) loads a valueless key as `{}`, so a block that
+# failed to load is indistinguishable from one deliberately left empty. The
+# three top-level collections are lists of entries, the only list form the
+# schema admits.
+#
+# There is deliberately no `version` key. A revision counter no check reads is
+# write-only state, and pinning rubrics to one would require a
+# `catalog_version` key on every rubric that neither tier's shared contract
+# declares.
+#
+# `anchor` exists instead of a line number: a line number drifts silently the
+# moment anyone edits above the defect, while a string asserted unique in its
+# file drifts loudly.
+
+# Pinned to the literal, NOT derived from the directory name, so a rename is a
+# visible edit rather than a silent rebinding. Three readers match this prefix
+# (CATALOG_UNRESOLVED_CITATION here, RUBRIC_TWIN_UNCITED and
+# RUBRIC_COVERS_SKILLS_UNLISTED in the tier specs) and pinning it is what stops
+# them diverging.
+catalog_id: "skill-regression"
+
+# The project tree sits one level down so a skill pointed at the fixture sees a
+# clean adev project. catalog.yaml and README.md are harness files ABOUT the
+# fixture and are deliberately outside it.
+fixture_root: "project"
+
+# ---------------------------------------------------------------------------
+# planted_violations — defects a skill under test MUST catch.
+# ---------------------------------------------------------------------------
+planted_violations:
+  - id: "PV-01"
+    path: ".context-index/specs/features/orders/shipping-rates.spec.md"
+    class: "spec-code-drift"
+    anchor: "rounded half up to the nearest whole cent"
+    covers_skills: "hygiene, validate, debug"
+    twin: "KC-01"
+    detect_when: "the report names shipping-rates.spec.md behavior B7 as a rule src/shipping/rates.mjs does not implement"
+
+  - id: "PV-02"
+    path: ".context-index/specs/features/orders/shipping-rates.spec.md"
+    class: "stale-spec-frontmatter"
+    anchor: "updated: 2026-08-03"
+    covers_skills: "hygiene, status"
+    twin: "KC-02"
+    detect_when: "the report names shipping-rates.spec.md as stale against src/shipping/rates.mjs, whose recorded change date is sixteen days newer"
+
+  - id: "PV-03"
+    path: "src/orders/orphaned-helper.mjs"
+    class: "orphan-source-file"
+    anchor: "export function orphanedTotalCents"
+    covers_skills: "codehealth, repomap"
+    twin: "KC-03"
+    detect_when: "the orphan list names src/orders/orphaned-helper.mjs as unreachable from src/index.mjs"
+
+  - id: "PV-04"
+    path: "src/shipping/rates.mjs"
+    class: "dead-export"
+    anchor: "export function formatLegacyTotal"
+    covers_skills: "codehealth, repomap"
+    twin: "KC-04"
+    detect_when: "the dead-export list names formatLegacyTotal and reports zero references to it"
+
+  - id: "PV-05"
+    path: "package.json"
+    class: "unused-dependency"
+    anchor: '"ajv": "^8.17.1"'
+    covers_skills: "codehealth"
+    twin: "KC-05"
+    detect_when: "the unused-dependency list names ajv and no import line anywhere under src/ or tests/ binds it"
+
+  - id: "PV-06"
+    path: "src/orders/legacy-loader.js"
+    class: "esm-violation"
+    anchor: 'require("node:fs")'
+    covers_skills: "validate"
+    twin: "KC-06"
+    detect_when: "the constitution-compliance finding cites src/orders/legacy-loader.js against principle 1, Pure ESM"
+
+  - id: "PV-07"
+    path: ".context-index/specs/features/orders/shipping-rates.spec.md"
+    class: "charter-scope-escape"
+    anchor: "# Live Spec: Calculate a shipping rate"
+    covers_skills: "specify, review-specs, brainstorm"
+    twin: "KC-07"
+    detect_when: "the finding reports that the spec covers a capability absent from the orders charter's Capability Map"
+
+  - id: "PV-08"
+    path: "src/shipping/rates.mjs"
+    class: "undocumented-public-api"
+    anchor: "export function calculateRate"
+    covers_skills: "document"
+    twin: "KC-08"
+    detect_when: "the coverage gap names calculateRate as re-exported from src/index.mjs with no docs/api.md heading"
+
+  - id: "PV-09"
+    path: ".context-index/tasks/tasks.json"
+    class: "missing-issue-binding"
+    anchor: '"id": "epic-2"'
+    covers_skills: "reconcile, status, hygiene"
+    twin: "KC-09"
+    detect_when: "the report names shipping-rates.spec.md as having no Feature work item bound to it on the board"
+
+  - id: "PV-10"
+    path: ".context-index/specs/features/orders/shipping-rates.plan.md"
+    class: "plan-task-without-test"
+    anchor: "### Task 2: Apply the weight-band rounding rule"
+    covers_skills: "plan, write-test, route"
+    twin: "KC-10"
+    detect_when: "the finding names shipping-rates.plan.md Task 2 as declaring no TDD test expectation"
+
+# ---------------------------------------------------------------------------
+# known_clean — artifacts a skill under test MUST NOT flag. Every planted
+# violation has exactly one, and they name each other. A rubric that cites a PV
+# without its KC is measuring sensitivity with no specificity control.
+# ---------------------------------------------------------------------------
+known_clean:
+  - id: "KC-01"
+    path: ".context-index/specs/features/orders/create-order.spec.md"
+    class: "spec-code-drift"
+    anchor: "**B2 — Defaults the discount.**"
+    covers_skills: "hygiene, validate, debug"
+    twin: "PV-01"
+    must_not_flag_when: "create-order.spec.md B2 is reported as drifted, when src/orders/create-order.mjs defaults discountCents to 0 exactly as worded"
+
+  - id: "KC-02"
+    path: ".context-index/specs/features/orders/create-order.spec.md"
+    class: "stale-spec-frontmatter"
+    anchor: "updated: 2026-07-28"
+    covers_skills: "hygiene, status"
+    twin: "PV-02"
+    must_not_flag_when: "create-order.spec.md is reported as stale, when its updated date postdates src/orders/create-order.mjs's recorded change date"
+
+  - id: "KC-03"
+    path: "src/shipping/rates.mjs"
+    class: "orphan-source-file"
+    anchor: "function zoneBaseCents"
+    covers_skills: "codehealth, repomap"
+    twin: "PV-03"
+    must_not_flag_when: "src/shipping/rates.mjs appears in the orphan list, when src/index.mjs imports calculateRate from it"
+
+  - id: "KC-04"
+    path: "src/orders/create-order.mjs"
+    class: "dead-export"
+    anchor: "export function createOrder"
+    covers_skills: "codehealth, repomap"
+    twin: "PV-04"
+    must_not_flag_when: "createOrder appears in the dead-export list, when src/index.mjs and tests/create-order.test.mjs both reference it"
+
+  - id: "KC-05"
+    path: "package.json"
+    class: "unused-dependency"
+    anchor: '"nanoid": "^5.0.7"'
+    covers_skills: "codehealth"
+    twin: "PV-05"
+    must_not_flag_when: "nanoid appears in the unused-dependency list, when src/index.mjs imports it for newOrderId"
+
+  - id: "KC-06"
+    path: "src/orders/create-order.mjs"
+    class: "esm-violation"
+    anchor: "export const MAX_LINE_ITEMS = 50;"
+    covers_skills: "validate"
+    twin: "PV-06"
+    must_not_flag_when: "src/orders/create-order.mjs is cited against principle 1, when it is .mjs and uses export syntax with no require call"
+
+  - id: "KC-07"
+    path: ".context-index/specs/features/orders/create-order.spec.md"
+    class: "charter-scope-escape"
+    anchor: "# Live Spec: Validate and price an order payload"
+    covers_skills: "specify, review-specs, brainstorm"
+    twin: "PV-07"
+    must_not_flag_when: "create-order.spec.md is reported as out of charter scope, when the orders charter's Capability Map charts exactly that capability"
+
+  - id: "KC-08"
+    path: "docs/api.md"
+    class: "undocumented-public-api"
+    anchor: "## `createOrder(payload)`"
+    covers_skills: "document"
+    twin: "PV-08"
+    must_not_flag_when: "createOrder is reported as undocumented, when docs/api.md carries a heading and a full parameter table for it"
+
+  - id: "KC-09"
+    path: ".context-index/tasks/tasks.json"
+    class: "missing-issue-binding"
+    anchor: '"id": "issue-7"'
+    covers_skills: "reconcile, status, hygiene"
+    twin: "PV-09"
+    must_not_flag_when: "create-order.spec.md is reported as unbound, when issue-7 is a Feature work item whose spec_ref names it"
+
+  - id: "KC-10"
+    path: ".context-index/specs/features/orders/create-order.plan.md"
+    class: "plan-task-without-test"
+    anchor: "### Task 2: Pricing and the discount bound"
+    covers_skills: "plan, write-test, route"
+    twin: "PV-10"
+    must_not_flag_when: "a create-order.plan.md task is reported as missing a test expectation, when all three declare one"
+
+# ---------------------------------------------------------------------------
+# scaffolding — the context files skills read to do their job at all. Not
+# ground truth: no rubric cites an SC id (CATALOG_UNRESOLVED_CITATION resolves
+# PV/KC ids only). `read_by` is the declaration the disclosure-fidelity
+# capability will later compare an observed ReadTrace against.
+# ---------------------------------------------------------------------------
+scaffolding:
+  - id: "SC-01"
+    path: ".context-index/constitution.md"
+    role: "constitution"
+    read_by: "sync, validate, implement, review-specs, specify, brainstorm, assess"
+
+  - id: "SC-02"
+    path: ".context-index/manifest.yaml"
+    role: "manifest"
+    read_by: "init, sync, status, hygiene, plan, implement, issues, validate, repomap, eval, deploy"
+
+  - id: "SC-03"
+    path: ".context-index/platform-context.yaml"
+    role: "platform-context"
+    read_by: "init, plan, implement"
+
+  - id: "SC-04"
+    path: ".context-index/deploy.yaml"
+    role: "deploy-config"
+    read_by: "deploy"
+
+  - id: "SC-05"
+    path: ".context-index/governance/validate.yaml"
+    role: "governance-config"
+    read_by: "validate, build"
+
+  - id: "SC-06"
+    path: ".context-index/governance/review.yaml"
+    role: "governance-config"
+    read_by: "review-specs, build"
+
+  - id: "SC-07"
+    path: ".context-index/specs/product.md"
+    role: "product-spec"
+    read_by: "brainstorm, specify, status"
+
+  - id: "SC-08"
+    path: ".context-index/specs/features/orders/charter.md"
+    role: "charter"
+    read_by: "brainstorm, specify, review-specs, plan, status"
+
+  - id: "SC-09"
+    path: ".context-index/specs/features/orders/create-order.spec.md"
+    role: "live-spec"
+    read_by: "review-specs, plan, implement, validate, work, build, status"
+
+  - id: "SC-10"
+    path: ".context-index/specs/features/orders/shipping-rates.spec.md"
+    role: "live-spec"
+    read_by: "review-specs, plan, implement, validate, work, build, status"
+
+  - id: "SC-11"
+    path: ".context-index/specs/features/orders/create-order.plan.md"
+    role: "plan"
+    read_by: "route, implement, work, build, status"
+
+  - id: "SC-12"
+    path: ".context-index/specs/features/orders/shipping-rates.plan.md"
+    role: "plan"
+    read_by: "route, implement, work, build, status"
+
+  - id: "SC-13"
+    path: ".context-index/adrs/0001-esm-only.md"
+    role: "adr"
+    read_by: "debug, implement, review-specs, validate"
+
+  - id: "SC-14"
+    path: ".context-index/memory/heuristics/orders.md"
+    role: "heuristic"
+    read_by: "learn, implement, debug"
+
+  - id: "SC-15"
+    path: ".context-index/samples/order-pipeline-create-order.md"
+    role: "golden-sample"
+    read_by: "sample, implement"
+
+  - id: "SC-16"
+    path: ".context-index/lifecycle-state/create-order.jsonl"
+    role: "lifecycle-log"
+    read_by: "work, build, status, hygiene, retro"
+
+  - id: "SC-17"
+    path: ".context-index/lifecycle-state/shipping-rates.jsonl"
+    role: "lifecycle-log"
+    read_by: "work, build, status, hygiene, retro"
+
+  - id: "SC-18"
+    path: ".context-index/evals/config.yaml"
+    role: "eval-config"
+    read_by: "eval"
+
+  - id: "SC-19"
+    path: ".context-index/evals/orders-rubric.yaml"
+    role: "rubric"
+    read_by: "eval"
+
+  - id: "SC-20"
+    path: ".context-index/evals/orders-verdicts.json"
+    role: "verdict-input"
+    read_by: "eval"
+
+  # The one entry that needs `role: issue-board` specifically — any other enum
+  # member satisfies CATALOG_ROLE_UNKNOWN identically while making the spec's
+  # board prose silently false, so the integrity test pins it directly.
+  # `read_by` is every skill that resolves the board through getIssueManager:
+  # reach, not tier membership. `research` is absent because its call is gated
+  # on --issue, which no scenario passes; `assess` never opens the board at all.
+  - id: "SC-21"
+    path: ".context-index/tasks/tasks.json"
+    role: "issue-board"
+    read_by: "issues, implement, work, build, debug, specify, reconcile, status, hygiene, plan"
+
+  - id: "SC-22"
+    path: "CLAUDE.md"
+    role: "agent-file"
+    read_by: "sync"
+
+  - id: "SC-23"
+    path: "AGENTS.md"
+    role: "agent-file"
+    read_by: "sync"

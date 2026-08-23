@@ -5,8 +5,6 @@
 // write. The entrypoint try/catches the whole body and converts throws into
 // `process.exit(1)` with `err.message` on stderr, per spec throw-vs-exit
 // semantics.
-//
-// Spec: .context-index/specs/features/copilot-provider/copilot-hook-generator.spec.md
 
 import { existsSync, readFileSync, writeFileSync, mkdirSync, renameSync } from "node:fs";
 import path from "node:path";

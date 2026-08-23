@@ -1,0 +1,35 @@
+# Incomplete-criterion fixture — exercises BEH-5's RUBRIC_INCOMPLETE_CRITERION
+# path, where the error must name the entry id AND the missing field.
+# Modelled on conforming.yaml and kept valid and flat so it survives parse,
+# nesting, and the required-key pass.
+#
+# The offender: quality_dimensions[0], id "naming_clarity" (deliberately NOT
+# the conforming fixture's "readability_naming", so the test cannot pass by
+# matching a shared id), declares criterion, reference, met_when and
+# not_met_when but NO unknown_when. required_elements are all complete, so the
+# element pass must let this file through to the criterion pass.
+
+rubric_id: "fixture-incomplete-criterion"
+version: 1
+layer: 3
+verdict_values: "met | not_met | unknown (judged criteria) | not_applicable (deterministic elements)"
+
+required_elements:
+  - id: spec_criteria_referenced
+    description: "Every acceptance criterion in the spec is referenced verbatim by an added or modified test"
+    source: "the Live Spec's acceptance-criteria list, matched against test names and assertion messages in the diff"
+    met_when: "each criterion's identifier, or its literal wording, appears in at least one test name or assertion message"
+
+quality_dimensions:
+  - id: naming_clarity
+    criterion: "Can a developer unfamiliar with this module state what each newly added symbol does from its name and signature alone?"
+    reference: "the matched golden sample in .context-index/samples/, else the naming conventions in the constitution"
+    met_when: "every new symbol's name and signature convey its purpose without reading its body"
+    not_met_when: "at least one new symbol requires reading its body to know what it does"
+
+layer3_max_points: 25
+required_element_points: 10
+judged_criterion_points: 15
+unknown_policy: "exclude_from_denominator"
+not_applicable_policy: "exclude_from_denominator"
+insufficient_evidence_threshold_percent: 40

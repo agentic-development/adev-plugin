@@ -36,6 +36,7 @@ AI coding agents work best with structured context but most projects provide non
 | Copilot Provider | Fifth provider adapter that installs adev into GitHub Copilot's per-repo customization surface (`.github/skills/`, `.github/hooks/`, `.github/copilot-instructions.md`, `.github/instructions/`), with a build-step generator emitting Copilot's PascalCase hook protocol and tool-name mapping; covers both VS Code Copilot and the standalone Copilot CLI from one install | [charter.md](./features/copilot-provider/charter.md) |
 | Worktree Parallelization | adev-managed git worktrees enabling parallel, file-disjoint lifecycle execution (implement task-groups, milestone builds) without conflicts, anchored to the main repo root so they never nest | [charter.md](./features/worktree-parallelization/charter.md) |
 | Autonomous Bugfix Loop | Self-re-invoking loop that drains P2/P3 bugs from the issue board unattended by composing existing debug/claim/convergence primitives, plus a triage-gated GitHub Issues bridge for external bug intake | [charter.md](./features/autonomous-bugfix-loop/charter.md) |
+| Eval Harness | One rubric contract and scoring engine shared by /adev:eval and tests/evals/, with hermetic planted-ground-truth fixtures, per-skill regression rubrics for all 30 skills, run-cost records, and tiered CI gates | [charter.md](./features/eval-harness/charter.md) |
 
 ## Cross-Cutting Concerns
 

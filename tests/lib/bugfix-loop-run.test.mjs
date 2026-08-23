@@ -6,12 +6,13 @@ import { test } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, dirname, relative } from 'node:path';
 import { execSync } from 'node:child_process';
 import {
   createRun, readRunState, resolveRunStatePath, checkStatusGuard, checkBudget,
   appendAttempt, completeTurn, finishRun, tokenForStatus, findLatestRunState,
   recordSyncRetry, resetSyncRetry, recordStaleLinkNotice, hasStaleLinkNoticeFired,
+  resolveWorktreeBaseRef, recordWorktreeBranch, appendSummaryRow, formatSummaryTable,
 } from '../../lib/bugfix-loop-run.mjs';
 
 test('createRun writes a run-state file with all BugfixLoopRun fields, defaults intact', () => {
@@ -37,8 +38,14 @@ test('resolveRunStatePath rejects a non-UUID-shaped run_id (BD-1)', () => {
 test('run-state filename stays covered by the .gitignore lifecycle-state/*.json glob', () => {
   const root = process.cwd();
   const path = resolveRunStatePath(root, '11111111-1111-4111-8111-111111111111');
-  const rel = path.slice(root.length + 1);
-  const out = execSync(`git check-ignore ${rel}`, { cwd: root }).toString().trim();
+  // resolveRunStatePath maps `root` onto the shared main-repo storage root
+  // (BEH-3, worktree-aware resolution — `git check-ignore` when *this test
+  // itself* runs from inside a linked worktree redirects here rather than
+  // to `root`) — derive the actual containing root from the returned path
+  // itself, not the input, so the assertion holds either way.
+  const storageRoot = dirname(dirname(dirname(path))); // strip lifecycle-state/<file>.json, then .context-index
+  const rel = relative(storageRoot, path);
+  const out = execSync(`git check-ignore ${rel}`, { cwd: storageRoot }).toString().trim();
   assert.equal(out, rel);
 });
 
@@ -234,4 +241,99 @@ test('a fresh run_id starts stale_link_notices_surfaced empty (fresh-per-run sco
   const { run_id: run2 } = createRun(root, {});
   assert.equal(hasStaleLinkNoticeFired(root, run2, 'github:1'), false);
   rmSync(root, { recursive: true, force: true });
+});
+
+test('createRun accepts startingBranch and persists it; resolveWorktreeBaseRef falls back to it when last_worktree_branch is null (Plan-task 4)', () => {
+  const root = mkdtempSync(join(tmpdir(), 'bfl-run-'));
+  const state = createRun(root, { startingBranch: 'main' });
+  assert.equal(state.starting_branch, 'main');
+  assert.equal(state.last_worktree_branch, null);
+  assert.equal(resolveWorktreeBaseRef(state), 'main');
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('createRun defaults starting_branch to null when not provided (Plan-task 4)', () => {
+  const root = mkdtempSync(join(tmpdir(), 'bfl-run-'));
+  const state = createRun(root, {});
+  assert.equal(state.starting_branch, null);
+  assert.equal(resolveWorktreeBaseRef(state), null);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('recordWorktreeBranch updates last_worktree_branch; resolveWorktreeBaseRef then prefers it over starting_branch (Plan-task 4)', () => {
+  const root = mkdtempSync(join(tmpdir(), 'bfl-run-'));
+  const state = createRun(root, { startingBranch: 'main' });
+  recordWorktreeBranch(root, state.run_id, 'adev/bugfix-issue-1');
+  const updated = readRunState(root, state.run_id);
+  assert.equal(updated.last_worktree_branch, 'adev/bugfix-issue-1');
+  assert.equal(resolveWorktreeBaseRef(updated), 'adev/bugfix-issue-1');
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('createRun initializes summary_rows to [] (Plan-task 12)', () => {
+  const root = mkdtempSync(join(tmpdir(), 'bfl-run-'));
+  const state = createRun(root, {});
+  assert.deepEqual(state.summary_rows, []);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('appendSummaryRow appends a row and formatSummaryTable renders it with the priority-bound column (Plan-task 12)', () => {
+  const root = mkdtempSync(join(tmpdir(), 'bfl-run-'));
+  const state = createRun(root, {});
+  appendSummaryRow(root, state.run_id, { issueId: 'issue-1', verdict: 'FIXED', filesTouched: 3, testsAdded: 1, priorityBound: 'P3', turn: 1 });
+  const updated = readRunState(root, state.run_id);
+  assert.equal(updated.summary_rows.length, 1);
+  assert.deepEqual(updated.summary_rows[0], { issueId: 'issue-1', verdict: 'FIXED', filesTouched: 3, testsAdded: 1, priorityBound: 'P3', turn: 1 });
+  const table = formatSummaryTable(updated);
+  assert.match(table, /issue-1/);
+  assert.match(table, /FIXED/);
+  assert.match(table, /P3/);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('appendSummaryRow accumulates multiple rows in order; formatSummaryTable renders one row per attempt (Plan-task 12)', () => {
+  const root = mkdtempSync(join(tmpdir(), 'bfl-run-'));
+  const state = createRun(root, {});
+  appendSummaryRow(root, state.run_id, { issueId: 'issue-1', verdict: 'FIXED', filesTouched: 3, testsAdded: 1, priorityBound: 'P3', turn: 1 });
+  appendSummaryRow(root, state.run_id, { issueId: 'issue-2', verdict: 'PARKED', filesTouched: 0, testsAdded: 0, priorityBound: 'P2', turn: 2 });
+  const updated = readRunState(root, state.run_id);
+  assert.equal(updated.summary_rows.length, 2);
+  const table = formatSummaryTable(updated);
+  const issue1Idx = table.indexOf('issue-1');
+  const issue2Idx = table.indexOf('issue-2');
+  assert.ok(issue1Idx !== -1 && issue2Idx !== -1 && issue1Idx < issue2Idx);
+  assert.match(table, /PARKED/);
+  assert.match(table, /P2/);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('formatSummaryTable on a run with no attempts yet renders a table with headers and no data rows (Plan-task 12)', () => {
+  const root = mkdtempSync(join(tmpdir(), 'bfl-run-'));
+  const state = createRun(root, {});
+  const table = formatSummaryTable(state);
+  assert.match(table, /issue/i);
+  assert.match(table, /verdict/i);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('resolveRunStatePath resolves a relative tasks.db_path to an absolute path, not silently against process.cwd() (Plan-task 16 cq-1 fix)', () => {
+  const root = mkdtempSync(join(tmpdir(), 'bfl-run-'));
+  const dbDir = mkdtempSync(join(tmpdir(), 'bfl-run-dbpath-'));
+  // A relative tasks.db_path, resolved relative to *this process's* cwd —
+  // deliberately NOT `root`, to prove resolveRunStatePath does not silently
+  // treat it as relative-to-root either. Use path.relative so the test
+  // itself does not hardcode process.cwd()'s identity.
+  const relativeDbPath = relative(process.cwd(), dbDir);
+  mkdirSync(join(root, '.context-index'), { recursive: true });
+  writeFileSync(join(root, '.context-index', 'manifest.yaml'), `tasks:\n  db_path: ${relativeDbPath}\n`);
+
+  const runId = '22222222-2222-4222-8222-222222222222';
+  const path = resolveRunStatePath(root, runId);
+
+  // The resolved path must be absolute and must land under dbDir (resolved
+  // against process.cwd(), matching node:path's own resolve() semantics —
+  // not silently left relative, and not anchored to `root`).
+  assert.ok(path.startsWith(dbDir + '/'), `expected path under ${dbDir}, got ${path}`);
+  rmSync(root, { recursive: true, force: true });
+  rmSync(dbDir, { recursive: true, force: true });
 });

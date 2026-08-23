@@ -30,7 +30,7 @@ test("MANAGED_GITIGNORE_PATHS is frozen", () => {
   assert.ok(Object.isFrozen(MANAGED_GITIGNORE_PATHS));
 });
 
-test("MANAGED_GITIGNORE_PATHS contains the spec-declared 19 entries in declared order", () => {
+test("MANAGED_GITIGNORE_PATHS contains the spec-declared 21 entries in declared order", () => {
   const paths = MANAGED_GITIGNORE_PATHS.map((e) => e.path);
   const expected = [
     ".context-index/hygiene/",
@@ -47,6 +47,8 @@ test("MANAGED_GITIGNORE_PATHS contains the spec-declared 19 entries in declared 
     ".context-index/tasks/tasks.json.lock",
     ".context-index/tasks/tasks.json.*.tmp",
     ".context-index/tasks/.migrate-state.json",
+    ".beads/",
+    ".context-index/tasks/.board-migrate-state.json",
     "*.partial",
     "*.partial.lock",
     ".gitignore.*.tmp",
@@ -54,6 +56,12 @@ test("MANAGED_GITIGNORE_PATHS contains the spec-declared 19 entries in declared 
     ".githooks/*.adev",
   ];
   assert.deepEqual(paths, expected);
+});
+
+test("includes .beads/ and the board-migrate checkpoint in MANAGED_GITIGNORE_PATHS", () => {
+  const paths = MANAGED_GITIGNORE_PATHS.map((e) => e.path);
+  assert.ok(paths.includes(".beads/"));
+  assert.ok(paths.includes(".context-index/tasks/.board-migrate-state.json"));
 });
 
 test("MANAGED_GITIGNORE_PATHS does NOT include .context-index/sessions/", () => {

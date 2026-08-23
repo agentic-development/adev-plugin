@@ -1,0 +1,4 @@
+[
+  { "id": "spec_criteria_referenced", "value": "met", "evidence": "tests/x.test.mjs:12 names criterion 1" },
+  { "id": "tests_accompany_source", "value": "met", "evidence": "the diff pairs every source file" }
+]

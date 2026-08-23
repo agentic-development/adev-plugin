@@ -122,7 +122,7 @@ If no specialist is associated with the file, score based on general constitutio
 
 #### Present Results
 
-Rank candidates by total score. Present the top 10 (or fewer if less exist) to the user. **Persona adaptation:** The format below is the default for the Developer persona. If a different persona is active, adapt the display to its output rules.
+Rank candidates by total score. Present the top 10 (or fewer if less exist) to the user. **Persona adaptation:** The format below is the default for the Developer persona; adapt the display to the active persona's output rules. Verbosity is resolved separately across `templates/verbosity/terse.md`, `templates/verbosity/normal.md`, and `templates/verbosity/deep.md`: when the resolved verbosity is terse and this section carries a `**Terse form:**` block, that block is the section's declared rendering at terse verbosity. See `skills/status/SKILL.md:12` for the full terse-form marker grammar and table-substitution recipe.
 
 ```
 ## Sample Candidates
@@ -137,6 +137,8 @@ Select files to extract as golden samples (e.g., "1, 3" or "all").
 ```
 
 Wait for user selection before proceeding.
+
+**Terse form:** Renders the ranked candidate table narrowed to rank, file, pattern, and total score, and the selection prompt asking which files to extract. Substitutes the five per-dimension score columns (Test, Naming, Pattern, Complexity, Recency) with `/adev:sample --from <file>`, which re-scores and shows the full dimension breakdown for any one candidate.
 
 ### Step 4: Extract
 
@@ -181,6 +183,8 @@ Golden sample created:
   Principles: error-handling, response-shape, input-validation
 ```
 
+**Terse form:** Renders the repo-relative sample path (`.context-index/samples/<name>.md`) and its score. Substitutes the source file path, pattern name, and principles listing with the sample path already rendered above, whose frontmatter records them.
+
 ## --from Mode
 
 When `--from <file>` is provided:
@@ -214,6 +218,8 @@ When `--score` is provided:
 Degraded samples need attention: source code has changed or standards have evolved.
 ```
 
+**Terse form:** Renders the score audit table narrowed to sample, delta, and status columns, limited to degraded entries — the actionable subset. Skips the old-score and new-score columns; delta already carries the change they show. Substitutes the non-degraded (OK) rows with a count plus the repo-relative path under `.context-index/samples/` for any one sample's current recorded score.
+
 ## --refresh Mode
 
 When `--refresh` is provided:
@@ -237,6 +243,8 @@ When `--refresh` is provided:
 
 Proceed with recommended actions? (y/n)
 ```
+
+**Terse form:** This section's terse form governs the composed view; `## --score Mode`'s terse form applies only when `--score` runs on its own. Renders the refresh table narrowed to sample, stale, drift, and action columns — the action column and its per-sample rows are the evidence the following prompt asks the user to approve — plus the "Proceed with recommended actions?" prompt. Substitutes the score column with a count of samples needing attention and the repo-relative path under `.context-index/samples/` for any one sample's score detail.
 
 ## Red Flags
 

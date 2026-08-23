@@ -146,7 +146,7 @@ If `exec.status === "active"`, resume from `exec.currentTask` instead of task 1.
 
 **Load or create epic on the issue board:** Read `tasks.backend` from `manifest.yaml`. If configured:
 - If an epic exists matching this plan's `planRef`, load it.
-- If no epic exists, create it with `adev issues epic "<plan title>" --plan-ref "<plan-file-path>"` — never `adev issues create` (wrong store, duplicates) or `br create` (worktree `SYNC_CONFLICT`). It's the **only** board entry created here — per-task Issues are forbidden by the board-granularity invariant (see `agent-reliable-state-artifacts/charter.md`).
+- If no epic exists, create one with `adev issues epic "<plan title>" --plan-ref "<plan-file-path>"` — never `adev issues create` (wrong store) or a raw `br create` (`SYNC_CONFLICT`). The epic is the **only** board entry created here — per-task Issue creation is forbidden by the board-granularity invariant (see `agent-reliable-state-artifacts/charter.md`).
 - **Do NOT call `create({ ..., planTask: ... })`.** Plan-task state lives in the lifecycle log, not as Issues on the board. The `JsonAdapter` rejects such calls with `BOARD_GRANULARITY_VIOLATION`.
 
 If `tasks.backend` is not configured, skip epic creation entirely (plan-task events are still emitted to the lifecycle log).

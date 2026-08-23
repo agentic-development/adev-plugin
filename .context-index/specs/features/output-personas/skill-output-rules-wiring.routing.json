@@ -1,0 +1,94 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "16/20. Plan gives concrete assertion regexes, the normative SA-3 extent rule and the exact expected RED output with line numbers; one new file under tests/. Fence-aware section scanner is bespoke but has close in-repo precedent (tests/governance/helpers/parse-pack-sections.mjs, tests/hooks/pre-commit-no-inline-node.test.mjs), no curated golden sample."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.8,
+        "novelty": 0.6
+      },
+      "rationale": "14/20. Must author canonical footnote prose satisfying five BEH-7/SA-4 constraints while avoiding the layer defect that withdrew BEH-12 and BEH-14; wording is not supplied by the spec, touches four files, and is a hard predecessor of tasks 3-6. Checkpoint the wording before it propagates."
+    },
+    {
+      "task_id": "t3",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "17/20. Plan supplies a per-section BEH-3 treatment table for all ten Mode sections plus a detailed --all recipe; single file, single module, mechanical application of task 2's convention."
+    },
+    {
+      "task_id": "t4",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "17/20. Two sections with per-section requirements spelled out, including the composed-view rule and the repo-relative sidecar-path trap; one file, low novelty once task 2 lands."
+    },
+    {
+      "task_id": "t5",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "16/20. Four sections fully specified with extents, but two are decision gates and one is a composed view, so the authoring constraint plus the layer-discipline prohibition must be applied together — more judgement than tasks 3-4 at the same blast radius."
+    },
+    {
+      "task_id": "t6",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "18/20. Three sections, one decision gate, one file; by this point tasks 3-5 supply direct in-repo precedent for the terse-form shape and the falsification procedure is prescribed step by step."
+    },
+    {
+      "task_id": "t7",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.6,
+        "novelty": 1
+      },
+      "rationale": "17/20. Pure recipe: run scripts/sync-provider-skills.mjs and confirm parity reports 0 updated, 0 created. Blast radius is 8 generated files across two provider subtrees, but none is hand-edited and providers/** is excluded from every boundary rule."
+    },
+    {
+      "task_id": "t8",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.6,
+        "novelty": 0.6
+      },
+      "rationale": "13/20. Part A is precise, but Part B asks five open retrospective questions whose answers are synthesis over tasks 2-6 rather than pattern application; touches the charter under .context-index/ plus the test file, and the charter row is the input to the widening spec. Worth a human read."
+    }
+  ]
+}

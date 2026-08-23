@@ -12,7 +12,7 @@ Manage project issues and epics using the configured task backend.
 ## Arguments
 
 - No arguments: display the full issue board
-- `create "<title>" [--type bug|feature|task] [--epic <epic-id>] [--priority 0-4]`: create an issue
+- `create "<title>" [--type bug|feature|task] [--epic <epic-id>] [--priority 0-4] [--spec-ref <path>] [--next-action <text>]`: create an issue
 - `epic "<title>" [--milestone <name>]`: create a new epic in the epic store, optionally assigning it to a milestone
 - `update <id> --status <open|in_progress|closed|deferred> [--milestone <name>]`: update issue status and/or milestone (for epics). `--status` and `--milestone` can be used together or independently — both fields are updated in a single call
 - `close <id> --reason "<text>"`: close an issue with a reason
@@ -67,15 +67,33 @@ Standalone issues (no epic) appear under "Unassigned." When any epic has a `mile
 Create one board item in one step:
 
 ```bash
-adev issues create "<title>" [--type <bug|feature|task>] [--priority 0-4] [--epic <epic-id>]
+adev issues create "<title>" [--type <bug|feature|task>] [--priority 0-4] [--epic <epic-id>] [--spec-ref <path>] [--next-action <text>] [--notes <text>]
 ```
 
 The command owns the defaults — type `task`, priority `2`, status `open` — so nothing here restates them per call. `--epic <id>` files the new issue under an existing epic; no id prefix is inspected anywhere, which keeps this correct on backends whose ids carry no prefix. Pass `--json` when you need the full created record rather than the summary line.
+
+**Content template (BEH-1, BEH-2):** When `--type bug|feature` is given and no `--notes` was supplied, prompt the author before creating the issue:
+
+> This is a `<bug|feature>` issue — give it a short body:
+> **Problem / Intent:** what's wrong, or what capability is missing, and why it matters
+> **Acceptance Criteria:** concrete, checkable outcomes
+> **Out of Scope:** what this issue deliberately does not cover
+
+Assemble the three answers into a single `notes` string and pass it via `--notes`. When `--type task` (the default) is given, skip this prompt — accept a one-line `--notes` value as-is, since Tasks are typically short and already scoped by a parent Feature's spec.
+
+**Empty-body warning (BEH-4):** If the author skips or cancels the prompt above for a `feature`/`bug` issue, still create the issue (creation is never blocked) and report an additional line after the normal "Created ..." confirmation:
+
+> Issue `<id>` was created without a body. Consider `/adev:issues update <id> --notes "..."` before work starts.
+
+**Traceability (BEH-3):** When `--spec-ref <path>` is provided, or a `spec_ref` can be inferred from the active lifecycle context (e.g. invoked via `/adev:work` immediately after `/adev:specify`), pass it through with `--spec-ref`. `spec_ref` is a descriptive string, not filesystem-validated.
+
+**Default `next_action` (BEH-6):** If `--next-action <text>` is not supplied for a newly created `feature` or `task` issue, look up a default from the next_action Convention Table in `skills/plan/epic-mode.md`, keyed on `type` and known state (e.g. a `feature` with no `spec_ref` yet gets `"Run /adev:specify --module <module> to author this Feature"`). Substitute real values for any `<token>` in the looked-up string. If no row matches, omit `--next-action` — this is not an error. An explicit `--next-action` value is always passed through verbatim and is never overridden by this lookup.
 
 It prints the minted id in this shape, with one indented line per ref that was set:
 
 > Created `<type>` `<id>`: <title>
 > &nbsp;&nbsp;epic: `<epic-id>`
+> &nbsp;&nbsp;spec: `<spec-ref>`
 
 Display the command output to the user verbatim.
 

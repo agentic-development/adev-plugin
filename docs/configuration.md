@@ -236,6 +236,8 @@ tasks:
   backend: json
 ```
 
+**Beads board git topology:** when `backend: beads`, the board (`.beads/issues.jsonl`) is not tracked inside `main`'s history. It lives on a dedicated `beads-board` orphan branch and `.beads/` is a linked git worktree checked out against that branch — so worktrees and clones share one live board without a PR cycle. No extra config is needed; `adev install`/`adev upgrade` auto-provision `.beads/` as that worktree. A repo that already tracks `.beads/` on `main` needs a one-time `adev issues board migrate` to move it. See [`adev issues board migrate`](cli-reference.md#issues) in the CLI reference for the full command, checkpoint/resume behavior, and error codes.
+
 ### provenance
 
 Controls commit provenance tracking for traceability between commits and lifecycle artifacts.

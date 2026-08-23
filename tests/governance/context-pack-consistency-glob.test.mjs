@@ -42,20 +42,34 @@ describe("bundled consistency pack glob (BEH-1)", () => {
     const { includes } = resolveExtends("consistency", contextPacks);
     const crossCutting = includes.find((i) => normalizeGlob(i).includes("cross-cutting"));
     assert.ok(crossCutting, "consistency pack must carry a cross-cutting include");
+    // RECURSIVE (`**`) is deliberate, and the `*.spec.md` suffix is what makes
+    // it safe. The guard this test exists for is "spec-only, never a lifecycle
+    // sidecar" — see assertion 3 — not "single directory level". A non-recursive
+    // glob made `cross-cutting/completion-tokens/completion-tokens.spec.md`
+    // unreachable at ANY budget, and on 2026-08-20 that produced a false
+    // `blocker` finding: a reviewer was asked to verify a citation against a
+    // spec that had never been delivered to it. Widening to `**` still matches
+    // only `*.spec.md`, so the sidecars living in that same nested directory
+    // (`.plan.md`, `.review.md`, `.validate.md`) remain excluded.
     assert.equal(
       normalizeGlob(crossCutting),
-      ".context-index/specs/cross-cutting/*.spec.md"
+      ".context-index/specs/cross-cutting/**/*.spec.md"
     );
   });
 
-  test("rendered against this repo, the pack names 18 cross-cutting specs, not 55 files", () => {
+  test("rendered against this repo, the pack names 19 cross-cutting specs, not 55 files", () => {
     // LIVE COUNT against this repository's own .context-index/specs/cross-cutting/.
-    // 55 files live there; 18 are `*.spec.md`. The other 37 are lifecycle
-    // sidecars that must never reach a reviewer prompt: 13 `.review.md`,
-    // 11 `.plan.md`, 9 `.validate.md`, 3 `.blockers.md`, and 1 bare
-    // `lifecycle-gate-validation.md`.
+    // 19 `*.spec.md` files: 18 at the top level plus
+    // `completion-tokens/completion-tokens.spec.md` one level down. Everything
+    // else there is a lifecycle sidecar that must never reach a reviewer
+    // prompt (`.review.md`, `.plan.md`, `.validate.md`, `.blockers.md`), plus
+    // a bare `lifecycle-gate-validation.md` and the nested `charter.md`.
     //
-    // FUTURE CONTRIBUTOR: bump 18 when you add or remove a cross-cutting
+    // Raised 18 -> 19 on 2026-08-20 when the glob became recursive. The 19th
+    // is a genuine spec that already existed; it was simply unreachable while
+    // the glob was single-level.
+    //
+    // FUTURE CONTRIBUTOR: bump this when you add or remove a cross-cutting
     // *spec*. NEVER bump it because a sidecar appeared — a sidecar reaching
     // this count means the glob regressed, which is the bug this test exists
     // to catch.
@@ -68,7 +82,7 @@ describe("bundled consistency pack glob (BEH-1)", () => {
     const crossCuttingMatches = namedFiles(r.rendered, r.files, r.nonce).filter((f) =>
       f.startsWith(CROSS_CUTTING_PREFIX)
     );
-    assert.equal(crossCuttingMatches.length, 18);
+    assert.equal(crossCuttingMatches.length, 19);
   });
 
   test("no lifecycle sidecar reaches any bundled pack", () => {

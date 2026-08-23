@@ -113,6 +113,8 @@ Save this? (yes / edit / cancel)
 - **edit**: Ask which field to change, apply the edit, re-present.
 - **cancel**: Abort without writing.
 
+**Terse form:** Renders the scope, id, title, and confidence lines, the pattern and anti-pattern text in full, and the "Save this? (yes / edit / cancel)" prompt — no heuristic is written yet, so no artifact path exists to substitute for them.
+
 ## Step 5: Write the Heuristic
 
 Construct the heuristic entry object:
@@ -188,13 +190,15 @@ To strengthen it: /adev:learn --promote <id>
 To remove it:     /adev:learn --archive <id> --reason "no longer relevant"
 ```
 
+**Terse form:** Renders the saved id, scope, and confidence, and the two follow-on invocations (`/adev:learn --promote <id>`, `/adev:learn --archive <id> --reason "…"`). Substitutes the surfacing-context sentence with the repo-relative store path `.context-index/memory/heuristics/<scope>.md`, which now holds the full record.
+
 ## List Mode (`--list`)
 
 When `--list` is provided:
 
 1. Read all heuristics using the store API.
 2. If `--module` is provided, filter to that scope.
-3. Display as a table. **Persona adaptation:** If a different persona is active, adapt the display to its output rules.
+3. Display as a table. **Persona adaptation:** Adapt the display to the active persona's output rules. Verbosity is resolved separately across `templates/verbosity/terse.md`, `templates/verbosity/normal.md`, and `templates/verbosity/deep.md`: when the resolved verbosity is terse and this section carries a `**Terse form:**` block, that block is the section's declared rendering at terse verbosity. See `skills/status/SKILL.md:12` for the full terse-form marker grammar and table-substitution recipe.
 
 ```
 Heuristics (scope: hooks)
@@ -206,6 +210,8 @@ Heuristics (scope: hooks)
 
 Total: 2 heuristics (1 high, 0 medium, 1 low)
 ```
+
+**Terse form:** Renders the heuristics table narrowed to id, title, and confidence, and the totals line. Substitutes the Evidence and Updated columns with a count of heuristics and `/adev:learn --list --module <scope>` for the narrower listing that carries per-entry evidence and update dates.
 
 ## Promote/Demote/Archive Modes
 

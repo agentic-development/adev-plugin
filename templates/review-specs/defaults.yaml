@@ -83,7 +83,13 @@ context_packs:
     include:
       - glob: .context-index/adrs/*.md
         title: ADRs
-      - glob: .context-index/specs/cross-cutting/*.spec.md
+      # Recursive (`**`), not `*`: cross-cutting specs may live one level down
+      # in a per-topic directory (e.g. cross-cutting/completion-tokens/
+      # completion-tokens.spec.md). A non-recursive glob made those specs
+      # unreachable at ANY budget, which produced a false `blocker` finding
+      # when a reviewer was asked to verify a citation against a spec that had
+      # never been delivered to it (2026-08-20).
+      - glob: .context-index/specs/cross-cutting/**/*.spec.md
         title: Cross-Cutting Specs
 
   referent-integrity:

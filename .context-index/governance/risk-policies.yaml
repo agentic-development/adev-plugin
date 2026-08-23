@@ -25,7 +25,16 @@ policies:
     require_hitl_approval: false
     review_mode: full
     validate_mode: full
-    implement_mode: full
+    # Post-implementation review for medium-risk work runs as ONE synthesized
+    # reviewer carrying both stages' context, not spec-compliance followed by
+    # code-quality. This is only a BASELINE: quickGrantPredicate still has to
+    # grant it per task (auto-agent routing, every routing dimension at or above
+    # threshold, no boundary crossing, additive-only file set), and the floor
+    # pass can still escalate back to full on risk-level, boundary,
+    # sensitive-path, critical-finding, batched-task or scope-mismatch legs.
+    # A task that edits an existing file, or that routes assisted-agent, keeps
+    # both stages.
+    implement_mode: quick
     test_depth: standard
     additional_gates: []
   low:

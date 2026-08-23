@@ -50,7 +50,7 @@ This file is the CLI counterpart to [`skill-reference.md`](skill-reference.md) (
 | `implement` | Read a task's routing entry from the sidecar | `lib/cli/implement.mjs` |
 | `specify` | Revise a BLOCKED spec (revision N → N+1) | `lib/cli/specify.mjs` |
 | `prototype` | Prototype helpers (charter discovery, preview server) | `lib/cli/prototype.mjs` |
-| `issues` | Issue-board subcommands (board, create, epic, update, close, dep, list, ready, milestone, migrate, claim, release, stale) | `lib/cli/issues.mjs` |
+| `issues` | Issue-board subcommands (board, create, epic, update, close, dep, list, ready, milestone, migrate, claim, release, stale, set-modules, next, record-attempt, show) | `lib/cli/issues.mjs` |
 | `coordination` | Scan open PRs, remote branches, and issues owned elsewhere | `lib/cli/coordination.mjs` |
 | `retro` | Gather session activity for a retrospective window | `lib/cli/retro.mjs` |
 | `heuristics` | Retrieve/sign/write/rekey project heuristics | `lib/cli/heuristics.mjs` |
@@ -61,6 +61,7 @@ This file is the CLI counterpart to [`skill-reference.md`](skill-reference.md) (
 | `test-policy` | Resolve/inspect/set the test depth policy for a plan task | `lib/cli/test-policy.mjs` |
 | `test-helpers` | Emit the shared test-helper/fixture/test-sample inventory; check a test file for helper duplication | `lib/cli/test-helpers.mjs` |
 | `test-debt` | Scan the test suite for accreted debt (hygiene Audit Pass 23) | `lib/cli/test-debt.mjs` |
+| `eval` | Score a verdict set against a rubric (`eval score`) | `lib/cli/eval.mjs` |
 
 ---
 
@@ -607,6 +608,7 @@ adev coordination scan --json --owner "$USER/local"
 | `claim <id> --owner <name> [--branch <b>] [--pr <ref>] [--json]` | Take ownership via an atomic check-and-set. Exit `2` = refused (held by a live owner, or closed); exit `1` = usage error or `CLAIM_UNSUPPORTED_BACKEND` |
 | `release <id> --owner <name> [--force] [--json]` | Give up ownership. `branch`/`pr` are kept as the record of where the work went; `--force` releases another owner's claim |
 | `stale [--json]` | Report claims past their TTL, plus `unexpirable` rows (an owner with no `claimed_at`, which can never expire on their own). Read-only |
+| `board migrate [--dry-run]` | One-shot, resumable migration of `.beads/issues.jsonl` off `main`'s git history onto a dedicated `beads-board` orphan branch, checked out as a linked worktree at `.beads/` |
 
 #### `issues milestone`
 
@@ -723,26 +725,78 @@ adev issues set-modules issue-42 cli,hooks
 
 **`set-modules <id> <slug>[,<slug>...] [--json]`:** sets `WorkItem.affected_modules` — the module-safety tag `adev issues next` (bug-selection-and-eligibility.spec.md) consults for its blast-radius and reserved-tag safety checks. This is v1's only producer for the field: a direct, scriptable verb, deliberately unpolished (no validation against `manifest.modules[]`, no GitHub-label sync — both remain charter Deferred Capabilities). Works identically on the `json` and `beads` backends. An issue with no `affected_modules` set fails closed and is never autonomously selected.
 
-**`next [--type bug] [--max-priority P0-P4] [--json]`:** read-only bug-selection verb for the autonomous bugfix loop. Returns the single highest-priority eligible `type: "bug"` WorkItem within the resolved priority bound, or `{"bug": null}` if none qualify — never a partial or ambiguous result, and never a write (no claim, no close, no AttemptRecord mutation). `--type` currently only accepts `"bug"` (the default); any other value exits non-zero with `UNSUPPORTED_TYPE`. `--max-priority` defaults to `P3` (covering `P2`/`P3`) and rejects `P0`/`P1` with `INVALID_PRIORITY_BOUND` — those priorities are outside the eligibility filter's safety boundary by design, not merely deprioritized, and can never be selected via this verb regardless of flags. Eligibility also requires: `status` other than `closed`/`deferred`; a single `affected_modules` entry that is a real `manifest.modules[].slug` and not a reserved safety tag (`review-gate`, `convergence-detector`, `retry-loop`, `bugfix-loop`) or a manifest-configured `tasks.bugfix_loop.excluded_modules` entry; no live (non-expired) claim; no open blocking dependencies; and no `AttemptRecord.last_verdict` of `NO_PROGRESS`, `REGRESSED`, or `BUDGET_EXHAUSTED`. Ties within a priority band resolve FIFO by oldest `created`. Exits non-zero with `ISSUE_BOARD_NOT_CONFIGURED` if `tasks.backend` is unset.
+**`next [--type bug] [--max-priority P0-P4] [--json]`:** read-only bug-selection verb for the autonomous bugfix loop. Returns the single highest-priority eligible `type: "bug"` WorkItem within the resolved priority bound, or `{"bug": null}` if none qualify — never a partial or ambiguous result, and never a write (no claim, no close, no AttemptRecord mutation). `--type` currently only accepts `"bug"` (the default); any other value exits non-zero with `UNSUPPORTED_TYPE`. `--max-priority` defaults to `P3` (covering `P2`/`P3`) and accepts the full `P0`-`P4` range — a malformed value (not `P0`-`P4`) still exits non-zero with `INVALID_PRIORITY_BOUND`. The module-exclusion floor below (reserved safety tags and any manifest-configured `tasks.bugfix_loop.excluded_modules`) is the actual safety boundary, not the priority band — it is unconditional and applies regardless of `--max-priority`. When `--max-priority P0` or `P1` is used, `adev issues next` additionally prints the effective excluded-module set to stderr before returning, so the operator can see what remains protected at the widened bound. Eligibility also requires: `status` other than `closed`/`deferred`; a single `affected_modules` entry that is a real `manifest.modules[].slug` and not a reserved safety tag (`review-gate`, `convergence-detector`, `retry-loop`, `bugfix-loop`) or a manifest-configured `tasks.bugfix_loop.excluded_modules` entry; no live (non-expired) claim; no open blocking dependencies; and no `AttemptRecord.last_verdict` of `NO_PROGRESS`, `REGRESSED`, or `BUDGET_EXHAUSTED`. Ties within a priority band resolve FIFO by oldest `created`. Exits non-zero with `ISSUE_BOARD_NOT_CONFIGURED` if `tasks.backend` is unset.
 
 Unlike `claim`/`release`, `next` is not yet called from any skill's preflight — no skill invokes `adev issues next` today; it is a standalone verb for the (separately specified) autonomous bugfix loop to call once that loop exists.
 
-**Implementation:** `lib/cli/issues.mjs` dispatches to `issues-board.mjs` (`board`), `issues-create.mjs` (`create`), `issues-epic.mjs` (`epic`), `issues-mutate.mjs` (`update`, `close`, `dep`), `issues-list.mjs` (`list`, `ready`), `issues-milestone.mjs` (`milestone …`), `issues-migrate.mjs`, `issues-claim.mjs` (`claim`, `release`), `issues-stale.mjs`, `issues-set-modules.mjs`, and `issues-next.mjs`. **Called by:** `/adev:issues` (every step), `/adev:plan` and `/adev:reconcile` (epic creation), and in preflight by `/adev:implement` and `/adev:debug`.
+#### `board migrate` — beads board git topology
+
+**Purpose:** on the `beads` backend, moves `.beads/issues.jsonl` off `main`'s own git history onto a dedicated orphan branch (`beads-board`), checked out as a **linked git worktree** at `.beads/`. This lets multiple worktrees and clones share one board without a PR cycle — `.beads/` becomes a live checkout of `beads-board`, not a copy tracked in `main`'s tree.
+
+**Configuration:** none beyond the existing `tasks.backend: beads` in `manifest.yaml` — no new manifest keys were introduced. Everything below is either automatic or a single explicit command.
+
+**Automatic provisioning.** `adev install` and `adev upgrade` both call `maybeProvisionBoardWorktree()` after the managed-`.gitignore` step, gated on `manifest.tasks.backend === "beads"`:
+- `.beads/` doesn't exist yet → provisioned as a linked worktree: checks out the existing `beads-board` branch if one already exists (local or `origin`), otherwise creates it fresh as an orphan branch.
+- `.beads/` is already a registered worktree → silent no-op (idempotent on every upgrade).
+- `.beads/` exists as a non-empty plain directory (e.g. a repo that predates this feature and still tracks `.beads/` on `main`) → provisioning is skipped silently, deferring to `adev issues board migrate` below. Install/upgrade never fails or blocks on this.
+
+**One-time migration for an existing repo:**
+```
+adev issues board migrate --dry-run    # preview
+adev issues board migrate              # do it
+```
+Sequence: snapshot `.beads/issues.jsonl` → create `beads-board` as an orphan branch inside a disposable temp worktree → commit and push it to `origin` → only then remove `.beads/` from `main`'s tracked tree (`git rm -r --cached .beads`) → add the managed `.gitignore` entries → commit on `main` → re-provision `.beads/` as the real linked worktree. `main`'s tree is left untouched until after the `beads-board` push has succeeded.
+
+**Resumable.** A checkpoint at `.context-index/tasks/.board-migrate-state.json` is written the instant the push lands, before any of `main`'s tree is touched. If the process is interrupted after that point, re-running the exact same command resumes from the checkpoint (recover-and-re-provision only) instead of re-doing the snapshot/push/cleanup.
+
+**`.gitignore`:** two entries are added automatically via the existing managed-block mechanism (`ensureManagedBlock()` / `MANAGED_GITIGNORE_PATHS`) — no manual edit needed:
+```
+.beads/
+.context-index/tasks/.board-migrate-state.json
+```
+
+**Error/status codes:**
+
+| Code | Meaning |
+|---|---|
+| `BOARD_ALREADY_EXISTS` | `.beads/` is a non-empty plain directory, not a registered worktree — run `board migrate` instead of a raw `git worktree add` |
+| `BOARD_ALREADY_MIGRATED` | `.beads/` is already a linked worktree against `beads-board` — exit 0, nothing to do |
+| `BOARD_NOTHING_TO_MIGRATE` | `.beads/issues.jsonl` isn't tracked on `main` — nothing to migrate |
+| `BOARD_MIGRATE_PUSH_FAILED` | the `beads-board` push failed before `main`'s tree was touched — safe to retry from scratch |
+| `BOARD_MIGRATE_PARTIAL_FAILURE` | recovery/re-provisioning failed after `main`'s tree was already cleaned up — resumable via the checkpoint, re-run the same command |
+| `BOARD_ADD_FAILED` | the underlying `git worktree add` call failed |
+
+**Corrupt-leftover recovery:** both the resumed-migration path and every fresh provisioning attempt run a recovery pass first — a plain filesystem delete of any existing `.beads/` (not `git worktree remove`, since an interrupted prior `git worktree add` may not have registered cleanly enough for git to recognize it) followed by `git worktree prune`.
+
+**Implementation:** `lib/cli/issues-board.mjs` (shared with the read-only `board` print verb above — dispatches on `argv[0] === "migrate"`), `lib/issues/board-worktree.mjs`, `lib/issues/board-migrate-state.mjs`; auto-provisioning hook in `cli/index.mjs` (`maybeProvisionBoardWorktree`). **Spec:** `.context-index/specs/features/task-management/beads-board-git-topology.spec.md`.
+
+**Implementation:** `lib/cli/issues.mjs` dispatches to `issues-board.mjs` (`board`, `board migrate`), `issues-create.mjs` (`create`), `issues-epic.mjs` (`epic`), `issues-mutate.mjs` (`update`, `close`, `dep`), `issues-list.mjs` (`list`, `ready`), `issues-milestone.mjs` (`milestone …`), `issues-migrate.mjs`, `issues-claim.mjs` (`claim`, `release`), `issues-stale.mjs`, `issues-set-modules.mjs`, and `issues-next.mjs`. **Called by:** `/adev:issues` (every step), `/adev:plan` and `/adev:reconcile` (epic creation), and in preflight by `/adev:implement` and `/adev:debug`; `claim`/`release` also run in preflight by `/adev:implement` and `/adev:debug`; `board migrate` is run manually by the operator.
 
 ### `bugfix-loop`
 
-**Purpose:** Persist and drive one `BugfixLoopRun`'s state across `/adev:bugfix-loop`'s self-re-invoking turns — resolving the run, guarding status/budget before each bug selection, recording attempts, and finishing with the terminal token the skill prints.
+**Purpose:** Persist and drive one `BugfixLoopRun`'s state across `/adev:bugfix-loop`'s self-re-invoking turns — resolving the run, checking branch freshness, guarding status/budget before each bug selection, isolating per-bug worktrees, recording attempts, automating commit/PR on `FIXED` verdicts, and finishing with the terminal token (plus a running summary table) the skill prints.
 
-**Signature:** `bugfix-loop <create|guard|record-attempt|complete-turn|finish|latest> [flags]`
+**Signature:** `bugfix-loop <create|guard|record-attempt|complete-turn|finish|latest|check-freshness|commit-pr> [flags]`
 
 **Example:**
 ```
-adev bugfix-loop create --max-bugs 20 --max-turns 20 --json
+adev bugfix-loop create --max-bugs 20 --max-turns 20 --starting-branch main --json
+adev bugfix-loop check-freshness --json
 adev bugfix-loop guard --run-id <id> --json
+adev bugfix-loop record-attempt --run-id <id> --issue <id> --verdict FIXED --files-touched 3 --tests-added 1 --priority-bound P3
+adev bugfix-loop commit-pr --run-id <id> --issue <id> --title "Fix the bug" --pr-base main --json
 adev bugfix-loop finish --run-id <id> --status complete --json
 ```
 
-**Implementation:** `lib/cli/bugfix-loop.mjs`. **Called by:** `/adev:bugfix-loop`, every turn.
+**`create`** accepts `--starting-branch <ref>`, persisted as the run's worktree base-ref fallback for the first bug of a `--worktree-per-bug` run. **`guard`**'s JSON result always includes `worktree_base_ref` (the previous bug's completed branch this run, or `starting_branch`) alongside `proceed`/`reason`/`status`/`budget_reason`.
+
+**`check-freshness [--json]`:** reports how far HEAD is behind/ahead of the remote default branch. Stdout: `{status: "ok"|"warn"|"blocked"|"degraded", ahead?, behind?, reason?}`. Reads `tasks.bugfix_loop.freshness.{soft_threshold,hard_threshold}` from the manifest (defaults: soft=50, hard=unset/warn-only). Always exits 0 — a hard-threshold breach is reported via `status: "blocked"` in the JSON, not a non-zero exit; the calling skill halts on that value itself.
+
+**`record-attempt`** accepts `--verdict <FIXED|PARKED|UNREPRODUCIBLE>` (optional — presence gates whether a summary row is appended), `--files-touched <n>`, `--tests-added <n>`, and `--priority-bound <P0-P4>`. When `--verdict` is given, it appends a row to the run's running summary table (issue id, verdict, files touched, tests added, priority bound, turn) and prints the table; when omitted, no summary row is appended. **`finish`**'s JSON result includes a `summary_table` field (the full markdown table) so the calling skill can reprint it before the terminal token without a second read.
+
+**`commit-pr --run-id <id> --issue <id> [--title <t>] [--notes <n>] [--spec-path <p>] [--pr-base <ref>] [--json]`:** commits the isolated diff, pushes `adev/bugfix-<issue-id>`, and opens a PR against `--pr-base`. On success, updates the run's `last_worktree_branch` so the next bug's worktree stacks on this one. `--title`/`--notes` are untrusted WorkItem content — unsafe content (shell metacharacters, over-length, etc.) is refused, never sanitized, and falls back to a generic templated message keyed only by the issue id. Degrades to `{skipped: true, reason}` on any commit/push/`gh` failure — always exits 0, never blocks the loop.
+
+**Implementation:** `lib/cli/bugfix-loop.mjs` (+ `lib/bugfix-loop-run.mjs`, `lib/bugfix-loop-freshness.mjs`, `lib/bugfix-loop-commit.mjs`). **Called by:** `/adev:bugfix-loop`, every turn.
 
 ### `tracker-sync`
 
@@ -985,6 +1039,95 @@ adev test-debt scan --detector APPEND_CHAIN
 
 **Implementation:** `lib/cli/test-debt.mjs` (engine: `lib/hygiene/test-debt.mjs`).
 **Called by:** `/adev:hygiene` Audit Pass 23.
+
+### `eval`
+
+**Purpose:** Score a verdict set against a rubric — the CLI surface over the Layer 3 scoring
+engine (`lib/evals/rubric.mjs`'s `loadRubric`, `lib/evals/score.mjs`'s `scoreRubric`). `run()`
+dispatches on the first argument; `score` is the only subcommand today, and the verb is named
+`eval` rather than `eval-score` so a future Run-cost record capability can add `eval cost`
+beside it without a second registry entry.
+
+**Signature:** `eval score --rubric <path|default> --input <path> [--json]`
+
+- `--rubric <path|default>` — either a rubric YAML file, containment-checked against the
+  project root, **or** the literal keyword `default`, which resolves the plugin's shipped
+  `skills/eval/default-rubric.yaml`. Only the exact literal `default` is the keyword;
+  `Default`, `./default`, and `default.yaml` are ordinary paths and take the containment branch.
+- `--input <path>` — a JSON verdict-set file (an array of `{id, value, evidence}`),
+  containment-checked against the project root.
+- `--json` — print one JSON object carrying the verdict table, both halves, and the total,
+  instead of the default table.
+
+Every `--rubric` *path* value and `--input` are contained against the project root — resolved,
+then real-pathed to catch a symlink escape, then re-checked — **before either file is opened**, so a
+traversal or symlink escape on either flag is refused by one uniform code
+(`UNSAFE_SCORE_PATH`, naming the offending path exactly as supplied) without reading any
+content. This matches the `UNSAFE_RUBRIC_PATH` precedent `loadRubric` already sets; `loadRubric`
+re-contains `--rubric` again on its own, and that duplicate check is deliberate. A contained but
+missing or unreadable `--input` exits non-zero with `SCORE_INPUT_NOT_FOUND`, naming the resolved
+path. An unparsable JSON `--input` exits non-zero with `SCORE_INPUT_PARSE_ERROR`. A verdict set
+the engine rejects (an unknown id, a missing id, an illegal verdict, empty evidence, a
+duplicate, or a malformed rubric/threshold) surfaces that engine error code and exits non-zero.
+Nothing is ever printed — table, aggregate, or JSON — unless every step above succeeded.
+
+**The `default` keyword is not a path, and so is not contained against the project root.** It
+names a fixed location inside the plugin, and is bounded by the **plugin root** instead — derived
+from the plugin's own module location on disk (`getPluginRoot()` in `lib/profiles/index.mjs`),
+never from an environment variable such as `CLAUDE_PLUGIN_ROOT` and never threaded in from the
+caller, because the whole safety argument for skipping project-root containment is that the
+location it resolves is unforgeable. The same resolve/real-path/re-check sequence is then applied
+against the plugin root, so the keyword is bounded exactly as a path value is, only against a
+different root. `--input` is a path in every case and is contained against the project root
+unconditionally, keyword or not. When the shipped rubric is absent or unreadable, the verb exits
+non-zero with `SCORE_DEFAULT_RUBRIC_MISSING`, naming the resolved plugin path; a shipped rubric
+that is readable but malformed keeps its own parse/schema error code rather than being reported
+as missing.
+
+**The default table omits evidence.** Evidence strings are free text and would make every run's
+paste-into-a-conversation width unbounded, which defeats the point of a compact default; the
+table reports `id`, `kind`, and `verdict` only, with column widths computed from the data, plus
+one aggregate line (`deterministic: <points>/<max>` or `deterministic: <STATUS>`, likewise
+`judged`, then `total: <points>/<max>` or `total: n/a`). The verdict table and the aggregate
+always appear together, never the aggregate alone; a half carrying a status renders by that
+status's name, never as `0`. Evidence is available only via `--json`.
+
+**Example:**
+```
+adev eval score --rubric default --input .adev/eval/latest-verdicts.json
+adev eval score --rubric default --input .adev/eval/latest-verdicts.json --json
+```
+
+**Implementation:** `lib/cli/eval.mjs` (engine: `lib/evals/rubric.mjs`, `lib/evals/score.mjs`).
+**Called by:** `/adev:eval` Layer 3, Step 3 — aggregates the deterministic and judged halves into
+the half-level trend score once Steps 1 and 2 produce every verdict it needs.
+
+### `worktree`
+
+**Purpose:** Manage adev-managed git worktrees used for parallel isolated execution. Worktrees are anchored to the main repo root (via `git rev-parse --git-common-dir`) so they never nest, and live under `.adev/worktrees/` (git-ignored).
+
+**Signature:** `worktree <add|list|merge|remove|guard> [flags]` — e.g. `worktree add --slug <slug> [--base <ref>]`, `worktree merge --slug <slug>`, `worktree remove --slug <slug> [--delete-branch] [--force]`, `worktree guard` (reports whether the current cwd is nested inside a worktree).
+
+**Example:**
+```
+adev worktree add --slug login-group-a
+adev worktree remove --slug login-group-a --force
+```
+
+**Implementation:** `lib/cli/worktree.mjs`. **Called by:** `/adev:implement --parallel`.
+
+### `parallel`
+
+**Purpose:** Decision helpers for the `/adev:implement --parallel` orchestration — group parsing and deterministic merge order, orchestrator-pollution assertion, per-group completeness verification, the concurrency cap, and re-run collision detection. The skill orchestrates; these verbs compute the checks.
+
+**Signature:** `parallel <groups|baseline|assert-clean|verify|max-parallel|collision> [flags]` — e.g. `parallel groups --plan <path>`, `parallel baseline`, `parallel assert-clean --base-head <sha>`, `parallel verify --branch <b> --base <sha> --tasks <ids> --done <ids>`, `parallel collision --slug <slug>`.
+
+**Example:**
+```
+adev parallel groups --plan .context-index/specs/features/auth/login.plan.md
+```
+
+**Implementation:** `lib/cli/parallel.mjs`. **Called by:** `/adev:implement --parallel`.
 
 ---
 

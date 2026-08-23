@@ -1,0 +1,4 @@
+# Malformed on purpose — a key at indent 0 followed by a key at indent 2 makes
+# the minimal YAML reader raise "unexpected indentation".
+rubric_id: "fixture-malformed"
+  version: 1

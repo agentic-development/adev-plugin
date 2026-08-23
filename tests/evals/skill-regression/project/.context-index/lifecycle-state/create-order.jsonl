@@ -1,0 +1,27 @@
+{"event":"lifecycle_step","step":"specify","status":"started","ts":"2026-07-03T09:12:04.118Z"}
+{"event":"step_completed","step":"specify","verdict":"PASS","ts":"2026-07-03T09:41:22.507Z"}
+{"event":"lifecycle_step","step":"review","status":"started","revision":1,"ts":"2026-07-04T08:05:11.930Z"}
+{"event":"reviewer_report","step":"review","reviewer":"structural-architect","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"Spec sits inside the orders charter's scope. One suggestion: state that the discount bound is checked after pricing, not alongside field validation.","ts":"2026-07-04T08:09:47.402Z"}
+{"event":"reviewer_report","step":"review","reviewer":"consistency-analyzer","severity":"blocker","verdict":"PASS","notes":"Error strings in the spec table match the constitution's error-reporting rule and the docs/api.md wording.","ts":"2026-07-04T08:10:02.885Z"}
+{"event":"spec_revised","from_revision":1,"to_revision":2,"ts":"2026-07-04T08:31:19.264Z","addressed_blocker_ids":["structural-architect:module-boundary-violation:6694235a"],"unresolved_blocker_ids":[]}
+{"event":"lifecycle_step","step":"review","status":"started","revision":2,"ts":"2026-07-04T08:44:03.611Z"}
+{"event":"reviewer_report","step":"review","reviewer":"structural-architect","severity":"blocker","verdict":"PASS","notes":"Revision 2 states the post-pricing ordering explicitly. No remaining findings.","ts":"2026-07-04T08:47:55.140Z"}
+{"event":"reviewer_report","step":"review","reviewer":"consistency-analyzer","severity":"blocker","verdict":"PASS","notes":"No drift from revision 1 beyond the addressed note.","ts":"2026-07-04T08:48:01.773Z"}
+{"event":"step_completed","step":"review","verdict":"PASS","ts":"2026-07-04T08:52:30.006Z"}
+{"event":"lifecycle_step","step":"plan","status":"started","ts":"2026-07-05T10:02:18.442Z"}
+{"event":"plan_task","plan":".context-index/specs/features/orders/create-order.plan.md","task_id":"1","status":"pending","notes":null,"ts":"2026-07-05T10:19:44.901Z"}
+{"event":"plan_task","plan":".context-index/specs/features/orders/create-order.plan.md","task_id":"2","status":"pending","notes":null,"ts":"2026-07-05T10:19:44.903Z"}
+{"event":"plan_task","plan":".context-index/specs/features/orders/create-order.plan.md","task_id":"3","status":"pending","notes":null,"ts":"2026-07-05T10:19:44.904Z"}
+{"event":"step_completed","step":"plan","verdict":"PASS","ts":"2026-07-05T10:19:44.905Z"}
+{"event":"lifecycle_step","step":"implement","status":"started","ts":"2026-07-20T09:00:12.336Z"}
+{"event":"plan_task","plan":".context-index/specs/features/orders/create-order.plan.md","task_id":"1","status":"in_progress","notes":null,"ts":"2026-07-20T09:01:05.117Z"}
+{"event":"plan_task","plan":".context-index/specs/features/orders/create-order.plan.md","task_id":"1","status":"done","notes":"B3/B4/B5: shape throws TypeError, field problems collected, items[i] prefix on line-item messages","ts":"2026-07-20T09:38:51.628Z"}
+{"event":"plan_task","plan":".context-index/specs/features/orders/create-order.plan.md","task_id":"2","status":"in_progress","notes":null,"ts":"2026-07-20T09:41:10.209Z"}
+{"event":"plan_task","plan":".context-index/specs/features/orders/create-order.plan.md","task_id":"2","status":"done","notes":"B1/B2/B7: line totals and subtotal in integer cents, discountCents defaults to 0, bound checked after pricing","ts":"2026-07-20T10:14:37.845Z"}
+{"event":"plan_task","plan":".context-index/specs/features/orders/create-order.plan.md","task_id":"3","status":"in_progress","notes":null,"ts":"2026-07-20T10:16:22.470Z"}
+{"event":"plan_task","plan":".context-index/specs/features/orders/create-order.plan.md","task_id":"3","status":"done","notes":"B6: MAX_LINE_ITEMS bound; both symbols re-exported from src/index.mjs and documented in docs/api.md","ts":"2026-07-20T10:48:09.512Z"}
+{"event":"step_completed","step":"implement","verdict":"PASS","ts":"2026-07-20T10:52:44.301Z"}
+{"event":"lifecycle_step","step":"validate","status":"started","ts":"2026-07-28T11:03:07.988Z"}
+{"event":"validator_report","step":"validate","validator":"validate.check-2-spec-compliance","severity":"error","verdict":"PASS","notes":"All 7 behaviors and 11 error cases evidenced by tests/create-order.test.mjs; 3 of 4 postconditions evidenced (no-mutation tracked as issue-6).","ts":"2026-07-28T11:06:19.554Z"}
+{"event":"validator_report","step":"validate","validator":"validate.check-4-constitution","severity":"error","verdict":"PASS","notes":"Pure ESM .mjs, integer cents throughout, JSDoc on both exports, docs/api.md covers the full public surface","ts":"2026-07-28T11:06:41.017Z"}
+{"event":"step_completed","step":"validate","verdict":"PASS","ts":"2026-07-28T11:09:58.223Z"}

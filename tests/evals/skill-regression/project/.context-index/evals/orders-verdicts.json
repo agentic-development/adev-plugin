@@ -1,0 +1,32 @@
+[
+  {
+    "id": "money_stays_integer_cents",
+    "value": "met",
+    "evidence": "src/orders/create-order.mjs:88 sums quantity * unitPriceCents with no float operand."
+  },
+  {
+    "id": "public_export_documented",
+    "value": "not_met",
+    "evidence": "src/index.mjs:31 re-exports calculateRate; docs/api.md carries no entry for it."
+  },
+  {
+    "id": "module_is_pure_esm",
+    "value": "not_met",
+    "evidence": "src/orders/legacy-loader.js:14 calls require(\"node:fs\") inside a \"type\": \"module\" package."
+  },
+  {
+    "id": "validation_precedes_pricing",
+    "value": "met",
+    "evidence": "src/orders/create-order.mjs:85 returns on a non-empty errors array before any subtotal is computed."
+  },
+  {
+    "id": "errors_are_collected_not_short_circuited",
+    "value": "met",
+    "evidence": "src/orders/create-order.mjs:79 pushes every validateItem message before the errors array is read."
+  },
+  {
+    "id": "spec_and_code_agree",
+    "value": "not_met",
+    "evidence": "shipping-rates.spec.md B7 requires half-up rounding; src/shipping/rates.mjs:64 rounds nothing."
+  }
+]

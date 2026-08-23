@@ -1064,6 +1064,43 @@ export async function maybeEnsureManagedGitignore(projectRoot, manifest) {
 }
 
 /**
+ * Auto-provision the shared beads issue board's `.beads/` git worktree on
+ * install/upgrade, when `tasks.backend` is `beads` (BEH-6). Mirrors
+ * `maybeEnsureManagedGitignore` immediately above: module-load and
+ * provisioning failures are downgraded to warnings, never block install.
+ *
+ * Idempotent by construction (`provisionBoardWorktree`'s own idempotency
+ * check) — safe to call unconditionally on every install/upgrade run.
+ *
+ * Spec: .context-index/specs/features/task-management/beads-board-git-topology.spec.md
+ * Plan-task: 4
+ *
+ * @param {string} projectRoot
+ * @param {object|null} manifest - parsed manifest.yaml or null
+ */
+export async function maybeProvisionBoardWorktree(projectRoot, manifest) {
+  if (manifest?.tasks?.backend !== "beads") return;
+  let provisionBoardWorktree;
+  try {
+    const mod = await import("../lib/issues/board-worktree.mjs");
+    provisionBoardWorktree = mod.provisionBoardWorktree;
+  } catch {
+    return; // module not present — skip silently
+  }
+  try {
+    const result = provisionBoardWorktree({ projectRoot });
+    if (result.mode === "already-provisioned") {
+      // Silent no-op on repeat install/upgrade — nothing changed (review finding).
+      return;
+    }
+    console.log(`beads board worktree: ${result.mode} (provisioned)`);
+  } catch (err) {
+    if (err?.code === "BOARD_ALREADY_EXISTS") return; // un-migrated repo — leave for `adev issues board migrate`
+    console.error(`warn: beads board worktree provisioning skipped: ${err.message}`);
+  }
+}
+
+/**
  * `adev install --target copilot [--user] [--dry-run]` — per-target adapter
  * invocation. Routes through CopilotAdapter.install() and prints its return
  * value as a status line. Mirrors the documented Behaviors §7 surface.
@@ -1248,6 +1285,7 @@ async function cmdInstall() {
       m = null;
     }
     await maybeEnsureManagedGitignore(process.cwd(), m);
+    await maybeProvisionBoardWorktree(process.cwd(), m);
   }
 
   // --- Summary ---
@@ -1334,10 +1372,10 @@ async function cmdUpgrade() {
   // --- Stamp adev_version ---
   stampVersion();
 
-  // Provenance enforcement used to be prompted for here. It writes a
-  // `provenance:` block into manifest.yaml — context-layer configuration owned
-  // by /adev:init, not the CLI. `adev upgrade` still needs the delta below for
-  // its own reporting, but it no longer asks the question or writes the block.
+  // The `provenance:` block in manifest.yaml is context-layer configuration
+  // owned by /adev:init, not the CLI. `adev upgrade` still needs the delta
+  // below for its own reporting, but it does not ask the question or write
+  // the block itself.
   const manifestPath = join(process.cwd(), ".context-index", "manifest.yaml");
   const delta = computeUpgradeDelta(state.version);
   if (delta.provenance && existsSync(manifestPath)) {
@@ -1382,6 +1420,7 @@ async function cmdUpgrade() {
       m = null;
     }
     await maybeEnsureManagedGitignore(process.cwd(), m);
+    await maybeProvisionBoardWorktree(process.cwd(), m);
   }
 
   // --- Dual sync targets ---
@@ -1915,7 +1954,7 @@ const VERB_REGISTRY = new Map([
   ["uninstall", () => ({ run: () => cmdUninstall(),              help: () => cmdHelp() })],
   ["init",      () => ({ run: async () => {
                           // Sub-verb: `adev init prompt session-capture` delegates to the
-                          // init-prompt-session-capture module (SA-5). This keeps the
+                          // init-prompt-session-capture module. This keeps the
                           // skills/init/SKILL.md prose readable as a 3-token verb while
                           // the dispatcher remains a single-token registry.
                           const sub = process.argv[3];
@@ -1975,6 +2014,7 @@ const VERB_REGISTRY = new Map([
   ["prototype",       () => import("../lib/cli/prototype.mjs")],
   ["artifact",        () => import("../lib/cli/artifact.mjs")],
   ["partial",         () => import("../lib/cli/partial.mjs")],
+  ["eval",            () => import("../lib/cli/eval.mjs")],
   ["route",           () => import("../lib/cli/route.mjs")],
   ["implement",       () => import("../lib/cli/implement.mjs")],
   ["specify",         () => import("../lib/cli/specify.mjs")],

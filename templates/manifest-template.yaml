@@ -270,12 +270,22 @@ tasks:
   # bugfix_loop.tracker_link_stale_days: age threshold (days) for the
   #   stale-tracker-link notice on an already-linked, never-attempted issue.
   #   Default: 30. Fires at most once per external ref per run.
+  # bugfix_loop.freshness.soft_threshold: commit-behind-count at which
+  #   `adev bugfix-loop check-freshness` (bugfix-loop-execution-hardening.spec.md
+  #   BEH-1/BEH-2) reports status "warn" instead of "ok". Default: 50.
+  # bugfix_loop.freshness.hard_threshold: commit-behind-count at which
+  #   check-freshness reports status "blocked" instead of "warn". Default:
+  #   unset (null) — disabled, warn-only, so no existing invocation's
+  #   pass/fail behavior changes until an operator opts in by setting this.
   # bugfix_loop:
   #   attempt_cap: 2
   #   reproduction_attempt_limit: 3
   #   excluded_modules: []
   #   tracker_provider: github
   #   tracker_link_stale_days: 30
+  #   freshness:
+  #     soft_threshold: 50
+  #     hard_threshold: 100
   # legacy_read: enabled | disabled
   #   When set to "enabled" (default) and tasks.json is absent, the json
   #   adapter falls back to reading tasks.md via the shared markdown parser.
