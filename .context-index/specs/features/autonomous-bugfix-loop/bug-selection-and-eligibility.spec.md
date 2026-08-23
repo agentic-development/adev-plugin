@@ -21,6 +21,7 @@ source-manifest:
     - templates/manifest-template.yaml
     - tests/issues/next.test.mjs
   computed-at: "2026-08-20T13:15:34.355Z"
+drift_detected: true
 ---
 
 # Live Spec: Bug Selection Verb and Eligibility Filter

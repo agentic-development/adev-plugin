@@ -1064,6 +1064,43 @@ export async function maybeEnsureManagedGitignore(projectRoot, manifest) {
 }
 
 /**
+ * Auto-provision the shared beads issue board's `.beads/` git worktree on
+ * install/upgrade, when `tasks.backend` is `beads` (BEH-6). Mirrors
+ * `maybeEnsureManagedGitignore` immediately above: module-load and
+ * provisioning failures are downgraded to warnings, never block install.
+ *
+ * Idempotent by construction (`provisionBoardWorktree`'s own idempotency
+ * check) — safe to call unconditionally on every install/upgrade run.
+ *
+ * Spec: .context-index/specs/features/task-management/beads-board-git-topology.spec.md
+ * Plan-task: 4
+ *
+ * @param {string} projectRoot
+ * @param {object|null} manifest - parsed manifest.yaml or null
+ */
+export async function maybeProvisionBoardWorktree(projectRoot, manifest) {
+  if (manifest?.tasks?.backend !== "beads") return;
+  let provisionBoardWorktree;
+  try {
+    const mod = await import("../lib/issues/board-worktree.mjs");
+    provisionBoardWorktree = mod.provisionBoardWorktree;
+  } catch {
+    return; // module not present — skip silently
+  }
+  try {
+    const result = provisionBoardWorktree({ projectRoot });
+    if (result.mode === "already-provisioned") {
+      // Silent no-op on repeat install/upgrade — nothing changed (review finding).
+      return;
+    }
+    console.log(`beads board worktree: ${result.mode} (provisioned)`);
+  } catch (err) {
+    if (err?.code === "BOARD_ALREADY_EXISTS") return; // un-migrated repo — leave for `adev issues board migrate`
+    console.error(`warn: beads board worktree provisioning skipped: ${err.message}`);
+  }
+}
+
+/**
  * `adev install --target copilot [--user] [--dry-run]` — per-target adapter
  * invocation. Routes through CopilotAdapter.install() and prints its return
  * value as a status line. Mirrors the documented Behaviors §7 surface.
@@ -1248,6 +1285,7 @@ async function cmdInstall() {
       m = null;
     }
     await maybeEnsureManagedGitignore(process.cwd(), m);
+    await maybeProvisionBoardWorktree(process.cwd(), m);
   }
 
   // --- Summary ---
@@ -1382,6 +1420,7 @@ async function cmdUpgrade() {
       m = null;
     }
     await maybeEnsureManagedGitignore(process.cwd(), m);
+    await maybeProvisionBoardWorktree(process.cwd(), m);
   }
 
   // --- Dual sync targets ---

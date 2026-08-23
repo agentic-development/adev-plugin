@@ -1,0 +1,182 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Freshness computation has explicit behavioral contract and error cases; mirrors coordination.mjs's default-branch resolution pattern; two new files in one module."
+    },
+    {
+      "task_id": "t10",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Mechanical verb wiring calling commitAndOpenPr then recordWorktreeBranch, following the established CLI subcommand pattern."
+    },
+    {
+      "task_id": "t11",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "New Step 4.5 insertion follows the same call-and-gate convention as the existing Step 4, single file, clear FIXED/PARKED gating."
+    },
+    {
+      "task_id": "t12",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Append-row and format-table helpers mirror the pattern Task 4 already establishes in the same file; purely additive and mechanical."
+    },
+    {
+      "task_id": "t13",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.6,
+        "novelty": 0.6
+      },
+      "rationale": "Spans lib/cli and skills modules, and combines a new CLI flag surface with git diff --stat-based computation logic embedded in skill prose plus two separate print sites (Step 4 and Step 5)."
+    },
+    {
+      "task_id": "t14",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Skill-layer-only threading of an already-shipped verb capability (resolvePriorityBound, BEH-12 stderr) through existing call sites; single file."
+    },
+    {
+      "task_id": "t15",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 1,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Pure documentation update following the existing docs format exactly, verified by a doc-drift test."
+    },
+    {
+      "task_id": "t16",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Verification-only task extending the existing fixture/harness pattern in tests/integration/bugfix-loop-loop.test.mjs; all underlying behavior already implemented in prior tasks."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.6,
+        "novelty": 0.8
+      },
+      "rationale": "check-freshness verb mirrors the create/guard CLI subcommand pattern directly; touches cli lib plus templates doc convention."
+    },
+    {
+      "task_id": "t3",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Mechanical SKILL.md wiring following the existing guard/tracker-sync call-and-branch pattern already present in Step 0/1."
+    },
+    {
+      "task_id": "t4",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Simple field additions and read-mutate-write helpers mirroring appendAttempt/completeTurn in the same file."
+    },
+    {
+      "task_id": "t5",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Mechanical CLI flag threading into existing create/guard verbs, single file."
+    },
+    {
+      "task_id": "t6",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "First worktree integration into this skill; plan already had to correct a spec-prose flag-name error (--base-ref vs --base), combines worktree add with claim/skip branching logic."
+    },
+    {
+      "task_id": "t7",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.4
+      },
+      "rationale": "Crash-recovery orphan sweep spans two skill entry points (Step 6 and manual --resume) with several branching failure/defer cases (REMOVE_FAILED vs WORKTREE_REMOVAL_DEFERRED); orphan-detection mechanics require design judgment beyond the spec's prose."
+    },
+    {
+      "task_id": "t8",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "BEH-11 validation function ships with an explicit regex/behavior sketch in the plan; governance-values.mjs provides a close allowlist-shape precedent; two new files in one module."
+    },
+    {
+      "task_id": "t9",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.8,
+        "novelty": 0.4
+      },
+      "rationale": "Largest task in the plan: shells to external gh CLI, resolves stacked PR bases, implements refuse-not-sanitize fallback, and requires a real non-mocked integration test with external credentials/network — genuine design decisions beyond the spec plus injection-relevant surface area warrant a checkpoint."
+    }
+  ]
+}

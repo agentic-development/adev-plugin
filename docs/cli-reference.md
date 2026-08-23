@@ -50,7 +50,7 @@ This file is the CLI counterpart to [`skill-reference.md`](skill-reference.md) (
 | `implement` | Read a task's routing entry from the sidecar | `lib/cli/implement.mjs` |
 | `specify` | Revise a BLOCKED spec (revision N → N+1) | `lib/cli/specify.mjs` |
 | `prototype` | Prototype helpers (charter discovery, preview server) | `lib/cli/prototype.mjs` |
-| `issues` | Issue-board subcommands (migrate, claim, release, stale) | `lib/cli/issues.mjs` |
+| `issues` | Issue-board subcommands (migrate, claim, release, stale, board) | `lib/cli/issues.mjs` |
 | `coordination` | Scan open PRs, remote branches, and issues owned elsewhere | `lib/cli/coordination.mjs` |
 | `retro` | Gather session activity for a retrospective window | `lib/cli/retro.mjs` |
 | `heuristics` | Retrieve/sign/write/rekey project heuristics | `lib/cli/heuristics.mjs` |
@@ -599,6 +599,7 @@ adev coordination scan --json --owner "$USER/local"
 | `claim <id> --owner <name> [--branch <b>] [--pr <ref>] [--json]` | Take ownership via an atomic check-and-set. Exit `2` = refused (held by a live owner, or closed); exit `1` = usage error or `CLAIM_UNSUPPORTED_BACKEND` |
 | `release <id> --owner <name> [--force] [--json]` | Give up ownership. `branch`/`pr` are kept as the record of where the work went; `--force` releases another owner's claim |
 | `stale [--json]` | Report claims past their TTL, plus `unexpirable` rows (an owner with no `claimed_at`, which can never expire on their own). Read-only |
+| `board migrate [--dry-run]` | One-shot, resumable migration of `.beads/issues.jsonl` off `main`'s git history onto a dedicated `beads-board` orphan branch, checked out as a linked worktree at `.beads/` |
 
 Claims are **leases**, not locks: they expire after `tasks.claim_ttl_minutes` (default `240`, `0` disables expiry), and claiming an issue whose lease has expired takes it over and reports the displaced owner. Without expiry a crashed session would hold an issue forever, and an unreleasable gate is one people learn to bypass.
 
@@ -660,7 +661,48 @@ adev issues set-modules issue-42 cli,hooks
 
 Unlike `claim`/`release`, `next` is not yet called from any skill's preflight — no skill invokes `adev issues next` today; it is a standalone verb for the (separately specified) autonomous bugfix loop to call once that loop exists.
 
-**Implementation:** `lib/cli/issues.mjs` (+ `issues-migrate.mjs`, `issues-claim.mjs`, `issues-stale.mjs`, `issues-set-modules.mjs`, `issues-next.mjs`). **Called by:** `/adev:issues` (`claim`/`release`/`stale`/`set-modules`/`next`); `claim`/`release` also run in preflight by `/adev:implement` and `/adev:debug`.
+#### `board migrate` — beads board git topology
+
+**Purpose:** on the `beads` backend, moves `.beads/issues.jsonl` off `main`'s own git history onto a dedicated orphan branch (`beads-board`), checked out as a **linked git worktree** at `.beads/`. This lets multiple worktrees and clones share one board without a PR cycle — `.beads/` becomes a live checkout of `beads-board`, not a copy tracked in `main`'s tree.
+
+**Configuration:** none beyond the existing `tasks.backend: beads` in `manifest.yaml` — no new manifest keys were introduced. Everything below is either automatic or a single explicit command.
+
+**Automatic provisioning.** `adev install` and `adev upgrade` both call `maybeProvisionBoardWorktree()` after the managed-`.gitignore` step, gated on `manifest.tasks.backend === "beads"`:
+- `.beads/` doesn't exist yet → provisioned as a linked worktree: checks out the existing `beads-board` branch if one already exists (local or `origin`), otherwise creates it fresh as an orphan branch.
+- `.beads/` is already a registered worktree → silent no-op (idempotent on every upgrade).
+- `.beads/` exists as a non-empty plain directory (e.g. a repo that predates this feature and still tracks `.beads/` on `main`) → provisioning is skipped silently, deferring to `adev issues board migrate` below. Install/upgrade never fails or blocks on this.
+
+**One-time migration for an existing repo:**
+```
+adev issues board migrate --dry-run    # preview
+adev issues board migrate              # do it
+```
+Sequence: snapshot `.beads/issues.jsonl` → create `beads-board` as an orphan branch inside a disposable temp worktree → commit and push it to `origin` → only then remove `.beads/` from `main`'s tracked tree (`git rm -r --cached .beads`) → add the managed `.gitignore` entries → commit on `main` → re-provision `.beads/` as the real linked worktree. `main`'s tree is left untouched until after the `beads-board` push has succeeded.
+
+**Resumable.** A checkpoint at `.context-index/tasks/.board-migrate-state.json` is written the instant the push lands, before any of `main`'s tree is touched. If the process is interrupted after that point, re-running the exact same command resumes from the checkpoint (recover-and-re-provision only) instead of re-doing the snapshot/push/cleanup.
+
+**`.gitignore`:** two entries are added automatically via the existing managed-block mechanism (`ensureManagedBlock()` / `MANAGED_GITIGNORE_PATHS`) — no manual edit needed:
+```
+.beads/
+.context-index/tasks/.board-migrate-state.json
+```
+
+**Error/status codes:**
+
+| Code | Meaning |
+|---|---|
+| `BOARD_ALREADY_EXISTS` | `.beads/` is a non-empty plain directory, not a registered worktree — run `board migrate` instead of a raw `git worktree add` |
+| `BOARD_ALREADY_MIGRATED` | `.beads/` is already a linked worktree against `beads-board` — exit 0, nothing to do |
+| `BOARD_NOTHING_TO_MIGRATE` | `.beads/issues.jsonl` isn't tracked on `main` — nothing to migrate |
+| `BOARD_MIGRATE_PUSH_FAILED` | the `beads-board` push failed before `main`'s tree was touched — safe to retry from scratch |
+| `BOARD_MIGRATE_PARTIAL_FAILURE` | recovery/re-provisioning failed after `main`'s tree was already cleaned up — resumable via the checkpoint, re-run the same command |
+| `BOARD_ADD_FAILED` | the underlying `git worktree add` call failed |
+
+**Corrupt-leftover recovery:** both the resumed-migration path and every fresh provisioning attempt run a recovery pass first — a plain filesystem delete of any existing `.beads/` (not `git worktree remove`, since an interrupted prior `git worktree add` may not have registered cleanly enough for git to recognize it) followed by `git worktree prune`.
+
+**Implementation:** `lib/cli/issues-board.mjs`, `lib/issues/board-worktree.mjs`, `lib/issues/board-migrate-state.mjs`; auto-provisioning hook in `cli/index.mjs` (`maybeProvisionBoardWorktree`). **Spec:** `.context-index/specs/features/task-management/beads-board-git-topology.spec.md`.
+
+**Implementation:** `lib/cli/issues.mjs` (+ `issues-migrate.mjs`, `issues-claim.mjs`, `issues-stale.mjs`, `issues-set-modules.mjs`, `issues-next.mjs`, `issues-board.mjs`). **Called by:** `/adev:issues` (`claim`/`release`/`stale`/`set-modules`/`next`); `claim`/`release` also run in preflight by `/adev:implement` and `/adev:debug`; `board migrate` is run manually by the operator.
 
 ### `bugfix-loop`
 

@@ -28,6 +28,7 @@ source-manifest:
   computed-at: "2026-08-20T01:26:28.457Z"
 created: 2026-08-19
 updated: 2026-08-20
+drift_detected: true
 ---
 
 # Skill Spec: /adev:bugfix-loop

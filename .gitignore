@@ -128,6 +128,10 @@ viz/dist/
 .context-index/tasks/tasks.json.*.tmp
 # backend-migration resume state
 .context-index/tasks/.migrate-state.json
+# beads board — linked git worktree against beads-board, not main's tree
+.beads/
+# board-migrate resume checkpoint
+.context-index/tasks/.board-migrate-state.json
 # incremental artifact write — satisfies cross-cutting/incremental-artifact-writes:236
 *.partial
 # incremental artifact lock
