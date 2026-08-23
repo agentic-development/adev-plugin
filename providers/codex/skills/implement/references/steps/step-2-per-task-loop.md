@@ -63,6 +63,8 @@ Before routing or dispatching, assemble the task's context packet:
 - `assisted-agent`: proceed with dispatch, but pause after RED phase (tests written) for user review before GREEN phase
 - `human-only`: generate scaffolding only (type stubs, file structure, test shells), present as a manual task checklist, emit `reportPlanTask(projectRoot, specPath, { plan: planFilePath, task_id, status: "skipped", notes: "MANUAL — requires human implementation" })`, skip to next task
 
+**Provisional review depth.** Alongside the routing-tag check, before dispatch: `adev implement resolve-depth --spec <spec> --plan <plan> --task-id <id> [--tier <t>] [--review-cycles <n>] [--in-batch] --pass provisional`. It briefs the implementer and reports `review_depth_resolved`; the final pass (2f-pre) decides which reviewer(s) dispatch. Contract: `graduated-review-depth.md`.
+
 #### 2b. Specialist Routing
 
 Determine which specialist (if any) should handle this task.
@@ -183,6 +185,8 @@ The verb wraps `lib/execution-state.mjs::writeExecutionState`. If the CLI call e
 
 #### 2d. Dispatch and Handle Status
 
+- **Capture the task's base SHA** immediately before dispatch: `git rev-parse HEAD`. Used only by this task's final-pass depth resolution (2f-pre); never persisted.
+
 Dispatch the subagent with `Agent({description, prompt, run_in_background: false})` and nothing else.
 
 
@@ -273,6 +277,15 @@ Do not proceed. Do not skip. Do not fall back to code-only review for UI tasks.
 
 **If the spec has no Visual Expectations section:** Still take a basic snapshot after implementation. Verify the page loads without errors, shows content (not a blank screen), and has no console errors. This is the minimum bar.
 
+#### 2f-pre. Final Review Depth
+
+> **Required reading:** `skills/implement/graduated-review-depth.md`.
+
+Immediately before 2f's dispatch — after GREEN, against the real diff — run the provisional call again with `[--had-critical-finding] --base-sha <captured-sha> --pass final`. Echo `REVIEW_DEPTH_FLOOR_APPLIED` (naming `floor_legs`) and any `ROUTING_SCORE_OUT_OF_RANGE` warning to the operator-facing transcript, not only to the persisted `review_depth_resolved` event. Then branch on the resolved `depth`:
+
+- **`full`** — run 2f then 2g below exactly as written.
+- **`quick`** — skip both stages; dispatch one synthesized reviewer carrying `synthesized-reviewer-prompt.md` and the union of both stages' context, under the same `cq-<n>` / `evaluateStopCondition` discipline, capped at the returned `review_cycles`. Record `stage: "synthesized"` provenance (`Review-round: synthesized=<n>`) instead of the two stage records.
+
 #### 2f. Stage 1 Review: Spec Compliance
 
 Dispatch a fresh spec reviewer subagent with:
@@ -287,7 +300,7 @@ The spec reviewer verifies by reading code, not by trusting the report:
 - **Extra work:** Was anything built that was not requested?
 - **Misunderstandings:** Were requirements interpreted correctly?
 
-**If the reviewer finds issues:** The implementer subagent (same one) fixes them. The spec reviewer reviews again. Maximum 3 review cycles per task. After the third, escalate to the user.
+**If the reviewer finds issues:** The implementer subagent (same one) fixes them. The spec reviewer reviews again. Maximum `implement.max_review_cycles` review cycles per task (default 3), or the effective `review_cycles` returned by this task's last `adev implement resolve-depth` call when `--review-cycles` was passed. After the last cycle, escalate to the user.
 
 **Only proceed to Stage 2 after Stage 1 passes.**
 
@@ -307,7 +320,7 @@ The code quality reviewer checks the items in `<ADEV_ROOT>/skills/implement/refe
 
 **Minor issues:** Noted but do not block progress.
 
-**Critical or Important issues — bounded fix/review loop.** The implementer subagent (same one) fixes them and the reviewer reviews again, but the loop is capped. **Maximum 3 code-quality review cycles per task**, matching the Stage 1 cap (2f) and the visual fix cap (2e). This is a hardcoded convention because no manifest knob exists for it yet; a config-backed budget mirroring `build.max_review_retries` (see `lib/manifest.mjs` and `skills/build/SKILL.md` Step 1) is a follow-up.
+**Critical or Important issues — bounded fix/review loop.** The implementer subagent (same one) fixes them and the reviewer reviews again, but the loop is capped. **Maximum `implement.max_review_cycles` code-quality review cycles per task** (same effective value as Stage 1's cap above — both stages read the same resolved number, which is what makes the `quick` path's `1 × cap` (vs. `full`'s `2 × cap`) worst-case-dispatch claim true).
 
 Each cycle, compare the reviewer's Critical/Important finding ids against the previous cycle's set the way `/adev:build`'s BLOCK→revise loop does, using the convergence primitive `lib/loop-convergence.mjs` (`partitionBlockers` splits the two id sets into addressed / persistent / new; `evaluateStopCondition` turns that partition plus the cycles remaining into one verdict). Act on the verdict:
 

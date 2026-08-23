@@ -19,3 +19,5 @@ This is the longest-running step. The implement skill manages TDD loops, special
 **After subagent returns:**
 - If verdict indicates quality gate or integration gate failure: run `recordStepResult()` with `status: "failed"` and the failure details (including tier-specific context: tier name, failing command, severity). Report the failures to the user and stop the build for this spec.
 - Otherwise: run the `recordStepResult()` call from Dispatch Loop step 4 with `stepName="implement"`. Then follow Dispatch Loop step 5 (re-invoke or stop). Do NOT stop here.
+
+**Rigor tier propagation:** Read `skills/build/step4-tier-propagation.md` for the `--tier` handoff to `/adev:implement`.

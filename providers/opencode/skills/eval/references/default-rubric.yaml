@@ -94,7 +94,6 @@ quality_dimensions:
     met_when: "every new symbol's name and signature convey its purpose without reading its body"
     not_met_when: "at least one new symbol requires reading its body to know what it does"
     unknown_when: "no golden sample and no naming convention is declared, so there is no anchor to compare against"
-    weight: 1
 
   - id: separation_of_concerns
     criterion: "Does each changed file hold a single responsibility, at the same boundary the reference draws?"
@@ -102,7 +101,6 @@ quality_dimensions:
     met_when: "no changed file mixes responsibilities the reference keeps apart"
     not_met_when: "at least one changed file merges responsibilities the reference separates"
     unknown_when: "the diff touches no file the reference covers"
-    weight: 1
 
   - id: spec_intent_fidelity
     criterion: "Does the implementation handle the edge cases the spec names, not just its literal acceptance criteria?"
@@ -110,7 +108,6 @@ quality_dimensions:
     met_when: "every edge case named in the spec has corresponding handling in the diff"
     not_met_when: "at least one spec-named edge case has no handling in the diff"
     unknown_when: "the spec names no edge cases or error behavior"
-    weight: 1
 
   - id: idiomatic_conformance
     criterion: "Does the diff use the same language and framework idioms as the reference for this platform?"
@@ -118,7 +115,6 @@ quality_dimensions:
     met_when: "the diff uses the reference's idioms for imports, error handling, and module structure"
     not_met_when: "the diff departs from a reference idiom without a comment explaining why"
     unknown_when: "no golden sample exists and the constitution declares no platform idioms"
-    weight: 1
 
   - id: error_handling_placement
     criterion: "Are errors raised and handled at the layer the reference designates, with messages an operator could act on?"
@@ -126,7 +122,6 @@ quality_dimensions:
     met_when: "errors surface at the designated layer and each message names the failing input or condition"
     not_met_when: "an error is swallowed, re-raised at the wrong layer, or carries a message with no actionable detail"
     unknown_when: "the diff contains no error paths"
-    weight: 1
 
 # ---------------------------------------------------------------------------
 # Aggregation — TREND TRACKING ONLY.

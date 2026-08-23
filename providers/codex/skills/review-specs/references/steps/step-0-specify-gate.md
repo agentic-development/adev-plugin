@@ -4,8 +4,10 @@ Before identifying targets, gate on the prior step via the lifecycle log, then e
 
 ```bash
 adev gate require --skill review-specs --spec <spec-path>
-adev report --type step --spec <spec-path> --step review --status started
+adev report --type step --spec <spec-path> --step review --status started --revision <spec-revision>
 ```
+
+`<spec-revision>` is the spec's own `revision:` frontmatter value, read once here and reused for every `adev report --type step` call in this skill (Step 8, Step 0-fail below). Without it, `currentState().steps.review.byRevision` folds every hand-authored revision's events into bucket 1 regardless of which revision actually produced them — the only path currently available while `adev specify revise --auto` has open convergence bugs (adev-plugin-656e).
 
 In strict mode (default — resolved from `manifest.yaml`'s `lifecycle.gate_mode`), `adev gate require` exits `2` if the `specify` step has not been recorded as completed (the spec must exist and have a `lifecycle_step: specify, status: completed` event). In advisory mode, it emits a warning and exits `0`. Do NOT catch the failure — surface the helper's stderr unchanged. Path-containment is enforced by the helper.
 
@@ -14,7 +16,7 @@ When reviewing in bulk (`--charter` or no-args), apply the gate per-spec inside 
 In Step 8, emit the matching exit event with the consolidated review verdict:
 
 ```bash
-adev report --type step --spec <spec-path> --step review --status completed --verdict <consolidated-verdict> --from-summary
+adev report --type step --spec <spec-path> --step review --status completed --verdict <consolidated-verdict> --from-summary --revision <spec-revision>
 ```
 
 ### Step 0-fail: Failure-path exit event
@@ -24,7 +26,7 @@ A BLOCK verdict is **not** a failure — it is a completed review whose consolid
 Whenever the skill stops after the `--status started` event above without reaching the Step 8 exit event, emit the terminal event before surfacing the error to the operator:
 
 ```bash
-adev report --type step --spec <spec-path> --step review --status failed --verdict FAIL
+adev report --type step --spec <spec-path> --step review --status failed --verdict FAIL --revision <spec-revision>
 ```
 
 `--verdict FAIL` is required, not decorative. The projection's aggregation pass in `lib/lifecycle-state.mjs` only treats a step terminal as explicit when it carries a string verdict; a `step_failed` emitted without one is overwritten by the verdict synthesized from whatever `reviewer_report` events already landed, so a partial review whose first reviewer passed would project as `{verdict: PASS, status: completed}` and open the `plan` gate. This is the same class of bug fixed for BLOCK in `aggregateReports`.

@@ -41,6 +41,7 @@ Skipped — no governance/ directory configured. Run `/adev:init` to set up gove
 9. **Transition gate references.** For each gate ID in `transitions.*.required_gates`, verify it exists in the `gates` list. Flag MISSING_GATE_REF.
 10. **Risk policy completeness.** Verify all three levels (high, medium, low) are defined in `risk-policies.yaml`. Flag INCOMPLETE_POLICY.
 11. **Legacy manifest gates.** Read `manifest.yaml`. If a top-level `gates:` section exists, flag LEGACY_GATES: "Legacy gates: section found in manifest.yaml. This is no longer used. Move gate definitions to governance/gates.yaml."
+12. **Duplicate manifest keys.** Run `adev manifest lint --json`. Flag each `duplicates` entry DUPLICATE_MANIFEST_KEY: "manifest.yaml declares `<key>` twice — merge the blocks."
 
 **Output format:**
 ```

@@ -205,17 +205,18 @@ infra_requirements:
 
 ### Step 5: Write the Spec
 
-**Incremental authoring (`.partial` pattern).** Per `incremental-artifact-writes.spec.md`, the spec body MUST be authored incrementally to `<spec-path>.partial` and atomically renamed to `<spec-path>` on completion. The first authored chunk MUST begin with a `partial_schema: spec@1` marker placed in an HTML comment:
+**Incremental authoring (`.partial` pattern).** Per `incremental-artifact-writes.spec.md`, the spec body MUST be authored incrementally to `<spec-path>.partial` and atomically renamed to `<spec-path>` on completion. The first authored chunk MUST carry a `partial_schema: spec@1` marker as a **YAML frontmatter key**, so the `---` delimiter stays the first non-blank line:
 
 ```markdown
-<!-- partial_schema: spec@1 -->
-
 ---
-... frontmatter ...
+partial_schema: spec@1
+... rest of frontmatter ...
 ---
 
 # Live Spec: ...
 ```
+
+Do NOT put the marker in an HTML comment above the frontmatter. `adev/frontmatter-present` (severity: **error**, `.context-index/governance/diagnostics.yaml`) requires the first non-blank line of a `.spec.md` to be `---`, and the marker survives the atomic rename into the final artifact — anything above the frontmatter makes every spec you author violate an error-severity diagnostic on write. The frontmatter key satisfies SA-6 ("marker in the first authored chunk") because the frontmatter *is* the first chunk, and `adev partial inspect` reads it unchanged: its scan matches the `partial_schema: <marker>` token anywhere in the first 4 KB, regardless of surrounding syntax. Leave the key in place on the final artifact — it is the resume contract, not scaffolding.
 
 Cadence: one section (H2 boundary — Behavioral Contract, System Constitution Reference, Module Impact Map, Integration Points, Acceptance Criteria, etc.) per append. Each section, once written, is durable: a kill/crash mid-write leaves the prior sections on disk and only the in-flight section is lost.
 

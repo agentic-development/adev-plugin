@@ -17,6 +17,7 @@ This table covers the full skill surface — route any intent to exactly one tar
 | Implement a plan | "implement", "start coding", "build the plan" | `/adev:implement` |
 | Write tests first | "write tests", "TDD", "failing test for" | `/adev:write-test` |
 | Bug / broken behavior | "bug", "broken", "failing test", "error", "not working" | `/adev:debug` |
+| Drain P2/P3 bugs unattended | "drain the bug backlog", "bugfix loop", "run the loop unattended" | `/adev:bugfix-loop` |
 | Validate an implementation | "validate", "check it works", "verify the feature" | `/adev:validate` |
 | Score / grade quality | "eval", "score", "grade", "how good is" | `/adev:eval` |
 | Project status | "status", "where do things stand", "progress", "what's done" | `/adev:status` |
