@@ -48,3 +48,4 @@
 {"event":"validator_report","step":"validate","validator":"validate.check-11-visual-verification","severity":"warning","verdict":"PASS","notes":"SKIP — no UI files in implementation diff (all 13 manifest files are .mjs/.md); visual verification not applicable.","ts":"2026-08-18T23:22:04.139Z"}
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-08-18T23:23:23.750Z"}
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-08-18T23:27:26.726Z"}
+{"event":"code_drift_detected","drift_source":"skills/specify/SKILL.md","drift_at":"2026-08-22T23:21:01.250Z","ts":"2026-08-22T23:21:01.250Z"}
