@@ -13,22 +13,33 @@
  * the eleven error-code strings belong in `lib/evals/rubric-coverage-codes.mjs`
  * — the check function and its branches stay here.
  *
- * Task 1 implements four of the eleven rules only: `RUBRIC_TIER_INCOMPLETE`,
+ * Task 1 implements four of the eleven rules: `RUBRIC_TIER_INCOMPLETE`,
  * `RUBRIC_TIER_ORPHAN`, `RUBRIC_LANDED_INVALID` (two branches), and
  * `RUBRIC_TIER_UNCOVERED` (proven on synthetic roots only — the real
  * `tests/evals/skill-regression/rubrics/` tree is legitimately empty at this
  * task's landing state, and applying the rule there is a later task's job).
- * The remaining seven codes are declared in the registry but have no branch
- * here yet; Tasks 2 and 3 add them to this same file.
+ *
+ * Task 2 adds six more — the shared per-skill rubric contract's rules, every
+ * one of which needs a rubric actually LOADED via `lib/evals/rubric.mjs::loadRubric`
+ * first, so its own codes surface unmodified before any of these six run:
+ * `RUBRIC_ID_MISMATCH`, `RUBRIC_SCENARIO_MISSING`, `RUBRIC_SOURCE_PATH_ESCAPE`,
+ * `RUBRIC_ELEMENT_FLOOR`, `RUBRIC_EXCEPTION_ID_MALFORMED`, and
+ * `RUBRIC_TWIN_UNCITED`. Proven on synthetic roots only, for the same reason
+ * as `RUBRIC_TIER_UNCOVERED`.
+ *
+ * The remaining code, `RUBRIC_SCENARIO_STEP_MISSING`, is declared in the
+ * registry but has no branch here yet; Task 3 adds it to this same file.
  */
 
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, symlinkSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
+import { loadRubric } from "../../../lib/evals/rubric.mjs";
 import { RUBRIC_COVERAGE_ERROR_CODES } from "../../../lib/evals/rubric-coverage-codes.mjs";
+import { isContained, lenientRealpath, resolveContained } from "../../../lib/path-safety.mjs";
 import { parseYaml } from "../../../lib/profiles/yaml.mjs";
 import { captureThrow, cleanupTempDir, createTempDir } from "../../helpers.mjs";
 import { splitSlugs } from "./catalog-validator.mjs";
@@ -40,13 +51,29 @@ const DEFAULT_TIERS_PATH = join(REPO_ROOT, "tests", "evals", "skill-regression",
 const DEFAULT_RUBRIC_ROOT = join(REPO_ROOT, "tests", "evals", "skill-regression", "rubrics");
 const DEFAULT_SCENARIO_ROOT = join(REPO_ROOT, "tests", "evals", "skill-regression", "scenarios");
 const DEFAULT_SKILLS_ROOT = join(REPO_ROOT, "skills");
+// Fixed, not a parameter: whichever rubric root a caller passes, the catalog a
+// rubric cites against is always this tier's one fixture (RUBRIC_TWIN_UNCITED
+// resolves twins here, never by string arithmetic on an id).
+const DEFAULT_CATALOG_PATH = join(REPO_ROOT, "tests", "evals", "skill-regression", "catalog.yaml");
 
-/** The four codes with an implemented branch as of Task 1. */
+/** The shape `baseline_exception_issue` / `spec_behaviour_gap_issue` must take, when present. */
+const EXCEPTION_ID_RE = /^[a-z][a-z0-9-]*-[0-9a-z]+$/;
+
+/** An exact `skill-regression:PV-nn` or `skill-regression:KC-nn` citation, and nothing else. */
+const SKILL_REGRESSION_CITATION_RE = /^skill-regression:(PV-\d+|KC-\d+)$/;
+
+/** Ten of the eleven codes with an implemented branch as of Task 2; only `RUBRIC_SCENARIO_STEP_MISSING` (Task 3) remains. */
 const IMPLEMENTED_CODES = Object.freeze([
   "RUBRIC_TIER_INCOMPLETE",
   "RUBRIC_TIER_ORPHAN",
   "RUBRIC_LANDED_INVALID",
   "RUBRIC_TIER_UNCOVERED",
+  "RUBRIC_ID_MISMATCH",
+  "RUBRIC_SCENARIO_MISSING",
+  "RUBRIC_SOURCE_PATH_ESCAPE",
+  "RUBRIC_ELEMENT_FLOOR",
+  "RUBRIC_EXCEPTION_ID_MALFORMED",
+  "RUBRIC_TWIN_UNCITED",
 ]);
 
 /**
@@ -193,6 +220,179 @@ export function checkRubricSet({
     }
   }
 
+  // --- The six shared-contract rules ----------------------------------------
+  // Every rubric under rubricRoot is loaded through `loadRubric` FIRST, and a
+  // load failure surfaces the loader's own code unmodified and skips the rest
+  // of this block for that file — these six rules sit ON TOP of the loader's,
+  // never in place of it, and a document that never finished loading has no
+  // fields left to check.
+  checked.add("RUBRIC_ID_MISMATCH");
+  checked.add("RUBRIC_SCENARIO_MISSING");
+  checked.add("RUBRIC_SOURCE_PATH_ESCAPE");
+  checked.add("RUBRIC_ELEMENT_FLOOR");
+  checked.add("RUBRIC_EXCEPTION_ID_MALFORMED");
+  checked.add("RUBRIC_TWIN_UNCITED");
+
+  // `artifact:` sources resolve against the fixture root, which sits beside
+  // `rubricRoot` — `tests/evals/skill-regression/{rubrics,project}` in the
+  // real tree, and the same sibling shape a synthetic root reproduces.
+  // Real-pathed ONCE, up front, and reused for both the lexical pre-check and
+  // the realpath-contained verdict below: `loadRubric` real-paths its own
+  // root first for the identical reason — on macOS a temp root is reached
+  // through `/var` -> `/private/var`, so handing a raw base to the lexical
+  // step fails closed on every candidate, escaping or not.
+  const fixtureRoot = join(dirname(rubricRoot), "project");
+  const fixtureRootReal = lenientRealpath(fixtureRoot);
+  const scenarioRootReal = lenientRealpath(scenarioRoot);
+
+  // RUBRIC_TWIN_UNCITED resolves a cited PV's twin through the real catalog's
+  // `twin:` field, never by string arithmetic on the id, so a catalog that
+  // ever renumbers does not silently un-pair. A missing/unparsable catalog
+  // leaves `twinById` empty, which is fail-closed: every PV citation then
+  // reports its twin as unresolved rather than the rule silently no-opping.
+  const twinById = new Map();
+  try {
+    const catalogDoc = parseYaml(readFileSync(DEFAULT_CATALOG_PATH, "utf8"));
+    for (const list of [catalogDoc.planted_violations, catalogDoc.known_clean]) {
+      if (!Array.isArray(list)) continue;
+      for (const entry of list) {
+        if (entry && typeof entry.id === "string" && typeof entry.twin === "string") {
+          twinById.set(entry.id, entry.twin);
+        }
+      }
+    }
+  } catch {
+    // handled by the empty map above
+  }
+
+  for (const file of rubricFiles) {
+    const stem = file.slice(0, -".yaml".length);
+
+    let doc;
+    try {
+      // A relative path plus `projectRoot`, never a pre-joined absolute path:
+      // `rubricRoot` itself may be a raw (non-real) temp path on macOS, and an
+      // absolute path built from it would be compared against `loadRubric`'s
+      // OWN real-pathed root and rejected as unsafe on every call.
+      doc = loadRubric(file, { projectRoot: rubricRoot });
+    } catch (err) {
+      fail(err.code ?? "RUBRIC_LOAD_ERROR", err.message);
+      continue;
+    }
+
+    // --- RUBRIC_ID_MISMATCH ---------------------------------------------------
+    const expectedId = `skill-regression-${stem}`;
+    if (doc.rubric_id !== expectedId) {
+      fail(
+        "RUBRIC_ID_MISMATCH",
+        `rubric "${file}" declares rubric_id "${doc.rubric_id}", expected "${expectedId}"`,
+      );
+    }
+    if (doc.skill !== stem) {
+      fail(
+        "RUBRIC_ID_MISMATCH",
+        `rubric "${file}" declares skill "${doc.skill}", expected the filename stem "${stem}"`,
+      );
+    }
+
+    // --- RUBRIC_ELEMENT_FLOOR ---------------------------------------------------
+    const elementCount = Array.isArray(doc.required_elements) ? doc.required_elements.length : 0;
+    const criterionCount = Array.isArray(doc.quality_dimensions) ? doc.quality_dimensions.length : 0;
+    if (elementCount < 5) {
+      fail(
+        "RUBRIC_ELEMENT_FLOOR",
+        `rubric "${file}" declares ${elementCount} required_elements, fewer than the floor of 5`,
+      );
+    }
+    if (criterionCount < 3 || criterionCount > 6) {
+      fail(
+        "RUBRIC_ELEMENT_FLOOR",
+        `rubric "${file}" declares ${criterionCount} quality_dimensions, outside the 3-6 range`,
+      );
+    }
+
+    // --- RUBRIC_EXCEPTION_ID_MALFORMED ------------------------------------------
+    for (const key of ["baseline_exception_issue", "spec_behaviour_gap_issue"]) {
+      if (!(key in doc)) continue; // present-and-malformed, not required
+      const value = doc[key];
+      if (typeof value !== "string" || !EXCEPTION_ID_RE.test(value)) {
+        fail(
+          "RUBRIC_EXCEPTION_ID_MALFORMED",
+          `rubric "${file}" declares ${key} ${JSON.stringify(value)}, which fails ${EXCEPTION_ID_RE}`,
+        );
+      }
+    }
+
+    // --- RUBRIC_SOURCE_PATH_ESCAPE (scenario) / RUBRIC_SCENARIO_MISSING --------
+    // Escape is decided before existence: an escaping scenario value never
+    // reaches the existence check below, even when the escaping path happens
+    // to exist on disk.
+    if (typeof doc.scenario === "string") {
+      const lexical = resolveContained(scenarioRootReal, `${doc.scenario}.md`);
+      if (lexical === null) {
+        fail(
+          "RUBRIC_SOURCE_PATH_ESCAPE",
+          `rubric "${file}" scenario "${doc.scenario}" escapes scenarioRoot "${scenarioRoot}"`,
+        );
+      } else {
+        const real = lenientRealpath(lexical);
+        if (!isContained(real, scenarioRootReal)) {
+          fail(
+            "RUBRIC_SOURCE_PATH_ESCAPE",
+            `rubric "${file}" scenario "${doc.scenario}" escapes scenarioRoot "${scenarioRoot}" after realpath resolution`,
+          );
+        } else if (!existsSync(real)) {
+          fail(
+            "RUBRIC_SCENARIO_MISSING",
+            `rubric "${file}" scenario "${doc.scenario}" names no file at "${real}"`,
+          );
+        }
+      }
+    }
+
+    // --- RUBRIC_SOURCE_PATH_ESCAPE (artifact:) ----------------------------------
+    const elements = Array.isArray(doc.required_elements) ? doc.required_elements : [];
+    for (let i = 0; i < elements.length; i++) {
+      const entry = elements[i];
+      if (!entry || typeof entry.source !== "string" || !entry.source.startsWith("artifact:")) continue;
+      const rawPath = entry.source.slice("artifact:".length).trim();
+      const lexical = resolveContained(fixtureRootReal, rawPath);
+      if (lexical === null) {
+        fail(
+          "RUBRIC_SOURCE_PATH_ESCAPE",
+          `rubric "${file}" required_elements[${i}] artifact source "${rawPath}" escapes fixture_root "${fixtureRoot}"`,
+        );
+        continue;
+      }
+      const real = lenientRealpath(lexical);
+      if (!isContained(real, fixtureRootReal)) {
+        fail(
+          "RUBRIC_SOURCE_PATH_ESCAPE",
+          `rubric "${file}" required_elements[${i}] artifact source "${rawPath}" escapes fixture_root "${fixtureRoot}" after realpath resolution`,
+        );
+      }
+    }
+
+    // --- RUBRIC_TWIN_UNCITED -----------------------------------------------------
+    const citedIds = new Set();
+    for (const entry of elements) {
+      if (!entry || typeof entry.source !== "string") continue;
+      const m = SKILL_REGRESSION_CITATION_RE.exec(entry.source.trim());
+      if (m) citedIds.add(m[1]);
+    }
+    for (const cited of citedIds) {
+      if (!cited.startsWith("PV-")) continue;
+      const twin = twinById.get(cited);
+      if (!twin || !citedIds.has(twin)) {
+        fail(
+          "RUBRIC_TWIN_UNCITED",
+          `rubric "${file}" cites ${cited} without also citing its known-clean twin` +
+            (twin ? ` ${twin}` : " (unresolved in the catalog)"),
+        );
+      }
+    }
+  }
+
   return { errors, checked };
 }
 
@@ -223,8 +423,9 @@ test("RUBRIC_COVERAGE_ERROR_CODES holds exactly the eleven documented codes, fro
 });
 
 test("every implemented rule's checked counter was reached", () => {
-  // Only four of the eleven codes have branches at this task; asserting the
-  // other seven would be asserting code that does not exist yet.
+  // Ten of the eleven codes have branches as of Task 2; asserting
+  // RUBRIC_SCENARIO_STEP_MISSING too would be asserting code that does not
+  // exist yet (Task 3).
   const { checked } = checkRubricSet();
   for (const code of IMPLEMENTED_CODES) {
     assert.ok(
@@ -593,6 +794,450 @@ test("RUBRIC_TIER_UNCOVERED: a bucket absent from landed: with no rubrics does n
       [],
       "a bucket absent from landed: must not be checked for coverage — the rule would be bucket-agnostic in the wrong direction",
     );
+  } finally {
+    cleanupTempDir(tmp);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// 7. Shared-contract rule test helpers (Task 2)
+// ---------------------------------------------------------------------------
+
+/**
+ * Render a value as it must appear on the right of a `key:` in these flat-YAML
+ * fixtures — every string quoted, since several values here carry a colon
+ * (`"artifact: docs/foo.md"`, `"output: ..."`) that an unquoted scalar cannot
+ * survive through `lib/profiles/yaml.mjs`'s first-colon-split reader.
+ *
+ * @param {any} value
+ * @returns {string}
+ */
+function yamlScalar(value) {
+  return typeof value === "string" ? JSON.stringify(value) : String(value);
+}
+
+/**
+ * Build `count` `required_elements` entries, each declaring every field the
+ * shared contract's field-shapes paragraph names (`id`, `description`,
+ * `source`, `met_when`, `not_applicable_when`), with an `output:` source —
+ * never `artifact:` or `skill-regression:`, so building N of these never by
+ * itself trips `RUBRIC_SOURCE_PATH_ESCAPE` or `RUBRIC_TWIN_UNCITED`.
+ *
+ * @param {number} count
+ * @returns {object[]}
+ */
+function makeElements(count) {
+  return Array.from({ length: count }, (_, i) => {
+    const n = i + 1;
+    return {
+      id: `element_${n}`,
+      description: `Deterministic check ${n}`,
+      source: `output: the span element ${n} reads`,
+      met_when: `condition ${n} holds`,
+      not_applicable_when: `never — element ${n} always answers this`,
+    };
+  });
+}
+
+/**
+ * Build `count` `quality_dimensions` entries, each declaring every field
+ * `REQUIRED_CRITERION_FIELDS` names.
+ *
+ * @param {number} count
+ * @returns {object[]}
+ */
+function makeCriteria(count) {
+  return Array.from({ length: count }, (_, i) => {
+    const n = i + 1;
+    return {
+      id: `criterion_${n}`,
+      criterion: `Does the run satisfy judged condition ${n}?`,
+      reference: "the matched golden sample, else the constitution",
+      met_when: `condition ${n} is satisfied`,
+      not_met_when: `condition ${n} is not satisfied`,
+      unknown_when: `no reference exists to judge condition ${n} against`,
+    };
+  });
+}
+
+/**
+ * Build the conforming baseline every shared-contract rule test mutates in
+ * exactly one way: five `required_elements`, three `quality_dimensions`, the
+ * shipped point budgets, both `exclude_from_denominator` policies, and
+ * `insufficient_evidence_threshold_percent: 40` — the shared contract table
+ * field-for-field.
+ *
+ * @param {string} slug - bare skill slug, e.g. "codehealth"
+ * @returns {object} a plain-object rubric document, ready for `renderRubricYaml`
+ */
+function makeConformingRubric(slug) {
+  return {
+    rubric_id: `skill-regression-${slug}`,
+    version: 1,
+    layer: 3,
+    verdict_values: "met | not_met | unknown (judged criteria) | not_applicable (deterministic elements)",
+    skill: slug,
+    scenario: slug,
+    required_elements: makeElements(5),
+    quality_dimensions: makeCriteria(3),
+    layer3_max_points: 25,
+    required_element_points: 10,
+    judged_criterion_points: 15,
+    unknown_policy: "exclude_from_denominator",
+    not_applicable_policy: "exclude_from_denominator",
+    insufficient_evidence_threshold_percent: 40,
+  };
+}
+
+/**
+ * Render a rubric document built by {@link makeConformingRubric} (or a
+ * mutation of one) as flat-YAML source, in `REQUIRED_TOP_LEVEL_KEYS` order.
+ *
+ * @param {object} doc
+ * @returns {string}
+ */
+function renderRubricYaml(doc) {
+  const lines = [];
+  const scalarKey = (key) => {
+    if (key in doc) lines.push(`${key}: ${yamlScalar(doc[key])}`);
+  };
+  scalarKey("rubric_id");
+  scalarKey("version");
+  scalarKey("layer");
+  scalarKey("verdict_values");
+  scalarKey("skill");
+  scalarKey("scenario");
+
+  lines.push("required_elements:");
+  for (const el of doc.required_elements ?? []) {
+    lines.push(`  - id: ${el.id}`);
+    for (const field of ["description", "source", "met_when", "not_applicable_when"]) {
+      if (field in el) lines.push(`    ${field}: ${yamlScalar(el[field])}`);
+    }
+  }
+
+  lines.push("quality_dimensions:");
+  for (const c of doc.quality_dimensions ?? []) {
+    lines.push(`  - id: ${c.id}`);
+    for (const field of ["criterion", "reference", "met_when", "not_met_when", "unknown_when"]) {
+      if (field in c) lines.push(`    ${field}: ${yamlScalar(c[field])}`);
+    }
+  }
+
+  scalarKey("layer3_max_points");
+  scalarKey("required_element_points");
+  scalarKey("judged_criterion_points");
+  scalarKey("unknown_policy");
+  scalarKey("not_applicable_policy");
+  scalarKey("insufficient_evidence_threshold_percent");
+  scalarKey("baseline_exception_issue");
+  scalarKey("spec_behaviour_gap_issue");
+
+  return `${lines.join("\n")}\n`;
+}
+
+/**
+ * Build a complete, otherwise-conforming harness for one shared-contract rule
+ * case: a single-bucket `tiers.yaml`, a matching `skills/<slug>/` directory,
+ * an empty `rubrics/` directory, and a `scenarios/<slug>.md` file so
+ * `RUBRIC_SCENARIO_MISSING` never fires as background noise in a case that is
+ * not testing it.
+ *
+ * @param {string} tmp - a directory from `createTempDir()`
+ * @param {string} slug - bare skill slug
+ * @returns {{tiersPath: string, rubricRoot: string, scenarioRoot: string, skillsRoot: string}}
+ */
+function buildHarness(tmp, slug) {
+  const tiersPath = join(tmp, "tiers.yaml");
+  writeFileSync(tiersPath, [`landed: "b1"`, `b1: "${slug}"`].join("\n") + "\n");
+  const skillsRoot = join(tmp, "skills");
+  mkdirSync(join(skillsRoot, slug), { recursive: true });
+  const rubricRoot = join(tmp, "rubrics");
+  mkdirSync(rubricRoot, { recursive: true });
+  const scenarioRoot = join(tmp, "scenarios");
+  mkdirSync(scenarioRoot, { recursive: true });
+  writeFileSync(join(scenarioRoot, `${slug}.md`), `# ${slug} scenario\n`);
+  return { tiersPath, rubricRoot, scenarioRoot, skillsRoot };
+}
+
+/**
+ * Write `doc` as `<rubricRoot>/<slug>.yaml` over a harness {@link buildHarness}
+ * builds, and run `checkRubricSet` over it.
+ *
+ * Asserts the rubric glob found the one file written before returning — the
+ * "assert the glob returned a non-zero count" heuristic, applied once here so
+ * every case built on top of this helper inherits it.
+ *
+ * @param {string} tmp - a directory from `createTempDir()`
+ * @param {string} slug - bare skill slug
+ * @param {object} doc - a rubric document, from `makeConformingRubric` or a mutation of one
+ * @returns {{errors: Array<{code: string, detail: string}>, checked: Set<string>}}
+ */
+function runOneRubric(tmp, slug, doc) {
+  const harness = buildHarness(tmp, slug);
+  writeFileSync(join(harness.rubricRoot, `${slug}.yaml`), renderRubricYaml(doc));
+  assert.ok(
+    readdirSync(harness.rubricRoot).length > 0,
+    "precondition: rubricRoot must be non-empty before checkRubricSet is asked to glob it",
+  );
+  return checkRubricSet(harness);
+}
+
+// ---------------------------------------------------------------------------
+// 8. RUBRIC_ID_MISMATCH
+// ---------------------------------------------------------------------------
+
+test("RUBRIC_ID_MISMATCH: the conforming baseline is accepted outright", () => {
+  const tmp = createTempDir();
+  try {
+    const { errors } = runOneRubric(tmp, "codehealth", makeConformingRubric("codehealth"));
+    assert.deepEqual(errors, []);
+  } finally {
+    cleanupTempDir(tmp);
+  }
+});
+
+test("RUBRIC_ID_MISMATCH: a wrong rubric_id with a correct skill is rejected, and only that", () => {
+  const tmp = createTempDir();
+  try {
+    const doc = makeConformingRubric("codehealth");
+    doc.rubric_id = "skill-regression-wrong-name";
+    const { errors } = runOneRubric(tmp, "codehealth", doc);
+    assert.deepEqual(errors.map((e) => e.code), ["RUBRIC_ID_MISMATCH"]);
+    assert.match(errors[0].detail, /wrong-name/);
+  } finally {
+    cleanupTempDir(tmp);
+  }
+});
+
+test("RUBRIC_ID_MISMATCH: a wrong skill with a correct rubric_id is rejected, and only that", () => {
+  const tmp = createTempDir();
+  try {
+    const doc = makeConformingRubric("codehealth");
+    doc.skill = "not-codehealth";
+    const { errors } = runOneRubric(tmp, "codehealth", doc);
+    assert.deepEqual(errors.map((e) => e.code), ["RUBRIC_ID_MISMATCH"]);
+    assert.match(errors[0].detail, /not-codehealth/);
+  } finally {
+    cleanupTempDir(tmp);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// 9. RUBRIC_SCENARIO_MISSING
+// ---------------------------------------------------------------------------
+
+test("RUBRIC_SCENARIO_MISSING: a scenario naming no file under scenarioRoot is rejected, and only that", () => {
+  const tmp = createTempDir();
+  try {
+    const doc = makeConformingRubric("codehealth");
+    doc.scenario = "no-such-scenario";
+    const { errors } = runOneRubric(tmp, "codehealth", doc);
+    assert.deepEqual(errors.map((e) => e.code), ["RUBRIC_SCENARIO_MISSING"]);
+    assert.match(errors[0].detail, /no-such-scenario/);
+  } finally {
+    cleanupTempDir(tmp);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// 10. RUBRIC_SOURCE_PATH_ESCAPE
+// ---------------------------------------------------------------------------
+
+test("RUBRIC_SOURCE_PATH_ESCAPE: an artifact: source escaping fixture_root is rejected before existence", () => {
+  const tmp = createTempDir();
+  try {
+    mkdirSync(join(tmp, "project"), { recursive: true });
+    const doc = makeConformingRubric("codehealth");
+    doc.required_elements[0].source = "artifact: ../../../../etc/definitely-not-here";
+    const { errors } = runOneRubric(tmp, "codehealth", doc);
+    assert.deepEqual(errors.map((e) => e.code), ["RUBRIC_SOURCE_PATH_ESCAPE"]);
+    assert.match(errors[0].detail, /definitely-not-here/);
+  } finally {
+    cleanupTempDir(tmp);
+  }
+});
+
+test("RUBRIC_SOURCE_PATH_ESCAPE: a scenario value escaping scenarioRoot is rejected, and only that", () => {
+  const tmp = createTempDir();
+  try {
+    const doc = makeConformingRubric("codehealth");
+    doc.scenario = "../../../../etc/passwd";
+    const { errors } = runOneRubric(tmp, "codehealth", doc);
+    assert.deepEqual(errors.map((e) => e.code), ["RUBRIC_SOURCE_PATH_ESCAPE"]);
+    assert.match(errors[0].detail, /passwd/);
+  } finally {
+    cleanupTempDir(tmp);
+  }
+});
+
+test("RUBRIC_SOURCE_PATH_ESCAPE: a symlinked fixture_root does not falsely report a legitimate artifact as escaping", () => {
+  const tmp = createTempDir();
+  try {
+    // The base is reached through a symlink — the same shape a macOS temp
+    // root has via /var -> /private/var. A candidate real-pathed through it
+    // must still compare as contained once the base is real-pathed too.
+    const realProject = join(tmp, "real-project");
+    mkdirSync(realProject, { recursive: true });
+    writeFileSync(join(realProject, "docs-architecture.md"), "# architecture\n");
+    symlinkSync(realProject, join(tmp, "project"));
+
+    const doc = makeConformingRubric("codehealth");
+    doc.required_elements[0].source = "artifact: docs-architecture.md";
+    const { errors } = runOneRubric(tmp, "codehealth", doc);
+    assert.deepEqual(errors, [], "a legitimate in-base path must not be reported as an escape");
+  } finally {
+    cleanupTempDir(tmp);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// 11. RUBRIC_ELEMENT_FLOOR
+// ---------------------------------------------------------------------------
+
+test("RUBRIC_ELEMENT_FLOOR: 4 required_elements is rejected, and only that", () => {
+  const tmp = createTempDir();
+  try {
+    const doc = makeConformingRubric("codehealth");
+    doc.required_elements = makeElements(4);
+    const { errors } = runOneRubric(tmp, "codehealth", doc);
+    assert.deepEqual(errors.map((e) => e.code), ["RUBRIC_ELEMENT_FLOOR"]);
+    assert.match(errors[0].detail, /\b4\b/);
+  } finally {
+    cleanupTempDir(tmp);
+  }
+});
+
+test("RUBRIC_ELEMENT_FLOOR: 2 quality_dimensions is rejected, and only that", () => {
+  const tmp = createTempDir();
+  try {
+    const doc = makeConformingRubric("codehealth");
+    doc.quality_dimensions = makeCriteria(2);
+    const { errors } = runOneRubric(tmp, "codehealth", doc);
+    assert.deepEqual(errors.map((e) => e.code), ["RUBRIC_ELEMENT_FLOOR"]);
+    assert.match(errors[0].detail, /\b2\b/);
+  } finally {
+    cleanupTempDir(tmp);
+  }
+});
+
+test("RUBRIC_ELEMENT_FLOOR: 7 quality_dimensions is rejected, and only that", () => {
+  const tmp = createTempDir();
+  try {
+    const doc = makeConformingRubric("codehealth");
+    doc.quality_dimensions = makeCriteria(7);
+    const { errors } = runOneRubric(tmp, "codehealth", doc);
+    assert.deepEqual(errors.map((e) => e.code), ["RUBRIC_ELEMENT_FLOOR"]);
+    assert.match(errors[0].detail, /\b7\b/);
+  } finally {
+    cleanupTempDir(tmp);
+  }
+});
+
+test("RUBRIC_ELEMENT_FLOOR: the boundary values 5 elements and 3 criteria (the baseline) are accepted", () => {
+  const tmp = createTempDir();
+  try {
+    const { errors } = runOneRubric(tmp, "codehealth", makeConformingRubric("codehealth"));
+    assert.deepEqual(errors.filter((e) => e.code === "RUBRIC_ELEMENT_FLOOR"), []);
+  } finally {
+    cleanupTempDir(tmp);
+  }
+});
+
+test("RUBRIC_ELEMENT_FLOOR: the boundary value 6 criteria is accepted", () => {
+  const tmp = createTempDir();
+  try {
+    const doc = makeConformingRubric("codehealth");
+    doc.quality_dimensions = makeCriteria(6);
+    const { errors } = runOneRubric(tmp, "codehealth", doc);
+    assert.deepEqual(errors, []);
+  } finally {
+    cleanupTempDir(tmp);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// 12. RUBRIC_EXCEPTION_ID_MALFORMED
+// ---------------------------------------------------------------------------
+
+test("RUBRIC_EXCEPTION_ID_MALFORMED: a malformed baseline_exception_issue is rejected, and only that", () => {
+  const tmp = createTempDir();
+  try {
+    const doc = makeConformingRubric("codehealth");
+    doc.baseline_exception_issue = "ISSUE-1"; // fails: must start with a lowercase letter
+    const { errors } = runOneRubric(tmp, "codehealth", doc);
+    assert.deepEqual(errors.map((e) => e.code), ["RUBRIC_EXCEPTION_ID_MALFORMED"]);
+    assert.match(errors[0].detail, /baseline_exception_issue/);
+  } finally {
+    cleanupTempDir(tmp);
+  }
+});
+
+test("RUBRIC_EXCEPTION_ID_MALFORMED: a malformed spec_behaviour_gap_issue is rejected, and only that", () => {
+  const tmp = createTempDir();
+  try {
+    const doc = makeConformingRubric("codehealth");
+    // Unquoted in the rendered YAML, this reparses as a Number, not a string —
+    // exactly the "bare digit ... reparsing as a non-string" failure the rule exists to catch.
+    doc.spec_behaviour_gap_issue = 123;
+    const { errors } = runOneRubric(tmp, "codehealth", doc);
+    assert.deepEqual(errors.map((e) => e.code), ["RUBRIC_EXCEPTION_ID_MALFORMED"]);
+    assert.match(errors[0].detail, /spec_behaviour_gap_issue/);
+  } finally {
+    cleanupTempDir(tmp);
+  }
+});
+
+test("RUBRIC_EXCEPTION_ID_MALFORMED: absent keys do not fire — present-and-malformed, not required", () => {
+  const tmp = createTempDir();
+  try {
+    const doc = makeConformingRubric("codehealth"); // declares neither key
+    const { errors } = runOneRubric(tmp, "codehealth", doc);
+    assert.deepEqual(errors.filter((e) => e.code === "RUBRIC_EXCEPTION_ID_MALFORMED"), []);
+  } finally {
+    cleanupTempDir(tmp);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// 13. RUBRIC_TWIN_UNCITED
+// ---------------------------------------------------------------------------
+
+test("RUBRIC_TWIN_UNCITED: PV-03 cited alone is rejected, and only that", () => {
+  const tmp = createTempDir();
+  try {
+    const doc = makeConformingRubric("codehealth");
+    doc.required_elements[0].source = "skill-regression:PV-03";
+    const { errors } = runOneRubric(tmp, "codehealth", doc);
+    assert.deepEqual(errors.map((e) => e.code), ["RUBRIC_TWIN_UNCITED"]);
+    assert.match(errors[0].detail, /PV-03/);
+  } finally {
+    cleanupTempDir(tmp);
+  }
+});
+
+test("RUBRIC_TWIN_UNCITED: PV-03 cited with the wrong twin KC-04 is rejected, and only that", () => {
+  const tmp = createTempDir();
+  try {
+    const doc = makeConformingRubric("codehealth");
+    doc.required_elements[0].source = "skill-regression:PV-03";
+    doc.required_elements[1].source = "skill-regression:KC-04";
+    const { errors } = runOneRubric(tmp, "codehealth", doc);
+    assert.deepEqual(errors.map((e) => e.code), ["RUBRIC_TWIN_UNCITED"]);
+    assert.match(errors[0].detail, /PV-03/);
+  } finally {
+    cleanupTempDir(tmp);
+  }
+});
+
+test("RUBRIC_TWIN_UNCITED: PV-03 cited with its correct twin KC-03 is accepted", () => {
+  const tmp = createTempDir();
+  try {
+    const doc = makeConformingRubric("codehealth");
+    doc.required_elements[0].source = "skill-regression:PV-03";
+    doc.required_elements[1].source = "skill-regression:KC-03";
+    const { errors } = runOneRubric(tmp, "codehealth", doc);
+    assert.deepEqual(errors, []);
   } finally {
     cleanupTempDir(tmp);
   }
