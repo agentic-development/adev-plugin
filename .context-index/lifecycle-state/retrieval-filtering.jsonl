@@ -1,0 +1,1 @@
+{"event":"debug_intervention","kind":"debug","note":"heuristics.injection_limit was never read; threaded manifest into retrieveHeuristics via resolveInjectionLimit (mirrors resolveErrorInjectionLimit). Tier-cascade left to PR #354.","ts":"2026-08-24T08:14:35.863Z"}
