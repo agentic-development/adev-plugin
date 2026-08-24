@@ -2028,6 +2028,7 @@ const VERB_REGISTRY = new Map([
   ["test-helpers",    () => import("../lib/cli/test-helpers.mjs")],
   ["coordination",    () => import("../lib/cli/coordination.mjs")],
   ["test-debt",       () => import("../lib/cli/test-debt.mjs")],
+  ["repomap",         () => import("../lib/cli/repomap.mjs")],
 ]);
 
 // Strip ANSI color codes from messages before printing to stdout/stderr
