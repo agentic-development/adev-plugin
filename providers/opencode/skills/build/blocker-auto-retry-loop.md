@@ -10,7 +10,7 @@ Full instructions for `skills/build/SKILL.md` Step 1's Blocker handling. Loaded 
 
 1. **Read the latest review verdict** from `currentState(spec).steps.review.byRevision[N]` (the per-revision projection).
 2. **Read `<spec-stem>.review.md` + `<spec-stem>.blockers.md`** — the canonical sidecars written by `/adev:review-specs` Step 6b-bis, keyed by canonical `blocker_id`.
-3. **Detect legacy reviewer output:** if any BLOCK finding in `.review.md` is missing the `blocker_id` field (pre-Task-6 reviewer), fall through to the sidecar+fail-loud path below. Log `LEGACY_REVIEWER_OUTPUT`. Do NOT auto-retry — the loop requires canonical IDs to detect convergence.
+3. **Detect unusable reviewer output:** `/adev:review-specs` Step 6b-bis already excludes any individual finding lacking a valid `blocker_id` from `.blockers.md` at write time (its own per-finding `LEGACY_REVIEWER_OUTPUT`/`INVALID_BLOCKER_ID` advisory) — a reviewer partially malforming *some* findings does NOT by itself disqualify the cycle; the malformed ones are already gone from `.blockers.md`, and whatever well-formed entries remain are exactly what step 4 below acts on, unmodified. Check `.blockers.md`'s actual content, not `.review.md`: if it contains at least one entry, proceed to step 4. Only fall through to the sidecar+fail-loud path (logging `LEGACY_REVIEWER_OUTPUT`) when `.blockers.md` is empty despite `.review.md` recording verdict BLOCK — every finding this round was unusable and there is nothing left to auto-retry on.
 4. **Branch on `finding_class`** — get the breakdown before dispatching any authoring:
 
    ```bash
