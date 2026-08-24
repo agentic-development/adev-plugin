@@ -155,17 +155,24 @@ test("the default rubric roots are non-vacuous — the scan reaches skills/eval/
  * extended this list in the same commit that created it.
  *
  * The plan's Task 5 says thirty-two, counting the spec's Required Files table
- * minus README.md. With Task 6's README the tree holds thirty-four, because
+ * minus README.md. With Task 6's README the tree held thirty-four, because
  * Task 4's review round
  * added `project/tests/rates.test.mjs` — the dirty slice was shipping
  * implemented code with no tests, a shape asymmetry a rubric could score
  * instead of the planted defect — and the spec's Required Files table was not
  * extended with it. This list is pinned to the TREE, which is what the
  * both-ways comparison is for; the table is the artifact that is behind.
+ *
+ * `rubric-set-change-imminent.spec.md` Task 1 added `tiers.yaml` at the
+ * fixture directory's root (sibling to `catalog.yaml` and `README.md`, not
+ * under `project/` — it declares tier membership for the fixture's own
+ * consumers, not fixture content), taking the count from thirty-four to
+ * thirty-five.
  */
 const REQUIRED_FIXTURE_FILES = Object.freeze([
   "README.md",
   "catalog.yaml",
+  "tiers.yaml",
   "project/AGENTS.md",
   "project/CLAUDE.md",
   "project/docs/api.md",
@@ -208,7 +215,11 @@ test("Required Files is enumerated both ways — every pinned path exists and th
   // tree without reaching the spec's Required Files table.
   const onDisk = walkFiles(FIXTURE_DIR).sort();
   assert.deepEqual(onDisk, [...REQUIRED_FIXTURE_FILES].sort());
-  assert.equal(REQUIRED_FIXTURE_FILES.length, 34, "Task 6's README.md took the count from 33 to 34");
+  assert.equal(
+    REQUIRED_FIXTURE_FILES.length,
+    35,
+    "Task 6's README.md took the count from 33 to 34; rubric-set-change-imminent Task 1's tiers.yaml took it to 35",
+  );
   assert.ok(REQUIRED_FIXTURE_FILES.includes("README.md"), "Task 6's README.md must be registered here");
 });
 
