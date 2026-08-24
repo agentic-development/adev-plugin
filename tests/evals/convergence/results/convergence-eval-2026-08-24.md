@@ -1,6 +1,6 @@
 # Review-Block Auto-Retry Convergence Eval
 
-**Date:** 2026-08-23
+**Date:** 2026-08-24
 **Fixture:** tests/evals/integration-sandbox/.context-index/specs/cross-cutting/broken-loop-fixture.spec.md
 **Spec under test:** review-block-auto-retry.spec.md (base) / review-block-auto-retry-rev-2-targeted-author-verify-loop.spec.md (amendment)
 **Tier:** full  **Samples/arm:** 2
@@ -11,13 +11,13 @@ Real `/adev:build --full --auto` sessions — real reviewer dispatch (referent-i
 
 | Arm | Cycles | Reviewer dispatches | Cost | Tokens (median) | DECISION_REQUIRED halts | EXTERNAL_REMEDY exits | Failed trials |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| baseline | 1.5 (±1.0) | 12.5 (±5.0) | $18.194 (±$6.705) | 31,790,422 | 0 | 0 | 0/2 |
-| treatment | 2.0 (±0.0) | 15.0 (±0.0) | $29.814 (±$4.531) | 49,921,277 | 0 | 0 | 0/2 |
+| baseline | 1.0 (±0.0) | 10.0 (±0.0) | $21.224 (±$1.068) | 40,023,875 | 0 | 0 | 0/2 |
+| treatment | 0.5 (±1.0) | 7.5 (±5.0) | $17.203 (±$14.654) | 31,932,201 | 0 | 0 | 0/2 |
 
 Baseline verdicts: BLOCK, BLOCK
 Treatment verdicts: BLOCK, BLOCK
 
-**Cycles Δ:** 33%  **Cost Δ:** 64%
+**Cycles Δ:** -50%  **Cost Δ:** -19%
 
 ## Methodology
 
