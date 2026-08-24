@@ -8,7 +8,9 @@
       "bump-minor-pre-major": true,
       "bump-patch-for-minor-pre-major": true,
       "draft": false,
-      "prerelease": false,
+      "prerelease": true,
+      "prerelease-type": "next",
+      "versioning": "prerelease",
       "extra-files": [
         ".claude-plugin/plugin.json",
         ".cursor-plugin/plugin.json"
