@@ -27,8 +27,12 @@
  * `RUBRIC_TWIN_UNCITED`. Proven on synthetic roots only, for the same reason
  * as `RUBRIC_TIER_UNCOVERED`.
  *
- * The remaining code, `RUBRIC_SCENARIO_STEP_MISSING`, is declared in the
- * registry but has no branch here yet; Task 3 adds it to this same file.
+ * Task 3 adds the eleventh and last, `RUBRIC_SCENARIO_STEP_MISSING` — the
+ * only rule that reads markdown rather than YAML, driven by `TOKEN_TABLE`,
+ * a twenty-row `{ token, scope }` table declared as data below. Proven per
+ * TOKEN BRANCH, not per rule, and on synthetic roots only: the real
+ * `tests/evals/skill-regression/scenarios/` tree is legitimately empty at
+ * this task's landing state.
  */
 
 import assert from "node:assert/strict";
@@ -62,7 +66,7 @@ const EXCEPTION_ID_RE = /^[a-z][a-z0-9-]*-[0-9a-z]+$/;
 /** An exact `skill-regression:PV-nn` or `skill-regression:KC-nn` citation, and nothing else. */
 const SKILL_REGRESSION_CITATION_RE = /^skill-regression:(PV-\d+|KC-\d+)$/;
 
-/** Ten of the eleven codes with an implemented branch as of Task 2; only `RUBRIC_SCENARIO_STEP_MISSING` (Task 3) remains. */
+/** All eleven codes have an implemented branch as of Task 3. */
 const IMPLEMENTED_CODES = Object.freeze([
   "RUBRIC_TIER_INCOMPLETE",
   "RUBRIC_TIER_ORPHAN",
@@ -74,7 +78,74 @@ const IMPLEMENTED_CODES = Object.freeze([
   "RUBRIC_ELEMENT_FLOOR",
   "RUBRIC_EXCEPTION_ID_MALFORMED",
   "RUBRIC_TWIN_UNCITED",
+  "RUBRIC_SCENARIO_STEP_MISSING",
 ]);
+
+/**
+ * The twenty token-branches `RUBRIC_SCENARIO_STEP_MISSING` checks for,
+ * declared as data — `{ token, scope }`, where `scope` is `'every'` (every
+ * scenario file), `'prototype'` (only `prototype.md`), or an array of slugs
+ * (only scenario files whose basename is one of them). Both the checking
+ * loop in `checkRubricSet` and the rejecting-input loop in section 14 below
+ * drive off this ONE array — adding a row adds both a check and a rejecting
+ * case, which is what keeps the per-token-branch obligation from drifting.
+ *
+ * The check below is LITERAL SUBSTRING PRESENCE, never meaning: a scenario
+ * naming every required step in the wrong order still passes. That is the
+ * honest limit of a static check over prose.
+ */
+const TOKEN_TABLE = Object.freeze([
+  { token: "createTempGitRepo", scope: "every" },
+  { token: "flat copy of fixture_root contents into <copy-root>", scope: "every" },
+  { token: "tasks.db_path", scope: "every" },
+  { token: "cwd: realpath(<copy-root>)", scope: "every" },
+  { token: "isContained under <copy-root>", scope: "every" },
+  { token: "artifact: sources re-resolved under <copy-root> after the run", scope: "every" },
+  {
+    token: "outputs/ from its own mkdtempSync, beside <copy-root>, outside every worktree root and outside the copy",
+    scope: "every",
+  },
+  { token: "copy root matches ^[A-Za-z0-9._/-]+$ before any typed command", scope: "every" },
+  { token: "teardown deletes only the two mkdtempSync-returned roots", scope: "every" },
+  { token: "tasks.backend: json survives the splice, and the manifest's comments survive it", scope: "every" },
+  { token: "db_path read back as <copy-root>", scope: "every" },
+  { token: "no infra_requirements: in the copy", scope: "every" },
+  { token: "no .claude/ or .mcp.json anywhere under <copy-root>", scope: "every" },
+  { token: "git status and rev-parse HEAD equality at every worktree root", scope: "every" },
+  { token: "kill <recorded-pid>", scope: "prototype" },
+  { token: "loopback", scope: "prototype" },
+  { token: "recorded PID and bound port each match ^[0-9]+$ before any typed command", scope: "prototype" },
+  { token: "no listener on <port> after teardown", scope: "prototype" },
+  { token: "scored tier: non-functional", scope: "prototype" },
+  { token: "ADEV_NO_INFRA=1 in the step's own env", scope: ["build", "work"] },
+]);
+
+/**
+ * Whether TOKEN_TABLE row `scope` selects a scenario file's bare slug —
+ * `'every'` selects unconditionally, `'prototype'` selects only the literal
+ * slug `prototype`, and an array selects by membership.
+ *
+ * @param {'every'|'prototype'|string[]} scope
+ * @param {string} slug - a scenario file's basename with `.md` stripped
+ * @returns {boolean}
+ */
+function scopeSelects(scope, slug) {
+  if (scope === "every") return true;
+  if (scope === "prototype") return slug === "prototype";
+  if (Array.isArray(scope)) return scope.includes(slug);
+  return false;
+}
+
+/**
+ * The TOKEN_TABLE rows applicable to `slug` — used both to render a fully
+ * conforming scenario file and, with one row removed, a rejecting one.
+ *
+ * @param {string} slug
+ * @returns {Array<{token: string, scope: string|string[]}>}
+ */
+function tokensFor(slug) {
+  return TOKEN_TABLE.filter((row) => scopeSelects(row.scope, slug));
+}
 
 /**
  * Every top-level key of a parsed `tiers.yaml` except `landed` — a bucket key.
@@ -104,11 +175,6 @@ export function checkRubricSet({
   scenarioRoot = DEFAULT_SCENARIO_ROOT,
   skillsRoot = DEFAULT_SKILLS_ROOT,
 } = {}) {
-  // scenarioRoot is accepted now (the contract fixes the four-argument
-  // shape) but unused until Tasks 2/3 add RUBRIC_SCENARIO_MISSING and
-  // RUBRIC_SCENARIO_STEP_MISSING, whose rules read it.
-  void scenarioRoot;
-
   const errors = [];
   const checked = new Set();
   const fail = (code, detail) => {
@@ -393,6 +459,34 @@ export function checkRubricSet({
     }
   }
 
+  // --- RUBRIC_SCENARIO_STEP_MISSING ------------------------------------------
+  // The only rule in the set that reads markdown, not YAML, and is decided
+  // independently of the rubrics loaded above: for every `scenarioRoot/*.md`
+  // file, every TOKEN_TABLE row whose scope selects that file's slug must
+  // appear as a literal substring somewhere in the file. LITERAL SUBSTRING
+  // PRESENCE, never meaning — a scenario naming every step in the wrong
+  // order still passes. That is the honest limit of a static check over
+  // prose.
+  checked.add("RUBRIC_SCENARIO_STEP_MISSING");
+  let scenarioFiles = [];
+  try {
+    scenarioFiles = readdirSync(scenarioRoot).filter((f) => f.endsWith(".md"));
+  } catch {
+    // scenarioRoot does not exist yet — expands to nothing, the same
+    // convention rubricFiles above uses for rubricRoot.
+    scenarioFiles = [];
+  }
+  for (const file of scenarioFiles) {
+    const slug = file.slice(0, -".md".length);
+    const content = readFileSync(join(scenarioRoot, file), "utf8");
+    for (const row of TOKEN_TABLE) {
+      if (!scopeSelects(row.scope, slug)) continue;
+      if (!content.includes(row.token)) {
+        fail("RUBRIC_SCENARIO_STEP_MISSING", `scenario "${file}" is missing required step token "${row.token}"`);
+      }
+    }
+  }
+
   return { errors, checked };
 }
 
@@ -423,9 +517,10 @@ test("RUBRIC_COVERAGE_ERROR_CODES holds exactly the eleven documented codes, fro
 });
 
 test("every implemented rule's checked counter was reached", () => {
-  // Ten of the eleven codes have branches as of Task 2; asserting
-  // RUBRIC_SCENARIO_STEP_MISSING too would be asserting code that does not
-  // exist yet (Task 3).
+  // All eleven codes have branches as of Task 3 — the real scenarioRoot
+  // being legitimately empty at this landing state does not stop
+  // RUBRIC_SCENARIO_STEP_MISSING's `checked.add` from running; it only
+  // means the loop it guards iterates zero files.
   const { checked } = checkRubricSet();
   for (const code of IMPLEMENTED_CODES) {
     assert.ok(
@@ -939,9 +1034,12 @@ function renderRubricYaml(doc) {
 /**
  * Build a complete, otherwise-conforming harness for one shared-contract rule
  * case: a single-bucket `tiers.yaml`, a matching `skills/<slug>/` directory,
- * an empty `rubrics/` directory, and a `scenarios/<slug>.md` file so
- * `RUBRIC_SCENARIO_MISSING` never fires as background noise in a case that is
- * not testing it.
+ * an empty `rubrics/` directory, and a `scenarios/<slug>.md` file carrying
+ * every TOKEN_TABLE token `slug` requires — so neither `RUBRIC_SCENARIO_MISSING`
+ * nor `RUBRIC_SCENARIO_STEP_MISSING` (Task 3) fires as background noise in a
+ * case that is not testing either of them. `renderScenarioBody`/`tokensFor`
+ * are defined later in this file (section 14) but, as top-level function
+ * declarations, are hoisted and callable here.
  *
  * @param {string} tmp - a directory from `createTempDir()`
  * @param {string} slug - bare skill slug
@@ -956,7 +1054,7 @@ function buildHarness(tmp, slug) {
   mkdirSync(rubricRoot, { recursive: true });
   const scenarioRoot = join(tmp, "scenarios");
   mkdirSync(scenarioRoot, { recursive: true });
-  writeFileSync(join(scenarioRoot, `${slug}.md`), `# ${slug} scenario\n`);
+  writeFileSync(join(scenarioRoot, `${slug}.md`), renderScenarioBody(tokensFor(slug)));
   return { tiersPath, rubricRoot, scenarioRoot, skillsRoot };
 }
 
@@ -1242,3 +1340,134 @@ test("RUBRIC_TWIN_UNCITED: PV-03 cited with its correct twin KC-03 is accepted",
     cleanupTempDir(tmp);
   }
 });
+
+// ---------------------------------------------------------------------------
+// 14. RUBRIC_SCENARIO_STEP_MISSING — twenty token branches (Task 3)
+// ---------------------------------------------------------------------------
+
+/**
+ * A minimal harness for RUBRIC_SCENARIO_STEP_MISSING alone: a valid
+ * single-bucket `tiers.yaml`, a matching `skills/` directory, an empty
+ * `rubrics/` directory, and an empty `scenarios/` directory for the caller to
+ * populate. RUBRIC_SCENARIO_STEP_MISSING's own branch is decided entirely by
+ * `scenarioRoot`'s `*.md` files, independent of `tiersPath`/`rubricRoot`/
+ * `skillsRoot` — so every test below filters `errors` down to this rule's own
+ * code rather than asserting on the full list, exactly like the other ten
+ * rules' sections do when a shared harness necessarily also exercises them.
+ *
+ * @param {string} tmp - a directory from `createTempDir()`
+ * @returns {{tiersPath: string, rubricRoot: string, scenarioRoot: string, skillsRoot: string}}
+ */
+function buildScenarioOnlyHarness(tmp) {
+  const tiersPath = join(tmp, "tiers.yaml");
+  writeFileSync(tiersPath, ['landed: "b1"', 'b1: "codehealth"'].join("\n") + "\n");
+  const skillsRoot = join(tmp, "skills");
+  mkdirSync(join(skillsRoot, "codehealth"), { recursive: true });
+  const rubricRoot = join(tmp, "rubrics");
+  mkdirSync(rubricRoot, { recursive: true });
+  const scenarioRoot = join(tmp, "scenarios");
+  mkdirSync(scenarioRoot, { recursive: true });
+  return { tiersPath, rubricRoot, scenarioRoot, skillsRoot };
+}
+
+/**
+ * Render a scenario markdown body carrying every token in `tokens`, one per
+ * bullet — order does not matter to the rule (LITERAL SUBSTRING PRESENCE
+ * only), so a bulleted list is as good as prose here and far easier to build.
+ *
+ * @param {Array<{token: string}>} tokens
+ * @returns {string}
+ */
+function renderScenarioBody(tokens) {
+  return `# scenario\n\n${tokens.map((row) => `- ${row.token}`).join("\n")}\n`;
+}
+
+test("TOKEN_TABLE holds exactly 20 rows — a silently deleted row must go red here first", () => {
+  assert.equal(TOKEN_TABLE.length, 20);
+});
+
+test("RUBRIC_SCENARIO_STEP_MISSING: conforming scenario files for an ordinary, prototype, and synthetic build slug are accepted", () => {
+  const tmp = createTempDir();
+  try {
+    const harness = buildScenarioOnlyHarness(tmp);
+    // "build" is a synthetic build-shaped fixture: neither `build` nor `work`
+    // is authored by this tier, so its only real input here is this one.
+    for (const slug of ["codehealth", "prototype", "build"]) {
+      writeFileSync(join(harness.scenarioRoot, `${slug}.md`), renderScenarioBody(tokensFor(slug)));
+    }
+    assert.equal(
+      readdirSync(harness.scenarioRoot).filter((f) => f.endsWith(".md")).length,
+      3,
+      "precondition: all three synthetic scenario files must be present before checkRubricSet is asked to glob them",
+    );
+    const { errors } = checkRubricSet(harness);
+    assert.deepEqual(errors.filter((e) => e.code === "RUBRIC_SCENARIO_STEP_MISSING"), []);
+  } finally {
+    cleanupTempDir(tmp);
+  }
+});
+
+test("RUBRIC_SCENARIO_STEP_MISSING: an empty scenarioRoot glob is the non-emptiness failure mode, not a vacuous pass", () => {
+  // The second harness probe from the plan's falsification step: a token
+  // check over zero files passes vacuously — the exact anti-pattern being
+  // guarded against — so this asserts the precondition itself fails here,
+  // never that checkRubricSet silently reports zero errors.
+  const tmp = createTempDir();
+  try {
+    const harness = buildScenarioOnlyHarness(tmp);
+    assert.equal(readdirSync(harness.scenarioRoot).filter((f) => f.endsWith(".md")).length, 0);
+    const err = captureThrow(() =>
+      assert.ok(
+        readdirSync(harness.scenarioRoot).filter((f) => f.endsWith(".md")).length > 0,
+        "precondition: scenarioRoot must be non-empty before checkRubricSet is asked to glob it",
+      ),
+    );
+    assert.equal(err.code, "ERR_ASSERTION");
+    // And distinctly: the token loop itself passes vacuously over the same
+    // empty root — proving the two failure modes are different, not that
+    // either is acceptable on its own.
+    const { errors } = checkRubricSet(harness);
+    assert.deepEqual(errors.filter((e) => e.code === "RUBRIC_SCENARIO_STEP_MISSING"), []);
+  } finally {
+    cleanupTempDir(tmp);
+  }
+});
+
+for (const [index, row] of TOKEN_TABLE.entries()) {
+  test(`RUBRIC_SCENARIO_STEP_MISSING: row ${index + 1} — omitting "${row.token}" fires, naming only it`, () => {
+    const tmp = createTempDir();
+    try {
+      const harness = buildScenarioOnlyHarness(tmp);
+      // The representative slug this row's scope resolves to: 'every' picks
+      // an ordinary skill slug, 'prototype' picks itself, and the
+      // build/work slug list picks its first member — the synthetic
+      // build-shaped fixture the plan calls for, since neither `build` nor
+      // `work` is authored by this tier.
+      const slug = row.scope === "prototype" ? "prototype" : Array.isArray(row.scope) ? row.scope[0] : "codehealth";
+      // Every OTHER token applicable to this slug stays present — omitting
+      // more than the one target token would prove nothing about this row
+      // specifically.
+      const tokens = tokensFor(slug).filter((candidate) => candidate !== row);
+      assert.equal(
+        tokens.length,
+        tokensFor(slug).length - 1,
+        "precondition: exactly the target row was removed from this slug's applicable set",
+      );
+      writeFileSync(join(harness.scenarioRoot, `${slug}.md`), renderScenarioBody(tokens));
+      assert.equal(
+        readdirSync(harness.scenarioRoot).filter((f) => f.endsWith(".md")).length,
+        1,
+        "precondition: exactly one synthetic scenario file is present",
+      );
+      const { errors } = checkRubricSet(harness);
+      const missing = errors.filter((e) => e.code === "RUBRIC_SCENARIO_STEP_MISSING");
+      assert.equal(missing.length, 1, `row ${index + 1} must fire exactly once, naming only the omitted token`);
+      assert.ok(
+        missing[0].detail.includes(row.token),
+        `row ${index + 1}'s error detail must literally name the omitted token`,
+      );
+    } finally {
+      cleanupTempDir(tmp);
+    }
+  });
+}
