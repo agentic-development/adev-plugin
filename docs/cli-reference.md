@@ -648,6 +648,8 @@ They write to different stores. `adev issues epic` writes the **epic store**, an
 
 **Always create through this verb, never through the backend binary.** `br create` resolves `.beads/` from the current directory, and `git worktree add` materialises the git-tracked `issues.jsonl` into every linked worktree while the gitignored `beads.db` stays behind — so a raw `br` call from a worktree opens a JSONL with no database beside it and fails with `SYNC_CONFLICT`. `adev issues create` resolves the storage root through `resolveStorageRoot()` (the git common dir) and reaches the one real board from anywhere in the repo. Plan tasks are not issues — they live in the lifecycle log via `reportPlanTask` — so there is no `--plan-task` flag.
 
+`adev issues epic list [--milestone <name>] [--json]` enumerates the epic store instead of creating a record — read-only, matching the naming of `board`/`list`/`ready`/`stale`. `list` is therefore reserved: `adev issues epic "<title>" --plan-ref <path>` and every other title keep working exactly as documented above, but a bare `adev issues epic list` no longer mints an epic literally titled "list".
+
 Claims are **leases**, not locks: they expire after `tasks.claim_ttl_minutes` (default `240`, `0` disables expiry), and claiming an issue whose lease has expired takes it over and reports the displaced owner. Without expiry a crashed session would hold an issue forever, and an unreleasable gate is one people learn to bypass.
 
 #### Issue IDs are merge-safe
