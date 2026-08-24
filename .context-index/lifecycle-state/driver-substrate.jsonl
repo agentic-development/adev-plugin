@@ -58,3 +58,4 @@
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T17:21:03.496Z","ts":"2026-05-20T17:21:03.496Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T17:21:19.828Z","ts":"2026-05-20T17:21:19.828Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T17:21:37.152Z","ts":"2026-05-20T17:21:37.152Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"debug_intervention","kind":"debug","note":"dispatch() called process.exit() before pending stdout drained on a piped fd, truncating --json output at 64 KiB; switched to process.exitCode + natural exit","ts":"2026-08-24T07:13:26.992Z"}
