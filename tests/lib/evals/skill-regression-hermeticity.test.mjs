@@ -11,12 +11,12 @@
  * stable so a reader can map a test to a spec row without a translation table.
  *
  *   present: 1, 2, 3, 4 (Task 1), 5, 7 (Task 2), 6, 9 (Task 3),
- *            10, 11 (Task 8)
- *   pending: none — all eleven Hermeticity Rules rows are covered.
+ *            10, 11 (Task 8), 12
+ *   pending: none — all twelve Hermeticity Rules rows are covered.
  *
  * The convention held while rows were outstanding: a pending property was
  * deliberately ABSENT rather than stubbed, because a stubbed property reads as
- * covered. Keep that rule if the spec ever grows a twelfth row.
+ * covered. Keep that rule if the spec ever grows a thirteenth row.
  *
  * Not every test is a numbered property. Task 2 added five unnumbered ones
  * covering the config layer — banned governance keys, banned governance files,
@@ -920,6 +920,52 @@ test("hermeticity property 9 — the required instruction files exist and no mar
     "no markdown under the fixture, and nothing within " +
       `${MAX_IMPORT_HOPS} hops of it, may carry an \`@\`-import — \`@../../../CLAUDE.md\` ` +
       "feeds this repository's own constitution to a driven skill",
+  );
+});
+
+/** Required agent instruction files — same set property 9 requires present. */
+const AGENT_FILES = ["CLAUDE.md", "AGENTS.md"];
+
+/** Fence info strings that read as a shell command to an agent, not as prose. */
+const SHELL_FENCE_LANGS = new Set(["bash", "sh", "shell", "zsh", "console"]);
+
+/**
+ * Fenced code blocks in `text` opened with a shell-language info string.
+ *
+ * Matches the OPENING fence only — the closing fence carries no info string,
+ * so it never matches `SHELL_FENCE_LANGS`. A fence tagged `js`, `yaml`, or
+ * left untagged documents something other than a command line and is left
+ * alone; the risk this property closes is a scenario agent reading fixture
+ * instruction text and running a fenced shell block as if it were a real
+ * instruction — the same threat model property 9 closes for `@`-imports.
+ *
+ * @param {string} text Raw file contents.
+ * @returns {Array<{lang: string, line: number}>}
+ */
+function shellFences(text) {
+  const re = /^```[ \t]*([A-Za-z0-9_-]*)[ \t]*\r?$/gm;
+  const found = [];
+  for (const m of text.matchAll(re)) {
+    const lang = m[1].toLowerCase();
+    if (SHELL_FENCE_LANGS.has(lang)) {
+      found.push({ lang, line: text.slice(0, m.index).split("\n").length });
+    }
+  }
+  return found;
+}
+
+test("hermeticity property 12 — no fenced shell/bash block in the fixture's agent instruction files", () => {
+  const found = [];
+  for (const rel of AGENT_FILES) {
+    const text = readFileSync(join(PROJECT, rel), "utf8");
+    for (const hit of shellFences(text)) found.push(`${rel}:${hit.line} (\`\`\`${hit.lang})`);
+  }
+  assert.deepEqual(
+    found,
+    [],
+    "a scenario agent reading CLAUDE.md/AGENTS.md as project context may run a fenced shell " +
+      "block as an actual instruction — ban the construct, not just the heading, the same way " +
+      "property 9 bans `@`-imports rather than trusting agents not to follow them",
   );
 });
 
@@ -2066,6 +2112,35 @@ test("falsification artifact — property 9's walk rejects a copy whose CLAUDE.m
     assert.ok(
       escapes.some((e) => e.includes("@../../../CLAUDE.md")),
       `the walk must name the planted import; reported: ${escapes.join(" | ")}`,
+    );
+  } finally {
+    cleanupTempDir(run.runRoot);
+  }
+});
+
+test("falsification artifact — property 12 rejects a copy whose CLAUDE.md carries a fenced bash block", () => {
+  const run = copyFixtureForRun();
+  try {
+    // Clean first: the copy is a byte copy of a tree property 12 passes on, so
+    // a scan reporting a hit here would be reporting its own bug.
+    const claudeMd = join(run.projectRoot, "CLAUDE.md");
+    assert.deepEqual(
+      shellFences(readFileSync(claudeMd, "utf8")),
+      [],
+      "the untouched copy must pass property 12's scan",
+    );
+
+    writeFileSync(claudeMd, `${readFileSync(claudeMd, "utf8")}\n\`\`\`bash\nrm -rf /\n\`\`\`\n`);
+
+    const found = shellFences(readFileSync(claudeMd, "utf8"));
+    assert.notDeepEqual(
+      found,
+      [],
+      "a fenced bash block added to the copy's CLAUDE.md did not fail property 12's scan",
+    );
+    assert.ok(
+      found.some((hit) => hit.lang === "bash"),
+      `the scan must report the planted fence's language; reported: ${JSON.stringify(found)}`,
     );
   } finally {
     cleanupTempDir(run.runRoot);
