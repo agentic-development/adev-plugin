@@ -285,6 +285,7 @@ adev boundaries check --json
 ```
 governance materialize --registry <review|diagnostics|gates> [--dry-run] [--json]
 governance drift [--registry <validate|review|diagnostics|gates>] [--json]
+governance migrate-gates [--dry-run] [--json]
 ```
 
 `validate.yaml` and `boundaries.yaml` are **exempt** (DDR-1): both are already explicit single-source registries, so naming either is refused. See [Governance](governance.md#materialized-registries-and-the-materialized_at-marker).
@@ -293,12 +294,15 @@ Materialization is **write-once**: a second run preserves the original stamp ver
 
 `governance drift` is Hygiene Audit Pass 19 — read-only, advisory, always exit 0 on a scan. It reports `hygiene/unadopted-upgrade` (info), `hygiene/project-addition` (info), `hygiene/disabled-bundled-entry` (WARN) and `hygiene/non-project-execution-field` (info). Field **names** are printed, never field values, and an unmaterialized marked registry is reported rather than read.
 
+`governance migrate-gates` rewrites legacy shell-string `command:` values in `governance/gates.yaml` to argv lists — the pre-v0.25.0 form that `mergeGates` (SEC-2) silently drops at load (`INVALID_GATE`). `adev upgrade` already runs this repair, but only when a project takes the `adev upgrade` path; a plugin-cache version bump never calls it. This verb is the same repair, reachable on its own. Exit 0 always (no file, nothing to migrate, or migrated); a command containing shell metacharacters is reported as `skipped`, never rewritten.
+
 **Example:**
 ```
 adev governance materialize --registry gates --dry-run
+adev governance migrate-gates --dry-run --json
 ```
 
-**Implementation:** `lib/cli/governance.mjs`. **Called by:** `/adev:init`, `/adev:hygiene` (Audit Pass 19).
+**Implementation:** `lib/cli/governance.mjs`. **Called by:** `/adev:init` (diagnostic mode's Gate Liveness check), `adev upgrade` (`cli/index.mjs::migrateLegacyGateCommands`, its own separate call site), `/adev:hygiene` (Audit Pass 19).
 
 ### `report`
 
