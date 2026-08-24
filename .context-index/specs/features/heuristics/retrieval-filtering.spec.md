@@ -45,9 +45,11 @@ This spec defines the retrieval policy that `/adev:implement` and `/adev:plan` f
 
 2. **When** both module-scoped and `_global` heuristics are returned **then** module-scoped entries sort before `_global` entries at the same confidence level (module relevance trumps global).
 
-3. **When** the merged result set exceeds the injection limit **then** the caller applies the budget cap: max 5 `high`-confidence entries plus max 3 `medium`-confidence entries (total default 8). `low`-confidence entries are never injected.
+3. **When** the merged result set exceeds the injection limit **then** the caller applies the budget cap: up to `highMax` `high`-confidence entries (5 by default) plus up to `mediumMax` `medium`-confidence entries (3 by default, see Behavior 3a for reallocation), never exceeding the injection limit in total. `low`-confidence entries are never injected (the sole documented exemption is the exact-signature match in `signature-retrieval.spec.md`).
 
-4. **When** `manifest.yaml` contains a `heuristics.injection_limit` key **then** the caller uses that value as the total budget instead of the default 8. The split is: `highMax = ceil(limit * 5/8)`, `mediumMax = limit - highMax`. Reference values:
+3a. **When** the scope holds fewer `high`-confidence entries than `highMax` reserves **then** the unfilled `high` capacity folds into the `medium` budget for that call — `mediumBudget = mediumMax + (highMax - highFill)` where `highFill` is the number of available `high` entries capped at `highMax` — so a well-stocked `medium` tier is not artificially capped at the static `mediumMax` while `high` slots sit unused. Reallocation runs one direction only: unused `medium` capacity does **not** cascade into `low`. Behavior 3's `low` exclusion has no reallocation path regardless of how much budget goes unspent — that is a separate, still-open question about whether the `low` floor should exist at all. Example: `limit=8` with zero `high` entries and 8 `medium` entries returns all 8 as `medium`, not the 3 the static `mediumMax` alone would allow.
+
+4. **When** `manifest.yaml` contains a `heuristics.injection_limit` key **then** the caller uses that value as the total budget instead of the default 8. The split is: `highMax = ceil(limit * 5/8)`, `mediumMax = limit - highMax` (before Behavior 3a's reallocation). Reference values:
 
 | injection_limit | highMax | mediumMax |
 |-----------------|---------|-----------|
@@ -107,6 +109,7 @@ This spec defines the retrieval policy that `/adev:implement` and `/adev:plan` f
 
 - [ ] Retrieval protocol is documented in a form consumable by `/adev:implement` and `/adev:plan`
 - [ ] Budget cap defaults to 8 (5 high + 3 medium), configurable via `heuristics.injection_limit`
+- [ ] Unused `high` capacity reallocates to `medium` up to the combined budget (Behavior 3a); unused `medium` capacity does not cascade to `low`
 - [ ] `low`-confidence heuristics are never injected
 - [ ] Module-scoped heuristics sort before `_global` at the same confidence level
 - [ ] Injection limit of `0` disables injection with a logged advisory

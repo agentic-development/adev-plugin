@@ -1,0 +1,1 @@
+{"event":"debug_intervention","kind":"debug","note":"Fixed tier-cascade waste: unfilled 'high' budget now folds into 'medium' in retrieveHeuristics. Left the hardcoded 'low' floor (:1578) untouched per operator scope; /adev:learn default flipped low->medium (issue-6gyq1t).","ts":"2026-08-24T07:55:57.941Z"}
