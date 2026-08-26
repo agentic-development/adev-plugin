@@ -1992,6 +1992,7 @@ const VERB_REGISTRY = new Map([
   ["boundaries",      () => import("../lib/cli/boundaries.mjs")],
   ["governance",      () => import("../lib/cli/governance.mjs")],
   ["diagnose",        () => import("../lib/cli/diagnose.mjs")],
+  ["capability-map",  () => import("../lib/cli/capability-map.mjs")],
   ["heuristics",      () => import("../lib/cli/heuristics.mjs")],
   ["report",          () => import("../lib/cli/report.mjs")],
   ["manifest",        () => import("../lib/cli/manifest.mjs")],

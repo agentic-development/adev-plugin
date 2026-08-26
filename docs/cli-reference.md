@@ -37,6 +37,7 @@ This file is the CLI counterpart to [`skill-reference.md`](skill-reference.md) (
 | `governance` | Materialize a registry's effective set; audit registry drift | `lib/cli/governance.mjs` |
 | `report` | Append a lifecycle event to the per-spec event log | `lib/cli/report.mjs` |
 | `diagnose` | Run registered write-time diagnostics over artifacts | `lib/cli/diagnose.mjs` |
+| `capability-map` | Monotonic writer for a charter's Capability Map `Status` column | `lib/cli/capability-map.mjs` |
 | `source-manifest` | Verify or compute a spec's source-file manifest | `lib/cli/source-manifest.mjs` |
 | `verify` | Reality-check whether spec/issue work exists in code | `lib/cli/verify.mjs` |
 | `preflight` | Run the infrastructure preflight for a spec/plan | `lib/cli/preflight.mjs` |
@@ -358,6 +359,20 @@ adev diagnose --tier 1 --json
 ```
 
 **Implementation:** `lib/cli/diagnose.mjs`. **Called by:** the write-time diagnostic hook (see [Hooks](hooks.md)); also invokable manually.
+
+### `capability-map`
+
+**Purpose:** Write a charter's Capability Map `Status` column for one capability, refusing any write that is not strictly forward of the row's current value in the lifecycle order (`— → specified → review-passed → planned → implementing → implemented → validated`). A re-review, re-plan, or other re-entry through an earlier lifecycle step reports `updated: false, reason: "NOT_MONOTONIC"` instead of regressing a row that already advanced past that step.
+
+**Signature:** `capability-map set-status --charter <path> --capability <name> --status <status>`
+
+**Example:**
+```
+adev capability-map set-status --charter .context-index/specs/features/scoring-engine/charter.md \
+    --capability "Scoring engine" --status review-passed
+```
+
+**Implementation:** `lib/cli/capability-map.mjs` (engine: `lib/capability-map.mjs`). **Called by:** `/adev:review-specs` Step 7.
 
 ### `source-manifest`
 
