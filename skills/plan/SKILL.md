@@ -352,10 +352,10 @@ After writing the final Quality Gates section, commit the artifact via atomic re
 
 ```bash
 adev partial inspect --artifact <plan-path>.partial   # sanity check before commit
-# then perform the rename (helper invocation, NOT inline Node):
-# In a foreground skill, the wrapping CLI driver performs the rename; the
-# skill simply marks "done" so the orchestrator finalises.
+adev partial commit --artifact <plan-path>.partial    # atomic rename to <plan-path> (Behavior 2)
 ```
+
+`.plan.md` carries no frontmatter contract, so `commit` skips the frontmatter guard for this kind and only performs the rename plus lock cleanup. A non-zero exit means the rename did not happen — the `.partial` is left in place for inspection.
 
 Lock coordination: acquire `<plan-path>.partial.lock` via `adev partial inspect` first (lock_exists must be false OR the lock must be owned by this process). On a stale lock (dead-owner, age > `lifecycle.partial_stale_seconds`), the helper auto-steals — see the spec's Behavior 6 for the full contract.
 

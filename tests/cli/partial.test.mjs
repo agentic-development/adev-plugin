@@ -323,3 +323,136 @@ test("adev partial check-size accepts the .partial form of --artifact", () => {
     cleanup(dir);
   }
 });
+
+// ── commit ───────────────────────────────────────────────────────────────
+//
+// Regression coverage for issue adev-plugin-akoy.2: `adev partial` had no
+// `commit` subverb, so the three skills that write `.partial` artifacts
+// could not name a real CLI verb for the atomic-rename step and the
+// frontmatter-first contract went unenforced for that commit path (unlike
+// `adev artifact commit`, which already guards `.validate.md`/`.review.md`).
+
+test("adev partial commit renames a spec .partial into place when frontmatter is first", () => {
+  const dir = makeTempProject();
+  try {
+    const finalPath = join(dir, ".context-index/specs/features/m/demo.spec.md");
+    writeFileSync(
+      `${finalPath}.partial`,
+      "---\npartial_schema: spec@1\nstatus: draft\n---\n\n# Live Spec: Demo\n"
+    );
+    const r = runCli(["commit", "--artifact", `${finalPath}.partial`], { cwd: dir });
+    assert.strictEqual(r.status, 0, r.stderr);
+    const out = JSON.parse(r.stdout.trim());
+    assert.strictEqual(out.committed, ".context-index/specs/features/m/demo.spec.md");
+    assert.equal(existsSync(finalPath), true);
+    assert.equal(existsSync(`${finalPath}.partial`), false);
+    // The frontmatter key marker is left in place — it is the resume
+    // contract, not scaffolding (skills/specify/SKILL.md Step 5).
+    assert.match(readFileSync(finalPath, "utf8"), /partial_schema: spec@1/);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("adev partial commit accepts the final (non-.partial) form of --artifact", () => {
+  const dir = makeTempProject();
+  try {
+    const finalPath = join(dir, ".context-index/specs/features/m/either.spec.md");
+    writeFileSync(`${finalPath}.partial`, "---\nstatus: draft\n---\n\nbody\n");
+    const r = runCli(["commit", "--artifact", finalPath], { cwd: dir });
+    assert.strictEqual(r.status, 0, r.stderr);
+    assert.equal(existsSync(finalPath), true);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("adev partial commit rejects a .spec.md .partial whose marker precedes the frontmatter", () => {
+  const dir = makeTempProject();
+  try {
+    const finalPath = join(dir, ".context-index/specs/features/m/bad.spec.md");
+    writeFileSync(
+      `${finalPath}.partial`,
+      "<!-- partial_schema: spec@1 -->\n\n---\nstatus: draft\n---\n\n# Live Spec: Bad\n"
+    );
+    const r = runCli(["commit", "--artifact", finalPath], { cwd: dir });
+    assert.strictEqual(r.status, 1);
+    assert.match(r.stderr, /ARTIFACT_FRONTMATTER_NOT_FIRST/);
+    // Refusal leaves the .partial untouched for inspection — no rename happened.
+    assert.equal(existsSync(finalPath), false);
+    assert.equal(existsSync(`${finalPath}.partial`), true);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("adev partial commit skips the frontmatter guard for .plan.md (no frontmatter contract)", () => {
+  const dir = makeTempProject();
+  try {
+    const finalPath = join(dir, ".context-index/specs/features/m/demo.plan.md");
+    writeFileSync(
+      `${finalPath}.partial`,
+      "<!-- partial_schema: plan@1 -->\n\n# Implementation Plan: Demo\n"
+    );
+    const r = runCli(["commit", "--artifact", finalPath], { cwd: dir });
+    assert.strictEqual(r.status, 0, r.stderr);
+    assert.equal(existsSync(finalPath), true);
+    assert.match(readFileSync(finalPath, "utf8"), /partial_schema: plan@1/);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("adev partial commit unlinks a stale lock sidecar on success", () => {
+  const dir = makeTempProject();
+  try {
+    const finalPath = join(dir, ".context-index/specs/features/m/locked.plan.md");
+    writeFileSync(`${finalPath}.partial`, "<!-- partial_schema: plan@1 -->\n\nbody\n");
+    writeFileSync(
+      `${finalPath}.partial.lock`,
+      JSON.stringify({ pid: process.pid, started_at: new Date().toISOString() })
+    );
+    const r = runCli(["commit", "--artifact", finalPath], { cwd: dir });
+    assert.strictEqual(r.status, 0, r.stderr);
+    assert.equal(existsSync(`${finalPath}.partial.lock`), false);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("adev partial commit exits 1 when the source .partial is missing", () => {
+  const dir = makeTempProject();
+  try {
+    const finalPath = join(dir, ".context-index/specs/features/m/absent.spec.md");
+    const r = runCli(["commit", "--artifact", finalPath], { cwd: dir });
+    assert.strictEqual(r.status, 1);
+    assert.match(r.stderr, /source artifact missing/);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("adev partial commit exits 1 on a zero-byte .partial (refuses a truncated write)", () => {
+  const dir = makeTempProject();
+  try {
+    const finalPath = join(dir, ".context-index/specs/features/m/empty.spec.md");
+    writeFileSync(`${finalPath}.partial`, "");
+    const r = runCli(["commit", "--artifact", finalPath], { cwd: dir });
+    assert.strictEqual(r.status, 1);
+    assert.match(r.stderr, /source is empty/);
+    assert.equal(existsSync(finalPath), false);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("adev partial commit rejects paths that escape the project root (containment)", () => {
+  const dir = makeTempProject();
+  try {
+    const r = runCli(["commit", "--artifact", "/etc/passwd"], { cwd: dir });
+    assert.notStrictEqual(r.status, 0);
+    assert.match(r.stderr + r.stdout, /INVALID_PARTIAL_PATH|containment|escapes/i);
+  } finally {
+    cleanup(dir);
+  }
+});
