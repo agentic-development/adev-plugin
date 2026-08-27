@@ -294,6 +294,39 @@ test("heuristics retrieve --injection-limit 0 returns empty result", () => {
   }
 });
 
+test("heuristics retrieve honours manifest heuristics.injection_limit with no --injection-limit flag", () => {
+  const dir = makeTempProject();
+  // Three high-confidence entries in one scope file, header once, blocks concatenated.
+  const blocks = ["h0", "h1", "h2"]
+    .map((id) =>
+      makeHeuristicBody({ id: `m-${id}aaa111`, title: `High ${id}`, confidence: "high" }).replace(
+        /^# Heuristics \(scope: m\)\n\n/,
+        "",
+      ),
+    )
+    .join("");
+  seedHeuristic(dir, "m", `# Heuristics (scope: m)\n\n${blocks}`);
+  writeFileSync(
+    join(dir, ".context-index", "manifest.yaml"),
+    'project:\n  name: t\n  adev_version: "0.22.0"\nheuristics:\n  injection_limit: 2\n',
+  );
+  try {
+    const r = spawnSync(
+      "node",
+      [CLI, "heuristics", "retrieve", "--module", "m"],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 0);
+    const parsed = JSON.parse(r.stdout.trim());
+    // highMax = ceil(2*5/8) = 2 — the manifest key caps the budget below the
+    // 3 seeded entries. Before this fix the manifest key was never read and
+    // this returned 3 (the hardcoded default-8 budget was never exceeded).
+    assert.strictEqual(parsed.count, 2);
+  } finally {
+    cleanup(dir);
+  }
+});
+
 // ── write subcommand ─────────────────────────────────────────────────────
 
 test("heuristics write without required flags exits 1", () => {
