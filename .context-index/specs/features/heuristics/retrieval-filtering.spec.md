@@ -108,7 +108,7 @@ This spec defines the retrieval policy that `/adev:implement` and `/adev:plan` f
 ## Acceptance Criteria
 
 - [ ] Retrieval protocol is documented in a form consumable by `/adev:implement` and `/adev:plan`
-- [ ] Budget cap defaults to 8 (5 high + 3 medium), configurable via `heuristics.injection_limit`
+- [x] Budget cap defaults to 8 (5 high + 3 medium), configurable via `heuristics.injection_limit`
 - [ ] Unused `high` capacity reallocates to `medium` up to the combined budget (Behavior 3a); unused `medium` capacity does not cascade to `low`
 - [ ] `low`-confidence heuristics are never injected
 - [ ] Module-scoped heuristics sort before `_global` at the same confidence level
