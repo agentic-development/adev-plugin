@@ -1,0 +1,97 @@
+# Layer 3 rubric for /adev:using-adev, scored against the skill-regression
+# fixture (tests/evals/skill-regression/). Field shapes verbatim from
+# skills/eval/default-rubric.yaml. All values flat: no nested maps, since the
+# repo's minimal YAML readers cannot represent them.
+#
+# RESPONDER, NOT PRODUCER, NOT DETECTOR: this rubric cites no catalog id and
+# scores no artifact at all. using-adev is the gateway skill's Q&A mode — it
+# answers an on-demand question in chat and, per its own SKILL.md, is
+# explicitly "chat-only: no file writes, no lifecycle events" in both of its
+# Q&A modes. Every required_elements[].source below is `output:` only —
+# there is no artifact: for this scenario to name, because nothing is ever
+# written. `output:` names a span of the agent's own chat transcript (the
+# presented answer); it has NO v1 machine reader (lib/evals/score.mjs never
+# reads an element's `source` field at all — scoring runs entirely off the
+# verdict set a judge or the operator supplies). Its v1 consumer is the
+# operator's manual Tier B pass; its automated consumer is a future
+# CI-integration capability, not anything this rubric or `score.mjs` do
+# today.
+#
+# Scored input: the presented chat answer text to a single mid-session
+# question naming a specific skill ("How does /adev:plan work?"), which per
+# skills/using-adev/SKILL.md's Ambiguous question rule resolves to "How does
+# X work?" mode rather than "What should I do?" mode. The rubric is
+# deliberately anchored on that one mode's contract (check docs/*.md first,
+# fall back to the real SKILL.md only if needed, no user-visible caveat on
+# the fallback, chat-only, no unprompted routing instruction) rather than the
+# other mode's, since the scenario's own question decides which mode
+# applies.
+#
+# Spec: .context-index/specs/features/eval-harness/rubric-set-change-imminent.spec.md
+
+rubric_id: "skill-regression-using-adev"
+version: 1
+layer: 3
+verdict_values: "met | not_met | unknown (judged criteria) | not_applicable (deterministic elements)"
+skill: using-adev
+scenario: using-adev
+
+required_elements:
+  - id: responder_mode_correctly_selected
+    description: "The response follows the 'How does X work?' Q&A Mode, not the 'What should I do?' mode"
+    source: "output: the presented chat response to the question"
+    met_when: "the response explains /adev:plan's specific behavior directly, rather than only pointing the user to /adev:work for a routing decision — matching the Ambiguous question rule in skills/using-adev/SKILL.md ('treat it as \"How does X work?\" only when a specific skill name or command is named in the question')"
+    not_applicable_when: "never — the scenario's question always names a specific skill (/adev:plan)"
+
+  - id: docs_checked_before_skill_md
+    description: "The answer is grounded in docs/skill-reference.md's /adev:plan entry, falling back to skills/plan/SKILL.md only if needed"
+    source: "output: the presented chat response to the question"
+    met_when: "the response content matches what docs/skill-reference.md documents for /adev:plan, or explicitly states that source was checked, per the 'How does X work?' Q&A Mode's stated precedence in skills/using-adev/SKILL.md ('Check docs/*.md first ... Fall back to reading the actual skills/<name>/SKILL.md only when the docs do not cover the needed detail')"
+    not_applicable_when: "never — the mode's precedence rule always applies to this question"
+
+  - id: plan_purpose_stated_accurately
+    description: "The response accurately states what /adev:plan does"
+    source: "output: the presented chat response to the question"
+    met_when: "the response states that /adev:plan decomposes reviewed Live Specs into ordered implementation tasks (with TDD expectations and context routing), matching skills/plan/SKILL.md's own description rather than an invented summary"
+    not_applicable_when: "never — the question always asks specifically how /adev:plan works"
+
+  - id: review_gate_precondition_named
+    description: "The response names the review-before-plan gate as a real precondition, not a generic caveat"
+    source: "output: the presented chat response to the question"
+    met_when: "the response states that /adev:plan blocks if specs have not passed /adev:review-specs, matching the Lifecycle Gates section of skills/using-adev/SKILL.md ('Review before plan. /adev:plan blocks if specs have not passed /adev:review-specs.')"
+    not_applicable_when: "never — this Lifecycle Gate is stated unconditionally in skills/using-adev/SKILL.md"
+
+  - id: no_file_writes_or_lifecycle_events_claimed
+    description: "The response makes no claim of having written a file or logged a lifecycle event"
+    source: "output: the presented chat response to the question"
+    met_when: "the response contains no statement that a file was created, modified, or that a lifecycle event was recorded during this exchange, matching the 'chat-only response: no file writes, no lifecycle events' rule stated in skills/using-adev/SKILL.md's Q&A Mode sections"
+    not_applicable_when: "never — a Q&A-mode response always carries this constraint"
+
+quality_dimensions:
+  - id: response_is_conceptual_not_procedural_narration
+    criterion: "Does the response explain what /adev:plan does and why, rather than narrating a simulated run of it?"
+    reference: "the 'How does X work?' Q&A Mode section of skills/using-adev/SKILL.md, which scopes this mode to explaining behavior, never executing the skill"
+    met_when: "the response reads as an explanation of /adev:plan's behavior and gates, with no simulated invocation or fabricated tool output"
+    not_met_when: "the response narrates as if /adev:plan were actually invoked and produced output, rather than explaining its behavior"
+    unknown_when: "the response text is unavailable to judge"
+
+  - id: docs_insufficiency_fallback_handled_honestly
+    criterion: "If the response draws on skills/plan/SKILL.md content, does it do so only because docs/skill-reference.md genuinely lacked the needed detail, per the stated failure mode?"
+    reference: "the Failure modes subsection of skills/using-adev/SKILL.md ('Docs insufficient — if docs/*.md doesn't cover the needed detail, fall back to skills/<name>/SKILL.md automatically; this needs no user-visible caveat.')"
+    met_when: "any SKILL.md-sourced detail in the response is accurate to skills/plan/SKILL.md and the response carries no user-visible caveat about falling back, matching the rule that the fallback 'needs no user-visible caveat'"
+    not_met_when: "the response either fabricates a detail not actually present in docs/skill-reference.md or skills/plan/SKILL.md, or surfaces an unnecessary caveat about the fallback"
+    unknown_when: "it cannot be determined which source (docs or SKILL.md) the response's specific details came from"
+
+  - id: no_routing_decision_performed
+    criterion: "Does the response stop at explaining /adev:plan's behavior, without also performing an unrelated routing decision on the user's behalf?"
+    reference: "the 'What should I do?' Q&A Mode section's rule in skills/using-adev/SKILL.md ('Never perform the routing decision yourself ... Always end by pointing the user to /adev:work for the actual routing decision'), which this response must not blur into even though the question resolved to the other mode"
+    met_when: "the response answers only the asked question about /adev:plan's behavior and does not additionally issue an unprompted routing instruction (e.g. telling the user which skill to run next for unrelated work)"
+    not_met_when: "the response additionally tells the user what to do next / which skill to run, beyond what was asked"
+    unknown_when: "the response text is unavailable to judge"
+
+layer3_max_points: 25
+required_element_points: 10
+judged_criterion_points: 15
+unknown_policy: "exclude_from_denominator"
+not_applicable_policy: "exclude_from_denominator"
+insufficient_evidence_threshold_percent: 40

@@ -173,9 +173,12 @@ test("the default rubric roots are non-vacuous — the scan reaches skills/eval/
  * fixture rather than being part of it — taking the count to forty-one.
  * Task 6 added the next four pairs (`deploy`, `sync`, `learn`, `issues`) —
  * the producer tier, same sibling placement — taking the count to
- * forty-nine. Task 7 added the last three pairs (`eval`, `assess`,
+ * forty-nine. Task 7 added the next three pairs (`eval`, `assess`,
  * `prototype`) — the reporter tier, same sibling placement — taking the
- * count to fifty-five and landing all eleven rubric/scenario pairs.
+ * count to fifty-five. `rubric-set-change-imminent.spec.md` Task 8 added the
+ * eleventh and last pair (`using-adev`) — the responder tier, same sibling
+ * placement — taking the count to fifty-seven and landing all eleven
+ * rubric/scenario pairs.
  */
 const REQUIRED_FIXTURE_FILES = Object.freeze([
   "README.md",
@@ -191,6 +194,7 @@ const REQUIRED_FIXTURE_FILES = Object.freeze([
   "rubrics/prototype.yaml",
   "rubrics/repomap.yaml",
   "rubrics/sync.yaml",
+  "rubrics/using-adev.yaml",
   "scenarios/assess.md",
   "scenarios/codehealth.md",
   "scenarios/deploy.md",
@@ -201,6 +205,7 @@ const REQUIRED_FIXTURE_FILES = Object.freeze([
   "scenarios/prototype.md",
   "scenarios/repomap.md",
   "scenarios/sync.md",
+  "scenarios/using-adev.md",
   "project/AGENTS.md",
   "project/CLAUDE.md",
   "project/docs/api.md",
@@ -245,10 +250,11 @@ test("Required Files is enumerated both ways — every pinned path exists and th
   assert.deepEqual(onDisk, [...REQUIRED_FIXTURE_FILES].sort());
   assert.equal(
     REQUIRED_FIXTURE_FILES.length,
-    55,
+    57,
     "Task 6's README.md took the count from 33 to 34; rubric-set-change-imminent Task 1's tiers.yaml took it to 35; " +
       "Task 5's three rubrics + three scenarios took it to 41; rubric-set-change-imminent Task 6's four rubrics + " +
-      "four scenarios took it to 49; rubric-set-change-imminent Task 7's three rubrics + three scenarios took it to 55",
+      "four scenarios took it to 49; rubric-set-change-imminent Task 7's three rubrics + three scenarios took it to 55; " +
+      "rubric-set-change-imminent Task 8's one rubric + one scenario (using-adev) took it to 57",
   );
   assert.ok(REQUIRED_FIXTURE_FILES.includes("README.md"), "Task 6's README.md must be registered here");
 });

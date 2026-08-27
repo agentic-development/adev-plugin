@@ -2210,3 +2210,164 @@ test("eval's four judged criteria anchor on the four named contracts, not an inv
     "eval.yaml must anchor a quality_dimensions[].reference on the score-report table's id, kind, verdict column structure (lib/cli/eval.mjs's renderTable)",
   );
 });
+
+// ---------------------------------------------------------------------------
+// 21. Task 8 — the responder rubric conforms (using-adev), and the tier lands
+// ---------------------------------------------------------------------------
+//
+// No new RUBRIC_* rule here either: using-adev.yaml/.md are validated by the
+// checker Tasks 1-3 already landed, the same as sections 16-17 and 19. Unlike
+// every earlier stem in this tier, using-adev is neither a detector nor a
+// state-writer/reporter producer — it is a RESPONDER: it writes no artifact
+// at all, so it reuses the producer/reporter tiers' no-catalog-citation
+// convention (sections 17/19) rather than any twin-citation assertion, and
+// its scored input is the chat answer text alone.
+//
+// This is also the LANDING section: with using-adev's files present, all
+// eleven change_imminent stems now exist together for the first time, so
+// this section is where `checkRubricSet()` is first exercised with NO
+// onlyStems filter at all, over the real, now-complete `rubrics/` and
+// `scenarios/` trees.
+
+/** The one responder-tier stem this task authors. */
+const RESPONDER_STEM = "using-adev";
+
+test("the responder rubric conforms", () => {
+  const { errors, matchedRubricFiles, matchedScenarioFiles } = checkRubricSet({
+    tiersPath: DEFAULT_TIERS_PATH,
+    rubricRoot: DEFAULT_RUBRIC_ROOT,
+    scenarioRoot: DEFAULT_SCENARIO_ROOT,
+    onlyStems: [RESPONDER_STEM],
+  });
+
+  // Task 5-7's exact pattern, narrowed to one stem: prove the filter
+  // actually narrowed rubricRoot/scenarioRoot to exactly this one file
+  // apiece before trusting the error-free result — a stem filter matching
+  // zero files would let "errors is empty" pass vacuously.
+  assert.deepEqual(
+    matchedRubricFiles,
+    ["using-adev.yaml"],
+    `onlyStems: ['using-adev'] must narrow rubricRoot to exactly this one file, matched: ${JSON.stringify(matchedRubricFiles)}`,
+  );
+  assert.deepEqual(
+    matchedScenarioFiles,
+    ["using-adev.md"],
+    `onlyStems: ['using-adev'] must narrow scenarioRoot to exactly this one file, matched: ${JSON.stringify(matchedScenarioFiles)}`,
+  );
+  assert.deepEqual(errors, []);
+});
+
+test("the landed tier is complete at the real roots", () => {
+  // A zero-error result over an empty root would pass vacuously — these
+  // count and set assertions are what prevent that, checked BEFORE trusting
+  // the no-argument checkRubricSet() call below.
+  const rubricFilesOnDisk = readdirSync(DEFAULT_RUBRIC_ROOT).filter((f) => f.endsWith(".yaml"));
+  const scenarioFilesOnDisk = readdirSync(DEFAULT_SCENARIO_ROOT).filter((f) => f.endsWith(".md"));
+  assert.equal(
+    rubricFilesOnDisk.length,
+    11,
+    `rubrics/ must hold exactly 11 files at the landing state, found: ${JSON.stringify(rubricFilesOnDisk)}`,
+  );
+  assert.equal(
+    scenarioFilesOnDisk.length,
+    11,
+    `scenarios/ must hold exactly 11 files at the landing state, found: ${JSON.stringify(scenarioFilesOnDisk)}`,
+  );
+
+  const tiersDoc = parseYaml(readFileSync(DEFAULT_TIERS_PATH, "utf8"));
+  const expectedStems = new Set(splitSlugs(tiersDoc.change_imminent));
+  const rubricStems = new Set(rubricFilesOnDisk.map((f) => f.slice(0, -".yaml".length)));
+  const scenarioStems = new Set(scenarioFilesOnDisk.map((f) => f.slice(0, -".md".length)));
+
+  // Both directions, explicitly — a one-way subset check is insufficient: it
+  // would miss either an orphan file the bucket does not name, or a bucket
+  // slug with no file, depending on which direction was skipped.
+  for (const slug of expectedStems) {
+    assert.ok(rubricStems.has(slug), `tiers.yaml's change_imminent names "${slug}", which has no rubrics/${slug}.yaml`);
+  }
+  for (const slug of rubricStems) {
+    assert.ok(expectedStems.has(slug), `rubrics/${slug}.yaml exists but "${slug}" is not in tiers.yaml's change_imminent bucket`);
+  }
+  for (const slug of expectedStems) {
+    assert.ok(scenarioStems.has(slug), `tiers.yaml's change_imminent names "${slug}", which has no scenarios/${slug}.md`);
+  }
+  for (const slug of scenarioStems) {
+    assert.ok(expectedStems.has(slug), `scenarios/${slug}.md exists but "${slug}" is not in tiers.yaml's change_imminent bucket`);
+  }
+  // The set-equality restated as one deepEqual per side, over sorted arrays
+  // — a direct pin alongside the explicit per-direction loops above.
+  assert.deepEqual([...rubricStems].sort(), [...expectedStems].sort());
+  assert.deepEqual([...scenarioStems].sort(), [...expectedStems].sort());
+
+  const { errors } = checkRubricSet();
+  assert.deepEqual(errors, []);
+});
+
+test("every rule was reached at the real roots", () => {
+  // RUBRIC_COVERAGE_ERROR_CODES — the frozen registry module, not the
+  // test-local IMPLEMENTED_CODES array — imported and asserted against
+  // directly, so a code added to the registry without a corresponding
+  // `checked.add` at the real landing state is caught here.
+  const { checked } = checkRubricSet();
+  for (const code of RUBRIC_COVERAGE_ERROR_CODES) {
+    assert.ok(checked.has(code), `rule ${code} never ran at the real roots — a rule that quietly stops running proves nothing`);
+  }
+});
+
+test("rubric-coverage.test.mjs is in the default bucket", () => {
+  const output = execFileSync(process.execPath, [join(REPO_ROOT, "scripts", "run-tests.mjs"), "--list"], {
+    cwd: REPO_ROOT,
+    encoding: "utf8",
+  });
+  assert.ok(
+    output.includes("tests/lib/evals/rubric-coverage.test.mjs"),
+    "scripts/run-tests.mjs --list must list this test file's own path in the default bucket",
+  );
+});
+
+test("the evals bucket discovers nothing for this tier", () => {
+  const output = execFileSync(process.execPath, [join(REPO_ROOT, "scripts", "run-tests.mjs"), "--evals", "--list"], {
+    cwd: REPO_ROOT,
+    encoding: "utf8",
+  });
+  // Non-emptiness first: a crashed or silently-empty subprocess would make
+  // the "does not mention" check below pass vacuously — this is the guard
+  // that distinguishes "genuinely nothing for this tier" from "the command
+  // produced nothing at all."
+  assert.ok(
+    output.trim().length > 0,
+    "scripts/run-tests.mjs --evals --list produced no output — cannot trust the emptiness check below",
+  );
+  assert.ok(
+    !output.includes("tests/evals/skill-regression/"),
+    `the --evals bucket must not mention tests/evals/skill-regression/ — this tier's own fixture files carry no *.test.mjs suffix, output: ${JSON.stringify(output)}`,
+  );
+});
+
+test("every scenario states where outputs/ lives", () => {
+  // Token 7 — the outputs/-location row — named by exact string, confirmed
+  // against TOKEN_TABLE itself first so this test proves nothing against
+  // the wrong row if TOKEN_TABLE's order ever shifts.
+  const token7 = TOKEN_TABLE[6].token;
+  assert.equal(
+    token7,
+    "outputs/ from its own mkdtempSync, beside <copy-root>, outside every worktree root and outside the copy",
+    "precondition: TOKEN_TABLE[6] must be the outputs/-location row",
+  );
+  const scenarioFiles = readdirSync(DEFAULT_SCENARIO_ROOT).filter((f) => f.endsWith(".md"));
+  assert.equal(scenarioFiles.length, 11, "precondition: all eleven real scenario files must be present");
+  for (const file of scenarioFiles) {
+    const content = readFileSync(join(DEFAULT_SCENARIO_ROOT, file), "utf8");
+    assert.ok(content.includes(token7), `scenarios/${file} is missing token 7 (outputs/ location)`);
+  }
+});
+
+test("the responder rubric cites no catalog id", () => {
+  const path = join(DEFAULT_RUBRIC_ROOT, "using-adev.yaml");
+  const yamlText = readFileSync(path, "utf8");
+  assert.ok(yamlText.length > 0, "precondition: using-adev.yaml must be read as a non-empty string");
+  assert.ok(
+    !/skill-regression:/.test(yamlText),
+    "rubrics/using-adev.yaml must cite no skill-regression: catalog id anywhere in its raw text — this responder is not a detector",
+  );
+});
