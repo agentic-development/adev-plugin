@@ -107,15 +107,31 @@ describe("hygiene Validate Config Drift audit (SKILL.md content + simulation)", 
     );
   });
 
-  it("skills/hygiene/SKILL.md describes SEC-4 value-type emission for prompt/context_pack", () => {
+  // Behavior 8's original SEC-4 fix (name+type only, never the literal value,
+  // for BOTH `prompt:` and `context_pack:`) was superseded by issue-cp2l2e:
+  // the execution-field sub-audit that shipped for `prompt`/`command`/
+  // `runner`/`pattern` is stricter still (field NAME only, no type hint at
+  // all), but `context_pack` — never itself an execution-bearing field — is
+  // now diffed by a separate sub-audit (`hygiene/entry-field-drift`) that
+  // reports BOTH literal values on purpose: it is a short enum-like config
+  // value, not a path or codename, and a divergence finding that only says
+  // "the type changed" names nothing an operator can act on. See
+  // validate-config-single-source.spec.md Behavior 8 and
+  // lib/hygiene/registry-drift.mjs's module header.
+  it("skills/hygiene/SKILL.md still redacts execution-bearing field values (SEC-4), but not context_pack", () => {
     const content = readFileSync(join(PLUGIN_ROOT, 'skills', 'hygiene', 'SKILL.md'), 'utf8');
     assert.ok(
       content.includes("SEC-4"),
       "hygiene SKILL.md must reference SEC-4 emission rules"
     );
     assert.ok(
-      /value\s*\*\*type\*\*/i.test(content) || /value type/i.test(content),
-      "hygiene SKILL.md must describe value-type emission for sensitive fields"
+      /non-project-execution-field.*field NAME|field NAME.*non-project-execution-field/is.test(content) ||
+        /emits the field NAME/i.test(content),
+      "hygiene SKILL.md must describe name-only emission for execution-bearing fields"
+    );
+    assert.ok(
+      content.includes("hygiene/entry-field-drift"),
+      "hygiene SKILL.md must document the field-drift sub-audit that diffs context_pack"
     );
   });
 

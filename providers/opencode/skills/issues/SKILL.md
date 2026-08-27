@@ -114,6 +114,8 @@ It prints:
 > Created epic `<id>`: <title>
 > &nbsp;&nbsp;milestone: <name>
 
+`adev issues epic list [--milestone <name>] [--json]` enumerates the epic store instead — read-only, never a create. `list` is reserved for this: an epic cannot be titled exactly `list` through this verb.
+
 with the second line present only when a milestone was set. Display the command output to the user verbatim.
 
 ### Update
