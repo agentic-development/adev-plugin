@@ -2712,20 +2712,27 @@ test("RUBRIC_CORE_ELEMENT_FLOOR: 7 elements and 7 quality_dimensions fires RUBRI
 // enough; this rule cares only about a rubric's own `skill` value against
 // the real catalog's `covers_skills` for whatever it cites.
 
-test("RUBRIC_COVERS_SKILLS_UNLISTED: citing PV-03 (and its twin KC-03, to keep RUBRIC_TWIN_UNCITED clean) from a hygiene-shaped rubric is rejected, and only that", () => {
+test("RUBRIC_COVERS_SKILLS_UNLISTED: citing PV-04 (and its twin KC-04, to keep RUBRIC_TWIN_UNCITED clean) from a hygiene-shaped rubric is rejected, and only that", () => {
   const tmp = createTempDir();
   try {
-    // PV-03's real covers_skills is "codehealth, repomap" (confirmed by
-    // reading tests/evals/skill-regression/catalog.yaml) — "hygiene" is
-    // absent from it, so both citations fire.
+    // PV-04 (class dead-export), not PV-03: Task 2 of
+    // rubric-set-core-lifecycle.plan.md added "hygiene" to PV-03/KC-03's
+    // (class orphan-source-file) covers_skills, which is exactly the
+    // red-then-green transition "the hygiene citation of orphan-source-file
+    // is listed" (section 23a below) exercises — reusing PV-03 here would
+    // make this generic rejecting case pass for the wrong reason (clear the
+    // citation) rather than the reason under test (reject it). PV-04's real
+    // covers_skills is "codehealth, repomap" (confirmed by reading
+    // tests/evals/skill-regression/catalog.yaml) — "hygiene" is absent from
+    // it, so both citations fire.
     const doc = makeConformingRubric("hygiene"); // skill: "hygiene"
-    doc.required_elements[0].source = "skill-regression:PV-03";
-    doc.required_elements[1].source = "skill-regression:KC-03";
+    doc.required_elements[0].source = "skill-regression:PV-04";
+    doc.required_elements[1].source = "skill-regression:KC-04";
     const { errors } = runOneRubric(tmp, "hygiene", doc);
     assert.deepEqual(errors.map((e) => e.code), ["RUBRIC_COVERS_SKILLS_UNLISTED", "RUBRIC_COVERS_SKILLS_UNLISTED"]);
-    assert.match(errors[0].detail, /PV-03/);
+    assert.match(errors[0].detail, /PV-04/);
     assert.match(errors[0].detail, /hygiene/);
-    assert.match(errors[1].detail, /KC-03/);
+    assert.match(errors[1].detail, /KC-04/);
   } finally {
     cleanupTempDir(tmp);
   }
@@ -2772,6 +2779,68 @@ test("RUBRIC_COVERS_SKILLS_UNLISTED: a rubric citing no catalog id at all does n
     assert.ok(
       checked.has("RUBRIC_COVERS_SKILLS_UNLISTED"),
       "the rule must be recorded as reached even when citedIds is empty — not skipped from the reachability count",
+    );
+  } finally {
+    cleanupTempDir(tmp);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// 23a. Task 2 of rubric-set-core-lifecycle.plan.md — the covers_skills
+// interlock, proven red-then-green against the real catalog.yaml edit
+// ---------------------------------------------------------------------------
+
+test("the hygiene citation of orphan-source-file is listed", () => {
+  // Task 2 of rubric-set-core-lifecycle.plan.md — the covers_skills
+  // interlock's red-then-green proof. The `hygiene` rubric itself is Task
+  // 3's job and does not exist yet, so this is a SYNTHETIC hygiene-shaped
+  // rubric (skill: "hygiene", citing PV-03 and its known-clean twin KC-03 so
+  // RUBRIC_TWIN_UNCITED stays clean and this test isolates
+  // RUBRIC_COVERS_SKILLS_UNLISTED alone) resolved against the REAL
+  // tests/evals/skill-regression/catalog.yaml — only the citing file is
+  // synthetic; the catalog under test is real.
+  //
+  // Before the catalog lists `hygiene` in PV-03/KC-03's covers_skills, the
+  // errors deep-equal([]) assertion below goes RED, reporting
+  // RUBRIC_COVERS_SKILLS_UNLISTED twice (once per citation). After the
+  // catalog edit lands, it is GREEN.
+  const tmp = createTempDir();
+  try {
+    const harness = buildHarness(tmp, "hygiene");
+    const doc = makeConformingRubric("hygiene");
+    doc.required_elements[0].source = "skill-regression:PV-03";
+    doc.required_elements[1].source = "skill-regression:KC-03";
+    writeFileSync(join(harness.rubricRoot, "hygiene.yaml"), renderRubricYaml(doc));
+    assert.ok(
+      readdirSync(harness.rubricRoot).length > 0,
+      "precondition: rubricRoot must be non-empty before checkRubricSet is asked to glob it",
+    );
+
+    // All four roots named explicitly — buildHarness's own synthetic tier
+    // file, rubric root, scenario root, skills root, never
+    // DEFAULT_TIERS_PATH/DEFAULT_SCENARIO_ROOT — PLUS onlyStems: ["hygiene"].
+    // Leaving tiersPath/scenarioRoot at their real defaults while rubricRoot
+    // points at this synthetic one-file directory would make
+    // RUBRIC_TIER_UNCOVERED fire for all 11 real change_imminent slugs the
+    // synthetic root doesn't contain, making a bare "errors is empty"
+    // assertion unreachable regardless of the catalog state — this form
+    // makes it reachable. Only the DEFAULT_CATALOG_PATH lookup inside
+    // checkRubricSet stays real; it is not parameterized. legacyRoots is
+    // also taken from the harness (its two non-existent synthetic roots),
+    // the same "irrelevant to what this test is about" reasoning
+    // buildHarness's own comment gives for every shared-contract-rule test.
+    const { errors, checked } = checkRubricSet({
+      tiersPath: harness.tiersPath,
+      rubricRoot: harness.rubricRoot,
+      scenarioRoot: harness.scenarioRoot,
+      skillsRoot: harness.skillsRoot,
+      legacyRoots: harness.legacyRoots,
+      onlyStems: ["hygiene"],
+    });
+    assert.deepEqual(errors, []);
+    assert.ok(
+      checked.has("RUBRIC_COVERS_SKILLS_UNLISTED"),
+      "the rule must be recorded as reached — a rule that quietly stops running proves nothing",
     );
   } finally {
     cleanupTempDir(tmp);

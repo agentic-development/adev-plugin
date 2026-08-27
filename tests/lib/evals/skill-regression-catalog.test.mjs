@@ -361,21 +361,31 @@ test("the four covers_skills content pins hold", () => {
   assert.ok(skillsFor("charter-scope-escape").has("brainstorm"));
 });
 
-test("orphan-source-file's covers_skills is exactly codehealth, repomap — hygiene deliberately absent", () => {
-  // Do NOT "improve" this by adding `hygiene`. The core-lifecycle tier adds it
-  // as its own task and proves RUBRIC_COVERS_SKILLS_UNLISTED red-then-green
-  // across that edit; pre-extending it here makes that proof unreachable.
+test("orphan-source-file's covers_skills is exactly codehealth, hygiene, repomap — hygiene now load-bearing", () => {
+  // Task 2 of rubric-set-core-lifecycle.plan.md landed the transition this
+  // pin used to forbid: `hygiene` is now listed on both PV-03 and its KC-03
+  // twin. This is the green half of the covers_skills interlock's
+  // red-then-green proof — see rubric-coverage.test.mjs's "the hygiene
+  // citation of orphan-source-file is listed", which resolves a SYNTHETIC
+  // hygiene-shaped rubric citing PV-03/KC-03 against this REAL catalog and
+  // went red on RUBRIC_COVERS_SKILLS_UNLISTED before this edit landed.
+  //
+  // New invariant: `hygiene` is now load-bearing for hygiene.yaml's (Task 3,
+  // not yet authored) PV-03/KC-03 citations. Removing it here — reverting to
+  // "codehealth, repomap" — re-fires RUBRIC_COVERS_SKILLS_UNLISTED the moment
+  // hygiene.yaml exists and cites this class, so do not "simplify" this pin
+  // back to the two-slug form.
   const doc = parseYaml(readFileSync(CATALOG_PATH, "utf8"));
   let matched = 0;
   for (const entry of [...doc.planted_violations, ...doc.known_clean]) {
     if (entry.class !== "orphan-source-file") continue;
     matched += 1;
-    assert.deepEqual(splitSlugs(entry.covers_skills), ["codehealth", "repomap"], entry.id);
-    assert.ok(!splitSlugs(entry.covers_skills).includes("hygiene"), `${entry.id} must not list hygiene yet`);
+    assert.deepEqual(splitSlugs(entry.covers_skills), ["codehealth", "hygiene", "repomap"], entry.id);
+    assert.ok(splitSlugs(entry.covers_skills).includes("hygiene"), `${entry.id} must list hygiene`);
   }
   // Same reason the `checked` counters exist: a class-slug rename empties the
   // loop, and a pin that iterates nothing stops checking without going red.
-  // One PV and its KC twin.
+  // One PV and its KC twin — unchanged by the covers_skills edit above.
   assert.equal(matched, 2, "no orphan-source-file pair was matched — the pin above checked nothing");
 });
 
