@@ -244,7 +244,7 @@ If a package-mode adapter returns output that does not parse as the findings YAM
 - Wrap as a single `suggestion` finding with message: `"Adapter did not parse output into structured findings — sanitized runner output below (redacted and truncated)."`
 - Write the full redacted (untruncated) output to the dispatch record, **never** to `.review.md`.
 
-If a subagent-mode or package-mode runner attempts a tool call disallowed by its profile (as surfaced by the harness), the reviewer is recorded as a `warning` finding.
+**Not yet implemented:** nothing in this pipeline currently observes a runner's tool calls against `reviewer.profile`'s `allowedTools`, so a disallowed tool call is never surfaced or recorded as a `warning` finding today. The profile's tool list is handed to the dispatch call, but until a harness-level check exists, the read-only posture is honored only by the dispatched subagent following instructions — not enforced. Tracked as issue `adev-plugin-bjkp`.
 
 ### Tier note
 
