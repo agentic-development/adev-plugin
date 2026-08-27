@@ -2048,3 +2048,165 @@ test("issues' board-granularity-anchored criterion cites the real charter invari
     "issues.yaml must carry at least one quality_dimensions[].reference anchored on the agent-reliable-state-artifacts charter's board-granularity invariant (naming both planRef and planTask), not an invented standard",
   );
 });
+
+// ---------------------------------------------------------------------------
+// 19. Task 7 — the three reporter rubrics conform (eval, assess, prototype)
+// ---------------------------------------------------------------------------
+//
+// No new RUBRIC_* rule here either: these three files are validated by the
+// checker Tasks 1-3 already landed, the same as sections 16-17. Like the four
+// state-writer rubrics (Task 6), these three are PRODUCERS — they cite no
+// catalog id — so this section reuses the producer tier's own no-citation
+// convention (section 17) rather than the detector tier's twin-citation
+// assertion (section 16). What is new here: `prototype.yaml`'s scenario is
+// this suite's first NON-SYNTHETIC exercise of TOKEN_TABLE's `'prototype'`
+// scope branch — Task 3 only proved that branch fires on synthetic input, so
+// this section also asserts the stem filter genuinely selected
+// `scenarios/prototype.md` before trusting that the five prototype-scoped
+// checks ran against it at all.
+
+/** The three reporter-tier stems this task authors. */
+const REPORTER_STEMS = Object.freeze(["eval", "assess", "prototype"]);
+
+/** The five TOKEN_TABLE rows scoped to `'prototype'` alone. */
+const PROTOTYPE_SCOPED_TOKENS = TOKEN_TABLE.filter((row) => row.scope === "prototype").map((row) => row.token);
+
+test("the three reporter rubrics conform", () => {
+  const { errors, matchedRubricFiles, matchedScenarioFiles } = checkRubricSet({
+    tiersPath: DEFAULT_TIERS_PATH,
+    rubricRoot: DEFAULT_RUBRIC_ROOT,
+    scenarioRoot: DEFAULT_SCENARIO_ROOT,
+    onlyStems: [...REPORTER_STEMS],
+  });
+
+  // The stem filter matching zero files would let "errors is empty" pass
+  // vacuously — every one of the eleven rules reports clean over an empty
+  // set. Pin the filter actually narrowed rubricRoot's (and scenarioRoot's)
+  // real files down to exactly these three before trusting the error-free
+  // result.
+  assert.equal(
+    matchedRubricFiles.length,
+    3,
+    `onlyStems must narrow rubricRoot to exactly the three reporter stems, matched: ${JSON.stringify(matchedRubricFiles)}`,
+  );
+  assert.equal(
+    matchedScenarioFiles.length,
+    3,
+    `onlyStems must narrow scenarioRoot to exactly the three reporter stems, matched: ${JSON.stringify(matchedScenarioFiles)}`,
+  );
+  assert.deepEqual(errors, []);
+
+  // Precondition for every RUBRIC_SCENARIO_STEP_MISSING assertion below: the
+  // stem filter must have actually selected scenarios/prototype.md, or the
+  // five prototype-scoped token checks the plan requires this section to
+  // exercise non-synthetically would simply never run — passing vacuously,
+  // proving nothing. This is the "assert the scope selector actually
+  // selected prototype.md" obligation, checked directly rather than inferred
+  // from the count above.
+  assert.ok(
+    matchedScenarioFiles.includes("prototype.md"),
+    `onlyStems must select scenarios/prototype.md so TOKEN_TABLE's 'prototype' scope branch is exercised non-synthetically, matched: ${JSON.stringify(matchedScenarioFiles)}`,
+  );
+
+  // Anti-vacuity: prove the filter narrows by passing a genuine PROPER
+  // SUBSET of the real stems and asserting BOTH match counts shrink
+  // accordingly — the same habit sections 16-17 established, applied to
+  // scenarioFiles too since this section's own prototype-scope obligation
+  // depends on scenario-side filtering being real, not only rubric-side.
+  const { matchedRubricFiles: subsetRubricMatch, matchedScenarioFiles: subsetScenarioMatch } = checkRubricSet({
+    tiersPath: DEFAULT_TIERS_PATH,
+    rubricRoot: DEFAULT_RUBRIC_ROOT,
+    scenarioRoot: DEFAULT_SCENARIO_ROOT,
+    onlyStems: ["prototype"],
+  });
+  assert.deepEqual(
+    subsetRubricMatch,
+    ["prototype.yaml"],
+    "onlyStems: ['prototype'] must narrow to exactly one rubric file — proves the filter is real narrowing, not a no-op that happens to report 3",
+  );
+  assert.deepEqual(
+    subsetScenarioMatch,
+    ["prototype.md"],
+    "onlyStems: ['prototype'] must narrow to exactly one scenario file — proves the filter is real narrowing, not a no-op that happens to report 3",
+  );
+
+  // Every one of the five prototype-scoped TOKEN_TABLE rows must actually be
+  // a substring somewhere in the real scenarios/prototype.md — proven
+  // directly against the file's raw text, not only inferred from `errors`
+  // being empty above (which would also be true if TOKEN_TABLE had zero
+  // prototype-scoped rows).
+  assert.ok(PROTOTYPE_SCOPED_TOKENS.length > 0, "precondition: TOKEN_TABLE must declare at least one 'prototype'-scoped row");
+  const prototypeScenarioText = readFileSync(join(DEFAULT_SCENARIO_ROOT, "prototype.md"), "utf8");
+  for (const token of PROTOTYPE_SCOPED_TOKENS) {
+    assert.ok(
+      prototypeScenarioText.includes(token),
+      `scenarios/prototype.md is missing prototype-scoped token: ${JSON.stringify(token)}`,
+    );
+  }
+});
+
+test("no reporter rubric in this tier cites a catalog id", () => {
+  // The same predicate section 17 applies to the producer tier, over this
+  // tier's own three stems — the shared rules do not forbid a rubric from
+  // citing a catalog id at all; that ban is each producer/reporter tier's own
+  // convention, checked directly against the raw file text.
+  for (const stem of REPORTER_STEMS) {
+    const path = join(DEFAULT_RUBRIC_ROOT, `${stem}.yaml`);
+    const yamlText = readFileSync(path, "utf8");
+    assert.ok(
+      !/skill-regression:/.test(yamlText),
+      `rubrics/${stem}.yaml must cite no skill-regression: catalog id anywhere in its raw text — this tier's reporters are not detectors`,
+    );
+  }
+});
+
+test("catalog.yaml's covers_skills never names assess, confirming assess has nothing to cite", () => {
+  // Direct evidence for assess.yaml's own header-comment claim: every
+  // covers_skills line across catalog.yaml's planted_violations and
+  // known_clean lists is checked, not merely asserted in prose.
+  const catalogDoc = parseYaml(readFileSync(DEFAULT_CATALOG_PATH, "utf8"));
+  for (const list of [catalogDoc.planted_violations, catalogDoc.known_clean]) {
+    for (const entry of list) {
+      const covered = splitSlugs(entry.covers_skills);
+      assert.ok(
+        !covered.includes("assess"),
+        `catalog.yaml entry ${entry.id} covers_skills (${JSON.stringify(entry.covers_skills)}) names "assess", which assess.yaml's header comment claims never happens`,
+      );
+    }
+  }
+});
+
+// ---------------------------------------------------------------------------
+// 20. Task 7 — eval's four reference-anchor assertions
+// ---------------------------------------------------------------------------
+//
+// Per-tier reference anchors are not covered by any of the eleven shared
+// rules — a `reference` field is free text as far as `checkRubricSet` is
+// concerned. The plan requires eval.yaml to anchor a judged `reference` on
+// EACH of four named contracts, checked here as four SEPARATE assertions so
+// a falsifying edit to any one of the four literals turns exactly that
+// assertion red, and only that one.
+
+test("eval's four judged criteria anchor on the four named contracts, not an invented standard", () => {
+  const doc = loadRubric("eval.yaml", { projectRoot: DEFAULT_RUBRIC_ROOT });
+  const refs = (doc.quality_dimensions ?? [])
+    .map((c) => c.reference)
+    .filter((r) => typeof r === "string");
+
+  assert.ok(
+    refs.some((r) => r.includes("skills/eval/default-rubric.yaml")),
+    "eval.yaml must anchor a quality_dimensions[].reference on the literal path skills/eval/default-rubric.yaml",
+  );
+  assert.ok(
+    refs.some((r) => r.includes("ELEMENT_VERDICTS") || r.includes("CRITERION_VERDICTS")),
+    "eval.yaml must anchor a quality_dimensions[].reference on ELEMENT_VERDICTS or CRITERION_VERDICTS (lib/evals/rubric-schema.mjs)",
+  );
+  assert.ok(
+    refs.some((r) => r.includes("HALF_STATUSES")),
+    "eval.yaml must anchor a quality_dimensions[].reference on HALF_STATUSES (lib/evals/score-schema.mjs)",
+  );
+  assert.ok(
+    refs.some((r) => r.includes("id, kind, verdict")),
+    "eval.yaml must anchor a quality_dimensions[].reference on the score-report table's id, kind, verdict column structure (lib/cli/eval.mjs's renderTable)",
+  );
+});

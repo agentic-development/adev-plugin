@@ -1,0 +1,93 @@
+# Layer 3 rubric for /adev:prototype, scored against the skill-regression
+# fixture (tests/evals/skill-regression/). Field shapes verbatim from
+# skills/eval/default-rubric.yaml — the exemplar. All values flat: no nested
+# maps, since the repo's minimal YAML readers cannot represent them.
+#
+# PRODUCER, NOT DETECTOR: this rubric cites no skill-regression PV/KC pair.
+# prototype neither audits the fixture nor emits a finding about a planted
+# defect class — it generates UI scaffolding from a charter. Every
+# required_elements[].source below is `output:` or `artifact:` only.
+#
+# SCORED AT WIREFRAME (OR MOCKUP) TIER ONLY, NEVER FUNCTIONAL: the functional
+# tier's own generation rule pulls CDN imports with no build step (per
+# skills/prototype/SKILL.md's Step 3 per-tier rules), which means a real
+# functional-tier run initiates network egress this scenario's git-status-
+# based capture has no way to observe, block, or account for. This rubric and
+# its scenario run the wireframe tier exclusively — scored tier:
+# non-functional — so no functional-tier run is ever exercised here.
+#
+# Scored input: the generated prototype tree — the wireframe-tier files this
+# scenario's `/adev:prototype --module orders --tier wireframe` run produces
+# and, on the "keep" persistence choice, copies to `.adev/prototype/orders/`
+# inside the scenario copy — plus the server lifecycle transcript (bound
+# port, recorded PID, and the post-teardown loopback probe) `scenarios/
+# prototype.md` walks through.
+#
+# Spec: .context-index/specs/features/eval-harness/rubric-set-change-imminent.spec.md
+
+rubric_id: "skill-regression-prototype"
+version: 1
+layer: 3
+verdict_values: "met | not_met | unknown (judged criteria) | not_applicable (deterministic elements)"
+skill: prototype
+scenario: prototype
+
+required_elements:
+  - id: tier_selected_is_non_functional
+    description: "The confirmed tier is wireframe or mockup, never functional, matching this scenario's scored tier: non-functional scope"
+    source: "output: the tier confirmation in the /adev:prototype transcript"
+    met_when: "the confirmed tier reads wireframe or mockup"
+    not_applicable_when: "never — Step 2 always confirms a tier before generation begins"
+
+  - id: wireframe_output_carries_no_network_or_cdn_references
+    description: "The persisted wireframe carries no CDN import or outbound network reference"
+    source: "artifact: .adev/prototype/orders/index.html"
+    met_when: "the persisted index.html contains no CDN script tag and no fetch/XHR/WebSocket call to an external host, matching the wireframe tier's semantic-HTML-only generation rule in skills/prototype/SKILL.md's Step 3"
+    not_applicable_when: "never — Step 3 always writes at least one index.html regardless of tier"
+
+  - id: server_bound_to_loopback_only
+    description: "The prototype server binds to loopback only, never 0.0.0.0"
+    source: "output: the prototype server's reported bind address in the transcript"
+    met_when: "the server reports binding to 127.0.0.1 (loopback) — never 0.0.0.0 — per skills/prototype/SKILL.md's Red Flags and lib/prototype-server.mjs's tryListen, which calls server.listen with '127.0.0.1' as the bind host"
+    not_applicable_when: "never — Step 4 always starts the server through startServer, which always binds loopback-only"
+
+  - id: gitignore_managed_block_spliced_on_persist
+    description: "Choosing keep splices the adev:gitignore managed block (including .adev/) into the copy's .gitignore"
+    source: "artifact: .gitignore"
+    met_when: "the copy's .gitignore carries the '# >>> adev:gitignore >>>' / '# <<< adev:gitignore <<<' managed block with a .adev/ entry inside it, installed by adev prototype ensure-gitignore during the keep path"
+    not_applicable_when: "the session ended in discard, in which case ensure-gitignore is never invoked, per Step 6"
+
+  - id: persisted_tree_lands_under_adev_prototype_module
+    description: "The kept prototype's files land at .adev/prototype/orders/, matching the module argument, and the temp directory is removed afterward"
+    source: "artifact: .adev/prototype/orders/"
+    met_when: "the kept prototype's files are copied to .adev/prototype/orders/ and the session's temp directory no longer exists afterward, per Step 6"
+    not_applicable_when: "the session ended in discard, in which case nothing is persisted under .adev/prototype/, per Step 6"
+
+quality_dimensions:
+  - id: wireframe_conveys_information_hierarchy_not_visual_design
+    criterion: "Does the wireframe tier's markup convey information hierarchy (headings, lists, sections, nav) rather than visual design intent (color, typography, spacing, borders)?"
+    reference: "skills/prototype/SKILL.md's Wireframe generation rule ('Shows information hierarchy, not visual design') and its Mockup rule, which is where visual styling belongs instead"
+    met_when: "the generated markup uses semantic structural elements and placeholder text, with no color, font, or spacing styling beyond a basic layout reset"
+    not_met_when: "the generated markup carries visual styling (colors, custom typography, borders, spacing beyond a basic reset) that belongs to the mockup tier instead"
+    unknown_when: "the generated markup is unavailable to inspect"
+
+  - id: charter_intent_reflected_in_generated_structure
+    criterion: "Does the generated prototype's structure map recognizably to the orders charter's Business Intent and Capability Map sections, rather than a generic layout unrelated to order intake?"
+    reference: "the loaded charter at .context-index/specs/features/orders/charter.md's Business Intent and Capability Map sections, per Step 1 of skills/prototype/SKILL.md"
+    met_when: "the generated structure's sections or headings recognizably correspond to order intake and the Validate and price an order payload capability the charter names"
+    not_met_when: "the generated structure bears no recognizable relationship to the charter's Business Intent or Capability Map"
+    unknown_when: "the charter content used to generate the prototype is unavailable to compare against"
+
+  - id: teardown_leaves_no_orphaned_server_process
+    criterion: "Was the HTTP server actually stopped at session end, evidenced by the recorded PID no longer present and the bound port refusing new connections, rather than merely trusting the session's exit to reap it?"
+    reference: "skills/prototype/SKILL.md's Step 7 Cleanup ('The HTTP server MUST always be stopped when the session ends ... No orphaned server processes') and its Red Flags section"
+    met_when: "after kill <recorded-pid> runs, a real connection attempt to the recorded port confirms no listener on <port> after teardown"
+    not_met_when: "a real connection attempt after teardown still succeeds, or no post-teardown connection check was performed at all"
+    unknown_when: "the recorded PID or port was never captured, so no teardown verification is possible"
+
+layer3_max_points: 25
+required_element_points: 10
+judged_criterion_points: 15
+unknown_policy: "exclude_from_denominator"
+not_applicable_policy: "exclude_from_denominator"
+insufficient_evidence_threshold_percent: 40
