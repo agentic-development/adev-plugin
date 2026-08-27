@@ -1,0 +1,125 @@
+# Layer 3 rubric for /adev:validate, scored against the skill-regression
+# fixture (tests/evals/skill-regression/). Field shapes verbatim from
+# skills/eval/default-rubric.yaml — the exemplar. All values flat: no nested
+# maps, since the repo's minimal YAML readers cannot represent them.
+#
+# Scored input: the PASS/FAIL report, written to
+# <spec-slug>.validate.md after a scenario run against a temp-tree copy of
+# tests/evals/skill-regression/project (see scenarios/validate.md).
+#
+# Citations: skill-regression:PV-01/KC-01 (spec-code-drift, via Check 2:
+# Spec Compliance), PV-06/KC-06 (esm-violation, via Check 4: Constitution
+# Compliance). Every met_when below is phrased against catalog.yaml's
+# detect_when/must_not_flag_when clause — the finding a correct validation
+# run produces — never against the fixture's in-file answer-key label, so
+# the element survives the fixture's own redaction with no edit.
+#
+# This rubric scores the report over a DELIBERATELY EMPTY gate set: the
+# fixture's own .context-index/governance/validate.yaml declares no
+# quality-gate `command:` (see that file's own header comment), and
+# lib/domains/merge-gates.mjs's INVALID_GATE path warns and drops a
+# malformed or absent gate rather than throwing. required_element
+# gate_section_honest_about_empty_set asserts the honest form of that —
+# "the gate section is present and reports zero configured gates" — not
+# that a gate ran, which would be red by construction against this fixture.
+#
+# Spec: .context-index/specs/features/eval-harness/rubric-set-core-lifecycle.spec.md
+
+rubric_id: "skill-regression-validate"
+version: 1
+layer: 3
+verdict_values: "met | not_met | unknown (judged criteria) | not_applicable (deterministic elements)"
+skill: validate
+scenario: validate
+
+required_elements:
+  - id: pv01_spec_code_drift_detected
+    description: "Check 2: Spec Compliance names the planted behavioral drift"
+    source: "skill-regression:PV-01"
+    met_when: "Check 2 records shipping-rates.spec.md behavior B7 as FAIL or PARTIAL, citing that src/shipping/rates.mjs no longer implements the half-up rounding the spec still specifies, per catalog.yaml PV-01's detect_when"
+    not_applicable_when: "never — the fixture always plants this defect"
+
+  - id: kc01_spec_code_drift_not_flagged
+    description: "The specificity twin of PV-01: a spec behavior the code correctly implements must not be flagged as drifted"
+    source: "skill-regression:KC-01"
+    met_when: "Check 2 does not record create-order.spec.md behavior B2 as FAIL or PARTIAL, given src/orders/create-order.mjs defaults discountCents to 0 exactly as worded, per catalog.yaml KC-01's must_not_flag_when"
+    not_applicable_when: "never — the fixture always ships this known-clean twin"
+
+  - id: pv06_esm_violation_detected
+    description: "Check 4: Constitution Compliance names the planted CommonJS file"
+    source: "skill-regression:PV-06"
+    met_when: "Check 4 cites src/orders/legacy-loader.js against principle 1 (Pure ESM), per catalog.yaml PV-06's detect_when"
+    not_applicable_when: "never — the fixture always plants this defect"
+
+  - id: kc06_esm_violation_not_flagged
+    description: "The specificity twin of PV-06: an ESM file must not be cited as a Pure ESM violation"
+    source: "skill-regression:KC-06"
+    met_when: "Check 4 does not cite src/orders/create-order.mjs against principle 1, given it is .mjs and uses export syntax with no require call, per catalog.yaml KC-06's must_not_flag_when"
+    not_applicable_when: "never — the fixture always ships this known-clean twin"
+
+  - id: gate_section_honest_about_empty_set
+    description: "Check 1: Quality Gates reports the fixture's true, empty gate configuration rather than fabricating a run"
+    source: "the report's Check 1 section"
+    met_when: "Check 1 is present in the report and states that no gates are configured (SKIP with the documented advisory, or an explicit zero-gates note) — never a PASS or FAIL implying a gate command executed"
+    not_applicable_when: "never — the copy's governance/validate.yaml declares no gate command in every run"
+
+  - id: overall_status_present
+    description: "The report states an Overall Status matching the aggregate of every surviving check's verdict"
+    source: "the report's header"
+    met_when: "the header's Overall Status field is PASS or FAIL, and equals FAIL if and only if at least one surviving check (1.5, 2, 4, and any conditionally-run check) recorded FAIL"
+    not_applicable_when: "never — the report always states an Overall Status"
+
+  - id: check2_findings_read_grounded
+    description: "Every Check 2 verdict cites a file it actually read, not a plan checkbox"
+    source: "Check 2's per-criterion findings"
+    met_when: "every FAIL or PARTIAL recorded under Check 2 cites a file:line reference, and no criterion's evidence is a plan.md checkbox"
+    not_applicable_when: "never — Check 2 always records at least the two behaviors PV-01/KC-01 cite"
+
+  - id: completion_token_emitted
+    description: "The chat transcript ends with the machine-readable completion token"
+    source: "the final line of the chat transcript"
+    met_when: "the transcript's final line is exactly ADEV-VALIDATE: PASS or ADEV-VALIDATE: FAIL, as plain text with no trailing prose"
+    not_applicable_when: "never — the skill always emits this line once Overall Status is known"
+
+quality_dimensions:
+  - id: check2_grounded_in_reads
+    criterion: "Is every Check 2 verdict grounded in an actual Read tool call over the cited file, rather than inferred from the spec or the plan alone?"
+    reference: "Check 2: Spec Compliance, the anti-fabrication rule, in skills/validate/SKILL.md"
+    met_when: "every cited file:line in Check 2 corresponds to content that exists at that location in the actual file"
+    not_met_when: "at least one cited file:line does not match the actual file content, or a criterion is verified with no file citation at all"
+    unknown_when: "Check 2 records no criteria for the spec under test"
+
+  - id: check4_semantic_intent
+    criterion: "Is the ESM-violation finding assessed against principle 1's semantic intent — the file actually using require() / module.exports at runtime — rather than a surface keyword match?"
+    reference: "Check 4: Constitution Compliance in skills/validate/SKILL.md"
+    met_when: "the finding's explanation names the specific require() or module.exports usage that violates Pure ESM, not merely the file's .js extension"
+    not_met_when: "the finding cites the file extension alone with no reference to its actual require()/module.exports usage"
+    unknown_when: "Check 4 records no finding for src/orders/legacy-loader.js at all"
+
+  - id: gate_configuration_honesty
+    criterion: "Does the report distinguish 'no gates are configured' from 'gates ran and passed', per the Gate Source Resolution rule that an empty gate list SKIPs rather than PASSes?"
+    reference: "Check 1: Quality Gates § Gate Source Resolution in skills/validate/SKILL.md"
+    met_when: "the Check 1 section's status and advisory match the empty-list SKIP branch documented in Gate Source Resolution"
+    not_met_when: "Check 1 reports PASS or FAIL with no advisory explaining that zero gates were resolved"
+    unknown_when: "the report omits a Check 1 section entirely"
+
+  - id: report_format_fidelity
+    criterion: "Does the written report match the documented Report Format shape — frontmatter first, then the per-check sections in the surviving-check order, then a Summary line?"
+    reference: "Report Format in skills/validate/SKILL.md"
+    met_when: "the report opens with frontmatter before any heading, and every surviving check appears as its own numbered section culminating in a Summary line"
+    not_met_when: "a heading or prose precedes the frontmatter delimiter, or a surviving check has no corresponding section"
+    unknown_when: "the report was not written at all"
+
+  - id: anti_fabrication_traceable
+    criterion: "Can every file:line citation in the report be traced to a Read tool call made during this validation run, per the anti-fabrication rule?"
+    reference: "Check 2: Spec Compliance § Anti-fabrication rule in skills/validate/SKILL.md"
+    met_when: "every citation in the report corresponds to a file the run actually read, and any file the run could not read is stated explicitly rather than guessed"
+    not_met_when: "at least one citation names content that does not appear at the cited location"
+    unknown_when: "the report carries no file:line citations at all"
+
+layer3_max_points: 25
+required_element_points: 10
+judged_criterion_points: 15
+unknown_policy: "exclude_from_denominator"
+not_applicable_policy: "exclude_from_denominator"
+insufficient_evidence_threshold_percent: 40
