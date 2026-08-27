@@ -5,7 +5,7 @@
  * composition, so a new bundled or domain entry no longer activates by itself:
  * someone has to materialize it. That makes this pass the ONLY
  * upgrade-adoption channel, and it now covers all four registries
- * (`validate`, `review`, `diagnostics`, `gates`) plus two sub-audits:
+ * (`validate`, `review`, `diagnostics`, `gates`) plus three sub-audits:
  *
  *   - `hygiene/disabled-bundled-entry`      (warning) — a bundled/domain entry
  *     switched off in the project file, which the unadopted-upgrade half can
@@ -13,6 +13,11 @@
  *   - `hygiene/non-project-execution-field` (info)    — every non-`project`
  *     entry carrying `command`, `runner`, `prompt` or `pattern`, so an
  *     extension-appended `command` that reaches `spawnSync` is visible.
+ *   - `hygiene/entry-field-drift`           (warning) — a `bundled`/
+ *     `domain:*`-sourced entry whose FIELDS (`context_pack`, `profile`,
+ *     `severity_cap`, `dispatch`) no longer match the matching-id entry in
+ *     the source it names. Both id-set audits are blind to this: the entry is
+ *     present in both files, only its fields moved.
  *
  * Spec: .context-index/specs/cross-cutting/explicit-governance-registries.spec.md
  * Plan-task: 17
@@ -110,6 +115,17 @@ function addStarterEntry(ctx, registry, entry) {
     ? join(ctx.dir, ".context-index/domains", DOMAIN, starterFile)
     : join(ctx.pluginRoot, "templates", TEMPLATE[registry]);
   appendEntry(abs, entry);
+}
+
+/**
+ * Seed an entry into the registry's BUNDLED TEMPLATE specifically — distinct
+ * from {@link addStarterEntry}, which prefers the domain overlay when a
+ * registry has one (`gates` has both). A `source: bundled` entry must be
+ * compared against the template, never the domain overlay, so tests that
+ * pin that need a way to target the template even for `gates`.
+ */
+function addBundledTemplateEntry(ctx, registry, entry) {
+  appendEntry(join(ctx.pluginRoot, "templates", TEMPLATE[registry]), entry);
 }
 
 async function runPass19(ctx) {
@@ -493,4 +509,248 @@ test(
       1,
     );
   }),
+);
+
+// ────────────────────────────────────────────────────────────────────────
+// hygiene/entry-field-drift — audit 4.
+//
+// The id-set audits (1: unadopted-upgrade/project-addition, and the
+// execution-field audit 3) both key on entry ID. An entry present in BOTH the
+// project file and its source is invisible to them no matter how far its
+// FIELDS have diverged. This is the gap that let a reviewer's context_pack
+// stay narrowed to 'base' for five days in this very repo with no error,
+// warning, or failed run (issue-cp2l2e).
+// ────────────────────────────────────────────────────────────────────────
+
+test(
+  "a context_pack divergence from a domain-sourced entry is reported at warning, naming both values",
+  withProject(async (ctx) => {
+    addStarterEntry(ctx, "review", { id: "consistency-analyzer", context_pack: "consistency" });
+    seedEntry(ctx, "review", {
+      id: "consistency-analyzer",
+      source: `domain:${DOMAIN}`,
+      context_pack: "base",
+    });
+    const f = (await runPass19(ctx)).find(
+      (x) => x.id === "hygiene/entry-field-drift" && x.entry_id === "consistency-analyzer",
+    );
+    assert.ok(f, "expected an entry-field-drift finding");
+    assert.equal(f.severity, "warning");
+    assert.equal(f.registry, "review");
+    assert.equal(f.field, "context_pack");
+    assert.equal(f.project_value, "base");
+    assert.equal(f.profile_value, "consistency");
+    assert.match(f.message, /context_pack/);
+    assert.match(f.message, /'base'/);
+    assert.match(f.message, /'consistency'/);
+  }),
+);
+
+test(
+  "a domain-sourced entry whose fields still match its profile produces no field-drift finding",
+  withProject(async (ctx) => {
+    addStarterEntry(ctx, "review", {
+      id: "wiring-reviewer",
+      context_pack: "wiring",
+      profile: "reviewer-capable",
+      severity_cap: "blocker",
+    });
+    seedEntry(ctx, "review", {
+      id: "wiring-reviewer",
+      source: `domain:${DOMAIN}`,
+      context_pack: "wiring",
+      profile: "reviewer-capable",
+      severity_cap: "blocker",
+    });
+    const findings = (await runPass19(ctx)).filter((f) => f.id === "hygiene/entry-field-drift");
+    assert.equal(findings.length, 0);
+  }),
+);
+
+test(
+  "a bundled-sourced entry's field divergence is compared against the bundled template, not the domain overlay",
+  withProject(async (ctx) => {
+    // The domain overlay declares a DIFFERENT value for the same field/id —
+    // if the audit fell back to it for a 'bundled' source, this would either
+    // miss the real divergence or report the wrong one.
+    addStarterEntry(ctx, "gates", { id: "shared-gate", severity_cap: "warning" });
+    seedEntry(ctx, "gates", { id: "shared-gate", source: "bundled", severity_cap: "info" });
+    const noTemplateMatch = (await runPass19(ctx)).filter(
+      (f) => f.id === "hygiene/entry-field-drift" && f.entry_id === "shared-gate",
+    );
+    assert.equal(
+      noTemplateMatch.length,
+      0,
+      "no bundled-template entry with this id exists yet — nothing to compare a 'bundled' source against",
+    );
+
+    addBundledTemplateEntry(ctx, "gates", { id: "shared-gate-2", severity_cap: "warning" });
+    seedEntry(ctx, "gates", { id: "shared-gate-2", source: "bundled", severity_cap: "info" });
+    const f2 = (await runPass19(ctx)).find(
+      (x) => x.id === "hygiene/entry-field-drift" && x.entry_id === "shared-gate-2",
+    );
+    assert.ok(f2, "expected the bundled-template divergence to be reported");
+    assert.equal(f2.project_value, "info");
+    assert.equal(f2.profile_value, "warning");
+  }),
+);
+
+test(
+  "a field present on only one side is reported against '(not set)' on the other",
+  withProject(async (ctx) => {
+    addStarterEntry(ctx, "review", { id: "dropped-field-reviewer", severity_cap: "blocker" });
+    seedEntry(ctx, "review", { id: "dropped-field-reviewer", source: `domain:${DOMAIN}` });
+    const f = (await runPass19(ctx)).find(
+      (x) => x.id === "hygiene/entry-field-drift" && x.entry_id === "dropped-field-reviewer",
+    );
+    assert.ok(f, "expected a finding for the field only the profile declares");
+    assert.equal(f.field, "severity_cap");
+    assert.equal(f.project_value, undefined);
+    assert.equal(f.profile_value, "blocker");
+    assert.match(f.message, /\(not set\)/);
+  }),
+);
+
+test(
+  "a field outside the drift set never triggers a finding, even when it differs",
+  withProject(async (ctx) => {
+    addStarterEntry(ctx, "review", { id: "name-drift-reviewer", name: "New Name" });
+    seedEntry(ctx, "review", { id: "name-drift-reviewer", source: `domain:${DOMAIN}`, name: "Old Name" });
+    const findings = (await runPass19(ctx)).filter(
+      (f) => f.id === "hygiene/entry-field-drift" && f.entry_id === "name-drift-reviewer",
+    );
+    assert.equal(findings.length, 0, "name is not in FIELD_DRIFT_FIELDS");
+  }),
+);
+
+test(
+  "a project-sourced entry never produces a field-drift finding",
+  withProject(async (ctx) => {
+    addStarterEntry(ctx, "review", { id: "own-reviewer", context_pack: "architecture" });
+    seedEntry(ctx, "review", { id: "own-reviewer", source: "project", context_pack: "base" });
+    const findings = (await runPass19(ctx)).filter(
+      (f) => f.id === "hygiene/entry-field-drift" && f.entry_id === "own-reviewer",
+    );
+    assert.equal(findings.length, 0, "a project entry has no source to diverge from");
+  }),
+);
+
+test(
+  "an entry with no source at all (defaults to project) never produces a field-drift finding",
+  withProject(async (ctx) => {
+    addStarterEntry(ctx, "review", { id: "bare-reviewer", context_pack: "architecture" });
+    seedEntry(ctx, "review", { id: "bare-reviewer", context_pack: "base" });
+    const findings = (await runPass19(ctx)).filter(
+      (f) => f.id === "hygiene/entry-field-drift" && f.entry_id === "bare-reviewer",
+    );
+    assert.equal(findings.length, 0);
+  }),
+);
+
+test(
+  "the dispatch field is compared structurally — same nested keys in a different order is not drift",
+  withProject(async (ctx) => {
+    const overlayPath = join(ctx.dir, ".context-index/domains", DOMAIN, "reviewers.yaml");
+    writeFileSync(
+      overlayPath,
+      [
+        "reviewers:",
+        "  - id: dispatch-match-reviewer",
+        "    dispatch:",
+        "      triggered:",
+        "        min_score: 1",
+        "        keywords: [loop, retry]",
+        "",
+      ].join("\n"),
+    );
+    const reviewPath = join(ctx.dir, ".context-index/governance/review.yaml");
+    const lines = readFileSync(reviewPath, "utf8").split("\n");
+    const markerAt = lines.findIndex((l) => l.startsWith("materialized_at:"));
+    lines.splice(
+      markerAt,
+      0,
+      "  - id: dispatch-match-reviewer",
+      `    source: domain:${DOMAIN}`,
+      "    dispatch:",
+      "      triggered:",
+      "        keywords: [loop, retry]",
+      "        min_score: 1",
+      "",
+    );
+    writeFileSync(reviewPath, lines.join("\n"));
+
+    const findings = (await runPass19(ctx)).filter(
+      (f) =>
+        f.id === "hygiene/entry-field-drift" &&
+        f.entry_id === "dispatch-match-reviewer" &&
+        f.field === "dispatch",
+    );
+    assert.equal(findings.length, 0, "same nested keys in a different order must not read as drift");
+  }),
+);
+
+test(
+  "a genuinely different dispatch shape IS reported as drift",
+  withProject(async (ctx) => {
+    const overlayPath = join(ctx.dir, ".context-index/domains", DOMAIN, "reviewers.yaml");
+    writeFileSync(overlayPath, ["reviewers:", "  - id: dispatch-diff-reviewer", "    dispatch: always", ""].join("\n"));
+    const reviewPath = join(ctx.dir, ".context-index/governance/review.yaml");
+    const lines = readFileSync(reviewPath, "utf8").split("\n");
+    const markerAt = lines.findIndex((l) => l.startsWith("materialized_at:"));
+    lines.splice(
+      markerAt,
+      0,
+      "  - id: dispatch-diff-reviewer",
+      `    source: domain:${DOMAIN}`,
+      "    dispatch: triggered",
+      "",
+    );
+    writeFileSync(reviewPath, lines.join("\n"));
+
+    const f = (await runPass19(ctx)).find(
+      (x) =>
+        x.id === "hygiene/entry-field-drift" &&
+        x.entry_id === "dispatch-diff-reviewer" &&
+        x.field === "dispatch",
+    );
+    assert.ok(f, "expected a dispatch drift finding");
+    assert.equal(f.project_value, "triggered");
+    assert.equal(f.profile_value, "always");
+  }),
+);
+
+test("adev governance drift surfaces entry-field-drift in its JSON envelope", async () => {
+  const ctx = setupProject();
+  try {
+    addStarterEntry(ctx, "review", { id: "envelope-reviewer", context_pack: "architecture" });
+    seedEntry(ctx, "review", { id: "envelope-reviewer", source: `domain:${DOMAIN}`, context_pack: "base" });
+    const r = cli(["governance", "drift", "--json"], ctx.dir);
+    assert.equal(r.status, 0, r.stderr);
+    const envelope = JSON.parse(r.stdout);
+    const f = envelope.findings.find(
+      (x) => x.id === "hygiene/entry-field-drift" && x.entry_id === "envelope-reviewer",
+    );
+    assert.ok(f, "envelope must carry the field-drift finding");
+    assert.equal(f.severity, "warning");
+    assert.ok(envelope.summary.warning_count >= 1);
+  } finally {
+    cleanupTempDir(ctx.dir);
+  }
+});
+
+test(
+  "the entry-field-drift audit reproduces this repository's own currently-live context_pack divergence",
+  async () => {
+    // Regression pin for issue-cp2l2e: this repo's own review.yaml carries an
+    // active (non-disabled) consistency-analyzer entry whose context_pack
+    // ('base') has diverged from the software domain profile ('consistency')
+    // since commit 631a12ad. Pre-fix, Pass 19 was silent about it.
+    const result = await runRegistryDriftPass(PLUGIN_ROOT, { registry: "review" });
+    const f = result.findings.find(
+      (x) => x.id === "hygiene/entry-field-drift" && x.entry_id === "consistency-analyzer",
+    );
+    assert.ok(f, "expected the live context_pack divergence to be reported");
+    assert.equal(f.field, "context_pack");
+    assert.equal(f.severity, "warning");
+  },
 );

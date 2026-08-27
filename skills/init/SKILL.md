@@ -761,6 +761,7 @@ adev Context Index — Health Check
 ✗ Samples             empty directory
 ✓ External References references/ matches manifest (2 configured, 2 present)
 ✓ Governance          gates.yaml, boundaries.yaml, risk-policies.yaml configured
+⚠ Gate Liveness       1 gate command still uses the pre-argv shell-string form
 ✓ Sync Status         CLAUDE.md matches constitution (synced 2 days ago)
 ⚠ Plugin Conflict     Superpowers is active globally but not disabled for this project
 ✗ Task Management     no tasks: section in manifest.yaml
@@ -772,13 +773,43 @@ Issues found:
 4. Superpowers plugin may conflict with adev workflows
 5. Task management not configured — /adev:plan and /adev:implement
    cannot track issues without tasks.backend in manifest.yaml
+6. governance/gates.yaml has 1 gate command still in the pre-argv shell-string
+   form — dropped at load, so it runs zero checks while looking configured
 
 → Fix issue 1: create charter for user-management? (yes / skip)
 → Fix issue 2: draft ADRs from git history? (yes / skip)
 → Fix issue 3: I'll skip samples for now
 → Fix issue 4: disable Superpowers for this project? (yes / no)
 → Fix issue 5: enable task management? (file / beads / skip)
+→ Fix issue 6: migrate gate commands to argv form? (yes / skip)
 ```
+
+**Gate Liveness check:** `Governance` above only checks that `gates.yaml` (and
+its siblings) exist — a project can have a well-formed, present gates.yaml
+whose gates are dropped at load and never run, which reads identically to a
+project that passed them. Run:
+
+```bash
+adev governance migrate-gates --dry-run --json
+```
+
+Parse the JSON envelope's `migrated` and `skipped` arrays.
+
+- Both empty: `✓ Gate Liveness` — no legacy shell-string commands found.
+- `migrated` non-empty: `⚠ Gate Liveness` — N command(s) can be safely rewritten
+  to argv form. Add an issue naming the count. On `yes`, re-run
+  `adev governance migrate-gates` (without `--dry-run`) and report each
+  command it rewrote.
+- `skipped` non-empty: report those commands too — they contain shell
+  metacharacters and were left as-is; note that they need a human to rewrite
+  as an argv list or split into separate gates, since `migrate-gates` will
+  never guess at a command it cannot safely split.
+
+This check exists specifically because a plugin-cache version bump — the
+common way this plugin itself upgrades — never runs `adev upgrade`, so a
+project that only ever upgraded that way never received this repair. This
+diagnostic-mode check is the reachable second path, run whenever a user
+actually re-runs `/adev:init` after an upgrade.
 
 **Fix issue 5 behavior (task management):**
 
