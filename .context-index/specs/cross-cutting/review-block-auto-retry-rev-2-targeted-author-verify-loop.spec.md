@@ -38,6 +38,8 @@ source-manifest:
     - tests/evals/convergence/README.md
     - tests/evals/convergence/results/convergence-eval-2026-08-22.md
     - tests/evals/convergence/results/convergence-eval-2026-08-23.md
+    - tests/evals/convergence/results/convergence-eval-2026-08-24.md
+    - tests/evals/convergence/results/convergence-eval-2026-08-27-clean.md
     - tests/evals/convergence/run-convergence-eval.mjs
     - tests/evals/integration-sandbox/.context-index/governance/review.yaml
     - tests/evals/integration-sandbox/.context-index/specs/cross-cutting/broken-loop-fixture.spec.md
