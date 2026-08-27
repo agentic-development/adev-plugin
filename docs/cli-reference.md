@@ -62,6 +62,7 @@ This file is the CLI counterpart to [`skill-reference.md`](skill-reference.md) (
 | `test-helpers` | Emit the shared test-helper/fixture/test-sample inventory; check a test file for helper duplication | `lib/cli/test-helpers.mjs` |
 | `test-debt` | Scan the test suite for accreted debt (hygiene Audit Pass 23) | `lib/cli/test-debt.mjs` |
 | `eval` | Score a verdict set against a rubric (`eval score`) | `lib/cli/eval.mjs` |
+| `repomap` | Generate repo-map.md / dependency-graph.json / symbol-ranks.json via tree-sitter (or regex fallback) | `lib/cli/repomap.mjs` |
 
 ---
 
@@ -1107,6 +1108,40 @@ adev eval score --rubric default --input .adev/eval/latest-verdicts.json --json
 **Implementation:** `lib/cli/eval.mjs` (engine: `lib/evals/rubric.mjs`, `lib/evals/score.mjs`).
 **Called by:** `/adev:eval` Layer 3, Step 3 — aggregates the deterministic and judged halves into
 the half-level trend score once Steps 1 and 2 produce every verdict it needs.
+
+### `repomap`
+
+**Purpose:** CLI surface over `lib/repomap/` — the tree-sitter AST parser + PageRank ranker
+(`.context-index/specs/features/tree-sitter-repomap/charter.md`). `generate` wraps
+`lib/repomap/index.mjs`'s `run(root, mode)` orchestrator; `check-deps` wraps
+`lib/repomap/check-deps.mjs`'s `isTreeSitterAvailable()`.
+
+**Signature:**
+```
+adev repomap generate [--mode tree-sitter|regex] [--format json|text]
+adev repomap check-deps [--format json|text]
+```
+
+- `generate` writes, under the project root's `.context-index/hygiene/`: `repo-map.md` always;
+  `dependency-graph.json` and `symbol-ranks.json` only in tree-sitter mode (the charter's
+  regex-mode invariant — no JSON artifacts without an AST). Omitting `--mode` auto-detects via
+  `isTreeSitterAvailable()`. `--mode tree-sitter` when `web-tree-sitter` is not resolvable exits 1.
+- `check-deps` exits 0 if `web-tree-sitter` is resolvable, 1 otherwise — used to report the mode a
+  run will take before generating.
+- `--format json` (generate) prints `{mode, artifacts, files, edges, symbols, topSymbol}`, derived
+  by reading the artifacts the pipeline just wrote (`files`/`edges`/`symbols`/`topSymbol` are
+  `null` in regex mode). `--format text` (default) prints the same facts as a human summary.
+
+**Example:**
+```
+adev repomap check-deps
+adev repomap generate --format json
+adev repomap generate --mode regex
+```
+
+**Implementation:** `lib/cli/repomap.mjs` (engine: `lib/repomap/index.mjs`, `lib/repomap/check-deps.mjs`).
+**Called by:** `/adev:repomap`. Its output artifacts are consumed by `/adev:hygiene`,
+`/adev:codehealth`, `/adev:route`, `/adev:validate`, `/adev:implement`, `/adev:recover`.
 
 ### `worktree`
 
