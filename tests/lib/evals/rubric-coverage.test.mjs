@@ -38,7 +38,7 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, symlinkSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
@@ -68,13 +68,29 @@ const DEFAULT_SKILLS_ROOT = join(REPO_ROOT, "skills");
 // resolves twins here, never by string arithmetic on an id).
 const DEFAULT_CATALOG_PATH = join(REPO_ROOT, "tests", "evals", "skill-regression", "catalog.yaml");
 
+/**
+ * `RUBRIC_LEGACY_SURVIVES`'s two enumerated roots — two enumerated roots,
+ * both named, both scanned, never a repo-wide shape scan (a repo-wide scan
+ * would go red on landing against 21 legacy-shaped rubrics that live in
+ * five other, out-of-charter eval harnesses; see section 24 below).
+ */
+const DEFAULT_LEGACY_ROOTS = Object.freeze([
+  join(REPO_ROOT, "tests", "evals", "skill-regression", "rubrics"),
+  join(REPO_ROOT, "tests", "evals", "skill-compression"),
+]);
+
 /** The shape `baseline_exception_issue` / `spec_behaviour_gap_issue` must take, when present. */
 const EXCEPTION_ID_RE = /^[a-z][a-z0-9-]*-[0-9a-z]+$/;
 
 /** An exact `skill-regression:PV-nn` or `skill-regression:KC-nn` citation, and nothing else. */
 const SKILL_REGRESSION_CITATION_RE = /^skill-regression:(PV-\d+|KC-\d+)$/;
 
-/** All eleven codes have an implemented branch as of Task 3. */
+/**
+ * All eleven change-imminent codes have an implemented branch as of Task 3
+ * of the sibling plan. rubric-set-core-lifecycle Task 1 adds three more:
+ * RUBRIC_CORE_ELEMENT_FLOOR, RUBRIC_COVERS_SKILLS_UNLISTED,
+ * RUBRIC_LEGACY_SURVIVES — fourteen total.
+ */
 const IMPLEMENTED_CODES = Object.freeze([
   "RUBRIC_TIER_INCOMPLETE",
   "RUBRIC_TIER_ORPHAN",
@@ -87,6 +103,9 @@ const IMPLEMENTED_CODES = Object.freeze([
   "RUBRIC_EXCEPTION_ID_MALFORMED",
   "RUBRIC_TWIN_UNCITED",
   "RUBRIC_SCENARIO_STEP_MISSING",
+  "RUBRIC_CORE_ELEMENT_FLOOR",
+  "RUBRIC_COVERS_SKILLS_UNLISTED",
+  "RUBRIC_LEGACY_SURVIVES",
 ]);
 
 /**
@@ -166,9 +185,72 @@ function bucketKeysOf(tiersDoc) {
 }
 
 /**
- * The eleven `RUBRIC_*` coverage rules, decided by `tiersPath` and the
- * filesystem alone. Only four have branches at Task 1; the rest are no-ops
- * reserved for Tasks 2 and 3.
+ * The four raw-text legacy markers `RUBRIC_LEGACY_SURVIVES` fires on, each
+ * its own independently-testable branch (a falsification that deletes one
+ * row must never affect another row's rejecting input). Deliberately loose,
+ * line-anchored regexes over raw text — no YAML parsing, so a file that
+ * fails to parse entirely is still fully in scope.
+ */
+const LEGACY_MARKERS = Object.freeze([
+  { name: "a numeric weight: key", re: /^[ \t]*weight:\s*-?\d/m },
+  { name: 'a string weight: key (e.g. weight: "1.5")', re: /^[ \t]*weight:\s*"/m },
+  { name: "a match_pattern: key", re: /^[ \t]*match_pattern:/m },
+  { name: "a scoring: block", re: /^[ \t]*scoring:\s*$/m },
+]);
+
+/**
+ * Every LEGACY_MARKERS row name whose regex matches `text` — empty when
+ * none match. PARSE-TOLERANT: raw text only, never a parsed document, so a
+ * document that fails to parse entirely (or carries no `rubric_id`) is
+ * still fully in scope, per RUBRIC_LEGACY_SURVIVES's own contract.
+ *
+ * @param {string} text
+ * @returns {string[]}
+ */
+function legacyMarkersIn(text) {
+  return LEGACY_MARKERS.filter((m) => m.re.test(text)).map((m) => m.name);
+}
+
+/**
+ * Every regular file and symlink under `dir`, recursively, as
+ * `{ path, isSymlink }` pairs. `dirent.isSymbolicLink()`/`isDirectory()`
+ * read the entry's own type from the directory listing itself — never
+ * following the link — which is what lets a symlinked entry be reported as
+ * a symlink rather than silently resolved through. A symlinked directory is
+ * reported as a symlink and NOT descended into: descending would risk
+ * walking outside `dir` entirely, and the rule's contract only asks that
+ * the entry itself be reported, never that its target be scanned. A missing
+ * `dir` (ENOENT) yields nothing rather than throwing — ready for
+ * `tests/evals/skill-compression/` to not exist after a later task deletes
+ * it.
+ *
+ * @param {string} dir
+ * @returns {Array<{path: string, isSymlink: boolean}>}
+ */
+function walkLegacyRoot(dir) {
+  const out = [];
+  let entries;
+  try {
+    entries = readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return out; // ENOENT (or any other read failure) — not an error, see above
+  }
+  for (const entry of entries) {
+    const abs = join(dir, entry.name);
+    if (entry.isSymbolicLink()) {
+      out.push({ path: abs, isSymlink: true });
+    } else if (entry.isDirectory()) {
+      out.push(...walkLegacyRoot(abs));
+    } else if (entry.isFile()) {
+      out.push({ path: abs, isSymlink: false });
+    }
+  }
+  return out;
+}
+
+/**
+ * The fourteen `RUBRIC_*` coverage rules, decided by `tiersPath` and the
+ * filesystem alone.
  *
  * @param {object} [options]
  * @param {string} [options.tiersPath]
@@ -187,6 +269,10 @@ function bucketKeysOf(tiersDoc) {
  *   real roots that will, over later tasks, accumulate files this task did
  *   not author. `null`/absent means "no filter" — every file present is
  *   considered, the pre-Task-5 behaviour.
+ * @param {string[]} [options.legacyRoots] - `RUBRIC_LEGACY_SURVIVES`'s two
+ *   enumerated roots, defaulting to `DEFAULT_LEGACY_ROOTS`. Independent of
+ *   `onlyStems`: this rule is root-scoped, not stem-scoped, so it scans
+ *   every file under both roots regardless of any stem filter.
  * @returns {{errors: Array<{code: string, detail: string}>, checked: Set<string>,
  *   matchedRubricFiles: string[], matchedScenarioFiles: string[]}}
  */
@@ -196,6 +282,7 @@ export function checkRubricSet({
   scenarioRoot = DEFAULT_SCENARIO_ROOT,
   skillsRoot = DEFAULT_SKILLS_ROOT,
   onlyStems = null,
+  legacyRoots = DEFAULT_LEGACY_ROOTS,
 } = {}) {
   const onlyStemsSet = Array.isArray(onlyStems) ? new Set(onlyStems) : null;
   const errors = [];
@@ -366,6 +453,40 @@ export function checkRubricSet({
     // handled by the empty map above
   }
 
+  // --- RUBRIC_CORE_ELEMENT_FLOOR / RUBRIC_COVERS_SKILLS_UNLISTED (Task 1 of
+  // rubric-set-core-lifecycle.plan.md) -----------------------------------
+  // Two more rules riding the SAME loadRubric-first loop as the six
+  // shared-contract rules above — their own codes surface unmodified before
+  // either of these runs, exactly like the six.
+  checked.add("RUBRIC_CORE_ELEMENT_FLOOR");
+  checked.add("RUBRIC_COVERS_SKILLS_UNLISTED");
+
+  // Scoped to the core_lifecycle bucket alone — a tiers.yaml fixture that
+  // declares no core_lifecycle key (every synthetic single-bucket harness
+  // elsewhere in this file) must scope to nothing, not to the bogus literal
+  // string "undefined" splitSlugs(undefined) would otherwise produce.
+  const coreLifecycleStems = tiersDoc.core_lifecycle ? new Set(splitSlugs(tiersDoc.core_lifecycle)) : new Set();
+
+  // RUBRIC_COVERS_SKILLS_UNLISTED resolves a cited id's covers_skills through
+  // the same real catalog RUBRIC_TWIN_UNCITED already reads above, split on
+  // the catalog's own comma-AND-SPACE form (", "), never a bare split(",")
+  // — a bare split leaves every slug after the first with a leading space,
+  // silently breaking the membership check below.
+  const coversSkillsById = new Map();
+  try {
+    const catalogDoc = parseYaml(readFileSync(DEFAULT_CATALOG_PATH, "utf8"));
+    for (const list of [catalogDoc.planted_violations, catalogDoc.known_clean]) {
+      if (!Array.isArray(list)) continue;
+      for (const entry of list) {
+        if (entry && typeof entry.id === "string" && typeof entry.covers_skills === "string") {
+          coversSkillsById.set(entry.id, splitSlugs(entry.covers_skills));
+        }
+      }
+    }
+  } catch {
+    // handled by the empty map above
+  }
+
   for (const file of rubricFiles) {
     const stem = file.slice(0, -".yaml".length);
 
@@ -409,6 +530,20 @@ export function checkRubricSet({
       fail(
         "RUBRIC_ELEMENT_FLOOR",
         `rubric "${file}" declares ${criterionCount} quality_dimensions, outside the 3-6 range`,
+      );
+    }
+
+    // --- RUBRIC_CORE_ELEMENT_FLOOR ------------------------------------------
+    // SCOPED to the core_lifecycle bucket only: the eleven change-imminent
+    // rubrics legitimately sit at 5-6 elements, and a tier-agnostic floor
+    // would wrongly flag files this tier doesn't own. Judges
+    // required_elements alone, never quality_dimensions — the judged range
+    // is RUBRIC_ELEMENT_FLOOR's job above, and this rule must never
+    // duplicate that check.
+    if (coreLifecycleStems.has(stem) && elementCount < 7) {
+      fail(
+        "RUBRIC_CORE_ELEMENT_FLOOR",
+        `rubric "${file}" sits in tiers.yaml's core_lifecycle bucket and declares ${elementCount} required_elements, fewer than that bucket's floor of 7`,
       );
     }
 
@@ -492,6 +627,23 @@ export function checkRubricSet({
         );
       }
     }
+
+    // --- RUBRIC_COVERS_SKILLS_UNLISTED --------------------------------------
+    // A rubric citing NO catalog id at all leaves citedIds empty, so this
+    // loop simply never runs for it — not a fire, and not a skip either:
+    // checked.add above already recorded this rule as reached regardless.
+    // An id absent from the catalog (coversSkillsById has no entry) is
+    // skipped, fail-open, for THIS rule only — RUBRIC_TWIN_UNCITED already
+    // owns "unresolved in the catalog" as its own reported condition above.
+    for (const cited of citedIds) {
+      const coversList = coversSkillsById.get(cited);
+      if (coversList && !coversList.includes(doc.skill)) {
+        fail(
+          "RUBRIC_COVERS_SKILLS_UNLISTED",
+          `rubric "${file}" cites ${cited} but its own skill "${doc.skill}" is absent from that catalog entry's covers_skills (${coversList.join(", ")})`,
+        );
+      }
+    }
   }
 
   // --- RUBRIC_SCENARIO_STEP_MISSING ------------------------------------------
@@ -525,6 +677,35 @@ export function checkRubricSet({
     }
   }
 
+  // --- RUBRIC_LEGACY_SURVIVES ------------------------------------------------
+  // PARSE-TOLERANT TEXT SCAN, deliberately NOT routed through loadRubric:
+  // routing through the loader would let RUBRIC_PARSE_ERROR terminate a
+  // malformed file before any marker is inspected, defeating the exact
+  // adversarial input this rule exists to catch. Reads raw file text
+  // directly and independently of every rule above — not gated by
+  // onlyStems, which only ever filtered rubricFiles/scenarioFiles: this
+  // rule is root-scoped, not stem-scoped.
+  checked.add("RUBRIC_LEGACY_SURVIVES");
+  for (const root of legacyRoots) {
+    for (const { path: entryPath, isSymlink } of walkLegacyRoot(root)) {
+      if (isSymlink) {
+        // Symlinks are REPORTED, not skipped — never a silent pass.
+        fail("RUBRIC_LEGACY_SURVIVES", `"${entryPath}" is a symlink under legacy root "${root}" — reported, not skipped`);
+        continue;
+      }
+      let text;
+      try {
+        text = readFileSync(entryPath, "utf8");
+      } catch {
+        continue; // unreadable (e.g. a broken symlink target) — defensive only
+      }
+      const markers = legacyMarkersIn(text);
+      if (markers.length > 0) {
+        fail("RUBRIC_LEGACY_SURVIVES", `"${entryPath}" carries legacy marker(s): ${markers.join(", ")}`);
+      }
+    }
+  }
+
   return { errors, checked, matchedRubricFiles: rubricFiles, matchedScenarioFiles: scenarioFiles };
 }
 
@@ -532,15 +713,21 @@ export function checkRubricSet({
 // 1. The code registry
 // ---------------------------------------------------------------------------
 
-test("RUBRIC_COVERAGE_ERROR_CODES holds exactly the eleven documented codes, frozen", () => {
+test("RUBRIC_COVERAGE_ERROR_CODES holds exactly the fourteen documented codes, frozen", () => {
+  // Eleven from the sibling change-imminent plan plus the three
+  // rubric-set-core-lifecycle Task 1 adds: RUBRIC_CORE_ELEMENT_FLOOR,
+  // RUBRIC_COVERS_SKILLS_UNLISTED, RUBRIC_LEGACY_SURVIVES.
   assert.ok(Object.isFrozen(RUBRIC_COVERAGE_ERROR_CODES), "RUBRIC_COVERAGE_ERROR_CODES must be frozen");
   assert.deepEqual(
     [...RUBRIC_COVERAGE_ERROR_CODES].sort(),
     [
+      "RUBRIC_CORE_ELEMENT_FLOOR",
+      "RUBRIC_COVERS_SKILLS_UNLISTED",
       "RUBRIC_ELEMENT_FLOOR",
       "RUBRIC_EXCEPTION_ID_MALFORMED",
       "RUBRIC_ID_MISMATCH",
       "RUBRIC_LANDED_INVALID",
+      "RUBRIC_LEGACY_SURVIVES",
       "RUBRIC_SCENARIO_MISSING",
       "RUBRIC_SCENARIO_STEP_MISSING",
       "RUBRIC_SOURCE_PATH_ESCAPE",
@@ -550,8 +737,8 @@ test("RUBRIC_COVERAGE_ERROR_CODES holds exactly the eleven documented codes, fro
       "RUBRIC_TWIN_UNCITED",
     ],
   );
-  assert.equal(RUBRIC_COVERAGE_ERROR_CODES.length, 11);
-  assert.equal(new Set(RUBRIC_COVERAGE_ERROR_CODES).size, 11);
+  assert.equal(RUBRIC_COVERAGE_ERROR_CODES.length, 14);
+  assert.equal(new Set(RUBRIC_COVERAGE_ERROR_CODES).size, 14);
 });
 
 test("every implemented rule's checked counter was reached", () => {
@@ -766,6 +953,11 @@ test("RUBRIC_TIER_INCOMPLETE: an empty skillsRoot short-circuits, reporting exac
       skillsRoot,
       rubricRoot: join(tmp, "rubrics"),
       scenarioRoot: join(tmp, "scenarios"),
+      // Non-existent, deliberately: this test asserts errors is EXACTLY the
+      // one non-emptiness code, and the real legacyRoots default would mix
+      // RUBRIC_LEGACY_SURVIVES noise from the real skill-compression tree
+      // into that count — irrelevant to what this test is about.
+      legacyRoots: [join(tmp, "no-legacy-a"), join(tmp, "no-legacy-b")],
     });
     // Not "not the partition branch" — exactly the one non-emptiness error,
     // full stop: no phantom-token noise from a partition branch that never ran.
@@ -1093,7 +1285,16 @@ function buildHarness(tmp, slug) {
   const scenarioRoot = join(tmp, "scenarios");
   mkdirSync(scenarioRoot, { recursive: true });
   writeFileSync(join(scenarioRoot, `${slug}.md`), renderScenarioBody(tokensFor(slug)));
-  return { tiersPath, rubricRoot, scenarioRoot, skillsRoot };
+  // Non-existent legacyRoots, deliberately: every shared-contract-rule test
+  // built on this harness (sections 8-13) asserts an exact errors list for
+  // its OWN rule, and the real DEFAULT_LEGACY_ROOTS default would mix
+  // RUBRIC_LEGACY_SURVIVES noise from the real skill-compression tree into
+  // every one of them — irrelevant to what any of those tests are about.
+  // ENOENT on a non-existent root is RUBRIC_LEGACY_SURVIVES's own documented
+  // pass case (ready for skill-compression/ to not exist after a later
+  // task), so this is the same graceful path, not a special case.
+  const legacyRoots = [join(tmp, "no-legacy-a"), join(tmp, "no-legacy-b")];
+  return { tiersPath, rubricRoot, scenarioRoot, skillsRoot, legacyRoots };
 }
 
 /**
@@ -1812,7 +2013,15 @@ test("the three detector rubrics conform", () => {
     3,
     `onlyStems must narrow rubricRoot to exactly the three detector stems, matched: ${JSON.stringify(matchedRubricFiles)}`,
   );
-  assert.deepEqual(errors, []);
+  // RUBRIC_LEGACY_SURVIVES (rubric-set-core-lifecycle Task 1) scans its two
+  // legacyRoots regardless of onlyStems — it is root-scoped, not
+  // stem-scoped — and fires on the three still-undeleted skill-compression
+  // legacy files at every call with default legacyRoots, including this
+  // one. See "RUBRIC_LEGACY_SURVIVES: the real skill-compression legacy
+  // files are pinned at exactly three, by name" below for the pin; a later
+  // task in that plan deletes those three files and this filter becomes a
+  // no-op at that point, not before.
+  assert.deepEqual(errors.filter((e) => e.code !== "RUBRIC_LEGACY_SURVIVES"), []);
 
   // The count-of-3 above cannot alone distinguish real filtering from a
   // no-op: rubricRoot happens to hold exactly these three files today, so
@@ -1938,7 +2147,10 @@ test("the four state-writer rubrics conform", () => {
     4,
     `onlyStems must narrow rubricRoot to exactly the four producer stems, matched: ${JSON.stringify(matchedRubricFiles)}`,
   );
-  assert.deepEqual(errors, []);
+  // See the detector-tier test above (section 16): RUBRIC_LEGACY_SURVIVES is
+  // root-scoped, not stem-scoped, and fires on the three still-undeleted
+  // skill-compression legacy files regardless of onlyStems.
+  assert.deepEqual(errors.filter((e) => e.code !== "RUBRIC_LEGACY_SURVIVES"), []);
 
   // The count-of-4 above cannot alone distinguish real filtering from a
   // no-op — prove the filter narrows by passing a genuine PROPER SUBSET of
@@ -2094,7 +2306,10 @@ test("the three reporter rubrics conform", () => {
     3,
     `onlyStems must narrow scenarioRoot to exactly the three reporter stems, matched: ${JSON.stringify(matchedScenarioFiles)}`,
   );
-  assert.deepEqual(errors, []);
+  // See the detector-tier test above (section 16): RUBRIC_LEGACY_SURVIVES is
+  // root-scoped, not stem-scoped, and fires on the three still-undeleted
+  // skill-compression legacy files regardless of onlyStems.
+  assert.deepEqual(errors.filter((e) => e.code !== "RUBRIC_LEGACY_SURVIVES"), []);
 
   // Precondition for every RUBRIC_SCENARIO_STEP_MISSING assertion below: the
   // stem filter must have actually selected scenarios/prototype.md, or the
@@ -2254,7 +2469,10 @@ test("the responder rubric conforms", () => {
     ["using-adev.md"],
     `onlyStems: ['using-adev'] must narrow scenarioRoot to exactly this one file, matched: ${JSON.stringify(matchedScenarioFiles)}`,
   );
-  assert.deepEqual(errors, []);
+  // See the detector-tier test above (section 16): RUBRIC_LEGACY_SURVIVES is
+  // root-scoped, not stem-scoped, and fires on the three still-undeleted
+  // skill-compression legacy files regardless of onlyStems.
+  assert.deepEqual(errors.filter((e) => e.code !== "RUBRIC_LEGACY_SURVIVES"), []);
 });
 
 test("the landed tier is complete at the real roots", () => {
@@ -2300,7 +2518,10 @@ test("the landed tier is complete at the real roots", () => {
   assert.deepEqual([...scenarioStems].sort(), [...expectedStems].sort());
 
   const { errors } = checkRubricSet();
-  assert.deepEqual(errors, []);
+  // See the detector-tier test above (section 16): RUBRIC_LEGACY_SURVIVES
+  // fires on the three still-undeleted skill-compression legacy files at
+  // every default-legacyRoots call, including this no-argument one.
+  assert.deepEqual(errors.filter((e) => e.code !== "RUBRIC_LEGACY_SURVIVES"), []);
 });
 
 test("every rule was reached at the real roots", () => {
@@ -2369,5 +2590,407 @@ test("the responder rubric cites no catalog id", () => {
   assert.ok(
     !/skill-regression:/.test(yamlText),
     "rubrics/using-adev.yaml must cite no skill-regression: catalog id anywhere in its raw text — this responder is not a detector",
+  );
+});
+
+// ---------------------------------------------------------------------------
+// 22. RUBRIC_CORE_ELEMENT_FLOOR (Task 1 of rubric-set-core-lifecycle.plan.md)
+// ---------------------------------------------------------------------------
+//
+// Scoped to the core_lifecycle bucket alone. A minimal two-bucket harness:
+// `hygiene` sits in core_lifecycle (this rule's target bucket), `codehealth`
+// sits in change_imminent (used only for the scoping-proof case, never
+// touched by RUBRIC_CORE_ELEMENT_FLOOR). `landed: ""` — deliberately empty
+// — so RUBRIC_TIER_UNCOVERED never demands a rubric file for whichever stem
+// a given test does NOT write one for.
+
+/**
+ * A two-bucket harness for RUBRIC_CORE_ELEMENT_FLOOR: `hygiene` in
+ * core_lifecycle, `codehealth` in change_imminent, an empty rubrics/ dir,
+ * and conforming scenario files for both slugs so neither
+ * RUBRIC_SCENARIO_MISSING nor RUBRIC_SCENARIO_STEP_MISSING fires as
+ * background noise in a case that is not testing either of them.
+ *
+ * @param {string} tmp - a directory from `createTempDir()`
+ * @returns {{tiersPath: string, rubricRoot: string, scenarioRoot: string, skillsRoot: string}}
+ */
+function buildCoreFloorHarness(tmp) {
+  const tiersPath = join(tmp, "tiers.yaml");
+  // landed: "" — deliberately empty, so RUBRIC_TIER_UNCOVERED has no bucket
+  // to demand a rubric file for, regardless of which one stem (hygiene or
+  // codehealth) a given test writes a rubric for.
+  writeFileSync(
+    tiersPath,
+    ['landed: ""', 'core_lifecycle: "hygiene"', 'change_imminent: "codehealth"'].join("\n") + "\n",
+  );
+  const skillsRoot = join(tmp, "skills");
+  mkdirSync(join(skillsRoot, "hygiene"), { recursive: true });
+  mkdirSync(join(skillsRoot, "codehealth"), { recursive: true });
+  const rubricRoot = join(tmp, "rubrics");
+  mkdirSync(rubricRoot, { recursive: true });
+  const scenarioRoot = join(tmp, "scenarios");
+  mkdirSync(scenarioRoot, { recursive: true });
+  writeFileSync(join(scenarioRoot, "hygiene.md"), renderScenarioBody(tokensFor("hygiene")));
+  writeFileSync(join(scenarioRoot, "codehealth.md"), renderScenarioBody(tokensFor("codehealth")));
+  return { tiersPath, rubricRoot, scenarioRoot, skillsRoot };
+}
+
+/**
+ * Write `doc` as `<rubricRoot>/<slug>.yaml` over a {@link buildCoreFloorHarness}
+ * harness and run `checkRubricSet`, with a non-existent legacyRoots override
+ * — RUBRIC_LEGACY_SURVIVES is not this section's concern, the same reason
+ * `buildHarness` (section 7) overrides it.
+ *
+ * @param {string} tmp
+ * @param {string} slug
+ * @param {object} doc
+ * @returns {{errors: Array<{code: string, detail: string}>}}
+ */
+function runOneCoreFloorRubric(tmp, slug, doc) {
+  const harness = buildCoreFloorHarness(tmp);
+  writeFileSync(join(harness.rubricRoot, `${slug}.yaml`), renderRubricYaml(doc));
+  return checkRubricSet({ ...harness, legacyRoots: [join(tmp, "no-legacy-a"), join(tmp, "no-legacy-b")] });
+}
+
+test("RUBRIC_CORE_ELEMENT_FLOOR: a core_lifecycle rubric with 6 required_elements is rejected, and only that", () => {
+  const tmp = createTempDir();
+  try {
+    const doc = makeConformingRubric("hygiene");
+    doc.required_elements = makeElements(6);
+    const { errors } = runOneCoreFloorRubric(tmp, "hygiene", doc);
+    assert.deepEqual(errors.map((e) => e.code), ["RUBRIC_CORE_ELEMENT_FLOOR"]);
+    assert.match(errors[0].detail, /\b6\b/);
+  } finally {
+    cleanupTempDir(tmp);
+  }
+});
+
+test("RUBRIC_CORE_ELEMENT_FLOOR: the boundary value of exactly 7 required_elements is accepted", () => {
+  const tmp = createTempDir();
+  try {
+    const doc = makeConformingRubric("hygiene");
+    doc.required_elements = makeElements(7);
+    const { errors } = runOneCoreFloorRubric(tmp, "hygiene", doc);
+    assert.deepEqual(errors, []);
+  } finally {
+    cleanupTempDir(tmp);
+  }
+});
+
+test("RUBRIC_CORE_ELEMENT_FLOOR: a change_imminent rubric at 5 elements does not fire — proves the bucket scoping is real, not decorative", () => {
+  const tmp = createTempDir();
+  try {
+    // 5 elements clears RUBRIC_ELEMENT_FLOOR's own floor of 5 too, so a
+    // clean errors:[] here is unambiguous: neither rule fired.
+    const doc = makeConformingRubric("codehealth");
+    doc.required_elements = makeElements(5);
+    const { errors } = runOneCoreFloorRubric(tmp, "codehealth", doc);
+    assert.deepEqual(errors, []);
+  } finally {
+    cleanupTempDir(tmp);
+  }
+});
+
+test("RUBRIC_CORE_ELEMENT_FLOOR: 7 elements and 7 quality_dimensions fires RUBRIC_ELEMENT_FLOOR alone — never duplicates the judged-range check", () => {
+  const tmp = createTempDir();
+  try {
+    const doc = makeConformingRubric("hygiene");
+    doc.required_elements = makeElements(7);
+    doc.quality_dimensions = makeCriteria(7);
+    const { errors } = runOneCoreFloorRubric(tmp, "hygiene", doc);
+    assert.deepEqual(errors.map((e) => e.code), ["RUBRIC_ELEMENT_FLOOR"]);
+  } finally {
+    cleanupTempDir(tmp);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// 23. RUBRIC_COVERS_SKILLS_UNLISTED (Task 1 of rubric-set-core-lifecycle.plan.md)
+// ---------------------------------------------------------------------------
+//
+// Reuses `runOneRubric` (section 7) — an ordinary single-bucket harness is
+// enough; this rule cares only about a rubric's own `skill` value against
+// the real catalog's `covers_skills` for whatever it cites.
+
+test("RUBRIC_COVERS_SKILLS_UNLISTED: citing PV-03 (and its twin KC-03, to keep RUBRIC_TWIN_UNCITED clean) from a hygiene-shaped rubric is rejected, and only that", () => {
+  const tmp = createTempDir();
+  try {
+    // PV-03's real covers_skills is "codehealth, repomap" (confirmed by
+    // reading tests/evals/skill-regression/catalog.yaml) — "hygiene" is
+    // absent from it, so both citations fire.
+    const doc = makeConformingRubric("hygiene"); // skill: "hygiene"
+    doc.required_elements[0].source = "skill-regression:PV-03";
+    doc.required_elements[1].source = "skill-regression:KC-03";
+    const { errors } = runOneRubric(tmp, "hygiene", doc);
+    assert.deepEqual(errors.map((e) => e.code), ["RUBRIC_COVERS_SKILLS_UNLISTED", "RUBRIC_COVERS_SKILLS_UNLISTED"]);
+    assert.match(errors[0].detail, /PV-03/);
+    assert.match(errors[0].detail, /hygiene/);
+    assert.match(errors[1].detail, /KC-03/);
+  } finally {
+    cleanupTempDir(tmp);
+  }
+});
+
+test("RUBRIC_COVERS_SKILLS_UNLISTED: skill: codehealth (PV-03's first-listed covers_skills entry) clears the citation", () => {
+  const tmp = createTempDir();
+  try {
+    const doc = makeConformingRubric("codehealth");
+    doc.required_elements[0].source = "skill-regression:PV-03";
+    doc.required_elements[1].source = "skill-regression:KC-03";
+    const { errors } = runOneRubric(tmp, "codehealth", doc);
+    assert.deepEqual(errors, []);
+  } finally {
+    cleanupTempDir(tmp);
+  }
+});
+
+test("RUBRIC_COVERS_SKILLS_UNLISTED: skill: repomap (PV-03's SECOND-listed covers_skills entry) also clears — this is what actually falsifies a bare split(',')", () => {
+  const tmp = createTempDir();
+  try {
+    // PV-03's real covers_skills is "codehealth, repomap": "codehealth"
+    // sits first (unaffected by a leading-space bug even under a bare
+    // split(",") — the first token never carries a leading space), while
+    // "repomap" sits second and WOULD carry a leading space under a bare
+    // split, failing an exact-membership check. This case, not the
+    // codehealth one above, is what proves the comma-and-space split
+    // matters.
+    const doc = makeConformingRubric("repomap");
+    doc.required_elements[0].source = "skill-regression:PV-03";
+    doc.required_elements[1].source = "skill-regression:KC-03";
+    const { errors } = runOneRubric(tmp, "repomap", doc);
+    assert.deepEqual(errors, []);
+  } finally {
+    cleanupTempDir(tmp);
+  }
+});
+
+test("RUBRIC_COVERS_SKILLS_UNLISTED: a rubric citing no catalog id at all does not fire, and the rule is still recorded as checked", () => {
+  const tmp = createTempDir();
+  try {
+    const { errors, checked } = runOneRubric(tmp, "codehealth", makeConformingRubric("codehealth"));
+    assert.deepEqual(errors.filter((e) => e.code === "RUBRIC_COVERS_SKILLS_UNLISTED"), []);
+    assert.ok(
+      checked.has("RUBRIC_COVERS_SKILLS_UNLISTED"),
+      "the rule must be recorded as reached even when citedIds is empty — not skipped from the reachability count",
+    );
+  } finally {
+    cleanupTempDir(tmp);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// 24. RUBRIC_LEGACY_SURVIVES (Task 1 of rubric-set-core-lifecycle.plan.md)
+// ---------------------------------------------------------------------------
+
+/**
+ * A minimal harness for RUBRIC_LEGACY_SURVIVES alone: a valid tiers.yaml
+ * whose landed bucket is empty (so RUBRIC_TIER_UNCOVERED has nothing to
+ * check against the deliberately-empty rubrics/), a matching skills/
+ * directory, and two empty SYNTHETIC legacy roots for the caller to
+ * populate. Every test below filters `errors` down to this rule's own code
+ * — the same "shared harness necessarily also exercises the other rules"
+ * discipline section 14 documents.
+ *
+ * @param {string} tmp - a directory from `createTempDir()`
+ * @returns {{tiersPath: string, rubricRoot: string, scenarioRoot: string,
+ *   skillsRoot: string, legacyRootA: string, legacyRootB: string}}
+ */
+function buildLegacyHarness(tmp) {
+  const tiersPath = join(tmp, "tiers.yaml");
+  // "codehealth" sits in b2, which is NOT landed — landed's own bucket (b1)
+  // is empty, so RUBRIC_TIER_UNCOVERED has no slug to demand a rubric file
+  // for, and rubricRoot can stay genuinely empty.
+  writeFileSync(tiersPath, ['landed: "b1"', 'b1: ""', 'b2: "codehealth"'].join("\n") + "\n");
+  const skillsRoot = join(tmp, "skills");
+  mkdirSync(join(skillsRoot, "codehealth"), { recursive: true });
+  const rubricRoot = join(tmp, "rubrics");
+  mkdirSync(rubricRoot, { recursive: true });
+  const scenarioRoot = join(tmp, "scenarios");
+  mkdirSync(scenarioRoot, { recursive: true });
+  const legacyRootA = join(tmp, "legacy-a");
+  mkdirSync(legacyRootA, { recursive: true });
+  const legacyRootB = join(tmp, "legacy-b");
+  mkdirSync(legacyRootB, { recursive: true });
+  return { tiersPath, rubricRoot, scenarioRoot, skillsRoot, legacyRootA, legacyRootB };
+}
+
+test("RUBRIC_LEGACY_SURVIVES: a numeric weight: key under legacyRootA is rejected, and only that", () => {
+  const tmp = createTempDir();
+  try {
+    const h = buildLegacyHarness(tmp);
+    writeFileSync(join(h.legacyRootA, "old.yaml"), "quality_dimensions:\n  - id: x\n    weight: 3\n");
+    const { errors } = checkRubricSet({ ...h, legacyRoots: [h.legacyRootA, h.legacyRootB] });
+    assert.deepEqual(errors.map((e) => e.code), ["RUBRIC_LEGACY_SURVIVES"]);
+    assert.match(errors[0].detail, /numeric weight/);
+  } finally {
+    cleanupTempDir(tmp);
+  }
+});
+
+test('RUBRIC_LEGACY_SURVIVES: a string weight: key (e.g. weight: "1.5") under legacyRootB is rejected, and only that — a distinct branch from the numeric form', () => {
+  const tmp = createTempDir();
+  try {
+    const h = buildLegacyHarness(tmp);
+    writeFileSync(join(h.legacyRootB, "old.yaml"), 'quality_dimensions:\n  - id: x\n    weight: "1.5"\n');
+    const { errors } = checkRubricSet({ ...h, legacyRoots: [h.legacyRootA, h.legacyRootB] });
+    assert.deepEqual(errors.map((e) => e.code), ["RUBRIC_LEGACY_SURVIVES"]);
+    assert.match(errors[0].detail, /string weight/);
+  } finally {
+    cleanupTempDir(tmp);
+  }
+});
+
+test("RUBRIC_LEGACY_SURVIVES: a match_pattern: key is rejected, and only that", () => {
+  const tmp = createTempDir();
+  try {
+    const h = buildLegacyHarness(tmp);
+    writeFileSync(join(h.legacyRootA, "old.yaml"), 'required_elements:\n  - id: x\n    match_pattern: "foo"\n');
+    const { errors } = checkRubricSet({ ...h, legacyRoots: [h.legacyRootA, h.legacyRootB] });
+    assert.deepEqual(errors.map((e) => e.code), ["RUBRIC_LEGACY_SURVIVES"]);
+    assert.match(errors[0].detail, /match_pattern/);
+  } finally {
+    cleanupTempDir(tmp);
+  }
+});
+
+test("RUBRIC_LEGACY_SURVIVES: a scoring: block is rejected, and only that", () => {
+  const tmp = createTempDir();
+  try {
+    const h = buildLegacyHarness(tmp);
+    writeFileSync(join(h.legacyRootA, "old.yaml"), "scoring:\n  required_element_weight: 50\n");
+    const { errors } = checkRubricSet({ ...h, legacyRoots: [h.legacyRootA, h.legacyRootB] });
+    assert.deepEqual(errors.map((e) => e.code), ["RUBRIC_LEGACY_SURVIVES"]);
+    assert.match(errors[0].detail, /scoring/);
+  } finally {
+    cleanupTempDir(tmp);
+  }
+});
+
+test("RUBRIC_LEGACY_SURVIVES: an unparseable file still fires — never a parse error, never a silent skip", () => {
+  const tmp = createTempDir();
+  try {
+    const h = buildLegacyHarness(tmp);
+    // Genuinely unparseable by lib/profiles/yaml.mjs (an indentation jump
+    // with no opening block) — proven below via captureThrow — yet it still
+    // carries a raw-text weight: marker for the scan to find, because the
+    // scan never routes through the parser at all.
+    const garbled = 'weight: 3\n  bogus: [unterminated\n    "broken string with no close\n';
+    const parseErr = captureThrow(() => parseYaml(garbled));
+    assert.ok(parseErr, "precondition: this fixture must genuinely fail lib/profiles/yaml.mjs's parser");
+    writeFileSync(join(h.legacyRootA, "garbled.yaml"), garbled);
+    const { errors } = checkRubricSet({ ...h, legacyRoots: [h.legacyRootA, h.legacyRootB] });
+    assert.deepEqual(errors.map((e) => e.code), ["RUBRIC_LEGACY_SURVIVES"]);
+    assert.doesNotMatch(errors[0].detail, /PARSE/);
+  } finally {
+    cleanupTempDir(tmp);
+  }
+});
+
+test("RUBRIC_LEGACY_SURVIVES: a symlinked entry is reported, never silently skipped, even carrying no marker itself", () => {
+  const tmp = createTempDir();
+  try {
+    const h = buildLegacyHarness(tmp);
+    const realFile = join(tmp, "clean-target.yaml");
+    writeFileSync(realFile, "rubric_id: harmless\nskill: harmless\n"); // no marker at all
+    symlinkSync(realFile, join(h.legacyRootA, "linked.yaml"));
+    const { errors } = checkRubricSet({ ...h, legacyRoots: [h.legacyRootA, h.legacyRootB] });
+    assert.deepEqual(errors.map((e) => e.code), ["RUBRIC_LEGACY_SURVIVES"]);
+    assert.match(errors[0].detail, /symlink/);
+  } finally {
+    cleanupTempDir(tmp);
+  }
+});
+
+test("RUBRIC_LEGACY_SURVIVES: a file with none of the four markers under a legacy root does not fire", () => {
+  const tmp = createTempDir();
+  try {
+    const h = buildLegacyHarness(tmp);
+    writeFileSync(join(h.legacyRootA, "clean.yaml"), "rubric_id: harmless\nskill: harmless\nrequired_elements: []\n");
+    const { errors } = checkRubricSet({ ...h, legacyRoots: [h.legacyRootA, h.legacyRootB] });
+    assert.deepEqual(errors.filter((e) => e.code === "RUBRIC_LEGACY_SURVIVES"), []);
+  } finally {
+    cleanupTempDir(tmp);
+  }
+});
+
+test("RUBRIC_LEGACY_SURVIVES: a missing legacy root is not an error — pinned PASS on a clean checkout", () => {
+  const tmp = createTempDir();
+  try {
+    const h = buildLegacyHarness(tmp);
+    const missingRoot = join(tmp, "does-not-exist-at-all");
+    assert.ok(!existsSync(missingRoot), "precondition: the second root must genuinely not exist");
+    const { errors, checked } = checkRubricSet({ ...h, legacyRoots: [h.legacyRootA, missingRoot] });
+    assert.deepEqual(errors.filter((e) => e.code === "RUBRIC_LEGACY_SURVIVES"), []);
+    assert.ok(
+      checked.has("RUBRIC_LEGACY_SURVIVES"),
+      "ENOENT on one legacy root must not stop the rule from being recorded as reached",
+    );
+  } finally {
+    cleanupTempDir(tmp);
+  }
+});
+
+/**
+ * The five eval harnesses whose rubrics/ directories hold legacy-shaped
+ * files this rule deliberately does not scan — out of scope by argument
+ * (rubric-set-core-lifecycle.plan.md's Out of Scope names each by charter),
+ * not by oversight.
+ */
+const OUT_OF_CHARTER_LEGACY_RUBRIC_DIRS = Object.freeze([
+  join(REPO_ROOT, "tests", "evals", "configurable-governance", "rubrics"),
+  join(REPO_ROOT, "tests", "evals", "data-engineering", "rubrics"),
+  join(REPO_ROOT, "tests", "evals", "work-tracking", "rubrics"),
+  join(REPO_ROOT, "tests", "evals", "integration-sandbox", "rubrics"),
+  join(REPO_ROOT, "tests", "evals", "worktree-parallelization", "rubrics"),
+]);
+
+test("RUBRIC_LEGACY_SURVIVES: does not fire on the 21 legacy-shaped rubrics outside legacyRoots — proves the root scoping is real, not decorative", () => {
+  const outOfCharterFiles = OUT_OF_CHARTER_LEGACY_RUBRIC_DIRS.flatMap((dir) =>
+    readdirSync(dir)
+      .filter((f) => f.endsWith(".yaml"))
+      .map((f) => join(dir, f)),
+  );
+  // Pin the enumerated set at 21 so a rename empties this loop loudly,
+  // rather than the "reports nothing" assertion below passing vacuously.
+  assert.equal(
+    outOfCharterFiles.length,
+    21,
+    `expected exactly 21 legacy-shaped rubrics outside legacyRoots, found: ${JSON.stringify(outOfCharterFiles)}`,
+  );
+  // These 21 files DO carry the same weight:/match_pattern:/scoring:
+  // markers this rule matches on (confirmed by reading them) — the
+  // must-not-fire guarantee below comes entirely from ROOT SCOPING (they
+  // sit outside both of DEFAULT_LEGACY_ROOTS' two enumerated roots), never
+  // from marker precision. Widening legacyRoots to cover tests/evals/
+  // broadly would walk into these directories and make this assertion go
+  // red — see the falsification table. Separately, comparison/'s 4 files
+  // carry `weight` on a `dimensions:` list rather than `quality_dimensions`
+  // and are not part of this enumerated 21 at all — a fourth legacy shape
+  // this rule doesn't name, deliberately out of scope.
+  const { errors } = checkRubricSet(); // real defaults, including default legacyRoots
+  const legacyErrors = errors.filter((e) => e.code === "RUBRIC_LEGACY_SURVIVES");
+  for (const filePath of outOfCharterFiles) {
+    assert.ok(
+      !legacyErrors.some((e) => e.detail.includes(filePath)),
+      `RUBRIC_LEGACY_SURVIVES must not report ${filePath} — it sits outside both legacyRoots`,
+    );
+  }
+});
+
+test("RUBRIC_LEGACY_SURVIVES: the real skill-compression legacy files are pinned at exactly three, by name", () => {
+  const { errors } = checkRubricSet(); // real defaults
+  const legacyErrors = errors.filter((e) => e.code === "RUBRIC_LEGACY_SURVIVES");
+  const names = legacyErrors.map((e) => {
+    const m = e.detail.match(/"([^"]+)"/);
+    assert.ok(m, `RUBRIC_LEGACY_SURVIVES detail must quote the offending path: ${e.detail}`);
+    return basename(m[1]);
+  });
+  // Not decorative: a later task in this plan flips this pin to [] in the
+  // same commit that deletes these three files — this pin is what makes
+  // that future deletion checkably observed rather than merely believed.
+  assert.deepEqual(
+    [...names].sort(),
+    ["brainstorm.yaml", "plan.yaml", "specify.yaml"],
+    `expected exactly the three known skill-compression legacy files at this task's landing state, found: ${JSON.stringify(names)}`,
   );
 });
