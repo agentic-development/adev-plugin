@@ -1,4 +1,13 @@
 {"issue_id":"issue-g15ur1","attempts":1,"updated_at":"2026-08-24T10:08:55.408Z","last_verdict":"PASS","curr_blockers":[],"parked_reason":null}
+{"issue_id":"issue-l1efc1","attempts":1,"updated_at":"2026-08-24T07:14:44.893Z","last_verdict":"PASS","curr_blockers":[],"parked_reason":null}
+{"issue_id":"issue-ahgmci","attempts":1,"updated_at":"2026-08-24T07:41:09.171Z","last_verdict":"PASS","curr_blockers":[],"parked_reason":null}
+{"issue_id":"adev-plugin-gate-migration-unreachable-q6e9","attempts":1,"updated_at":"2026-08-24T06:56:42.674Z","last_verdict":"PASS","curr_blockers":[],"parked_reason":null}
+{"issue_id":"issue-cp2l2e","attempts":1,"updated_at":"2026-08-24T10:58:11.970Z","last_verdict":"PASS","curr_blockers":[],"parked_reason":null}
+{"issue_id":"issue-y49odg","attempts":1,"updated_at":"2026-08-24T08:51:11.543Z","last_verdict":"PASS","curr_blockers":[],"parked_reason":null}
+{"issue_id":"issue-kgakan","attempts":1,"updated_at":"2026-08-24T09:38:13.940Z","last_verdict":"PASS","curr_blockers":[],"parked_reason":null}
+{"issue_id":"issue-qo9jn8","attempts":1,"updated_at":"2026-08-24T09:52:35.701Z","last_verdict":"PASS","curr_blockers":[],"parked_reason":null}
+{"issue_id":"issue-6gyq1t","attempts":1,"updated_at":"2026-08-24T07:57:24.553Z","last_verdict":"PASS","curr_blockers":[],"parked_reason":null}
+{"issue_id":"adev-plugin-injection-limit-unwired-wg5g","attempts":1,"updated_at":"2026-08-24T08:17:07.597Z","last_verdict":"PASS","curr_blockers":[],"parked_reason":null}
 {"issue_id":"adev-plugin-skill-invocation-bypass-gwo8","attempts":1,"updated_at":"2026-08-26T05:41:00.908Z","last_verdict":"CONTINUE","curr_blockers":["fed36205"],"parked_reason":null}
 {"issue_id":"adev-plugin-skill-invocation-bypass-gwo8","attempts":2,"updated_at":"2026-08-26T05:41:00.999Z","last_verdict":"BUDGET_EXHAUSTED","curr_blockers":["433471a4"],"parked_reason":null}
 {"issue_id":"adev-plugin-gkfv.3","attempts":1,"updated_at":"2026-08-26T05:52:53.447Z","last_verdict":"PASS","curr_blockers":[],"parked_reason":null}
