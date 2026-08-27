@@ -720,22 +720,21 @@ Batching and `--parallel` operate at different scopes: batching groups cohesive,
 
 ### `/adev:repomap`
 
-**Purpose:** Generate an AST-based symbol index of the repository. Extracts exported functions, classes, types, and interfaces, ranks by reference count, and outputs artifacts consumed by `/adev:hygiene` for drift detection.
+**Purpose:** Generate an AST-based symbol index of the repository. Extracts exported functions, classes, types, and interfaces, ranks by reference count, and outputs artifacts consumed by `/adev:hygiene`, `/adev:codehealth`, `/adev:route`, `/adev:validate`, `/adev:implement`, and `/adev:recover`. Wraps `adev repomap generate` (the tested `lib/repomap/` tree-sitter + PageRank pipeline) — no hand-grepping.
 
 **Prerequisites:** Source code must exist.
 
 **Arguments:**
-- No arguments: map the entire repository
-- `--path <dir>`: map a specific directory
-- `--depth <n>`: limit tree depth (default: unlimited)
+- No arguments: map the entire repository, auto-detecting parser mode (tree-sitter if `web-tree-sitter` is installed, regex fallback otherwise)
+- `--mode <tree-sitter|regex>`: force a specific parser mode
 
 **Example:**
 ```
 /adev:repomap
-/adev:repomap --path lib/
+/adev:repomap --mode regex
 ```
 
-**Expected Output:** Symbol index files at `.context-index/hygiene/` including `dependency-graph.json` and `symbol-ranks.json`.
+**Expected Output:** `.context-index/hygiene/repo-map.md` always; `dependency-graph.json` and `symbol-ranks.json` in tree-sitter mode only (regex mode is a documented degraded fallback with no JSON artifacts).
 
 **Related Guides:** [Maintain](maintain.md)
 
