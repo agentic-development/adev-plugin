@@ -41,6 +41,8 @@ source-manifest:
     - tests/evals/convergence/run-convergence-eval.mjs
     - tests/evals/integration-sandbox/.context-index/governance/review.yaml
     - tests/evals/integration-sandbox/.context-index/specs/cross-cutting/broken-loop-fixture.spec.md
+    - tests/evals/integration-sandbox/.context-index/specs/cross-cutting/clean-loop-fixture.spec.md
+    - tests/evals/integration-sandbox/lib/loop-fixture/idempotency-cache.mjs
     - tests/evals/integration-sandbox/lib/loop-fixture/rate-limiter.mjs
     - tests/evals/token-optimization/run-ab-eval.mjs
     - tests/governance/diff-scope.test.mjs

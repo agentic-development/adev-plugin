@@ -31,6 +31,11 @@
  *   --samples <n>         Trials per arm (default 2 — each trial is a full
  *                          multi-cycle build, not a single skill call; this
  *                          is expensive, keep n small unless you mean it)
+ *   --fixture <name>       Which fixture to drive: `broken` (default — four
+ *                          planted defect classes, measures recovery cost)
+ *                          or `clean` (no planted defects, measures cost of
+ *                          a review that should reach PASS on or near the
+ *                          first round — the complementary control).
  *   --baseline-ref <ref>   Git ref/commit to check out as the baseline arm.
  *                          Omit to run single-arm against the current branch.
  *   --tier <full|quick>    Rigor tier passed to /adev:build --tier (default: full)
@@ -47,7 +52,7 @@
  *     domain defaults)
  *
  * Output:
- *   tests/evals/convergence/results/convergence-eval-<date>.md
+ *   tests/evals/convergence/results/convergence-eval-<date>-<fixture>.md
  */
 
 import { execSync } from 'node:child_process';
@@ -64,9 +69,37 @@ const SANDBOX = join(REPO_ROOT, 'tests', 'evals', 'integration-sandbox');
 const RESULTS_DIR = join(__dirname, 'results');
 const WORKTREE_DIR = join(REPO_ROOT, '.eval-worktree-convergence-baseline');
 
-const FIXTURE_SPEC_REL = '.context-index/specs/cross-cutting/broken-loop-fixture.spec.md';
-const FIXTURE_SLUG = 'broken-loop-fixture';
-const FIXTURE_LIB_REL = 'lib/loop-fixture/rate-limiter.mjs';
+// ─── Fixture selection (--fixture clean|broken, default broken) ───────────
+//
+// `broken` plants four defect classes (defect/mechanism-existence/decision/
+// external) to measure recovery cost. `clean` is the opposite control — no
+// planted defects, every citation resolves, nothing depends on an artifact
+// outside the fixture — to measure the loop's cost on the case where review
+// should reach PASS on (or near) the first round, uncontaminated by
+// recovery cost. Comparing the two isolates "cost of a real fix" from
+// "baseline cost of a clean pass."
+const FIXTURES = {
+  broken: {
+    specRel: '.context-index/specs/cross-cutting/broken-loop-fixture.spec.md',
+    slug: 'broken-loop-fixture',
+    libRel: 'lib/loop-fixture/rate-limiter.mjs',
+  },
+  clean: {
+    specRel: '.context-index/specs/cross-cutting/clean-loop-fixture.spec.md',
+    slug: 'clean-loop-fixture',
+    libRel: 'lib/loop-fixture/idempotency-cache.mjs',
+  },
+};
+
+const fixtureArgIdx = process.argv.indexOf('--fixture');
+const fixtureName = fixtureArgIdx >= 0 ? process.argv[fixtureArgIdx + 1] : 'broken';
+if (!Object.prototype.hasOwnProperty.call(FIXTURES, fixtureName)) {
+  console.error(`Unknown --fixture '${fixtureName}' — expected one of: ${Object.keys(FIXTURES).join(', ')}`);
+  process.exit(1);
+}
+const FIXTURE_SPEC_REL = FIXTURES[fixtureName].specRel;
+const FIXTURE_SLUG = FIXTURES[fixtureName].slug;
+const FIXTURE_LIB_REL = FIXTURES[fixtureName].libRel;
 const FIXTURE_PATHS_TO_RESET = [
   FIXTURE_SPEC_REL,
   FIXTURE_SPEC_REL.replace(/\.spec\.md$/, '.review.md'),
@@ -411,7 +444,8 @@ async function main() {
   }
 
   const report = generateReport({ single, baseline, treatment });
-  const reportPath = join(RESULTS_DIR, `convergence-eval-${new Date().toISOString().replace(/[:.]/g, '-').split('T')[0]}.md`);
+  const dateStamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
+  const reportPath = join(RESULTS_DIR, `convergence-eval-${dateStamp}-${fixtureName}.md`);
   writeFileSync(reportPath, report);
   console.log('\n' + report);
   console.log(`Report saved: ${reportPath}`);
