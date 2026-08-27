@@ -216,4 +216,85 @@ describe("adev issues epic", () => {
     assert.match(r.stdout, /^usage: adev issues epic .*--plan-ref <path>/m);
     assert.match(r.stdout, /^--plan-ref <path>/m);
   });
+
+  it("does NOT silently mint an epic titled 'list' — 'epic list' enumerates instead", () => {
+    // Regression for issue-y49odg: `adev issues epic list` used to hit the
+    // create path with "list" as a positional title (every other read-intent
+    // `adev issues` sub-verb is named for reading, so an agent reasonably
+    // expects this to enumerate). It exited 0 and minted a real epic.
+    const before = readBoard(root).epics.length;
+
+    const r = runCli(root, ["list"]);
+    assert.equal(r.status, 0, r.stderr);
+
+    const after = readBoard(root);
+    assert.equal(after.epics.length, before, "no epic titled 'list' was created");
+    assert.equal(
+      after.epics.find((e) => e.title === "list"),
+      undefined,
+      "no epic titled 'list' exists in board.epics"
+    );
+    assert.doesNotMatch(r.stdout, /^Created epic /m);
+  });
+
+  it("'epic list' enumerates the epic store, not the issue store", () => {
+    const seed = runCli(root, ["Enumerable epic one", "--milestone", "v42"]);
+    assert.equal(seed.status, 0, seed.stderr);
+
+    const r = runCli(root, ["list"]);
+    assert.equal(r.status, 0, r.stderr);
+    assert.match(r.stdout, /Enumerable epic one/);
+    assert.match(r.stdout, /\[v42\]/);
+  });
+
+  it("'epic list --milestone' filters and 'epic list --json' emits the array", () => {
+    const a = runCli(root, ["Milestone filter epic A", "--milestone", "v43", "--json"]);
+    assert.equal(a.status, 0, a.stderr);
+    const idA = JSON.parse(a.stdout).id;
+    const b = runCli(root, ["Milestone filter epic B", "--milestone", "v44"]);
+    assert.equal(b.status, 0, b.stderr);
+
+    const filtered = runCli(root, ["list", "--milestone", "v43", "--json"]);
+    assert.equal(filtered.status, 0, filtered.stderr);
+    const parsed = JSON.parse(filtered.stdout);
+    assert.ok(Array.isArray(parsed));
+    assert.ok(parsed.some((e) => e.id === idA));
+    assert.ok(!parsed.some((e) => e.title === "Milestone filter epic B"));
+  });
+
+  it("'epic list' with no epics prints a clear empty message, not a silent no-op", () => {
+    const emptyRoot = makeProject();
+    try {
+      const r = runIssues(emptyRoot, ["epic", "list"]);
+      assert.equal(r.status, 0, r.stderr);
+      assert.match(r.stdout, /No epics found\./);
+    } finally {
+      rmSync(emptyRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("the documented call shape 'epic \"<title>\" --plan-ref <path>' keeps working unchanged", () => {
+    // /adev:plan and /adev:implement call this exact shape non-interactively.
+    // It must keep exiting 0, printing the created line, and persisting to
+    // board.epics with planRef set — completely unaffected by the 'list'
+    // reservation, since "title" here is never literally "list".
+    const r = runCli(root, [
+      "Unattended plan epic",
+      "--plan-ref",
+      ".context-index/specs/features/task-management/regression-check.plan.md",
+    ]);
+    assert.equal(r.status, 0, r.stderr);
+    assert.match(r.stdout, /^Created epic epic-\w+: Unattended plan epic$/m);
+    assert.match(
+      r.stdout,
+      /^ {2}plan: \.context-index\/specs\/features\/task-management\/regression-check\.plan\.md$/m
+    );
+
+    const found = readBoard(root).epics.find((e) => e.title === "Unattended plan epic");
+    assert.ok(found, "epic landed in board.epics");
+    assert.equal(
+      found.planRef,
+      ".context-index/specs/features/task-management/regression-check.plan.md"
+    );
+  });
 });
