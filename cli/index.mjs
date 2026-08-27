@@ -2029,6 +2029,7 @@ const VERB_REGISTRY = new Map([
   ["test-helpers",    () => import("../lib/cli/test-helpers.mjs")],
   ["coordination",    () => import("../lib/cli/coordination.mjs")],
   ["test-debt",       () => import("../lib/cli/test-debt.mjs")],
+  ["repomap",         () => import("../lib/cli/repomap.mjs")],
 ]);
 
 // Strip ANSI color codes from messages before printing to stdout/stderr
@@ -2047,17 +2048,26 @@ function printVerbRegistry(stream = "stdout") {
   }
 }
 
+// Terminal exit codes are set via process.exitCode rather than process.exit()
+// so pending stdout/stderr writes are allowed to drain before the process
+// exits naturally. process.exit() tears down libuv immediately, and on a
+// piped stdout (unlike a captured/file-backed fd) that can truncate output
+// still queued behind the pipe's kernel buffer — no verb in VERB_REGISTRY
+// holds the event loop open with a timer/watcher/server, so natural exit
+// always follows once dispatch() returns.
 async function dispatch(argv) {
   const verb = argv[2];
   if (!verb) {
     printVerbRegistry();
-    process.exit(1);
+    process.exitCode = 1;
+    return;
   }
   const factory = VERB_REGISTRY.get(verb);
   if (!factory) {
     console.error(`unknown verb: ${stripAnsi(verb)}`);
     printVerbRegistry("stderr");
-    process.exit(1);
+    process.exitCode = 1;
+    return;
   }
   const verbArgs = argv.slice(3);
 
@@ -2067,13 +2077,15 @@ async function dispatch(argv) {
   } catch (err) {
     // Module import failure (e.g., missing run export)
     console.error(stripAnsi(err && err.message ? err.message : String(err)));
-    process.exit(1);
+    process.exitCode = 1;
+    return;
   }
 
   // Validate that the resolved module exposes the contract.
   if (typeof mod.run !== "function") {
     console.error(`verb ${stripAnsi(verb)} missing run export`);
-    process.exit(1);
+    process.exitCode = 1;
+    return;
   }
 
   // --help short-circuit applies only to new-contract modules. Legacy
@@ -2092,7 +2104,8 @@ async function dispatch(argv) {
   ) {
     if (typeof mod.help === "function") {
       mod.help();
-      process.exit(0);
+      process.exitCode = 0;
+      return;
     }
   }
 
@@ -2122,17 +2135,18 @@ async function dispatch(argv) {
         returnCode = ret;
       }
     }
-    process.exit(returnCode);
+    process.exitCode = returnCode;
   } catch (err) {
     // GateError detection: use err.code === 'GATE_BLOCKED' rather than
     // instanceof — robust across module-instance boundaries.
     if (err && err.code === "GATE_BLOCKED") {
       console.error(stripAnsi(err.message));
-      process.exit(2);
+      process.exitCode = 2;
+      return;
     }
     console.error(stripAnsi(err && err.message ? err.message : String(err)));
     if (err && err.stack) console.error(stripAnsi(err.stack));
-    process.exit(1);
+    process.exitCode = 1;
   }
 }
 

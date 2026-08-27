@@ -126,6 +126,17 @@ drift_detected: true
 <!-- Cross-cutting refactor. Frontmatter precedes the H1 deliberately: `adev specify
      revise` cannot parse a spec whose frontmatter is not the first non-blank content. -->
 
+> **Post-revision-5 addendum (2026-08-24, issue-cp2l2e):** the id-set comparison this
+> revision shipped (audits 1-3 below) cannot see a declared entry whose FIELDS diverge
+> from the source it was copied from while its id stays put — a project's reviewer
+> `context_pack` silently narrowed for five days with no error, warning, or failed run.
+> `lib/hygiene/registry-drift.mjs` gained a fourth audit, `hygiene/entry-field-drift`
+> (WARN), closing that gap for `context_pack`/`profile`/`severity_cap`/`dispatch`. It is
+> additive — no behavior this revision's AC list describes changed — so the AC list below
+> is left as originally validated; see the module's own header for the new audit's design
+> and rationale, and `validate-config-single-source.spec.md` Behavior 8 for the superseded
+> redaction claim this closed alongside it.
+
 ## Current State
 
 ### Structure

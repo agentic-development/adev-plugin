@@ -63,6 +63,7 @@ This file is the CLI counterpart to [`skill-reference.md`](skill-reference.md) (
 | `test-helpers` | Emit the shared test-helper/fixture/test-sample inventory; check a test file for helper duplication | `lib/cli/test-helpers.mjs` |
 | `test-debt` | Scan the test suite for accreted debt (hygiene Audit Pass 23) | `lib/cli/test-debt.mjs` |
 | `eval` | Score a verdict set against a rubric (`eval score`) | `lib/cli/eval.mjs` |
+| `repomap` | Generate repo-map.md / dependency-graph.json / symbol-ranks.json via tree-sitter (or regex fallback) | `lib/cli/repomap.mjs` |
 
 ---
 
@@ -286,20 +287,24 @@ adev boundaries check --json
 ```
 governance materialize --registry <review|diagnostics|gates> [--dry-run] [--json]
 governance drift [--registry <validate|review|diagnostics|gates>] [--json]
+governance migrate-gates [--dry-run] [--json]
 ```
 
 `validate.yaml` and `boundaries.yaml` are **exempt** (DDR-1): both are already explicit single-source registries, so naming either is refused. See [Governance](governance.md#materialized-registries-and-the-materialized_at-marker).
 
 Materialization is **write-once**: a second run preserves the original stamp verbatim, so an unchanged effective set produces byte-identical output. Entries already on disk keep their positions and their bytes; contributed entries are appended; comments and sibling keys survive. Exit 1 covers an argument error, an unknown or exempt registry, a containment refusal, and the two write refusals `MATERIALIZE_LOAD_INCOMPLETE` (a row failed to load) and `MATERIALIZE_WOULD_DROP` (a row would be lost).
 
-`governance drift` is Hygiene Audit Pass 19 — read-only, advisory, always exit 0 on a scan. It reports `hygiene/unadopted-upgrade` (info), `hygiene/project-addition` (info), `hygiene/disabled-bundled-entry` (WARN) and `hygiene/non-project-execution-field` (info). Field **names** are printed, never field values, and an unmaterialized marked registry is reported rather than read.
+`governance drift` is Hygiene Audit Pass 19 — read-only, advisory, always exit 0 on a scan. It reports `hygiene/unadopted-upgrade` (info), `hygiene/project-addition` (info), `hygiene/disabled-bundled-entry` (WARN), `hygiene/non-project-execution-field` (info) and `hygiene/entry-field-drift` (WARN — a `bundled`/`domain:*`-sourced entry's `context_pack`, `profile`, `severity_cap` or `dispatch` no longer matches the source named in its own `source:` field). The execution-field finding prints field **names** only, never values; the field-drift finding prints both values, since they are short enum-like config and the finding is not actionable without them. An unmaterialized marked registry is reported rather than read.
+
+`governance migrate-gates` rewrites legacy shell-string `command:` values in `governance/gates.yaml` to argv lists — the pre-v0.25.0 form that `mergeGates` (SEC-2) silently drops at load (`INVALID_GATE`). `adev upgrade` already runs this repair, but only when a project takes the `adev upgrade` path; a plugin-cache version bump never calls it. This verb is the same repair, reachable on its own. Exit 0 always (no file, nothing to migrate, or migrated); a command containing shell metacharacters is reported as `skipped`, never rewritten.
 
 **Example:**
 ```
 adev governance materialize --registry gates --dry-run
+adev governance migrate-gates --dry-run --json
 ```
 
-**Implementation:** `lib/cli/governance.mjs`. **Called by:** `/adev:init`, `/adev:hygiene` (Audit Pass 19).
+**Implementation:** `lib/cli/governance.mjs`. **Called by:** `/adev:init` (diagnostic mode's Gate Liveness check), `adev upgrade` (`cli/index.mjs::migrateLegacyGateCommands`, its own separate call site), `/adev:hygiene` (Audit Pass 19).
 
 ### `report`
 
@@ -613,7 +618,7 @@ adev coordination scan --json --owner "$USER/local"
 | `board [--milestone <name>] [--json]` | Print the whole board as canonical markdown on **stdout**. Read-only — never writes a file. `--milestone` restricts the epics section; `--json` emits `{ version, epics, issues }` unrendered |
 | `create <title> [--type <t>] [--priority 0-4] [--epic <id>] [--plan-ref <p>] [--spec-ref <p>] [--parent <id>] [--notes <text>] [--next-action <text>] [--id <id>] [--json]` | Create one board-granularity item in the **issue store**. Prints `Created <type> <id>: <title>`. `--type` defaults to `task`, `--priority` to `2`. **`--milestone` is refused here (exit 1)** — see `epic` |
 | `epic <title> [--plan-ref <path>] [--milestone <name>] [--json]` | Create one epic in the **epic store**. Pass `--plan-ref` when the epic backs a plan — `/adev:implement` and `/adev:reconcile` look the epic up by `planRef`, and an epic minted without it is re-created on every run. Prints `Created epic <id>: <title>`. Not the same as `create --type epic` — see below |
-| `update <id> [--status <s>] [--milestone <name>] [--title <text>] [--priority 0-4] [--notes <text>]` | Edit one item, issue or epic, **resolved from the id alone** by lookup — callers never read an id prefix. `--milestone` is epics-only, `--priority` issues-only. `--status closed` is refused (exit 1): close goes through `close` |
+| `update <id> [--status <s>] [--milestone <name>] [--title <text>] [--priority 0-4] [--notes <text>] [--next-action <text>]` | Edit one item, issue or epic, **resolved from the id alone** by lookup — callers never read an id prefix. `--milestone` is epics-only, `--priority` issues-only. `--next-action` sets the next-step hint; an empty string clears it, same as `--notes`. `--status closed` is refused (exit 1): close goes through `close` |
 | `close <id> --reason <text>` | Close one item through the dependency/cascade guards. `--reason` is required and recorded on the item's notes |
 | `dep <id> <depends-on-id>` | Record that `<id>` is blocked by `<depends-on-id>`. Both ids must exist; re-adding an existing edge is a no-op success |
 | `list [--status <s>] [--epic <id>] [--milestone <name>] [--json]` | List issues as a table, priority ascending (0 first). `--milestone` selects the epics carrying that milestone and their child issues. Read-only |
@@ -662,6 +667,8 @@ INV-6 is what keeps the file from drifting: `tasks.md` is a rendered consumer vi
 They write to different stores. `adev issues epic` writes the **epic store**, and that store is the only thing `listEpics()` reads — so only an epic created there is visible to `adev issues board`, to `adev issues list --milestone`, and to `adev issues update --milestone`. `adev issues create --type epic` writes an ordinary issue that happens to carry `type: epic`; it will not appear in the epics section of the board and cannot carry a milestone. Milestones live on epics, which is why `create --milestone` is refused with exit 1 pointing at `issues epic`.
 
 **Always create through this verb, never through the backend binary.** `br create` resolves `.beads/` from the current directory, and `git worktree add` materialises the git-tracked `issues.jsonl` into every linked worktree while the gitignored `beads.db` stays behind — so a raw `br` call from a worktree opens a JSONL with no database beside it and fails with `SYNC_CONFLICT`. `adev issues create` resolves the storage root through `resolveStorageRoot()` (the git common dir) and reaches the one real board from anywhere in the repo. Plan tasks are not issues — they live in the lifecycle log via `reportPlanTask` — so there is no `--plan-task` flag.
+
+`adev issues epic list [--milestone <name>] [--json]` enumerates the epic store instead of creating a record — read-only, matching the naming of `board`/`list`/`ready`/`stale`. `list` is therefore reserved: `adev issues epic "<title>" --plan-ref <path>` and every other title keep working exactly as documented above, but a bare `adev issues epic list` no longer mints an epic literally titled "list".
 
 Claims are **leases**, not locks: they expire after `tasks.claim_ttl_minutes` (default `240`, `0` disables expiry), and claiming an issue whose lease has expired takes it over and reports the displaced owner. Without expiry a crashed session would hold an issue forever, and an unreleasable gate is one people learn to bypass.
 
@@ -1116,6 +1123,40 @@ adev eval score --rubric default --input .adev/eval/latest-verdicts.json --json
 **Implementation:** `lib/cli/eval.mjs` (engine: `lib/evals/rubric.mjs`, `lib/evals/score.mjs`).
 **Called by:** `/adev:eval` Layer 3, Step 3 — aggregates the deterministic and judged halves into
 the half-level trend score once Steps 1 and 2 produce every verdict it needs.
+
+### `repomap`
+
+**Purpose:** CLI surface over `lib/repomap/` — the tree-sitter AST parser + PageRank ranker
+(`.context-index/specs/features/tree-sitter-repomap/charter.md`). `generate` wraps
+`lib/repomap/index.mjs`'s `run(root, mode)` orchestrator; `check-deps` wraps
+`lib/repomap/check-deps.mjs`'s `isTreeSitterAvailable()`.
+
+**Signature:**
+```
+adev repomap generate [--mode tree-sitter|regex] [--format json|text]
+adev repomap check-deps [--format json|text]
+```
+
+- `generate` writes, under the project root's `.context-index/hygiene/`: `repo-map.md` always;
+  `dependency-graph.json` and `symbol-ranks.json` only in tree-sitter mode (the charter's
+  regex-mode invariant — no JSON artifacts without an AST). Omitting `--mode` auto-detects via
+  `isTreeSitterAvailable()`. `--mode tree-sitter` when `web-tree-sitter` is not resolvable exits 1.
+- `check-deps` exits 0 if `web-tree-sitter` is resolvable, 1 otherwise — used to report the mode a
+  run will take before generating.
+- `--format json` (generate) prints `{mode, artifacts, files, edges, symbols, topSymbol}`, derived
+  by reading the artifacts the pipeline just wrote (`files`/`edges`/`symbols`/`topSymbol` are
+  `null` in regex mode). `--format text` (default) prints the same facts as a human summary.
+
+**Example:**
+```
+adev repomap check-deps
+adev repomap generate --format json
+adev repomap generate --mode regex
+```
+
+**Implementation:** `lib/cli/repomap.mjs` (engine: `lib/repomap/index.mjs`, `lib/repomap/check-deps.mjs`).
+**Called by:** `/adev:repomap`. Its output artifacts are consumed by `/adev:hygiene`,
+`/adev:codehealth`, `/adev:route`, `/adev:validate`, `/adev:implement`, `/adev:recover`.
 
 ### `worktree`
 

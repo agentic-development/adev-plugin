@@ -136,6 +136,22 @@ function writeGovernanceReview(dir, reviewers) {
   );
 }
 
+function writeLegacyGovernanceGates(dir, gates) {
+  // Pre-v0.25.0 shell-string `command:` form. `mergeGates` drops any such
+  // entry with an INVALID_GATE warning (SEC-2) — this fixture reproduces the
+  // exact shape `lib/migrate-gate-commands.mjs` exists to repair.
+  const lines = ["gates:"];
+  for (const g of gates) {
+    lines.push(`  - id: ${g.id}`);
+    lines.push(`    command: ${JSON.stringify(g.command)}`);
+    if (g.tier) lines.push(`    tier: ${g.tier}`);
+  }
+  writeFileSync(
+    join(dir, ".context-index", "governance", "gates.yaml"),
+    stampMarker(lines.join("\n") + "\n", "2026-08-15T00:00:00Z"),
+  );
+}
+
 function cleanup(dir) {
   try {
     rmSync(dir, { recursive: true, force: true });
@@ -288,6 +304,65 @@ test("adev domain load-gates emits the project's own gates.yaml, verbatim", () =
       !codes.includes("GATE_OVERRIDE"),
       `nothing is overridden when nothing else contributes: ${codes.join(", ")}`,
     );
+  } finally {
+    cleanup(dir);
+  }
+});
+
+// ── load-gates: legacy shell-string command is dropped LOUDLY ────────────
+//
+// Regression coverage for adev-plugin-gate-migration-unreachable-q6e9: a
+// project whose gates.yaml still declares a shell-string `command:` (the
+// pre-v0.25.0 form) has every such gate silently dropped by `mergeGates`
+// (INVALID_GATE, collected into `warnings`). Nothing on this hot path used
+// to print it — `adev domain load-gates` exits 0 with an empty gate set and
+// the only trace was inside the stdout JSON envelope a caller had to choose
+// to inspect. This is the CLI verb both `/adev:validate` Check 1 and
+// `/adev:implement`'s integration gate call to resolve what runs, so a
+// dropped gate here reads as "zero gates configured", not as a failure.
+
+test("adev domain load-gates surfaces INVALID_GATE on stderr when a legacy shell-string command is dropped", () => {
+  const dir = makeTempProject();
+  try {
+    writeLegacyGovernanceGates(dir, [
+      { id: "python-tests", command: "npm test", tier: "fast" },
+    ]);
+
+    const r = spawnSync(
+      "node",
+      [CLI, "domain", "load-gates", "--module", "m"],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 0, `stderr: ${r.stderr}\nstdout: ${r.stdout}`);
+
+    const out = JSON.parse(r.stdout);
+    // stdout envelope already carried this — the regression is that nothing
+    // printed it anywhere a caller checking only the exit code would see.
+    assert.deepStrictEqual(out.gates, []);
+    const codes = (out.warnings ?? []).map((w) => w.code);
+    assert.ok(codes.includes("INVALID_GATE"), `expected INVALID_GATE: ${codes.join(", ")}`);
+
+    assert.match(r.stderr, /INVALID_GATE/);
+    assert.match(r.stderr, /python-tests/);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("adev domain load-gates prints nothing to stderr when no gate is dropped", () => {
+  const dir = makeTempProject();
+  try {
+    writeGovernanceGates(dir, [
+      { id: "quality-gate", command: ["npm", "run", "lint"], tier: "fast" },
+    ]);
+
+    const r = spawnSync(
+      "node",
+      [CLI, "domain", "load-gates", "--module", "m"],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 0, `stderr: ${r.stderr}\nstdout: ${r.stdout}`);
+    assert.strictEqual(r.stderr, "");
   } finally {
     cleanup(dir);
   }
