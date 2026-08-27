@@ -1858,6 +1858,56 @@ describe("retrieveHeuristics", () => {
     assert.equal(result.length, 8);
   });
 
+  it("reallocates unused high capacity to medium when a scope has zero high entries", async () => {
+    // 0 high, 8 medium, at default injectionLimit (highMax=5, mediumMax=3):
+    // unfilled high capacity must fold into the medium budget so all 8
+    // medium entries fit, rather than capping at mediumMax=3.
+    for (let i = 0; i < 8; i++) {
+      await writeHeuristic(tempDir, makeEntry(`m${i}`, "hooks", "medium", `Med ${i}`));
+    }
+
+    const result = await heuristics.retrieveHeuristics(tempDir, "hooks", {});
+    const highCount = result.filter((h) => h.confidence === "high").length;
+    const medCount = result.filter((h) => h.confidence === "medium").length;
+    assert.equal(highCount, 0);
+    assert.equal(medCount, 8);
+    assert.equal(result.length, 8);
+  });
+
+  it("reallocates only the high shortfall to medium, still capping high at highMax", async () => {
+    // 2 high (highMax=5, so 3 unused slots), 10 medium (mediumMax=3):
+    // mediumBudget = 3 + (5 - 2) = 6.
+    for (let i = 0; i < 2; i++) {
+      await writeHeuristic(tempDir, makeEntry(`h${i}`, "hooks", "high", `High ${i}`));
+    }
+    for (let i = 0; i < 10; i++) {
+      await writeHeuristic(tempDir, makeEntry(`m${i}`, "hooks", "medium", `Med ${i}`));
+    }
+
+    const result = await heuristics.retrieveHeuristics(tempDir, "hooks", {});
+    const highCount = result.filter((h) => h.confidence === "high").length;
+    const medCount = result.filter((h) => h.confidence === "medium").length;
+    assert.equal(highCount, 2);
+    assert.equal(medCount, 6);
+    assert.equal(result.length, 8);
+  });
+
+  it("does not cascade unused medium capacity to low (floor still excludes low)", async () => {
+    // 0 high, 1 medium, 5 low: medium fully absorbs the cascaded high
+    // capacity but low stays excluded regardless of leftover budget.
+    await writeHeuristic(tempDir, makeEntry("m0", "hooks", "medium", "Med 0"));
+    for (let i = 0; i < 5; i++) {
+      await writeHeuristic(tempDir, makeEntry(`l${i}`, "hooks", "low", `Low ${i}`));
+    }
+
+    const result = await heuristics.retrieveHeuristics(tempDir, "hooks", {});
+    const medCount = result.filter((h) => h.confidence === "medium").length;
+    const lowCount = result.filter((h) => h.confidence === "low").length;
+    assert.equal(medCount, 1);
+    assert.equal(lowCount, 0);
+    assert.equal(result.length, 1);
+  });
+
   it("scales budget proportionally with custom injectionLimit", async () => {
     for (let i = 0; i < 10; i++) {
       await writeHeuristic(tempDir, makeEntry(`h${i}`, "hooks", "high", `High ${i}`));
@@ -1936,6 +1986,108 @@ describe("retrieveHeuristics", () => {
     // Next 3 should be medium
     for (let i = 5; i < 8; i++) {
       assert.equal(result[i].confidence, "medium");
+    }
+  });
+
+  it("honours manifest heuristics.injection_limit when no explicit injectionLimit is passed", async () => {
+    for (let i = 0; i < 20; i++) {
+      await writeHeuristic(tempDir, makeEntry(`h${i}`, "hooks", "high", `High ${i}`));
+    }
+    for (let i = 0; i < 20; i++) {
+      await writeHeuristic(tempDir, makeEntry(`m${i}`, "hooks", "medium", `Med ${i}`));
+    }
+
+    const manifest = { heuristics: { injection_limit: 24 } };
+    const result = await heuristics.retrieveHeuristics(tempDir, "hooks", { manifest });
+    // highMax = ceil(24*5/8) = 15, mediumMax = 24-15 = 9
+    assert.equal(result.length, 24);
+    assert.equal(result.filter((h) => h.confidence === "high").length, 15);
+    assert.equal(result.filter((h) => h.confidence === "medium").length, 9);
+  });
+
+  it("an explicit injectionLimit wins over manifest heuristics.injection_limit", async () => {
+    for (let i = 0; i < 20; i++) {
+      await writeHeuristic(tempDir, makeEntry(`h${i}`, "hooks", "high", `High ${i}`));
+    }
+    const manifest = { heuristics: { injection_limit: 24 } };
+    const result = await heuristics.retrieveHeuristics(tempDir, "hooks", {
+      manifest,
+      injectionLimit: 2,
+    });
+    assert.equal(result.length, 2);
+  });
+
+  it("falls back to default 8 when manifest.heuristics.injection_limit is missing", async () => {
+    for (let i = 0; i < 10; i++) {
+      await writeHeuristic(tempDir, makeEntry(`h${i}`, "hooks", "high", `High ${i}`));
+    }
+    const result = await heuristics.retrieveHeuristics(tempDir, "hooks", { manifest: {} });
+    assert.equal(result.filter((h) => h.confidence === "high").length, 5);
+    assert.equal(result.length, 5);
+  });
+
+  it("falls back to default 8 when manifest.heuristics.injection_limit is malformed", async () => {
+    for (let i = 0; i < 10; i++) {
+      await writeHeuristic(tempDir, makeEntry(`h${i}`, "hooks", "high", `High ${i}`));
+    }
+    for (const bad of ["many", -1, 2.5, NaN, true, [], {}, "8"]) {
+      const manifest = { heuristics: { injection_limit: bad } };
+      const result = await heuristics.retrieveHeuristics(tempDir, "hooks", { manifest });
+      assert.equal(
+        result.filter((h) => h.confidence === "high").length,
+        5,
+        `injection_limit ${JSON.stringify(bad)} must fall back to default 8`,
+      );
+    }
+  });
+});
+
+describe("resolveInjectionLimit", () => {
+  /**
+   * Call through the namespace so a missing export fails HERE with a readable
+   * message rather than at module link time.
+   */
+  function resolveLimit(manifest) {
+    assert.equal(
+      typeof heuristics.resolveInjectionLimit,
+      "function",
+      "lib/heuristics.mjs must export resolveInjectionLimit(manifest)",
+    );
+    return heuristics.resolveInjectionLimit(manifest);
+  }
+
+  it("exports DEFAULT_INJECTION_LIMIT as 8", () => {
+    assert.equal(heuristics.DEFAULT_INJECTION_LIMIT, 8);
+  });
+
+  it("defaults to 8 with no manifest config", () => {
+    assert.equal(resolveLimit(undefined), 8);
+    assert.equal(resolveLimit({}), 8);
+    assert.equal(resolveLimit({ heuristics: {} }), 8);
+  });
+
+  it("reads heuristics.injection_limit when configured", () => {
+    assert.equal(resolveLimit({ heuristics: { injection_limit: 24 } }), 24);
+    // 0 is a legal configured value — it disables entry-time injection — and
+    // must NOT be swallowed by a falsy check that falls back to the default.
+    assert.equal(resolveLimit({ heuristics: { injection_limit: 0 } }), 0);
+  });
+
+  it("ignores heuristics.error_injection_limit — the error-time knob must not leak", () => {
+    assert.equal(resolveLimit({ heuristics: { error_injection_limit: 3 } }), 8);
+    assert.equal(
+      resolveLimit({ heuristics: { error_injection_limit: 3, injection_limit: 24 } }),
+      24,
+    );
+  });
+
+  it("falls back to 8 on a non-integer, negative, or unreadable value", () => {
+    for (const bad of ["many", -1, null, 2.5, NaN, true, [], {}, "8"]) {
+      assert.equal(
+        resolveLimit({ heuristics: { injection_limit: bad } }),
+        8,
+        `injection_limit ${JSON.stringify(bad)} must fall back to 8`,
+      );
     }
   });
 });
