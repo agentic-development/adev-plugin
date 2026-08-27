@@ -429,7 +429,13 @@ After saving the review report, update the spec's status based on the verdict:
 
 Log the status change to the user.
 
-**Charter Capability Map update (PASS or PASS_WITH_NOTES only):** After updating the spec status to `review-passed`, also update the parent charter's Capability Map. Find the capability row corresponding to this spec and set its `Status` column to `review-passed`.
+**Charter Capability Map update (PASS or PASS_WITH_NOTES only):** After updating the spec status to `review-passed`, also update the parent charter's Capability Map. Find the capability row corresponding to this spec, then write the update via the CLI rather than editing the table directly:
+
+```bash
+adev capability-map set-status --charter <charterPath> --capability "<capability name>" --status review-passed
+```
+
+Stdout is a single JSON object `{ updated, previousStatus, newStatus, reason }`. The write is monotonic: on a **re-review** of a spec whose capability row already reads `planned`, `implementing`, `implemented`, or `validated` (e.g. after `/adev:validate` FAILs and the spec is revised, or any other re-entry through this step), the row is already past `review-passed` in the lifecycle order, so the verb reports `updated: false, reason: "NOT_MONOTONIC"` and leaves the charter untouched instead of regressing the record that the capability was already built further. Log this outcome to the user the same as a normal update — it is expected behavior on re-review, not an error. `reason: "CAPABILITY_NOT_FOUND"` or `"PARSE_ERROR"` are non-blocking; log and continue.
 
 **Note:** Do not increment the spec's `revision` field on status-only changes. The `revision` field tracks content changes, not workflow transitions.
 
