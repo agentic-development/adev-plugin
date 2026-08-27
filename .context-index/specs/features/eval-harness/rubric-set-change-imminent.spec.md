@@ -1,14 +1,45 @@
 ---
-partial_schema: spec@1
 charter: eval-harness
 kind: artifact
-status: review-passed
+status: implemented
 risk_level: medium
 milestone: v1
 revision: 15
 charter-revision: 6
 created: 2026-08-21
-updated: 2026-08-22
+updated: 2026-08-27
+source-manifest:
+  sha: "e723cfb"
+  files:
+    - .context-index/evals/tier-b-2026-08-27-01.md
+    - lib/evals/rubric-coverage-codes.mjs
+    - scripts/eval-scenario-setup.mjs
+    - tests/evals/skill-regression/rubrics/assess.yaml
+    - tests/evals/skill-regression/rubrics/codehealth.yaml
+    - tests/evals/skill-regression/rubrics/deploy.yaml
+    - tests/evals/skill-regression/rubrics/document.yaml
+    - tests/evals/skill-regression/rubrics/eval.yaml
+    - tests/evals/skill-regression/rubrics/issues.yaml
+    - tests/evals/skill-regression/rubrics/learn.yaml
+    - tests/evals/skill-regression/rubrics/prototype.yaml
+    - tests/evals/skill-regression/rubrics/repomap.yaml
+    - tests/evals/skill-regression/rubrics/sync.yaml
+    - tests/evals/skill-regression/rubrics/using-adev.yaml
+    - tests/evals/skill-regression/scenarios/assess.md
+    - tests/evals/skill-regression/scenarios/codehealth.md
+    - tests/evals/skill-regression/scenarios/deploy.md
+    - tests/evals/skill-regression/scenarios/document.md
+    - tests/evals/skill-regression/scenarios/eval.md
+    - tests/evals/skill-regression/scenarios/issues.md
+    - tests/evals/skill-regression/scenarios/learn.md
+    - tests/evals/skill-regression/scenarios/prototype.md
+    - tests/evals/skill-regression/scenarios/repomap.md
+    - tests/evals/skill-regression/scenarios/sync.md
+    - tests/evals/skill-regression/scenarios/using-adev.md
+    - tests/evals/skill-regression/tiers.yaml
+    - tests/lib/evals/rubric-coverage.test.mjs
+    - tests/lib/evals/skill-regression-catalog.test.mjs
+  computed-at: "2026-08-27T13:32:34.377Z"
 ---
 
 # Artifact Spec: Rubric Set — Change-Imminent Tier

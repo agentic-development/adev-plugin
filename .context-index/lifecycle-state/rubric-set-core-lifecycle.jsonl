@@ -111,3 +111,5 @@
 {"event":"plan_task","plan":".context-index/specs/features/eval-harness/rubric-set-core-lifecycle.plan.md","task_id":"7","status":"pending","notes":null,"ts":"2026-08-23T12:57:26.404Z"}
 {"event":"plan_task","plan":".context-index/specs/features/eval-harness/rubric-set-core-lifecycle.plan.md","task_id":"8","status":"pending","notes":null,"ts":"2026-08-23T12:57:26.448Z"}
 {"event":"step_completed","step":"plan","verdict":"PASS_WITH_NOTES","ts":"2026-08-23T12:57:26.533Z"}
+{"event":"lifecycle_step","step":"implement","status":"started","ts":"2026-08-23T23:32:33.393Z"}
+{"event":"step_failed","step":"implement","verdict":"FAIL","ts":"2026-08-23T23:35:32.983Z"}
