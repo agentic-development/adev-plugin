@@ -45,3 +45,4 @@
 {"event":"validator_report","step":"validate","validator":"validate.check-8-boundaries","severity":"error","verdict":"PASS","notes":"Skipped — quick rigor tier.","ts":"2026-08-22T17:39:29.377Z"}
 {"event":"validator_report","step":"validate","validator":"validate.check-9-transition-gates","severity":"warning","verdict":"PASS","notes":"Skipped — quick rigor tier.","ts":"2026-08-22T17:39:29.458Z"}
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-08-22T17:40:16.860Z"}
+{"event":"debug_intervention","kind":"debug","note":"update verb lacked --next-action flag parsing; adapters already supported the field. Wired flag through, mirroring --notes.","ts":"2026-08-24T09:37:12.021Z"}

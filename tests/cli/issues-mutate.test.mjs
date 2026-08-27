@@ -278,6 +278,35 @@ describe("adev issues update", () => {
     assert.match(r.stderr, /issue-does-not-exist/);
     assert.match(r.stderr, /not found/i);
   });
+
+  it("sets --next-action and round-trips through show and list", async () => {
+    const r = runCli(root, ["update", issueId, "--next-action", "/adev:plan --spec foo.md"]);
+    assert.equal(r.status, 0, r.stderr);
+
+    const shown = runCli(root, ["show", issueId, "--json"]);
+    assert.equal(shown.status, 0, shown.stderr);
+    assert.equal(JSON.parse(shown.stdout).next_action, "/adev:plan --spec foo.md");
+
+    const listed = runCli(root, ["list", "--json"]);
+    assert.equal(listed.status, 0, listed.stderr);
+    const fromList = JSON.parse(listed.stdout).find((i) => i.id === issueId);
+    assert.equal(fromList.next_action, "/adev:plan --spec foo.md");
+
+    const manager = getIssueManager(MANIFEST, root);
+    assert.equal((await manager.get(issueId)).next_action, "/adev:plan --spec foo.md");
+  });
+
+  it("clears --next-action with an empty string, mirroring --notes semantics", async () => {
+    const set = runCli(root, ["update", issueId, "--next-action", "some hint"]);
+    assert.equal(set.status, 0, set.stderr);
+
+    const cleared = runCli(root, ["update", issueId, "--next-action", ""]);
+    assert.equal(cleared.status, 0, cleared.stderr);
+
+    const manager = getIssueManager(MANIFEST, root);
+    const issue = await manager.get(issueId);
+    assert.equal(issue.next_action, "", "next_action should clear the same way --notes clears");
+  });
 });
 
 describe("adev issues update/close/dep help", () => {
