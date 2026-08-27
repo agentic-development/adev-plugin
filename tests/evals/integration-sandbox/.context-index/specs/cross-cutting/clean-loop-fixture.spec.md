@@ -4,9 +4,9 @@ affects: [orders]
 kind: behavioral
 status: review-pending
 risk_level: low
-revision: 1
+revision: 2
 created: 2026-08-26
-updated: 2026-08-26
+updated: 2026-08-27
 ---
 
 # Live Spec: Idempotency Request Cache
@@ -22,19 +22,27 @@ updated: 2026-08-26
      broken-loop-fixture's four planted defect classes.
      Do not add a defect to this file. If a real review round ever BLOCKs on
      it, that is itself a finding about reviewer false-positive rate, not
-     something to "fix" by editing around the report. -->
+     something to "fix" by editing around the report.
+
+     Revision history: rev 1 genuinely BLOCKed once (1/2 real trials) on two
+     real, non-planted defects, not reviewer noise: a constitution citation
+     of a principle absent from this sandbox's own constitution.md, and
+     `recordRequest`/`purgeExpired` having no named caller anywhere (the
+     wiring reviewer's own grep confirmed it). Rev 2 fixes both — the cited
+     principle now matches an entry that actually exists, and
+     `handleRequest` is a real, named caller of both. -->
 
 ## Behavioral Contract
 
-The request-handling path deduplicates repeated submissions of the same
-idempotency key within a time-to-live window using
-`lib/loop-fixture/idempotency-cache.mjs`, so a retried request is never
-processed twice.
+`handleRequest(key, handler)` (`lib/loop-fixture/idempotency-cache.mjs::handleRequest`)
+is the request-handling entry point: it deduplicates repeated submissions
+of the same idempotency key within a time-to-live window before invoking
+`handler`, so a retried request is never processed twice.
 
 ### Preconditions
 
 - An idempotency key is resolved (non-empty string) before any call into
-  the cache.
+  `handleRequest`.
 - `lib/loop-fixture/idempotency-cache.mjs` is loaded once per process; its
   in-memory store is not shared across processes.
 
@@ -44,6 +52,7 @@ processed twice.
 - **BEH-2** — **When** `recordRequest(key)` is called with a key whose stored entry is no more than 300 seconds old **then** it returns `{ duplicate: true }` and does not update the stored timestamp.
 - **BEH-3** — **When** `recordRequest(key)` is called with a key whose stored entry is older than 300 seconds **then** the entry is treated as expired: the call returns `{ duplicate: false }` and overwrites the stored timestamp with the current time.
 - **BEH-4** — **When** `purgeExpired()` (`lib/loop-fixture/idempotency-cache.mjs::purgeExpired`) is called **then** every stored key whose timestamp is more than 300 seconds old is removed from the cache; keys within the window are left untouched.
+- **BEH-5** — **When** `handleRequest(key, handler)` is called **then** it first calls `purgeExpired()`, then `recordRequest(key)`: if the result is a duplicate, `handleRequest` returns `{ duplicate: true, result: undefined }` without invoking `handler`; otherwise it invokes `handler()` and returns `{ duplicate: false, result: handler()'s return value }`. `handleRequest` is the sole caller of both `recordRequest` and `purgeExpired`.
 
 ### Postconditions
 
@@ -60,13 +69,13 @@ processed twice.
 
 ## System Constitution Reference
 
-- **Principle: "Minimize external dependencies."** — The cache uses only an in-memory `Map`; no new dependency.
+- **Principle 4: "Pure ESM"** (`tests/evals/integration-sandbox/.context-index/constitution.md`) — `lib/loop-fixture/idempotency-cache.mjs` is a `.mjs` file using only `export`/`import`, no CommonJS.
 
 ## Actionable Task Map
 
 | Task | Description | Estimated Complexity |
 |------|-------------|---------------------|
-| Idempotency cache integration | Wire `recordRequest`/`purgeExpired` into the request-handling path | small |
+| Idempotency cache integration | Wire `handleRequest` into the request-handling path | small |
 
 ## Acceptance Criteria
 
@@ -74,5 +83,6 @@ processed twice.
 - [ ] `recordRequest` returns `{ duplicate: true }` for a repeated key within the TTL window and `{ duplicate: false }` once it expires.
 - [ ] `purgeExpired` removes only entries older than 300 seconds.
 - [ ] `recordRequest` rejects an empty or non-string key with `INVALID_IDEMPOTENCY_KEY`.
+- [ ] `handleRequest` invokes `handler` exactly once for a non-duplicate key, and never invokes it for a duplicate key.
 - [ ] All quality gates pass (tests, lint, typecheck).
 - [ ] No constitutional violations introduced.

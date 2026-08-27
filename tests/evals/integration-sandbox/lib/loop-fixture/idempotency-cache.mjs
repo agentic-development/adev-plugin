@@ -2,10 +2,13 @@
  * Fixture module for tests/evals/convergence — a tiny, real, self-contained
  * idempotency cache. Companion to `clean-loop-fixture.spec.md`: unlike
  * `rate-limiter.mjs` (which deliberately omits a function the fixture spec
- * cites), every function this module exports is real and matches its
- * spec's behaviors exactly. This module's completeness is load-bearing —
- * do not remove or rename anything here, it would break the "this fixture
- * should PASS" control.
+ * cites), every function this module exports is real, matches its spec's
+ * behaviors exactly, and is genuinely wired: `handleRequest` is the named
+ * caller of both `recordRequest` and `purgeExpired` (a real reviewer round
+ * on an earlier draft of this fixture correctly flagged their absence as a
+ * no-caller wiring blocker before `handleRequest` existed). This module's
+ * completeness is load-bearing — do not remove or rename anything here, it
+ * would break the "this fixture should PASS" control.
  */
 
 const TTL_MS = 300_000;
@@ -34,4 +37,13 @@ export function purgeExpired() {
       seen.delete(key);
     }
   }
+}
+
+export function handleRequest(key, handler) {
+  purgeExpired();
+  const { duplicate } = recordRequest(key);
+  if (duplicate) {
+    return { duplicate: true, result: undefined };
+  }
+  return { duplicate: false, result: handler() };
 }

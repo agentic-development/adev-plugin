@@ -104,6 +104,13 @@ const FIXTURE_PATHS_TO_RESET = [
   FIXTURE_SPEC_REL,
   FIXTURE_SPEC_REL.replace(/\.spec\.md$/, '.review.md'),
   FIXTURE_SPEC_REL.replace(/\.spec\.md$/, '.blockers.md'),
+  // `broken-loop-fixture` never converges past review, so these were never
+  // needed until `clean-loop-fixture` (which genuinely reaches PASS) started
+  // producing them for real — found missing from this list via a real run,
+  // same as the build-state snapshot below.
+  FIXTURE_SPEC_REL.replace(/\.spec\.md$/, '.plan.md'),
+  FIXTURE_SPEC_REL.replace(/\.spec\.md$/, '.routing.json'),
+  FIXTURE_SPEC_REL.replace(/\.spec\.md$/, '.validate.md'),
   FIXTURE_LIB_REL,
   `.context-index/lifecycle-state/${FIXTURE_SLUG}.jsonl`,
   // /adev:build's own build-state snapshot — separate from the event log
@@ -177,6 +184,15 @@ function resetFixture(pluginDir) {
   // fresh trial read as "resume" instead of a clean run.
   const execState = join(SANDBOX, '.context-index', '.execution-state.json');
   try { rmSync(execState, { force: true }); } catch { /* best effort */ }
+
+  // Implement's incremental-write packets (`lib/incremental-artifact-writes`) —
+  // named per-task, not per-fixture-slug, so an exact-path entry in
+  // FIXTURE_PATHS_TO_RESET above can't target them. This sandbox's entire
+  // .context-index/packets/ directory only ever holds eval-run output (no
+  // other project work happens here), so a full wipe is safe and simpler
+  // than tracking unpredictable per-task filenames.
+  const packetsDir = join(SANDBOX, '.context-index', 'packets');
+  try { rmSync(packetsDir, { recursive: true, force: true }); } catch { /* best effort */ }
 
   // The fixture is hand-authored, not produced by /adev:specify, so it has
   // no `specify: completed` lifecycle event — and the lifecycle log was
