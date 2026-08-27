@@ -1,3 +1,4 @@
+{"issue_id":"issue-l1efc1","attempts":1,"updated_at":"2026-08-24T07:14:44.893Z","last_verdict":"PASS","curr_blockers":[],"parked_reason":null}
 {"issue_id":"adev-plugin-skill-invocation-bypass-gwo8","attempts":1,"updated_at":"2026-08-26T05:41:00.908Z","last_verdict":"CONTINUE","curr_blockers":["fed36205"],"parked_reason":null}
 {"issue_id":"adev-plugin-skill-invocation-bypass-gwo8","attempts":2,"updated_at":"2026-08-26T05:41:00.999Z","last_verdict":"BUDGET_EXHAUSTED","curr_blockers":["433471a4"],"parked_reason":null}
 {"issue_id":"adev-plugin-gkfv.3","attempts":1,"updated_at":"2026-08-26T05:52:53.447Z","last_verdict":"PASS","curr_blockers":[],"parked_reason":null}
