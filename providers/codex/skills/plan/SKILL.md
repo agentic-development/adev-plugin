@@ -485,6 +485,18 @@ Groups B and C can run in parallel with Group A.
 
 This is informational for `/adev:implement --parallel` (future). Tasks within a group run sequentially; groups run concurrently.
 
+**Group line grammar — required, not stylistic.** `lib/parallel/groups.mjs` parses each group line with a fixed grammar; deviating from it either drops the group silently or corrupts its member list. Each group line MUST be shaped exactly:
+
+```
+- Group <id> (independent|sequential): Task <n>[ → Task <n>]...
+```
+
+- `<id>` — one or more letters/digits (`A`, `B1`, ...).
+- The parenthetical MUST be the literal word `independent` or `sequential` — nothing else (no "the two run in parallel", no extra qualifiers, no synonyms). A group whose parenthetical is anything else is dropped and reported as a parse warning rather than scheduled.
+- Each task reference MUST be the literal word `Task` followed by an id starting with a digit (`Task 1`, `Task 3.1`, `Task 8b`) — dotted sub-parts and a single trailing letter are allowed, but the id must start with a digit so free-flowing prose words are never mistaken for a task reference.
+- Trailing prose after the task list (rationale, file names, notes) is fine and is ignored by the parser — but do not put additional `Task <n>` references inside that prose unless they really are members of the group, and do not end a task list with punctuation attached to the last id (`Task 6.` parses as task `6`, not `6.`, but keep the task list itself terse rather than folding a full sentence in immediately after the last arrow).
+- One group per line. A task that runs alone and unordered relative to every group (e.g., "runs last") does not belong in this grammar at all — say so in prose outside the `- Group ...` lines rather than inventing a line the parser will not recognize.
+
 ### Task Summary Table
 
 After the Parallelization section, emit a `## Task Summary` table that provides a quick-glance overview of all tasks. This is the first thing users and `/adev:implement` see before the detailed task sections.
