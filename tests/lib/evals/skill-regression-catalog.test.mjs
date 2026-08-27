@@ -167,12 +167,21 @@ test("the default rubric roots are non-vacuous — the scan reaches skills/eval/
  * fixture directory's root (sibling to `catalog.yaml` and `README.md`, not
  * under `project/` — it declares tier membership for the fixture's own
  * consumers, not fixture content), taking the count from thirty-four to
- * thirty-five.
+ * thirty-five. Task 5 added the first three of the eleven `rubrics/*.yaml`
+ * and `scenarios/*.md` pairs (`codehealth`, `repomap`, `document`) — also
+ * siblings of `catalog.yaml`, not under `project/`, since they describe the
+ * fixture rather than being part of it — taking the count to forty-one.
  */
 const REQUIRED_FIXTURE_FILES = Object.freeze([
   "README.md",
   "catalog.yaml",
   "tiers.yaml",
+  "rubrics/codehealth.yaml",
+  "rubrics/document.yaml",
+  "rubrics/repomap.yaml",
+  "scenarios/codehealth.md",
+  "scenarios/document.md",
+  "scenarios/repomap.md",
   "project/AGENTS.md",
   "project/CLAUDE.md",
   "project/docs/api.md",
@@ -217,8 +226,9 @@ test("Required Files is enumerated both ways — every pinned path exists and th
   assert.deepEqual(onDisk, [...REQUIRED_FIXTURE_FILES].sort());
   assert.equal(
     REQUIRED_FIXTURE_FILES.length,
-    35,
-    "Task 6's README.md took the count from 33 to 34; rubric-set-change-imminent Task 1's tiers.yaml took it to 35",
+    41,
+    "Task 6's README.md took the count from 33 to 34; rubric-set-change-imminent Task 1's tiers.yaml took it to 35; " +
+      "Task 5's three rubrics + three scenarios took it to 41",
   );
   assert.ok(REQUIRED_FIXTURE_FILES.includes("README.md"), "Task 6's README.md must be registered here");
 });

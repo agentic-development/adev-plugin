@@ -54,7 +54,7 @@ import { parseYaml } from "../../../lib/profiles/yaml.mjs";
 // scripts/eval-scenario-setup.mjs does not exist, so the import throws.").
 import { createOutputsRoot, createScenarioCopy, spliceDbPath } from "../../../scripts/eval-scenario-setup.mjs";
 import { captureThrow, cleanupTempDir, createTempDir, createTempGitRepo } from "../../helpers.mjs";
-import { splitSlugs } from "./catalog-validator.mjs";
+import { splitSlugs, validateCatalog } from "./catalog-validator.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(HERE, "..", "..", "..");
@@ -175,14 +175,29 @@ function bucketKeysOf(tiersDoc) {
  * @param {string} [options.rubricRoot]
  * @param {string} [options.scenarioRoot]
  * @param {string} [options.skillsRoot]
- * @returns {{errors: Array<{code: string, detail: string}>, checked: Set<string>}}
+ * @param {string[]} [options.onlyStems] - Task 5's extension: when supplied,
+ *   restrict every stem-scoped check (`RUBRIC_TIER_ORPHAN`,
+ *   `RUBRIC_TIER_UNCOVERED`, the six shared-contract rules,
+ *   `RUBRIC_SCENARIO_STEP_MISSING`) to rubric/scenario files whose basename
+ *   stem is a member of this list, as if `rubricRoot`/`scenarioRoot`
+ *   contained only those stems. `RUBRIC_TIER_INCOMPLETE` and
+ *   `RUBRIC_LANDED_INVALID` are unaffected — they decide `tiersPath` against
+ *   `skillsRoot` alone and have no rubric/scenario file to filter. Lets a
+ *   tier-landing task assert "these N files conform" in isolation against
+ *   real roots that will, over later tasks, accumulate files this task did
+ *   not author. `null`/absent means "no filter" — every file present is
+ *   considered, the pre-Task-5 behaviour.
+ * @returns {{errors: Array<{code: string, detail: string}>, checked: Set<string>,
+ *   matchedRubricFiles: string[], matchedScenarioFiles: string[]}}
  */
 export function checkRubricSet({
   tiersPath = DEFAULT_TIERS_PATH,
   rubricRoot = DEFAULT_RUBRIC_ROOT,
   scenarioRoot = DEFAULT_SCENARIO_ROOT,
   skillsRoot = DEFAULT_SKILLS_ROOT,
+  onlyStems = null,
 } = {}) {
+  const onlyStemsSet = Array.isArray(onlyStems) ? new Set(onlyStems) : null;
   const errors = [];
   const checked = new Set();
   const fail = (code, detail) => {
@@ -251,6 +266,13 @@ export function checkRubricSet({
     // throwing, matching `expandRubricRoot`'s convention in catalog-validator.mjs.
     rubricFiles = [];
   }
+  // `onlyStems` filters the shared `rubricFiles` list BEFORE any rule below
+  // consumes it, so every stem-scoped rule (ORPHAN here, the six
+  // shared-contract rules further down) sees only the requested subset —
+  // as if `rubricRoot` contained nothing else.
+  if (onlyStemsSet) {
+    rubricFiles = rubricFiles.filter((f) => onlyStemsSet.has(f.slice(0, -".yaml".length)));
+  }
   const allBucketedSlugs = new Set(bucketKeys.flatMap((key) => splitSlugs(tiersDoc[key])));
   for (const file of rubricFiles) {
     const stem = file.slice(0, -".yaml".length);
@@ -287,6 +309,11 @@ export function checkRubricSet({
   const landedBucketKeys = landedTokens.filter((t) => t !== "uncovered" && bucketKeys.includes(t));
   for (const key of landedBucketKeys) {
     for (const slug of splitSlugs(tiersDoc[key])) {
+      // `onlyStems` restricts coverage scope too: a slug outside the filter
+      // is treated as out of scope for THIS call, not as an uncovered
+      // finding — the same "as if rubricRoot contained only these stems"
+      // semantics the rubricFiles filter above applies.
+      if (onlyStemsSet && !onlyStemsSet.has(slug)) continue;
       const rubricPath = join(rubricRoot, `${slug}.yaml`);
       if (!existsSync(rubricPath)) {
         fail("RUBRIC_TIER_UNCOVERED", `bucket "${key}" names "${slug}", which has no ${rubricPath}`);
@@ -484,6 +511,9 @@ export function checkRubricSet({
     // convention rubricFiles above uses for rubricRoot.
     scenarioFiles = [];
   }
+  if (onlyStemsSet) {
+    scenarioFiles = scenarioFiles.filter((f) => onlyStemsSet.has(f.slice(0, -".md".length)));
+  }
   for (const file of scenarioFiles) {
     const slug = file.slice(0, -".md".length);
     const content = readFileSync(join(scenarioRoot, file), "utf8");
@@ -495,7 +525,7 @@ export function checkRubricSet({
     }
   }
 
-  return { errors, checked };
+  return { errors, checked, matchedRubricFiles: rubricFiles, matchedScenarioFiles: scenarioFiles };
 }
 
 // ---------------------------------------------------------------------------
@@ -1748,5 +1778,125 @@ test("createOutputsRoot: the outputs root is a sibling of the copy root, not nes
     }
   } finally {
     cleanupTempDir(copyRoot);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// 16. Task 5 — the three detector rubrics conform (codehealth, repomap, document)
+// ---------------------------------------------------------------------------
+//
+// No new RUBRIC_* rule here: these three files are validated by the checker
+// Tasks 1-3 already landed. This section adds one test that runs
+// `checkRubricSet` over the REAL roots, narrowed by `onlyStems` to exactly
+// these three stems, plus three detector-specific assertions the generic
+// eleven rules do not cover (acceptance criterion 19 and the catalog-side
+// coverage-transfer guarantee).
+
+/** The three detector-tier stems this task authors. */
+const DETECTOR_STEMS = Object.freeze(["codehealth", "repomap", "document"]);
+
+test("the three detector rubrics conform", () => {
+  const { errors, matchedRubricFiles } = checkRubricSet({
+    tiersPath: DEFAULT_TIERS_PATH,
+    rubricRoot: DEFAULT_RUBRIC_ROOT,
+    scenarioRoot: DEFAULT_SCENARIO_ROOT,
+    onlyStems: [...DETECTOR_STEMS],
+  });
+
+  // The stem filter matching zero files would let "errors is empty" pass
+  // vacuously — every one of the eleven rules reports clean over an empty
+  // set. Pin the filter actually narrowed rubricRoot's real files down to
+  // exactly these three before trusting the error-free result.
+  assert.equal(
+    matchedRubricFiles.length,
+    3,
+    `onlyStems must narrow rubricRoot to exactly the three detector stems, matched: ${JSON.stringify(matchedRubricFiles)}`,
+  );
+  assert.deepEqual(errors, []);
+
+  // The count-of-3 above cannot alone distinguish real filtering from a
+  // no-op: rubricRoot happens to hold exactly these three files today, so
+  // an unfiltered readdirSync would report the same count. Prove the
+  // filter narrows by passing a genuine PROPER SUBSET of the real stems
+  // and asserting the match count shrinks accordingly — this is red the
+  // moment onlyStems degrades to a no-op, independently of how many files
+  // rubricRoot happens to hold.
+  const { matchedRubricFiles: subsetMatch } = checkRubricSet({
+    tiersPath: DEFAULT_TIERS_PATH,
+    rubricRoot: DEFAULT_RUBRIC_ROOT,
+    scenarioRoot: DEFAULT_SCENARIO_ROOT,
+    onlyStems: ["codehealth"],
+  });
+  assert.deepEqual(
+    subsetMatch,
+    ["codehealth.yaml"],
+    "onlyStems: ['codehealth'] must narrow to exactly one file — proves the filter is real narrowing, not a no-op that happens to report 3",
+  );
+
+  const catalogDoc = parseYaml(readFileSync(DEFAULT_CATALOG_PATH, "utf8"));
+  const catalogById = new Map();
+  const catalogTwinById = new Map();
+  for (const list of [catalogDoc.planted_violations, catalogDoc.known_clean]) {
+    for (const entry of list) {
+      catalogById.set(entry.id, entry);
+      catalogTwinById.set(entry.id, entry.twin);
+    }
+  }
+
+  // Assertion 1: each of the three cites >= 1 skill-regression:PV-nn AND its
+  // KC twin (acceptance criterion 19). RUBRIC_TWIN_UNCITED, proven clean
+  // above, only proves the negative (no PV cited without its twin) — this
+  // proves the positive (some PV actually IS cited) is non-empty, since a
+  // rubric citing nothing would also pass that rule vacuously.
+  for (const stem of DETECTOR_STEMS) {
+    const doc = loadRubric(`${stem}.yaml`, { projectRoot: DEFAULT_RUBRIC_ROOT });
+    const citedIds = new Set();
+    for (const entry of doc.required_elements ?? []) {
+      if (!entry || typeof entry.source !== "string") continue;
+      const m = SKILL_REGRESSION_CITATION_RE.exec(entry.source.trim());
+      if (m) citedIds.add(m[1]);
+    }
+    const citedPVs = [...citedIds].filter((id) => id.startsWith("PV-"));
+    assert.ok(
+      citedPVs.length > 0,
+      `rubric "${stem}.yaml" cites no skill-regression:PV-nn — the positive half of acceptance criterion 19`,
+    );
+    for (const pv of citedPVs) {
+      const twin = catalogTwinById.get(pv);
+      assert.ok(
+        twin && citedIds.has(twin),
+        `rubric "${stem}.yaml" cites ${pv} without also citing its catalog twin ${twin ?? "(unresolved)"}`,
+      );
+    }
+
+    // Assertion 3: each rubric's `skill` appears in each cited entry's
+    // `covers_skills`. Confirmed here against the real catalog rather than
+    // assumed: PV-03/PV-04 carry "codehealth, repomap", PV-05 carries
+    // "codehealth", PV-08 carries "document".
+    for (const id of citedIds) {
+      const catalogEntry = catalogById.get(id);
+      assert.ok(catalogEntry, `rubric "${stem}.yaml" cites ${id}, which resolves to nothing in catalog.yaml`);
+      const coveredSkills = splitSlugs(catalogEntry.covers_skills);
+      assert.ok(
+        coveredSkills.includes(doc.skill),
+        `catalog entry ${id} covers_skills (${JSON.stringify(catalogEntry.covers_skills)}) ` +
+          `does not list "${doc.skill}", cited by rubric "${stem}.yaml"`,
+      );
+    }
+  }
+
+  // Assertion 2: every cited id resolves in catalog.yaml, guaranteed by the
+  // FIXTURE's own CATALOG_UNRESOLVED_CITATION scan (tests/lib/evals/
+  // catalog-validator.mjs::validateCatalog), never by an alias this tier
+  // mints. Proven by running that scan with its DEFAULT roots and asserting
+  // its reported scanned-file list now CONTAINS these three new rubric
+  // paths — before this task that list held only skills/eval/default-rubric.yaml.
+  const { scannedRubricFiles } = validateCatalog(DEFAULT_CATALOG_PATH);
+  for (const stem of DETECTOR_STEMS) {
+    const expected = join("tests", "evals", "skill-regression", "rubrics", `${stem}.yaml`);
+    assert.ok(
+      scannedRubricFiles.includes(expected),
+      `expected the catalog's citation scan to have grown to include ${expected}, visited: ${JSON.stringify(scannedRubricFiles)}`,
+    );
   }
 });
