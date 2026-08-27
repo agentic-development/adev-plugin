@@ -1900,3 +1900,151 @@ test("the three detector rubrics conform", () => {
     );
   }
 });
+
+// ---------------------------------------------------------------------------
+// 17. Task 6 — the four state-writer rubrics conform (deploy, sync, learn, issues)
+// ---------------------------------------------------------------------------
+//
+// No new RUBRIC_* rule here either: these four files are validated by the
+// checker Tasks 1-3 already landed, the same as section 16. Unlike the three
+// detector rubrics, these four are PRODUCERS — they cite no catalog id at
+// all, so this section adds no PV/KC-twin-citation assertion (there is
+// nothing to cite). What it does add is the producer-tier's own convention:
+// no `skill-regression:` citation anywhere in these four files' raw text,
+// checked as a plain predicate over the source text rather than through
+// `checkRubricSet` — RUBRIC_TWIN_UNCITED only resolves a PV cited without its
+// KC twin, so a producer citing BOTH halves of a pair would sail past it
+// clean. That is exactly why this tier needs its own predicate: the shared
+// rules do not forbid a producer from citing a catalog id, this convention
+// does.
+
+/** The four producer-tier stems this task authors. */
+const PRODUCER_STEMS = Object.freeze(["deploy", "sync", "learn", "issues"]);
+
+test("the four state-writer rubrics conform", () => {
+  const { errors, matchedRubricFiles } = checkRubricSet({
+    tiersPath: DEFAULT_TIERS_PATH,
+    rubricRoot: DEFAULT_RUBRIC_ROOT,
+    scenarioRoot: DEFAULT_SCENARIO_ROOT,
+    onlyStems: [...PRODUCER_STEMS],
+  });
+
+  // The stem filter matching zero files would let "errors is empty" pass
+  // vacuously — every one of the eleven rules reports clean over an empty
+  // set. Pin the filter actually narrowed rubricRoot's real files down to
+  // exactly these four before trusting the error-free result.
+  assert.equal(
+    matchedRubricFiles.length,
+    4,
+    `onlyStems must narrow rubricRoot to exactly the four producer stems, matched: ${JSON.stringify(matchedRubricFiles)}`,
+  );
+  assert.deepEqual(errors, []);
+
+  // The count-of-4 above cannot alone distinguish real filtering from a
+  // no-op — prove the filter narrows by passing a genuine PROPER SUBSET of
+  // the real stems and asserting the match count shrinks accordingly. Same
+  // anti-vacuity habit section 16 established for the detector tier.
+  const { matchedRubricFiles: subsetMatch } = checkRubricSet({
+    tiersPath: DEFAULT_TIERS_PATH,
+    rubricRoot: DEFAULT_RUBRIC_ROOT,
+    scenarioRoot: DEFAULT_SCENARIO_ROOT,
+    onlyStems: ["deploy"],
+  });
+  assert.deepEqual(
+    subsetMatch,
+    ["deploy.yaml"],
+    "onlyStems: ['deploy'] must narrow to exactly one file — proves the filter is real narrowing, not a no-op that happens to report 4",
+  );
+});
+
+test("no producer rubric in this tier cites a catalog id", () => {
+  // The predicate this convention needs, applied to the raw file text —
+  // never through checkRubricSet's element-level source parsing, since the
+  // point of this test is that the CONVENTION forbids what the shared rules
+  // do not.
+  for (const stem of PRODUCER_STEMS) {
+    const path = join(DEFAULT_RUBRIC_ROOT, `${stem}.yaml`);
+    const yamlText = readFileSync(path, "utf8");
+    assert.ok(
+      !/skill-regression:/.test(yamlText),
+      `rubrics/${stem}.yaml must cite no skill-regression: catalog id anywhere in its raw text — this tier's producers are not detectors`,
+    );
+  }
+});
+
+test("RUBRIC_TWIN_UNCITED stays silent on a producer citing both halves of a PV/KC pair — proving the no-citation rule needs its OWN predicate", () => {
+  // Falsification companion, proven now rather than only asserted in the
+  // commit body: a producer rubric that cited PV-03 AND its correct twin
+  // KC-03 would pass RUBRIC_TWIN_UNCITED cleanly, because that rule only
+  // ever complains about a PV cited WITHOUT its twin. The shared rules
+  // impose no ban on a producer citing a catalog id at all — that ban is
+  // this tier's convention alone, which is exactly what the previous test
+  // enforces and this test explains why it has to exist as its own check.
+  const tmp = createTempDir();
+  try {
+    const doc = makeConformingRubric("deploy");
+    doc.required_elements[0].source = "skill-regression:PV-03";
+    doc.required_elements[1].source = "skill-regression:KC-03";
+    const { errors } = runOneRubric(tmp, "deploy", doc);
+    assert.deepEqual(
+      errors.filter((e) => e.code === "RUBRIC_TWIN_UNCITED"),
+      [],
+      "RUBRIC_TWIN_UNCITED must stay silent here — both halves of the pair are cited, which is exactly the gap this tier's own no-citation predicate exists to close",
+    );
+
+    // Half two of the proof, not merely asserted in the commit body: the
+    // SAME synthetic doc's rendered YAML text must fail this tier's own
+    // no-citation predicate — the exact check the previous test applies to
+    // the four real files. Without this half, the test above only shows
+    // the shared rule is silent; it does not show why this tier needs a
+    // predicate of its own to catch what the shared rule lets through.
+    const yamlText = renderRubricYaml(doc);
+    assert.ok(
+      /skill-regression:/.test(yamlText),
+      "precondition: the rendered doc must actually carry a skill-regression: citation for this half to mean anything",
+    );
+  } finally {
+    cleanupTempDir(tmp);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// 18. Task 6 — the two reference-anchor assertions (sync, issues)
+// ---------------------------------------------------------------------------
+//
+// Per-tier reference anchors are not covered by any of the eleven shared
+// rules — a `reference` field is free text as far as `checkRubricSet` is
+// concerned. The plan's own heuristic ("an unbacked review convention is not
+// acceptable") requires a testable predicate for each of the two anchors
+// this task's table names, so both are written here rather than left as
+// prose-only review guidance.
+
+test("sync's manifest-mapping-anchored criterion cites the real sync.targets mapping", () => {
+  const doc = loadRubric("sync.yaml", { projectRoot: DEFAULT_RUBRIC_ROOT });
+  const anchored = (doc.quality_dimensions ?? []).some(
+    (c) =>
+      typeof c.reference === "string" &&
+      /sync\.targets/.test(c.reference) &&
+      /CLAUDE\.md/.test(c.reference) &&
+      /AGENTS\.md/.test(c.reference),
+  );
+  assert.ok(
+    anchored,
+    "sync.yaml must carry at least one quality_dimensions[].reference anchored on the real sync.targets mapping (naming both CLAUDE.md and AGENTS.md), not an invented standard",
+  );
+});
+
+test("issues' board-granularity-anchored criterion cites the real charter invariant", () => {
+  const doc = loadRubric("issues.yaml", { projectRoot: DEFAULT_RUBRIC_ROOT });
+  const anchored = (doc.quality_dimensions ?? []).some(
+    (c) =>
+      typeof c.reference === "string" &&
+      /agent-reliable-state-artifacts\/charter\.md/.test(c.reference) &&
+      /planRef/.test(c.reference) &&
+      /planTask/.test(c.reference),
+  );
+  assert.ok(
+    anchored,
+    "issues.yaml must carry at least one quality_dimensions[].reference anchored on the agent-reliable-state-artifacts charter's board-granularity invariant (naming both planRef and planTask), not an invented standard",
+  );
+});
