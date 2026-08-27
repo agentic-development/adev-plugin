@@ -36,6 +36,4 @@ caller owns transport and persistence.
 
 ## Quality Gates
 
-```bash
-node --test tests/
-```
+Run `node --test tests/` before committing.
