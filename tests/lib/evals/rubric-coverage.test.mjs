@@ -36,16 +36,24 @@
  */
 
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, readFileSync, readdirSync, symlinkSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, symlinkSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
+import { resolveStorageRoot } from "../../../lib/issues/resolve-root.mjs";
 import { loadRubric } from "../../../lib/evals/rubric.mjs";
 import { RUBRIC_COVERAGE_ERROR_CODES } from "../../../lib/evals/rubric-coverage-codes.mjs";
 import { isContained, lenientRealpath, resolveContained } from "../../../lib/path-safety.mjs";
 import { parseYaml } from "../../../lib/profiles/yaml.mjs";
-import { captureThrow, cleanupTempDir, createTempDir } from "../../helpers.mjs";
+// `spliceDbPath`, `createScenarioCopy` and `createOutputsRoot` are Task 4's
+// production deliverable (RED phase: the file does not exist yet, so this
+// import throws and every test below fails at module load — the failure
+// mode the plan's "Verify test fails" step names explicitly: "FAIL —
+// scripts/eval-scenario-setup.mjs does not exist, so the import throws.").
+import { createOutputsRoot, createScenarioCopy, spliceDbPath } from "../../../scripts/eval-scenario-setup.mjs";
+import { captureThrow, cleanupTempDir, createTempDir, createTempGitRepo } from "../../helpers.mjs";
 import { splitSlugs } from "./catalog-validator.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -1471,3 +1479,274 @@ for (const [index, row] of TOKEN_TABLE.entries()) {
     }
   });
 }
+
+// ---------------------------------------------------------------------------
+// 15. spliceDbPath — the splice refusal set (Task 4)
+// ---------------------------------------------------------------------------
+//
+// `spliceDbPath(manifestText, value)` is a smaller, single-purpose sibling of
+// `lib/extensions/governance-splice.mjs`'s registry splice: same discipline
+// (never reserialize through `parseYaml`, since that discards comments;
+// locate the target by line range; refuse an ambiguous form rather than
+// guessing), a different key shape (a single nested `db_path` scalar under
+// `tasks:`, rather than a registry array). It accepts exactly two on-disk
+// forms and refuses every other, each refusal distinguishable by its
+// message even though every shape-refusal below shares one error code
+// (`DB_PATH_SPLICE_REFUSED`) — the same convention `governance-splice.mjs`
+// uses for its own `GOVERNANCE_PARSE_REFUSED`.
+
+/**
+ * The normal, accepted block-map manifest form: `tasks:` as a multi-line
+ * YAML block carrying `backend: json`, with a comment before and after —
+ * the fixture the round-trip and indent assertions below build on, and the
+ * "pre-existing normal block-map acceptance" row of the form table.
+ */
+function baseManifestText() {
+  return [
+    "# eval scenario manifest",
+    "platform: javascript",
+    "",
+    "tasks:",
+    "  backend: json",
+    "  claim_ttl_minutes: 240",
+    "",
+    "# trailing comment about tasks",
+    "",
+  ].join("\n");
+}
+
+const SPLICE_VALUE = "/private/tmp/adev-eval-scenario-abc123";
+
+/**
+ * The seven refusal rows of Task 4's form table, plus the two acceptance
+ * rows, as one table so the row order here mirrors the plan's table order
+ * exactly (traceability, same convention `TOKEN_TABLE` uses above).
+ *
+ * `reason` is a regex the thrown message must match — distinct per row, so a
+ * future implementation that throws the right code for the wrong reason is
+ * still caught.
+ */
+const REFUSAL_TABLE = Object.freeze([
+  {
+    name: "tasks: absent",
+    manifestText: ["# eval scenario manifest", "platform: javascript", ""].join("\n"),
+    reason: /absent/i,
+  },
+  {
+    name: "db_path: already present under tasks:",
+    manifestText: ["tasks:", "  backend: json", "  db_path: /already/set", ""].join("\n"),
+    reason: /db_path/i,
+  },
+  {
+    name: "tasks: duplicated (appears twice at top level)",
+    manifestText: ["tasks:", "  backend: json", "tasks:", "  claim_ttl_minutes: 240", ""].join("\n"),
+    reason: /duplicat/i,
+  },
+  {
+    name: "tasks: {backend: json} (non-empty inline flow map)",
+    manifestText: ["tasks: {backend: json}", ""].join("\n"),
+    reason: /non-empty|backend/i,
+  },
+  {
+    name: "tasks: [] (empty inline flow sequence)",
+    manifestText: ["tasks: []", ""].join("\n"),
+    reason: /sequence/i,
+  },
+  {
+    name: "tasks: present but not a map (a scalar value)",
+    manifestText: ['tasks: "x"', ""].join("\n"),
+    reason: /scalar|not a map/i,
+  },
+  {
+    name: "mixed or lone-CR line endings in the manifest text",
+    manifestText: "tasks:\r\n  backend: json\n  claim_ttl_minutes: 240\n",
+    reason: /carriage return|line ending|CRLF/i,
+  },
+]);
+
+for (const [index, row] of REFUSAL_TABLE.entries()) {
+  test(`spliceDbPath: row ${index + 1} — ${row.name} — refuses, distinct reason`, () => {
+    const err = captureThrow(() => spliceDbPath(row.manifestText, SPLICE_VALUE));
+    assert.equal(err.code, "DB_PATH_SPLICE_REFUSED", `row ${index + 1} must refuse with the splice-refusal code`);
+    assert.match(err.message, row.reason, `row ${index + 1}'s message must name its own distinct reason`);
+    for (const [otherIndex, other] of REFUSAL_TABLE.entries()) {
+      if (otherIndex === index) continue;
+      assert.doesNotMatch(
+        err.message,
+        other.reason,
+        `row ${index + 1}'s message must not also match row ${otherIndex + 1}'s reason — the two refusals must stay distinguishable`,
+      );
+    }
+  });
+}
+
+test("spliceDbPath: tasks: {} (empty inline flow map) is accepted — the deliberate widening", () => {
+  const result = spliceDbPath(["tasks: {}", ""].join("\n"), SPLICE_VALUE);
+  const parsed = parseYaml(result);
+  assert.equal(typeof parsed.tasks.db_path, "string");
+  assert.equal(parsed.tasks.db_path, SPLICE_VALUE);
+});
+
+test("spliceDbPath: tasks: {} widening does not also accept a non-empty inline flow map", () => {
+  // Falsification companion to the acceptance test above, written now so the
+  // widening's boundary is pinned from the start rather than discovered at
+  // GREEN: `{}` is accepted because it is provably empty, not because any
+  // inline flow map is.
+  const err = captureThrow(() => spliceDbPath(["tasks: {backend: json}", ""].join("\n"), SPLICE_VALUE));
+  assert.equal(err.code, "DB_PATH_SPLICE_REFUSED");
+});
+
+test("spliceDbPath: tasks: present as a normal block map is accepted, appending db_path nested beneath it", () => {
+  const result = spliceDbPath(baseManifestText(), SPLICE_VALUE);
+  const parsed = parseYaml(result);
+  assert.equal(typeof parsed.tasks.db_path, "string");
+  assert.equal(parsed.tasks.db_path, SPLICE_VALUE);
+});
+
+test("spliceDbPath: an unsafe value is rejected via assertSafeScalar, not silently written", () => {
+  // A colon-followed-by-space value reparses as a nested map key
+  // (`lib/profiles/yaml.mjs`'s block-sequence/map branch — see
+  // `governance-values.mjs`'s UNSAFE_COLON doc comment) — exactly the class
+  // of value assertSafeScalar exists to refuse before it ever reaches emission.
+  const unsafeValue = "/tmp/evil: rm -rf /";
+  const err = captureThrow(() => spliceDbPath(baseManifestText(), unsafeValue));
+  assert.equal(err.code, "GOVERNANCE_SCALAR_UNSAFE");
+});
+
+test("spliceDbPath: an unsafe value carrying a flow indicator is also rejected", () => {
+  const unsafeValue = "/tmp/[bad]";
+  const err = captureThrow(() => spliceDbPath(baseManifestText(), unsafeValue));
+  assert.equal(err.code, "GOVERNANCE_SCALAR_UNSAFE");
+});
+
+test("spliceDbPath: the value is checked before any manifest-shape parsing — an unsafe value on an absent tasks: manifest still reports GOVERNANCE_SCALAR_UNSAFE, not DB_PATH_SPLICE_REFUSED", () => {
+  // Distinguishes the PRE-check from the emission re-check: pairing an
+  // unsafe value with a manifest shape that would ALSO be refused on its
+  // own (tasks: absent) proves which check fires first. If the pre-check
+  // were skipped and only the emission check ran, the absent-tasks: shape
+  // refusal would fire first instead, since emission is never reached.
+  const unsafeValue = "/tmp/evil: rm -rf /";
+  const manifestText = ["# eval scenario manifest", "platform: javascript", ""].join("\n");
+  const err = captureThrow(() => spliceDbPath(manifestText, unsafeValue));
+  assert.equal(err.code, "GOVERNANCE_SCALAR_UNSAFE");
+});
+
+test("spliceDbPath: round-trip pin — db_path is a string equal to the value, backend: json survives, and every comment line survives on the text", () => {
+  const before = baseManifestText();
+  const result = spliceDbPath(before, SPLICE_VALUE);
+
+  const parsed = parseYaml(result);
+  assert.equal(typeof parsed.tasks.db_path, "string");
+  assert.equal(parsed.tasks.db_path, SPLICE_VALUE);
+  assert.equal(parsed.tasks.backend, "json");
+
+  // Checked on the raw TEXT, not the parsed doc — parseYaml discards comments,
+  // which is exactly what makes this assertion meaningful: a reserialize-based
+  // splice would still pass the parsed-doc assertions above while silently
+  // dropping every comment line below.
+  const beforeCommentLines = before.split("\n").filter((line) => line.trim().startsWith("#"));
+  assert.ok(beforeCommentLines.length > 0, "precondition: the fixture must actually carry comment lines to prove");
+  for (const commentLine of beforeCommentLines) {
+    assert.ok(
+      result.includes(commentLine),
+      `comment line ${JSON.stringify(commentLine)} must survive the splice verbatim`,
+    );
+  }
+});
+
+test("spliceDbPath: db_path is emitted nested under tasks:, not at the top level", () => {
+  const result = spliceDbPath(baseManifestText(), SPLICE_VALUE);
+  const parsed = parseYaml(result);
+  // This is the assertion that actually detects a wrong-indent emission:
+  // `resolveStorageRoot` reads `manifest?.tasks?.db_path` with optional
+  // chaining, so a leaf emitted one column too shallow reads back as
+  // `undefined` at `parsed.tasks.db_path` even though `parsed.db_path` would
+  // hold the value instead.
+  assert.equal(parsed.tasks.db_path, SPLICE_VALUE);
+  assert.equal(parsed.db_path, undefined, "db_path must not land at the top level of the document");
+});
+
+test("spliceDbPath: indent correctness is decided by resolveStorageRoot against a DIFFERENT cwd, not a same-cwd difference", () => {
+  // Part two of the indent-correctness assertion (part one is the parsed-leaf
+  // check above). A same-cwd comparison cannot distinguish correct from
+  // wrong-indent code: for a mkdtempSync + git init root, dirname(git
+  // rev-parse --git-common-dir) returns exactly realpathSync(dir) — the
+  // git-common-dir fallback is byte-identical to the value the splice
+  // writes, at the copy root. So spliced and unspliced resolveStorageRoot
+  // return the SAME string there regardless of indent, and an assertion
+  // built on that pair would be red before any perturbation and could never
+  // go red because of one. The differ-assertion is only meaningful against
+  // a cwd OTHER than the copy root.
+  const copyRoot = createTempGitRepo();
+  const otherRoot = createTempGitRepo();
+  try {
+    const realCopyRoot = realpathSync(copyRoot);
+    const spliced = spliceDbPath(baseManifestText(), realCopyRoot);
+    const unspliced = baseManifestText();
+
+    assert.equal(
+      resolveStorageRoot(parseYaml(spliced), otherRoot),
+      realCopyRoot,
+      "a correctly-nested db_path must win over cwd when resolved from a different root",
+    );
+    assert.equal(
+      resolveStorageRoot(parseYaml(unspliced), otherRoot),
+      realpathSync(otherRoot),
+      "with no db_path declared, the git-common-dir fallback must answer for cwd",
+    );
+
+    // The wrong-indent perturbation: emit db_path at the top level instead
+    // of nested under tasks:. resolveStorageRoot's optional chaining reads
+    // manifest?.tasks?.db_path, so a top-level leaf is invisible to it and
+    // the fallback fires — the perturbation this test exists to catch.
+    const wronglyIndented = spliced.replace(/^(\s*)db_path:/m, "db_path:");
+    assert.equal(
+      resolveStorageRoot(parseYaml(wronglyIndented), otherRoot),
+      realpathSync(otherRoot),
+      "a top-level (wrongly-indented) db_path must not be honoured — this must go red under the perturbation",
+    );
+  } finally {
+    cleanupTempDir(copyRoot);
+    cleanupTempDir(otherRoot);
+  }
+});
+
+test("createScenarioCopy: the copy is a git repo whose root is simultaneously the project root — a flat copy, not a nested one", () => {
+  // The falsification target: if cpSync ever copied fixtureRoot AS a
+  // subdirectory instead of flattening its contents into copyRoot,
+  // resolveStorageRoot's git-common-dir fallback would still resolve to
+  // copyRoot (the git root), but .context-index/manifest.yaml would sit one
+  // level too deep to be found at the path this test checks — the
+  // git-root/project-root identity this row exists to prove.
+  const { copyRoot } = createScenarioCopy();
+  try {
+    const gitRoot = execFileSync("git", ["rev-parse", "--show-toplevel"], {
+      encoding: "utf8",
+      cwd: copyRoot,
+    }).trim();
+    assert.equal(realpathSync(gitRoot), copyRoot, "the copy's git root must equal the copy root itself");
+
+    const manifestPath = join(copyRoot, ".context-index", "manifest.yaml");
+    assert.ok(existsSync(manifestPath), "the manifest must be directly under the copy root, not nested under a fixture-named subdirectory");
+
+    const parsed = parseYaml(readFileSync(manifestPath, "utf8"));
+    assert.equal(parsed.tasks.db_path, copyRoot, "the copy's own manifest must already carry its own db_path, spliced to itself");
+  } finally {
+    cleanupTempDir(copyRoot);
+  }
+});
+
+test("createOutputsRoot: the outputs root is a sibling of the copy root, not nested inside it", () => {
+  const { copyRoot } = createScenarioCopy();
+  try {
+    const outputsRoot = createOutputsRoot(copyRoot);
+    try {
+      assert.equal(dirname(outputsRoot), dirname(copyRoot), "outputs must sit beside the copy root, in the same parent");
+      assert.ok(!outputsRoot.startsWith(copyRoot + "/"), "outputs must not be nested inside the copy");
+    } finally {
+      cleanupTempDir(outputsRoot);
+    }
+  } finally {
+    cleanupTempDir(copyRoot);
+  }
+});
