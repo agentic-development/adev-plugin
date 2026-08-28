@@ -40,6 +40,7 @@ source-manifest:
     - tests/lib/evals/rubric-coverage.test.mjs
     - tests/lib/evals/skill-regression-catalog.test.mjs
   computed-at: "2026-08-27T13:32:34.377Z"
+drift_detected: true
 ---
 
 # Artifact Spec: Rubric Set — Change-Imminent Tier
