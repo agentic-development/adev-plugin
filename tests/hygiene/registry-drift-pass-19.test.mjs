@@ -739,18 +739,15 @@ test("adev governance drift surfaces entry-field-drift in its JSON envelope", as
 });
 
 test(
-  "the entry-field-drift audit reproduces this repository's own currently-live context_pack divergence",
+  "consistency-analyzer context_pack is aligned with domain profile — no entry-field-drift expected",
   async () => {
-    // Regression pin for issue-cp2l2e: this repo's own review.yaml carries an
-    // active (non-disabled) consistency-analyzer entry whose context_pack
-    // ('base') has diverged from the software domain profile ('consistency')
-    // since commit 631a12ad. Pre-fix, Pass 19 was silent about it.
+    // Regression pin for issue-cp2l2e: context_pack was 'base' (diverged from
+    // software domain profile 'consistency') until the hygiene-audit fix aligned
+    // them. This pin ensures the drift is not reintroduced.
     const result = await runRegistryDriftPass(PLUGIN_ROOT, { registry: "review" });
     const f = result.findings.find(
       (x) => x.id === "hygiene/entry-field-drift" && x.entry_id === "consistency-analyzer",
     );
-    assert.ok(f, "expected the live context_pack divergence to be reported");
-    assert.equal(f.field, "context_pack");
-    assert.equal(f.severity, "warning");
+    assert.ok(!f, "consistency-analyzer context_pack now matches domain profile — no drift expected");
   },
 );
