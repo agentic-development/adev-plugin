@@ -184,7 +184,9 @@ test("the default rubric roots are non-vacuous — the scan reaches skills/eval/
  * plan's twelve `rubrics/*.yaml` and `scenarios/*.md` pairs (`hygiene`,
  * `validate`, `review-specs`, `debug`, `route`) — the core-lifecycle
  * detector tier, same sibling placement as every earlier pair — taking the
- * count from fifty-seven to sixty-seven.
+ * count from fifty-seven to sixty-seven. Task 4 added the next two
+ * (`write-test`, `implement`) — the core-lifecycle producer tier, same
+ * sibling placement — taking the count to seventy-one.
  */
 const REQUIRED_FIXTURE_FILES = Object.freeze([
   "README.md",
@@ -197,6 +199,7 @@ const REQUIRED_FIXTURE_FILES = Object.freeze([
   "rubrics/document.yaml",
   "rubrics/eval.yaml",
   "rubrics/hygiene.yaml",
+  "rubrics/implement.yaml",
   "rubrics/issues.yaml",
   "rubrics/learn.yaml",
   "rubrics/prototype.yaml",
@@ -206,6 +209,7 @@ const REQUIRED_FIXTURE_FILES = Object.freeze([
   "rubrics/sync.yaml",
   "rubrics/using-adev.yaml",
   "rubrics/validate.yaml",
+  "rubrics/write-test.yaml",
   "scenarios/assess.md",
   "scenarios/codehealth.md",
   "scenarios/debug.md",
@@ -213,6 +217,7 @@ const REQUIRED_FIXTURE_FILES = Object.freeze([
   "scenarios/document.md",
   "scenarios/eval.md",
   "scenarios/hygiene.md",
+  "scenarios/implement.md",
   "scenarios/issues.md",
   "scenarios/learn.md",
   "scenarios/prototype.md",
@@ -222,6 +227,7 @@ const REQUIRED_FIXTURE_FILES = Object.freeze([
   "scenarios/sync.md",
   "scenarios/using-adev.md",
   "scenarios/validate.md",
+  "scenarios/write-test.md",
   "project/AGENTS.md",
   "project/CLAUDE.md",
   "project/docs/api.md",
@@ -266,13 +272,14 @@ test("Required Files is enumerated both ways — every pinned path exists and th
   assert.deepEqual(onDisk, [...REQUIRED_FIXTURE_FILES].sort());
   assert.equal(
     REQUIRED_FIXTURE_FILES.length,
-    67,
+    71,
     "Task 6's README.md took the count from 33 to 34; rubric-set-change-imminent Task 1's tiers.yaml took it to 35; " +
       "Task 5's three rubrics + three scenarios took it to 41; rubric-set-change-imminent Task 6's four rubrics + " +
       "four scenarios took it to 49; rubric-set-change-imminent Task 7's three rubrics + three scenarios took it to 55; " +
       "rubric-set-change-imminent Task 8's one rubric + one scenario (using-adev) took it to 57; " +
       "rubric-set-core-lifecycle Task 3's five rubrics + five scenarios (hygiene, validate, review-specs, debug, " +
-      "route) took it to 67",
+      "route) took it to 67; rubric-set-core-lifecycle Task 4's two rubrics + two scenarios (write-test, implement) " +
+      "took it to 71",
   );
   assert.ok(REQUIRED_FIXTURE_FILES.includes("README.md"), "Task 6's README.md must be registered here");
 });

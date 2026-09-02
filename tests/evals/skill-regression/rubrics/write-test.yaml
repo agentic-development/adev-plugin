@@ -1,0 +1,114 @@
+# Layer 3 rubric for /adev:write-test, scored against the skill-regression
+# fixture (tests/evals/skill-regression/). Field shapes verbatim from
+# skills/eval/default-rubric.yaml — the exemplar. All values flat: no nested
+# maps, since the repo's minimal YAML readers cannot represent them.
+#
+# Scored input: the failing tests and the Handoff Block a --red run produces.
+# Written after a scenario run against a temp-tree copy of
+# tests/evals/skill-regression/project (see scenarios/write-test.md).
+#
+# Citations: skill-regression:PV-10/KC-10 (plan-task-without-test) only.
+# Every met_when below is phrased against catalog.yaml's
+# detect_when/must_not_flag_when clause — the finding a correct write-test
+# run produces — never against the fixture's in-file answer-key label, so
+# the element survives the fixture's own redaction with no edit.
+# shipping-rates.plan.md:66,68 (Task 2's "declares no TDD expectation"
+# prose) is the post-redaction, meaning-preserving form of PV-10's anchor —
+# confirmed clean by `git grep -niE 'planted|known-clean'` returning no hit
+# there.
+#
+# PRODUCER, NOT ONLY PRODUCER: per the spec's Structural Shape note,
+# write-test writes an artifact *and* detects a defect while doing so — the
+# Handoff Block is scored for whether it authors the red-phase test Task 2's
+# own checklist never asked for (PV-10), and whether it treats Tasks 1 and 3
+# — which already declare that step — no differently (KC-10), the same
+# specificity-twin shape rubrics/route.yaml already established for this
+# pair against the same plan file.
+#
+# Spec: .context-index/specs/features/eval-harness/rubric-set-core-lifecycle.spec.md
+
+rubric_id: "skill-regression-write-test"
+version: 1
+layer: 3
+verdict_values: "met | not_met | unknown (judged criteria) | not_applicable (deterministic elements)"
+skill: write-test
+scenario: write-test
+
+required_elements:
+  - id: pv10_undeclared_task_gets_red_phase_test
+    description: "A Test Contract is authored for Task 2's own behavior even though its checklist declares no TDD test expectation"
+    source: "skill-regression:PV-10"
+    met_when: "the derived Test Contracts include one covering shipping-rates.spec.md behavior B7 — one of Task 2's own listed Spec behaviors (B1, B2, B7) — even though shipping-rates.plan.md Task 2 declares no TDD test expectation, per catalog.yaml PV-10's detect_when"
+    not_applicable_when: "never — the fixture always plants this defect and the scenario always targets the full Behavioral Contract"
+
+  - id: kc10_declared_tasks_not_shortchanged
+    description: "The specificity twin of PV-10: behaviors whose plan tasks already declare a red-phase step receive the same authoring treatment, never a lighter one"
+    source: "skill-regression:KC-10"
+    met_when: "the derived Test Contracts also cover B3, B4, B5 (Task 1) and B6 (Task 3) — the behaviors of shipping-rates.plan.md's own tasks that already declare a Write failing test step — with no fewer assertions or weaker rigor than B7's, confirming write-test's authoring does not vary with whether the corresponding task declared the step, per catalog.yaml KC-10's must_not_flag_when"
+    not_applicable_when: "never — the fixture always ships Tasks 1 and 3 as the declared-step twin"
+
+  - id: red_state_observed_not_asserted
+    description: "The RED state is a recorded observation of a real run, not a claim in the subagent's own prose"
+    source: "the Handoff Block's RED state evidence field"
+    met_when: "the Handoff Block's RED state evidence carries the last 20 lines of an actual `node --test` invocation against the newly authored test file, showing the B7 case failing for a behavioral reason (not a syntax or import error) — captured as an observed transcript of the run per Step 4's RED State Verification, before any edit to src/shipping/rates.mjs — never a sentence claiming the test 'is expected to fail' with no run output backing it"
+    not_applicable_when: "never — RED State Verification is mandatory for every --red invocation before the Handoff Block may be produced"
+
+  - id: handoff_block_hash_recorded
+    description: "The Handoff Block is written with a content hash over the authored test files"
+    source: "the Handoff Block"
+    met_when: "the Handoff Block at .context-index/packets/<slug>-tests.md exists and carries a SHA-256 content hash covering every listed test file, written by write-handoff.sh per Step 5"
+    not_applicable_when: "never — Step 5 always produces the Handoff Block once RED state is confirmed"
+
+  - id: mocking_boundary_documented_or_absent
+    description: "The Mocking Boundaries table correctly reflects that calculateRate is a pure function needing no permitted-boundary mock"
+    source: "the Handoff Block's Mocking Boundaries table"
+    met_when: "the Mocking Boundaries table is empty, or contains no entry mocking any of HTTP, DB, filesystem, or external-api, and no entry mocking an internal repository module — calculateRate performs no I/O and calls no dependency, so no mock is required at all"
+    not_applicable_when: "never — src/shipping/rates.mjs never changes shape across runs of this scenario"
+
+  - id: seed_data_deterministic
+    description: "Every assertion operates on an explicitly seeded shipment object, never on unseeded runtime state"
+    source: "the authored test files"
+    met_when: "every new assertion constructs an explicit { zone, weightGrams } shipment literal and asserts an exact rateCents or errors value, per the Seed Data Rule — no assertion of the form toBeGreaterThan(0) or toBeDefined() as its sole check"
+    not_applicable_when: "never — the Seed Data Rule applies to every assertion this run authors"
+
+  - id: gaming_scan_clean
+    description: "detect-gaming.sh reports no blocking violation in the authored test files"
+    source: "detect-gaming.sh's output"
+    met_when: "detect-gaming.sh run over every newly authored test file reports zero blocking violations, per Step 4's Gaming Violation Detection"
+    not_applicable_when: "never — Step 4 always runs this scan before the Handoff Block may be produced"
+
+quality_dimensions:
+  - id: contract_derivation_traces_to_spec
+    criterion: "Does the B7 Test Contract's assertion trace to shipping-rates.spec.md's actual wording for behavior B7, rather than an invented rounding threshold?"
+    reference: "Deriving Test Contracts, 'From --spec <path>', in skills/write-test/SKILL.md"
+    met_when: "the B7 test's assertion and its surrounding comment or contract description paraphrase or quote B7's actual text ('rounded half up to the nearest whole cent')"
+    not_met_when: "the B7 test asserts a numeric rule not traceable to B7's stated text"
+    unknown_when: "the Handoff Block records no contract description for the B7 test"
+
+  - id: seed_data_grounded_in_documented_zones
+    criterion: "Does the seed data for zone-dependent assertions use the three zones the fixture module actually documents (domestic, regional, international), rather than an invented zone name?"
+    reference: "tests/evals/skill-regression/project/src/shipping/rates.mjs's ZONE_BASE_CENTS table"
+    met_when: "every seeded shipment's zone field is one of domestic, regional, or international"
+    not_met_when: "a seeded shipment's zone field is a string not in that set, used as though it were valid"
+    unknown_when: "no zone-dependent assertion was authored in this run"
+
+  - id: mocking_boundary_reasoning_grounded
+    criterion: "When the Mocking Boundaries table is left empty, does the Handoff Block state the reasoning (a pure function, no I/O) rather than leaving the omission unexplained?"
+    reference: "Mocking Boundary Declaration in skills/write-test/SKILL.md"
+    met_when: "the Handoff Block or the authoring subagent's report states that no mock is required because calculateRate performs no I/O and has no external dependency"
+    not_met_when: "the Mocking Boundaries table is empty with no stated reasoning at all"
+    unknown_when: "the Handoff Block carries no Mocking Boundaries section to evaluate"
+
+  - id: shared_helper_reuse_surfaced
+    criterion: "Is the Step 4 Shared Helper Duplication Check's result reported inline, so a locally redefined helper that shadows a shared one is visible rather than silently introduced?"
+    reference: "Shared Helper Duplication Check (advisory) in skills/write-test/SKILL.md"
+    met_when: "the run reports the `adev test-helpers check` finding — either that no duplicate was found, or naming the duplicated symbol — inline in the authoring subagent's report"
+    not_met_when: "the run authors new local test helpers with no mention of whether the duplication check ran or what it found"
+    unknown_when: "the authored test file defines no new local helper at all, so the check has nothing to report against"
+
+layer3_max_points: 25
+required_element_points: 10
+judged_criterion_points: 15
+unknown_policy: "exclude_from_denominator"
+not_applicable_policy: "exclude_from_denominator"
+insufficient_evidence_threshold_percent: 40

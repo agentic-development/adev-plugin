@@ -2475,15 +2475,20 @@ test("the responder rubric conforms", () => {
   assert.deepEqual(errors.filter((e) => e.code !== "RUBRIC_LEGACY_SURVIVES"), []);
 });
 
-// AMENDMENT (rubric-set-core-lifecycle.plan.md, Task 3): this test is owned
-// by the sibling change-imminent plan, but this tier's own landing grows the
-// real rubric/scenario roots it pins — 11 -> 16 here, in the same commit as
-// the five detector rubrics/scenarios that move the count. A FUTURE
-// amendment (Task 4 of this plan, -> 18) should find this precedent and
-// follow the same shape: both counts, the expected-stem-set extension, and
-// the bidirectional comparison, all kept intact.
+// AMENDMENT (rubric-set-core-lifecycle.plan.md, Task 3, then Task 4): this
+// test is owned by the sibling change-imminent plan, but this tier's own
+// landing grows the real rubric/scenario roots it pins — 11 -> 16 at Task 3,
+// then 16 -> 18 here at Task 4, in the same commit as the two producer
+// rubrics/scenarios that move the count. A FUTURE amendment (Task 6 of this
+// plan, retiring specify/plan/brainstorm's legacy predecessor and landing
+// their replacements) should find this precedent and follow the same shape:
+// both counts, the expected-stem-set extension, and the bidirectional
+// comparison, all kept intact.
 /** The five core-lifecycle detector stems Task 3 adds to the real roots. */
 const CORE_LIFECYCLE_DETECTOR_STEMS = Object.freeze(["hygiene", "validate", "review-specs", "debug", "route"]);
+
+/** The two core-lifecycle producer stems Task 4 adds to the real roots. */
+const CORE_LIFECYCLE_PRODUCER_STEMS = Object.freeze(["write-test", "implement"]);
 
 test("the landed tier is complete at the real roots", () => {
   // A zero-error result over an empty root would pass vacuously — these
@@ -2493,17 +2498,21 @@ test("the landed tier is complete at the real roots", () => {
   const scenarioFilesOnDisk = readdirSync(DEFAULT_SCENARIO_ROOT).filter((f) => f.endsWith(".md"));
   assert.equal(
     rubricFilesOnDisk.length,
-    16,
-    `rubrics/ must hold exactly 16 files at the landing state, found: ${JSON.stringify(rubricFilesOnDisk)}`,
+    18,
+    `rubrics/ must hold exactly 18 files at the landing state, found: ${JSON.stringify(rubricFilesOnDisk)}`,
   );
   assert.equal(
     scenarioFilesOnDisk.length,
-    16,
-    `scenarios/ must hold exactly 16 files at the landing state, found: ${JSON.stringify(scenarioFilesOnDisk)}`,
+    18,
+    `scenarios/ must hold exactly 18 files at the landing state, found: ${JSON.stringify(scenarioFilesOnDisk)}`,
   );
 
   const tiersDoc = parseYaml(readFileSync(DEFAULT_TIERS_PATH, "utf8"));
-  const expectedStems = new Set([...splitSlugs(tiersDoc.change_imminent), ...CORE_LIFECYCLE_DETECTOR_STEMS]);
+  const expectedStems = new Set([
+    ...splitSlugs(tiersDoc.change_imminent),
+    ...CORE_LIFECYCLE_DETECTOR_STEMS,
+    ...CORE_LIFECYCLE_PRODUCER_STEMS,
+  ]);
   const rubricStems = new Set(rubricFilesOnDisk.map((f) => f.slice(0, -".yaml".length)));
   const scenarioStems = new Set(scenarioFilesOnDisk.map((f) => f.slice(0, -".md".length)));
 
@@ -2585,11 +2594,12 @@ test("every scenario states where outputs/ lives", () => {
     "outputs/ from its own mkdtempSync, beside <copy-root>, outside every worktree root and outside the copy",
     "precondition: TOKEN_TABLE[6] must be the outputs/-location row",
   );
-  // AMENDMENT (rubric-set-core-lifecycle.plan.md, Task 3): this precondition
-  // count grows in lockstep with "the landed tier is complete at the real
-  // roots" above — 11 -> 16 in this same commit, for the same reason.
+  // AMENDMENT (rubric-set-core-lifecycle.plan.md, Task 3, then Task 4): this
+  // precondition count grows in lockstep with "the landed tier is complete
+  // at the real roots" above — 11 -> 16 at Task 3, then 16 -> 18 here at
+  // Task 4, for the same reason.
   const scenarioFiles = readdirSync(DEFAULT_SCENARIO_ROOT).filter((f) => f.endsWith(".md"));
-  assert.equal(scenarioFiles.length, 16, "precondition: all sixteen real scenario files must be present");
+  assert.equal(scenarioFiles.length, 18, "precondition: all eighteen real scenario files must be present");
   for (const file of scenarioFiles) {
     const content = readFileSync(join(DEFAULT_SCENARIO_ROOT, file), "utf8");
     assert.ok(content.includes(token7), `scenarios/${file} is missing token 7 (outputs/ location)`);
@@ -3275,4 +3285,136 @@ test("the five detector rubrics conform", () => {
       `expected the catalog's citation scan to have grown to include ${expected}, visited: ${JSON.stringify(scannedRubricFiles)}`,
     );
   }
+});
+
+// ---------------------------------------------------------------------------
+// 26. Task 4 of rubric-set-core-lifecycle.plan.md — the two producer
+// rubrics conform (write-test, implement)
+// ---------------------------------------------------------------------------
+//
+// Same shape as section 25's detector-tier test, narrowed to two stems and
+// dropping the twin-citation-table assertion for one of them: write-test
+// cites PV-10/KC-10 (pinned, same as any detector), but implement cites
+// NO catalog id at all — its scored input is task diffs and per-task review
+// records, which no planted class describes. RUBRIC_TWIN_UNCITED can only
+// ever express "a PV cited without its twin"; it says nothing about "cites
+// nothing", so that half is a dedicated per-file predicate here, not a rule
+// inside checkRubricSet.
+
+test("the two producer rubrics conform", () => {
+  const { errors, matchedRubricFiles } = checkRubricSet({
+    tiersPath: DEFAULT_TIERS_PATH,
+    rubricRoot: DEFAULT_RUBRIC_ROOT,
+    scenarioRoot: DEFAULT_SCENARIO_ROOT,
+    onlyStems: [...CORE_LIFECYCLE_PRODUCER_STEMS],
+  });
+
+  // The stem filter matching zero files would let "errors is empty" pass
+  // vacuously — pin the filter actually narrowed rubricRoot's real files
+  // down to exactly these two before trusting the error-free result.
+  assert.equal(
+    matchedRubricFiles.length,
+    2,
+    `onlyStems must narrow rubricRoot to exactly the two core-lifecycle producer stems, matched: ${JSON.stringify(matchedRubricFiles)}`,
+  );
+  assert.deepEqual(errors.filter((e) => e.code !== "RUBRIC_LEGACY_SURVIVES"), []);
+
+  // Anti-vacuity: a genuine PROPER SUBSET narrows the match count too, same
+  // habit as every earlier tier section in this file.
+  const { matchedRubricFiles: subsetMatch } = checkRubricSet({
+    tiersPath: DEFAULT_TIERS_PATH,
+    rubricRoot: DEFAULT_RUBRIC_ROOT,
+    scenarioRoot: DEFAULT_SCENARIO_ROOT,
+    onlyStems: ["write-test"],
+  });
+  assert.deepEqual(
+    subsetMatch,
+    ["write-test.yaml"],
+    "onlyStems: ['write-test'] must narrow to exactly one file — proves the filter is real narrowing, not a no-op that happens to report 2",
+  );
+
+  const catalogDoc = parseYaml(readFileSync(DEFAULT_CATALOG_PATH, "utf8"));
+  const catalogById = new Map();
+  for (const list of [catalogDoc.planted_violations, catalogDoc.known_clean]) {
+    for (const entry of list) catalogById.set(entry.id, entry);
+  }
+
+  // write-test: twin positivity, pinned to the plan's own citation table.
+  const writeTestDoc = loadRubric("write-test.yaml", { projectRoot: DEFAULT_RUBRIC_ROOT });
+  const writeTestCitedIds = new Set();
+  for (const entry of writeTestDoc.required_elements ?? []) {
+    if (!entry || typeof entry.source !== "string") continue;
+    const m = SKILL_REGRESSION_CITATION_RE.exec(entry.source.trim());
+    if (m) writeTestCitedIds.add(m[1]);
+  }
+  assert.deepEqual(
+    [...writeTestCitedIds].sort(),
+    ["KC-10", "PV-10"],
+    `rubric "write-test.yaml" must cite exactly PV-10/KC-10, cited: ${JSON.stringify([...writeTestCitedIds])}`,
+  );
+  // covers_skills positivity, confirmed against the real catalog.
+  for (const id of writeTestCitedIds) {
+    const catalogEntry = catalogById.get(id);
+    assert.ok(catalogEntry, `rubric "write-test.yaml" cites ${id}, which resolves to nothing in catalog.yaml`);
+    const coveredSkills = splitSlugs(catalogEntry.covers_skills);
+    assert.ok(
+      coveredSkills.includes(writeTestDoc.skill),
+      `catalog entry ${id} covers_skills (${JSON.stringify(catalogEntry.covers_skills)}) ` +
+        `does not list "${writeTestDoc.skill}", cited by rubric "write-test.yaml"`,
+    );
+  }
+
+  // implement: the no-citation predicate, stated per-file rather than as a
+  // tier universal — four of this tier's twelve rubrics DO cite, so a
+  // tier-wide "cites nothing" rule would be false on its face.
+  const implementYamlText = readFileSync(join(DEFAULT_RUBRIC_ROOT, "implement.yaml"), "utf8");
+  assert.ok(
+    !/skill-regression:/.test(implementYamlText),
+    "rubrics/implement.yaml must cite no skill-regression: catalog id anywhere in its raw text — its scored input " +
+      "(task diffs and per-task review records) matches no planted class",
+  );
+
+  // The reference-anchoring predicate, extended to these two stems.
+  for (const stem of CORE_LIFECYCLE_PRODUCER_STEMS) {
+    const doc = loadRubric(`${stem}.yaml`, { projectRoot: DEFAULT_RUBRIC_ROOT });
+    for (const criterion of doc.quality_dimensions ?? []) {
+      const ref = criterion.reference;
+      assert.equal(
+        typeof ref,
+        "string",
+        `rubric "${stem}.yaml" criterion "${criterion.id}" must declare a string reference`,
+      );
+      assert.ok(
+        isAnchoredReference(ref, stem),
+        `rubric "${stem}.yaml" criterion "${criterion.id}" reference ${JSON.stringify(ref)} anchors on none of: ` +
+          `skills/${stem}/SKILL.md, a .context-index/specs/ path, or a named repository contract`,
+      );
+      for (const pattern of UNANCHORED_REFERENCE_PATTERNS) {
+        assert.doesNotMatch(
+          ref,
+          pattern,
+          `rubric "${stem}.yaml" criterion "${criterion.id}" reference ${JSON.stringify(ref)} matches the unanchored form ${pattern}`,
+        );
+      }
+      for (const candidate of repoPathSubstringsOf(ref)) {
+        const abs = join(REPO_ROOT, candidate);
+        assert.ok(
+          existsSync(abs),
+          `rubric "${stem}.yaml" criterion "${criterion.id}" reference ${JSON.stringify(ref)} names path-shaped ` +
+            `substring "${candidate}", which does not resolve to ${abs}`,
+        );
+      }
+    }
+  }
+
+  // Citation resolution — write-test.yaml's PV-10/KC-10 citations resolve in
+  // catalog.yaml, proven by the FIXTURE's own CATALOG_UNRESOLVED_CITATION
+  // scan having grown to include this new rubric path, never by an alias
+  // this tier mints.
+  const { scannedRubricFiles: producerScannedRubricFiles } = validateCatalog(DEFAULT_CATALOG_PATH);
+  const expectedWriteTestPath = join("tests", "evals", "skill-regression", "rubrics", "write-test.yaml");
+  assert.ok(
+    producerScannedRubricFiles.includes(expectedWriteTestPath),
+    `expected the catalog's citation scan to have grown to include ${expectedWriteTestPath}, visited: ${JSON.stringify(producerScannedRubricFiles)}`,
+  );
 });
