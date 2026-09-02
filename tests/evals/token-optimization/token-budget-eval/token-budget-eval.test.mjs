@@ -6,7 +6,7 @@
  * duplication, review loop overhead, and subagent output compression.
  *
  * Usage:
- *   node --test tests/evals/skill-compression/token-budget-eval/token-budget-eval.test.mjs
+ *   node --test tests/evals/token-optimization/token-budget-eval/token-budget-eval.test.mjs
  */
 
 import { describe, it } from "node:test";

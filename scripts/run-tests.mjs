@@ -95,7 +95,7 @@ const EVALS_DIR = join(TESTS_DIR, 'evals');
  * that a default `npm test` must not assume: a docker Postgres
  * (evals/integration-sandbox — its own driver says "run `npm run db:up`
  * first"), an ANTHROPIC_API_KEY (evals/comparison), local Claude session
- * JSONL (evals/skill-compression token-budget), or generated fixtures.
+ * JSONL (evals/token-optimization token-budget), or generated fixtures.
  * Running them by default makes the project's single quality gate depend on
  * machine state, which is the opposite of a gate.
  *

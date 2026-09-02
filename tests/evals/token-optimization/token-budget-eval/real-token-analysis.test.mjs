@@ -10,7 +10,7 @@
  * - Cross-session comparison
  *
  * Usage:
- *   node --test tests/evals/skill-compression/token-budget-eval/real-token-analysis.test.mjs
+ *   node --test tests/evals/token-optimization/token-budget-eval/real-token-analysis.test.mjs
  */
 
 import { describe, it } from "node:test";
