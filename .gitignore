@@ -24,6 +24,7 @@ skills/*/evals/
 # aside on first use, so both forms stay out of git.
 .beads-map.json
 .beads-map.json.migrated-*
+.context-index/tasks/tasks.json
 .context-index/tasks/tasks.json.migrated-*
 
 # Build orchestrator resume state (ephemeral — survives across sessions but never committed)

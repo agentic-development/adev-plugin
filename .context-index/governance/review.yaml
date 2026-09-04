@@ -58,7 +58,7 @@ reviewers:
     name: Consistency Analyzer
     dispatch: always
     profile: reviewer-fast
-    context_pack: base
+    context_pack: consistency
     severity_cap: blocker
     prompt: plugin:review-specs/consistency-analyzer-prompt.md
     source: domain:software
