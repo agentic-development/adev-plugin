@@ -538,6 +538,24 @@ describe("JsonAdapter — close()", () => {
       (err) => err.code === "NOT_FOUND"
     );
   });
+
+  it("closes an epic (falls back to the epics array when not found in issues)", async () => {
+    const e = await adapter.createEpic({ title: "Epic A" });
+    const closed = await adapter.close(e.id, "done");
+    assert.equal(closed.status, "closed");
+    assert.match(closed.notes, /Closed: done/);
+    const epics = await adapter.listEpics({});
+    assert.equal(epics.find((x) => x.id === e.id).status, "closed");
+  });
+
+  it("rejects close on epic with unclosed children (CASCADE_BLOCKED)", async () => {
+    const e = await adapter.createEpic({ title: "Epic B" });
+    await adapter.create({ title: "Child", type: "task", epicId: e.id });
+    await assert.rejects(
+      adapter.close(e.id, "done"),
+      (err) => err.code === "CASCADE_BLOCKED"
+    );
+  });
 });
 
 // ---------------------------------------------------------------------------
