@@ -190,7 +190,9 @@ test("the default rubric roots are non-vacuous — the scan reaches skills/eval/
  * last three (`specify`, `plan`, `brainstorm`) — re-authored against this
  * tier's shared contract, replacing their retired weighted-rubric-harness
  * legacy predecessors, deleted in the same commit — taking the count to
- * seventy-seven.
+ * seventy-seven. Task 7 added the final two (`build`, `work`) — the
+ * core-lifecycle orchestrator tier, same sibling placement — taking the
+ * count to eighty-one, the tier's full and final total.
  */
 const REQUIRED_FIXTURE_FILES = Object.freeze([
   "README.md",
@@ -198,6 +200,7 @@ const REQUIRED_FIXTURE_FILES = Object.freeze([
   "tiers.yaml",
   "rubrics/assess.yaml",
   "rubrics/brainstorm.yaml",
+  "rubrics/build.yaml",
   "rubrics/codehealth.yaml",
   "rubrics/debug.yaml",
   "rubrics/deploy.yaml",
@@ -216,9 +219,11 @@ const REQUIRED_FIXTURE_FILES = Object.freeze([
   "rubrics/sync.yaml",
   "rubrics/using-adev.yaml",
   "rubrics/validate.yaml",
+  "rubrics/work.yaml",
   "rubrics/write-test.yaml",
   "scenarios/assess.md",
   "scenarios/brainstorm.md",
+  "scenarios/build.md",
   "scenarios/codehealth.md",
   "scenarios/debug.md",
   "scenarios/deploy.md",
@@ -237,6 +242,7 @@ const REQUIRED_FIXTURE_FILES = Object.freeze([
   "scenarios/sync.md",
   "scenarios/using-adev.md",
   "scenarios/validate.md",
+  "scenarios/work.md",
   "scenarios/write-test.md",
   "project/AGENTS.md",
   "project/CLAUDE.md",
@@ -282,7 +288,7 @@ test("Required Files is enumerated both ways — every pinned path exists and th
   assert.deepEqual(onDisk, [...REQUIRED_FIXTURE_FILES].sort());
   assert.equal(
     REQUIRED_FIXTURE_FILES.length,
-    77,
+    81,
     "Task 6's README.md took the count from 33 to 34; rubric-set-change-imminent Task 1's tiers.yaml took it to 35; " +
       "Task 5's three rubrics + three scenarios took it to 41; rubric-set-change-imminent Task 6's four rubrics + " +
       "four scenarios took it to 49; rubric-set-change-imminent Task 7's three rubrics + three scenarios took it to 55; " +
@@ -290,7 +296,8 @@ test("Required Files is enumerated both ways — every pinned path exists and th
       "rubric-set-core-lifecycle Task 3's five rubrics + five scenarios (hygiene, validate, review-specs, debug, " +
       "route) took it to 67; rubric-set-core-lifecycle Task 4's two rubrics + two scenarios (write-test, implement) " +
       "took it to 71; rubric-set-core-lifecycle Task 6's three rubrics + three scenarios (specify, plan, brainstorm) " +
-      "took it to 77",
+      "took it to 77; rubric-set-core-lifecycle Task 7's two rubrics + two scenarios (build, work) took it to 81, " +
+      "the tier's full and final total",
   );
   assert.ok(REQUIRED_FIXTURE_FILES.includes("README.md"), "Task 6's README.md must be registered here");
 });

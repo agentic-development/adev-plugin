@@ -796,9 +796,15 @@ test("five-key shape: a tiers_version key alongside the five real keys makes the
   }
 });
 
-test("tiers.yaml's landed: is the literal change_imminent", () => {
+// AMENDMENT (rubric-set-core-lifecycle.plan.md, Task 7): this test is owned
+// by the sibling change-imminent plan and pinned the single-bucket literal
+// this tier's own landed: value held before Task 7's amendment. Updated in
+// place rather than duplicated — see test("tiers.yaml declares the amended
+// landed scalar") below for the fuller Task 7 proof (the five-key shape and
+// the no-tiers_version guard).
+test("tiers.yaml's landed: is the literal change_imminent,core_lifecycle", () => {
   const doc = parseYaml(readFileSync(DEFAULT_TIERS_PATH, "utf8"));
-  assert.equal(doc.landed, "change_imminent");
+  assert.equal(doc.landed, "change_imminent,core_lifecycle");
 });
 
 test("every bucket token in tiers.yaml matches ^[a-z][a-z0-9-]*$", () => {
@@ -2482,14 +2488,25 @@ test("the responder rubric conforms", () => {
 });
 
 // AMENDMENT (rubric-set-core-lifecycle.plan.md, Task 3, then Task 4, then
-// Task 6): this test is owned by the sibling change-imminent plan, but this
-// tier's own landing grows the real rubric/scenario roots it pins — 11 -> 16
-// at Task 3, 16 -> 18 at Task 4, then 18 -> 21 here at Task 6, in the same
-// commit that re-authors specify/plan/brainstorm against this tier's shared
-// contract and deletes their legacy tests/evals/skill-compression/
-// predecessors. Both counts, the expected-stem-set extension, and the
+// Task 6, then Task 7 — the fourth and FINAL amendment): this test is owned
+// by the sibling change-imminent plan, but this tier's own landing grows the
+// real rubric/scenario roots it pins — 11 -> 16 at Task 3, 16 -> 18 at Task
+// 4, 18 -> 21 at Task 6 (re-authoring specify/plan/brainstorm against this
+// tier's shared contract and deleting their legacy
+// tests/evals/skill-compression/ predecessors), now 21 -> 23 here at Task 7
+// (build, work — the last two, landing alongside the landed: amendment in
+// the same commit). Both counts, the expected-stem-set extension, and the
 // bidirectional comparison, all kept intact — the precedent Task 4's own
-// comment named for exactly this amendment.
+// comment named for exactly this amendment. At Task 6 and earlier the
+// expected stem set was the change_imminent bucket plus an explicit literal
+// list of the core-lifecycle stems landed SO FAR — a derived union would
+// have gone red on the core-lifecycle slugs not yet authored. Task 7 is the
+// first commit at which all twelve core-lifecycle rubrics exist, so the
+// expected set becomes the plain union of tiers.yaml's own change_imminent
+// and core_lifecycle buckets, read directly rather than re-listed as a
+// literal — the per-task literal lists below stay for their own tasks'
+// historical record, but this test's OWN expected-set construction no
+// longer needs them.
 /** The five core-lifecycle detector stems Task 3 adds to the real roots. */
 const CORE_LIFECYCLE_DETECTOR_STEMS = Object.freeze(["hygiene", "validate", "review-specs", "debug", "route"]);
 
@@ -2512,22 +2529,23 @@ test("the landed tier is complete at the real roots", () => {
   const scenarioFilesOnDisk = readdirSync(DEFAULT_SCENARIO_ROOT).filter((f) => f.endsWith(".md"));
   assert.equal(
     rubricFilesOnDisk.length,
-    21,
-    `rubrics/ must hold exactly 21 files at the landing state, found: ${JSON.stringify(rubricFilesOnDisk)}`,
+    23,
+    `rubrics/ must hold exactly 23 files at the landing state, found: ${JSON.stringify(rubricFilesOnDisk)}`,
   );
   assert.equal(
     scenarioFilesOnDisk.length,
-    21,
-    `scenarios/ must hold exactly 21 files at the landing state, found: ${JSON.stringify(scenarioFilesOnDisk)}`,
+    23,
+    `scenarios/ must hold exactly 23 files at the landing state, found: ${JSON.stringify(scenarioFilesOnDisk)}`,
   );
 
   const tiersDoc = parseYaml(readFileSync(DEFAULT_TIERS_PATH, "utf8"));
-  const expectedStems = new Set([
-    ...splitSlugs(tiersDoc.change_imminent),
-    ...CORE_LIFECYCLE_DETECTOR_STEMS,
-    ...CORE_LIFECYCLE_PRODUCER_STEMS,
-    ...CORE_LIFECYCLE_TASK6_STEMS,
-  ]);
+  // Task 7 and later: the plain union of BOTH buckets, read from tiers.yaml
+  // directly — correct only from this commit on, since it is the first at
+  // which all twelve core_lifecycle rubrics exist. Earlier tasks' literal
+  // stem lists (CORE_LIFECYCLE_DETECTOR_STEMS etc., above) stay defined for
+  // their own tests' use elsewhere in this file, but this expected-set
+  // construction no longer assembles them by hand.
+  const expectedStems = new Set([...splitSlugs(tiersDoc.change_imminent), ...splitSlugs(tiersDoc.core_lifecycle)]);
   const rubricStems = new Set(rubricFilesOnDisk.map((f) => f.slice(0, -".yaml".length)));
   const scenarioStems = new Set(scenarioFilesOnDisk.map((f) => f.slice(0, -".md".length)));
 
@@ -2611,11 +2629,12 @@ test("every scenario states where outputs/ lives", () => {
     "precondition: TOKEN_TABLE[6] must be the outputs/-location row",
   );
   // AMENDMENT (rubric-set-core-lifecycle.plan.md, Task 3, then Task 4, then
-  // Task 6): this precondition count grows in lockstep with "the landed
-  // tier is complete at the real roots" above — 11 -> 16 at Task 3, 16 -> 18
-  // at Task 4, then 18 -> 21 here at Task 6, for the same reason.
+  // Task 6, then Task 7): this precondition count grows in lockstep with
+  // "the landed tier is complete at the real roots" above — 11 -> 16 at
+  // Task 3, 16 -> 18 at Task 4, 18 -> 21 at Task 6, now 21 -> 23 here at
+  // Task 7, for the same reason.
   const scenarioFiles = readdirSync(DEFAULT_SCENARIO_ROOT).filter((f) => f.endsWith(".md"));
-  assert.equal(scenarioFiles.length, 21, "precondition: all twenty-one real scenario files must be present");
+  assert.equal(scenarioFiles.length, 23, "precondition: all twenty-three real scenario files must be present");
   for (const file of scenarioFiles) {
     const content = readFileSync(join(DEFAULT_SCENARIO_ROOT, file), "utf8");
     assert.ok(content.includes(token7), `scenarios/${file} is missing token 7 (outputs/ location)`);
@@ -3776,4 +3795,226 @@ test("no bare 'skill-compression' token survives the repo outside the exempt set
     [],
     `bare "skill-compression" token found outside the exempt set:\n${nonExempt.join("\n")}`,
   );
+});
+
+// ---------------------------------------------------------------------------
+// 29. Task 7 of rubric-set-core-lifecycle.plan.md — the two orchestrator
+// rubrics conform (build, work), and neither cites a catalog id
+// ---------------------------------------------------------------------------
+//
+// Same shape as sections 25-27, narrowed to two stems. Unlike every other
+// stem in this tier, NEITHER build nor work cites a skill-regression: id at
+// all — both score a routing DECISION, never an artifact, and the ten
+// planted catalog classes describe artifacts a downstream skill wrote,
+// none of which describes a six-stage dispatch sequence or a routing
+// proposal. The no-citation predicate is per-file, the same shape
+// section 26 already used for rubrics/implement.yaml.
+
+/** The two core-lifecycle orchestrator stems Task 7 adds to the real roots. */
+const CORE_LIFECYCLE_ORCHESTRATOR_STEMS = Object.freeze(["build", "work"]);
+
+test("the two orchestrator rubrics conform", () => {
+  const { errors, matchedRubricFiles } = checkRubricSet({
+    tiersPath: DEFAULT_TIERS_PATH,
+    rubricRoot: DEFAULT_RUBRIC_ROOT,
+    scenarioRoot: DEFAULT_SCENARIO_ROOT,
+    onlyStems: [...CORE_LIFECYCLE_ORCHESTRATOR_STEMS],
+  });
+
+  // The stem filter matching zero files would let "errors is empty" pass
+  // vacuously — pin the filter actually narrowed rubricRoot's real files
+  // down to exactly these two before trusting the error-free result.
+  assert.equal(
+    matchedRubricFiles.length,
+    2,
+    `onlyStems must narrow rubricRoot to exactly the two core-lifecycle orchestrator stems, matched: ${JSON.stringify(matchedRubricFiles)}`,
+  );
+  assert.deepEqual(errors.filter((e) => e.code !== "RUBRIC_LEGACY_SURVIVES"), []);
+
+  // Anti-vacuity: a genuine PROPER SUBSET narrows the match count too, same
+  // habit as every earlier tier section in this file.
+  const { matchedRubricFiles: subsetMatch } = checkRubricSet({
+    tiersPath: DEFAULT_TIERS_PATH,
+    rubricRoot: DEFAULT_RUBRIC_ROOT,
+    scenarioRoot: DEFAULT_SCENARIO_ROOT,
+    onlyStems: ["build"],
+  });
+  assert.deepEqual(
+    subsetMatch,
+    ["build.yaml"],
+    "onlyStems: ['build'] must narrow to exactly one file — proves the filter is real narrowing, not a no-op that happens to report 2",
+  );
+
+  // Neither file cites ANY skill-regression: catalog id — a tier-wide
+  // "cites nothing" claim would be false on its face (ten of the twelve
+  // rubrics DO cite), so this is a per-file predicate, same as section
+  // 26's implement.yaml check.
+  for (const stem of CORE_LIFECYCLE_ORCHESTRATOR_STEMS) {
+    const rawText = readFileSync(join(DEFAULT_RUBRIC_ROOT, `${stem}.yaml`), "utf8");
+    assert.ok(
+      !/skill-regression:/.test(rawText),
+      `rubrics/${stem}.yaml must cite no skill-regression: catalog id anywhere in its raw text — an orchestrator scores ` +
+        `a routing decision, which no planted class describes`,
+    );
+  }
+
+  // The reference-anchoring predicate, extended to these two stems.
+  for (const stem of CORE_LIFECYCLE_ORCHESTRATOR_STEMS) {
+    const doc = loadRubric(`${stem}.yaml`, { projectRoot: DEFAULT_RUBRIC_ROOT });
+    for (const criterion of doc.quality_dimensions ?? []) {
+      const ref = criterion.reference;
+      assert.equal(
+        typeof ref,
+        "string",
+        `rubric "${stem}.yaml" criterion "${criterion.id}" must declare a string reference`,
+      );
+      assert.ok(
+        isAnchoredReference(ref, stem),
+        `rubric "${stem}.yaml" criterion "${criterion.id}" reference ${JSON.stringify(ref)} anchors on none of: ` +
+          `skills/${stem}/SKILL.md, a .context-index/specs/ path, or a named repository contract`,
+      );
+      for (const pattern of UNANCHORED_REFERENCE_PATTERNS) {
+        assert.doesNotMatch(
+          ref,
+          pattern,
+          `rubric "${stem}.yaml" criterion "${criterion.id}" reference ${JSON.stringify(ref)} matches the unanchored form ${pattern}`,
+        );
+      }
+      for (const candidate of repoPathSubstringsOf(ref)) {
+        const abs = join(REPO_ROOT, candidate);
+        assert.ok(
+          existsSync(abs),
+          `rubric "${stem}.yaml" criterion "${criterion.id}" reference ${JSON.stringify(ref)} names path-shaped ` +
+            `substring "${candidate}", which does not resolve to ${abs}`,
+        );
+      }
+    }
+  }
+});
+
+// ---------------------------------------------------------------------------
+// 30. Task 7 — the orchestrators cite no downstream artifact (the deny-list
+// predicate the spec's "The two orchestrators score routing, not
+// artifacts" section requires)
+// ---------------------------------------------------------------------------
+//
+// Scoring an orchestrator on a downstream skill's own artifact would
+// double-count that skill's own rubric and mark the orchestrator not_met
+// for a child's regression. Checked as a BLANKET ban on any
+// "artifact:"-prefixed source in either file, rather than a partial
+// deny-list of path fragments: build.yaml and work.yaml's sources are
+// plain descriptive prose over the ORCHESTRATOR's own state (the
+// build-state file, the lifecycle log, the coordination scan) — nothing
+// either rubric scores needs an "artifact:"-prefixed pointer at all, so a
+// blanket ban is strictly narrower than, and can never under-enforce, the
+// spec's own "no artifact: source naming a file a downstream skill wrote."
+
+test("the orchestrators cite no downstream artifact", () => {
+  for (const stem of CORE_LIFECYCLE_ORCHESTRATOR_STEMS) {
+    const doc = loadRubric(`${stem}.yaml`, { projectRoot: DEFAULT_RUBRIC_ROOT });
+    for (const entry of doc.required_elements ?? []) {
+      assert.ok(
+        typeof entry.source === "string" && !entry.source.trim().startsWith("artifact:"),
+        `rubrics/${stem}.yaml element "${entry.id}" carries an "artifact:"-prefixed source (${JSON.stringify(entry.source)}) — ` +
+          `an orchestrator must score the decision, never a downstream skill's own artifact`,
+      );
+    }
+  }
+});
+
+// ---------------------------------------------------------------------------
+// 31. Task 7 — the work rubric asserts a refusal (spec criterion #8: AT
+// LEAST one; this tier's fixture makes exactly TWO branches decidable, and
+// pinning the count at two is what stops a weaker "at least one" reading
+// from passing on a single-refusal rubric)
+// ---------------------------------------------------------------------------
+
+test("the work rubric asserts a refusal", () => {
+  const doc = loadRubric("work.yaml", { projectRoot: DEFAULT_RUBRIC_ROOT });
+  const refusalIdPattern = /refus|must-not|not-routed/;
+  const adevTargetPattern = /\/adev:\S+/;
+
+  const refusalElements = (doc.required_elements ?? []).filter((entry) => refusalIdPattern.test(entry.id));
+
+  assert.equal(
+    refusalElements.length,
+    2,
+    `rubrics/work.yaml must declare exactly 2 refusal elements (id matching ${refusalIdPattern}), ` +
+      `found ${refusalElements.length}: ${JSON.stringify(refusalElements.map((e) => e.id))}`,
+  );
+
+  for (const entry of refusalElements) {
+    assert.ok(
+      adevTargetPattern.test(entry.met_when ?? ""),
+      `rubrics/work.yaml refusal element "${entry.id}" must name a /adev: target in its met_when, got: ${JSON.stringify(entry.met_when)}`,
+    );
+  }
+});
+
+// ---------------------------------------------------------------------------
+// 32. Task 7 — tiers.yaml declares the amended landed scalar
+// ---------------------------------------------------------------------------
+//
+// `core_lifecycle` joins `landed:` in the SAME commit that adds the twelfth
+// (and final) core-lifecycle rubric — not one commit earlier (which would
+// make RUBRIC_TIER_UNCOVERED unsatisfiable across Tasks 3-6) and not one
+// commit later (which would leave twelve rubrics present and uncovered).
+
+test("tiers.yaml declares the amended landed scalar", () => {
+  const rawText = readFileSync(DEFAULT_TIERS_PATH, "utf8");
+  assert.match(rawText, /^landed:\s*"change_imminent,core_lifecycle"\s*$/m);
+
+  const tiersDoc = parseYaml(rawText);
+  assert.equal(tiersDoc.landed, "change_imminent,core_lifecycle");
+  assert.deepEqual(
+    Object.keys(tiersDoc).sort(),
+    ["change_imminent", "core_lifecycle", "landed", "remaining", "uncovered"].sort(),
+    "tiers.yaml must still declare exactly five top-level keys — this amendment changes landed:'s VALUE, never its shape",
+  );
+  assert.ok(!("tiers_version" in tiersDoc), "tiers.yaml must still declare no tiers_version key");
+});
+
+// ---------------------------------------------------------------------------
+// 33. Task 7 — RUBRIC_CORE_ELEMENT_FLOOR's real-root counter is scoped to
+// the core_lifecycle bucket (12), never the full 23-file landed set
+// ---------------------------------------------------------------------------
+//
+// checkRubricSet() itself exposes no per-rule counter (it accumulates
+// errors and a `checked` set, not a scan tally), so both counts here are
+// computed independently, directly from the same rubricRoot/tiersDoc
+// checkRubricSet() reads — an independent recount, not a call into the
+// function under test.
+
+test("RUBRIC_CORE_ELEMENT_FLOOR's real-root scope is exactly the 12 core_lifecycle rubrics, RUBRIC_ELEMENT_FLOOR's is all 23", () => {
+  const tiersDoc = parseYaml(readFileSync(DEFAULT_TIERS_PATH, "utf8"));
+  const coreLifecycleStems = new Set(splitSlugs(tiersDoc.core_lifecycle));
+  assert.equal(coreLifecycleStems.size, 12, `tiers.yaml's core_lifecycle bucket must name exactly 12 slugs, found ${coreLifecycleStems.size}`);
+
+  const rubricFiles = readdirSync(DEFAULT_RUBRIC_ROOT).filter((f) => f.endsWith(".yaml"));
+  assert.equal(rubricFiles.length, 23, `rubrics/ must hold exactly 23 files, found ${rubricFiles.length}`);
+
+  // RUBRIC_ELEMENT_FLOOR's scope: every rubric file, unconditionally.
+  assert.equal(rubricFiles.length, 23);
+
+  // RUBRIC_CORE_ELEMENT_FLOOR's scope: only the stems checkRubricSet's own
+  // `coreLifecycleStems.has(stem)` guard admits — recomputed the same way
+  // here, over the real files on disk.
+  const coreScopedFiles = rubricFiles.filter((f) => coreLifecycleStems.has(f.slice(0, -".yaml".length)));
+  assert.equal(
+    coreScopedFiles.length,
+    12,
+    `RUBRIC_CORE_ELEMENT_FLOOR's real-root scope must be exactly the 12 core_lifecycle files, found ${coreScopedFiles.length}: ${JSON.stringify(coreScopedFiles)}`,
+  );
+
+  // And the complement — the 11 change_imminent files — must be OUTSIDE
+  // that scope, proving the bucket scoping is real narrowing, not a no-op
+  // that happens to report 12 out of 23.
+  const changeImminentStems = new Set(splitSlugs(tiersDoc.change_imminent));
+  const outOfScopeFiles = rubricFiles.filter((f) => changeImminentStems.has(f.slice(0, -".yaml".length)));
+  assert.equal(
+    outOfScopeFiles.length,
+    11,
+    `the complement (change_imminent files, out of RUBRIC_CORE_ELEMENT_FLOOR's scope) must be exactly 11, found ${outOfScopeFiles.length}`,
+  );
+  assert.equal(coreScopedFiles.length + outOfScopeFiles.length, 23, "the two scopes must partition all 23 real rubric files");
 });
