@@ -244,7 +244,7 @@ If a package-mode adapter returns output that does not parse as the findings YAM
 - Wrap as a single `suggestion` finding with message: `"Adapter did not parse output into structured findings — sanitized runner output below (redacted and truncated)."`
 - Write the full redacted (untruncated) output to the dispatch record, **never** to `.review.md`.
 
-If a subagent-mode or package-mode runner attempts a tool call disallowed by its profile (as surfaced by the harness), the reviewer is recorded as a `warning` finding.
+**Not yet implemented:** nothing in this pipeline currently observes a runner's tool calls against `reviewer.profile`'s `allowedTools`, so a disallowed tool call is never surfaced or recorded as a `warning` finding today. The profile's tool list is handed to the dispatch call, but until a harness-level check exists, the read-only posture is honored only by the dispatched subagent following instructions — not enforced. Tracked as issue `adev-plugin-bjkp`.
 
 ### Tier note
 
@@ -429,7 +429,13 @@ After saving the review report, update the spec's status based on the verdict:
 
 Log the status change to the user.
 
-**Charter Capability Map update (PASS or PASS_WITH_NOTES only):** After updating the spec status to `review-passed`, also update the parent charter's Capability Map. Find the capability row corresponding to this spec and set its `Status` column to `review-passed`.
+**Charter Capability Map update (PASS or PASS_WITH_NOTES only):** After updating the spec status to `review-passed`, also update the parent charter's Capability Map. Find the capability row corresponding to this spec, then write the update via the CLI rather than editing the table directly:
+
+```bash
+adev capability-map set-status --charter <charterPath> --capability "<capability name>" --status review-passed
+```
+
+Stdout is a single JSON object `{ updated, previousStatus, newStatus, reason }`. The write is monotonic: on a **re-review** of a spec whose capability row already reads `planned`, `implementing`, `implemented`, or `validated` (e.g. after `/adev:validate` FAILs and the spec is revised, or any other re-entry through this step), the row is already past `review-passed` in the lifecycle order, so the verb reports `updated: false, reason: "NOT_MONOTONIC"` and leaves the charter untouched instead of regressing the record that the capability was already built further. Log this outcome to the user the same as a normal update — it is expected behavior on re-review, not an error. `reason: "CAPABILITY_NOT_FOUND"` or `"PARSE_ERROR"` are non-blocking; log and continue.
 
 **Note:** Do not increment the spec's `revision` field on status-only changes. The `revision` field tracks content changes, not workflow transitions.
 

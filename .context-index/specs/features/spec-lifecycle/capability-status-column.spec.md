@@ -3,10 +3,10 @@ charter: spec-lifecycle
 status: implemented
 risk_level: medium
 milestone:
-revision: 1
+revision: 2
 charter-revision: 1
 created: 2026-03-27
-updated: 2026-03-28
+updated: 2026-08-26
 source-manifest:
   sha: "0705163"
   files:
@@ -48,10 +48,13 @@ drift_detected: true
 
 8. **When** a capability's Status is updated **then** the charter's `revision` is incremented and `updated` is set to today's date.
 
+9. **When** any skill writes a capability's Status **then** the write is monotonic: it lands only if the target value is strictly forward of the row's current value in the lifecycle order (`— → specified → review-passed → planned → implementing → implemented → validated`). A write that would move the row backward (or repeat its current value) is skipped and the caller is told why, rather than applied. `/adev:review-specs` Step 7 enforces this via `adev capability-map set-status` (`lib/capability-map.mjs`), the shared, canonical writer — this closes the gap where a re-review of an already-`implemented`/`validated` capability (e.g. after `/adev:validate` FAILs and the spec is revised, `/adev:specify --amend`, or `/adev:reconcile`) regressed the row back to `review-passed`. `/adev:specify`, `/adev:plan`, and `/adev:implement`/`/adev:validate`'s own Capability Map writes (Behaviors 2, 4, 5, 6, 7) still edit the table directly and have not yet been migrated onto this guard — same unconditional-write exposure on re-entry, tracked as follow-up rather than folded into this fix.
+
 ### Postconditions
 
 - Every capability in every charter's Capability Map has a `Status` column
 - A capability's Status never advances past its spec's `status` (e.g., cannot be `implemented` if spec is `draft`)
+- A capability's Status column is written monotonically per Behavior 9 — the column's value only ever moves forward through the lifecycle order, never backward, regardless of how many times a step re-runs against the same capability
 
 ### Error Cases
 
@@ -75,6 +78,9 @@ drift_detected: true
 | Update `adev:implement/SKILL.md` | Add capability status updates for `implementing` and `implemented` | small |
 | Update `adev:validate/SKILL.md` | Add capability status update to `validated` after validation passes | small |
 | Update charter template | Add Status column to Capability Map in `templates/charter-template.md` | small |
+| Add `lib/capability-map.mjs` + `adev capability-map set-status` | Shared monotonic writer for the Status column (Behavior 9) | small |
+| Migrate `adev:review-specs/SKILL.md` Step 7 onto `adev capability-map set-status` | Fixes the reported re-review regression | small |
+| Migrate `adev:specify`/`adev:plan`/`adev:implement`/`adev:validate`'s Capability Map writes onto the same verb | Follow-up — not yet done; see Behavior 9 | small |
 
 ## Acceptance Criteria
 
@@ -83,5 +89,6 @@ drift_detected: true
 - [ ] Capability Status values follow the order: `—` → `specified` → `review-passed` → `planned` → `implementing` → `implemented` → `validated`
 - [ ] Charter `revision` increments when capability status changes
 - [ ] Missing or unmatched capability names produce a warning, not a block
+- [x] Capability Status writes are monotonic — a write to an earlier lifecycle value than the row's current one is skipped, not applied (`/adev:review-specs` Step 7; other writers pending, see Behavior 9)
 - [ ] All quality gates pass (tests, lint, typecheck)
 - [ ] No constitutional violations introduced
