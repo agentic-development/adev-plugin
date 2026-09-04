@@ -107,6 +107,135 @@ describe("verifySpecImplemented", () => {
     }
   });
 
+  test("expands a plan path combining brace and glob syntax to find committed files", () => {
+    // Reproduces the skill-output-rules-wiring case: a plan declares a
+    // modified-file set using shell-brace form crossed with a glob, and all
+    // the files it expands to are present and committed. Before the fix,
+    // the literal brace/glob string was passed straight to existsSync(),
+    // always missed, and confidence bottomed out at NONE even though every
+    // file existed.
+    const tmp = createTempGitDir();
+    try {
+      writeFixture(tmp, "spec.spec.md", "---\nstatus: implemented\n---\n# Spec\n\nTests at tests/feature.test.mjs\n");
+      writeFixture(tmp, "spec.plan.md", `# Plan
+
+**Create:**
+- providers/{cursor,windsurf}/skills/output-rules/*.md — provider mirrors
+- tests/feature.test.mjs — tests
+
+**Reference (read, do not modify):**
+- README.md
+`);
+      writeFixture(tmp, "providers/cursor/skills/output-rules/SKILL.md", "# Cursor mirror\n");
+      writeFixture(tmp, "providers/windsurf/skills/output-rules/SKILL.md", "# Windsurf mirror\n");
+      writeFixture(tmp, "tests/feature.test.mjs", "import { test } from 'node:test';\ntest('pass', () => {});\n");
+
+      execSync("git add -A && git commit -m init", { cwd: tmp, stdio: "ignore" });
+
+      const result = verifySpecImplemented(join(tmp, "spec.spec.md"), { projectRoot: tmp });
+      const failMessages = result.evidence.filter((e) => e.type === "fail").map((e) => e.message);
+      assert.deepEqual(failMessages, [], `Expected no false-negative failures, got: ${JSON.stringify(failMessages)}`);
+      // 3 file-existence passes (2 glob-expanded mirrors + the literal test
+      // file) plus 1 "Test file exists" pass from the spec's own test-file
+      // detection step (step 5, a separate evidence entry).
+      const passCount = result.evidence.filter((e) => e.type === "pass").length;
+      assert.equal(passCount, 4, "expected both expanded provider mirrors plus the test file to pass");
+      assert.equal(result.confidence, CONFIDENCE.HIGH);
+      assert.equal(result.implemented, true);
+    } finally {
+      cleanupTempDir(tmp);
+    }
+  });
+
+  test("reports a legitimately empty glob match as missing, not unverifiable", () => {
+    const tmp = createTempGitDir();
+    try {
+      writeFixture(tmp, "spec.spec.md", "---\nstatus: implemented\n---\n# Spec\n");
+      writeFixture(tmp, "spec.plan.md", `# Plan
+
+**Create:**
+- lib/nonexistent/*.mjs — nothing here
+
+**Reference (read, do not modify):**
+- README.md
+`);
+      execSync("git add -A && git commit -m init", { cwd: tmp, stdio: "ignore" });
+
+      const result = verifySpecImplemented(join(tmp, "spec.spec.md"), { projectRoot: tmp });
+      const failMessages = result.evidence.filter((e) => e.type === "fail").map((e) => e.message);
+      assert.equal(failMessages.length, 1);
+      assert.match(failMessages[0], /missing from disk/);
+      assert.equal(result.evidence.some((e) => e.type === "unverifiable"), false);
+      assert.equal(result.confidence, CONFIDENCE.NONE);
+      assert.equal(result.implemented, false);
+    } finally {
+      cleanupTempDir(tmp);
+    }
+  });
+
+  test("reports an unparseable brace path as unverifiable and excludes it from confidence", () => {
+    const tmp = createTempGitDir();
+    try {
+      writeFixture(tmp, "spec.spec.md", "---\nstatus: implemented\n---\n# Spec\n\nTests at tests/feature.test.mjs\n");
+      writeFixture(tmp, "spec.plan.md", `# Plan
+
+**Create:**
+- lib/{unterminated.mjs — malformed brace group
+- lib/feature.mjs — the module
+- tests/feature.test.mjs — tests
+
+**Reference (read, do not modify):**
+- README.md
+`);
+      writeFixture(tmp, "lib/feature.mjs", "export function hello() {}\n");
+      writeFixture(tmp, "tests/feature.test.mjs", "import { test } from 'node:test';\ntest('pass', () => {});\n");
+
+      execSync("git add -A && git commit -m init", { cwd: tmp, stdio: "ignore" });
+
+      const result = verifySpecImplemented(join(tmp, "spec.spec.md"), { projectRoot: tmp });
+      const unverifiable = result.evidence.filter((e) => e.type === "unverifiable");
+      assert.equal(unverifiable.length, 1);
+      assert.match(unverifiable[0].message, /unbalanced braces/);
+      // The unparseable entry must not count as evidence of absence — the
+      // other two (real, resolvable) files are present and committed, so
+      // confidence should reflect THEM, not be dragged to NONE by the
+      // entry we couldn't even parse.
+      const failMessages = result.evidence.filter((e) => e.type === "fail");
+      assert.equal(failMessages.length, 0);
+      assert.equal(result.confidence, CONFIDENCE.HIGH);
+      assert.equal(result.implemented, true);
+    } finally {
+      cleanupTempDir(tmp);
+    }
+  });
+
+  test("returns low confidence, not high, when every declared path is unverifiable", () => {
+    // An unparseable path must not be silently treated as satisfied: with
+    // zero resolvable entries there is no real evidence of completion, so
+    // confidence must not reach HIGH/MEDIUM even though nothing failed.
+    const tmp = createTempGitDir();
+    try {
+      writeFixture(tmp, "spec.spec.md", "---\nstatus: implemented\n---\n# Spec\n");
+      writeFixture(tmp, "spec.plan.md", `# Plan
+
+**Create:**
+- lib/{unterminated.mjs — malformed brace group
+
+**Reference (read, do not modify):**
+- README.md
+`);
+      execSync("git add -A && git commit -m init", { cwd: tmp, stdio: "ignore" });
+
+      const result = verifySpecImplemented(join(tmp, "spec.spec.md"), { projectRoot: tmp });
+      assert.equal(result.evidence.filter((e) => e.type === "unverifiable").length, 1);
+      assert.equal(result.evidence.filter((e) => e.type === "fail").length, 0);
+      assert.equal(result.confidence, CONFIDENCE.LOW);
+      assert.equal(result.implemented, false);
+    } finally {
+      cleanupTempDir(tmp);
+    }
+  });
+
   test("returns none confidence when plan files are missing from disk", () => {
     const tmp = createTempGitDir();
     try {

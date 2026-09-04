@@ -26,6 +26,4 @@ order record. No network, no database, no framework.
 
 ## Verify
 
-```bash
-node --test tests/
-```
+Run `node --test tests/` before committing.

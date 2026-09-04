@@ -5,10 +5,13 @@
  * without requiring `br` to be installed.
  */
 
-import { describe, it } from "node:test";
+import { describe, it, after } from "node:test";
 import assert from "node:assert/strict";
+import { chmodSync, mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 
 import { BeadsAdapter } from "../../lib/issues/beads-adapter.mjs";
+import { createTempDir, cleanupTempDir } from "../helpers.mjs";
 
 describe("BeadsAdapter", () => {
   it("throws BEADS_NOT_AVAILABLE when br is not on PATH", () => {
@@ -179,3 +182,58 @@ describe("BeadsAdapter", () => {
     assert.equal(typeof adapter._runBr, "function");
   });
 });
+
+// ─── _runBr maxBuffer ceiling (issue-mohump) ───────────────────────────────
+{
+  /**
+   * `_runBr` drives every read verb (board, list, ready, get) through
+   * `br list -s all --json`, whose payload covers the whole board — open AND
+   * closed. Node's execFileSync defaults `maxBuffer` to 1 MiB; a payload past
+   * that throws ENOBUFS regardless of how healthy `br` itself is, and the
+   * catch clause reports `err.stdout` — on ENOBUFS the truncated buffer — so
+   * the failure surfaces as a megabyte of JSON that reads like backend
+   * corruption rather than a size ceiling. Observed live at 1,050,038 bytes.
+   *
+   * A real subprocess exercises this, not a stub of `_runBr` — every other
+   * test in this suite stubs `_runBr` itself, which cannot observe a
+   * maxBuffer regression because the stub never calls execFileSync at all.
+   * The stand-in binary needs no `br` install: it ignores argv and writes a
+   * payload sized just past the default ceiling.
+   */
+
+  const dir = createTempDir();
+  const binDir = join(dir, "bin");
+
+  function makeFakeBrOnPath(payloadSize) {
+    mkdirSync(binDir, { recursive: true });
+    const script = join(binDir, "br");
+    writeFileSync(
+      script,
+      `#!/usr/bin/env node\nprocess.stdout.write("a".repeat(${payloadSize}));\n`,
+    );
+    chmodSync(script, 0o755);
+    return binDir;
+  }
+
+  describe("BeadsAdapter — _runBr maxBuffer ceiling (issue-mohump)", () => {
+    after(() => cleanupTempDir(dir));
+
+    it("does not throw ENOBUFS on a payload past Node's 1 MiB default", () => {
+      const oversizePayload = 1024 * 1024 + 50_000; // past the 1,048,576-byte default
+      const fakeBinDir = makeFakeBrOnPath(oversizePayload);
+      const originalPath = process.env.PATH;
+      process.env.PATH = `${fakeBinDir}:${originalPath}`;
+      try {
+        const adapter = new BeadsAdapter(dir, { checkBr: false });
+        const output = adapter._runBr(["list", "-s", "all", "--json"]);
+        assert.equal(
+          output.length,
+          oversizePayload,
+          "the full payload must come back intact, not truncated by a low maxBuffer",
+        );
+      } finally {
+        process.env.PATH = originalPath;
+      }
+    });
+  });
+}
