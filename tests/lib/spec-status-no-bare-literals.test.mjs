@@ -38,7 +38,13 @@ const FORBIDDEN_LITERALS = [
 //   - spec-status.mjs itself (it defines the enum)
 //   - any *.test.mjs file (test fixtures need the literals)
 //   - migrate-state-artifacts.mjs IS migrated to the enum if it contains them
-const ALLOWED_FILES = new Set(['spec-status.mjs']);
+//   - capability-map.mjs defines CAPABILITY_STATUSES, a separate canonical
+//     enum for the charter Capability Map's `Status` column (a different
+//     lifecycle dimension from a spec's frontmatter `status`). Its overlap
+//     with a few spec-status words ("review-passed", "implemented",
+//     "validated") is coincidental English, not the drift this test guards
+//     against — see capability-status-column.spec.md.
+const ALLOWED_FILES = new Set(['spec-status.mjs', 'capability-map.mjs']);
 
 function walkMjsFiles(dir) {
   const out = [];
