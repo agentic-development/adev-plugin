@@ -463,7 +463,13 @@ Cadence: one section (H2 boundary — Behavioral Contract, System Constitution R
 
 Before writing, check for a prior `.partial`: run `adev partial inspect --artifact <spec-path>.partial`. If `partial_exists` is true and the schema marker is `spec@1`, offer the user **resume / discard / abort**. In `--auto` mode, default to resume; on a schema-mismatched marker, discard with a logged warning via `adev partial discard --artifact <spec-path>.partial --spec <spec-path>`.
 
-After writing the final section, the atomic rename `commit` step finalises the artifact. Use the CLI verb to drive this — SKILL.md stays markdown-only per the `cli-driver-surface` charter (no inline Node).
+After writing the final section, finalise the artifact via the guarded commit verb — SKILL.md stays markdown-only per the `cli-driver-surface` charter (no inline Node):
+
+```bash
+adev partial commit --artifact <spec-path>.partial
+```
+
+This performs the atomic rename to `<spec-path>` (Behavior 2) and enforces the same frontmatter-first guard `adev artifact commit` uses for `.validate.md`/`.review.md`. `ARTIFACT_FRONTMATTER_NOT_FIRST` on exit 1 means the frontmatter is not the first non-blank line — fix the `.partial` and re-run; it does not mean re-attempt without fixing.
 
 1. Generate slug: lowercase, kebab-case, no special characters.
 2. **Resolve the template via `resolveTemplate('spec', kind, domain)`.** Call `resolveTemplate` from `<ADEV_ROOT>/lib/template-resolution.mjs`, passing the kind selected in Step 3.5 as the second argument and the active domain from `resolveDomain(...)` (loaded in Step 2) as the third. Use the returned absolute path as the template body. **Do not hardcode a template filename.** This replaces the previous fall-back-to-`spec-template.behavioral.md` behavior for new specs.
