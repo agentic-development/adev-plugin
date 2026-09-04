@@ -186,13 +186,18 @@ test("the default rubric roots are non-vacuous — the scan reaches skills/eval/
  * detector tier, same sibling placement as every earlier pair — taking the
  * count from fifty-seven to sixty-seven. Task 4 added the next two
  * (`write-test`, `implement`) — the core-lifecycle producer tier, same
- * sibling placement — taking the count to seventy-one.
+ * sibling placement — taking the count to seventy-one. Task 6 added the
+ * last three (`specify`, `plan`, `brainstorm`) — re-authored against this
+ * tier's shared contract, replacing their retired weighted-rubric-harness
+ * legacy predecessors, deleted in the same commit — taking the count to
+ * seventy-seven.
  */
 const REQUIRED_FIXTURE_FILES = Object.freeze([
   "README.md",
   "catalog.yaml",
   "tiers.yaml",
   "rubrics/assess.yaml",
+  "rubrics/brainstorm.yaml",
   "rubrics/codehealth.yaml",
   "rubrics/debug.yaml",
   "rubrics/deploy.yaml",
@@ -202,15 +207,18 @@ const REQUIRED_FIXTURE_FILES = Object.freeze([
   "rubrics/implement.yaml",
   "rubrics/issues.yaml",
   "rubrics/learn.yaml",
+  "rubrics/plan.yaml",
   "rubrics/prototype.yaml",
   "rubrics/repomap.yaml",
   "rubrics/review-specs.yaml",
   "rubrics/route.yaml",
+  "rubrics/specify.yaml",
   "rubrics/sync.yaml",
   "rubrics/using-adev.yaml",
   "rubrics/validate.yaml",
   "rubrics/write-test.yaml",
   "scenarios/assess.md",
+  "scenarios/brainstorm.md",
   "scenarios/codehealth.md",
   "scenarios/debug.md",
   "scenarios/deploy.md",
@@ -220,10 +228,12 @@ const REQUIRED_FIXTURE_FILES = Object.freeze([
   "scenarios/implement.md",
   "scenarios/issues.md",
   "scenarios/learn.md",
+  "scenarios/plan.md",
   "scenarios/prototype.md",
   "scenarios/repomap.md",
   "scenarios/review-specs.md",
   "scenarios/route.md",
+  "scenarios/specify.md",
   "scenarios/sync.md",
   "scenarios/using-adev.md",
   "scenarios/validate.md",
@@ -272,14 +282,15 @@ test("Required Files is enumerated both ways — every pinned path exists and th
   assert.deepEqual(onDisk, [...REQUIRED_FIXTURE_FILES].sort());
   assert.equal(
     REQUIRED_FIXTURE_FILES.length,
-    71,
+    77,
     "Task 6's README.md took the count from 33 to 34; rubric-set-change-imminent Task 1's tiers.yaml took it to 35; " +
       "Task 5's three rubrics + three scenarios took it to 41; rubric-set-change-imminent Task 6's four rubrics + " +
       "four scenarios took it to 49; rubric-set-change-imminent Task 7's three rubrics + three scenarios took it to 55; " +
       "rubric-set-change-imminent Task 8's one rubric + one scenario (using-adev) took it to 57; " +
       "rubric-set-core-lifecycle Task 3's five rubrics + five scenarios (hygiene, validate, review-specs, debug, " +
       "route) took it to 67; rubric-set-core-lifecycle Task 4's two rubrics + two scenarios (write-test, implement) " +
-      "took it to 71",
+      "took it to 71; rubric-set-core-lifecycle Task 6's three rubrics + three scenarios (specify, plan, brainstorm) " +
+      "took it to 77",
   );
   assert.ok(REQUIRED_FIXTURE_FILES.includes("README.md"), "Task 6's README.md must be registered here");
 });

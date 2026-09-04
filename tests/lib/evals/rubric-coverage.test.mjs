@@ -2015,12 +2015,12 @@ test("the three detector rubrics conform", () => {
   );
   // RUBRIC_LEGACY_SURVIVES (rubric-set-core-lifecycle Task 1) scans its two
   // legacyRoots regardless of onlyStems — it is root-scoped, not
-  // stem-scoped — and fires on the three still-undeleted skill-compression
-  // legacy files at every call with default legacyRoots, including this
-  // one. See "RUBRIC_LEGACY_SURVIVES: the real skill-compression legacy
-  // files are pinned at exactly three, by name" below for the pin; a later
-  // task in that plan deletes those three files and this filter becomes a
-  // no-op at that point, not before.
+  // stem-scoped — at every call with default legacyRoots, including this
+  // one. As of Task 6, tests/evals/skill-compression/ is deleted (ENOENT is
+  // a documented pass) and skill-regression/rubrics/ carries no
+  // legacy-shaped file, so this filter is a standing guard rather than a
+  // description of a still-open defect. See "RUBRIC_LEGACY_SURVIVES: the
+  // real skill-compression legacy files are gone" below for the pin.
   assert.deepEqual(errors.filter((e) => e.code !== "RUBRIC_LEGACY_SURVIVES"), []);
 
   // The count-of-3 above cannot alone distinguish real filtering from a
@@ -2148,8 +2148,10 @@ test("the four state-writer rubrics conform", () => {
     `onlyStems must narrow rubricRoot to exactly the four producer stems, matched: ${JSON.stringify(matchedRubricFiles)}`,
   );
   // See the detector-tier test above (section 16): RUBRIC_LEGACY_SURVIVES is
-  // root-scoped, not stem-scoped, and fires on the three still-undeleted
-  // skill-compression legacy files regardless of onlyStems.
+  // root-scoped, not stem-scoped, checked regardless of onlyStems — it fires
+  // on nothing at the real roots as of Task 6 (tests/evals/skill-compression/
+  // deleted; skill-regression/rubrics/ carries no legacy-shaped file), but the
+  // filter stays as a standing guard rather than an assumption.
   assert.deepEqual(errors.filter((e) => e.code !== "RUBRIC_LEGACY_SURVIVES"), []);
 
   // The count-of-4 above cannot alone distinguish real filtering from a
@@ -2307,8 +2309,10 @@ test("the three reporter rubrics conform", () => {
     `onlyStems must narrow scenarioRoot to exactly the three reporter stems, matched: ${JSON.stringify(matchedScenarioFiles)}`,
   );
   // See the detector-tier test above (section 16): RUBRIC_LEGACY_SURVIVES is
-  // root-scoped, not stem-scoped, and fires on the three still-undeleted
-  // skill-compression legacy files regardless of onlyStems.
+  // root-scoped, not stem-scoped, checked regardless of onlyStems — it fires
+  // on nothing at the real roots as of Task 6 (tests/evals/skill-compression/
+  // deleted; skill-regression/rubrics/ carries no legacy-shaped file), but the
+  // filter stays as a standing guard rather than an assumption.
   assert.deepEqual(errors.filter((e) => e.code !== "RUBRIC_LEGACY_SURVIVES"), []);
 
   // Precondition for every RUBRIC_SCENARIO_STEP_MISSING assertion below: the
@@ -2470,25 +2474,35 @@ test("the responder rubric conforms", () => {
     `onlyStems: ['using-adev'] must narrow scenarioRoot to exactly this one file, matched: ${JSON.stringify(matchedScenarioFiles)}`,
   );
   // See the detector-tier test above (section 16): RUBRIC_LEGACY_SURVIVES is
-  // root-scoped, not stem-scoped, and fires on the three still-undeleted
-  // skill-compression legacy files regardless of onlyStems.
+  // root-scoped, not stem-scoped, checked regardless of onlyStems — it fires
+  // on nothing at the real roots as of Task 6 (tests/evals/skill-compression/
+  // deleted; skill-regression/rubrics/ carries no legacy-shaped file), but the
+  // filter stays as a standing guard rather than an assumption.
   assert.deepEqual(errors.filter((e) => e.code !== "RUBRIC_LEGACY_SURVIVES"), []);
 });
 
-// AMENDMENT (rubric-set-core-lifecycle.plan.md, Task 3, then Task 4): this
-// test is owned by the sibling change-imminent plan, but this tier's own
-// landing grows the real rubric/scenario roots it pins — 11 -> 16 at Task 3,
-// then 16 -> 18 here at Task 4, in the same commit as the two producer
-// rubrics/scenarios that move the count. A FUTURE amendment (Task 6 of this
-// plan, retiring specify/plan/brainstorm's legacy predecessor and landing
-// their replacements) should find this precedent and follow the same shape:
-// both counts, the expected-stem-set extension, and the bidirectional
-// comparison, all kept intact.
+// AMENDMENT (rubric-set-core-lifecycle.plan.md, Task 3, then Task 4, then
+// Task 6): this test is owned by the sibling change-imminent plan, but this
+// tier's own landing grows the real rubric/scenario roots it pins — 11 -> 16
+// at Task 3, 16 -> 18 at Task 4, then 18 -> 21 here at Task 6, in the same
+// commit that re-authors specify/plan/brainstorm against this tier's shared
+// contract and deletes their legacy tests/evals/skill-compression/
+// predecessors. Both counts, the expected-stem-set extension, and the
+// bidirectional comparison, all kept intact — the precedent Task 4's own
+// comment named for exactly this amendment.
 /** The five core-lifecycle detector stems Task 3 adds to the real roots. */
 const CORE_LIFECYCLE_DETECTOR_STEMS = Object.freeze(["hygiene", "validate", "review-specs", "debug", "route"]);
 
 /** The two core-lifecycle producer stems Task 4 adds to the real roots. */
 const CORE_LIFECYCLE_PRODUCER_STEMS = Object.freeze(["write-test", "implement"]);
+
+/**
+ * The three core-lifecycle producer stems Task 6 re-authors against this
+ * tier's shared contract, replacing their tests/evals/skill-compression/
+ * legacy predecessors (deleted in this same commit) rather than sitting
+ * beside them on an incompatible scale.
+ */
+const CORE_LIFECYCLE_TASK6_STEMS = Object.freeze(["specify", "plan", "brainstorm"]);
 
 test("the landed tier is complete at the real roots", () => {
   // A zero-error result over an empty root would pass vacuously — these
@@ -2498,13 +2512,13 @@ test("the landed tier is complete at the real roots", () => {
   const scenarioFilesOnDisk = readdirSync(DEFAULT_SCENARIO_ROOT).filter((f) => f.endsWith(".md"));
   assert.equal(
     rubricFilesOnDisk.length,
-    18,
-    `rubrics/ must hold exactly 18 files at the landing state, found: ${JSON.stringify(rubricFilesOnDisk)}`,
+    21,
+    `rubrics/ must hold exactly 21 files at the landing state, found: ${JSON.stringify(rubricFilesOnDisk)}`,
   );
   assert.equal(
     scenarioFilesOnDisk.length,
-    18,
-    `scenarios/ must hold exactly 18 files at the landing state, found: ${JSON.stringify(scenarioFilesOnDisk)}`,
+    21,
+    `scenarios/ must hold exactly 21 files at the landing state, found: ${JSON.stringify(scenarioFilesOnDisk)}`,
   );
 
   const tiersDoc = parseYaml(readFileSync(DEFAULT_TIERS_PATH, "utf8"));
@@ -2512,6 +2526,7 @@ test("the landed tier is complete at the real roots", () => {
     ...splitSlugs(tiersDoc.change_imminent),
     ...CORE_LIFECYCLE_DETECTOR_STEMS,
     ...CORE_LIFECYCLE_PRODUCER_STEMS,
+    ...CORE_LIFECYCLE_TASK6_STEMS,
   ]);
   const rubricStems = new Set(rubricFilesOnDisk.map((f) => f.slice(0, -".yaml".length)));
   const scenarioStems = new Set(scenarioFilesOnDisk.map((f) => f.slice(0, -".md".length)));
@@ -2538,8 +2553,9 @@ test("the landed tier is complete at the real roots", () => {
 
   const { errors } = checkRubricSet();
   // See the detector-tier test above (section 16): RUBRIC_LEGACY_SURVIVES
-  // fires on the three still-undeleted skill-compression legacy files at
-  // every default-legacyRoots call, including this no-argument one.
+  // runs at every default-legacyRoots call, including this no-argument one,
+  // and reports nothing at the real roots as of Task 6 — see the ENOENT
+  // real-root case in section 24 below.
   assert.deepEqual(errors.filter((e) => e.code !== "RUBRIC_LEGACY_SURVIVES"), []);
 });
 
@@ -2594,12 +2610,12 @@ test("every scenario states where outputs/ lives", () => {
     "outputs/ from its own mkdtempSync, beside <copy-root>, outside every worktree root and outside the copy",
     "precondition: TOKEN_TABLE[6] must be the outputs/-location row",
   );
-  // AMENDMENT (rubric-set-core-lifecycle.plan.md, Task 3, then Task 4): this
-  // precondition count grows in lockstep with "the landed tier is complete
-  // at the real roots" above — 11 -> 16 at Task 3, then 16 -> 18 here at
-  // Task 4, for the same reason.
+  // AMENDMENT (rubric-set-core-lifecycle.plan.md, Task 3, then Task 4, then
+  // Task 6): this precondition count grows in lockstep with "the landed
+  // tier is complete at the real roots" above — 11 -> 16 at Task 3, 16 -> 18
+  // at Task 4, then 18 -> 21 here at Task 6, for the same reason.
   const scenarioFiles = readdirSync(DEFAULT_SCENARIO_ROOT).filter((f) => f.endsWith(".md"));
-  assert.equal(scenarioFiles.length, 18, "precondition: all eighteen real scenario files must be present");
+  assert.equal(scenarioFiles.length, 21, "precondition: all twenty-one real scenario files must be present");
   for (const file of scenarioFiles) {
     const content = readFileSync(join(DEFAULT_SCENARIO_ROOT, file), "utf8");
     assert.ok(content.includes(token7), `scenarios/${file} is missing token 7 (outputs/ location)`);
@@ -3069,7 +3085,15 @@ test("RUBRIC_LEGACY_SURVIVES: does not fire on the 21 legacy-shaped rubrics outs
   }
 });
 
-test("RUBRIC_LEGACY_SURVIVES: the real skill-compression legacy files are pinned at exactly three, by name", () => {
+test("RUBRIC_LEGACY_SURVIVES: the real skill-compression legacy files are gone", () => {
+  // FLIPPED (Task 6 of rubric-set-core-lifecycle.plan.md), in the same
+  // commit that deletes tests/evals/skill-compression/: this pin held
+  // ["brainstorm.yaml", "plan.yaml", "specify.yaml"] at every prior task's
+  // landing state. It is not decorative — flipping it to [] is what makes
+  // the deletion checkably OBSERVED by the rule this commit's charter names,
+  // rather than merely believed because the directory is absent from a
+  // listing. See the falsification table: leaving this pin at the three
+  // names is itself one of the falsification rows.
   const { errors } = checkRubricSet(); // real defaults
   const legacyErrors = errors.filter((e) => e.code === "RUBRIC_LEGACY_SURVIVES");
   const names = legacyErrors.map((e) => {
@@ -3077,13 +3101,43 @@ test("RUBRIC_LEGACY_SURVIVES: the real skill-compression legacy files are pinned
     assert.ok(m, `RUBRIC_LEGACY_SURVIVES detail must quote the offending path: ${e.detail}`);
     return basename(m[1]);
   });
-  // Not decorative: a later task in this plan flips this pin to [] in the
-  // same commit that deletes these three files — this pin is what makes
-  // that future deletion checkably observed rather than merely believed.
   assert.deepEqual(
     [...names].sort(),
-    ["brainstorm.yaml", "plan.yaml", "specify.yaml"],
-    `expected exactly the three known skill-compression legacy files at this task's landing state, found: ${JSON.stringify(names)}`,
+    [],
+    `expected zero skill-compression legacy files after Task 6's deletion, found: ${JSON.stringify(names)}`,
+  );
+});
+
+test("RUBRIC_LEGACY_SURVIVES: the real-root ENOENT case is a pass, and the sibling real root was genuinely scanned", () => {
+  // Task 6's second rule flip: tests/evals/skill-compression/ (one of
+  // DEFAULT_LEGACY_ROOTS' two enumerated roots) no longer exists on disk at
+  // all — not merely emptied — and RUBRIC_LEGACY_SURVIVES must treat that
+  // ENOENT as a pass, per its own documented contract (see "a missing legacy
+  // root is not an error" above). Both halves matter, per the plan: without
+  // the second assertion below, this test could pass by scanning nothing —
+  // a rule that silently skips both roots reports zero errors for the wrong
+  // reason.
+  assert.ok(
+    !existsSync(join(REPO_ROOT, "tests", "evals", "skill-compression")),
+    "precondition: tests/evals/skill-compression/ must not exist after Task 6's deletion",
+  );
+  const realRubricFiles = readdirSync(DEFAULT_RUBRIC_ROOT).filter((f) => f.endsWith(".yaml"));
+  assert.ok(
+    realRubricFiles.length > 0,
+    "precondition: tests/evals/skill-regression/rubrics/ (the other enumerated legacyRoot) must hold real files, " +
+      "or the ENOENT-side pass below would be proven over a scan that examined nothing on either root",
+  );
+
+  const { errors, checked } = checkRubricSet(); // real defaults, including default legacyRoots
+  assert.deepEqual(
+    errors.filter((e) => e.code === "RUBRIC_LEGACY_SURVIVES"),
+    [],
+    "RUBRIC_LEGACY_SURVIVES must report nothing once tests/evals/skill-compression/ is gone and " +
+      "tests/evals/skill-regression/rubrics/ carries no legacy-shaped file",
+  );
+  assert.ok(
+    checked.has("RUBRIC_LEGACY_SURVIVES"),
+    "ENOENT on one legacy root must not stop the rule from being recorded as reached, even at the real roots",
   );
 });
 
@@ -3416,5 +3470,310 @@ test("the two producer rubrics conform", () => {
   assert.ok(
     producerScannedRubricFiles.includes(expectedWriteTestPath),
     `expected the catalog's citation scan to have grown to include ${expectedWriteTestPath}, visited: ${JSON.stringify(producerScannedRubricFiles)}`,
+  );
+});
+
+// ---------------------------------------------------------------------------
+// 27. Task 6 of rubric-set-core-lifecycle.plan.md — the three re-authored
+// producer rubrics conform (specify, plan, brainstorm), replacing their
+// tests/evals/skill-compression/ legacy predecessors
+// ---------------------------------------------------------------------------
+//
+// Same shape as sections 25 and 26, narrowed to three stems. Two of the
+// three (specify, brainstorm) cite PV-07/KC-07 (charter-scope-escape); the
+// third (plan) cites PV-10/KC-10 (plan-task-without-test) — the same pair
+// route.yaml and write-test.yaml already cite, since plan's own Task
+// Structure template is where the shape that class names is either
+// introduced or avoided. All three classes already list their citing skill
+// in covers_skills ("specify, review-specs, brainstorm" and "plan,
+// write-test, route") — no catalog change lands in this task, and the
+// assertion below proves that positively rather than assuming it.
+
+/** Pinned expected citation sets for Task 6's three re-authored rubrics. */
+const CORE_LIFECYCLE_TASK6_EXPECTED_CITATIONS = Object.freeze({
+  specify: Object.freeze(["PV-07", "KC-07"]),
+  plan: Object.freeze(["PV-10", "KC-10"]),
+  brainstorm: Object.freeze(["PV-07", "KC-07"]),
+});
+
+test("the three re-authored producer rubrics conform", () => {
+  const { errors, matchedRubricFiles } = checkRubricSet({
+    tiersPath: DEFAULT_TIERS_PATH,
+    rubricRoot: DEFAULT_RUBRIC_ROOT,
+    scenarioRoot: DEFAULT_SCENARIO_ROOT,
+    onlyStems: [...CORE_LIFECYCLE_TASK6_STEMS],
+  });
+
+  // The stem filter matching zero files would let "errors is empty" pass
+  // vacuously — pin the filter actually narrowed rubricRoot's real files
+  // down to exactly these three before trusting the error-free result.
+  assert.equal(
+    matchedRubricFiles.length,
+    3,
+    `onlyStems must narrow rubricRoot to exactly the three Task 6 stems, matched: ${JSON.stringify(matchedRubricFiles)}`,
+  );
+  assert.deepEqual(errors.filter((e) => e.code !== "RUBRIC_LEGACY_SURVIVES"), []);
+
+  // Anti-vacuity: a genuine PROPER SUBSET narrows the match count too, same
+  // habit as every earlier tier section in this file.
+  const { matchedRubricFiles: subsetMatch } = checkRubricSet({
+    tiersPath: DEFAULT_TIERS_PATH,
+    rubricRoot: DEFAULT_RUBRIC_ROOT,
+    scenarioRoot: DEFAULT_SCENARIO_ROOT,
+    onlyStems: ["plan"],
+  });
+  assert.deepEqual(
+    subsetMatch,
+    ["plan.yaml"],
+    "onlyStems: ['plan'] must narrow to exactly one file — proves the filter is real narrowing, not a no-op that happens to report 3",
+  );
+
+  const catalogDoc = parseYaml(readFileSync(DEFAULT_CATALOG_PATH, "utf8"));
+  const catalogById = new Map();
+  for (const list of [catalogDoc.planted_violations, catalogDoc.known_clean]) {
+    for (const entry of list) catalogById.set(entry.id, entry);
+  }
+
+  for (const stem of CORE_LIFECYCLE_TASK6_STEMS) {
+    const doc = loadRubric(`${stem}.yaml`, { projectRoot: DEFAULT_RUBRIC_ROOT });
+
+    // Assertion 1: twin positivity, pinned to the plan's own citation table
+    // — a dropped citation goes red rather than merely shrinking a count.
+    const citedIds = new Set();
+    for (const entry of doc.required_elements ?? []) {
+      if (!entry || typeof entry.source !== "string") continue;
+      const m = SKILL_REGRESSION_CITATION_RE.exec(entry.source.trim());
+      if (m) citedIds.add(m[1]);
+    }
+    assert.deepEqual(
+      [...citedIds].sort(),
+      [...CORE_LIFECYCLE_TASK6_EXPECTED_CITATIONS[stem]].sort(),
+      `rubric "${stem}.yaml" must cite exactly ${JSON.stringify(CORE_LIFECYCLE_TASK6_EXPECTED_CITATIONS[stem])}, cited: ${JSON.stringify([...citedIds])}`,
+    );
+
+    // Assertion 2: covers_skills positivity — the cited class's catalog
+    // entry already lists this citing skill, proven against the real
+    // catalog rather than assumed. The plan states no catalog edit is
+    // needed for this task; this assertion is what makes that claim
+    // checked rather than merely believed.
+    for (const id of citedIds) {
+      const catalogEntry = catalogById.get(id);
+      assert.ok(catalogEntry, `rubric "${stem}.yaml" cites ${id}, which resolves to nothing in catalog.yaml`);
+      const coveredSkills = splitSlugs(catalogEntry.covers_skills);
+      assert.ok(
+        coveredSkills.includes(doc.skill),
+        `catalog entry ${id} covers_skills (${JSON.stringify(catalogEntry.covers_skills)}) ` +
+          `does not list "${doc.skill}", cited by rubric "${stem}.yaml"`,
+      );
+    }
+
+    // Assertion 3: the reference-anchoring predicate — every
+    // quality_dimensions[].reference anchors on the skill's own SKILL.md, a
+    // .context-index/specs/ path, or a named repository contract, matches
+    // none of the unanchored forms, and every path-shaped substring it
+    // carries resolves to a real file on disk.
+    for (const criterion of doc.quality_dimensions ?? []) {
+      const ref = criterion.reference;
+      assert.equal(
+        typeof ref,
+        "string",
+        `rubric "${stem}.yaml" criterion "${criterion.id}" must declare a string reference`,
+      );
+      assert.ok(
+        isAnchoredReference(ref, stem),
+        `rubric "${stem}.yaml" criterion "${criterion.id}" reference ${JSON.stringify(ref)} anchors on none of: ` +
+          `skills/${stem}/SKILL.md, a .context-index/specs/ path, or a named repository contract`,
+      );
+      for (const pattern of UNANCHORED_REFERENCE_PATTERNS) {
+        assert.doesNotMatch(
+          ref,
+          pattern,
+          `rubric "${stem}.yaml" criterion "${criterion.id}" reference ${JSON.stringify(ref)} matches the unanchored form ${pattern}`,
+        );
+      }
+      // A REAL filesystem check, not just a regex: every repo-path-shaped
+      // substring the reference carries must resolve to an existing file.
+      for (const candidate of repoPathSubstringsOf(ref)) {
+        const abs = join(REPO_ROOT, candidate);
+        assert.ok(
+          existsSync(abs),
+          `rubric "${stem}.yaml" criterion "${criterion.id}" reference ${JSON.stringify(ref)} names path-shaped ` +
+            `substring "${candidate}", which does not resolve to ${abs}`,
+        );
+      }
+    }
+  }
+
+  // Citation resolution — every cited id resolves in catalog.yaml, proven by
+  // the FIXTURE's own CATALOG_UNRESOLVED_CITATION scan having grown to
+  // include all three new rubric paths, never by an alias this tier mints.
+  const { scannedRubricFiles } = validateCatalog(DEFAULT_CATALOG_PATH);
+  for (const stem of CORE_LIFECYCLE_TASK6_STEMS) {
+    const expected = join("tests", "evals", "skill-regression", "rubrics", `${stem}.yaml`);
+    assert.ok(
+      scannedRubricFiles.includes(expected),
+      `expected the catalog's citation scan to have grown to include ${expected}, visited: ${JSON.stringify(scannedRubricFiles)}`,
+    );
+  }
+});
+
+// ---------------------------------------------------------------------------
+// 28. Task 6 of rubric-set-core-lifecycle.plan.md — the removal, asserted
+// rather than assumed (group (b) of the task's Write-failing-test step)
+// ---------------------------------------------------------------------------
+//
+// Two standing guards. The other two facts the task names — the 20-path
+// enumeration pre-flight and the `git show --stat -M HEAD` blast-radius
+// record — are one-time facts about a single commit, not standing
+// invariants, and live in the commit body instead (see the migration
+// script's pre-flight and this task's commit message).
+
+test("tests/evals/skill-compression is fully retired; the two relocated token-budget-eval suites are untouched", () => {
+  const trackedRemaining = execFileSync("git", ["ls-files", "tests/evals/skill-compression"], {
+    cwd: REPO_ROOT,
+    encoding: "utf8",
+  });
+  assert.equal(
+    trackedRemaining.trim(),
+    "",
+    `git ls-files tests/evals/skill-compression must return zero tracked paths, found: ${trackedRemaining}`,
+  );
+  assert.ok(
+    !existsSync(join(REPO_ROOT, "tests", "evals", "skill-compression")),
+    "tests/evals/skill-compression must not exist on disk at all, tracked or not",
+  );
+
+  const preservedTracked = execFileSync(
+    "git",
+    ["ls-files", "tests/evals/token-optimization/token-budget-eval"],
+    { cwd: REPO_ROOT, encoding: "utf8" },
+  )
+    .trim()
+    .split("\n")
+    .filter(Boolean);
+  const expectedPreserved = [
+    "tests/evals/token-optimization/token-budget-eval/real-token-analysis.test.mjs",
+    "tests/evals/token-optimization/token-budget-eval/token-budget-eval.test.mjs",
+  ];
+  assert.deepEqual(
+    preservedTracked.sort(),
+    [...expectedPreserved].sort(),
+    `expected exactly the two relocated token-budget-eval suites, found: ${JSON.stringify(preservedTracked)}`,
+  );
+
+  // Byte-identical to their Task 5 landing state — compared via git's own
+  // object model (blob hashes at the Task 5 commit vs. the working tree
+  // now), not a re-derived checksum, so this is exact rather than
+  // approximate and needs no hash literal pinned into this file.
+  const TASK5_LANDING_SHA = "039d1e1df6e51bcdd73a8af64767189b87b407be";
+  for (const relPath of expectedPreserved) {
+    const atTask5 = execFileSync("git", ["rev-parse", `${TASK5_LANDING_SHA}:${relPath}`], {
+      cwd: REPO_ROOT,
+      encoding: "utf8",
+    }).trim();
+    const atHead = execFileSync("git", ["hash-object", relPath], { cwd: REPO_ROOT, encoding: "utf8" }).trim();
+    assert.equal(
+      atHead,
+      atTask5,
+      `${relPath} must be byte-identical to its Task 5 landing state (git blob hash mismatch: ${atHead} vs ${atTask5})`,
+    );
+  }
+});
+
+/**
+ * The reference-clearance scan's own exemption set, pinned as a literal so
+ * it cannot quietly widen. Three history-bearing prefixes (path segments
+ * ending in `/`, matched as prefixes) plus two exact-path hosts (matched as
+ * whole paths, never as prefixes) — files that legitimately keep the bare
+ * token because they are what the scan itself would otherwise flag as its
+ * own corpus: `rubric-coverage.test.mjs` declares `RUBRIC_LEGACY_SURVIVES`'s
+ * `legacyRoots`, and `rubric-legacy-scale.test.mjs` regression-tests, by
+ * literal string, that `--evals --list` no longer discovers the relocated
+ * token-budget-eval suites at their pre-Task-5 skill-compression path (its
+ * `oldPaths` array) — a runtime literal a prose reword would break, not a
+ * living document that could go stale.
+ */
+const REFERENCE_CLEARANCE_EXEMPT = Object.freeze([
+  ".context-index/",
+  "CHANGELOG.md",
+  ".beads/",
+  "tests/lib/evals/rubric-coverage.test.mjs",
+  "tests/lib/evals/rubric-legacy-scale.test.mjs",
+]);
+
+/**
+ * Whether `filePath` (repo-relative, forward-slashed) is exempt from the
+ * bare-token scan. A `/`-suffixed entry matches as a PREFIX (a whole
+ * directory); any other entry matches only as a WHOLE PATH, never a prefix
+ * — `tests/lib/evals/rubric-coverage.test.mjs.bak` must not be exempted by
+ * `tests/lib/evals/rubric-coverage.test.mjs`.
+ *
+ * @param {string} filePath
+ * @param {readonly string[]} exemptList
+ * @returns {boolean}
+ */
+function isReferenceExempt(filePath, exemptList) {
+  return exemptList.some((entry) => (entry.endsWith("/") ? filePath.startsWith(entry) : filePath === entry));
+}
+
+test("REFERENCE_CLEARANCE_EXEMPT is pinned at exactly these five entries", () => {
+  assert.deepEqual(
+    [...REFERENCE_CLEARANCE_EXEMPT],
+    [
+      ".context-index/",
+      "CHANGELOG.md",
+      ".beads/",
+      "tests/lib/evals/rubric-coverage.test.mjs",
+      "tests/lib/evals/rubric-legacy-scale.test.mjs",
+    ],
+    "the exempt array must not quietly widen or narrow",
+  );
+});
+
+test("the fourth and fifth exempt entries match as a whole path, never as a prefix", () => {
+  assert.ok(isReferenceExempt("tests/lib/evals/rubric-coverage.test.mjs", REFERENCE_CLEARANCE_EXEMPT));
+  assert.ok(isReferenceExempt("tests/lib/evals/rubric-legacy-scale.test.mjs", REFERENCE_CLEARANCE_EXEMPT));
+  assert.ok(
+    !isReferenceExempt("tests/lib/evals/rubric-coverage.test.mjs.bak", REFERENCE_CLEARANCE_EXEMPT),
+    "a prefix-matched exemption would let a .bak copy of the host through; a whole-path one must not",
+  );
+  assert.ok(
+    !isReferenceExempt("tests/lib/evals/rubric-legacy-scale.test.mjs.bak", REFERENCE_CLEARANCE_EXEMPT),
+    "same guard for the fifth (rubric-legacy-scale.test.mjs) entry",
+  );
+});
+
+test("no bare 'skill-compression' token survives the repo outside the exempt set", () => {
+  // git grep exits 1 (not an error) when it finds nothing anywhere — that
+  // is the ENOENT-of-hits case this test would actually love to see one day,
+  // but today's real tree still has non-exempt narrative elsewhere in the
+  // scan's own corpus disclosure, so a real hit is expected right now: this
+  // assertion is about WHICH files carry it, not whether any do.
+  let output;
+  try {
+    output = execFileSync("git", ["grep", "-n", "--fixed-strings", "skill-compression"], {
+      cwd: REPO_ROOT,
+      encoding: "utf8",
+    });
+  } catch (err) {
+    if (err.status === 1 && !err.stdout) {
+      output = "";
+    } else {
+      throw err;
+    }
+  }
+  const lines = output.split("\n").filter(Boolean);
+  assert.ok(
+    lines.length > 0,
+    "precondition: git grep must find at least one raw hit, or this scan's own corpus check is vacuous",
+  );
+  const nonExempt = lines.filter((line) => {
+    const filePath = line.slice(0, line.indexOf(":"));
+    return !isReferenceExempt(filePath, REFERENCE_CLEARANCE_EXEMPT);
+  });
+  assert.deepEqual(
+    nonExempt,
+    [],
+    `bare "skill-compression" token found outside the exempt set:\n${nonExempt.join("\n")}`,
   );
 });

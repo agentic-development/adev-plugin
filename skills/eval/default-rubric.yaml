@@ -5,16 +5,17 @@
 # --rubric <path> override is supplied. A custom rubric must carry the same
 # top-level keys as this file.
 #
-# SHAPE: this follows the house rubric pattern established by
-# tests/evals/skill-compression/rubrics/*.yaml — deterministic
+# SHAPE: this follows the house rubric pattern — deterministic
 # `required_elements` plus judged `quality_dimensions`, scored with flat
-# top-level weights.
+# top-level weights — that an earlier, now-retired weighted/regex-matched
+# rubric harness established (rubric-set-core-lifecycle.plan.md Task 6
+# deleted its last real-world instance).
 #
 # TWO DELIBERATE DEVIATIONS FROM THAT PATTERN:
 #
 #   1. `required_elements` here carry `source` + `met_when` instead of
-#      `match_pattern`. The skill-compression harness regex-matches a skill's
-#      own markdown output; /adev:eval scores an implementation diff, where a
+#      `match_pattern`. The retired harness regex-matched a skill's own
+#      markdown output; /adev:eval scores an implementation diff, where a
 #      single regex over the whole diff is weak evidence. Each element names
 #      the artifact the check reads and the mechanical condition that decides
 #      it, so the check stays deterministic without pretending one regex can

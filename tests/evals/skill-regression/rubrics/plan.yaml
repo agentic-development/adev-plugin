@@ -1,0 +1,115 @@
+# Layer 3 rubric for /adev:plan, scored against the skill-regression
+# fixture (tests/evals/skill-regression/). Field shapes verbatim from
+# skills/eval/default-rubric.yaml — the exemplar. All values flat: no nested
+# maps, since the repo's minimal YAML readers cannot represent them.
+#
+# Scored input: the written `.plan.md` — this run re-plans
+# create-order.spec.md (already `review: PASS`, so Step 1's gate passes with
+# no scenario-side setup), producing a fresh create-order.plan.md inside the
+# disposable copy. Every task template /adev:plan renders requires a
+# `**Tests:**` field and a `Write failing test` step (Step 5, Task
+# Structure: "This field is required; a task without a `tests:` field is
+# incomplete"), so a compliant run's own output can never carry the shape
+# catalog.yaml's PV-10 (plan-task-without-test) flags. At least one element
+# below is phrased directly against that clause's wording, proving the
+# negative-space claim rather than assuming it.
+#
+# Citations: skill-regression:PV-10/KC-10 (plan-task-without-test) only.
+# Every met_when below is phrased against catalog.yaml's
+# detect_when/must_not_flag_when clause — the finding a correct planning run
+# produces — never against the fixture's in-file answer-key label, so the
+# element survives the fixture's own redaction with no edit.
+#
+# Spec: .context-index/specs/features/eval-harness/rubric-set-core-lifecycle.spec.md
+
+rubric_id: "skill-regression-plan"
+version: 1
+layer: 3
+verdict_values: "met | not_met | unknown (judged criteria) | not_applicable (deterministic elements)"
+skill: plan
+scenario: plan
+
+required_elements:
+  - id: pv10_no_task_omits_tdd_expectation
+    description: "No task in the freshly authored plan declares no TDD test expectation — the shape catalog.yaml's PV-10 flags is absent from this run's own output"
+    source: "skill-regression:PV-10"
+    met_when: "every task in the freshly authored create-order.plan.md carries a non-empty **Tests:** field and a Write failing test step; none is reported as declaring no TDD test expectation, the shape catalog.yaml PV-10's detect_when names against shipping-rates.plan.md's original Task 2"
+    not_applicable_when: "never — Step 5's Task Structure template requires this field on every task this run writes"
+
+  - id: kc10_all_tasks_consistently_declare
+    description: "The specificity twin of PV-10: every task declares the same TDD expectation with no variance, matching create-order.plan.md's own known-clean shape"
+    source: "skill-regression:KC-10"
+    met_when: "all three tasks in the freshly authored plan declare a TDD test expectation with equal rigor — none is wrongly reported as missing one — matching the fixture's own create-order.plan.md, where all three tasks already declare one, per catalog.yaml KC-10's must_not_flag_when"
+    not_applicable_when: "never — the fixture's re-planned spec always produces three tasks"
+
+  - id: review_gate_checked_before_planning
+    description: "Step 1's review gate is actually invoked and passes on the spec's real lifecycle state before any plan content is authored"
+    source: "the copy's lifecycle JSONL log and the adev gate require invocation"
+    met_when: "adev gate require --skill plan --spec <path> is invoked before Step 2's context loading, and it passes because create-order.spec.md's lifecycle log already records step_completed review PASS"
+    not_applicable_when: "never — Step 1 is the first action in Spec Mode"
+
+  - id: code_drift_check_performed
+    description: "The Code-Side Drift Check runs and reports no drift before planning proceeds"
+    source: "the run's hasDrift() / verifyManifest() invocation"
+    met_when: "hasDrift(specPath) is called and returns false for create-order.spec.md, and planning proceeds without a CODE_DRIFT block, per Step 1 item 4"
+    not_applicable_when: "never — the check runs on every Spec Mode invocation"
+
+  - id: plan_task_pending_events_emitted
+    description: "One pending plan_task event per written task is appended to the spec's lifecycle log after the plan is saved"
+    source: "the copy's lifecycle JSONL log"
+    met_when: "the copy's lifecycle log carries one plan_task pending event per task in the freshly authored plan, each naming the new plan's file path, per Step 7"
+    not_applicable_when: "never — Step 7 always emits these events after a successful plan save"
+
+  - id: capability_map_status_set_to_planned
+    description: "The orders charter's Capability Map Status column is updated to planned for the capability this plan covers"
+    source: "the copy's orders charter.md, read back after the run"
+    met_when: "the orders charter's Capability Map row for 'Validate and price an order payload' has its Status column set to planned after Step 7"
+    not_applicable_when: "never — Step 7 always performs this update for a covered capability"
+
+  - id: specialist_routing_tags_present
+    description: "Every task carries a resolved [specialist: <name|none>] tag"
+    source: "the written plan's Task Structure headings"
+    met_when: "every ### Task N: heading in the freshly authored plan ends with a [specialist: <name>] or [specialist: none] tag, per Step 4's Specialist Routing"
+    not_applicable_when: "never — Step 4 tags every task"
+
+  - id: partial_write_atomic_rename_observed
+    description: "The plan body is authored incrementally to a .partial file carrying the plan@1 marker, then committed by atomic rename"
+    source: "the copy's on-disk .partial lifecycle during the run"
+    met_when: "a <plan-path>.partial file is observed to exist mid-run with a partial_schema: plan@1 marker in an HTML comment, and the final <plan-path> is produced by an atomic rename rather than a direct write, per Step 5's Incremental Authoring protocol"
+    not_applicable_when: "never — Step 5 always follows the .partial-then-rename protocol for a plan write"
+
+quality_dimensions:
+  - id: strategy_assignment_grounded
+    criterion: "Does each task's resolved test strategy trace to an actual step in the priority chain, rather than an unexplained value?"
+    reference: "Strategy Assignment, in skills/plan/SKILL.md"
+    met_when: "each task's metadata names the source it resolved from (spec-declared, manifest, detected, or fallback) and the resolved source matches what create-order.spec.md and manifest.yaml actually declare (fallback: unit, since neither declares a strategy override)"
+    not_met_when: "a task's resolved strategy disagrees with what the priority chain would produce given the fixture's actual spec/manifest content"
+    unknown_when: "the plan carries no per-task strategy metadata to check"
+
+  - id: task_ordering_follows_dependency_rule
+    criterion: "Are the three tasks ordered field-validation before pricing/discount before public-surface-and-docs, matching the foundation-before-boundary ordering rule?"
+    reference: "Task Ordering, in skills/plan/SKILL.md"
+    met_when: "Task 1 covers field validation and the error contract, Task 2 covers pricing and the discount bound, and Task 3 covers the item-count bound and public surface/docs, in that order — mirroring create-order.plan.md's own task shape"
+    not_met_when: "a later-foundation task (e.g., public surface/docs) is ordered before an earlier one (e.g., field validation) with no stated dependency justifying it"
+    unknown_when: "the plan's task order cannot be determined from the capture"
+
+  - id: context_packets_reference_real_files
+    criterion: "Does every Context Packet entry name a file that actually exists in the copy, rather than an invented or stale path?"
+    reference: "Context Packet Section, in skills/plan/SKILL.md"
+    met_when: "every file path listed under each task's Context Packet entry resolves to a real file under <copy-root> (the spec, the charter, or a real source file under src/orders/ or src/shipping/)"
+    not_met_when: "a Context Packet entry names a path that does not exist in the copy"
+    unknown_when: "the plan carries no Context Packets section to check"
+
+  - id: quality_gates_section_reflects_constitution
+    criterion: "Does the closing Quality Gates section list the actual test/lint/typecheck commands from the fixture's constitution, rather than generic placeholder text?"
+    reference: "Quality Gates Section, in skills/plan/SKILL.md"
+    met_when: "the Quality Gates section names the fixture constitution's actual quality-gate commands (e.g., the node:test invocation), not an unresolved <test command> placeholder"
+    not_met_when: "the section is emitted with the literal placeholder text still present"
+    unknown_when: "the fixture constitution declares no quality-gate commands to compare against"
+
+layer3_max_points: 25
+required_element_points: 10
+judged_criterion_points: 15
+unknown_policy: "exclude_from_denominator"
+not_applicable_policy: "exclude_from_denominator"
+insufficient_evidence_threshold_percent: 40
