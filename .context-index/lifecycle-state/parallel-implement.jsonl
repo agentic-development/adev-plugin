@@ -37,3 +37,4 @@
 {"event":"validator_report","step":"validate","validator":"validate.check-9-transition-gates","severity":"warning","verdict":"PASS","ts":"2026-07-19T12:09:00.274Z"}
 {"event":"step_completed","step":"validate","verdict":"PASS","ts":"2026-07-19T12:09:00.360Z"}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-08-13T00:34:33.568Z","ts":"2026-08-13T00:34:33.568Z"}
+{"event":"debug_intervention","kind":"debug","note":"TASK_RE matched bare words after Task/task and folded trailing punctuation into ids; malformed group parenthetical was silently dropped. Tightened TASK_RE to digit-anchored ids, made malformed-parenthetical loud (warnings[]), documented group-line grammar in plan skill.","ts":"2026-08-24T10:06:46.769Z"}

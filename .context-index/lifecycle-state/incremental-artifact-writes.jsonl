@@ -145,3 +145,4 @@
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T17:21:19.817Z","ts":"2026-05-20T17:21:19.818Z"}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T17:21:37.141Z","ts":"2026-05-20T17:21:37.142Z"}
 {"event":"debug_intervention","kind":"debug","note":"partial_schema marker placement reconciled: frontmatter key for frontmatter-bearing kinds, HTML comment for .plan.md; 7 spec files backfilled.","ts":"2026-08-20T21:32:45.597Z"}
+{"event":"debug_intervention","kind":"debug","note":"adev partial had no commit verb; skills named none, mv was unguarded. Added adev partial commit (Behavior 2 rename + frontmatter guard).","ts":"2026-08-26T06:18:33.322Z"}

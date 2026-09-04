@@ -784,7 +784,13 @@ After all tasks are complete and before reporting completion:
    ```
 5. Write the spec file back.
 
-   **Incremental authoring for source-manifest stamping (`.partial` pattern):** When the spec file is non-trivial (~ 2 KB or larger, which is the common case for any reviewed Live Spec), the frontmatter rewrite MUST follow the `.partial` + atomic-rename protocol from `incremental-artifact-writes.spec.md`. Write the updated spec body to `<spec-path>.partial` with a `partial_schema: implement@1` marker in the first authored chunk (the chunk that carries the new frontmatter), then atomically rename to `<spec-path>` once the write completes. Use the existing artifact-commit CLI verb (`adev artifact commit ...`) which already implements the `.tmp` byte-level atomic-rename idiom — the `.partial` layer applies when the rewrite is performed by an agent over multiple Write calls rather than a single fs operation. On a mid-rewrite crash, the next `/adev:implement` invocation detects the partial and resumes.
+   **Incremental authoring for source-manifest stamping (`.partial` pattern):** When the spec file is non-trivial (~ 2 KB or larger, the common case for a reviewed Live Spec), the frontmatter rewrite MUST follow the `.partial` + atomic-rename protocol from `incremental-artifact-writes.spec.md`. Write the updated spec body to `<spec-path>.partial` with a `partial_schema: implement@1` marker **as a YAML frontmatter key** (`.spec.md` is one of the four kinds `adev/frontmatter-present` covers, so `---` stays the first non-blank line), then commit:
+
+   ```bash
+   adev partial commit --artifact <spec-path>.partial
+   ```
+
+   Atomically renames to `<spec-path>` (Behavior 2), enforcing the frontmatter-first guard first — exit 1 with `ARTIFACT_FRONTMATTER_NOT_FIRST` beats committing a spec that fails `adev diagnose`. A mid-rewrite crash leaves the `.partial` for the next `/adev:implement` invocation to resume.
 
    **Runaway-write guard:** Before each Write to the spec's `.partial`, run `adev partial check-size --artifact <spec-path>` to verify the in-progress rewrite has not exceeded `partial_oversize_multiplier × expected` bytes (defaults: 3× max(prior spec size, 50 KB)). Exit code 2 with `PARTIAL_ARTIFACT_OVERSIZE` is a hard stop: do NOT continue rewriting, do NOT commit the rename, surface the error to the user. Protects against retry loops re-writing prior chunks.
 
