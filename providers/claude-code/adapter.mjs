@@ -204,20 +204,41 @@ export const ClaudeCodeAdapter = {
     const registry = readJson(registryPath, claudeHome) || { version: 2, plugins: {} };
     const key = "adev@agentic-development";
     const now = new Date().toISOString();
-    const existing = registry.plugins[key]?.[0];
+    const rows = Array.isArray(registry.plugins[key]) ? registry.plugins[key] : [];
 
-    registry.plugins[key] = [
-      {
-        // An explicit answer wins over whatever a previous install recorded —
-        // re-running and choosing a different scope is exactly how a user
-        // corrects it.
-        scope: scope || existing?.scope || "user",
-        installPath: cacheDir,
-        version: PLUGIN_VERSION,
-        installedAt: existing?.installedAt || now,
-        lastUpdated: now,
-      },
-    ];
+    // An explicit answer wins over whatever a previous install recorded —
+    // re-running and choosing a different scope is exactly how a user
+    // corrects it. With no explicit answer, fall back to the first prior row.
+    const resolvedScope = scope || rows[0]?.scope || "user";
+    // Every project/local-scope row Claude Code itself writes carries a
+    // projectPath binding it to one repo. A "project"-scope row without one
+    // has no project to bind to, so nothing resolves the plugin anywhere.
+    const projectPath = resolvedScope === "user" ? undefined : process.cwd();
+
+    // Upsert the (scope, projectPath) row rather than replacing the whole
+    // array — the array exists precisely so one plugin can hold several
+    // scope/project rows. Overwriting it made a project-scope install in one
+    // repo silently drop the row recorded for another repo.
+    const matchIndex = rows.findIndex(
+      (r) => r.scope === resolvedScope && r.projectPath === projectPath,
+    );
+    const existing = matchIndex >= 0 ? rows[matchIndex] : undefined;
+
+    const row = {
+      scope: resolvedScope,
+      ...(projectPath !== undefined ? { projectPath } : {}),
+      installPath: cacheDir,
+      version: PLUGIN_VERSION,
+      installedAt: existing?.installedAt || now,
+      lastUpdated: now,
+    };
+
+    if (matchIndex >= 0) {
+      rows[matchIndex] = row;
+    } else {
+      rows.push(row);
+    }
+    registry.plugins[key] = rows;
 
     writeJson(registryPath, registry, claudeHome);
   },

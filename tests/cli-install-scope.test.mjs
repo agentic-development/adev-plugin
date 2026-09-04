@@ -16,7 +16,7 @@
 
 import { test, before, after, beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, readFileSync, mkdirSync, writeFileSync, rmSync, symlinkSync } from "node:fs";
+import { existsSync, readFileSync, mkdirSync, writeFileSync, rmSync, symlinkSync, realpathSync } from "node:fs";
 import { join } from "node:path";
 import { createTempDir, cleanupTempDir } from "./helpers.mjs";
 
@@ -160,6 +160,89 @@ test("updateRegistry defaults to user scope when none is passed", async () => {
 
   const reg = readJsonOrNull(join(tmpHome, ".claude", "plugins", "installed_plugins.json"));
   assert.equal(reg.plugins[KEY][0].scope, "user", "back-compat: absent scope still means user");
+});
+
+// ── GH #378: a project-scope row needs a projectPath, and the array must be
+//    upserted rather than replaced (else a second repo's project-scope
+//    install silently uninstalls the first repo's row) ─────────────────────
+
+test("updateRegistry records projectPath for a project-scope install", async () => {
+  const a = await adapter();
+  const cacheDir = join(tmpHome, "cache", "adev");
+  mkdirSync(cacheDir, { recursive: true });
+  mkdirSync(join(tmpHome, ".claude", "plugins"), { recursive: true });
+
+  a.updateRegistry(join(tmpHome, ".claude"), cacheDir, "project");
+
+  const reg = readJsonOrNull(join(tmpHome, ".claude", "plugins", "installed_plugins.json"));
+  assert.equal(
+    reg.plugins[KEY][0].projectPath,
+    realpathSync(projectDir),
+    "a project-scope row must bind to the project it was installed into, or nothing resolves it",
+  );
+});
+
+test("updateRegistry does not record projectPath for a user-scope install", async () => {
+  const a = await adapter();
+  const cacheDir = join(tmpHome, "cache", "adev");
+  mkdirSync(cacheDir, { recursive: true });
+  mkdirSync(join(tmpHome, ".claude", "plugins"), { recursive: true });
+
+  a.updateRegistry(join(tmpHome, ".claude"), cacheDir, "user");
+
+  const reg = readJsonOrNull(join(tmpHome, ".claude", "plugins", "installed_plugins.json"));
+  assert.equal(
+    "projectPath" in reg.plugins[KEY][0],
+    false,
+    "a user-scope row is machine-wide and must not carry a projectPath",
+  );
+});
+
+test("a second repo's project-scope install does not clobber the first repo's row", async () => {
+  const a = await adapter();
+  const cacheDir = join(tmpHome, "cache", "adev");
+  mkdirSync(cacheDir, { recursive: true });
+  mkdirSync(join(tmpHome, ".claude", "plugins"), { recursive: true });
+
+  const repoA = realpathSync(projectDir);
+  a.updateRegistry(join(tmpHome, ".claude"), cacheDir, "project");
+
+  const repoB = createTempDir();
+  try {
+    process.chdir(repoB);
+    a.updateRegistry(join(tmpHome, ".claude"), cacheDir, "project");
+
+    const reg = readJsonOrNull(join(tmpHome, ".claude", "plugins", "installed_plugins.json"));
+    const paths = reg.plugins[KEY].map((r) => r.projectPath);
+    assert.deepEqual(
+      [...paths].sort(),
+      [repoA, realpathSync(repoB)].sort(),
+      "both repos' project-scope rows must survive — the array holds one row per (scope, projectPath)",
+    );
+  } finally {
+    cleanupTempDir(repoB);
+  }
+});
+
+test("re-running updateRegistry for the same (scope, projectPath) updates in place, not a duplicate row", async () => {
+  const a = await adapter();
+  const cacheDir = join(tmpHome, "cache", "adev");
+  mkdirSync(cacheDir, { recursive: true });
+  mkdirSync(join(tmpHome, ".claude", "plugins"), { recursive: true });
+
+  a.updateRegistry(join(tmpHome, ".claude"), cacheDir, "project");
+  const first = readJsonOrNull(join(tmpHome, ".claude", "plugins", "installed_plugins.json"));
+  const installedAt = first.plugins[KEY][0].installedAt;
+
+  a.updateRegistry(join(tmpHome, ".claude"), cacheDir, "project");
+  const second = readJsonOrNull(join(tmpHome, ".claude", "plugins", "installed_plugins.json"));
+
+  assert.equal(second.plugins[KEY].length, 1, "re-installing must not append a duplicate row");
+  assert.equal(
+    second.plugins[KEY][0].installedAt,
+    installedAt,
+    "installedAt is preserved across a re-install, same as before this fix",
+  );
 });
 
 // ── AC-1: ordering — nothing scope-bearing is written before the answer ───
