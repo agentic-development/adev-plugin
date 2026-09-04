@@ -544,3 +544,126 @@ describe('integration - full pipeline', () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// U6 regression — exports lost past a JSX conditional with an attributed element
+// ---------------------------------------------------------------------------
+//
+// `tree-sitter-typescript.wasm` has NO JSX grammar rules at all. Bisection
+// against a real-world .tsx file (2026-09-03/04) found it error-recovers
+// cleanly on plain, attribute-less JSX (`<div><div>x</div></div>` parses
+// fine) — which is why this went undetected — but desyncs badly on the
+// extremely common React pattern of a ternary where either branch's element
+// carries an attribute, e.g. `cond ? (<button onClick={fn}>x</button>) :
+// (<p>none</p>)`. That desync corrupts the AST for everything after it,
+// silently dropping exports declared later in the file (confirmed: an
+// `export interface` before the JSX kept its export; an `export function`
+// whose body contained this shape lost its). `tree-sitter-tsx.wasm` is a
+// superset grammar that parses both TSX and plain JSX correctly, so it's
+// used for any extension that can contain JSX.
+describe('U6 regression - exports lost past an attributed JSX conditional', () => {
+  it('captures an export declared after a JSX ternary-with-attribute in the same .tsx file', () => {
+    const tempDir = createTempDir();
+    try {
+      // Minimal confirmed-failing shape: a ternary whose true-branch element
+      // carries an attribute, both branches non-null JSX. `export interface`
+      // comes first (kept its export even on the buggy grammar); the
+      // `export function` after the ternary is the one U6 dropped.
+      writeFileSync(
+        join(tempDir, 'cards-manager.tsx'),
+        [
+          'export interface CardOption {',
+          '  id: string;',
+          '}',
+          '',
+          'export function CardsManager({ show }: { show: boolean }) {',
+          '  return (',
+          '    <div>',
+          '      {show ? (',
+          '        <button onClick={() => {}}>remove</button>',
+          '      ) : (',
+          '        <p>none</p>',
+          '      )}',
+          '    </div>',
+          '  );',
+          '}',
+          '',
+          'export function CardsManagerFooter() {',
+          '  return <span>footer</span>;',
+          '}',
+          '',
+        ].join('\n'),
+      );
+
+      execFileSync('node', [SCRIPT_PATH, '--root', tempDir, '--mode', 'tree-sitter'], {
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+
+      const graph = JSON.parse(
+        readFileSync(join(tempDir, '.context-index', 'hygiene', 'dependency-graph.json'), 'utf-8'),
+      );
+      const node = graph.nodes.find((n) => n.path.endsWith('cards-manager.tsx'));
+
+      assert.ok(node, 'cards-manager.tsx should appear as a graph node');
+      assert.ok(
+        node.exports.includes('CardOption'),
+        `expected CardOption in exports, got ${JSON.stringify(node.exports)}`,
+      );
+      assert.ok(
+        node.exports.includes('CardsManager'),
+        `expected CardsManager in exports, got ${JSON.stringify(node.exports)}`,
+      );
+      assert.ok(
+        node.exports.includes('CardsManagerFooter'),
+        `expected CardsManagerFooter in exports (this is the export U6 dropped, declared after the JSX ternary), got ${JSON.stringify(node.exports)}`,
+      );
+    } finally {
+      cleanupTempDir(tempDir);
+    }
+  });
+
+  it('captures exports past the same JSX ternary shape in a plain .jsx file too', () => {
+    const tempDir = createTempDir();
+    try {
+      writeFileSync(
+        join(tempDir, 'widget.jsx'),
+        [
+          'export const WIDGET_ID = "w1";',
+          '',
+          'export function Widget({ show }) {',
+          '  return show ? (',
+          '    <button onClick={() => {}}>go</button>',
+          '  ) : (',
+          '    <p>none</p>',
+          '  );',
+          '}',
+          '',
+          'export function WidgetFooter() {',
+          '  return <footer>bye</footer>;',
+          '}',
+          '',
+        ].join('\n'),
+      );
+
+      execFileSync('node', [SCRIPT_PATH, '--root', tempDir, '--mode', 'tree-sitter'], {
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+
+      const graph = JSON.parse(
+        readFileSync(join(tempDir, '.context-index', 'hygiene', 'dependency-graph.json'), 'utf-8'),
+      );
+      const node = graph.nodes.find((n) => n.path.endsWith('widget.jsx'));
+
+      assert.ok(node, 'widget.jsx should appear as a graph node');
+      assert.deepEqual(
+        [...node.exports].sort(),
+        ['WIDGET_ID', 'Widget', 'WidgetFooter'].sort(),
+        `expected all three exports, got ${JSON.stringify(node.exports)}`,
+      );
+    } finally {
+      cleanupTempDir(tempDir);
+    }
+  });
+});
