@@ -118,5 +118,6 @@
 {"event":"validator_report","step":"validate","validator":"validate.check-11-visual-verification","severity":"warning","verdict":"PASS","notes":"SKIP-equivalent: no UI files in spec's source-manifest (0 of 104 files match UI patterns); N/A.","ts":"2026-08-16T01:30:07.225Z"}
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-08-16T01:31:27.732Z"}
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-08-16T01:35:59.010Z"}
+{"event":"code_drift_detected","drift_source":".context-index/governance/review.yaml","drift_at":"2026-08-17T17:50:44.738Z","ts":"2026-08-17T17:50:44.740Z"}
 {"event":"code_drift_detected","drift_source":"lib/gates/gate-sets.mjs","drift_at":"2026-08-17T11:54:47.061Z","ts":"2026-08-17T11:54:47.062Z"}
 {"event":"debug_intervention","kind":"debug","note":"Pass 19 compared reviewer id sets only; added hygiene/entry-field-drift (WARN) diffing context_pack/profile/severity_cap/dispatch vs the domain profile named in source:.","ts":"2026-08-24T10:53:09.661Z"}

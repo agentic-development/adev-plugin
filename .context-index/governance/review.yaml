@@ -38,7 +38,7 @@ reviewers:
     name: Structural Architect
     dispatch: always
     profile: reviewer-reasoning
-    context_pack: base
+    context_pack: architecture
     severity_cap: blocker
     prompt: plugin:review-specs/structural-architect-prompt.md
     source: domain:software
@@ -48,7 +48,7 @@ reviewers:
     name: Security Reviewer
     dispatch: always
     profile: reviewer-capable
-    context_pack: base
+    context_pack: security
     severity_cap: blocker
     prompt: plugin:review-specs/security-reviewer-prompt.md
     source: domain:software
@@ -58,7 +58,7 @@ reviewers:
     name: Consistency Analyzer
     dispatch: always
     profile: reviewer-fast
-    context_pack: base
+    context_pack: consistency
     severity_cap: blocker
     prompt: plugin:review-specs/consistency-analyzer-prompt.md
     source: domain:software
@@ -99,9 +99,31 @@ reviewers:
     source: domain:software
 
 # Context packs — additional files loaded for all reviewers
-# context_packs:
-#   base:
-#     include: []
+#
+# `review-base` is restated here (identical includes to the bundled default in
+# templates/review-specs/defaults.yaml) for the sole purpose of setting
+# `delivery: manifest`. mergePacks replaces a pack entry wholesale rather than
+# merging field-by-field, so the include list must be restated to change one
+# field. `architecture`, `security` and `consistency` all extend this pack and
+# declare no `delivery` of their own, so they inherit manifest delivery via the
+# nearest-declaration-wins rule. `base` is deliberately NOT overridden — the
+# software domain's validate.yaml also consumes it, and inline delivery there
+# is unaffected by this change.
+#
+# Rationale: adev-plugin-j7pq.6 measured 29-71% of matched files dropped at the
+# byte cap under inline delivery, which nullified per-reviewer pack
+# differentiation. Path-manifest delivery sends resolved paths for reviewers to
+# read on demand instead of inlining bodies.
+context_packs:
+  review-base:
+    extends: base
+    delivery: manifest
+    include:
+      - glob: <charter-dir>/charter.md
+        title: Parent Charter
+      - glob: <charter-dir>/*.spec.md
+        exclude: ["<target-spec>"]
+        title: Sibling Specs
 
 # Stamped by 'adev governance materialize' — write-once. The entries above are
 # the complete effective set; nothing is contributed from anywhere else.
