@@ -397,6 +397,114 @@ context_packs:
 });
 
 // ---------------------------------------------------------------------------
+// reviewer-tier-not-applied-wohx — buildReviewerDispatches resolves a
+// distinct, non-null modelId per profile tier when ctx.modelIdFromTier is
+// supplied. This is the data-layer half of the tier system: the sibling
+// SKILL.md prose is what actually threads a dispatch's modelId into the
+// Agent call, and this test cannot see that half — it only guards that the
+// value modelId per profile tier for every bundled reviewer stays populated.
+// ---------------------------------------------------------------------------
+describe("Tier 2 / modelId — buildReviewerDispatches resolves a tier-specific modelId", () => {
+  const TIER_MODELS = {
+    fast: "claude-haiku-4-5-20251001",
+    capable: "claude-sonnet-5",
+    reasoning: "claude-opus-5",
+  };
+  const modelIdFromTier = (tier) => TIER_MODELS[tier];
+
+  it("every bundled reviewer gets a distinct, non-null modelId matching its profile tier", () => {
+    const repo = cloneDir(BASE_FIXTURE);
+    try {
+      // Mirrors templates/domains/software/reviewers.yaml's five active
+      // entries and their profile bindings (reviewer-panel-retarget.spec.md).
+      writeFileSync(
+        join(repo, ".context-index/governance/review.yaml"),
+        stampMarker(
+          `reviewers:
+  - id: consistency-analyzer
+    dispatch: always
+    prompt: plugin:review-specs/consistency-analyzer-prompt.md
+    profile: reviewer-fast
+    context_pack: base
+    severity_cap: blocker
+
+  - id: termination-reviewer
+    dispatch: always
+    prompt: plugin:review-specs/termination-reviewer-prompt.md
+    profile: reviewer-fast
+    context_pack: base
+    severity_cap: blocker
+
+  - id: wiring-reviewer
+    dispatch: always
+    prompt: plugin:review-specs/wiring-reviewer-prompt.md
+    profile: reviewer-capable
+    context_pack: base
+    severity_cap: blocker
+
+  - id: boundary-reviewer
+    dispatch: always
+    prompt: plugin:review-specs/boundary-reviewer-prompt.md
+    profile: reviewer-capable
+    context_pack: base
+    severity_cap: blocker
+
+  - id: referent-integrity
+    dispatch: always
+    prompt: plugin:review-specs/referent-integrity-prompt.md
+    profile: reviewer-reasoning
+    context_pack: base
+    severity_cap: blocker
+`,
+          "2026-08-15T00:00:00Z"
+        )
+      );
+      const cfg = loadReviewConfig(repo);
+      assert.equal(cfg.errors.length, 0, JSON.stringify(cfg.errors, null, 2));
+
+      const expectedTierByReviewer = {
+        "consistency-analyzer": "fast",
+        "termination-reviewer": "fast",
+        "wiring-reviewer": "capable",
+        "boundary-reviewer": "capable",
+        "referent-integrity": "reasoning",
+      };
+      const seenModelIds = new Set();
+      for (const [reviewerId, tier] of Object.entries(expectedTierByReviewer)) {
+        const reviewer = cfg.reviewers.find((r) => r.id === reviewerId);
+        assert.ok(reviewer, `fixture is missing reviewer '${reviewerId}'`);
+        const result = buildReviewerDispatches(reviewer, {
+          profiles: cfg.profiles,
+          contextPacks: cfg.contextPacks,
+          consumerRepoRoot: repo,
+          adapter: claudeCode,
+          targetSpecPath: ".context-index/specs/features/billing/invoice-generation.md",
+          targetSpecContent: "stub",
+          modelIdFromTier,
+        });
+        assert.equal(result.errors.length, 0, JSON.stringify(result.errors, null, 2));
+        assert.ok(result.dispatches.length > 0, `reviewer '${reviewerId}' produced no dispatches`);
+        for (const d of result.dispatches) {
+          assert.equal(
+            d.modelId,
+            TIER_MODELS[tier],
+            `reviewer '${reviewerId}' stage '${d.stage}' expected the '${tier}'-tier modelId`
+          );
+        }
+        seenModelIds.add(TIER_MODELS[tier]);
+      }
+      assert.equal(
+        seenModelIds.size,
+        3,
+        `expected 3 distinct tier model ids across fast/capable/reasoning, saw: ${[...seenModelIds]}`
+      );
+    } finally {
+      rmSync(repo, { recursive: true, force: true });
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
 // reviewers #1 / checks #1 — byte-identical `.review.md` body via golden master.
 // ---------------------------------------------------------------------------
 describe("Tier 2 / golden master — renderReviewReport is byte-stable", () => {
