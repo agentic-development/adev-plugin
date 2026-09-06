@@ -62,6 +62,23 @@ function transformDescription(content, provider, skillName) {
   );
 }
 
+// Companions can live at any depth under a skill directory (references/,
+// scripts/, checks/, adapters/, etc.) — enumerating only the skill root would
+// silently stop mirroring a companion the moment it moves into a subdirectory.
+function listCompanions(skillDir, relDir = "") {
+  const entries = readdirSync(join(skillDir, relDir), { withFileTypes: true });
+  const companions = [];
+  for (const entry of entries) {
+    const relPath = relDir ? join(relDir, entry.name) : entry.name;
+    if (entry.isDirectory()) {
+      companions.push(...listCompanions(skillDir, relPath));
+    } else if (entry.isFile() && entry.name.endsWith(".md") && relPath !== "SKILL.md") {
+      companions.push(relPath);
+    }
+  }
+  return companions;
+}
+
 function syncFile(srcPath, destPath, transform) {
   const content = readFileSync(srcPath, "utf8");
   const transformed = transform ? transform(content) : content;
@@ -93,8 +110,7 @@ function syncSkillToProvider(skillName, provider) {
   fileResults.push({ file: "SKILL.md", status: skillStatus });
 
   // Sync companion .md files (mode files, reviewer prompts, etc.) — verbatim copy
-  const companions = readdirSync(mainDir)
-    .filter((f) => f.endsWith(".md") && f !== "SKILL.md");
+  const companions = listCompanions(mainDir);
   for (const companion of companions) {
     const status = syncFile(join(mainDir, companion), join(providerDir, companion));
     fileResults.push({ file: companion, status });
