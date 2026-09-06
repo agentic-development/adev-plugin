@@ -1,1 +1,2 @@
 {"event":"code_drift_detected","drift_source":"hooks/hooks.json","drift_at":"2026-05-16T02:31:19.739Z","ts":"2026-05-18T13:50:21.104Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"debug_intervention","kind":"debug","note":"Session-file lookup encoded current cwd; Claude Code keys transcripts by starting cwd. Added session_id fallback scan.","ts":"2026-09-06T06:00:52.527Z"}
