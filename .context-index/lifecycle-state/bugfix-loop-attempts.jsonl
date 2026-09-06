@@ -20,3 +20,6 @@
 {"issue_id":"adev-plugin-step7-capability-regression-0r65","attempts":1,"updated_at":"2026-08-26T06:46:28.999Z","last_verdict":"PASS","curr_blockers":[],"parked_reason":null}
 {"issue_id":"issue-ma6bcv","attempts":1,"updated_at":"2026-08-26T06:48:06.642Z","last_verdict":"UNREPRODUCIBLE","curr_blockers":[],"parked_reason":"does not reproduce"}
 {"issue_id":"issue-p1uqr8","attempts":1,"updated_at":"2026-09-01T05:32:44.642Z","last_verdict":"PASS","curr_blockers":[],"parked_reason":null}
+{"issue_id":"adev-plugin-eval-harness-xj3k.1","attempts":1,"updated_at":"2026-09-06T06:39:31.460Z","last_verdict":"CONTINUE","curr_blockers":["e3b0c442"],"parked_reason":null}
+{"issue_id":"adev-plugin-eval-harness-xj3k.1","attempts":2,"updated_at":"2026-09-06T06:52:42.536Z","last_verdict":"NO_PROGRESS","curr_blockers":["e3b0c442"],"parked_reason":null}
+{"issue_id":"adev-plugin-issue-trailer-cross-session-oe8w","attempts":1,"updated_at":"2026-09-06T07:05:14.918Z","last_verdict":"PASS","curr_blockers":[],"parked_reason":null}
