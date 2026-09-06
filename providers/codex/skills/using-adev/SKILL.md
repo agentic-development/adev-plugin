@@ -70,7 +70,7 @@ The constitution is synced into CLAUDE.md (and other agent files). For deeper co
 | Repair lifecycle mismatches | `/adev:reconcile` |
 | Everything else | `research`, `eval`, `deploy`, `document`, `retro`, `sample`, `learn`, `sync`, `repomap`, `codehealth`, `prototype`, `write-test` |
 
-For full per-skill usage, argument signatures, and worked examples, see [`docs/skill-reference.md`](../../docs/skill-reference.md). For the complete CLI verb surface (including internal verbs like `adev gate`, `adev report`, `adev build-state`, `adev partial`, `adev heuristics`, `adev source-manifest`, `adev domain`, etc. that this gateway does not list), consult [`docs/cli-reference.md`](../../docs/cli-reference.md) or `node cli/index.mjs <verb> --help` for any specific verb. End-user-facing topics — installation, getting-started, governance, hooks, extensions, troubleshooting — are indexed at [`docs/README.md`](../../docs/README.md).
+For full per-skill usage, argument signatures, and worked examples, see `docs/skill-reference.md`. For the complete CLI verb surface (including internal verbs like `adev gate`, `adev report`, `adev build-state`, `adev partial`, `adev heuristics`, `adev source-manifest`, `adev domain`, etc. that this gateway does not list), consult `docs/cli-reference.md` or `node cli/index.mjs <verb> --help` for any specific verb. End-user-facing topics — installation, getting-started, governance, hooks, extensions, troubleshooting — are indexed at `docs/README.md`.
 
 ## "What should I do?" Q&A Mode
 
