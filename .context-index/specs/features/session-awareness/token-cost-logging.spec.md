@@ -129,17 +129,18 @@ The third entry has no `usage` — either token data was unavailable or this was
 
 ### Location Resolution
 
-Claude Code stores conversation data in `~/.claude/projects/<hash>/` where `<hash>` is a deterministic encoding of the project's absolute path. The hook resolves the session file by:
+Claude Code stores conversation data in `~/.claude/projects/<hash>/` where `<hash>` is a deterministic encoding of the project's absolute path. Critically, that path is the session's **starting** cwd — the one Claude Code was launched from — not whatever cwd is current when a given hook invocation fires. A session that changes directory after starting (entering a worktree via `EnterWorktree`/`adev worktree`, or any `cd`) has every later hook fire with a current cwd whose encoding names a directory Claude Code never created; only `session_id` reliably identifies the transcript. The hook resolves the session file by:
 
-1. Scanning directories under `$HOME/.claude/projects/`. Each directory name encodes a project path. The resolver reads the directory's metadata (e.g., a `.project` file or the directory name itself) to find the one matching `$PWD`. If no match is found, resolution fails gracefully (Behavior 2).
-2. Within the matched directory, locating the file whose name matches the `session_id` from the hook's stdin JSON payload (e.g., `<session_id>.jsonl`).
-3. Checking the file size — if it exceeds 50 MB, the file is skipped (prevents unbounded memory consumption on corrupted or unusually large session files). Resolution fails gracefully per Behavior 2.
-4. Parsing the file as JSONL, reading only from `last_offset` (cursor) to end-of-file, extracting cumulative usage metadata from the newest entries.
+1. Encoding `$PWD` (current cwd) under both the current dot-and-slash encoding and the legacy slash-only encoding (`sessionDirCandidates`), and checking each candidate directory under `$HOME/.claude/projects/` for a file matching the `session_id` from the hook's stdin JSON payload (e.g., `<session_id>.jsonl`).
+2. If neither candidate holds the file — the session's cwd diverged from its starting cwd — falling back to a scan of every directory under `$HOME/.claude/projects/` for one containing `<session_id>.jsonl`, joining on session_id directly rather than on any cwd encoding.
+3. If no directory anywhere has the file, resolution fails gracefully (Behavior 2).
+4. Checking the file size — if it exceeds 50 MB, the file is skipped (prevents unbounded memory consumption on corrupted or unusually large session files). Resolution fails gracefully per Behavior 2.
+5. Parsing the file as JSONL, reading only from `last_offset` (cursor) to end-of-file, extracting cumulative usage metadata from the newest entries.
 
 The resolution contract is defined by `lib/session-file-reader.mjs`:
-- **Input:** `{ sessionId: string, projectDir: string }`
-- **Output:** `{ model: string, inputTokens: number, outputTokens: number, cacheReadTokens: number, cacheCreationTokens: number } | null`
-- **Failure mode:** Returns `null` on any error (file not found, parse error, size exceeded, format unrecognized)
+- **`resolveSessionFilePath({ sessionId, projectDir })`** — resolves the absolute transcript path per steps 1-3 above. Exported separately so callers needing the path itself (e.g. a pre-read file-size check) share the same resolution as `resolveSessionUsage`.
+- **`resolveSessionUsage({ sessionId, projectDir, fromOffset })`** — **Output:** `{ model: string, inputTokens: number, outputTokens: number, cacheReadTokens: number, cacheCreationTokens: number } | null`
+- **Failure mode:** Returns `null` on any error (file not found under any candidate or scan, parse error, size exceeded, format unrecognized)
 
 ### Fragility Acknowledgment
 
