@@ -217,9 +217,10 @@ For each subagent-mode reviewer:
 4. Dispatch a subagent with:
    - `description`: `"<reviewer.name> review of <spec-slug>"`
    - `prompt`: the provenance preamble, then the prompt body, then the rendered context pack, then the target spec — the pack sections and the target spec each wrapped in a nonce-scoped fence (`<<<ADEV-PACK-<nonce> …>>>`) so the reviewer can tell repository-sourced content from text the artifact under review merely claims is a delimiter. Both use the **same** nonce from the `renderPack` call, and the preamble names that token.
-   - Tool restrictions, model, env, redaction set all from the adapter's `prepareForDispatch` return.
+   - `modelId`: the dispatch struct's `modelId` field, resolved from the reviewer's `profile.model.tier` via `platform-context.yaml:model_tiers` and returned by the adapter's `prepareForDispatch`. Pass it into the Agent dispatch (its `model` argument) alongside `description` and `prompt`. **Omitting it silently defeats the tier system** — the dispatch falls back to the orchestrator's own session model regardless of the reviewer's assigned tier, and nothing fails or warns when this happens.
+   - Tool restrictions, env, redaction set — also from the adapter's `prepareForDispatch` return.
 
-   This composition is owned by `buildReviewerDispatches(...)` in `lib/governance/dispatch-shape.mjs` — that function is the single source of truth for prompt assembly, fencing, and preamble text. The description above is reference only; do not hand-assemble the prompt.
+   This composition is owned by `buildReviewerDispatches(...)` in `lib/governance/dispatch-shape.mjs` — that function is the single source of truth for prompt assembly, fencing, and preamble text, and for resolving `modelId` per dispatch. The description above is reference only; do not hand-assemble the prompt.
 
    When the reviewer's context pack resolves to `delivery: manifest`, that same preamble additionally carries the **manifest read contract**: it states that a `role="path-manifest"` fence lists repository paths whose contents were not inlined, that the reviewer is expected to read them on demand, and which read tools its resolved profile grants (the names are derived through the harness adapter, so they are correct per harness). It also restates that only paths inside a fence carrying this render's token are repository-sourced. The wording lives in `buildReviewerDispatches`; do not restate or hand-assemble it.
 
@@ -229,8 +230,8 @@ For each subagent-mode reviewer:
 
 Run the two-stage pipeline:
 
-1. **Stage 1 (runner):** dispatch a subagent under `reviewer.profile` with the resolved skill's `SKILL.md` contents plus a framing note (*"You are running as a reviewer subagent. Follow the instructions faithfully. The arguments and context for this run are appended."*) and the args from `package.args` (with `<target>` substituted for the spec path). Rendered context pack is appended. Tool restrictions from the profile apply.
-2. **Stage 2 (adapter):** dispatch a second subagent with the runner's full output + the adapter prompt (`reviewer.adapterPath`, defaults to `plugin:review-specs/adapters/generic.md`). The adapter extracts findings in the standard YAML format.
+1. **Stage 1 (runner):** dispatch a subagent under `reviewer.profile` with the resolved skill's `SKILL.md` contents plus a framing note (*"You are running as a reviewer subagent. Follow the instructions faithfully. The arguments and context for this run are appended."*) and the args from `package.args` (with `<target>` substituted for the spec path). Rendered context pack is appended. Tool restrictions from the profile apply. Pass the runner dispatch's `modelId` (from `buildReviewerDispatches`, same as a subagent-mode reviewer) as the Agent call's `model` argument — omitting it defeats the tier system the same way.
+2. **Stage 2 (adapter):** dispatch a second subagent with the runner's full output + the adapter prompt (`reviewer.adapterPath`, defaults to `plugin:review-specs/adapters/generic.md`). The adapter extracts findings in the standard YAML format. Pass this stage's own `modelId` the same way — the adapter stage has an independently resolved `modelId` in its dispatch struct.
 
 ### Severity cap and parse-failure fallback
 
@@ -248,7 +249,7 @@ If a package-mode adapter returns output that does not parse as the findings YAM
 
 ### Tier note
 
-Tier assignment now flows from each reviewer's `profile.model.tier` (resolved via `platform-context.yaml:model_tiers` as today). Bundled defaults continue to use reasoning/capable/fast for architect/security/consistency respectively.
+Tier assignment now flows from each reviewer's `profile.model.tier` (resolved via `platform-context.yaml:model_tiers` as today). Bundled defaults continue to use reasoning/capable/fast for architect/security/consistency respectively. **This tier assignment is inert unless the dispatch actually carries it forward**: every Agent dispatch above (subagent-mode, and both package-mode stages) MUST pass its dispatch struct's `modelId` field as the Agent call's `model` argument. A dispatch that omits `modelId` runs silently on the orchestrator's own session model instead of the assigned tier — nothing fails or warns, so this is easy to miss in review.
 
 ## Step 5: Collect and Consolidate Findings
 
