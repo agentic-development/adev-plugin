@@ -20,3 +20,4 @@
 {"issue_id":"adev-plugin-step7-capability-regression-0r65","attempts":1,"updated_at":"2026-08-26T06:46:28.999Z","last_verdict":"PASS","curr_blockers":[],"parked_reason":null}
 {"issue_id":"issue-ma6bcv","attempts":1,"updated_at":"2026-08-26T06:48:06.642Z","last_verdict":"UNREPRODUCIBLE","curr_blockers":[],"parked_reason":"does not reproduce"}
 {"issue_id":"issue-p1uqr8","attempts":1,"updated_at":"2026-09-01T05:32:44.642Z","last_verdict":"PASS","curr_blockers":[],"parked_reason":null}
+{"issue_id":"adev-plugin-parity-guard-self-referential-gobk","attempts":1,"updated_at":"2026-09-06T05:47:03.302Z","last_verdict":"PASS","curr_blockers":[],"parked_reason":null}
