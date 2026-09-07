@@ -59,6 +59,14 @@ lifecycle:
     - .context-index/lifecycle-state
     - .context-index/specs
 
+hygiene:
+  # Without this key, `/adev:codehealth` refuses every pass with
+  # INVALID_MANIFEST (skills/codehealth/SKILL.md's upfront gate), which meant
+  # the planted PV-03/KC-03 orphan-source-file fixture could never actually be
+  # observed by dispatching the real skill (tier-b-2026-09-07-01.md item 6).
+  source_roots:
+    - src/
+
 repomap:
   exclude:
     - "node_modules/**"
