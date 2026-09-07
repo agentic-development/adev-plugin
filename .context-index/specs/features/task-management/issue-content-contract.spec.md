@@ -21,6 +21,7 @@ source-manifest:
     - tests/skills/issue-content-contract-spec-ref.test.mjs
     - tests/skills/issue-content-contract-template.test.mjs
   computed-at: "2026-08-22T17:24:51.706Z"
+drift_detected: true
 ---
 
 <!-- Charter divergence: "Issue Content Contract" is not yet a row in the

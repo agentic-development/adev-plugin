@@ -147,3 +147,4 @@
 {"event":"debug_intervention","kind":"debug","note":"partial_schema marker placement reconciled: frontmatter key for frontmatter-bearing kinds, HTML comment for .plan.md; 7 spec files backfilled.","ts":"2026-08-20T21:32:45.597Z"}
 {"event":"debug_intervention","kind":"debug","note":"adev partial had no commit verb; skills named none, mv was unguarded. Added adev partial commit (Behavior 2 rename + frontmatter guard).","ts":"2026-08-26T06:18:33.322Z"}
 {"event":"debug_intervention","kind":"debug","note":"Step 2h emitted plan_task done before the mandatory commit, contradicting the implement rubric which requires done to postdate the commit; reordered commit-then-done.","ts":"2026-09-07T11:46:13.150Z"}
+{"event":"debug_intervention","kind":"debug","note":"adev artifact commit requires YAML frontmatter, incompatible with plan@1 HTML-comment marker; added adev partial commit wrapping the unwrapped commitPartial().","ts":"2026-09-07T11:53:31.710Z"}

@@ -348,7 +348,7 @@ Section append order matches the plan header → File Structure → Context Pack
 
 **Runaway-write guard (PARTIAL_ARTIFACT_OVERSIZE).** Before each append, run `adev partial check-size --artifact <plan-path>` to verify the in-progress partial has not exceeded `partial_oversize_multiplier × expected` bytes (defaults: 3× max(prior plan size, 50 KB)). The verb exits 2 with `PARTIAL_ARTIFACT_OVERSIZE` when the cap is breached — treat that as a hard stop: do NOT continue appending, do NOT commit the rename, preserve the partial for inspection, and surface the error to the user. This protects against retry loops that re-write prior chunks instead of appending only the new section.
 
-After writing the final Quality Gates section, commit the artifact via atomic rename. Use the CLI verb so the SKILL.md stays markdown-only per the `cli-driver-surface` charter:
+After writing the final Quality Gates section, commit the artifact via atomic rename. Use the CLI verb so the SKILL.md stays markdown-only per the `cli-driver-surface` charter — `adev artifact commit` refuses any source that doesn't start with YAML frontmatter, which the `plan@1` HTML-comment marker above never satisfies, so use `adev partial commit` instead (adev-plugin-eval-harness-xj3k.6):
 
 ```bash
 adev partial inspect --artifact <plan-path>.partial   # sanity check before commit
