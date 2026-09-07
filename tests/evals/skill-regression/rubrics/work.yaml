@@ -84,7 +84,7 @@ required_elements:
   - id: concurrent_work_scan_run
     description: "Step 1.5's coordination scan runs and its result is surfaced before any route is finalized"
     source: "the coordination scan's reported result (adev coordination scan)"
-    met_when: "adev coordination scan is invoked once per triage pass and its result — \"none detected\", a listed overlap, or a degraded \"(not scanned — ...)\" signal — is surfaced to the user before the route is proposed as final, per Step 1.5"
+    met_when: "adev coordination scan is invoked once per triage pass and its result — a clean \"none detected\", a partial \"none in the signals that were available\" with a \"(not scanned — ...)\" note, a fully degraded \"not scanned — no signal available\", or a listed overlap — is surfaced to the user before the route is proposed as final, per Step 1.5"
     not_applicable_when: "never — Step 1.5 runs on every state scan"
 
   - id: recent_sessions_surfaced
@@ -106,7 +106,7 @@ quality_dimensions:
     reference: "Step 1: Project State Scan in skills/work/SKILL.md"
     met_when: "a reported overlap appears in the user-facing output ahead of, or alongside, the route proposal — never only in a later turn after the user has already confirmed a route"
     not_met_when: "a reported overlap is available from the scan but does not reach the user-facing output before the route proposal"
-    unknown_when: "the coordination scan reports \"none detected\" or a degraded signal, so there is no overlap to test the ordering against"
+    unknown_when: "the coordination scan reports no overlap — clean, partial, or fully degraded — so there is no overlap to test the ordering against"
 
   - id: route_reasoning_cites_the_projection_table_row
     criterion: "Does the one-line reasoning behind the proposed route for each fixture spec name the specific lifecycle-position row it matched, rather than generic phrasing like 'this seems like the next step'?"
