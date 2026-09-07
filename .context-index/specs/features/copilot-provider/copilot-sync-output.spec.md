@@ -23,6 +23,7 @@ source-manifest:
     - tests/sync-copilot-render-module.test.mjs
     - tests/sync-copilot.test.mjs
   computed-at: "2026-05-20T00:30:34.826Z"
+drift_detected: true
 ---
 
 # Live Spec: Copilot Sync-Target Output

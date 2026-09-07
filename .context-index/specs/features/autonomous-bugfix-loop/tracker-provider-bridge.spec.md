@@ -37,6 +37,7 @@ source-manifest:
   computed-at: "2026-08-20T02:29:18.245Z"
 created: 2026-08-19
 updated: 2026-08-20
+drift_detected: true
 ---
 
 # Integration Spec: Tracker Provider Bridge
