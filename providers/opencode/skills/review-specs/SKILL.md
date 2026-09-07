@@ -429,7 +429,9 @@ After saving the review report, update the spec's status based on the verdict:
 
 Log the status change to the user.
 
-**Charter Capability Map update (PASS or PASS_WITH_NOTES only):** After updating the spec status to `review-passed`, also update the parent charter's Capability Map. Find the capability row corresponding to this spec and set its `Status` column to `review-passed`.
+**Charter Capability Map update (PASS or PASS_WITH_NOTES only), monotonic:** After updating the spec status to `review-passed`, also update the parent charter's Capability Map — but only forward, never backward. Read the capability row's current `Status` first. If it is unset, `—`, or `specified` (i.e. earlier than `review-passed` in the capability lifecycle: `— → specified → review-passed → planned → implementing → implemented → validated`), set it to `review-passed` as before. If it already reads `planned`, `implementing`, `implemented`, or `validated` — later than `review-passed` — leave it unchanged and log that the write was skipped, naming the row's current status, rather than regressing it.
+
+This guard exists because review is not always the capability's first pass through the lifecycle: `/adev:validate` can FAIL after implementation, sending the spec back through revision and re-review while the row already reads `implemented` or `validated`. Writing `review-passed` unconditionally at that point would erase the record that the capability was actually built — a real regression, not a cosmetic one, since downstream skills and `/adev:status` read this column as the capability's lifecycle state.
 
 **Note:** Do not increment the spec's `revision` field on status-only changes. The `revision` field tracks content changes, not workflow transitions.
 
