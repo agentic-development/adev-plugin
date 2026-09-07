@@ -1077,10 +1077,10 @@ adev test-debt scan --detector APPEND_CHAIN
 ### `eval`
 
 **Purpose:** Score a verdict set against a rubric — the CLI surface over the Layer 3 scoring
-engine (`lib/evals/rubric.mjs`'s `loadRubric`, `lib/evals/score.mjs`'s `scoreRubric`). `run()`
-dispatches on the first argument; `score` is the only subcommand today, and the verb is named
-`eval` rather than `eval-score` so a future Run-cost record capability can add `eval cost`
-beside it without a second registry entry.
+engine (`lib/evals/rubric.mjs`'s `loadRubric`, `lib/evals/score.mjs`'s `scoreRubric`) — and manage
+the durable pending-findings queue for operator-half eval passes. `run()` dispatches on the first
+argument; the verb is named `eval` rather than `eval-score` so capabilities like this one can add
+a subcommand without a second registry entry.
 
 **Signature:** `eval score --rubric <path|default> --input <path> [--json]`
 
@@ -1132,7 +1132,30 @@ adev eval score --rubric default --input .adev/eval/latest-verdicts.json
 adev eval score --rubric default --input .adev/eval/latest-verdicts.json --json
 ```
 
-**Implementation:** `lib/cli/eval.mjs` (engine: `lib/evals/rubric.mjs`, `lib/evals/score.mjs`).
+**Signature:** `eval findings <queue|list|file> [flags]`
+
+- `findings queue --title <t> --description <d> [--severity <s>] [--module <slug>] [--source <text>] [--json]`
+  — append one finding to `.context-index/evals/pending-findings.jsonl`. The durable fallback for
+  a manual eval pass (e.g. a Tier B pass) that surfaces a real defect while the issue board is
+  unreachable — before this, the only option was recording it in markdown prose nothing re-read
+  (`adev-plugin-tierb-findings-queue-bsb9`). `--title`/`--description` are required
+  (`EVAL_FINDING_INVALID` otherwise); `--severity`/`--module`/`--source` are free-text hints
+  carried through unchanged.
+- `findings list [--json]` — list queued findings (`id`, `title`, and every field `queue` was given).
+- `findings file <finding-id> [--json]` — file a queued finding as a real `bug` via the issue
+  store (`adev issues create`'s own path), setting `--affected-modules` from the finding's
+  `module` field when present, then drain it from the queue. An unknown `<finding-id>` exits 1
+  with `EVAL_FINDING_NOT_FOUND` and touches nothing.
+
+**Example:**
+```
+adev eval findings queue --title "repomap getCommitHash ignores cwd" --description "..." --module lib
+adev eval findings list --json
+adev eval findings file a1b2c3d4 --json
+```
+
+**Implementation:** `lib/cli/eval.mjs` (engine: `lib/evals/rubric.mjs`, `lib/evals/score.mjs`,
+`lib/eval-findings-queue.mjs`).
 **Called by:** `/adev:eval` Layer 3, Step 3 — aggregates the deterministic and judged halves into
 the half-level trend score once Steps 1 and 2 produce every verdict it needs.
 
