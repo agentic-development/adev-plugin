@@ -28,6 +28,17 @@ test('createRun writes a run-state file with all BugfixLoopRun fields, defaults 
   rmSync(root, { recursive: true, force: true });
 });
 
+test('createRun defaults epic to null when not provided, and persists it when given (adev-plugin-j2ev.1)', () => {
+  const root = mkdtempSync(join(tmpdir(), 'bfl-run-epic-'));
+  const unscoped = createRun(root, {});
+  assert.equal(unscoped.epic, null);
+
+  const scoped = createRun(root, { epic: 'adev-plugin-my-epic-ab12' });
+  assert.equal(scoped.epic, 'adev-plugin-my-epic-ab12');
+  assert.equal(readRunState(root, scoped.run_id).epic, 'adev-plugin-my-epic-ab12');
+  rmSync(root, { recursive: true, force: true });
+});
+
 test('resolveRunStatePath rejects a non-UUID-shaped run_id (BD-1)', () => {
   const root = mkdtempSync(join(tmpdir(), 'bfl-run-'));
   assert.throws(() => resolveRunStatePath(root, '../../etc/passwd'), /INVALID_RUN_ID/);

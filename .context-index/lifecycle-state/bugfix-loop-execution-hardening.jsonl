@@ -95,3 +95,4 @@
 {"event":"step_completed","step":"validate","verdict":"FAIL","ts":"2026-08-21T20:15:19.548Z"}
 {"event":"code_drift_detected","drift_source":"docs/cli-reference.md","drift_at":"2026-08-22T22:48:50.289Z","ts":"2026-08-22T22:48:50.290Z"}
 {"event":"code_drift_detected","drift_source":"lib/bugfix-loop-commit.mjs","drift_at":"2026-08-23T20:23:22.119Z","ts":"2026-08-23T20:23:22.120Z"}
+{"event":"debug_intervention","kind":"debug","note":"Added --epic scoping to adev issues next and bugfix-loop; discovered walkTree()/parseId() cannot recognize real slug-style epic ids, used plain prefix matching instead.","ts":"2026-09-07T18:39:03.786Z"}

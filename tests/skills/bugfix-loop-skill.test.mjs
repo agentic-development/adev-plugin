@@ -239,13 +239,49 @@ test('bugfix-loop SKILL.md Step 2 documents stderr must not be redirected/suppre
   assert.match(step2Text, /BEH-12/);
 });
 
-test('every new bugfix-loop subverb (check-freshness, commit-pr) and skill arg (--worktree-per-bug, --auto-commit, --max-priority) appears in docs/cli-reference.md and/or docs/skill-reference.md (Plan-task 15)', () => {
+test('every new bugfix-loop subverb (check-freshness, commit-pr) and skill arg (--worktree-per-bug, --auto-commit, --max-priority, --epic) appears in docs/cli-reference.md and/or docs/skill-reference.md (Plan-task 15)', () => {
   const cliDocs = read('docs/cli-reference.md');
   const skillDocs = read('docs/skill-reference.md');
   const combined = cliDocs + skillDocs;
-  for (const term of ['check-freshness', 'commit-pr', '--worktree-per-bug', '--auto-commit', '--max-priority']) {
+  for (const term of ['check-freshness', 'commit-pr', '--worktree-per-bug', '--auto-commit', '--max-priority', '--epic']) {
     assert.ok(combined.includes(term), `docs must mention "${term}" somewhere (cli-reference.md or skill-reference.md)`);
   }
+});
+
+test('bugfix-loop SKILL.md documents --epic <id>, default unscoped (adev-plugin-j2ev.1)', () => {
+  const md = read('skills/bugfix-loop/SKILL.md');
+  const argsIdx = md.indexOf('## Arguments');
+  const step0Idx = md.indexOf('## Step 0: Resolve the run');
+  const argsText = md.slice(argsIdx, step0Idx);
+  assert.match(argsText, /--epic <id>/);
+  assert.match(argsText, /Default: unscoped/);
+});
+
+test('bugfix-loop SKILL.md Step 0 passes --epic to bugfix-loop create when the invocation named one', () => {
+  const md = read('skills/bugfix-loop/SKILL.md');
+  const step0Idx = md.indexOf('## Step 0: Resolve the run');
+  const step1Idx = md.indexOf('## Step 1: Turn guard');
+  const step0Text = md.slice(step0Idx, step1Idx);
+  assert.match(step0Text, /adev bugfix-loop create --max-bugs <N> --max-turns <N> \[--epic <id>\]/);
+});
+
+test('bugfix-loop SKILL.md Step 2 passes --epic to adev issues next when the run has one', () => {
+  const md = read('skills/bugfix-loop/SKILL.md');
+  const step2Idx = md.indexOf('## Step 2: Select a bug');
+  const step3Idx = md.indexOf('## Step 3: Claim');
+  const step2Text = md.slice(step2Idx, step3Idx);
+  assert.match(step2Text, /adev issues next --type bug --max-priority <resolved-max-priority> \[--epic <id>\]/);
+});
+
+test('bugfix-loop SKILL.md Step 6 re-passes --epic on self-re-invocation, alongside every other original-invocation flag', () => {
+  const md = read('skills/bugfix-loop/SKILL.md');
+  const step6Idx = md.indexOf('## Step 6: Self-re-invoke');
+  assert.ok(step6Idx !== -1);
+  const step6Text = md.slice(step6Idx);
+  const flagListIdx = step6Text.indexOf('plus every other flag the original invocation was given');
+  assert.ok(flagListIdx !== -1);
+  const flagListText = step6Text.slice(flagListIdx, flagListIdx + 200);
+  assert.match(flagListText, /--epic/);
 });
 
 test('using-adev gateway table lists /adev:bugfix-loop', () => {

@@ -16,6 +16,7 @@ description: "Self-re-invoking, one-bug-per-turn loop that drains eligible P2/P3
 - `--worktree-per-bug`: default OFF. When set, each bug's claim, `/adev:debug --auto` attempt (Step 4), and any resulting commit happen inside a dedicated `adev`-managed worktree (`adev worktree add --slug bugfix-<issue-id> --base <ref>`) instead of the shared working tree — isolating each bug's diff from every other bug's in-flight changes (spec BEH-3).
 - `--auto-commit`: default OFF. When set (with or without `--worktree-per-bug`), a `FIXED` verdict triggers Step 4.5's commit/push/PR automation (spec BEH-4). Without either `--worktree-per-bug` or `--auto-commit`, Step 4.5 is skipped entirely and behavior is unchanged from before this capability existed.
 - `--max-priority <P0-P4>`: caps the priority band Step 2 selects from. Default: `P3` (covering `P2`/`P3`, identical to today's hardcoded behavior). The full `P0`-`P4` range is accepted — `P0`/`P1` are a deliberate, explicit operator opt-in (BEH-9), not rejected the way they were before the eligibility-floor amendment shipped. Validated fail-fast at Step 0, before any bug selection (BEH-10); malformed values (anything other than `P0`-`P4`) halt the run with `INVALID_PRIORITY_BOUND`. BEH-7's unconditional module-exclusion floor (reserved safety tags, always enforced) is unaffected by this flag at any value, including `P0` — it is the actual, non-configurable safety boundary, not the priority band.
+- `--epic <id>`: restricts Step 2's selection to `<id>` and its tiered children (`<id>.N`) for the whole run. Default: unscoped (candidates drawn from the entire board, today's behavior). Persisted on the run state at `create` time (adev-plugin-j2ev.1) and re-passed on every self-re-invocation exactly like `--max-priority`/`--worktree-per-bug`/etc. — see Step 2 and Step 6.
 
 **Load Skill Extensions:**
 
@@ -30,10 +31,10 @@ The following skill extension instructions apply to this invocation (source: ins
 - **Fresh invocation (`--max-bugs`/`--max-turns`/no resume flags):**
 
   ```bash
-  adev bugfix-loop create --max-bugs <N> --max-turns <N> --json
+  adev bugfix-loop create --max-bugs <N> --max-turns <N> [--epic <id>] --json
   ```
 
-  Capture `run_id` from the result.
+  Capture `run_id` from the result. Pass `--epic <id>` only when the invocation named one; the loop remains unscoped by default.
 - **`--resume --resume-run-id <id>`:** use `<id>` directly — it was passed explicitly by the prior turn's own self-re-invocation, so no discovery is needed.
 - **`--resume` with no `--resume-run-id` (manual crash recovery):**
 
@@ -45,7 +46,7 @@ The following skill extension instructions apply to this invocation (source: ins
 
   **Orphan-worktree sweep (BEH-13):** when the recovered run had `--worktree-per-bug` active (the crash that necessitated a manual `--resume` may have happened mid-attempt, before Step 6's own teardown ran), perform the same single-attempt sweep Step 6 does: `adev worktree remove --slug bugfix-<issue-id>` for the in-flight bug's worktree, if any. Same failure handling as Step 6 — `REMOVE_FAILED` logs a non-blocking advisory and the turn proceeds anyway; never retried.
 
-- **`--max-priority` fail-fast validation:** once `run_id` is resolved (fresh or resumed — a run must exist before `finish` can be called below), validate `--max-priority <p>` if it was passed: `<p>` must be exactly one of `P0`, `P1`, `P2`, `P3`, `P4`. `P0`/`P1` are legal here — this is not the old rejection; only a value outside `P0`-`P4` is malformed. Omitting the flag resolves to `P3` (BEH-9, identical to today's behavior). On a malformed value (`INVALID_PRIORITY_BOUND`, BEH-10): halt immediately, before selecting any bug — go straight to Step 5 (Finish) with `--status blocked`, naming the rejected value in the finish note; Step 5 then prints the literal `ADEV-BUGFIXLOOP: BLOCKED` token (BEH-10). This check runs on every turn, including resumed ones — `--max-priority` (like `--max-turns`, `--github-sync`, `--worktree-per-bug`, `--auto-commit`) is one of the original invocation's flags Step 6 re-passes on every self-re-invocation (see Step 6).
+- **`--max-priority` fail-fast validation:** once `run_id` is resolved (fresh or resumed — a run must exist before `finish` can be called below), validate `--max-priority <p>` if it was passed: `<p>` must be exactly one of `P0`, `P1`, `P2`, `P3`, `P4`. `P0`/`P1` are legal here — this is not the old rejection; only a value outside `P0`-`P4` is malformed. Omitting the flag resolves to `P3` (BEH-9, identical to today's behavior). On a malformed value (`INVALID_PRIORITY_BOUND`, BEH-10): halt immediately, before selecting any bug — go straight to Step 5 (Finish) with `--status blocked`, naming the rejected value in the finish note; Step 5 then prints the literal `ADEV-BUGFIXLOOP: BLOCKED` token (BEH-10). This check runs on every turn, including resumed ones — `--max-priority` (like `--max-turns`, `--github-sync`, `--worktree-per-bug`, `--auto-commit`, `--epic`) is one of the original invocation's flags Step 6 re-passes on every self-re-invocation (see Step 6).
 
 - **Freshness guard:** once `run_id` is resolved (fresh or resumed), check branch freshness before the Step 1 status/budget guard:
 
@@ -85,12 +86,12 @@ adev bugfix-loop guard --run-id <run_id> --json
 If `--github-sync` was set, inbound sync already ran in Step 0 — candidates below reflect the latest sync for this turn.
 
 ```bash
-adev issues next --type bug --max-priority <resolved-max-priority> --json
+adev issues next --type bug --max-priority <resolved-max-priority> [--epic <id>] --json
 ```
 
-`<resolved-max-priority>` is the value Step 0 already validated — `--max-priority` as passed, or `P3` if the flag was omitted (BEH-9). Do not redirect or suppress this call's stderr: at `P0`/`P1`, `adev issues next` prints the effective excluded-module set to stderr (BEH-7's floor, widened-bound visibility) — that output must reach this turn's transcript verbatim (BEH-12).
+`<resolved-max-priority>` is the value Step 0 already validated — `--max-priority` as passed, or `P3` if the flag was omitted (BEH-9). Do not redirect or suppress this call's stderr: at `P0`/`P1`, `adev issues next` prints the effective excluded-module set to stderr (BEH-7's floor, widened-bound visibility) — that output must reach this turn's transcript verbatim (BEH-12). Pass `--epic <id>` only when the original invocation named one (adev-plugin-j2ev.1) — the same value carried on `create` in Step 0, restricting candidates to that epic's own children (`<id>.N`) by plain id-prefix match; dependency resolution still consults the full board regardless of scoping.
 
-If the result's `bug` is `null`: the board is drained. Go to Step 5 with `--status complete`.
+If the result's `bug` is `null`: either the board is drained, or (when `--epic` is set) this epic's own eligible backlog is drained while unrelated bugs elsewhere remain open — the loop cannot distinguish the two from this result alone, and doesn't need to: either way there is nothing left to select. Go to Step 5 with `--status complete`.
 
 ## Step 3: Claim (bounded 3-retry)
 
@@ -224,7 +225,7 @@ Print `ADEV-BUGFIXLOOP: <token-from-result>` as the **final line** (the last lin
 
 This is this turn's own last action — no human approval, confirmation, or manual re-entry:
 
-Immediately re-invoke `/adev:bugfix-loop --resume --resume-run-id <run_id>` **plus every other flag the original invocation was given** (`--max-bugs`, `--max-turns`, `--github-sync`, `--worktree-per-bug`, `--auto-commit`, `--max-priority`) via the Skill tool — a self-re-invocation is a continuation of the same run, not a fresh invocation with defaults, so its configuration carries forward unchanged turn to turn. The re-invocation starts a fresh turn with a clean context. **Ending this turn's response without re-invoking (when not terminal) is a loop failure.**
+Immediately re-invoke `/adev:bugfix-loop --resume --resume-run-id <run_id>` **plus every other flag the original invocation was given** (`--max-bugs`, `--max-turns`, `--github-sync`, `--worktree-per-bug`, `--auto-commit`, `--max-priority`, `--epic`) via the Skill tool — a self-re-invocation is a continuation of the same run, not a fresh invocation with defaults, so its configuration carries forward unchanged turn to turn. The re-invocation starts a fresh turn with a clean context. **Ending this turn's response without re-invoking (when not terminal) is a loop failure.**
 
 ## Failure Modes
 
