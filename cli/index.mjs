@@ -38,14 +38,40 @@ function heading(msg) {
   console.log(`\n  ${msg}\n`);
 }
 
-async function ask(question) {
-  const rl = createInterface({ input: process.stdin, output: process.stdout });
-  return new Promise((resolve) => {
-    rl.question(`  ${question} `, (answer) => {
-      rl.close();
-      resolve(answer.trim().toLowerCase());
-    });
-  });
+// Lazily created, then reused for every ask() call in this process — both
+// the readline.Interface AND its async line iterator. Node's readline,
+// fed piped (non-TTY) stdin containing more than one line, only reliably
+// delivers the FIRST line to `rl.question()`'s one-shot 'line' listener; a
+// second `.question()` call (whether on a fresh interface or the same one)
+// hangs forever waiting for a 'line' event that already fired and was
+// consumed (visible as "Detected unsettled top-level await"). This only
+// surfaced once a flow needed two sequential prompts in the common case
+// (the config-dir picker introduced alongside install/uninstall scope
+// selection) — one `ask()` call per run never hit it. Pulling from the
+// interface's own async iterator instead of `.question()` does not have
+// this problem: it is the documented way to read successive lines and
+// correctly serves one buffered line per call, TTY or piped alike.
+let sharedReadline = null;
+let sharedLineIterator = null;
+
+function ask(question) {
+  if (!sharedReadline) {
+    sharedReadline = createInterface({ input: process.stdin, output: process.stdout });
+    sharedLineIterator = sharedReadline[Symbol.asyncIterator]();
+  }
+  process.stdout.write(`  ${question} `);
+  return sharedLineIterator.next().then(({ value, done }) => (done ? "" : value).trim().toLowerCase());
+}
+
+/** Release the readline interface once no more prompts are expected — an
+ * open interface holds a real TTY's stdin resumed, which keeps the process
+ * alive after `dispatch()` resolves. */
+function closeAsk() {
+  if (sharedReadline) {
+    sharedReadline.close();
+    sharedReadline = null;
+    sharedLineIterator = null;
+  }
 }
 
 /**
@@ -2230,6 +2256,7 @@ const isDirectRun = (() => {
 
 if (isDirectRun) {
   await dispatch(process.argv);
+  closeAsk();
 }
 
 export { VERB_REGISTRY, cmdExtension, dispatch, printVerbRegistry, stripAnsi };
