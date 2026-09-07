@@ -109,10 +109,10 @@ quality_dimensions:
     unknown_when: "the spec frontmatter carries no milestone: field to check at all"
 
   - id: duplicate_detection_reasoning_grounded
-    criterion: "Does the Duplicate Detection pass compare the new spec's title and behavioral contract against create-order.spec.md's actual content, rather than asserting 'no duplicate' with nothing to point to?"
+    criterion: "Does the Duplicate Detection pass compare the new spec's title and behavioral contract against shipping-rates.spec.md's actual content -- the fixture's planted near-duplicate, titled identically to the capability this scenario asks /adev:specify to author -- rather than asserting 'no duplicate' with nothing to point to?"
     reference: "Duplicate Detection (All Modes), in skills/specify/SKILL.md"
-    met_when: "the run's trace shows create-order.spec.md's title or behavioral contract was read and compared before concluding no duplicate exists"
-    not_met_when: "the run reports no duplicate with no evidence any existing spec in the module was read for comparison"
+    met_when: "the run's trace shows shipping-rates.spec.md's title or behavioral contract was read and compared, and either the ⚠ possible-duplicate prompt fired naming it or the run's reasoning explains why an identically-titled existing spec is not actually the same capability"
+    not_met_when: "the run reports no duplicate with no evidence shipping-rates.spec.md specifically was read or considered, despite sharing the new spec's exact title"
     unknown_when: "the module directory listing at Duplicate Detection time is not captured by the scenario"
 
 layer3_max_points: 25
