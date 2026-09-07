@@ -325,7 +325,9 @@ The warning is informational; it does NOT block charter creation. Do not auto-up
 
 ## Step 5b: Product.md Bootstrap
 
-> **Skip this step entirely if:** the user passed `--no-bootstrap`, OR if `--module <name>` was used (revision mode — no new charter is being created).
+> **Skip this step entirely if:** the user passed `--no-bootstrap`, OR if `--module <name>` was used (revision mode — no new charter is being created) AND `.context-index/specs/product.md` does not exist (nothing to append to, and bootstrapping a new product.md is out of scope for a revision).
+>
+> **If `--module <name>` was used and `.context-index/specs/product.md` DOES exist:** skip 5b-1 through 5b-3 (first-charter detection and bootstrap do not apply to a revision) and go directly to **5b-4: Module Map Append**, so the revised module's row stays in sync (adev-plugin-eval-harness-xj3k.7).
 
 This step runs immediately after the charter is written (Step 5). It keeps `product.md` in sync with the growing set of charters.
 
