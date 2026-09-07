@@ -31,3 +31,4 @@
 {"issue_id":"adev-plugin-reviewer-tier-not-applied-wohx","attempts":1,"updated_at":"2026-09-06T06:29:37.531Z","last_verdict":"PASS","curr_blockers":[],"parked_reason":null}
 {"issue_id":"issue-p1uqr8","attempts":1,"updated_at":"2026-09-07T11:26:53.657Z","last_verdict":"PASS","curr_blockers":[],"parked_reason":null}
 {"issue_id":"adev-plugin-eval-harness-xj3k.3","attempts":1,"updated_at":"2026-09-07T11:33:20.241Z","last_verdict":"PASS","curr_blockers":[],"parked_reason":null}
+{"issue_id":"adev-plugin-eval-harness-xj3k.1","attempts":1,"updated_at":"2026-09-07T11:35:19.117Z","last_verdict":"PASS","curr_blockers":[],"parked_reason":null}
