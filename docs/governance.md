@@ -174,6 +174,25 @@ review/validate gate machinery documented above. See
 for the full chain, and [Configuration Reference](configuration.md#test_policy-test-depth--granularity)
 for the `test_policy` manifest block that supplies the other axis (granularity).
 
+### Project risk tier — which `risk-policies.yaml` you start from
+
+`risk_level` (above) is per-spec. **Risk tier** is per-project: at `/adev:init` Step 7.0 you
+characterize the whole project's posture, and that choice picks which `risk-policies.yaml` (and,
+for the two non-default tiers, which `review.yaml`/`validate.yaml` overlay) gets seeded. It is
+orthogonal to `domain` — a `data-engineering` project can be any tier, and a `software` project
+can be any tier.
+
+| Tier | Every risk level gets | Reviewer/check registry effect |
+|---|---|---|
+| `prototype` | `require_hitl_approval: false`, `review_mode`/`validate_mode`/`implement_mode: quick`, `test_depth: minimal` (review is never skipped — just fast) | Bundled reviewers softened to `severity_cap: warning`; `validate.check-11-visual-verification` disabled; spec/constitution compliance downgraded to `warning` |
+| `standard` (default) | Framework defaults, unchanged since before tiers existed | No overlay — the bundled domain default runs exactly as documented above |
+| `regulated` | `require_hitl_approval: true`, `review_mode`/`validate_mode`/`implement_mode: full`, `test_depth: thorough` | `structural-architect`/`security-reviewer` re-enabled (off by default in the bundled `software` domain); three checks escalated to `error`; a `project.regulated-compliance` stub check appended |
+
+The choice is written to `manifest.yaml` as a top-level `risk_tier: <name>` key (a project with no
+key resolves to `standard`). Changing tier on a project whose `review.yaml`/`validate.yaml` are
+already materialized is not yet a supported re-adoption flow — see
+`.context-index/specs/features/setup/risk-tier-bundles.spec.md`.
+
 ### `sensitive-paths.yaml` — extend-only overlay
 
 The test-depth floor raises a task's assigned depth to `thorough` when its target paths match

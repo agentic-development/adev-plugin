@@ -499,6 +499,27 @@ To reset all customizations and return to the bundled defaults, change `domain:`
 
 ---
 
+## Risk Tier
+
+Risk tier is a second, project-level axis orthogonal to domain — domain selects a bundle by "what
+kind of software," risk tier selects one by "how much scrutiny it needs." It is set at
+`/adev:init` Step 7.0 (only when governance is opted into) as a top-level `risk_tier` key:
+
+```yaml
+# .context-index/manifest.yaml
+risk_tier: standard   # prototype | standard (default) | regulated
+```
+
+A project with no `risk_tier` key resolves to `standard` — `resolveRiskTier()` in
+`lib/risk-tiers/resolve.mjs` implements this, mirroring `resolveDomain()`'s shape but with no
+charter/module precedence chain, since risk tier characterizes the whole project rather than a
+per-spec or per-module setting. The tier selects which `risk-policies.yaml` gets scaffolded and,
+for `prototype`/`regulated`, which `review.yaml`/`validate.yaml` overlay is applied on top of the
+resolved domain's bundle — see [Governance → Project risk tier](governance.md#project-risk-tier--which-risk-policiesyaml-you-start-from)
+for the full table and mechanism.
+
+---
+
 ## governance/review.yaml
 
 `governance/review.yaml` is the project-level overlay for `/adev:review-specs`. It lives at `.context-index/governance/review.yaml` and is merged on top of the active domain's `reviewers.yaml`. Governance entries win on ID conflict, so this file is the right place to suppress, replace, or augment domain-provided reviewers.
