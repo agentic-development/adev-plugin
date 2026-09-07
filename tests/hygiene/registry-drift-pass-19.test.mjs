@@ -301,7 +301,7 @@ test(
 );
 
 test(
-  "every finding from the pass is info except the disabled-entry sub-audit",
+  "every finding from the pass is info except the two warning sub-audits",
   withProject(async (ctx) => {
     addStarterEntry(ctx, "gates", { id: "new-gate" });
     seedEntry(ctx, "validate", { id: "project.custom-check", source: "project" });
@@ -309,10 +309,56 @@ test(
     seedEntry(ctx, "diagnostics", { id: "d1", source: "bundled", runner: "plugin:x.mjs" });
     const findings = await runPass19(ctx);
     assert.ok(findings.length > 0, "fixture should produce findings");
+    const WARN_IDS = new Set(["hygiene/disabled-bundled-entry", "hygiene/context-pack-divergence"]);
     for (const f of findings) {
-      const expected = f.id === "hygiene/disabled-bundled-entry" ? "warning" : "info";
+      const expected = WARN_IDS.has(f.id) ? "warning" : "info";
       assert.equal(f.severity, expected, `${f.id} severity`);
     }
+  }),
+);
+
+test(
+  "a context_pack diverging from the domain source is flagged, without printing values",
+  withProject(async (ctx) => {
+    addStarterEntry(ctx, "review", { id: "consistency-analyzer", context_pack: "architecture" });
+    seedEntry(ctx, "review", {
+      id: "consistency-analyzer",
+      source: `domain:${DOMAIN}`,
+      context_pack: "base",
+    });
+    const findings = await runPass19(ctx);
+    const f = findings.find(
+      (x) => x.id === "hygiene/context-pack-divergence" && x.entry_id === "consistency-analyzer",
+    );
+    assert.ok(f, "expected a context-pack-divergence finding");
+    assert.equal(f.severity, "warning");
+    assert.equal(f.registry, "review");
+    assert.ok(!f.message.includes("architecture"), "message must not print the starter's value");
+    assert.ok(!f.message.includes("base"), "message must not print the project's value");
+  }),
+);
+
+test(
+  "a matching context_pack produces no divergence finding",
+  withProject(async (ctx) => {
+    addStarterEntry(ctx, "review", { id: "consistency-analyzer", context_pack: "consistency" });
+    seedEntry(ctx, "review", {
+      id: "consistency-analyzer",
+      source: `domain:${DOMAIN}`,
+      context_pack: "consistency",
+    });
+    const findings = await runPass19(ctx);
+    assert.equal(findings.filter((f) => f.id === "hygiene/context-pack-divergence").length, 0);
+  }),
+);
+
+test(
+  "a diverging context_pack on a project-sourced entry is NOT flagged",
+  withProject(async (ctx) => {
+    addStarterEntry(ctx, "review", { id: "own-reviewer", context_pack: "architecture" });
+    seedEntry(ctx, "review", { id: "own-reviewer", source: "project", context_pack: "base" });
+    const findings = await runPass19(ctx);
+    assert.equal(findings.filter((f) => f.id === "hygiene/context-pack-divergence").length, 0);
   }),
 );
 

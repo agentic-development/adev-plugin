@@ -291,7 +291,7 @@ governance drift [--registry <validate|review|diagnostics|gates>] [--json]
 
 Materialization is **write-once**: a second run preserves the original stamp verbatim, so an unchanged effective set produces byte-identical output. Entries already on disk keep their positions and their bytes; contributed entries are appended; comments and sibling keys survive. Exit 1 covers an argument error, an unknown or exempt registry, a containment refusal, and the two write refusals `MATERIALIZE_LOAD_INCOMPLETE` (a row failed to load) and `MATERIALIZE_WOULD_DROP` (a row would be lost).
 
-`governance drift` is Hygiene Audit Pass 19 — read-only, advisory, always exit 0 on a scan. It reports `hygiene/unadopted-upgrade` (info), `hygiene/project-addition` (info), `hygiene/disabled-bundled-entry` (WARN) and `hygiene/non-project-execution-field` (info). Field **names** are printed, never field values, and an unmaterialized marked registry is reported rather than read.
+`governance drift` is Hygiene Audit Pass 19 — read-only, advisory, always exit 0 on a scan. It reports `hygiene/unadopted-upgrade` (info), `hygiene/project-addition` (info), `hygiene/disabled-bundled-entry` (WARN), `hygiene/non-project-execution-field` (info), and `hygiene/context-pack-divergence` (WARN) — a `bundled`/`domain:*` `review.yaml` entry whose `context_pack` no longer matches its starter's current value for the same id. Field **names** are printed, never field values, and an unmaterialized marked registry is reported rather than read.
 
 **Example:**
 ```

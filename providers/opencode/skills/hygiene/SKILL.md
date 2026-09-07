@@ -924,11 +924,11 @@ Header notes:
 
 ## Audit Pass 19: Governance Registry Drift
 
-**Goal:** Surface divergence between the project's four governance registries — `validate.yaml`, `review.yaml`, `diagnostics.yaml`, `gates.yaml` — and the starters they came from, plus two sub-audits the divergence half structurally cannot see. Purpose is **visibility, not nagging**: divergence is the expected outcome of customization and the pass never blocks.
+**Goal:** Surface divergence between the project's four governance registries — `validate.yaml`, `review.yaml`, `diagnostics.yaml`, `gates.yaml` — and the starters they came from, plus sub-audits the divergence half structurally cannot see. Purpose is **visibility, not nagging**: divergence is the expected outcome of customization and the pass never blocks.
 
 **Why this pass carries weight now.** Run-time composition was removed (`explicit-governance-registries.spec.md`): a new bundled or domain entry no longer activates by itself — someone must run `adev governance materialize`. **Pass 19 is now the only channel through which a plugin or domain upgrade becomes visible.** `boundaries.yaml` is out of remit: no starter to diverge from, no execution-bearing field.
 
-**Severity policy.** All findings from this pass are **INFO**, not WARN, with one exception: `hygiene/disabled-bundled-entry` is WARN, because switching off a bundled check is a decision someone should see. No finding gates the `/adev:hygiene` exit code, and the verb exits 0 regardless of finding count.
+**Severity policy.** All findings are **INFO** except `hygiene/disabled-bundled-entry` and `hygiene/context-pack-divergence` (WARN). No finding gates the exit code.
 
 **Steps:**
 
@@ -943,6 +943,7 @@ Header notes:
 | Severity | Finding id | Trigger |
 |---|---|---|
 | `warning` | `hygiene/disabled-bundled-entry` | `enabled: false` on an entry whose `source` is `bundled` or `domain:*` — confirm it was meant to be off, and that `disabled_reason` says why |
+| `warning` | `hygiene/context-pack-divergence` | `review.yaml` bundled/domain entry's `context_pack` diverges from starter |
 | `info` | `hygiene/unadopted-upgrade` | The starter declares an id the project's registry does not — adopt with `adev governance materialize --registry <name>`, or record the decision not to |
 | `info` | `hygiene/project-addition` | The project declares an id the starter does not, `source: project` — customization |
 | `info` | `hygiene/non-project-execution-field` | A non-`project` entry carries `command`, `runner`, `prompt` or `pattern` — confirm it is meant to run |
