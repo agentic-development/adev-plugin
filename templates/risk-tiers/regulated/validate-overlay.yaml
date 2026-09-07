@@ -1,0 +1,23 @@
+# Validate registry overlay for the "regulated" risk tier.
+# Applied on top of the resolved domain's scaffolded validate.yaml during
+# /adev:init Step 7d.0, before any manual customization. Escalates
+# non-blocking checks to error severity so nothing regulated slips through
+# as PASS_WITH_NOTES, and appends a stub compliance check the operator is
+# expected to fill in (stub prompt scaffolded by the wizard at
+# .context-index/prompts/regulated-compliance-check.md — see Step 7d.0).
+# See lib/risk-tiers/merge-validate-overlay.mjs.
+
+severity_overrides:
+  validate.check-1.5-source-manifest: error
+  validate.check-9-transition-gates: error
+  validate.check-14-gate-executability: error
+
+extra_checks:
+  - id: project.regulated-compliance
+    name: "Regulated Compliance Review"
+    kind: subagent-review
+    profile: reviewer-capable
+    context_pack: base
+    severity: error
+    prompt: .context-index/prompts/regulated-compliance-check.md
+    description: "Verify changes against this project's regulatory/compliance requirements (edit the stub prompt to name them)."
