@@ -108,3 +108,4 @@
 {"event":"validator_report","step":"validate","validator":"validate.check-4-constitution","severity":"error","verdict":"PASS","notes":"No violations. No external deps added (empty package.json diff), no inline-Node in edited SKILL.md, pure ESM, kebab-case/camelCase conventions followed, all 15 commits carry Spec: trailer with sequential Plan-task numbers.","ts":"2026-08-20T02:42:09.454Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-08-20T02:43:25.449Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"templates/manifest-template.yaml","drift_at":"2026-08-21T18:40:23.365Z","ts":"2026-08-21T18:40:23.365Z"}
+{"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-08-23T20:25:45.177Z","ts":"2026-08-23T20:25:45.177Z"}

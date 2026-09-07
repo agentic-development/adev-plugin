@@ -94,3 +94,4 @@
 {"event":"validator_report","step":"validate","validator":"validate.check-1.5-source-manifest","severity":"warning","verdict":"PASS","notes":"Source manifest matches (sha: b1ea545). All 18 manifest files confirmed git-tracked (never-committed check).","ts":"2026-08-21T20:14:12.782Z"}
 {"event":"step_completed","step":"validate","verdict":"FAIL","ts":"2026-08-21T20:15:19.548Z"}
 {"event":"code_drift_detected","drift_source":"docs/cli-reference.md","drift_at":"2026-08-22T22:48:50.289Z","ts":"2026-08-22T22:48:50.290Z"}
+{"event":"code_drift_detected","drift_source":"lib/bugfix-loop-commit.mjs","drift_at":"2026-08-23T20:23:22.119Z","ts":"2026-08-23T20:23:22.120Z"}

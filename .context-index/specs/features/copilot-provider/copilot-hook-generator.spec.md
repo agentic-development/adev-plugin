@@ -23,6 +23,7 @@ source-manifest:
     - tests/copilot-matcher.test.mjs
     - tests/copilot-tool-names.test.mjs
   computed-at: "2026-05-19T19:48:52.956Z"
+drift_detected: true
 ---
 
 # Live Spec: Copilot Hook Config Generator
