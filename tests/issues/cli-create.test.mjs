@@ -171,4 +171,41 @@ describe("adev issues create", () => {
     const found = readBoard(root).issues.find((i) => i.title === "No epic of its own");
     assert.equal(found.epicId, undefined);
   });
+
+  it("--affected-modules sets the field in the same create call (adev-plugin-j2ev.3)", () => {
+    // Without this, a bug is invisible to /adev:bugfix-loop from the moment
+    // it's filed until a separate `adev issues set-modules` call lands —
+    // create() alone never produced this field (BEH-10's fail-closed default
+    // is the ONLY reachable outcome otherwise).
+    const r = runCli(root, ["Filed with a module", "--type", "bug", "--affected-modules", "cli", "--json"]);
+    assert.equal(r.status, 0, r.stderr);
+    const parsed = JSON.parse(r.stdout);
+    assert.deepEqual(parsed.affected_modules, ["cli"]);
+
+    const found = readBoard(root).issues.find((i) => i.title === "Filed with a module");
+    assert.deepEqual(found.affected_modules, ["cli"]);
+  });
+
+  it("--affected-modules accepts a comma-separated list", () => {
+    const r = runCli(root, ["Two modules", "--affected-modules", "cli,lib", "--json"]);
+    assert.equal(r.status, 0, r.stderr);
+    assert.deepEqual(JSON.parse(r.stdout).affected_modules, ["cli", "lib"]);
+  });
+
+  it("leaves affected_modules unset when the flag is omitted (unchanged default)", () => {
+    const r = runCli(root, ["No module tag", "--json"]);
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(JSON.parse(r.stdout).affected_modules, undefined);
+  });
+
+  it("rejects an empty --affected-modules value", () => {
+    const r = runCli(root, ["Empty modules", "--affected-modules", " , "]);
+    assert.equal(r.status, 1);
+    assert.match(r.stderr, /at least one module slug is required/);
+
+    assert.equal(
+      readBoard(root).issues.find((i) => i.title === "Empty modules"),
+      undefined
+    );
+  });
 });
