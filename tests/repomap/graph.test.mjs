@@ -1,6 +1,10 @@
-import { describe, it } from 'node:test';
+import { describe, it, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildGraph } from '../../lib/repomap/graph.mjs';
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { buildGraph, getCommitHash } from '../../lib/repomap/graph.mjs';
 
 // Helper to build minimal parsedFiles entries
 function file(filePath, exports = [], imports = []) {
@@ -195,5 +199,62 @@ describe('buildGraph', () => {
     const graph = buildGraph(parsedFiles, PROJECT_ROOT, []);
 
     assert.equal(graph.edges.length, 0);
+  });
+});
+
+describe('getCommitHash — reads the analyzed root, not the ambient cwd (adev-plugin-eval-harness-xj3k.9)', () => {
+  // A caller driven from a different cwd (or a scenario/copy-based repomap
+  // run) must still record the commit of the tree actually being analyzed,
+  // not whatever repo happens to contain process.cwd() at call time.
+  const repos = [];
+  after(() => {
+    for (const dir of repos) rmSync(dir, { recursive: true, force: true });
+  });
+
+  function makeGitRepo(fileContent) {
+    const dir = mkdtempSync(join(tmpdir(), 'adev-repomap-commit-'));
+    repos.push(dir);
+    execFileSync('git', ['init', '-q'], { cwd: dir });
+    execFileSync('git', ['config', 'user.email', 'test@example.com'], { cwd: dir });
+    execFileSync('git', ['config', 'user.name', 'Test'], { cwd: dir });
+    writeFileSync(join(dir, 'file.txt'), fileContent);
+    execFileSync('git', ['add', '.'], { cwd: dir });
+    execFileSync('git', ['commit', '-q', '-m', 'init'], { cwd: dir });
+    return execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: dir, encoding: 'utf-8' }).trim();
+  }
+
+  it('returns the target root commit even when process.cwd() is a different repo', () => {
+    const targetHash = makeGitRepo('target');
+    const ambientHash = makeGitRepo('ambient');
+    const targetDir = repos[repos.length - 2];
+    const ambientDir = repos[repos.length - 1];
+
+    assert.notEqual(targetHash, ambientHash, 'test setup requires two distinct commits');
+
+    const originalCwd = process.cwd();
+    process.chdir(ambientDir);
+    try {
+      assert.equal(getCommitHash(targetDir), targetHash);
+    } finally {
+      process.chdir(originalCwd);
+    }
+  });
+
+  it('defaults to process.cwd() when no root is given (back-compat)', () => {
+    const hash = makeGitRepo('default-cwd');
+    const dir = repos[repos.length - 1];
+    const originalCwd = process.cwd();
+    process.chdir(dir);
+    try {
+      assert.equal(getCommitHash(), hash);
+    } finally {
+      process.chdir(originalCwd);
+    }
+  });
+
+  it('returns "unknown" for a non-git directory', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'adev-repomap-nogit-'));
+    repos.push(dir);
+    assert.equal(getCommitHash(dir), 'unknown');
   });
 });
