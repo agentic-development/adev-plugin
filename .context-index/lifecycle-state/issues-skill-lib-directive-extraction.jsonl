@@ -45,3 +45,4 @@
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-08-20T11:21:48.012Z"}
 {"event":"debug_intervention","kind":"debug","note":"adev issues epic list: bare positional collided with read-verb naming, silently minting an epic titled 'list'. Added a real list sub-verb.","ts":"2026-08-24T08:46:28.667Z"}
 {"event":"debug_intervention","kind":"debug","note":"Gate-timeout classification missed real execFileSync timeouts (ETIMEDOUT w/o killed+SIGTERM). Matched e.code===ETIMEDOUT alongside legacy check; exported GATE_TIMEOUT_MS; CLI stopped mirroring it.","ts":"2026-08-24T09:50:54.129Z"}
+{"event":"code_drift_detected","drift_source":"docs/cli-reference.md","drift_at":"2026-09-12T12:24:03.405Z","ts":"2026-09-12T12:24:03.406Z"}
