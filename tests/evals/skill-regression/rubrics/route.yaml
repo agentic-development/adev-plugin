@@ -86,7 +86,7 @@ quality_dimensions:
     reference: "Step 5: Report to User in skills/route/SKILL.md"
     met_when: "every assisted-agent or human-only task's guidance names a specific remedy action, such as /adev:specify or /adev:sample, tied to its lowest-scoring dimension"
     not_met_when: "a task routed assisted-agent or human-only has guidance that only restates its scores with no remedy action"
-    unknown_when: "every task in this run routes auto-agent, so no human-only guidance block is rendered"
+    unknown_when: "no task in this run routes assisted-agent or human-only, so no guidance block this criterion covers is rendered"
 
 layer3_max_points: 25
 required_element_points: 10
