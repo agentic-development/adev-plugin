@@ -214,14 +214,14 @@ Ask the operator to characterize the project's overall risk posture, distinct fr
       prototype  — throwaway prototype / internal tool. Lightest review and
                    validate rigor at every level; no HITL approval required.
       standard   — (default) today's framework defaults, unchanged.
-      regulated  — security-critical / compliance-bound. Full rigor and HITL
+      strict  — security-critical / compliance-bound. Full rigor and HITL
                    approval at every level, regardless of a spec's own
                    declared risk_level.
 ```
 
 Default to `standard` on an unanswered prompt. Write the chosen value as a top-level `risk_tier: <name>` key in `manifest.yaml`, alongside the existing top-level `domain:` key. Validate the choice against the closed set in `lib/risk-tiers/constants.mjs` (`RISK_TIER_NAMES`) before writing.
 
-**Bundle resolution.** For each config type below, `loadRiskTierConfig(<tier>, <configType>, pluginRoot)` (`lib/risk-tiers/tier-config.mjs`) resolves the bundle content: for the `standard` tier, `risk-policies` resolves to the legacy fixed path `templates/risk-policies-template.yaml` (unchanged since before tier selection existed) and every overlay type resolves to `null` (a bundled default with no tier overlay IS the standard tier — Steps 7c/7d proceed exactly as they did before this step existed). For `prototype`/`regulated`, `risk-policies` resolves to `templates/risk-tiers/<tier>/risk-policies.yaml`, and `review-overlay`/`validate-overlay` resolve to `templates/risk-tiers/<tier>/{review,validate}-overlay.yaml` if present.
+**Bundle resolution.** For each config type below, `loadRiskTierConfig(<tier>, <configType>, pluginRoot)` (`lib/risk-tiers/tier-config.mjs`) resolves the bundle content: for the `standard` tier, `risk-policies` resolves to the legacy fixed path `templates/risk-policies-template.yaml` (unchanged since before tier selection existed) and every overlay type resolves to `null` (a bundled default with no tier overlay IS the standard tier — Steps 7c/7d proceed exactly as they did before this step existed). For `prototype`/`strict`, `risk-policies` resolves to `templates/risk-tiers/<tier>/risk-policies.yaml`, and `review-overlay`/`validate-overlay` resolve to `templates/risk-tiers/<tier>/{review,validate}-overlay.yaml` if present.
 
 **Diagnostic Mode.** An existing project with no `risk_tier` key resolves to `standard` (`resolveRiskTier()`, `lib/risk-tiers/resolve.mjs`) with no prompt and no file rewrite — this step only runs interactively on a project's first pass through Step 7. Changing an already-materialized project's tier is a re-adoption action (like a domain upgrade), out of scope for this step; it is tracked separately (see `adev governance adopt`, adev-plugin-j7pq.5.2) rather than solved here with an ad hoc rewrite path that would conflict with that mechanism once it lands.
 
@@ -264,7 +264,7 @@ Default to `standard` on an unanswered prompt. Write the chosen value as a top-l
 - Copy `risk-policies.yaml` from the Step 7.0-resolved tier's `risk-policies` bundle (sensible
   defaults per tier — see Step 7.0's bundle resolution). The copied file carries a literal
   `test_depth` value per risk level (`thorough` / `standard` / `minimal`, or the tier's own values
-  for `prototype`/`regulated`) — these are real scalars in the template, not `{{ }}` placeholders,
+  for `prototype`/`strict`) — these are real scalars in the template, not `{{ }}` placeholders,
   so no substitution step runs here.
 - Do not emit `governance/sensitive-paths.yaml` on greenfield init. It is optional and
   extend-only — the built-in default applies until the project chooses to extend it. State this
@@ -358,7 +358,7 @@ If "re-classify": swap between reviewer / validate-check / quality-gate; ambiguo
 
 #### Step 7c.0: Apply risk tier overlay (if any)
 
-Before any customization prompt, load the resolved domain's bundled `reviewers.yaml` (`reviewers` array — same file `Step 7c.3`'s "three bundled reviewers" table below reflects) and the Step 7.0-resolved tier's `review-overlay` bundle. If the overlay is non-null (`prototype`/`regulated`), apply it with `applyReviewTierOverlay()` (`lib/risk-tiers/merge-review-overlay.mjs`) and use the **full result** — not just the changed entries — as the working set's starting `reviewers:` content. This matters because `governance/review.yaml` is a marked registry once written: an entry the write in Step 5 omits does not run, so a tier overlay that only touches two ids (e.g. `regulated` re-enabling `structural-architect`/`security-reviewer`) must still carry every other bundled reviewer through into the write, unmodified, or those reviewers silently stop running.
+Before any customization prompt, load the resolved domain's bundled `reviewers.yaml` (`reviewers` array — same file `Step 7c.3`'s "three bundled reviewers" table below reflects) and the Step 7.0-resolved tier's `review-overlay` bundle. If the overlay is non-null (`prototype`/`strict`), apply it with `applyReviewTierOverlay()` (`lib/risk-tiers/merge-review-overlay.mjs`) and use the **full result** — not just the changed entries — as the working set's starting `reviewers:` content. This matters because `governance/review.yaml` is a marked registry once written: an entry the write in Step 5 omits does not run, so a tier overlay that only touches two ids (e.g. `strict` re-enabling `structural-architect`/`security-reviewer`) must still carry every other bundled reviewer through into the write, unmodified, or those reviewers silently stop running.
 
 For the `standard` tier the overlay is `null` — proceed exactly as before this step existed, and skip straight to sub-step 1.
 
@@ -455,11 +455,11 @@ Before any customization, materialize the project's `governance/validate.yaml` f
 3. If `loadDomainConfig` returns `null` for the resolved domain (no starter shipped for this domain):
    - Fall back to `loadDomainConfig('software', 'validate', repoRoot, pluginRoot)` and write from the software starter.
    - Print exactly: `"No validate.yaml starter for domain '<domain>'; scaffolded from 'software' as fallback."`
-4. **Apply risk tier overlay (if any).** Call `loadRiskTierConfig(<Step 7.0-resolved tier>, 'validate-overlay', pluginRoot)` (`lib/risk-tiers/tier-config.mjs`). If it returns non-null (`prototype`/`regulated`), apply it to the just-written checks list with `applyValidateTierOverlay()` (`lib/risk-tiers/merge-validate-overlay.mjs`) and re-write `.context-index/governance/validate.yaml` with the result before moving on — this still counts as part of the automatic scaffold, not a user customization. For the `standard` tier this returns `null`; the file stays exactly as sub-step 2/3 wrote it.
+4. **Apply risk tier overlay (if any).** Call `loadRiskTierConfig(<Step 7.0-resolved tier>, 'validate-overlay', pluginRoot)` (`lib/risk-tiers/tier-config.mjs`). If it returns non-null (`prototype`/`strict`), apply it to the just-written checks list with `applyValidateTierOverlay()` (`lib/risk-tiers/merge-validate-overlay.mjs`) and re-write `.context-index/governance/validate.yaml` with the result before moving on — this still counts as part of the automatic scaffold, not a user customization. For the `standard` tier this returns `null`; the file stays exactly as sub-step 2/3 wrote it.
 5. If `.context-index/governance/validate.yaml` already exists: no-op (idempotent) — this includes skipping the tier overlay re-write, since re-applying it on every init run would fight any manual edits the project has since made to an existing file.
 6. Do NOT prompt the user — this scaffold step is automatic, like `gates.yaml`.
 
-**Stub prompts for tier-added checks.** If the applied overlay's `extra_checks` names a `prompt` path under `.context-index/prompts/` that does not yet exist, scaffold it with a TODO framing (same convention as the Step 7c.3 charter-derived reviewer stub) — for the `regulated` tier's `project.regulated-compliance` check, a one-line stub naming the check's purpose and a `TODO: name this project's specific regulatory/compliance requirements` line is enough; the operator fills in the rest before the check first runs for real.
+**Stub prompts for tier-added checks.** If the applied overlay's `extra_checks` names a `prompt` path under `.context-index/prompts/` that does not yet exist, scaffold it with a TODO framing (same convention as the Step 7c.3 charter-derived reviewer stub) — for the `strict` tier's `project.strict-compliance` check, a one-line stub naming the check's purpose and a `TODO: name this project's specific regulatory/compliance requirements` line is enough; the operator fills in the rest before the check first runs for real.
 
 Subsequent customization steps (7d.1–7d.5 below) operate on the already-scaffolded file.
 
@@ -566,7 +566,7 @@ After all sub-steps, print what was written:
   cleanly. See docs/governance.md for customization beyond this wizard.
 ```
 
-The "Risk tier" line always prints, using the Step 7.0 choice (or `standard` for a project that reached Step 7 without answering — Step 7.0 defaults there too). For `prototype`/`regulated`, append the overlay's effect in one clause, e.g. `Risk tier: regulated (2 reviewers re-enabled, 1 check added, 3 checks escalated to error)`.
+The "Risk tier" line always prints, using the Step 7.0 choice (or `standard` for a project that reached Step 7 without answering — Step 7.0 defaults there too). For `prototype`/`strict`, append the overlay's effect in one clause, e.g. `Risk tier: strict (2 reviewers re-enabled, 1 check added, 3 checks escalated to error)`.
 
 **Legacy gate migration (brownfield folded into Step 7a).** When running Step 7a on a project that already has a `gates:` block in `manifest.yaml` AND no `governance/gates.yaml`, print the legacy-gates notice before copying the template:
 

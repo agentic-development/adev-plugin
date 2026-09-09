@@ -19,8 +19,8 @@ describe('resolveRiskTier', () => {
     assert.deepStrictEqual(resolveRiskTier({ risk_tier: 'prototype' }), { resolved_tier: 'prototype', source: 'manifest' });
   });
 
-  it('resolves an explicit regulated tier', () => {
-    assert.deepStrictEqual(resolveRiskTier({ risk_tier: 'regulated' }), { resolved_tier: 'regulated', source: 'manifest' });
+  it('resolves an explicit strict tier', () => {
+    assert.deepStrictEqual(resolveRiskTier({ risk_tier: 'strict' }), { resolved_tier: 'strict', source: 'manifest' });
   });
 
   it('throws INVALID_RISK_TIER for an unrecognized value', () => {

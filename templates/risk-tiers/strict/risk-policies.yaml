@@ -1,5 +1,5 @@
-# risk-policies.yaml — "regulated" risk tier bundle
-# Seeded by /adev:init when the operator selects the "regulated" project risk
+# risk-policies.yaml — "strict" risk tier bundle
+# Seeded by /adev:init when the operator selects the "strict" project risk
 # tier (security-critical / compliance-bound work). Every level runs full
 # rigor and requires human-in-the-loop approval — a spec's own declared
 # risk_level still selects test_depth's meaning elsewhere, but this tier

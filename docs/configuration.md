@@ -507,14 +507,14 @@ kind of software," risk tier selects one by "how much scrutiny it needs." It is 
 
 ```yaml
 # .context-index/manifest.yaml
-risk_tier: standard   # prototype | standard (default) | regulated
+risk_tier: standard   # prototype | standard (default) | strict
 ```
 
 A project with no `risk_tier` key resolves to `standard` — `resolveRiskTier()` in
 `lib/risk-tiers/resolve.mjs` implements this, mirroring `resolveDomain()`'s shape but with no
 charter/module precedence chain, since risk tier characterizes the whole project rather than a
 per-spec or per-module setting. The tier selects which `risk-policies.yaml` gets scaffolded and,
-for `prototype`/`regulated`, which `review.yaml`/`validate.yaml` overlay is applied on top of the
+for `prototype`/`strict`, which `review.yaml`/`validate.yaml` overlay is applied on top of the
 resolved domain's bundle — see [Governance → Project risk tier](governance.md#project-risk-tier--which-risk-policiesyaml-you-start-from)
 for the full table and mechanism.
 

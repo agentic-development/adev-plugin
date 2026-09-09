@@ -62,4 +62,4 @@ Unknown formats raise `MALFORMED_SYNC_TARGETS`. Adding a new format requires upd
 | Capability | Description | Priority | Milestone | Status |
 |---|---|---|---|---|
 | Interactive onboarding & help Q&A | `using-adev` answers ad hoc "how does X work" and "what should I do" questions, using `docs/*.md` first and skill source as fallback, explaining routing options before deferring to `/adev:work` | must-have | | validated |
-| Risk Tier Bundles | `/adev:init` Step 7 selects a project-level risk tier (`prototype`/`standard`/`regulated`), orthogonal to domain, seeding a correspondingly different `risk-policies.yaml` and `review.yaml`/`validate.yaml` overlay (`lib/risk-tiers/`) | should-have | | implemented |
+| Risk Tier Bundles | `/adev:init` Step 7 selects a project-level risk tier (`prototype`/`standard`/`strict`), orthogonal to domain, seeding a correspondingly different `risk-policies.yaml` and `review.yaml`/`validate.yaml` overlay (`lib/risk-tiers/`) | should-have | | implemented |

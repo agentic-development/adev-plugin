@@ -33,10 +33,10 @@ describe('applyValidateTierOverlay', () => {
 
   it('appends extra_checks that do not collide with existing ids', () => {
     const { checks, warnings } = applyValidateTierOverlay(BASE_VALIDATE, {
-      extra_checks: [{ id: 'project.regulated-compliance', kind: 'subagent-review' }],
+      extra_checks: [{ id: 'project.strict-compliance', kind: 'subagent-review' }],
     });
     assert.equal(checks.length, 3);
-    assert.ok(checks.find(c => c.id === 'project.regulated-compliance'));
+    assert.ok(checks.find(c => c.id === 'project.strict-compliance'));
     assert.deepStrictEqual(warnings, []);
   });
 
@@ -51,12 +51,12 @@ describe('applyValidateTierOverlay', () => {
   it('warns and skips a second extra_checks entry colliding with an earlier one in the same overlay', () => {
     const { checks, warnings } = applyValidateTierOverlay(BASE_VALIDATE, {
       extra_checks: [
-        { id: 'project.regulated-compliance', kind: 'subagent-review' },
-        { id: 'project.regulated-compliance', kind: 'quality-gate' },
+        { id: 'project.strict-compliance', kind: 'subagent-review' },
+        { id: 'project.strict-compliance', kind: 'quality-gate' },
       ],
     });
     assert.equal(checks.length, 3);
-    assert.equal(checks.filter(c => c.id === 'project.regulated-compliance').length, 1);
+    assert.equal(checks.filter(c => c.id === 'project.strict-compliance').length, 1);
     assert.equal(warnings.length, 1);
     assert.equal(warnings[0].code, 'RISK_TIER_OVERLAY_DUPLICATE_ID');
   });

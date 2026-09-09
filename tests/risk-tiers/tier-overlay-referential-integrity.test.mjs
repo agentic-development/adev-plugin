@@ -19,7 +19,7 @@ const softwareReviewers = loadDomainConfig('software', 'reviewers', PLUGIN_ROOT,
 const softwareValidate = loadDomainConfig('software', 'validate', PLUGIN_ROOT, PLUGIN_ROOT);
 
 describe('tier overlays vs. bundled software domain', () => {
-  for (const tier of ['prototype', 'regulated']) {
+  for (const tier of ['prototype', 'strict']) {
     it(`${tier} review-overlay names only real reviewer ids`, () => {
       const overlay = loadRiskTierConfig(tier, 'review-overlay', PLUGIN_ROOT);
       const { warnings } = applyReviewTierOverlay(softwareReviewers, overlay);
@@ -33,8 +33,8 @@ describe('tier overlays vs. bundled software domain', () => {
     });
   }
 
-  it('regulated review-overlay re-enables reviewers the domain disabled by default', () => {
-    const overlay = loadRiskTierConfig('regulated', 'review-overlay', PLUGIN_ROOT);
+  it('strict review-overlay re-enables reviewers the domain disabled by default', () => {
+    const overlay = loadRiskTierConfig('strict', 'review-overlay', PLUGIN_ROOT);
     const { reviewers } = applyReviewTierOverlay(softwareReviewers, overlay);
     for (const id of overlay.enable) {
       assert.equal(reviewers.find(r => r.id === id).enabled, true);

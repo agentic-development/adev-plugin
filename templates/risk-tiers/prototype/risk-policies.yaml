@@ -3,7 +3,7 @@
 # tier (throwaway prototype / internal tool, minimal review overhead). See
 # templates/risk-policies-template.yaml for the "standard" tier (the
 # framework's original, unconditional default) and
-# templates/risk-tiers/regulated/risk-policies.yaml for the opposite end.
+# templates/risk-tiers/strict/risk-policies.yaml for the opposite end.
 #
 # Every level still requires review — /adev:init never scaffolds a policy
 # that skips review outright — but every level runs at the lightest

@@ -35,20 +35,20 @@ describe('loadRiskTierConfig', () => {
     assert.ok(overlay.disable.includes('validate.check-11-visual-verification'));
   });
 
-  it('resolves regulated risk-policies with full rigor', () => {
-    const config = loadRiskTierConfig('regulated', 'risk-policies', PLUGIN_ROOT);
+  it('resolves strict risk-policies with full rigor', () => {
+    const config = loadRiskTierConfig('strict', 'risk-policies', PLUGIN_ROOT);
     assert.equal(config.policies.low.require_hitl_approval, true);
     assert.equal(config.policies.low.test_depth, 'thorough');
   });
 
-  it('resolves regulated review-overlay', () => {
-    const overlay = loadRiskTierConfig('regulated', 'review-overlay', PLUGIN_ROOT);
+  it('resolves strict review-overlay', () => {
+    const overlay = loadRiskTierConfig('strict', 'review-overlay', PLUGIN_ROOT);
     assert.deepStrictEqual(overlay.enable, ['structural-architect', 'security-reviewer']);
   });
 
-  it('resolves regulated validate-overlay with extra_checks', () => {
-    const overlay = loadRiskTierConfig('regulated', 'validate-overlay', PLUGIN_ROOT);
-    assert.equal(overlay.extra_checks[0].id, 'project.regulated-compliance');
+  it('resolves strict validate-overlay with extra_checks', () => {
+    const overlay = loadRiskTierConfig('strict', 'validate-overlay', PLUGIN_ROOT);
+    assert.equal(overlay.extra_checks[0].id, 'project.strict-compliance');
   });
 
   it('throws INVALID_RISK_TIER_ARG for an unrecognized tier', () => {
@@ -75,9 +75,9 @@ describe('loadRiskTierConfig — error cases (fake plugin root)', () => {
   it('throws RISK_TIER_CONFIG_TOO_LARGE for files exceeding 512KB', () => {
     const fakePluginRoot = createTempDir();
     const largeContent = 'x'.repeat(512 * 1024 + 1);
-    writeFixture(fakePluginRoot, 'templates/risk-tiers/regulated/validate-overlay.yaml', largeContent);
+    writeFixture(fakePluginRoot, 'templates/risk-tiers/strict/validate-overlay.yaml', largeContent);
     assert.throws(
-      () => loadRiskTierConfig('regulated', 'validate-overlay', fakePluginRoot),
+      () => loadRiskTierConfig('strict', 'validate-overlay', fakePluginRoot),
       (err) => err.code === 'RISK_TIER_CONFIG_TOO_LARGE'
     );
     cleanupTempDir(fakePluginRoot);

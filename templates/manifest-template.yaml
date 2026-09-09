@@ -19,7 +19,7 @@ project:
 
 # Project risk tier. Set by /adev:init Step 7.0 when governance is scaffolded.
 # Selects which risk-policies.yaml / review.yaml / validate.yaml bundle gets
-# seeded (prototype | standard | regulated). Orthogonal to domain above — it
+# seeded (prototype | standard | strict). Orthogonal to domain above — it
 # controls how much scrutiny the project needs, not what kind of software it
 # is. The bundled default is "standard" (unchanged framework defaults).
 # risk_tier: standard

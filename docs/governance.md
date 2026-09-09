@@ -186,7 +186,7 @@ can be any tier.
 |---|---|---|
 | `prototype` | `require_hitl_approval: false`, `review_mode`/`validate_mode`/`implement_mode: quick`, `test_depth: minimal` (review is never skipped — just fast) | Bundled reviewers softened to `severity_cap: warning`; `validate.check-11-visual-verification` disabled; spec/constitution compliance downgraded to `warning` |
 | `standard` (default) | Framework defaults, unchanged since before tiers existed | No overlay — the bundled domain default runs exactly as documented above |
-| `regulated` | `require_hitl_approval: true`, `review_mode`/`validate_mode`/`implement_mode: full`, `test_depth: thorough` | `structural-architect`/`security-reviewer` re-enabled (off by default in the bundled `software` domain); three checks escalated to `error`; a `project.regulated-compliance` stub check appended |
+| `strict` | `require_hitl_approval: true`, `review_mode`/`validate_mode`/`implement_mode: full`, `test_depth: thorough` | `structural-architect`/`security-reviewer` re-enabled (off by default in the bundled `software` domain); three checks escalated to `error`; a `project.strict-compliance` stub check appended |
 
 The choice is written to `manifest.yaml` as a top-level `risk_tier: <name>` key (a project with no
 key resolves to `standard`). Changing tier on a project whose `review.yaml`/`validate.yaml` are
