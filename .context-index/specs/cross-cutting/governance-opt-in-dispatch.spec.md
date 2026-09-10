@@ -1,6 +1,6 @@
 ---
 partial_schema: spec@1
-status: implemented
+status: validated
 mode: cross-cutting
 affects:
   - setup
