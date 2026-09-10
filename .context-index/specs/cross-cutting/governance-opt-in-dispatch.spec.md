@@ -1,6 +1,6 @@
 ---
 partial_schema: spec@1
-status: review-passed
+status: implemented
 mode: cross-cutting
 affects:
   - setup
@@ -10,7 +10,34 @@ affects:
 kind: behavioral
 revision: 3
 created: 2026-09-09
-updated: 2026-09-09
+updated: 2026-09-10
+source-manifest:
+  sha: "a87b0af"
+  files:
+    - .context-index/specs/features/review/charter.md
+    - .context-index/specs/features/setup/risk-tier-bundles.spec.md
+    - docs/cli-reference.md
+    - docs/governance.md
+    - lib/cli/governance.mjs
+    - lib/governance/registry-marker.mjs
+    - lib/governance/registry-scaffold.mjs
+    - skills/init/SKILL.md
+    - skills/review-specs/SKILL.md
+    - skills/validate/SKILL.md
+    - templates/risk-tiers/prototype/review-overlay.yaml
+    - templates/risk-tiers/prototype/validate-overlay.yaml
+    - templates/risk-tiers/strict/review-overlay.yaml
+    - templates/risk-tiers/strict/validate-overlay.yaml
+    - tests/cli/governance-scaffold.test.mjs
+    - tests/cross-skill/governance-opt-in-handoff.test.mjs
+    - tests/governance/registry-scaffold.test.mjs
+    - tests/risk-tiers/tier-overlay-referential-integrity.test.mjs
+    - tests/skills/init-governance-explicit-selection.test.mjs
+    - tests/skills/init-risk-tier-overlay-baseline.test.mjs
+    - tests/skills/review-specs-zero-reviewers-warning.test.mjs
+    - tests/skills/validate-zero-checks-warning.test.mjs
+    - tests/specs/governance-opt-in-dispatch-contract.test.mjs
+  computed-at: "2026-09-10T16:25:27.464Z"
 ---
 
 <!-- Cross-Cutting Live Spec. No single owning charter — affects setup
@@ -88,12 +115,12 @@ This does **not** change the loaders' single-source contract (`lib/governance/re
 
 ## Acceptance Criteria
 
-- [ ] `governance/validate.yaml` written by `/adev:init` Step 7d reflects an explicit operator selection, never an unconditional full copy, and the write goes through `spliceRegistryEntries` rather than a generic re-serialize.
-- [ ] A zero-selection outcome at Step 7c or Step 7d writes an explicit empty list, distinguishable from "Step 7c/7d never ran"; the Step 7c write includes the `materialized_at` marker so the zero-reviewers path reaches `/adev:review-specs`'s warning rather than `REGISTRY_NOT_MATERIALIZED`.
-- [ ] `/adev:review-specs` prints a standing warning (not silence) when `reviewers.filter(r => r.enabled !== false).length === 0` — covering both "declared nothing" and "declared some, all disabled."
-- [ ] `/adev:validate` prints a standing warning (not a hard crash) when `governance/validate.yaml` exists but selects zero checks; an entirely absent file still hard-crashes with `MISSING_VALIDATE_CONFIG`.
-- [ ] Risk tier overlays apply against the operator's own selection, not the full domain bundle, and their `warnings` output is surfaced to the operator at scaffold time (not computed and discarded); `.context-index/specs/features/setup/risk-tier-bundles.spec.md` is updated to match.
-- [ ] `skills/init/SKILL.md` and `docs/governance.md` no longer claim a bundled-defaults fallback that doesn't exist in `lib/governance/{review,validate}-config.mjs`.
-- [ ] A test exercises the actual init-writes → review-specs/validate-reads-and-warns hand-off, not just each skill's local behavior; `tests/risk-tiers/tier-overlay-referential-integrity.test.mjs` covers a partial-selection overlay case, not only the full-bundle case.
-- [ ] All quality gates pass.
-- [ ] No constitutional violations.
+- [x] `governance/validate.yaml` written by `/adev:init` Step 7d reflects an explicit operator selection, never an unconditional full copy, and the write goes through `spliceRegistryEntries` rather than a generic re-serialize.
+- [x] A zero-selection outcome at Step 7c or Step 7d writes an explicit empty list, distinguishable from "Step 7c/7d never ran"; the Step 7c write includes the `materialized_at` marker so the zero-reviewers path reaches `/adev:review-specs`'s warning rather than `REGISTRY_NOT_MATERIALIZED`.
+- [x] `/adev:review-specs` prints a standing warning (not silence) when `reviewers.filter(r => r.enabled !== false).length === 0` — covering both "declared nothing" and "declared some, all disabled."
+- [x] `/adev:validate` prints a standing warning (not a hard crash) when `governance/validate.yaml` exists but selects zero checks; an entirely absent file still hard-crashes with `MISSING_VALIDATE_CONFIG`.
+- [x] Risk tier overlays apply against the operator's own selection, not the full domain bundle, and their `warnings` output is surfaced to the operator at scaffold time (not computed and discarded); `.context-index/specs/features/setup/risk-tier-bundles.spec.md` is updated to match.
+- [x] `skills/init/SKILL.md` and `docs/governance.md` no longer claim a bundled-defaults fallback that doesn't exist in `lib/governance/{review,validate}-config.mjs`.
+- [x] A test exercises the actual init-writes → review-specs/validate-reads-and-warns hand-off, not just each skill's local behavior; `tests/risk-tiers/tier-overlay-referential-integrity.test.mjs` covers a partial-selection overlay case, not only the full-bundle case.
+- [x] All quality gates pass.
+- [x] No constitutional violations.
