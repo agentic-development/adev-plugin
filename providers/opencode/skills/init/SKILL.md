@@ -356,13 +356,22 @@ If "re-classify": swap between reviewer / validate-check / quality-gate; ambiguo
 
 ### Step 7c: Review registry (`governance/review.yaml`)
 
-#### Step 7c.0: Apply risk tier overlay (if any)
+#### Step 7c.0: Resolve risk tier overlay (applied after selection)
 
-Before any customization prompt, load the resolved domain's bundled `reviewers.yaml` (`reviewers` array — same file `Step 7c.3`'s "three bundled reviewers" table below reflects) and the Step 7.0-resolved tier's `review-overlay` bundle. If the overlay is non-null (`prototype`/`strict`), apply it with `applyReviewTierOverlay()` (`lib/risk-tiers/merge-review-overlay.mjs`) and use the **full result** — not just the changed entries — as the working set's starting `reviewers:` content. This matters because `governance/review.yaml` is a marked registry once written: an entry the write in Step 5 omits does not run, so a tier overlay that only touches two ids (e.g. `strict` re-enabling `structural-architect`/`security-reviewer`) must still carry every other bundled reviewer through into the write, unmodified, or those reviewers silently stop running.
+Load the Step 7.0-resolved tier's `review-overlay` bundle (`loadRiskTierConfig(<tier>,
+'review-overlay', pluginRoot)`, `lib/risk-tiers/tier-config.mjs`) for later use. For the
+`standard` tier this resolves to `null` — proceed straight to sub-step 1 with nothing to apply
+anywhere below.
 
-For the `standard` tier the overlay is `null` — proceed exactly as before this step existed, and skip straight to sub-step 1.
-
-A non-null risk tier overlay counts as a customization for Step 5's zero-config-preservation write gate: `governance/review.yaml` gets written even if the operator makes no further manual customization below, because the tier choice itself is the customization.
+**The overlay base is the operator's own selection, not the full domain bundle.** Earlier
+revisions of this step applied the overlay upfront, against every bundled reviewer, before the
+operator had chosen anything — which silently re-enabled or re-capped reviewers the operator
+never selected, and left an overlay target outside that set invisible rather than reported. That
+is corrected here: the overlay is **not** applied in this sub-step and **not** applied to the
+full bundle. It is applied in sub-step 5, immediately before the write, against exactly the
+subset the operator selects in sub-step 3 (plus sub-steps 1/2/4's own additions) — see sub-step 5
+for the mechanics and for how an overlay target outside that subset is reported
+(`RISK_TIER_OVERLAY_UNKNOWN_ID`).
 
 1. **Scan for existing charters.** Glob `.context-index/specs/features/*/charter.md`. If none exist, skip the "project-specific reviewers from charters" prompt.
 
@@ -383,9 +392,10 @@ A non-null risk tier overlay counts as a customization for Step 5's zero-config-
 
 3. **Bundled reviewer selection.**
 
-   Present the Step 7c.0 working set (the resolved domain's full reviewer bundle, tier-overlaid
-   if applicable) as an inclusion checklist, reusing Step 7d.0's checklist shape (DDR-1), with
-   every entry defaulting to **unselected** — opt-in, not pre-selected:
+   Present the resolved domain's full reviewer bundle (unmodified by any risk tier overlay — the
+   overlay applies later, in sub-step 5, against whatever the operator selects here) as an
+   inclusion checklist, reusing Step 7d.0's checklist shape (DDR-1), with every entry defaulting
+   to **unselected** — opt-in, not pre-selected:
 
    ```
    Select the reviewers to enable for this project (unchecked by default —
@@ -448,10 +458,19 @@ A non-null risk tier overlay counts as a customization for Step 5's zero-config-
    supersedes that path for this file specifically: `review.yaml` gets written every time Step 7c
    is reached.
 
-   Call `adev governance scaffold --registry review --entries <selected-subset-json>`, where
-   `<selected-subset-json>` is the JSON array of: the entries the operator selected from sub-step
-   3's checklist, plus any further chosen entries from sub-steps 1-2 and 4 (possibly `[]` if the
-   operator selected `"none"` and made no other choices). The verb:
+   Assemble the operator's selection: the entries chosen from sub-step 3's checklist, plus any
+   further chosen entries from sub-steps 1-2 and 4 (possibly `[]` if the operator selected
+   `"none"` and made no other choices). **If Step 7c.0 resolved a non-null overlay**
+   (`prototype`/`strict`), apply it now, against this selection and nothing wider, with
+   `applyReviewTierOverlay()` (`lib/risk-tiers/merge-review-overlay.mjs`), and use the **full
+   result** — not just the changed entries — as `<selected-subset-json>` below. An overlay target
+   id that the operator did not select is not silently skipped: `applyReviewTierOverlay` reports
+   it as a `RISK_TIER_OVERLAY_UNKNOWN_ID` warning naming the id, meaning "this tier expects to
+   adjust `<id>`, but it is not part of what the operator selected" — collect these warnings for
+   the Step 7 summary (below) rather than discarding them. For the `standard` tier there is no
+   overlay to apply; `<selected-subset-json>` is the operator's selection unchanged.
+
+   Call `adev governance scaffold --registry review --entries <selected-subset-json>`. The verb:
 
    - Writes a `reviewers:` block containing exactly that selection.
    - Stamps a top-level `materialized_at:` marker unconditionally, including on an empty
@@ -488,10 +507,10 @@ path — the single-source model from `validate-config-single-source.spec.md` �
    `loadDomainConfig('software', 'validate', repoRoot, pluginRoot)` and print exactly:
    `"No validate.yaml starter for domain '<domain>'; scaffolded from 'software' as fallback."`
 2. If `.context-index/governance/validate.yaml` already exists: no-op (idempotent) — skip the
-   rest of this sub-step entirely, including the checklist prompt and the tier overlay re-write
-   below, since re-running it on every init pass would fight any manual edits the project has
-   since made to an existing file. This is the same idempotency guard the prior scaffold shape
-   had; it is preserved unchanged by this rework.
+   rest of this sub-step entirely, including the checklist prompt and the tier overlay
+   application below, since re-running it on every init pass would fight any manual edits the
+   project has since made to an existing file. This is the same idempotency guard the prior
+   scaffold shape had; it is preserved unchanged by this rework.
 3. Otherwise, present each check in the starter's `checks:` list (reusing Step 7d.1's existing
    checklist UI shape, DDR-1) as an inclusion checklist, with every item defaulting to
    **unchecked** — explicit inclusion, not pre-selected, mirrors Step 7c's own reworked reviewer
@@ -515,13 +534,25 @@ path — the single-source model from `validate-config-single-source.spec.md` �
    Selecting `"none"` (or responding with an empty selection) is a legitimate, first-class
    outcome — it selects zero checks, not an error, and proceeds to sub-step 4 exactly like any
    other selection.
-4. Call `adev governance scaffold --registry validate --entries <selected-subset-json>`, where
-   `<selected-subset-json>` is the JSON array of the starter check objects the operator selected
-   (possibly `[]`). This is the only write path for this file; it always runs once sub-step 2's
+4. **Apply risk tier overlay (if any), then write.** Call `loadRiskTierConfig(<Step
+   7.0-resolved tier>, 'validate-overlay', pluginRoot)` (`lib/risk-tiers/tier-config.mjs`). If it
+   returns non-null (`prototype`/`strict`), apply it now — against the operator's own sub-step 3
+   selection, not the full domain bundle — with `applyValidateTierOverlay()`
+   (`lib/risk-tiers/merge-validate-overlay.mjs`), and use the **full result** as
+   `<selected-subset-json>` below. An overlay target id the operator did not select is not
+   silently skipped: `applyValidateTierOverlay` reports it as a `RISK_TIER_OVERLAY_UNKNOWN_ID`
+   warning naming the id, meaning "this tier expects to adjust `<id>`, but it is not part of what
+   the operator selected" — collect these warnings for the Step 7 summary (below) rather than
+   discarding them. For the `standard` tier there is no overlay to apply;
+   `<selected-subset-json>` is the operator's sub-step 3 selection unchanged, and this still
+   counts as part of the automatic scaffold, not a user customization.
+
+   Call `adev governance scaffold --registry validate --entries <selected-subset-json>`, where
+   `<selected-subset-json>` is the JSON array from above (possibly `[]`). This is the only write
+   path for this file, called exactly once per scaffold — it always runs once sub-step 2's
    idempotency guard has passed, regardless of whether the selection is empty. An empty selection
    writes a literal `checks: []` — a real, visible file, not an absent one.
-5. **Apply risk tier overlay (if any).** Call `loadRiskTierConfig(<Step 7.0-resolved tier>, 'validate-overlay', pluginRoot)` (`lib/risk-tiers/tier-config.mjs`). If it returns non-null (`prototype`/`strict`), apply it to the just-scaffolded checks list — the operator's own selection from sub-step 3/4, not the full domain bundle — with `applyValidateTierOverlay()` (`lib/risk-tiers/merge-validate-overlay.mjs`) and re-write `.context-index/governance/validate.yaml` with the result before moving on — this still counts as part of the automatic scaffold, not a user customization. For the `standard` tier this returns `null`; the file stays exactly as sub-step 4 wrote it.
-6. Do NOT otherwise prompt the user beyond the checklist in sub-step 3 — everything past that
+5. Do NOT otherwise prompt the user beyond the checklist in sub-step 3 — everything past that
    point is automatic, like `gates.yaml`.
 
 **Stub prompts for tier-added checks.** If the applied overlay's `extra_checks` names a `prompt` path under `.context-index/prompts/` that does not yet exist, scaffold it with a TODO framing (same convention as the Step 7c.3 charter-derived reviewer stub) — for the `strict` tier's `project.strict-compliance` check, a one-line stub naming the check's purpose and a `TODO: name this project's specific regulatory/compliance requirements` line is enough; the operator fills in the rest before the check first runs for real.
@@ -632,6 +663,24 @@ After all sub-steps, print what was written:
 ```
 
 The "Risk tier" line always prints, using the Step 7.0 choice (or `standard` for a project that reached Step 7 without answering — Step 7.0 defaults there too). For `prototype`/`strict`, append the overlay's effect in one clause, e.g. `Risk tier: strict (2 reviewers re-enabled, 1 check added, 3 checks escalated to error)`.
+
+**Overlay warnings are surfaced in the Step 7 summary, not discarded.** If Step 7c sub-step 5 or
+Step 7d.0 sub-step 4 collected any `applyReviewTierOverlay`/`applyValidateTierOverlay` warnings
+(`RISK_TIER_OVERLAY_UNKNOWN_ID`, `RISK_TIER_OVERLAY_INVALID_EXTRA_CHECK`,
+`RISK_TIER_OVERLAY_DUPLICATE_ID`), print each one as its own line directly under the "Risk tier"
+line, the same treatment the summary already gives other warnings elsewhere in this step — never
+compute them and drop them on the floor:
+
+```
+  Risk tier: strict (2 reviewers re-enabled, 1 check added, 3 checks escalated to error)
+    ⚠ RISK_TIER_OVERLAY_UNKNOWN_ID: strict's review-overlay targets 'security-reviewer', but
+      it is not part of your selection — the overlay had nothing to adjust for this id.
+```
+
+A `RISK_TIER_OVERLAY_UNKNOWN_ID` warning here is a meaningful, operator-visible signal, not
+noise: it names a reviewer or check the resolved risk tier expects to adjust that the operator
+didn't select at Step 7c/7d, so the tier's intended posture (e.g. "strict re-enables
+security-reviewer") silently did not take effect for this project.
 
 **Legacy gate migration (brownfield folded into Step 7a).** When running Step 7a on a project that already has a `gates:` block in `manifest.yaml` AND no `governance/gates.yaml`, print the legacy-gates notice before copying the template:
 
