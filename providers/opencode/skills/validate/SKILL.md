@@ -135,6 +135,23 @@ Log any warnings from the `warnings` field. The `gates` list is the resolved gat
 Before running any check, call `loadValidateConfig(repoRoot)` from `lib/governance/validate-config.mjs`. The loader follows the **single-source model** (per `validate-config-single-source.spec.md`):
 
 - **Preflight (missing-file check):** If `.context-index/governance/validate.yaml` does not exist, `loadValidateConfig` throws `MISSING_VALIDATE_CONFIG` with the message: `"No governance/validate.yaml found. Run /adev:init to scaffold the validate configuration for your domain."` The skill catches this only to surface the message and stop — no checks dispatch, no report is written.
+- **Standing warning — zero enabled checks (distinct from the missing-file case above).** This is
+  a **different** case from the preflight above: the file **exists** but
+  `loadValidateConfig(...).checks.filter(c => c.enabled !== false).length === 0` — either an empty
+  `checks` array or a non-empty one where every entry is disabled. Unlike the absent-file case,
+  this does **not** throw and does **not** abort. Print the standing warning as a report-header
+  line, not suppressible by the normal report format:
+
+  ```
+  ⚠ No checks are configured for this project — /adev:validate will dispatch zero checks. Run
+  /adev:init to configure governance/validate.yaml, or this is expected if the project
+  intentionally selected none.
+  ```
+
+  Then proceed to run Check 1 and every other configured check as normal — there are none, so the
+  run completes with no findings and a normal verdict. Do not conflate the two paths: an absent
+  file is `MISSING_VALIDATE_CONFIG` and hard-stops with no report; an existing file with zero
+  enabled checks warns and still produces a complete, passing report.
 - **Direct read:** Loads `.context-index/governance/validate.yaml` directly. There is no bundled-defaults file, no overlay merge. The project file is the entire registry. It was scaffolded at `/adev:init` time from `templates/domains/<domain>/validate.yaml`.
 - **Id allowlist (SEC-1):** Every entry's `id` is validated against `^[a-z0-9][a-z0-9._-]*$` BEFORE any `plugin:` URI construction. Non-conforming ids fail load with `INVALID_CHECK_ID` and the offending value is stripped to allowlist chars + truncated to 64 chars in the diagnostic.
 - **Prompt URI resolution:** For each entry's `prompt` field, the loader resolves `plugin:validate/checks/<id>.md` to `<pluginRoot>/skills/validate/checks/<id>.md` with path-containment and absolute/cross-plugin guards. Project-relative paths resolve under `.context-index/`. The resolved absolute path is stored on the check object as `resolvedPromptPath`.
