@@ -27,3 +27,22 @@ test("Step 7d.0 states a zero-selection outcome is legitimate, not an error", ()
 test("Step 7d.0 sub-step 5's idempotency guard survives unchanged", () => {
   assert.match(section, /already exists.*no-op|no-op.*already exists/is);
 });
+
+const step7cStart = content.indexOf("### Step 7c:");
+const step7cEnd = content.indexOf("\n### Step 7d:");
+const step7c = content.substring(step7cStart, step7cEnd);
+
+test("Step 7c always writes review.yaml, even on zero selection (BEH-3)", () => {
+  assert.ok(!/If nothing was selected, DO NOT write the file/.test(step7c),
+    "Step 7c must no longer skip the write on zero selection");
+  assert.match(step7c, /reviewers:\s*\[\]/);
+  assert.match(step7c, /materialized_at/);
+});
+
+test("Step 7c's bundled reviewer prompt starts unselected", () => {
+  assert.match(step7c, /unselected|not pre-selected|opt.?in/i);
+});
+
+test("Step 7c calls the shared scaffold verb", () => {
+  assert.match(step7c, /adev governance scaffold/);
+});

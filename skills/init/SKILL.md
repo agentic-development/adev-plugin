@@ -381,22 +381,37 @@ A non-null risk tier overlay counts as a customization for Step 5's zero-config-
 
    If yes: convert each specialist in-memory to a reviewer entry under the `reviewer-capable` profile with `dispatch: triggered`, and remove the `specialists:` block from `manifest.yaml` at write time.
 
-3. **Bundled reviewer customization.**
+3. **Bundled reviewer selection.**
+
+   Present the Step 7c.0 working set (the resolved domain's full reviewer bundle, tier-overlaid
+   if applicable) as an inclusion checklist, reusing Step 7d.0's checklist shape (DDR-1), with
+   every entry defaulting to **unselected** — opt-in, not pre-selected:
 
    ```
-   The three bundled reviewers run by default:
-     structural-architect  (reasoning tier, blocker cap)
-     security-reviewer     (capable tier,   blocker cap)
-     consistency-analyzer  (fast tier,      blocker cap)
+   Select the reviewers to enable for this project (unchecked by default —
+   none run until you select them):
+     [ ] referent-integrity     (reasoning tier, blocker cap)
+     [ ] wiring-reviewer        (capable tier,   blocker cap)
+     [ ] consistency-analyzer   (fast tier,      blocker cap)
+     [ ] boundary-reviewer      (capable tier,   blocker cap)
+     [ ] termination-reviewer   (fast tier,      blocker cap; triggered)
+     [ ] structural-architect   (reasoning tier, blocker cap; disabled in the bundle)
+     [ ] security-reviewer      (capable tier,   blocker cap; disabled in the bundle)
 
-   Customize?
-     [d] disable one
+   Select the ones to enable (space-separated numbers, "all", or "none"):
+   ```
+
+   Selecting `"none"` is a legitimate, first-class outcome (BEH-3) — it selects zero reviewers,
+   not an error, and proceeds to sub-step 5 exactly like any other selection.
+
+   After the inclusion selection, offer further customization over the selected subset:
+
+   ```
+   Customize the selected reviewers?
      [c] cap severity for one
      [p] propose project reviewers from detected charters
      [s] skip customization
    ```
-
-   On **[d]** — list the three ids; user picks one. Write `enabled: false`.
 
    On **[c]** — pick reviewer + new cap (`blocker` / `warning` / `suggestion`).
 
@@ -427,21 +442,35 @@ A non-null risk tier overlay counts as a customization for Step 5's zero-config-
        [a] always    [t] triggered (paths + keywords)    [s] skip
    ```
 
-5. **Write the file.** If at least one customization / migration / adoption was selected, **or** Step 7c.0 applied a non-null tier overlay, write `.context-index/governance/review.yaml` with:
+5. **Write the file.** Always write `.context-index/governance/review.yaml` now, regardless of
+   whether the operator selected anything in sub-steps 1-4 — an empty selection is a legitimate,
+   first-class outcome (BEH-3), not the old zero-config-preservation no-write path. This
+   supersedes that path for this file specifically: `review.yaml` gets written every time Step 7c
+   is reached.
 
-   - A `reviewers:` block containing the Step 7c.0 working set (the full bundled reviewer list, tier-overlaid if applicable) plus all further chosen entries from sub-steps 1-4.
-   - A commented `context_packs:` block seeded with `base: include: []` for easy extension.
-   - A top-level `materialized_at:` line, copied verbatim from the one at the bottom of
-     `templates/governance/review.example.yaml`. `review.yaml` is a marked registry: written
-     without that line it fails closed on the project's first `/adev:review-specs` and an
+   Call `adev governance scaffold --registry review --entries <selected-subset-json>`, where
+   `<selected-subset-json>` is the JSON array of: the entries the operator selected from sub-step
+   3's checklist, plus any further chosen entries from sub-steps 1-2 and 4 (possibly `[]` if the
+   operator selected `"none"` and made no other choices). The verb:
+
+   - Writes a `reviewers:` block containing exactly that selection.
+   - Stamps a top-level `materialized_at:` marker unconditionally, including on an empty
+     selection — `review.yaml` is always a marked registry once scaffolded. `review.yaml` written
+     without that marker fails closed on the project's first `/adev:review-specs`, and an
      extension install into it is refused with `REGISTRY_NOT_MATERIALIZED`. Writing it here is
      what makes the scaffolded project born materialized. The marker is a claim about this file —
      that the reviewers listed above are the whole effective set, with nothing merged in behind
-     them at run time — so if you write a `review.yaml` that omits a bundled reviewer, that
-     reviewer does not run, which is the intended and now-visible behaviour.
-   - A pointer at the bottom: `# See templates/governance/review.example.yaml for more examples.`
+     them at run time — so a `review.yaml` that omits a bundled reviewer means that reviewer does
+     not run, which is the intended and now-visible behaviour. An empty selection writes a literal
+     `reviewers: []` with the marker still stamped — a real, visible file stating "zero reviewers
+     dispatch here," never an absent one.
 
-   If nothing was selected, DO NOT write the file — keep the repo on the zero-config path.
+   The verb's own header comment names its provenance (an explicit operator selection at scaffold
+   time); it does not seed a `context_packs:` block or a pointer comment — those were prose
+   artifacts of the pre-Task-2 direct-write path and are no longer produced, since the verb writes
+   the file in one atomic pass and refuses to run again against a file it already created. An
+   operator who wants a `context_packs:` block can add one by hand, or reference
+   `templates/governance/review.example.yaml` directly.
 
 ### Step 7d: Validate registry (`governance/validate.yaml`)
 
