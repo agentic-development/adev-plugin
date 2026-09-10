@@ -195,10 +195,13 @@ Step 7/11: Governance Policies
   Skills enforce these automatically during planning, implementation,
   and validation.
 
-  Without governance files, adev uses the bundled defaults — the three
-  reviewers (structural-architect, security-reviewer, consistency-
-  analyzer) and the 12 bundled validate checks ship enabled; quality
-  gates come from the constitution.
+  Nothing ships enabled without an explicit selection. Without a
+  governance/review.yaml, /adev:review-specs dispatches zero reviewers;
+  without a governance/validate.yaml, /adev:validate cannot run. What
+  actually runs is exactly what you select below: Step 7c lets you choose
+  from the domain's 7-reviewer bundle, Step 7d from the domain's 8-check
+  bundle. Quality gates come from governance/gates.yaml, seeded at Step 7a
+  from the constitution's quality-gate commands.
 
   → Set up governance? (yes / skip)
 ```

@@ -71,7 +71,7 @@ Architecture review is the gate between specification and planning. This module 
 | Capability | Description | Priority | Milestone | Status |
 |-----------|-------------|----------|-------|--------|
 | Configurable reviewer registry | Project-level `governance/review.yaml` controls which reviewers run, their dispatch, and severity caps. | must-have |  | review-passed |
-| Bundled defaults preservation | Plugin ships `plugin:review-specs/defaults.yaml` encoding today's three-reviewer flow; projects with no governance file see no change. | must-have |  | validated |
+| Explicit opt-in dispatch | A project with no `governance/review.yaml` runs zero reviewers — there is no bundled-defaults fallback at dispatch time. `/adev:init` Step 7c scaffolds the file from an explicit per-reviewer operator selection over the domain's bundle; nothing dispatches that was not selected. | must-have |  | validated |
 | Context pack rendering | Named, reusable file bundles with `extends` resolve to concrete file contents at dispatch time. Per-pack `delivery: inline \| manifest` selects between inlined bodies and repo-relative path manifests (rev-5 amendment). | must-have |  | planned |
 | Execution profile consumption | Reviewer entries reference execution profiles (ADR-0004) for tool permissions, MCP, model tier, env, limits. Dispatch concerns are not redefined inline. | must-have |  | draft |
 | External skill packaging (package mode) | A reviewer can wrap an existing skill as a package: runner subagent runs the skill verbatim under a profile; adapter subagent extracts findings. Skills stay unaware they are being used as reviewers. | must-have |  | draft |

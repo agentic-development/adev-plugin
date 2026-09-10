@@ -19,7 +19,7 @@ Understanding how [`/adev:init`](skill-reference.md) scaffolds a project is help
 >
 > **Brownfield projects that just upgraded:** run `/adev:init` again — it's idempotent and will surface adoption opportunities against files that already exist. Absent that, keep reading for the five migration recipes at the bottom.
 >
-> **Zero-config is fine.** Bundled defaults ship with the plugin and reproduce the pre-0.18.0 hardcoded flow byte-for-byte. Nothing below is required.
+> **Zero-config is fine, but it means zero reviewers and no validate run.** Neither `review.yaml` nor `validate.yaml` has a bundled-defaults fallback: an absent `review.yaml` means `/adev:review-specs` dispatches zero reviewers, and an absent `validate.yaml` means `/adev:validate` cannot run at all (`MISSING_VALIDATE_CONFIG`). Nothing below is required, but "nothing" is a real, visible choice, not a hidden default set. See [`/adev:init`](skill-reference.md) Step 7c/7d to select what runs.
 
 ## The governance files
 
@@ -34,7 +34,9 @@ Understanding how [`/adev:init`](skill-reference.md) scaffolds a project is help
 | `.context-index/governance/diagnostics.yaml` | `adev diagnose` (write-time) | Tier-1 diagnostic producer registry tagging lifecycle events. |
 | `.context-index/profiles.yaml` | cross-cutting | Execution profiles: tool permissions, env allowlist, model tier, redaction. Consumed by every reviewer and check. |
 
-All are optional. Absent files mean "use bundled defaults."
+All are optional. For `review.yaml` and `validate.yaml`, an absent file means zero entries — not
+"use bundled defaults" — per `governance-opt-in-dispatch.spec.md`: nothing dispatches unless an
+operator explicitly selected it at `/adev:init` Step 7c/7d.
 
 ## The gate schema in `gates.yaml`
 
@@ -642,7 +644,11 @@ adev governance materialize --registry gates
 
 ## Migrating an existing project
 
-Zero-config projects migrate with nothing to do — the bundled defaults reproduce the pre-0.18.0 behavior bit-for-bit.
+A project that already ran `/adev:init` Step 7 under the old model is unaffected by this
+migration — its existing `review.yaml`/`validate.yaml` (or their absence) is left exactly as it
+was; there is no retroactive rewrite. A project running Step 7 for the first time after this
+shipped now sees an explicit selection prompt for both registries (Step 7c, Step 7d) instead of
+either an unconditional full-bundle copy or a silent zero-reviewer default.
 
 ### Recipe 1 — you have custom specialists in `manifest.yaml`
 

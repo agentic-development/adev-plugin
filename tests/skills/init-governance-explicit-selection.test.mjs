@@ -46,3 +46,20 @@ test("Step 7c's bundled reviewer prompt starts unselected", () => {
 test("Step 7c calls the shared scaffold verb", () => {
   assert.match(step7c, /adev governance scaffold/);
 });
+
+test("Step 7 intro no longer claims a fixed bundled-defaults-ship-enabled fallback", () => {
+  const introStart = content.indexOf("Step 7/11: Governance Policies");
+  const introEnd = content.indexOf("### Step 7.0");
+  const intro = content.substring(introStart, introEnd);
+  assert.ok(!/ship enabled/.test(intro), "Step 7 intro must not claim a ship-enabled default");
+});
+
+test("docs/governance.md no longer claims absent files mean bundled defaults", () => {
+  const docs = readFileSync("docs/governance.md", "utf8");
+  assert.ok(!/Absent files mean .use bundled defaults\./.test(docs));
+});
+
+test("review charter no longer claims no-governance-file means no change", () => {
+  const charter = readFileSync(".context-index/specs/features/review/charter.md", "utf8");
+  assert.ok(!/projects with no governance file see no change/.test(charter));
+});
