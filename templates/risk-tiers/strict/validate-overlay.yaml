@@ -1,5 +1,5 @@
 # Validate registry overlay for the "strict" risk tier.
-# Applied on top of the resolved domain's scaffolded validate.yaml during
+# Applied on top of the operator's own Step 7c/7d selection during
 # /adev:init Step 7d.0, before any manual customization. Escalates
 # non-blocking checks to error severity so nothing strict slips through
 # as PASS_WITH_NOTES, and appends a stub compliance check the operator is

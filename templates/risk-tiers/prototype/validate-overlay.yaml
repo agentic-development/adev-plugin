@@ -1,5 +1,5 @@
 # Validate registry overlay for the "prototype" risk tier.
-# Applied on top of the resolved domain's scaffolded validate.yaml during
+# Applied on top of the operator's own Step 7c/7d selection during
 # /adev:init Step 7d.0, before any manual customization. Disables the
 # heaviest check (visual verification needs a real UI + Playwright, rarely
 # worth the wait on a throwaway prototype) and downgrades spec/constitution

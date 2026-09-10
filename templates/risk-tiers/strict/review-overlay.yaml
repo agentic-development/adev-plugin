@@ -1,6 +1,6 @@
 # Review registry overlay for the "strict" risk tier.
-# Applied on top of the resolved domain's bundled reviewer defaults during
-# /adev:init Step 7c, before any manual customization. Re-enables the two
+# Applied on top of the operator's own Step 7c/7d selection during
+# /adev:init Step 7c, immediately before the write. Re-enables the two
 # reviewers the software domain profile disables by default — structural and
 # security review moved to opt-in for the default project shape (see
 # .context-index/specs/features/reviewer-domain-fit/reviewer-panel-retarget.spec.md) —
