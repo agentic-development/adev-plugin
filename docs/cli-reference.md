@@ -75,14 +75,25 @@ Invoked via `npx @adev-org/adev-cli <verb>` (before install) or `adev <verb>` (a
 
 **Purpose:** First-time plugin setup. Copies the plugin into the provider's plugin cache and makes hooks executable.
 
-**Signature:** `install [--provider claude-code|opencode|codex]...`
+**Signature:** `install [--provider claude-code|opencode|codex]... [--config-dir <path>]`
 
 Repeat `--provider` to install for multiple providers. Default is `claude-code`.
+
+`--config-dir <path>` targets a specific Claude Code config directory instead of
+the default `~/.claude` — for machines running more than one. It sets
+`CLAUDE_CONFIG_DIR` for the run, so the plugin cache, `installed_plugins.json`,
+and the user-scope `settings.json` all land in that directory (and it becomes
+the user-scope consent boundary). The path is used verbatim: no `.claude`
+segment is appended. If `CLAUDE_CONFIG_DIR` is already exported, adev honors it
+without the flag. A relative or blank value is refused
+(`CLAUDE_HOME_UNRESOLVED`) rather than resolved against the current repo. The
+flag is also accepted by `upgrade` and `uninstall`.
 
 **Example:**
 ```
 npx @adev-org/adev-cli install
 npx @adev-org/adev-cli install --provider opencode --provider codex
+npx @adev-org/adev-cli install --config-dir ~/.claude-work
 ```
 
 **Implementation:** `cli/index.mjs::cmdInstall`. After install, run `/adev:init` inside your AI assistant.
@@ -91,7 +102,7 @@ npx @adev-org/adev-cli install --provider opencode --provider codex
 
 **Purpose:** Update an existing install to the latest version (preserves project context).
 
-**Signature:** `upgrade [--provider <name>]...`
+**Signature:** `upgrade [--provider <name>]... [--config-dir <path>]`
 
 **Example:**
 ```
@@ -104,7 +115,7 @@ npx @adev-org/adev-cli upgrade
 
 **Purpose:** Remove the plugin from the selected providers.
 
-**Signature:** `uninstall [--provider <name>]...`
+**Signature:** `uninstall [--provider <name>]... [--config-dir <path>]`
 
 **Example:**
 ```

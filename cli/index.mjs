@@ -88,6 +88,46 @@ function ensureDir(path) {
   }
 }
 
+/**
+ * Apply `--config-dir <path>` (or `--config-dir=<path>`) by exporting
+ * `CLAUDE_CONFIG_DIR` for the rest of the process.
+ *
+ * The env var is the single seam every Claude Code path resolution already
+ * reads (`getClaudeHome()` in providers/claude-code/adapter.mjs), and the
+ * adapter resolves it lazily in install/enable/uninstall/detectConflicts.
+ * Threading an option through all four instead would let one call site keep
+ * the default and split an install across two config dirs — the exact failure
+ * the flag exists to prevent.
+ *
+ * Relative input is resolved against cwd here so the value handed to the
+ * adapter is always absolute; the adapter still rejects a non-absolute value,
+ * since it can also arrive straight from the environment.
+ */
+function applyConfigDirFlag(argv = process.argv) {
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    let raw = null;
+    if (arg === "--config-dir") {
+      raw = argv[i + 1];
+      if (!raw || raw.startsWith("-")) {
+        error("--config-dir requires a path argument");
+        process.exit(1);
+      }
+    } else if (arg.startsWith("--config-dir=")) {
+      raw = arg.slice("--config-dir=".length);
+      if (!raw) {
+        error("--config-dir requires a path argument");
+        process.exit(1);
+      }
+    }
+    if (raw !== null) {
+      process.env.CLAUDE_CONFIG_DIR = resolve(raw);
+      return process.env.CLAUDE_CONFIG_DIR;
+    }
+  }
+  return null;
+}
+
 function parseProviderFlags() {
   const providers = [];
   const argv = process.argv;
@@ -1891,12 +1931,19 @@ function cmdHelp() {
     --provider claude-code --provider opencode  Install for both
     --provider claude-code --provider codex     Install for Claude + Codex
 
+  Claude Code Config Directory:
+    --config-dir <path>           Install into a specific Claude Code config
+                                  directory instead of ~/.claude (also
+                                  honors the CLAUDE_CONFIG_DIR env var).
+                                  Applies to install, upgrade, and uninstall.
+
   Examples:
     npx @adev-org/adev-cli install                          # Claude Code (default)
     npx @adev-org/adev-cli install --provider opencode      # OpenCode only
     npx @adev-org/adev-cli install --provider codex         # OpenAI Codex only
     npx @adev-org/adev-cli upgrade                          # Upgrade existing install
     npx @adev-org/adev-cli uninstall                        # Remove from selected providers
+    npx @adev-org/adev-cli install --config-dir ~/.claude-work   # Alternate config dir
 
   After install, run /adev:init inside your AI coding assistant
   to configure constitution, governance, and project context.
@@ -2062,6 +2109,13 @@ async function dispatch(argv) {
     process.exitCode = 1;
     return;
   }
+  // Honored only for the verbs that touch a Claude Code config directory.
+  // Applied before the verb runs so every getClaudeHome() call inside it
+  // resolves the same directory.
+  if (verb === "install" || verb === "upgrade" || verb === "uninstall" || verb === "init") {
+    applyConfigDirFlag(argv);
+  }
+
   const factory = VERB_REGISTRY.get(verb);
   if (!factory) {
     console.error(`unknown verb: ${stripAnsi(verb)}`);
@@ -2161,4 +2215,4 @@ if (isDirectRun) {
   await dispatch(process.argv);
 }
 
-export { VERB_REGISTRY, cmdExtension, dispatch, printVerbRegistry, stripAnsi };
+export { VERB_REGISTRY, cmdExtension, dispatch, printVerbRegistry, stripAnsi, applyConfigDirFlag };

@@ -10,8 +10,9 @@
 // Every assertion below reads the FILESYSTEM rather than a return value: the
 // contract is about which settings file gained (or must not gain) an entry.
 //
-// HOME is redirected to a temp dir for the whole file — getClaudeHome() resolves
-// ~/.claude from process.env.HOME, and a test that asserts "the user's settings
+// HOME is redirected to a temp dir for the whole file — and CLAUDE_CONFIG_DIR,
+// which outranks it, is cleared — because getClaudeHome() resolves the config
+// dir from those two variables, and a test that asserts "the user's settings
 // file was not written" must not be able to touch the real one.
 
 import { test, before, after, beforeEach } from "node:test";
@@ -27,13 +28,18 @@ let realHome;
 let realCwd;
 let projectDir;
 
+let realConfigDir;
+
 before(() => {
   realHome = process.env.HOME;
+  realConfigDir = process.env.CLAUDE_CONFIG_DIR;
   realCwd = process.cwd();
 });
 
 after(() => {
   process.env.HOME = realHome;
+  if (realConfigDir === undefined) delete process.env.CLAUDE_CONFIG_DIR;
+  else process.env.CLAUDE_CONFIG_DIR = realConfigDir;
   process.chdir(realCwd);
   if (tmpHome) cleanupTempDir(tmpHome);
   if (projectDir) cleanupTempDir(projectDir);
@@ -45,6 +51,10 @@ beforeEach(() => {
   tmpHome = createTempDir();
   projectDir = createTempDir();
   process.env.HOME = tmpHome;
+  // CLAUDE_CONFIG_DIR outranks HOME in getClaudeHome(), so an inherited one
+  // would defeat the redirect this whole file depends on and let the
+  // "the user's settings file was not written" assertions write to it.
+  delete process.env.CLAUDE_CONFIG_DIR;
   process.chdir(projectDir);
 });
 

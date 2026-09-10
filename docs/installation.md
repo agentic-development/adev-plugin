@@ -35,6 +35,22 @@ The CLI will prompt you to select your AI coding assistant. Choose the one you u
 
 The installer registers the plugin, scaffolds a minimal `.context-index/` directory, and configures git hooks for provenance tracking.
 
+### Multiple Claude Code config directories
+
+By default the Claude Code adapter installs into `~/.claude`. If you run more
+than one config directory, name the one you want:
+
+```bash
+npx @adev-org/adev-cli install --config-dir ~/.claude-work
+```
+
+The path is used as the config directory itself (no `.claude` segment is
+appended), and the plugin cache, `installed_plugins.json`, and user-scope
+`settings.json` all go there. The flag simply sets `CLAUDE_CONFIG_DIR` for the
+run — the same variable Claude Code itself reads — so if you already export it,
+adev follows it with no flag needed. `upgrade` and `uninstall` accept the flag
+too; pass the same value you installed with, or the default location is used.
+
 ### Pre-release channel (`@next`)
 
 Fixes and features land on the `next` npm dist-tag before they reach a stable release. To install the pre-release build:

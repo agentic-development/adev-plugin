@@ -18,6 +18,7 @@ describe("ClaudeCodeAdapter", () => {
     projectDir = mkdtempSync(join(tmpdir(), "claude-project-"));
     process.env.HOME = homeDir;
     delete process.env.USERPROFILE;
+    delete process.env.CLAUDE_CONFIG_DIR;
     process.chdir(projectDir);
   });
 
@@ -94,6 +95,7 @@ describe("ClaudeCodeAdapter settings-path symlink containment", () => {
     projectDir = mkdtempSync(join(tmpdir(), "claude-project-"));
     process.env.HOME = homeDir;
     delete process.env.USERPROFILE;
+    delete process.env.CLAUDE_CONFIG_DIR;
     process.chdir(projectDir);
   });
 
