@@ -30,3 +30,4 @@
 {"event":"plan_task","plan":".context-index/specs/features/setup/risk-tier-bundles.plan.md","task_id":"task-5","status":"in_progress","notes":null,"ts":"2026-09-07T23:48:45.715Z"}
 {"event":"plan_task","plan":".context-index/specs/features/setup/risk-tier-bundles.plan.md","task_id":"task-5","status":"done","notes":"Lifecycle artifacts committed; no code review needed (markdown/JSONL bookkeeping only)","ts":"2026-09-07T23:48:53.361Z"}
 {"event":"step_completed","step":"implement","verdict":"PASS","ts":"2026-09-09T10:50:05.602Z"}
+{"event":"code_drift_detected","drift_source":"skills/init/SKILL.md","drift_at":"2026-09-10T16:02:23.164Z","ts":"2026-09-10T16:02:23.164Z"}

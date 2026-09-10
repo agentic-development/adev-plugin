@@ -445,19 +445,55 @@ A non-null risk tier overlay counts as a customization for Step 5's zero-config-
 
 ### Step 7d: Validate registry (`governance/validate.yaml`)
 
-#### Step 7d.0: Scaffold from domain starter (single-source model)
+#### Step 7d.0: Scaffold from an explicit per-check selection (single-source model)
 
-Before any customization, materialize the project's `governance/validate.yaml` from the resolved domain's starter. This makes the project's validate check registry self-contained and visible at a single path — the single-source model from `validate-config-single-source.spec.md`.
+Before any further customization, scaffold the project's `governance/validate.yaml` from an
+explicit operator selection over the resolved domain's starter checks — never an unconditional
+copy. This makes the project's validate check registry self-contained and visible at a single
+path — the single-source model from `validate-config-single-source.spec.md` — while making
+"what runs" always trace back to something the operator actually chose
+(`governance-opt-in-dispatch.spec.md` BEH-1/BEH-2).
 
-1. Call `loadDomainConfig(resolvedDomain, 'validate', repoRoot, pluginRoot)`.
-2. If the call returns a starter object AND `.context-index/governance/validate.yaml` does not yet exist:
-   - Read the starter file directly (the same file that `loadDomainConfig` resolved) and copy its bytes verbatim into `.context-index/governance/validate.yaml`.
-3. If `loadDomainConfig` returns `null` for the resolved domain (no starter shipped for this domain):
-   - Fall back to `loadDomainConfig('software', 'validate', repoRoot, pluginRoot)` and write from the software starter.
-   - Print exactly: `"No validate.yaml starter for domain '<domain>'; scaffolded from 'software' as fallback."`
-4. **Apply risk tier overlay (if any).** Call `loadRiskTierConfig(<Step 7.0-resolved tier>, 'validate-overlay', pluginRoot)` (`lib/risk-tiers/tier-config.mjs`). If it returns non-null (`prototype`/`strict`), apply it to the just-written checks list with `applyValidateTierOverlay()` (`lib/risk-tiers/merge-validate-overlay.mjs`) and re-write `.context-index/governance/validate.yaml` with the result before moving on — this still counts as part of the automatic scaffold, not a user customization. For the `standard` tier this returns `null`; the file stays exactly as sub-step 2/3 wrote it.
-5. If `.context-index/governance/validate.yaml` already exists: no-op (idempotent) — this includes skipping the tier overlay re-write, since re-applying it on every init run would fight any manual edits the project has since made to an existing file.
-6. Do NOT prompt the user — this scaffold step is automatic, like `gates.yaml`.
+1. Call `loadDomainConfig(resolvedDomain, 'validate', repoRoot, pluginRoot)`. If it returns
+   `null` for the resolved domain (no starter shipped for this domain), fall back to
+   `loadDomainConfig('software', 'validate', repoRoot, pluginRoot)` and print exactly:
+   `"No validate.yaml starter for domain '<domain>'; scaffolded from 'software' as fallback."`
+2. If `.context-index/governance/validate.yaml` already exists: no-op (idempotent) — skip the
+   rest of this sub-step entirely, including the checklist prompt and the tier overlay re-write
+   below, since re-running it on every init pass would fight any manual edits the project has
+   since made to an existing file. This is the same idempotency guard the prior scaffold shape
+   had; it is preserved unchanged by this rework.
+3. Otherwise, present each check in the starter's `checks:` list (reusing Step 7d.1's existing
+   checklist UI shape, DDR-1) as an inclusion checklist, with every item defaulting to
+   **unchecked** — explicit inclusion, not pre-selected, mirrors Step 7c's own reworked reviewer
+   checklist below:
+
+   ```
+     Detected domain: software. Select the validate checks to enable for this project
+     (unchecked by default — nothing runs until you select it):
+       [ ] validate.check-1-quality-gates        (runs the resolved gate set)
+       [ ] validate.check-1.5-source-manifest     (verifies spec source-manifest SHAs)
+       [ ] validate.check-2-spec-compliance       (spec-vs-implementation review)
+       [ ] validate.check-4-constitution          (constitutional compliance review)
+       [ ] validate.check-8-boundaries            (governance boundary compliance)
+       [ ] validate.check-9-transition-gates      (transition gate compliance)
+       [ ] validate.check-11-visual-verification  (requires Playwright MCP)
+       [ ] validate.check-14-gate-executability   (verifies declared gates can run)
+
+     Select the ones to enable (space-separated numbers, "all", or "none"):
+   ```
+
+   Selecting `"none"` (or responding with an empty selection) is a legitimate, first-class
+   outcome — it selects zero checks, not an error, and proceeds to sub-step 4 exactly like any
+   other selection.
+4. Call `adev governance scaffold --registry validate --entries <selected-subset-json>`, where
+   `<selected-subset-json>` is the JSON array of the starter check objects the operator selected
+   (possibly `[]`). This is the only write path for this file; it always runs once sub-step 2's
+   idempotency guard has passed, regardless of whether the selection is empty. An empty selection
+   writes a literal `checks: []` — a real, visible file, not an absent one.
+5. **Apply risk tier overlay (if any).** Call `loadRiskTierConfig(<Step 7.0-resolved tier>, 'validate-overlay', pluginRoot)` (`lib/risk-tiers/tier-config.mjs`). If it returns non-null (`prototype`/`strict`), apply it to the just-scaffolded checks list — the operator's own selection from sub-step 3/4, not the full domain bundle — with `applyValidateTierOverlay()` (`lib/risk-tiers/merge-validate-overlay.mjs`) and re-write `.context-index/governance/validate.yaml` with the result before moving on — this still counts as part of the automatic scaffold, not a user customization. For the `standard` tier this returns `null`; the file stays exactly as sub-step 4 wrote it.
+6. Do NOT otherwise prompt the user beyond the checklist in sub-step 3 — everything past that
+   point is automatic, like `gates.yaml`.
 
 **Stub prompts for tier-added checks.** If the applied overlay's `extra_checks` names a `prompt` path under `.context-index/prompts/` that does not yet exist, scaffold it with a TODO framing (same convention as the Step 7c.3 charter-derived reviewer stub) — for the `strict` tier's `project.strict-compliance` check, a one-line stub naming the check's purpose and a `TODO: name this project's specific regulatory/compliance requirements` line is enough; the operator fills in the rest before the check first runs for real.
 

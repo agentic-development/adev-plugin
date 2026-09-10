@@ -53,6 +53,7 @@ source-manifest:
     - tests/risk-tiers/tier-config.test.mjs
     - tests/risk-tiers/tier-overlay-referential-integrity.test.mjs
   computed-at: "2026-09-09T17:21:50.457Z"
+drift_detected: true
 ---
 
 <!-- Live Spec within the setup charter.
