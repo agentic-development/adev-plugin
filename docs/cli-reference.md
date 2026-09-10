@@ -288,9 +288,21 @@ adev boundaries check --json
 governance materialize --registry <review|diagnostics|gates> [--dry-run] [--json]
 governance drift [--registry <validate|review|diagnostics|gates>] [--json]
 governance migrate-gates [--dry-run] [--json]
+governance scaffold --registry <review|validate> --entries <json|@path>
 ```
 
 `validate.yaml` and `boundaries.yaml` are **exempt** (DDR-1): both are already explicit single-source registries, so naming either is refused. See [Governance](governance.md#materialized-registries-and-the-materialized_at-marker).
+
+`governance scaffold` writes an operator's explicit registry selection as a **fresh**
+`review.yaml` or `validate.yaml` — the write path `/adev:init` Step 7c/Step 7d.0 call once the
+operator has chosen which reviewers/checks to enable (`governance-opt-in-dispatch.spec.md`). It
+refuses to run against a file that already exists (`GOVERNANCE_SCAFFOLD_EXISTS`) — it is for first
+scaffold only, never an overwrite path. `--entries` takes a JSON array literal or `@path` to a
+JSON file; an empty array (`[]` or `@path` naming an empty array) is a legitimate, first-class
+selection and writes a literal `reviewers: []` / `checks: []` rather than leaving the file absent.
+`review.yaml` is stamped with the `materialized_at` marker unconditionally, including on an empty
+selection; `validate.yaml` is never marked (it is marker-exempt, matching `materialize`'s own
+exemption above).
 
 Materialization is **write-once**: a second run preserves the original stamp verbatim, so an unchanged effective set produces byte-identical output. Entries already on disk keep their positions and their bytes; contributed entries are appended; comments and sibling keys survive. Exit 1 covers an argument error, an unknown or exempt registry, a containment refusal, and the two write refusals `MATERIALIZE_LOAD_INCOMPLETE` (a row failed to load) and `MATERIALIZE_WOULD_DROP` (a row would be lost).
 
