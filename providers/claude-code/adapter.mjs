@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync, cpSync, chmodSync, readdirSync, rmSync, realpathSync, lstatSync, readlinkSync } from "fs";
-import { join, dirname } from "path";
+import { join, dirname, isAbsolute } from "path";
 import { fileURLToPath } from "url";
 import { execSync } from "child_process";
 import { readJson as readJsonRaw } from "../../lib/provider/json-io.mjs";
@@ -105,8 +105,60 @@ function readJson(path, root) {
   return readJsonRaw(path);
 }
 
+/**
+ * Resolve the Claude Code config directory — the user-scope consent boundary.
+ *
+ * `CLAUDE_CONFIG_DIR` wins when set, matching Claude Code's own contract: it
+ * is the supported way to run more than one config dir on a machine, and an
+ * operator who sets it has already told Claude Code which directory is live.
+ * Resolving `$HOME/.claude` regardless would install the plugin, the registry,
+ * and the "user" settings into a directory the running Claude Code never
+ * reads. It is used verbatim — it names the config dir itself, not its parent,
+ * so no `.claude` segment is appended.
+ *
+ * This value is not just a path to write to: it is passed as the `root`
+ * argument to `readJson`/`writeJson`, so a bad value widens the boundary
+ * `assertSettingsPathContained` is meant to enforce. Two inputs are silently
+ * wrong rather than loudly broken, so both are rejected for either source:
+ *
+ *   - Unset HOME/USERPROFILE would reach `join()` as `undefined`, whose
+ *     `ERR_INVALID_ARG_TYPE` from inside `path` names neither the variable at
+ *     fault nor the install step that needs it.
+ *   - A relative or whitespace-only value resolves against `process.cwd()`,
+ *     which would write the registry and "user" settings into whatever repo
+ *     is current and then check containment against that directory instead of
+ *     the operator's real config dir.
+ */
 function getClaudeHome() {
-  return join(process.env.HOME || process.env.USERPROFILE, ".claude");
+  const explicit = process.env.CLAUDE_CONFIG_DIR;
+  if (typeof explicit === "string" && explicit.trim()) {
+    const dir = explicit.trim();
+    if (!isAbsolute(dir)) {
+      const err = new Error(
+        `CLAUDE_CONFIG_DIR is ${JSON.stringify(explicit)}, which is not an absolute path.\n` +
+          "  Set it to an absolute config directory, or unset it to fall back to $HOME/.claude.",
+      );
+      err.code = "CLAUDE_HOME_UNRESOLVED";
+      throw err;
+    }
+    return dir;
+  }
+
+  const raw = process.env.HOME || process.env.USERPROFILE;
+  const home = typeof raw === "string" ? raw.trim() : "";
+  if (!home || !isAbsolute(home)) {
+    const err = new Error(
+      "Cannot resolve the Claude Code config directory: " +
+        (raw === undefined
+          ? "neither HOME nor USERPROFILE is set."
+          : `HOME/USERPROFILE is ${JSON.stringify(raw)}, which is not an absolute path.`) +
+        "\n  Set HOME (or USERPROFILE on Windows) to an absolute path, or set " +
+        "CLAUDE_CONFIG_DIR to the config directory you want adev installed into.",
+    );
+    err.code = "CLAUDE_HOME_UNRESOLVED";
+    throw err;
+  }
+  return join(home, ".claude");
 }
 
 /**

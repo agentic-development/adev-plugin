@@ -222,19 +222,25 @@ describe("enablePlugin", () => {
   let tempDir;
   let origCwd;
   let origHome;
+  let origConfigDir;
 
   beforeEach(() => {
     tempDir = createTempDir();
     origCwd = process.cwd();
     origHome = process.env.HOME;
-    // Point HOME to temp dir so user settings go there
+    origConfigDir = process.env.CLAUDE_CONFIG_DIR;
+    // Point HOME to temp dir so user settings go there. CLAUDE_CONFIG_DIR
+    // outranks HOME in the adapter, so it has to go for the redirect to hold.
     process.env.HOME = tempDir;
+    delete process.env.CLAUDE_CONFIG_DIR;
     process.chdir(tempDir);
   });
 
   afterEach(() => {
     process.chdir(origCwd);
     process.env.HOME = origHome;
+    if (origConfigDir === undefined) delete process.env.CLAUDE_CONFIG_DIR;
+    else process.env.CLAUDE_CONFIG_DIR = origConfigDir;
     cleanupTempDir(tempDir);
   });
 
@@ -279,19 +285,25 @@ describe("detectConflicts", () => {
   let homeDir;
   let origCwd;
   let origHome;
+  let origConfigDir;
 
   beforeEach(() => {
     projectDir = createTempDir();
     homeDir = createTempDir();
     origCwd = process.cwd();
     origHome = process.env.HOME;
+    origConfigDir = process.env.CLAUDE_CONFIG_DIR;
     process.env.HOME = homeDir;
+    // See above: CLAUDE_CONFIG_DIR would override the redirected HOME.
+    delete process.env.CLAUDE_CONFIG_DIR;
     process.chdir(projectDir);
   });
 
   afterEach(() => {
     process.chdir(origCwd);
     process.env.HOME = origHome;
+    if (origConfigDir === undefined) delete process.env.CLAUDE_CONFIG_DIR;
+    else process.env.CLAUDE_CONFIG_DIR = origConfigDir;
     cleanupTempDir(projectDir);
     cleanupTempDir(homeDir);
   });
