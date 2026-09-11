@@ -14,6 +14,7 @@ source-manifest:
     - docs/validate-debug.md
     - docs/maintain.md
   computed-at: "2026-05-10T23:51:35.315Z"
+drift_detected: true
 ---
 
 # Live Spec: Workflow Guides
