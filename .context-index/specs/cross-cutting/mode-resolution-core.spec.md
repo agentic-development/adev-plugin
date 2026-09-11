@@ -7,9 +7,9 @@ partial_schema: spec@1
 mode: cross-cutting
 affects: [setup, lib, cli]
 kind: behavioral
-status: review-blocked
+status: review-passed
 risk_level: medium
-revision: 2
+revision: 3
 charter-revision: 2
 created: 2026-09-10
 updated: 2026-09-11
@@ -30,7 +30,7 @@ Defines the foundational mechanism for the `implementation_mode` setting: the `m
 | Task | Description | Estimated Complexity |
 |------|-------------|---------------------|
 | Define mode constants | Write `lib/implementation-modes/constants.mjs` with the 3 modes' config objects (`tdd`, `test-required`, `agent-default`) | small |
-| Write resolver | `lib/implementation-modes/resolve.mjs` — reads `manifest.yaml` via `loadManifest()`, looks up the mode, validates, returns config or throws `UNKNOWN_IMPLEMENTATION_MODE` | small |
+| Write resolver | `lib/implementation-modes/resolve.mjs` — reads `manifest.yaml` via the exported `loadManifest()` (`lib/manifest.mjs`), looks up the mode, validates, returns config or throws `UNKNOWN_IMPLEMENTATION_MODE`. Wraps the `loadManifest()` call in its own try/catch: `loadManifest()` itself throws an uncoded `YamlParseError` on malformed YAML (no `.code` property — confirmed at `lib/manifest.mjs:56`, `parseYaml(raw)` with no surrounding try/catch), so the resolver catches that and re-throws it itself coded as `MANIFEST_PARSE_ERROR`. This is the resolver's own coding decision, not a reused throw from elsewhere — no other module's error-handling code is imported or depended on. | small |
 | Wire CLI verb | Add `implementation-mode resolve` to `VERB_REGISTRY` in `cli/index.mjs`, thin wrapper printing the resolver's JSON output | small |
 | Update `/adev:init` | New question step: `agent-default` listed first for a project with no existing value, no silent accept-on-enter, sensitive-path-floor warning shown when `agent-default` is chosen; writes `implementation_mode` to `manifest.yaml` directly (no resolver call at write time). SKILL.md prose names `adev implementation-mode resolve` as the canonical way any later step reads the value back — the verb documents the read path, it is not invoked during the write itself. | medium |
 | Update `templates/manifest-template.yaml` | Document the new key near the existing Test Policy block | small |
@@ -78,7 +78,7 @@ Defines the foundational mechanism for the `implementation_mode` setting: the `m
 | Condition | Expected Behavior | Error Code |
 |-----------|-------------------|------------|
 | `--mode` (or stored `manifest.yaml` value) is not one of `tdd`/`test-required`/`agent-default` | Exit 1, message lists the 3 valid options, no side effects | `UNKNOWN_IMPLEMENTATION_MODE` |
-| `manifest.yaml` exists but is malformed YAML | Exit 2, reports the offending file | `MANIFEST_PARSE_ERROR` (reuses the code already thrown by `readManifest()` in `lib/gates/gate-sets.mjs`; not a new code) |
+| `manifest.yaml` exists but is malformed YAML | Exit 2, reports the offending file | `MANIFEST_PARSE_ERROR` — thrown by the resolver itself, which catches `loadManifest()`'s uncoded `YamlParseError` and re-codes it. This is the same string used by the unrelated, non-exported `readManifest()` in `lib/gates/gate-sets.mjs` for the same class of failure, chosen for consistency across the codebase's error vocabulary — but that function is not called, imported, or depended on here. |
 
 ## Module Impact Map
 
