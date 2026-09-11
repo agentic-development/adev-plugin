@@ -37,6 +37,28 @@ test('adev implementation-mode resolve --mode bogus exits 1 with UNKNOWN_IMPLEME
   }
 });
 
+test('adev implementation-mode resolve --mode test-required prints the test-required config', () => {
+  const dir = makeProject('project:\n  name: t\n');
+  try {
+    const out = JSON.parse(execFileSync('node', [CLI_PATH, 'implementation-mode', 'resolve', '--mode', 'test-required'], { cwd: dir }).toString());
+    assert.equal(out.mode, 'test-required');
+    assert.deepStrictEqual(Object.keys(out.config).sort(), ['coverage_check', 'dispatch_red', 'ordering_enforced']);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('adev implementation-mode resolve --mode agent-default prints the agent-default config', () => {
+  const dir = makeProject('project:\n  name: t\n');
+  try {
+    const out = JSON.parse(execFileSync('node', [CLI_PATH, 'implementation-mode', 'resolve', '--mode', 'agent-default'], { cwd: dir }).toString());
+    assert.equal(out.mode, 'agent-default');
+    assert.deepStrictEqual(Object.keys(out.config).sort(), ['coverage_check', 'dispatch_red', 'ordering_enforced']);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('adev implementation-mode resolve with no --mode and no stored value returns tdd default', () => {
   const dir = makeProject('project:\n  name: t\n');
   try {
