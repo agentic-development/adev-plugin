@@ -153,3 +153,29 @@ test("piped stdin closing (EOF) before a valid choice exits cleanly instead of h
   assert.notEqual(result.status, 0, "closed input must not be treated as a valid choice");
   assert.match(result.stderr, /input closed before a valid choice was made/);
 });
+
+// Regression: rl.question()'s one-shot 'line' listener only reliably
+// delivers the FIRST line of piped multi-line stdin — a second
+// rl.question() call (this module's re-prompt-on-blank loop, BEH-5) hung
+// forever waiting for a 'line' event that already fired and was consumed.
+// __scriptedInput-based tests never exercise real readline plumbing, so
+// this gap survived until a real spawned-process, real-pipe test caught it.
+test("piped stdin with a blank line then a real answer re-prompts instead of hanging (BEH-5, real pipe)", (t) => {
+  const dir = createTempDir();
+  t.after(() => cleanupTempDir(dir));
+  writeFixture(dir, ".context-index/manifest.yaml", "project:\n  name: test\n");
+
+  const result = spawnSync(
+    "node",
+    [join(PLUGIN_ROOT, "cli", "index.mjs"), "init", "prompt", "implementation-mode"],
+    { cwd: dir, input: "\nagent-default\n", encoding: "utf8", timeout: 10_000 },
+  );
+
+  assert.notEqual(result.signal, "SIGTERM", "process must not hang on the second prompt after a blank line");
+  assert.equal(result.status, 0, `expected clean exit, got status=${result.status} stderr=${result.stderr}`);
+  assert.match(result.stdout, /You must type a choice/);
+  assert.match(result.stdout, /sensitive-path-floor-bypass warning/);
+
+  const manifest = readFileSync(join(dir, ".context-index", "manifest.yaml"), "utf8");
+  assert.match(manifest, /^implementation_mode:\s*agent-default\s*$/m);
+});
