@@ -1,20 +1,37 @@
-# Live Spec: Implementation Mode — Resolution Core
-
-<!-- Live Spec implementing the "mode-resolution-core" group of the Implementation Mode cross-cutting charter. Parent Charter: .context-index/specs/cross-cutting/implementation-mode/charter.md (revision 2) -->
-
 ---
 partial_schema: spec@1
 mode: cross-cutting
 affects: [setup, lib, cli]
 kind: behavioral
-status: review-passed
+status: implemented
 risk_level: medium
 revision: 3
 charter-revision: 2
 created: 2026-09-10
 updated: 2026-09-11
 tracker-ref: adev-plugin-8u2a
+source-manifest:
+  sha: "7fe2146"
+  files:
+    - cli/index.mjs
+    - lib/cli/implementation-mode.mjs
+    - lib/cli/init-prompt-implementation-mode.mjs
+    - lib/implementation-modes/constants.mjs
+    - lib/implementation-modes/resolve.mjs
+    - skills/init/SKILL.md
+    - templates/manifest-template.yaml
+    - tests/cli/implementation-mode.test.mjs
+    - tests/cli/init-prompt-implementation-mode.test.mjs
+    - tests/implementation-modes/resolve.test.mjs
+    - tests/integration/implementation-mode-round-trip.test.mjs
+    - tests/skills/init-implementation-mode-prompt.test.mjs
+    - tests/templates/manifest-template.test.mjs
+  computed-at: "2026-09-11T02:49:59.007Z"
 ---
+
+# Live Spec: Implementation Mode — Resolution Core
+
+<!-- Live Spec implementing the "mode-resolution-core" group of the Implementation Mode cross-cutting charter. Parent Charter: .context-index/specs/cross-cutting/implementation-mode/charter.md (revision 2) -->
 
 ## Behavioral Contract
 
