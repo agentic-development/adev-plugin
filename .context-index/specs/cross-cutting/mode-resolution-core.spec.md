@@ -1,20 +1,18 @@
 # Live Spec: Implementation Mode — Resolution Core
 
-<!-- Live Spec implementing the "mode-resolution-core" group of the
-     Implementation Mode cross-cutting charter.
-     Parent Charter: .context-index/specs/cross-cutting/implementation-mode/charter.md (revision 2) -->
+<!-- Live Spec implementing the "mode-resolution-core" group of the Implementation Mode cross-cutting charter. Parent Charter: .context-index/specs/cross-cutting/implementation-mode/charter.md (revision 2) -->
 
 ---
 partial_schema: spec@1
 mode: cross-cutting
 affects: [setup, lib, cli]
 kind: behavioral
-status: review-pending
+status: review-blocked
 risk_level: medium
-revision: 1
+revision: 2
 charter-revision: 2
 created: 2026-09-10
-updated: 2026-09-10
+updated: 2026-09-11
 tracker-ref: adev-plugin-8u2a
 ---
 
@@ -34,7 +32,7 @@ Defines the foundational mechanism for the `implementation_mode` setting: the `m
 | Define mode constants | Write `lib/implementation-modes/constants.mjs` with the 3 modes' config objects (`tdd`, `test-required`, `agent-default`) | small |
 | Write resolver | `lib/implementation-modes/resolve.mjs` — reads `manifest.yaml` via `loadManifest()`, looks up the mode, validates, returns config or throws `UNKNOWN_IMPLEMENTATION_MODE` | small |
 | Wire CLI verb | Add `implementation-mode resolve` to `VERB_REGISTRY` in `cli/index.mjs`, thin wrapper printing the resolver's JSON output | small |
-| Update `/adev:init` | New question step: `agent-default` listed first for a project with no existing value, no silent accept-on-enter, sensitive-path-floor warning shown when `agent-default` is chosen; writes `implementation_mode` to `manifest.yaml` | medium |
+| Update `/adev:init` | New question step: `agent-default` listed first for a project with no existing value, no silent accept-on-enter, sensitive-path-floor warning shown when `agent-default` is chosen; writes `implementation_mode` to `manifest.yaml` directly (no resolver call at write time). SKILL.md prose names `adev implementation-mode resolve` as the canonical way any later step reads the value back — the verb documents the read path, it is not invoked during the write itself. | medium |
 | Update `templates/manifest-template.yaml` | Document the new key near the existing Test Policy block | small |
 
 ## Acceptance Criteria
@@ -45,7 +43,9 @@ Defines the foundational mechanism for the `implementation_mode` setting: the `m
 - [ ] `adev implementation-mode resolve` with no `--mode` and no stored `manifest.yaml` value returns the `tdd` config (legacy fallback, unchanged)
 - [ ] `adev implementation-mode resolve` with no `--mode` and a stored `manifest.yaml` value resolves that stored value
 - [ ] `adev implementation-mode resolve --mode bogus` exits 1 with `UNKNOWN_IMPLEMENTATION_MODE`, message lists the 3 valid options, no side effects
-- [ ] A malformed `manifest.yaml` causes the resolver to exit 2 with `CONFIG_INVALID`, naming the offending file
+- [ ] A malformed `manifest.yaml` causes the resolver to exit 2 with `MANIFEST_PARSE_ERROR`, naming the offending file
+- [ ] A write-then-read round trip (`/adev:init` writes `implementation_mode`, then `adev implementation-mode resolve` with no `--mode` is run against that same manifest) returns the value that was written, verified by an integration test rather than a fixture-only unit test
+- [ ] BEH-5 (option ordering, no silent accept-on-enter) and BEH-6 (sensitive-path-floor warning on `agent-default` selection) are each verified by a golden-transcript or scripted-input test of the `/adev:init` prompt, not by manual QA alone
 - [ ] `/adev:init`'s new prompt lists `agent-default` first for a project with no existing `implementation_mode` value
 - [ ] `/adev:init`'s new prompt does not accept empty input as a silent default — the user must type a choice
 - [ ] Selecting `agent-default` in `/adev:init` displays the sensitive-path-floor-bypass warning before the value is written
@@ -78,13 +78,13 @@ Defines the foundational mechanism for the `implementation_mode` setting: the `m
 | Condition | Expected Behavior | Error Code |
 |-----------|-------------------|------------|
 | `--mode` (or stored `manifest.yaml` value) is not one of `tdd`/`test-required`/`agent-default` | Exit 1, message lists the 3 valid options, no side effects | `UNKNOWN_IMPLEMENTATION_MODE` |
-| `manifest.yaml` exists but is malformed YAML | Exit 2, reports the offending file | `CONFIG_INVALID` |
+| `manifest.yaml` exists but is malformed YAML | Exit 2, reports the offending file | `MANIFEST_PARSE_ERROR` (reuses the code already thrown by `readManifest()` in `lib/gates/gate-sets.mjs`; not a new code) |
 
 ## Module Impact Map
 
 | Module | Impact | Changes Required |
 |--------|--------|-----------------|
-| `setup` | medium | New `/adev:init` question, `agent-default` listed first for fresh projects (no silent accept-on-enter); writes `implementation_mode`; `agent-default` option shows the sensitive-path-floor warning. Resolver's `tdd` fallback for projects with no stored value is unchanged. |
+| `setup` | medium | New `/adev:init` question, `agent-default` listed first for fresh projects (no silent accept-on-enter); writes `implementation_mode`; `agent-default` option shows the sensitive-path-floor warning. Resolver's `tdd` fallback for projects with no stored value is unchanged. Deferred: the charter's second `setup`-module obligation — `using-adev`'s help routing-table row, TDD glossary entry, and its own restatement of the sensitive-path-floor bypass for `agent-default` — is explicitly out of scope for this spec and is owned by a future `using-adev`-scoped spec, not yet filed. That sibling spec is also where BD-1 (bypass warning surfaced at every discovery point, not only the one-time `/adev:init` prompt) is to be addressed. |
 | `lib` | medium | New `lib/implementation-modes/constants.mjs` + `resolve.mjs`, following the existing `lib/risk-tiers/` pattern. |
 | `cli` | low | New `implementation-mode resolve` verb wired into `VERB_REGISTRY`, following the existing driver-surface pattern. |
 
@@ -92,4 +92,4 @@ Defines the foundational mechanism for the `implementation_mode` setting: the `m
 
 1. `setup` ↔ `lib`: `/adev:init` writes the manifest key; the resolver reads it via the existing `loadManifest()`.
 2. `cli` ↔ `lib`: the verb is a thin wrapper printing the resolver's JSON output, following the driver-surface pattern (no inline Node in SKILL.md).
-3. `lib` → future `dispatch-behavior` spec (`implementation`, `write-test`): this resolver's `{dispatch_red, ordering_enforced, coverage_check}` output contract is exactly what that spec's dispatch logic will consume.
+3. `lib` → future `dispatch-behavior` spec (`implementation`, `write-test`): this resolver's `{dispatch_red, ordering_enforced, coverage_check}` output contract is exactly what that spec's dispatch logic will consume. That spec is not yet filed and the call mechanism (import of `lib/implementation-modes/resolve.mjs` vs. a CLI shell-out to `adev implementation-mode resolve`) is not yet decided; this integration point is to be updated with the concrete spec name and call mechanism once filed.
