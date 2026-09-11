@@ -282,7 +282,10 @@ Instead of always using the 9 hardcoded gaming patterns and mocking boundary rul
 - **Seed data requires:** representative production-like data seeded before migration
 - **Handoff block includes:** migration file paths, assertion scripts, seed data, schema snapshots
 
-For a `unit` task, behavior is identical to before — the unit profile codifies the existing rules.
+For a `unit` task, behavior is identical to before — the unit profile codifies the existing rules:
+
+- **Mocking boundary:** mock only at external boundaries (HTTP, DB, filesystem, external APIs). Internal module mocking is forbidden.
+- **Entry-point boundary:** whenever a public entry point exists for the behavior under test — a CLI subcommand run as a subprocess, a hook's stdin/stdout + exit-code contract, or a function explicitly documented as a public library API (a doc-comment, or an entry in [`skill-reference.md`](skill-reference.md) / [`cli-reference.md`](cli-reference.md)) — a test's primary assertion for that behavior must invoke it through that entry point. Internal-function tests remain permitted as a **supplement** (e.g. covering branch combinations impractical to drive end-to-end through the CLI/hook), never as a **replacement**, for the public-entry-point test of the same behavior. When no public entry point exists for a behavior, this rule does not apply — a direct internal-function test is sufficient.
 
 ### What stays the same
 
