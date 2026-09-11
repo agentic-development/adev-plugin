@@ -119,6 +119,18 @@ specialists: []
   #     - "*.css"
 
 # ============================================================================
+# Implementation Mode
+# Controls whether /adev:implement enforces TDD (RED phase before code),
+# requires tests without ordering enforcement, or defers test decisions to
+# agent judgment. One of: tdd | test-required | agent-default.
+# Default: tdd. Written by /adev:init's implementation-mode prompt — not
+# scaffolded here with a literal default value.
+# See .context-index/specs/cross-cutting/mode-resolution-core.spec.md
+# ============================================================================
+
+# implementation_mode: tdd   # tdd | test-required | agent-default
+
+# ============================================================================
 # Test Policy
 # Controls test granularity and risk-based depth escalation, consumed by
 # /adev:plan, /adev:write-test, /adev:implement, and `adev test-policy`.
