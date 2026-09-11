@@ -2026,6 +2026,7 @@ const VERB_REGISTRY = new Map([
   ["worktree",        () => import("../lib/cli/worktree.mjs")],
   ["parallel",        () => import("../lib/cli/parallel.mjs")],
   ["test-policy",     () => import("../lib/cli/test-policy.mjs")],
+  ["implementation-mode", () => import("../lib/cli/implementation-mode.mjs")],
   ["test-helpers",    () => import("../lib/cli/test-helpers.mjs")],
   ["coordination",    () => import("../lib/cli/coordination.mjs")],
   ["test-debt",       () => import("../lib/cli/test-debt.mjs")],
