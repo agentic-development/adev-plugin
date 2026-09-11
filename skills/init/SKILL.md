@@ -597,6 +597,31 @@ Re-running `/adev:init` on a project that already has these values reads them as
 
 Spec: `.context-index/specs/features/session-awareness/hook-driven-capture.spec.md`.
 
+### Step 8b: Implementation mode preference
+
+```
+Step 8b/11: Implementation Mode
+  Implementation mode controls how /adev:implement enforces test
+  coverage during a task.
+
+  Modes:
+  - agent-default   agent decides test depth per task; the
+                     sensitive-path-floor-bypass warning is shown
+                     when this mode is chosen (auth, crypto, secrets,
+                     and CI paths lose their forced `thorough` floor)
+  - tdd             tests are written before implementation code
+  - test-required   implementation requires accompanying tests, order
+                     unconstrained
+
+  → Choose implementation mode (type the name):
+```
+
+Invoke `adev init prompt implementation-mode` to drive this step. The verb owns the menu ordering (`agent-default` listed first, per BEH-5), the no-silent-accept-on-empty-input validation (blank input is rejected and re-prompted rather than treated as an implicit default, per BEH-5), and the splice-preserving write of the chosen value to `manifest.yaml`'s top-level `implementation_mode:` key. Selecting `agent-default` surfaces the sensitive-path-floor-bypass warning before the value is written (BEH-6). None of this ordering, validation, or write logic is reproduced in this skill's prose — the verb is the single source of truth for it.
+
+**Diagnostic Mode.** An existing project with an already-stored `implementation_mode` value resolves it silently on re-run via `adev implementation-mode resolve`, with no re-prompt — the BEH-5 agent-default-first, no-silent-accept ordering rule applies only on a project's first pass through this step, when there is no stored value yet.
+
+Spec: `.context-index/specs/cross-cutting/mode-resolution-core.spec.md`.
+
 ```
 Step 9/11: Sync Targets
   Your constitution will be synced to agent-specific files so
