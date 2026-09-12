@@ -1,0 +1,116 @@
+# Layer 3 rubric for /adev:debug, scored against the skill-regression
+# fixture (tests/evals/skill-regression/). Field shapes verbatim from
+# skills/eval/default-rubric.yaml — the exemplar. All values flat: no nested
+# maps, since the repo's minimal YAML readers cannot represent them.
+#
+# Scored input: the diagnosis AND the fix diff — the first rubric in either
+# tier whose scored input includes an actual code diff, not only a written
+# report. Written after a scenario run against a temp-tree copy of
+# tests/evals/skill-regression/project (see scenarios/debug.md).
+#
+# Citations: skill-regression:PV-01/KC-01 (spec-code-drift) only. Every
+# met_when below is phrased against catalog.yaml's
+# detect_when/must_not_flag_when clause — the finding a correct debug run
+# produces — never against the fixture's in-file answer-key label, so the
+# element survives the fixture's own redaction with no edit.
+#
+# LOAD-BEARING: a correct debug run REPAIRS the planted spec-code drift by
+# restoring half-up rounding to src/shipping/rates.mjs. This is exactly the
+# reason scenarios/debug.md requires a disposable copy, per the scenario's
+# own load-bearing property — running this scenario against the committed
+# fixture tree would destroy the ground truth every rubric in both tiers
+# cites for that class.
+#
+# Spec: .context-index/specs/features/eval-harness/rubric-set-core-lifecycle.spec.md
+
+rubric_id: "skill-regression-debug"
+version: 1
+layer: 3
+verdict_values: "met | not_met | unknown (judged criteria) | not_applicable (deterministic elements)"
+skill: debug
+scenario: debug
+
+required_elements:
+  - id: pv01_spec_code_drift_detected
+    description: "The diagnosis names the planted behavioral drift as the bug's root cause"
+    source: "skill-regression:PV-01"
+    met_when: "the stated hypothesis names shipping-rates.spec.md behavior B7 as the rule src/shipping/rates.mjs does not implement, per catalog.yaml PV-01's detect_when"
+    not_applicable_when: "never — the fixture always plants this defect"
+
+  - id: kc01_spec_code_drift_not_flagged
+    description: "The specificity twin of PV-01: a spec behavior the code correctly implements must not be named as a drift source"
+    source: "skill-regression:KC-01"
+    met_when: "the diagnosis does not name create-order.spec.md behavior B2 as a drift source, given src/orders/create-order.mjs defaults discountCents to 0 exactly as worded, per catalog.yaml KC-01's must_not_flag_when"
+    not_applicable_when: "never — the fixture always ships this known-clean twin"
+
+  - id: hypothesis_stated_explicitly
+    description: "The diagnosis states a single, testable root-cause hypothesis in the documented form"
+    source: "the stated hypothesis"
+    met_when: "the diagnosis states the root cause in the explicit form Phase 3 names — \"I think X is the root cause because Y\" — naming B7's rounding rule as X"
+    not_applicable_when: "never — Phase 3 always requires this explicit statement before Phase 4"
+
+  - id: failing_test_precedes_fix
+    description: "A test asserting B7's rounding rule is shown failing before the fix lands"
+    source: "the fix diff"
+    met_when: "the diff adds or modifies a tests/rates.test.mjs case asserting B7's half-up rounding rule, and that case is recorded as failing before the fix per Phase 5 step 1"
+    not_applicable_when: "never — Phase 5 always requires a failing test case for a code-level fix"
+
+  - id: single_scoped_fix
+    description: "The fix diff changes only what the root cause requires, with no bundled refactor"
+    source: "the fix diff"
+    met_when: "the diff's only functional change is to src/shipping/rates.mjs's rounding logic — no unrelated file is touched, per Phase 5 step 2's \"ONE change at a time\""
+    not_applicable_when: "never — every fix diff is checkable against this rule"
+
+  - id: fix_restores_spec_behavior
+    description: "After the fix, calculateRate matches B7 exactly"
+    source: "the fix diff"
+    met_when: "after the diff, calculateRate rounds a fractional-cent surcharge half up to the nearest whole cent, matching shipping-rates.spec.md behavior B7 exactly"
+    not_applicable_when: "never — this is the fix's entire purpose"
+
+  - id: debug_intervention_recorded
+    description: "A debug_intervention lifecycle event captures the root cause and the fix"
+    source: "the debug_intervention lifecycle event"
+    met_when: "a debug_intervention event is emitted carrying a note of at most 200 characters summarizing the root cause and the fix, per Phase 5 step 4"
+    not_applicable_when: "never — the bug is tracked by shipping-rates.spec.md, so Phase 5 step 4 always applies"
+
+  - id: completion_token_emitted
+    description: "The chat transcript ends with the machine-readable completion token"
+    source: "the final line of the chat transcript"
+    met_when: "the transcript's final line is exactly ADEV-DEBUG: FIXED or ADEV-DEBUG: PARKED, as plain text with no trailing prose"
+    not_applicable_when: "never — the skill always emits this line once Phase 6's confidence gate resolves"
+
+quality_dimensions:
+  - id: root_cause_not_symptom
+    criterion: "Does the fix address the rounding rule itself, root-cause style, rather than papering over one test's expected numeric value?"
+    reference: "Phase 5: Fix (\"Fix the root cause, not the symptom\") in skills/debug/SKILL.md"
+    met_when: "the diff changes the rounding computation in calculateRate/zoneBaseCents, not a test's expected literal alone"
+    not_met_when: "the diff changes only a test's expected value with no corresponding change to the rounding computation"
+    unknown_when: "the diff touches neither the test nor the rounding computation"
+
+  - id: context_loaded_before_hypothesis
+    criterion: "Does the diagnosis cite the spec's own behavioral contract for B7, loaded during Phase 2 step 2, before forming the Phase 3 hypothesis — rather than reasoning from the failing test's output alone?"
+    reference: "Phase 2: Investigate (with Context), step 2 (Check specs for expected behavior), in skills/debug/SKILL.md"
+    met_when: "the diagnosis quotes or paraphrases shipping-rates.spec.md's B7 wording before stating the hypothesis"
+    not_met_when: "the hypothesis is stated with no reference to the spec's B7 text at all"
+    unknown_when: "shipping-rates.spec.md cannot be located from the module inferred in Phase 1"
+
+  - id: debug_playbook_silent_skip
+    criterion: "When no debug-playbook.md exists for the orders module or cross-cutting, does the diagnosis skip playbook matching silently, per Phase 2 step 6a and the governing playbook-loading spec, rather than fabricating a matched failure mode?"
+    reference: "Phase 2, step 6a, in skills/debug/SKILL.md, and .context-index/specs/features/debug-playbooks/playbook-format-and-debug-loading.spec.md"
+    met_when: "the diagnosis contains no playbook-derived failure-mode language and no warning about a missing playbook"
+    not_met_when: "the diagnosis references a matched playbook failure mode, or emits a missing-playbook warning, despite no debug-playbook.md existing under the copy's orders module or cross-cutting directory"
+    unknown_when: "a debug-playbook.md does exist in the copy at either location"
+
+  - id: quality_gates_rerun_before_close
+    criterion: "Does the diagnosis record that quality gates were rerun after the fix, per Phase 6 step 1, before any close/park decision is made?"
+    reference: "Phase 6: Validate and Record, step 1 (Run quality gates), in skills/debug/SKILL.md"
+    met_when: "the diagnosis or the debug_intervention note states that gates were run after the fix, with a pass/fail outcome"
+    not_met_when: "the close/park decision is made with no mention of a post-fix gate run"
+    unknown_when: "the copy declares no quality gates to run at all"
+
+layer3_max_points: 25
+required_element_points: 10
+judged_criterion_points: 15
+unknown_policy: "exclude_from_denominator"
+not_applicable_policy: "exclude_from_denominator"
+insufficient_evidence_threshold_percent: 40

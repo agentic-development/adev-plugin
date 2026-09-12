@@ -63,10 +63,10 @@ ever computed on unvalidated input.
 **Strategy:** unit
 **Depends on:** Task 1
 
-This is the `plan-task-without-test` planted violation: the task declares no TDD
-expectation at all. Its checklist opens straight at implementation, with no
-red-phase step, no verification step, and no falsification step. Its known-clean
-twins are Tasks 1 and 3, and every task in `create-order.plan.md`.
+This task declares no TDD expectation at all. Its checklist opens straight at
+implementation, with no red-phase step, no verification step, and no
+falsification step — unlike Tasks 1 and 3 here, and every task in
+`create-order.plan.md`, which all declare one.
 
 - [ ] **Implement** — the base-rate lookup, the per-gram surcharge, and the
       half-up rounding of the surcharged total to whole cents.

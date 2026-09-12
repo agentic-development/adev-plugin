@@ -1,0 +1,103 @@
+# Layer 3 rubric for /adev:codehealth, scored against the skill-regression
+# fixture (tests/evals/skill-regression/). Field shapes verbatim from
+# skills/eval/default-rubric.yaml — the exemplar. All values flat: no nested
+# maps, since the repo's minimal YAML readers cannot represent them.
+#
+# Scored input: the severity-tiered report codehealth writes to
+# .context-index/reports/codehealth-<date>.md after a scenario run against a
+# temp-tree copy of tests/evals/skill-regression/project (see scenarios/codehealth.md).
+#
+# Citations: skill-regression:PV-03/KC-03 (orphan-source-file), PV-04/KC-04
+# (dead-export), PV-05/KC-05 (unused-dependency). Every met_when below is
+# phrased against catalog.yaml's detect_when/must_not_flag_when clause — the
+# finding a correct scan produces — never against the fixture's in-file
+# answer-key label, so the element survives a future redaction of that label
+# with no edit (see issue-dzxjoa, tracked separately, not resolved here).
+#
+# Spec: .context-index/specs/features/eval-harness/rubric-set-change-imminent.spec.md
+
+rubric_id: "skill-regression-codehealth"
+version: 1
+layer: 3
+verdict_values: "met | not_met | unknown (judged criteria) | not_applicable (deterministic elements)"
+skill: codehealth
+scenario: codehealth
+
+required_elements:
+  - id: orphan_source_file_detected
+    description: "The Orphan File Detection pass names the planted orphan source file"
+    source: "skill-regression:PV-03"
+    met_when: "the Orphan File Detection section names src/orders/orphaned-helper.mjs as unreachable from src/index.mjs, per catalog.yaml PV-03's detect_when"
+    not_applicable_when: "never — the fixture always plants this defect"
+
+  - id: orphan_known_clean_not_flagged
+    description: "The specificity twin of PV-03: a file that IS reachable from the entry point must not be flagged as an orphan"
+    source: "skill-regression:KC-03"
+    met_when: "the Orphan File Detection section does not name src/shipping/rates.mjs, which src/index.mjs imports calculateRate from, per catalog.yaml KC-03's must_not_flag_when"
+    not_applicable_when: "never — the fixture always ships this known-clean twin"
+
+  - id: dead_export_detected
+    description: "The Dead Export Detection pass names the planted dead export"
+    source: "skill-regression:PV-04"
+    met_when: "the Dead Export Detection section names formatLegacyTotal in src/shipping/rates.mjs with zero references, per catalog.yaml PV-04's detect_when"
+    not_applicable_when: "never — the fixture always plants this defect"
+
+  - id: dead_export_known_clean_not_flagged
+    description: "The specificity twin of PV-04: an export referenced elsewhere must not be flagged as dead"
+    source: "skill-regression:KC-04"
+    met_when: "the Dead Export Detection section does not name createOrder in src/orders/create-order.mjs, which src/index.mjs and tests/create-order.test.mjs both reference, per catalog.yaml KC-04's must_not_flag_when"
+    not_applicable_when: "never — the fixture always ships this known-clean twin"
+
+  - id: unused_dependency_detected
+    description: "The Unused Dependency Detection pass names the planted unused dependency"
+    source: "skill-regression:PV-05"
+    met_when: "the Unused Dependency Detection section names ajv as unused, with no import line under src/ or tests/ binding it, per catalog.yaml PV-05's detect_when"
+    not_applicable_when: "never — the fixture always plants this defect"
+
+  - id: unused_dependency_known_clean_not_flagged
+    description: "The specificity twin of PV-05: a dependency actually imported must not be flagged as unused"
+    source: "skill-regression:KC-05"
+    met_when: "the Unused Dependency Detection section does not name nanoid, which src/index.mjs imports for newOrderId, per catalog.yaml KC-05's must_not_flag_when"
+    not_applicable_when: "never — the fixture always ships this known-clean twin"
+
+  - id: severity_tiered_report_emitted
+    description: "codehealth writes a severity-tiered markdown report with a per-pass summary table"
+    source: "the report written to .context-index/reports/codehealth-<date>.md in the scenario copy"
+    met_when: "the report's Summary Table lists Dead Export Detection, Orphan File Detection, and Unused Dependency Detection rows, each broken down into High, Medium and Low counts"
+    not_applicable_when: "never — codehealth always writes this report on completion, per skills/codehealth/SKILL.md's Report Generation section"
+
+quality_dimensions:
+  - id: severity_classification_correct
+    criterion: "Does each finding carry the severity level skills/codehealth/SKILL.md's Severity Reference table assigns to its class — for example the PV-03 orphan reported as high (fully isolated, no outgoing or incoming edges, per Pass 2 step 5) and the PV-04 dead export reported as medium (coexists with calculateRate, a referenced export, in the same file, per Pass 1 step 4)?"
+    reference: "the Severity Reference table in skills/codehealth/SKILL.md"
+    met_when: "every finding's severity matches the table's rule for its class and the evidence in the report"
+    not_met_when: "at least one finding's severity contradicts the table's rule for its class"
+    unknown_when: "the report omits a severity field for a finding, so no comparison is possible"
+
+  - id: orphan_verification_against_real_consumers
+    criterion: "Does the orphan-file finding for PV-03 show evidence that step 4's real-consumer verification (hook scripts, package.json scripts, cli/index.mjs's dispatch table) was actually checked, rather than the file being flagged on the dependency-graph edge count alone?"
+    reference: "Pass 2, step 4 (Verify candidates against real consumers) in skills/codehealth/SKILL.md"
+    met_when: "the finding's description or the report's prose indicates the three consumer checks were considered before the file was reported"
+    not_met_when: "the finding is reported with no indication any of the three consumer checks ran"
+    unknown_when: "the report gives no description text for the finding at all"
+
+  - id: dead_export_line_number_enriched
+    criterion: "Does the dead-export finding for PV-04 cite a line number, sourced from symbol-ranks.json's line field per Pass 1 step 3, rather than naming only the file?"
+    reference: "Pass 1, step 3 (Cross-reference with symbol-ranks.json) in skills/codehealth/SKILL.md"
+    met_when: "the finding's Line column carries a number"
+    not_met_when: "the finding's Line column is blank or the em-dash placeholder despite symbol-ranks.json being available"
+    unknown_when: "symbol-ranks.json was itself reported as format-errored, per the FORMAT_ERROR note, so no line number could be enriched"
+
+  - id: conversation_summary_actionable
+    criterion: "Does the conversation summary's top-3 findings list name file:line (or file, when no line applies) and a one-sentence description a developer could act on without opening the full report?"
+    reference: "the Conversation Summary section in skills/codehealth/SKILL.md"
+    met_when: "every one of the top-3 printed findings names a file (with a line number when the finding has one) and a description of the specific defect"
+    not_met_when: "at least one of the top-3 printed findings omits the file or gives a description too generic to act on (e.g. 'issue found')"
+    unknown_when: "zero findings exist, so no top-3 summary is printed at all"
+
+layer3_max_points: 25
+required_element_points: 10
+judged_criterion_points: 15
+unknown_policy: "exclude_from_denominator"
+not_applicable_policy: "exclude_from_denominator"
+insufficient_evidence_threshold_percent: 40

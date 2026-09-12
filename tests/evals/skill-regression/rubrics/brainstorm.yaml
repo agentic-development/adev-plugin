@@ -1,0 +1,115 @@
+# Layer 3 rubric for /adev:brainstorm, scored against the skill-regression
+# fixture (tests/evals/skill-regression/). Field shapes verbatim from
+# skills/eval/default-rubric.yaml — the exemplar. All values flat: no nested
+# maps, since the repo's minimal YAML readers cannot represent them.
+#
+# Scored input: the written charter — this run invokes /adev:brainstorm
+# --module orders (revision mode, extending the existing orders charter) and
+# proposes "calculate a shipping rate" as a new capability. The orders
+# charter's own Out of Scope table already states "Shipping rate calculation
+# — owned by the `shipping` module", and manifest.yaml already registers a
+# `shipping` module (with no charter of its own yet) — both loaded as
+# Essential context in Step 1. This is this tier's second 7-element floor
+# case (rubrics/route.yaml is the first), exercising
+# RUBRIC_CORE_ELEMENT_FLOOR's boundary (>= 7) on real data a second time.
+#
+# Citations: skill-regression:PV-07/KC-07 (charter-scope-escape) only.
+# CONFIDENCE NOTE (recorded here per the tier's own convention — see
+# rubrics/route.yaml's PV-10 citation for precedent): Step 2.2's
+# Cross-charter conflict check is written as "does this module provide
+# something ANOTHER module already owns", framed against a genuinely
+# separate charter file — it does not explicitly say "check the SAME
+# charter's own Out of Scope table when extending it". A holistic run that
+# has actually loaded both the orders charter (being extended) and
+# manifest.yaml's module registry (Step 1, both Essential) would plausibly
+# still catch the self-contradiction, but this is inference over prose, not
+# a hard branch the way /adev:specify's Step 3 is. Filed at moderate
+# confidence, same treatment as route.yaml's PV-10 citation.
+#
+# Spec: .context-index/specs/features/eval-harness/rubric-set-core-lifecycle.spec.md
+
+rubric_id: "skill-regression-brainstorm"
+version: 1
+layer: 3
+verdict_values: "met | not_met | unknown (judged criteria) | not_applicable (deterministic elements)"
+skill: brainstorm
+scenario: brainstorm
+
+required_elements:
+  - id: pv07_cross_charter_conflict_flagged
+    description: "The cross-charter conflict check flags 'calculate a shipping rate' against the orders charter's own Out of Scope table before any charter section is written"
+    source: "skill-regression:PV-07"
+    met_when: "Step 2.2's cross-charter conflict check reports that the orders charter's own Out of Scope table already assigns shipping rate calculation to the shipping module (registered in manifest.yaml with no charter of its own), presented for the user to resolve before Step 3, per catalog.yaml PV-07's detect_when"
+    not_applicable_when: "never — the scenario always proposes this out-of-scope extension"
+
+  - id: kc07_in_scope_extension_not_flagged
+    description: "The specificity twin of PV-07: an extension that stays within the orders charter's own Scope table raises no conflict"
+    source: "skill-regression:KC-07"
+    met_when: "a second proposed capability that stays within the orders charter's In Scope table (e.g., a discount-application refinement) raises no cross-charter conflict, confirming the check fired above is specific to the actual Out-of-Scope collision rather than a blanket caution on every --module extension, per catalog.yaml KC-07's must_not_flag_when"
+    not_applicable_when: "never — the scenario always also proposes this in-scope extension for contrast"
+
+  - id: kind_resolved_explicit
+    description: "The charter's kind: field is the value actually resolved at Step 2.1, never a silent default"
+    source: "the written charter's frontmatter"
+    met_when: "the charter's kind: field is present and equals the value Step 2.1 actually resolved (feature, since --module orders extends an existing kind: feature charter), written verbatim"
+    not_applicable_when: "never — Step 2.1 is mandatory before charter authoring"
+
+  - id: capability_map_status_column_initialized
+    description: "Every Capability Map row (including any newly added one) carries an initialized Status column"
+    source: "the written charter's Capability Map"
+    met_when: "the Capability Map table's Status column reads em dash (—) for any capability added by this run, and the pre-existing row's Status is left unchanged, per Step 5's Capability Map Status column rule"
+    not_applicable_when: "never — Step 5 always initializes this column on write"
+
+  - id: constitution_and_boundary_check_performed
+    description: "The clarification phase actually checks the emerging idea against the loaded constitution's Non-Negotiable Principles and Architecture Boundaries"
+    source: "the run's Step 2.2 constitution check"
+    met_when: "Step 2.2's constitution check trace names at least one specific Non-Negotiable Principle or Architecture Boundary from the loaded constitution and states whether the emerging idea complies, rather than skipping the check silently"
+    not_applicable_when: "never — Step 2.2 always performs this check during clarification"
+
+  - id: charter_review_loop_dispatched
+    description: "The charter-reviewer subagent is dispatched against the written charter and its verdict is resolved within the 2-iteration cap"
+    source: "the Step 6 charter-reviewer dispatch"
+    met_when: "a charter-reviewer subagent is dispatched with the written charter, constitution, platform context, and existing charters, and the run reaches either an Approved verdict or a user-guided resolution within 2 iterations, per Step 6"
+    not_applicable_when: "never — Step 6 runs after every charter write"
+
+  - id: product_md_module_map_updated_idempotently
+    description: "product.md's Module Map is appended or updated in place with no duplicate row for orders"
+    source: "the copy's product.md, read back after the run"
+    met_when: "product.md's Module Map table carries exactly one row whose first cell is orders after the run, with its description refreshed rather than duplicated, per Step 5b-4's idempotency rule (product.md already exists in the copy from a prior charter write)"
+    not_applicable_when: "never — Step 5b-4 always runs in --module mode with an existing product.md"
+
+quality_dimensions:
+  - id: cross_charter_check_grounded
+    criterion: "Does the flagged conflict trace to the orders charter's own Out of Scope wording and manifest.yaml's module registry, rather than an unanchored sense that shipping 'sounds like' a different concern?"
+    reference: "Step 2.2: Cross-charter conflict check, in skills/brainstorm/SKILL.md"
+    met_when: "the conflict's stated reasoning quotes or paraphrases the orders charter's Out of Scope entry for shipping rate calculation and names the shipping module from manifest.yaml"
+    not_met_when: "the conflict is raised with no reference to either the charter's Out of Scope table or the manifest's module registry"
+    unknown_when: "the run's reasoning trace does not surface Step 2.2's internal check"
+
+  - id: hard_gate_respected
+    criterion: "Does the run take no implementation action (no spec, no code, no /adev:specify invocation) before the charter is written, reviewed, and user-approved?"
+    reference: "<HARD-GATE> block, in skills/brainstorm/SKILL.md"
+    met_when: "no file under .context-index/specs/features/orders/*.spec.md and no source file is created or modified at any point before Step 7's user approval completes"
+    not_met_when: "any spec or source file is written before Step 7 completes"
+    unknown_when: "the scenario capture does not resolve fine enough to order writes against the approval event"
+
+  - id: approach_tradeoffs_grounded_in_constitution
+    criterion: "Does Step 3's constitution-compliance column for each proposed approach quote an actual principle from the loaded constitution, rather than a generic 'aligns' with nothing behind it?"
+    reference: "Step 3: Propose 2-3 Approaches, in skills/brainstorm/SKILL.md"
+    met_when: "at least one proposed approach's constitution-compliance assessment quotes or closely paraphrases a real principle from the fixture's constitution.md"
+    not_met_when: "every approach's constitution-compliance assessment is a bare 'aligns' or 'violates' with no principle text referenced"
+    unknown_when: "Step 3's output does not carry a constitution-compliance column to check"
+
+  - id: spec_organization_plan_heuristics_named
+    criterion: "Does the Spec Organization Plan's grouping table (Step 8.3) cite exactly one of the three named heuristics per row, rather than an unnamed or invented rationale?"
+    reference: "Step 8.2: Grouping heuristics, in skills/brainstorm/SKILL.md"
+    met_when: "every row of the rendered grouping table's Rationale cell names exactly one of cohesion, dependency-chain, or blast-radius"
+    not_met_when: "a grouping table row's Rationale cell names none of the three heuristics, or names more than one without designating a dominant one"
+    unknown_when: "the charter lands with fewer than 2 must-have capabilities, so Step 8.1 skips the grouping table entirely"
+
+layer3_max_points: 25
+required_element_points: 10
+judged_criterion_points: 15
+unknown_policy: "exclude_from_denominator"
+not_applicable_policy: "exclude_from_denominator"
+insufficient_evidence_threshold_percent: 40

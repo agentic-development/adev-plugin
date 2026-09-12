@@ -133,3 +133,22 @@ test("/adev:implement frontmatter must NOT declare context: fork", () => {
     "implement dispatches subagents via the Agent tool; context: fork sandboxes the execution context and makes Agent unavailable — orchestrators must not fork",
   );
 });
+
+test("/adev:implement Step 2h commits the task before emitting its plan_task done event (adev-plugin-eval-harness-xj3k.5)", () => {
+  // tests/evals/skill-regression/rubrics/implement.yaml's
+  // plan_task_done_matches_commit requires the done event to be timestamped
+  // AFTER the commit lands — the commit is the durable checkpoint (2h.3's
+  // own "if a later task fails or a session crashes mid-pipeline, the
+  // prior task's work is preserved in git history"); a done event emitted
+  // first would fabricate completion for work a crash could still lose.
+  const md = readFileSync(SKILL_PATH, "utf8");
+  const section = md.slice(md.indexOf("#### 2h. Mark Task Complete"));
+  const commitIdx = section.indexOf("Commit-per-task is MANDATORY");
+  const doneIdx = section.indexOf("Emit a `plan_task` `done` event");
+  assert.ok(commitIdx !== -1, "2h must document the mandatory per-task commit");
+  assert.ok(doneIdx !== -1, "2h must document emitting the plan_task done event");
+  assert.ok(
+    commitIdx < doneIdx,
+    "the commit step must be listed before the done-event step, so the done event always postdates the commit it reports on",
+  );
+});

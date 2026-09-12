@@ -1,0 +1,118 @@
+# Layer 3 rubric for /adev:review-specs, scored against the skill-regression
+# fixture (tests/evals/skill-regression/). Field shapes verbatim from
+# skills/eval/default-rubric.yaml — the exemplar. All values flat: no nested
+# maps, since the repo's minimal YAML readers cannot represent them.
+#
+# Scored input: the review AND blockers sidecars — both, not the review
+# alone, since a charter-scope-escape finding lands as a BLOCK-severity
+# entry in the .blockers.md sidecar, not only as prose in the .review.md
+# body. Written after a scenario run against a temp-tree copy of
+# tests/evals/skill-regression/project (see scenarios/review-specs.md).
+#
+# Citations: skill-regression:PV-07/KC-07 (charter-scope-escape) — the only
+# class this tier's review-specs rubric cites. Every met_when below is
+# phrased against catalog.yaml's detect_when/must_not_flag_when clause —
+# the finding a correct review produces — never against the fixture's
+# in-file answer-key label, so the element survives the fixture's own
+# redaction with no edit.
+#
+# Spec: .context-index/specs/features/eval-harness/rubric-set-core-lifecycle.spec.md
+
+rubric_id: "skill-regression-review-specs"
+version: 1
+layer: 3
+verdict_values: "met | not_met | unknown (judged criteria) | not_applicable (deterministic elements)"
+skill: review-specs
+scenario: review-specs
+
+required_elements:
+  - id: pv07_charter_scope_escape_detected
+    description: "The consolidated review names the planted scope-escaping spec"
+    source: "skill-regression:PV-07"
+    met_when: "the consolidated review reports that shipping-rates.spec.md covers a capability absent from the orders charter's Capability Map, per catalog.yaml PV-07's detect_when"
+    not_applicable_when: "never — the fixture always plants this defect"
+
+  - id: kc07_charter_scope_escape_not_flagged
+    description: "The specificity twin of PV-07: a spec whose capability the charter DOES chart must not be flagged as out of scope"
+    source: "skill-regression:KC-07"
+    met_when: "the consolidated review does not report create-order.spec.md as out of charter scope, given the orders charter's Capability Map charts exactly that capability, per catalog.yaml KC-07's must_not_flag_when"
+    not_applicable_when: "never — the fixture always ships this known-clean twin"
+
+  - id: consolidated_verdict_block
+    description: "The consolidated header verdict reflects the blocker-severity charter-scope-escape finding"
+    source: "the consolidated report's header Verdict field"
+    met_when: "the header's Verdict is BLOCK, per the Verdict Logic table's 'at least one blocker finding' rule, given the PV-07 finding carries blocker severity"
+    not_applicable_when: "never — a charter-scope-escape finding is always dispatched as blocker severity in this fixture"
+
+  - id: blockers_sidecar_written
+    description: "A .blockers.md sidecar is written alongside the spec when the verdict is BLOCK"
+    source: "the .blockers.md sidecar written for shipping-rates.spec.md"
+    met_when: "a .blockers.md sidecar exists alongside shipping-rates.spec.md, carrying at least one entry whose blocker_id was constructed from a finding_type/section_anchor pair"
+    not_applicable_when: "never — the consolidated verdict is BLOCK, which always writes this sidecar"
+
+  - id: blockers_entry_names_scope_gap
+    description: "The sidecar's finding text names the actual charter-scope gap, not a generic blocker"
+    source: "the .blockers.md sidecar's findings array"
+    met_when: "at least one sidecar entry's prose names the gap between shipping-rates.spec.md's covered capability and the orders charter's Capability Map"
+    not_applicable_when: "never — the sidecar is always written when the verdict is BLOCK"
+
+  - id: reviewers_dispatched_table_complete
+    description: "The consolidated report lists every dispatched reviewer with its dispatch mode and prompt source"
+    source: "the consolidated report's Reviewers Dispatched table"
+    met_when: "the Reviewers Dispatched table lists every dispatched reviewer's id, name, mode, resolved profile, and prompt or skill source"
+    not_applicable_when: "never — the report always renders this table"
+
+  - id: per_reviewer_verdict_never_block
+    description: "No individual reviewer section states a BLOCK verdict — BLOCK is exclusively the consolidated header verdict"
+    source: "each per-reviewer section's Verdict line"
+    met_when: "every per-reviewer section's Verdict line is PASS, PASS_WITH_NOTES, or FAIL, and none is BLOCK"
+    not_applicable_when: "never — the report always renders a Verdict line per dispatched reviewer"
+
+  - id: summary_counts_consistent
+    description: "The report's Summary total findings count matches what the per-reviewer sections actually list"
+    source: "the report's Summary section"
+    met_when: "the Summary line's total findings count equals the sum of blockers, warnings, and suggestions actually listed across the per-reviewer sections"
+    not_applicable_when: "never — the report always renders a Summary section"
+
+quality_dimensions:
+  - id: blocker_id_construction_fidelity
+    criterion: "Is the sidecar's blocker_id constructed by the aggregator from finding_type and section_anchor via buildBlockerId, rather than accepted verbatim from a reviewer?"
+    reference: "Step 6b-bis, Aggregator blocker_id construction, in skills/review-specs/SKILL.md"
+    met_when: "the sidecar entry's blocker_id is consistent with a finding_type/section_anchor pair present in the underlying reviewer finding, and no entry copies a reviewer-supplied blocker_id verbatim"
+    not_met_when: "an entry's blocker_id cannot be derived from any finding_type/section_anchor pair in the underlying findings"
+    unknown_when: "the sidecar carries no entries at all"
+
+  - id: verdict_consolidation_fidelity
+    criterion: "Does the consolidated BLOCK verdict follow the documented blocker_threshold rule rather than an ad hoc judgment across reviewers?"
+    reference: "Step 5, Verdict Logic, in skills/review-specs/SKILL.md"
+    met_when: "the consolidated verdict is BLOCK if and only if the post-cap findings across all reviewers meet or exceed verdict_rules.blocker_threshold blocker-severity findings"
+    not_met_when: "the consolidated verdict disagrees with the documented threshold given the findings actually listed"
+    unknown_when: "the report does not list per-reviewer findings with severity, so the threshold cannot be checked"
+
+  - id: charter_scope_grounded_in_capability_map
+    criterion: "Does the charter-scope-escape finding trace to the parent charter's own Capability Map, loaded per Step 2 item 2, rather than an unanchored sense that the spec 'seems' out of scope?"
+    reference: "Step 2: Load Context for Each Spec, item 2 (Parent charter), in skills/review-specs/SKILL.md"
+    met_when: "the finding's text references the charter's Capability Map or its absence of a matching row for the spec's capability"
+    not_met_when: "the finding gives no reference to the charter's Capability Map at all"
+    unknown_when: "no charter-scope-escape finding is present in the report"
+
+  - id: disabled_reviewers_reported
+    criterion: "Is a reviewer switched off with enabled: false rendered as its own Disabled Reviewers table row naming disabled_reason, rather than silently dropped from the report?"
+    reference: "Step 5, Consolidated Report Format § Disabled reviewers get a report row, not silence, in skills/review-specs/SKILL.md"
+    met_when: "every disabled reviewer in the registry appears in the Disabled Reviewers table with its disabled_reason (or the literal 'no reason given')"
+    not_met_when: "a reviewer known to be disabled in the registry is absent from both the Reviewers Dispatched and Disabled Reviewers tables"
+    unknown_when: "the registry declares no disabled reviewer, so the section is legitimately omitted"
+
+  - id: atomic_write_fidelity
+    criterion: "Was the .review.md artifact written via the .tmp-then-commit atomic idiom rather than a direct write to the canonical path?"
+    reference: "Step 6b, Atomic write protocol, in skills/review-specs/SKILL.md"
+    met_when: "the scenario's before/after capture shows no partial .review.md ever existed at the canonical path — only the .tmp staging file, then the renamed final artifact"
+    not_met_when: "a partial or zero-byte .review.md is observed at the canonical path at any point during the run"
+    unknown_when: "the scenario capture does not resolve fine enough to distinguish the .tmp write from the commit rename"
+
+layer3_max_points: 25
+required_element_points: 10
+judged_criterion_points: 15
+unknown_policy: "exclude_from_denominator"
+not_applicable_policy: "exclude_from_denominator"
+insufficient_evidence_threshold_percent: 40

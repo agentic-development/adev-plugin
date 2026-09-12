@@ -86,11 +86,30 @@ describe("adev:brainstorm SKILL.md — product.md bootstrap (Step 5b)", () => {
     );
   });
 
-  it("SKILL.md Step 5b states that --module (revision mode) skips bootstrap and Module Map append", () => {
+  it("SKILL.md Step 5b states that --module (revision mode) skips bootstrap only when product.md does not exist yet", () => {
     const c = readFileSync(SKILL_PATH, "utf8");
     assert.ok(
       c.includes("--module") && (c.includes("revision mode") || c.includes("revising")),
-      "Must mention --module revision mode skip"
+      "Must mention --module revision mode"
+    );
+  });
+
+  it("SKILL.md Step 5b runs Module Map Append in --module mode when product.md already exists (adev-plugin-eval-harness-xj3k.7)", () => {
+    // tests/evals/skill-regression/rubrics/brainstorm.yaml's
+    // product_md_module_map_updated_idempotently declares
+    // `not_applicable_when: "never ... Step 5b-4 always runs in --module
+    // mode with an existing product.md"`. A blanket "--module always skips
+    // Step 5b" (with no product.md-exists carve-out) contradicts that.
+    const c = readFileSync(SKILL_PATH, "utf8");
+    const skipLine = c.slice(c.indexOf("## Step 5b"), c.indexOf("### 5b-1"));
+    assert.ok(
+      /--module.*product\.md.*(does not exist|doesn't exist)/i.test(skipLine) ||
+        /product\.md.*does not exist.*--module/i.test(skipLine),
+      "the --module skip condition must be qualified by product.md's absence, not unconditional",
+    );
+    assert.ok(
+      /5b-4/.test(skipLine),
+      "--module mode with an existing product.md must route to 5b-4: Module Map Append",
     );
   });
 

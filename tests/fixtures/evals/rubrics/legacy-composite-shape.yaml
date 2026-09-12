@@ -1,0 +1,98 @@
+# Legacy COMPOSITE-shape rubric fixture — reproduces, in one file, the
+# combination of BOTH pre-migration defects the retired weighted-rubric
+# harness's real plan.yaml carried before rubric-set-core-lifecycle.plan.md
+# Task 6 deleted the tree it lived in: a nested `scoring:` block AND weighted
+# `quality_dimensions` entries. Identical to
+# tests/fixtures/evals/rubrics/legacy-weight-scale.yaml (every required
+# top-level key present, both quality_dimensions entries carrying a numeric
+# `weight`) PLUS a nested `scoring:` block layered on top — deliberately, so
+# that removing the `scoring:` block alone reduces this file to exactly that
+# sibling fixture's already-proven shape.
+#
+# Its ONLY consumer is tests/lib/evals/rubric-legacy-scale.test.mjs's
+# "nesting is checked before the legacy-weight scale" test — the
+# pass-ordering claim the real plan.yaml used to carry: a composite rubric
+# this malformed trips `RUBRIC_NESTED_MAP` on its `scoring:` block before
+# `assertRequiredKeysPresent`, `assertEntriesComplete`, or
+# `assertNoLegacyWeights` ever run (lib/evals/rubric.mjs's loadRubric() pass
+# order), so the legacy-weight scale is provably unreachable behind nesting
+# rather than merely believed to be — and, falsified, removing `scoring:`
+# alone (with every other key and entry left complete, exactly as above)
+# makes the same file raise `RUBRIC_LEGACY_SCALE` instead, inverting the
+# ordering claim on demand. Do not add a second consumer; a rubric this
+# malformed exists only to be rejected.
+#
+# NOTE ON FIDELITY: the real, deleted plan.yaml was missing ten of the twelve
+# REQUIRED_TOP_LEVEL_KEYS (it declared only `skill`, `scenario`,
+# `required_elements`, `quality_dimensions`) — this fixture does NOT
+# reproduce that omission, deliberately: a file missing those keys reaches
+# `RUBRIC_MISSING_KEY` (or `RUBRIC_INCOMPLETE_ELEMENT`/
+# `RUBRIC_INCOMPLETE_CRITERION`, since plan.yaml's entries used the older
+# `match_pattern` schema) before `assertNoLegacyWeights` regardless of
+# whether `scoring:` is present, which would make the pass-ordering claim
+# untestable in the direction that matters (removing `scoring:` must reach
+# the legacy-weight-scale pass, not stall one step earlier at a different
+# rejection). The claim under test is specifically "nesting beats
+# legacy-weight-scale," not "nesting beats missing-keys" (a different,
+# already-uncontested ordering) — so this fixture is complete everywhere
+# except its nesting and its weights, isolating the one ordering pair the
+# test exists to prove.
+#
+# It is deliberately placed under tests/fixtures/evals/rubrics/, NOT under
+# either RUBRIC_LEGACY_SURVIVES root (tests/evals/skill-regression/rubrics/
+# and the now-deleted retired weighted-rubric harness's own root) — it must
+# stay here. It is also not one of the 21 out-of-charter legacy-shaped
+# rubrics rubric-set-core-lifecycle Task 1 enumerates: that set is scoped to
+# the five other harnesses under tests/evals/, not tests/fixtures/.
+#
+# It exists because the real composite input (the retired weighted-rubric
+# harness's own plan.yaml) was deleted by Task 6 of this same plan, which made
+# the pass-ordering claim permanently unfalsifiable without a replacement. If
+# you are tidying up "an unused legacy-looking fixture," this is why it is
+# here — do not delete it without replacing what it proves.
+
+rubric_id: "fixture-legacy-composite-shape"
+version: 1
+layer: 3
+verdict_values: "met | not_met | unknown (judged criteria) | not_applicable (deterministic elements)"
+
+required_elements:
+  - id: spec_criteria_referenced
+    description: "Every acceptance criterion in the spec is referenced verbatim by an added or modified test"
+    source: "the Live Spec's acceptance-criteria list, matched against test names and assertion messages in the diff"
+    met_when: "each criterion's identifier, or its literal wording, appears in at least one test name or assertion message"
+    not_applicable_when: "the spec declares no acceptance criteria — record NOT_APPLICABLE"
+
+  - id: tests_accompany_source
+    description: "Every changed non-test source file has an added or modified test in the same diff"
+    source: "the diff file list"
+    met_when: "no changed source file lacks a corresponding test change"
+    not_applicable_when: "never — the diff file list always answers this"
+
+quality_dimensions:
+  - id: readability_naming
+    criterion: "Can a developer unfamiliar with this module state what each newly added symbol does from its name and signature alone?"
+    reference: "the matched golden sample in .context-index/samples/, else the naming conventions in the constitution"
+    met_when: "every new symbol's name and signature convey its purpose without reading its body"
+    not_met_when: "at least one new symbol requires reading its body to know what it does"
+    unknown_when: "no golden sample and no naming convention is declared, so there is no anchor to compare against"
+    weight: 3
+
+  - id: separation_of_concerns
+    criterion: "Does each changed file hold a single responsibility, at the same boundary the reference draws?"
+    reference: "the matched golden sample's file/module split, else the Architecture Boundaries section of the constitution"
+    met_when: "no changed file mixes responsibilities the reference keeps apart"
+    not_met_when: "at least one changed file merges responsibilities the reference separates"
+    unknown_when: "the diff touches no file the reference covers"
+    weight: 9
+
+layer3_max_points: 25
+required_element_points: 10
+judged_criterion_points: 15
+unknown_policy: "exclude_from_denominator"
+not_applicable_policy: "exclude_from_denominator"
+insufficient_evidence_threshold_percent: 40
+
+scoring:
+  required_element_weight: 50
+  quality_dimension_weight: 50

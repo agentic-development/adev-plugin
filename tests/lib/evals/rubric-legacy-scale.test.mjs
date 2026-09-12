@@ -11,6 +11,7 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -187,26 +188,85 @@ test("the shipped default rubric loads — its vestigial weight: 1 lines are gon
   // Regression guard for the five `weight: 1` lines deleted from
   // skills/eval/default-rubric.yaml. That file's own header states its
   // quality_dimensions are BINARY (met / not_met / unknown) and calls that a
-  // deliberate deviation from the skill-compression pattern, so a uniform weight
-  // of 1 on every entry was left-over scaffolding from the pattern the file says
-  // it departs from — and carried no information even if it were read.
+  // deliberate deviation from the older weighted-scale pattern, so a uniform
+  // weight of 1 on every entry was left-over scaffolding from the pattern the
+  // file says it departs from — and carried no information even if it were
+  // read.
   const rubric = loadRubric("skills/eval/default-rubric.yaml", { projectRoot: repoRoot });
   assert.ok(rubric.quality_dimensions.length > 0);
   assert.ok(rubric.quality_dimensions.every((d) => d.weight === undefined));
 });
 
-test("the real skill-compression rubrics are refused — an intended signal, not a regression", () => {
-  // tests/evals/skill-compression/rubrics/plan.yaml IS a legacy weighted rubric
-  // (quality_dimensions carrying weight: 2, 1.5, ...), but it never reaches this
-  // pass: it declares only `skill`, `scenario`, `required_elements` and
-  // `quality_dimensions` — so it would fail the REQUIRED-KEY pass — and, earlier
-  // still, a nested `scoring:` block that the NESTING pass rejects first. The
-  // code asserted here is therefore the one it genuinely produces, not the one
-  // its weights would suggest. Migrating those three rubrics to the
-  // binary-verdict shape belongs to a separate capability.
+test("a conforming-but-weighted synthetic fixture is refused for the weight itself, not a coincidental earlier pass", () => {
+  // The real tests/evals/skill-compression/rubrics/plan.yaml this test used to
+  // target was a legacy weighted rubric (quality_dimensions carrying
+  // weight: 2, 1.5, ...) but it never reached the legacy-weight-scale pass: it
+  // declared only `skill`, `scenario`, `required_elements` and
+  // `quality_dimensions` — so it would fail the REQUIRED-KEY pass — and,
+  // earlier still, carried a nested `scoring:` block the NESTING pass rejects
+  // first. That file is gone (rubric-set-core-lifecycle.plan.md Task 6
+  // retired the tree it lived in); tests/fixtures/evals/rubrics/
+  // legacy-weight-scale.yaml is the purpose-built synthetic stand-in this
+  // test now targets instead — conforming except for its weights, with no
+  // `scoring:` block and every required key present, so it reaches the
+  // legacy-weight-scale pass and is refused for exactly the reason its name
+  // says, not for an earlier structural defect. (The pass-ordering claim the
+  // old target's `scoring:` block used to carry is preserved separately,
+  // below, against a fixture built to keep that claim falsifiable.)
   const err = captureThrow(() =>
-    loadRubric("tests/evals/skill-compression/rubrics/plan.yaml", { projectRoot: repoRoot }),
+    loadRubric("tests/fixtures/evals/rubrics/legacy-weight-scale.yaml", { projectRoot: repoRoot }),
+  );
+  assert.equal(err.code, "RUBRIC_LEGACY_SCALE");
+  assert.match(err.message, /weight/);
+});
+
+test("nesting is checked before the legacy-weight scale", () => {
+  // The retargeted test above proves refusal on a fixture with no `scoring:`
+  // block, which cannot carry the pass-ordering claim the original
+  // skill-compression/rubrics/plan.yaml target used to prove: that nesting is
+  // checked BEFORE the legacy-weight scale, so a composite legacy rubric
+  // (nested scoring: block AND weighted quality_dimensions) never reaches
+  // RUBRIC_LEGACY_SCALE at all — it is rejected earlier, for a different
+  // reason. tests/fixtures/evals/rubrics/legacy-composite-shape.yaml
+  // reproduces that composite shape (see its own header for the full
+  // rationale) specifically so this ordering claim stays falsifiable now
+  // that the real composite input is gone.
+  const err = captureThrow(() =>
+    loadRubric("tests/fixtures/evals/rubrics/legacy-composite-shape.yaml", { projectRoot: repoRoot }),
   );
   assert.equal(err.code, "RUBRIC_NESTED_MAP");
+  assert.notEqual(err.code, "RUBRIC_LEGACY_SCALE");
   assert.match(err.message, /scoring/);
+});
+
+test("token-budget-eval's two suites are discovered at their relocated path, never at the old one", () => {
+  // rubric-set-core-lifecycle.plan.md Task 5 relocates
+  // tests/evals/skill-compression/token-budget-eval/ to
+  // tests/evals/token-optimization/token-budget-eval/, ahead of Task 6
+  // retiring the skill-compression tree entirely. `--evals --list` is the
+  // discovery surface tests/test-discovery.test.mjs's bucket-partition
+  // assertion depends on; this proves the relocation is visible there, not
+  // merely that the files exist on disk at the new path.
+  const output = execFileSync(process.execPath, [join(PLUGIN_ROOT, "scripts", "run-tests.mjs"), "--evals", "--list"], {
+    cwd: PLUGIN_ROOT,
+    encoding: "utf8",
+  });
+  assert.ok(
+    output.trim().length > 0,
+    "scripts/run-tests.mjs --evals --list produced no output — cannot trust the path assertions below",
+  );
+  const newPaths = [
+    "tests/evals/token-optimization/token-budget-eval/token-budget-eval.test.mjs",
+    "tests/evals/token-optimization/token-budget-eval/real-token-analysis.test.mjs",
+  ];
+  const oldPaths = [
+    "tests/evals/skill-compression/token-budget-eval/token-budget-eval.test.mjs",
+    "tests/evals/skill-compression/token-budget-eval/real-token-analysis.test.mjs",
+  ];
+  for (const p of newPaths) {
+    assert.ok(output.includes(p), `--evals --list must list the relocated suite at ${p}, output: ${JSON.stringify(output)}`);
+  }
+  for (const p of oldPaths) {
+    assert.ok(!output.includes(p), `--evals --list must not list the pre-relocation path ${p} any more, output: ${JSON.stringify(output)}`);
+  }
 });

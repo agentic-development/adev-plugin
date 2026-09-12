@@ -118,6 +118,48 @@ describe("adev issues close", () => {
     const closed = await manager.get(blockerOne);
     assert.equal(closed.status, "closed");
   });
+
+  it("prints a non-blocking advisory when no commit in history mentions the closed id (adev-plugin-j2ev.2)", async () => {
+    // adev-plugin-7aav was closed with a full root-cause writeup but the
+    // suggested fix was never applied -- nothing in the close path noticed.
+    // This is advisory, never blocking: closing "won't fix" / "duplicate" /
+    // "resolved without a code change" issues is legitimate and must still
+    // exit 0.
+    const r = runCli(root, ["close", blockerTwo, "--reason", "finished"]);
+    assert.equal(r.status, 0, r.stderr);
+    assert.match(r.stderr, new RegExp(`no commit.*mentions.*\\b${blockerTwo}\\b`, "i"));
+
+    const manager = getIssueManager(MANIFEST, root);
+    const closed = await manager.get(blockerTwo);
+    assert.equal(closed.status, "closed");
+  });
+
+  it("prints no advisory when a commit in history mentions the closed id", async () => {
+    const verified = (await getIssueManager(MANIFEST, root).create({ title: "Verified fix", type: "task" })).id;
+    writeFileSync(join(root, "fix.txt"), verified);
+    execFileSync("git", ["add", "fix.txt"], { cwd: root });
+    execFileSync("git", ["commit", "-q", "-m", `fix: resolve ${verified}`], { cwd: root });
+
+    const r = runCli(root, ["close", verified, "--reason", "finished"]);
+    assert.equal(r.status, 0, r.stderr);
+    assert.doesNotMatch(r.stderr, /no commit.*mentions/i);
+  });
+
+  it("skips the advisory silently when projectRoot is not a git repository", async () => {
+    const nonGitRoot = mkdtempSync(join(tmpdir(), "adev-issues-close-nogit-"));
+    try {
+      mkdirSync(join(nonGitRoot, ".context-index"), { recursive: true });
+      writeFileSync(join(nonGitRoot, ".context-index", "manifest.yaml"), "tasks:\n  backend: json\n");
+      const manager = getIssueManager(MANIFEST, nonGitRoot);
+      const id = (await manager.create({ title: "No git here", type: "task" })).id;
+
+      const r = runCli(nonGitRoot, ["close", id, "--reason", "finished"]);
+      assert.equal(r.status, 0, r.stderr);
+      assert.doesNotMatch(r.stderr, /no commit.*mentions/i);
+    } finally {
+      rmSync(nonGitRoot, { recursive: true, force: true });
+    }
+  });
 });
 
 describe("adev issues close — cascade guard", () => {

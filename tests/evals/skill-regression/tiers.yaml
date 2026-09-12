@@ -1,0 +1,5 @@
+landed: "change_imminent,core_lifecycle"
+change_imminent: "codehealth,repomap,document,deploy,sync,learn,issues,eval,assess,using-adev,prototype"
+core_lifecycle: "work,brainstorm,specify,review-specs,plan,route,implement,write-test,validate,debug,build,hygiene"
+remaining: "init,reconcile,recover,research,retro,sample,status"
+uncovered: "bugfix-loop"

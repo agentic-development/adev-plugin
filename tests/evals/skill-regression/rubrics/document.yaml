@@ -1,0 +1,100 @@
+# Layer 3 rubric for /adev:document, scored against the skill-regression
+# fixture (tests/evals/skill-regression/). Field shapes verbatim from
+# skills/eval/default-rubric.yaml. All values flat.
+#
+# Scored input: docs/architecture.md and the per-module docs document writes
+# to a temp-tree copy of tests/evals/skill-regression/project, PLUS
+# docs/api.md — a file document never writes, shipped as fixture ground
+# truth — for the undocumented-public-api pair.
+#
+# Citation: skill-regression:PV-08/KC-08 (undocumented-public-api). The pair
+# is scored directly against docs/api.md's own content (never against a
+# document-generated report — document produces no such report today), which
+# is why the load-bearing note calls out docs/api.md rather than
+# docs/architecture.md: the twin is defined against the fixture-shipped
+# file, which architecture.md does not replace. Every met_when is phrased
+# against catalog.yaml's detect_when/must_not_flag_when finding, never
+# against the fixture's in-file answer-key label (see issue-dzxjoa, tracked
+# separately, not resolved here).
+#
+# Spec: .context-index/specs/features/eval-harness/rubric-set-change-imminent.spec.md
+
+rubric_id: "skill-regression-document"
+version: 1
+layer: 3
+verdict_values: "met | not_met | unknown (judged criteria) | not_applicable (deterministic elements)"
+skill: document
+scenario: document
+
+required_elements:
+  - id: architecture_md_written
+    description: "document writes docs/architecture.md with all four generated sections"
+    source: "artifact: docs/architecture.md"
+    met_when: "docs/architecture.md exists and carries a Module Map table, a Dependency Flow paragraph, an Entry Points list, and an Architecture Decision Records section, per Step 1.6 of skills/document/SKILL.md"
+    not_applicable_when: "never — a full run always executes Step 1"
+
+  - id: module_map_lists_both_modules
+    description: "The Module Map table names every module manifest.yaml declares"
+    source: "artifact: docs/architecture.md"
+    met_when: "the Module Map table lists both the orders and shipping modules (manifest.yaml modules[].slug), each with a Purpose, Key Exports, Inbound and Outbound column populated"
+    not_applicable_when: "never — manifest.yaml always declares both modules in the fixture"
+
+  - id: shipping_module_doc_written
+    description: "document writes the per-module doc for the shipping module"
+    source: "artifact: docs/modules/shipping.md"
+    met_when: "docs/modules/shipping.md exists, carrying Purpose, Key Exports, Dependencies and Related Specs sections, per Step 2 of skills/document/SKILL.md"
+    not_applicable_when: "never — a full run always executes Step 2 for every manifest module"
+
+  - id: generated_manifest_written
+    description: "document writes the manifest of generated doc files"
+    source: "artifact: docs/GENERATED.md"
+    met_when: "docs/GENERATED.md exists and lists docs/architecture.md with a 7-character commit SHA and a run date, per Step 3 of skills/document/SKILL.md"
+    not_applicable_when: "never — a full run always executes Step 3"
+
+  - id: undocumented_public_api_detected
+    description: "The planted undocumented public export has no heading in docs/api.md"
+    source: "skill-regression:PV-08"
+    met_when: "docs/api.md carries no heading for calculateRate, which src/index.mjs re-exports alongside createOrder and MAX_LINE_ITEMS — the coverage gap catalog.yaml PV-08 names as its detect_when"
+    not_applicable_when: "never — the fixture always plants this defect"
+
+  - id: documented_public_api_known_clean
+    description: "The specificity twin of PV-08: a fully documented export must carry its heading and parameter table in docs/api.md"
+    source: "skill-regression:KC-08"
+    met_when: "docs/api.md carries a heading for createOrder(payload) with a full parameter table, per catalog.yaml KC-08's must_not_flag_when"
+    not_applicable_when: "never — the fixture always ships this known-clean twin"
+
+quality_dimensions:
+  - id: entry_points_match_zero_inbound_definition
+    criterion: "Does the Entry Points list in docs/architecture.md name exactly the files with zero inbound edges in dependency-graph.json, matching Step 1.4's definition, rather than an arbitrary or hand-picked subset?"
+    reference: "Step 1.4 (Identify Entry Points) in skills/document/SKILL.md"
+    met_when: "every listed entry point has zero inbound edges in dependency-graph.json, and no zero-inbound file is omitted"
+    not_met_when: "the list includes a file with a nonzero inbound count, or omits a file that has zero inbound edges"
+    unknown_when: "dependency-graph.json is unavailable or carries no inbound/outbound data to check the list against"
+
+  - id: dependency_flow_narrative_matches_data
+    criterion: "Does the Dependency Flow prose correctly characterize the orders and shipping modules as core, leaf, or middleware based on their actual inbound/outbound counts in dependency-graph.json, per Step 1.3's three categories?"
+    reference: "Step 1.3 (Build Dependency Flow) in skills/document/SKILL.md"
+    met_when: "each module named in the prose is characterized consistently with its own inbound/outbound counts"
+    not_met_when: "at least one module is characterized inconsistently with its own inbound/outbound counts"
+    unknown_when: "the prose names no module by name, so no per-module comparison is possible"
+
+  - id: marker_protocol_respected
+    criterion: "When docs/architecture.md already carries both <!-- adev:generated --> and <!-- adev:human --> markers from a prior run, is the content after <!-- adev:human --> preserved verbatim while only the generated section is regenerated, per the Marker Protocol table?"
+    reference: "the Marker Protocol table in skills/document/SKILL.md"
+    met_when: "human content after the marker is byte-identical before and after the run"
+    not_met_when: "any content after <!-- adev:human --> is altered or dropped"
+    unknown_when: "the scenario is a first run with no prior docs/architecture.md carrying the marker, so there is nothing to preserve"
+
+  - id: public_api_gap_surfaced
+    criterion: "Does document's own output — the shipping module doc's Key Exports table, from symbol-ranks.json's top-10 ranked symbols per Step 2 — at least list calculateRate, giving a reader the information needed to notice it has no docs/api.md heading, even though document never writes docs/api.md itself?"
+    reference: "catalog.yaml PV-08's detect_when, read against docs/modules/shipping.md's Key Exports table and docs/api.md side by side"
+    met_when: "the shipping module doc's Key Exports table lists calculateRate"
+    not_met_when: "calculateRate is absent from the shipping module doc's Key Exports table even though it ranks within symbol-ranks.json's top 10 for that module"
+    unknown_when: "symbol-ranks.json ranks calculateRate below the top-10 cutoff Step 2 imposes, so its absence reflects the cutoff rather than a documentation gap"
+
+layer3_max_points: 25
+required_element_points: 10
+judged_criterion_points: 15
+unknown_policy: "exclude_from_denominator"
+not_applicable_policy: "exclude_from_denominator"
+insufficient_evidence_threshold_percent: 40

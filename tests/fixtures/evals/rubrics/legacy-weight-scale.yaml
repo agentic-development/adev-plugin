@@ -1,5 +1,7 @@
 # Legacy weighted rubric fixture — the pre-migration shape the loader must
-# REFUSE, modelled on tests/evals/skill-compression/rubrics/*.yaml.
+# REFUSE, modelled on the retired weighted-rubric harness's own rubrics
+# (rubric-set-core-lifecycle.plan.md Task 6 deleted the tree; this fixture is
+# now the only remaining instance of that shape).
 #
 # Identical to conforming.yaml except that both quality_dimensions entries
 # carry a numeric `weight`. Deliberate properties the suite depends on:

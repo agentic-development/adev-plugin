@@ -1,0 +1,107 @@
+# Layer 3 rubric for /adev:deploy, scored against the skill-regression
+# fixture (tests/evals/skill-regression/). Field shapes verbatim from
+# skills/eval/default-rubric.yaml. All values flat: no nested maps, since the
+# repo's minimal YAML readers cannot represent them.
+#
+# PRODUCER, NOT DETECTOR: this rubric cites no skill-regression PV/KC pair.
+# deploy neither audits the fixture nor emits a finding about planted
+# defects — it runs a pipeline. Every required_elements[].source below is
+# `output:` or `artifact:` only. `output:` names a span of the agent's own
+# chat transcript; it has NO v1 machine reader (lib/evals/score.mjs never
+# reads an element's `source` field at all — scoring runs entirely off the
+# verdict set a judge or the operator supplies). Its v1 consumer is the
+# operator's manual Tier B pass; its automated consumer is a future
+# CI-integration capability, not anything this rubric or `score.mjs` do today.
+#
+# Scored input: the `/adev:deploy --dry-run --version v1.0.0-fixture`
+# transcript. Never a live run: every step in .context-index/deploy.yaml is
+# type: manual, so lib/deploy.mjs's executor spawns no process for any of
+# them (manual is the one step type whose executor runs nothing — see that
+# file's own module doc). The actual hazard a live run introduces is
+# different from a spawn: skills/deploy/SKILL.md's Step 4 blocks on
+# interactive per-step confirmation ("done" / "skip" / "abort") for all five
+# steps before it returns — an unattended-input wait the eval harness's
+# Hermeticity Rules forbid for a scenario that must run to completion with no
+# human in the loop. --dry-run prints the same five-step list and exits
+# without ever entering that interactive loop, which is why this rubric
+# scores exclusively the --dry-run transcript.
+#
+# --version v1.0.0-fixture is required because the fixture ships no
+# milestones.json/milestones.yaml — resolveVersion() has no shipped milestone
+# to fall back to, so the scenario must supply --version explicitly or Step 2
+# fails before any step is ever printed.
+#
+# Spec: .context-index/specs/features/eval-harness/rubric-set-change-imminent.spec.md
+
+rubric_id: "skill-regression-deploy"
+version: 1
+layer: 3
+verdict_values: "met | not_met | unknown (judged criteria) | not_applicable (deterministic elements)"
+skill: deploy
+scenario: deploy
+
+required_elements:
+  - id: all_five_steps_listed_in_order
+    description: "The dry-run transcript names all five deploy.yaml steps, in the same order the config declares them"
+    source: "output: the printed step list in the --dry-run transcript"
+    met_when: "confirm-docs, confirm-version, tag-release, publish-package, and announce each appear, in that exact top-to-bottom order, matching .context-index/deploy.yaml's steps: list"
+    not_applicable_when: "never — --dry-run always prints the full step list before exiting, per Step 4 of skills/deploy/SKILL.md"
+
+  - id: step_types_reported_as_manual
+    description: "Every printed step is labeled with its declared type"
+    source: "output: the per-step type label in the --dry-run transcript"
+    met_when: "all five printed steps are labeled type: manual — the type every step in .context-index/deploy.yaml actually declares, with no step mislabeled shell, verify, gate, or ci-trigger"
+    not_applicable_when: "never — the config always declares a type for every step"
+
+  - id: step_instructions_printed_verbatim
+    description: "confirm-docs' printed instructions match the config's instructions field verbatim, not a paraphrase"
+    source: "output: the confirm-docs step's printed instructions text"
+    met_when: "the printed text for confirm-docs includes the full instruction to read docs/api.md, confirm every symbol src/index.mjs exports is documented there, and confirm no documented symbol has been removed from the export list — the exact sentence .context-index/deploy.yaml's confirm-docs step carries"
+    not_applicable_when: "never — the config always carries this instructions field"
+
+  - id: version_resolved_reported
+    description: "The transcript states the resolved version before printing the step list"
+    source: "output: the version-resolution line preceding the step list"
+    met_when: "the transcript reports the resolved version as v1.0.0-fixture, confirming Step 2 (Resolve Version) of skills/deploy/SKILL.md ran and used the supplied --version value rather than a milestone lookup"
+    not_applicable_when: "never — Step 2 always runs before Step 4 prints the steps"
+
+  - id: no_step_executed
+    description: "The transcript shows no execution outcome for any step"
+    source: "output: the full --dry-run transcript"
+    met_when: "no step in the transcript is reported as succeeded, failed, or skipped — --dry-run prints what would execute and exits without running anything, per the --dry-run entry in skills/deploy/SKILL.md's Arguments section"
+    not_applicable_when: "never — --dry-run always takes this exit path instead of Step 4's execution branch"
+
+  - id: no_rollback_section_shown
+    description: "The transcript carries no rollback-steps block"
+    source: "output: the full --dry-run transcript"
+    met_when: "the transcript contains no 'Rollback steps available' section — Step 5's rollback surfacing is gated on a step failure, which --dry-run's exit-before-execution path never reaches, and .context-index/deploy.yaml declares no rollback: body on any step regardless"
+    not_applicable_when: "never — --dry-run always exits before Step 5's failure branch could run"
+
+quality_dimensions:
+  - id: step_order_fidelity
+    criterion: "Does the printed step order exactly mirror .context-index/deploy.yaml's declared steps: list, so an operator reading the transcript top-to-bottom sees the same sequence a real run would execute in?"
+    reference: "the steps: list order in .context-index/deploy.yaml, and the 'Steps run in order with fail-fast behavior' guarantee in skills/deploy/SKILL.md's opening paragraph"
+    met_when: "the five printed steps appear in the identical order the config declares"
+    not_met_when: "at least one printed step is out of the config's declared order"
+    unknown_when: "the transcript omits step ordering information entirely (e.g. prints an unordered list or a table with no position cues)"
+
+  - id: manual_step_disclosure_actionable
+    criterion: "For each manual step, is the exact confirmation prompt text (the step's instructions field) shown, so an operator could act on it without opening deploy.yaml themselves?"
+    reference: "skills/deploy/SKILL.md's Step 4 announcement convention for manual steps ('Print the step's instructions field. Wait for user input')"
+    met_when: "every one of the five steps' printed entries includes its full instructions text, not merely its id or name"
+    not_met_when: "at least one step's printed entry omits its instructions text or truncates it to the point an operator could not act on it unaided"
+    unknown_when: "the transcript is unavailable or was truncated by the harness before all five steps were printed"
+
+  - id: dry_run_framed_as_preview_only
+    criterion: "Does the transcript state in its own words that this is a preview and nothing has actually run, rather than leaving that inference to the reader from omission alone?"
+    reference: "the --dry-run argument description in skills/deploy/SKILL.md's Arguments section ('--dry-run: print what would execute without running anything')"
+    met_when: "the transcript includes explicit preview-framing language (e.g. 'would execute', 'dry run', 'no steps were run') before or after the step list"
+    not_met_when: "the transcript prints the step list with no accompanying language distinguishing it from a completed or in-progress run"
+    unknown_when: "the harness captured only a partial transcript, so no judgment about the framing language's presence is possible"
+
+layer3_max_points: 25
+required_element_points: 10
+judged_criterion_points: 15
+unknown_policy: "exclude_from_denominator"
+not_applicable_policy: "exclude_from_denominator"
+insufficient_evidence_threshold_percent: 40

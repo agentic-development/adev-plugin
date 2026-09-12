@@ -155,17 +155,95 @@ test("the default rubric roots are non-vacuous — the scan reaches skills/eval/
  * extended this list in the same commit that created it.
  *
  * The plan's Task 5 says thirty-two, counting the spec's Required Files table
- * minus README.md. With Task 6's README the tree holds thirty-four, because
+ * minus README.md. With Task 6's README the tree held thirty-four, because
  * Task 4's review round
  * added `project/tests/rates.test.mjs` — the dirty slice was shipping
  * implemented code with no tests, a shape asymmetry a rubric could score
  * instead of the planted defect — and the spec's Required Files table was not
  * extended with it. This list is pinned to the TREE, which is what the
  * both-ways comparison is for; the table is the artifact that is behind.
+ *
+ * `rubric-set-change-imminent.spec.md` Task 1 added `tiers.yaml` at the
+ * fixture directory's root (sibling to `catalog.yaml` and `README.md`, not
+ * under `project/` — it declares tier membership for the fixture's own
+ * consumers, not fixture content), taking the count from thirty-four to
+ * thirty-five. Task 5 added the first three of the eleven `rubrics/*.yaml`
+ * and `scenarios/*.md` pairs (`codehealth`, `repomap`, `document`) — also
+ * siblings of `catalog.yaml`, not under `project/`, since they describe the
+ * fixture rather than being part of it — taking the count to forty-one.
+ * Task 6 added the next four pairs (`deploy`, `sync`, `learn`, `issues`) —
+ * the producer tier, same sibling placement — taking the count to
+ * forty-nine. Task 7 added the next three pairs (`eval`, `assess`,
+ * `prototype`) — the reporter tier, same sibling placement — taking the
+ * count to fifty-five. `rubric-set-change-imminent.spec.md` Task 8 added the
+ * eleventh and last pair (`using-adev`) — the responder tier, same sibling
+ * placement — taking the count to fifty-seven and landing all eleven
+ * rubric/scenario pairs.
+ *
+ * `rubric-set-core-lifecycle.plan.md` Task 3 added the first five of that
+ * plan's twelve `rubrics/*.yaml` and `scenarios/*.md` pairs (`hygiene`,
+ * `validate`, `review-specs`, `debug`, `route`) — the core-lifecycle
+ * detector tier, same sibling placement as every earlier pair — taking the
+ * count from fifty-seven to sixty-seven. Task 4 added the next two
+ * (`write-test`, `implement`) — the core-lifecycle producer tier, same
+ * sibling placement — taking the count to seventy-one. Task 6 added the
+ * last three (`specify`, `plan`, `brainstorm`) — re-authored against this
+ * tier's shared contract, replacing their retired weighted-rubric-harness
+ * legacy predecessors, deleted in the same commit — taking the count to
+ * seventy-seven. Task 7 added the final two (`build`, `work`) — the
+ * core-lifecycle orchestrator tier, same sibling placement — taking the
+ * count to eighty-one, the tier's full and final total.
  */
 const REQUIRED_FIXTURE_FILES = Object.freeze([
   "README.md",
   "catalog.yaml",
+  "tiers.yaml",
+  "rubrics/assess.yaml",
+  "rubrics/brainstorm.yaml",
+  "rubrics/build.yaml",
+  "rubrics/codehealth.yaml",
+  "rubrics/debug.yaml",
+  "rubrics/deploy.yaml",
+  "rubrics/document.yaml",
+  "rubrics/eval.yaml",
+  "rubrics/hygiene.yaml",
+  "rubrics/implement.yaml",
+  "rubrics/issues.yaml",
+  "rubrics/learn.yaml",
+  "rubrics/plan.yaml",
+  "rubrics/prototype.yaml",
+  "rubrics/repomap.yaml",
+  "rubrics/review-specs.yaml",
+  "rubrics/route.yaml",
+  "rubrics/specify.yaml",
+  "rubrics/sync.yaml",
+  "rubrics/using-adev.yaml",
+  "rubrics/validate.yaml",
+  "rubrics/work.yaml",
+  "rubrics/write-test.yaml",
+  "scenarios/assess.md",
+  "scenarios/brainstorm.md",
+  "scenarios/build.md",
+  "scenarios/codehealth.md",
+  "scenarios/debug.md",
+  "scenarios/deploy.md",
+  "scenarios/document.md",
+  "scenarios/eval.md",
+  "scenarios/hygiene.md",
+  "scenarios/implement.md",
+  "scenarios/issues.md",
+  "scenarios/learn.md",
+  "scenarios/plan.md",
+  "scenarios/prototype.md",
+  "scenarios/repomap.md",
+  "scenarios/review-specs.md",
+  "scenarios/route.md",
+  "scenarios/specify.md",
+  "scenarios/sync.md",
+  "scenarios/using-adev.md",
+  "scenarios/validate.md",
+  "scenarios/work.md",
+  "scenarios/write-test.md",
   "project/AGENTS.md",
   "project/CLAUDE.md",
   "project/docs/api.md",
@@ -208,7 +286,19 @@ test("Required Files is enumerated both ways — every pinned path exists and th
   // tree without reaching the spec's Required Files table.
   const onDisk = walkFiles(FIXTURE_DIR).sort();
   assert.deepEqual(onDisk, [...REQUIRED_FIXTURE_FILES].sort());
-  assert.equal(REQUIRED_FIXTURE_FILES.length, 34, "Task 6's README.md took the count from 33 to 34");
+  assert.equal(
+    REQUIRED_FIXTURE_FILES.length,
+    81,
+    "Task 6's README.md took the count from 33 to 34; rubric-set-change-imminent Task 1's tiers.yaml took it to 35; " +
+      "Task 5's three rubrics + three scenarios took it to 41; rubric-set-change-imminent Task 6's four rubrics + " +
+      "four scenarios took it to 49; rubric-set-change-imminent Task 7's three rubrics + three scenarios took it to 55; " +
+      "rubric-set-change-imminent Task 8's one rubric + one scenario (using-adev) took it to 57; " +
+      "rubric-set-core-lifecycle Task 3's five rubrics + five scenarios (hygiene, validate, review-specs, debug, " +
+      "route) took it to 67; rubric-set-core-lifecycle Task 4's two rubrics + two scenarios (write-test, implement) " +
+      "took it to 71; rubric-set-core-lifecycle Task 6's three rubrics + three scenarios (specify, plan, brainstorm) " +
+      "took it to 77; rubric-set-core-lifecycle Task 7's two rubrics + two scenarios (build, work) took it to 81, " +
+      "the tier's full and final total",
+  );
   assert.ok(REQUIRED_FIXTURE_FILES.includes("README.md"), "Task 6's README.md must be registered here");
 });
 
@@ -314,21 +404,31 @@ test("the four covers_skills content pins hold", () => {
   assert.ok(skillsFor("charter-scope-escape").has("brainstorm"));
 });
 
-test("orphan-source-file's covers_skills is exactly codehealth, repomap — hygiene deliberately absent", () => {
-  // Do NOT "improve" this by adding `hygiene`. The core-lifecycle tier adds it
-  // as its own task and proves RUBRIC_COVERS_SKILLS_UNLISTED red-then-green
-  // across that edit; pre-extending it here makes that proof unreachable.
+test("orphan-source-file's covers_skills is exactly codehealth, hygiene, repomap — hygiene now load-bearing", () => {
+  // Task 2 of rubric-set-core-lifecycle.plan.md landed the transition this
+  // pin used to forbid: `hygiene` is now listed on both PV-03 and its KC-03
+  // twin. This is the green half of the covers_skills interlock's
+  // red-then-green proof — see rubric-coverage.test.mjs's "the hygiene
+  // citation of orphan-source-file is listed", which resolves a SYNTHETIC
+  // hygiene-shaped rubric citing PV-03/KC-03 against this REAL catalog and
+  // went red on RUBRIC_COVERS_SKILLS_UNLISTED before this edit landed.
+  //
+  // New invariant: `hygiene` is now load-bearing for hygiene.yaml's (Task 3,
+  // not yet authored) PV-03/KC-03 citations. Removing it here — reverting to
+  // "codehealth, repomap" — re-fires RUBRIC_COVERS_SKILLS_UNLISTED the moment
+  // hygiene.yaml exists and cites this class, so do not "simplify" this pin
+  // back to the two-slug form.
   const doc = parseYaml(readFileSync(CATALOG_PATH, "utf8"));
   let matched = 0;
   for (const entry of [...doc.planted_violations, ...doc.known_clean]) {
     if (entry.class !== "orphan-source-file") continue;
     matched += 1;
-    assert.deepEqual(splitSlugs(entry.covers_skills), ["codehealth", "repomap"], entry.id);
-    assert.ok(!splitSlugs(entry.covers_skills).includes("hygiene"), `${entry.id} must not list hygiene yet`);
+    assert.deepEqual(splitSlugs(entry.covers_skills), ["codehealth", "hygiene", "repomap"], entry.id);
+    assert.ok(splitSlugs(entry.covers_skills).includes("hygiene"), `${entry.id} must list hygiene`);
   }
   // Same reason the `checked` counters exist: a class-slug rename empties the
   // loop, and a pin that iterates nothing stops checking without going red.
-  // One PV and its KC twin.
+  // One PV and its KC twin — unchanged by the covers_skills edit above.
   assert.equal(matched, 2, "no orphan-source-file pair was matched — the pin above checked nothing");
 });
 

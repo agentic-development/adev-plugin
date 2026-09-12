@@ -1,0 +1,123 @@
+# Layer 3 rubric for /adev:work, scored against the skill-regression
+# fixture (tests/evals/skill-regression/). Field shapes verbatim from
+# skills/eval/default-rubric.yaml — the exemplar. All values flat: no nested
+# maps, since the repo's minimal YAML readers cannot represent them.
+#
+# Scored input: the classification and the skill /adev:work routes to —
+# never an artifact of its own. This is one of this tier's two ORCHESTRATOR
+# rubrics (rubrics/build.yaml is the other): work reads project state and
+# decides which /adev:* skill runs next, and its rubric asserts on the
+# DECISION, never on what the routed-to skill later produces.
+#
+# No fixture catalog citation of any kind anywhere in this file's raw text
+# (the exact marker string is deliberately not spelled out here — naming it
+# in this comment would make this file fail its own no-citation check),
+# and no "artifact:"-prefixed source at all — see rubrics/build.yaml's
+# header for the full rationale (double-counting a downstream skill's own
+# rubric; scoring an orchestrator not_met for a child skill's regression).
+# Every source below is plain descriptive prose over state /adev:work
+# itself reads (the lifecycle log, currentState()'s projection, the
+# coordination scan) — never an "artifact:"-prefixed pointer at a routed-to
+# skill's own file.
+#
+# TWO REFUSALS, guarding different branches (rubric-set-core-lifecycle.
+# spec.md's "The two orchestrators score routing, not artifacts" section):
+# the fixture's shipping-rates.jsonl (tests/evals/skill-regression/project/
+# .context-index/lifecycle-state/shipping-rates.jsonl) shows `specify`
+# completed with NO `review` step and NO `plan` step. Per
+# skills/work/SKILL.md's Step 3 Next-Step Projection table, that state
+# routes to /adev:review-specs and must route to NEITHER /adev:plan (the
+# "review passed... no plan" row's precondition is unmet — there is no
+# review at all) NOR /adev:implement (the Resume Override in Step 3 item 1
+# requires an INCOMPLETE PLAN the state scan found — and Step 1.2 states
+# plainly that canonical task status lives in the lifecycle log, never in
+# grepped plan-file checkboxes — so the override does not fire despite
+# shipping-rates.plan.md sitting on disk in the fixture project tree as a
+# planted trap). Every element below anchors on the LIFECYCLE LOG, which is
+# what Step 1.2 and Step 3 both route on; shipping-rates.spec.md's matching
+# `status: review-pending` frontmatter is the visible half but not the
+# load-bearing one, and an element anchored on the frontmatter alone would
+# score met against a log that says otherwise — see element
+# state_derived_from_log_not_frontmatter below, which is precisely the
+# perturbation this rubric is built to catch.
+#
+# Spec: .context-index/specs/features/eval-harness/rubric-set-core-lifecycle.spec.md
+
+rubric_id: "skill-regression-work"
+version: 1
+layer: 3
+verdict_values: "met | not_met | unknown (judged criteria) | not_applicable (deterministic elements)"
+skill: work
+scenario: work
+
+required_elements:
+  - id: routes_shipping_rates_to_review_specs
+    description: "shipping-rates' lifecycle position (specify completed, no review step) routes to /adev:review-specs"
+    source: "the lifecycle log (shipping-rates.jsonl) read through currentState()"
+    met_when: "the proposed next step for shipping-rates is /adev:review-specs, matching the \"specify completed, no review step\" row of Step 3's Next-Step Projection table"
+    not_applicable_when: "never — the fixture's shipping-rates.jsonl always carries this exact log shape"
+
+  - id: refusal_no_plan_route_for_shipping_rates
+    description: "shipping-rates is never routed to /adev:plan"
+    source: "the lifecycle log (shipping-rates.jsonl)"
+    met_when: "the proposed route for shipping-rates is never /adev:plan — the Next-Step Projection table's \"review passed... no plan\" row requires a passed review, and the log carries no review step at all, satisfied or otherwise"
+    not_applicable_when: "never — the fixture's log shape always leaves this precondition unmet"
+
+  - id: refusal_no_implement_route_for_shipping_rates
+    description: "shipping-rates is never routed to /adev:implement, despite shipping-rates.plan.md sitting on disk"
+    source: "the lifecycle log (shipping-rates.jsonl), explicitly NOT the presence of shipping-rates.plan.md on disk"
+    met_when: "the proposed route for shipping-rates is never /adev:implement — the Resume Override (Step 3 item 1) requires an incomplete plan the STATE SCAN found via the lifecycle log, and shipping-rates.jsonl carries no plan step at all, so the override's precondition is unmet regardless of the plan file's presence on disk"
+    not_applicable_when: "never — the fixture always plants shipping-rates.plan.md on disk with no matching plan step in the log, precisely to make this refusal decidable"
+
+  - id: routes_create_order_to_done
+    description: "create-order's lifecycle position (validate passed) is classified as Done, offering deploy/retro/new work"
+    source: "the lifecycle log (create-order.jsonl) read through currentState()"
+    met_when: "the proposed next step for create-order is \"Done\" — offering /adev:deploy, /adev:retro, or new work, matching the \"validate passed\" row of Step 3's Next-Step Projection table, since create-order.jsonl's validate step_completed carries verdict PASS"
+    not_applicable_when: "never — the fixture's create-order.jsonl always carries this exact log shape"
+
+  - id: state_derived_from_log_not_frontmatter
+    description: "The routing decision for shipping-rates is justified by citing the lifecycle log, never the spec's frontmatter alone"
+    source: "the reasoning /adev:work reports alongside its proposed route"
+    met_when: "the reported reasoning for shipping-rates' route names the lifecycle log (or currentState()'s projection of it) as its evidence — not shipping-rates.spec.md's status: review-pending frontmatter in isolation, per Step 1.2's rule that canonical task status lives in the lifecycle log, never in grepped file state"
+    not_applicable_when: "never — this rubric's whole point is to prove the log, not the frontmatter, is load-bearing"
+
+  - id: concurrent_work_scan_run
+    description: "Step 1.5's coordination scan runs and its result is surfaced before any route is finalized"
+    source: "the coordination scan's reported result (adev coordination scan)"
+    met_when: "adev coordination scan is invoked once per triage pass and its result — a clean \"none detected\", a partial \"none in the signals that were available\" with a \"(not scanned — ...)\" note, a fully degraded \"not scanned — no signal available\", or a listed overlap — is surfaced to the user before the route is proposed as final, per Step 1.5"
+    not_applicable_when: "never — Step 1.5 runs on every state scan"
+
+  - id: recent_sessions_surfaced
+    description: "The 3 most recent session files are read and their summary lines surfaced when in-progress work is found"
+    source: "the .context-index/sessions/*.md glob, sorted by filename date prefix descending"
+    met_when: "when in-progress work is found for either fixture spec, the 3 most recent .context-index/sessions/*.md files (by filename date, descending) are read and each one's summary line is surfaced to the user, per Step 1.4"
+    not_applicable_when: "the copy's .context-index/sessions/ directory is empty or absent"
+
+quality_dimensions:
+  - id: refusal_reasoning_names_the_unmet_gate
+    criterion: "For each of the two refusals, does the reported reasoning name the SPECIFIC unmet precondition (no review step recorded; no plan step recorded despite a plan file existing) rather than silently omitting the wrong routes with no explanation?"
+    reference: "Step 3: State-Aware Routing Refinement in skills/work/SKILL.md"
+    met_when: "the user-facing reasoning explicitly states why /adev:plan and /adev:implement are not proposed for shipping-rates, each tied to the specific row of the Next-Step Projection table whose precondition is unmet"
+    not_met_when: "the two refused routes are omitted from the proposal with no stated reason, leaving a reader unable to tell a considered refusal from an oversight"
+    unknown_when: "the run's transcript does not preserve the reasoning text alongside the final route proposal"
+
+  - id: concurrent_work_surfaced_before_route_finalized
+    criterion: "Is any overlap the coordination scan reports (an open PR, branch, or in-progress issue on the same subject) surfaced to the user BEFORE the route is proposed as final, per Step 1.5?"
+    reference: "Step 1: Project State Scan in skills/work/SKILL.md"
+    met_when: "a reported overlap appears in the user-facing output ahead of, or alongside, the route proposal — never only in a later turn after the user has already confirmed a route"
+    not_met_when: "a reported overlap is available from the scan but does not reach the user-facing output before the route proposal"
+    unknown_when: "the coordination scan reports no overlap — clean, partial, or fully degraded — so there is no overlap to test the ordering against"
+
+  - id: route_reasoning_cites_the_projection_table_row
+    criterion: "Does the one-line reasoning behind the proposed route for each fixture spec name the specific lifecycle-position row it matched, rather than generic phrasing like 'this seems like the next step'?"
+    reference: "Step 4: Route Proposal in skills/work/SKILL.md"
+    met_when: "the reasoning line names the matched lifecycle position (e.g. \"specify completed, no review step\" or \"validate passed\") in terms traceable to Step 3's Next-Step Projection table"
+    not_met_when: "the reasoning line gives no lifecycle-position justification traceable to the table, even though a route is still proposed"
+    unknown_when: "the run proposes no route at all for one of the two fixture specs"
+
+layer3_max_points: 25
+required_element_points: 10
+judged_criterion_points: 15
+unknown_policy: "exclude_from_denominator"
+not_applicable_policy: "exclude_from_denominator"
+insufficient_evidence_threshold_percent: 40

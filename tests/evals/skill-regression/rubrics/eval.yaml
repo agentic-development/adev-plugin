@@ -1,0 +1,117 @@
+# Layer 3 rubric for /adev:eval, scored against the skill-regression fixture
+# (tests/evals/skill-regression/). Field shapes verbatim from
+# skills/eval/default-rubric.yaml — the exemplar. All values flat: no nested
+# maps, since the repo's minimal YAML readers cannot represent them.
+#
+# PRODUCER, NOT DETECTOR: this rubric cites no skill-regression PV/KC pair.
+# eval neither audits the fixture for a planted defect class nor emits a
+# codehealth-style finding — it reports a score. Every required_elements[].source
+# below is `output:` only, never `artifact:`: `adev eval score` prints to
+# stdout and writes nothing to disk (lib/cli/eval.mjs's cmdScore never opens a
+# file for writing — see its own module comments), so nothing this run
+# produces is ever a persisted artifact to cite.
+#
+# Scored input: the verdict table and aggregate line `adev eval score` prints
+# when scoring THIS FIXTURE'S OWN pre-built project rubric and verdict set —
+# .context-index/evals/orders-rubric.yaml scored against
+# .context-index/evals/orders-verdicts.json — both of which already ship in
+# tests/evals/skill-regression/project. This is exactly Layer 3 Step 3 of
+# skills/eval/SKILL.md ("Then score it: adev eval score --rubric <path>
+# --input <verdict file path>"), run with a verdict set the fixture already
+# supplies rather than one Steps 1-2 would otherwise have to produce live —
+# Steps 1-2 require judge subagent dispatch, which this rubric does not need
+# in order to score the rendering step alone.
+#
+# The table's six rows, the values below, and the aggregate line were
+# confirmed by actually calling lib/evals/score.mjs's scoreRubric() against
+# these two fixture files (not merely read from their source text): three
+# required_elements (money_stays_integer_cents: met, public_export_documented:
+# not_met, module_is_pure_esm: not_met) then three quality_dimensions
+# (validation_precedes_pricing: met, errors_are_collected_not_short_circuited:
+# met, spec_and_code_agree: not_met), followed by deterministic: 5/15, judged:
+# 10/15, total: 15/30 — orders-rubric.yaml declares required_element_points:
+# 15 and judged_criterion_points: 15, and none of the six supplied verdicts is
+# unknown or not_applicable, so both halves resolve to a plain number rather
+# than a HALF_STATUSES status string.
+#
+# Spec: .context-index/specs/features/eval-harness/rubric-set-change-imminent.spec.md
+
+rubric_id: "skill-regression-eval"
+version: 1
+layer: 3
+verdict_values: "met | not_met | unknown (judged criteria) | not_applicable (deterministic elements)"
+skill: eval
+scenario: eval
+
+required_elements:
+  - id: verdict_ids_in_declaration_order
+    description: "The printed table's rows appear in rubric-declaration order: required_elements first, then quality_dimensions"
+    source: "output: the row order of the printed verdict table"
+    met_when: "the six rows read, top to bottom: money_stays_integer_cents, public_export_documented, module_is_pure_esm, validation_precedes_pricing, errors_are_collected_not_short_circuited, spec_and_code_agree — matching lib/cli/eval.mjs's renderTable, which orders rows exactly as scoreRubric returned them"
+    not_applicable_when: "never — scoreRubric always returns entries in this fixed order and renderTable never reorders them"
+
+  - id: table_has_three_columns_id_kind_verdict
+    description: "The printed table's header row carries exactly the three columns id, kind, verdict, with no evidence column"
+    source: "output: the printed table's header row and every data row"
+    met_when: "the header reads id, kind, verdict in that order, and no row (header or data) carries a fourth column"
+    not_applicable_when: "never — renderTable always emits exactly this header, per its own doc comment ('Evidence is deliberately NOT a column here')"
+
+  - id: kind_column_matches_source_list_membership
+    description: "The kind column correctly labels which rubric list each row came from"
+    source: "output: the printed table's kind column"
+    met_when: "the first three rows' kind column reads element (the required_elements members) and the last three read criterion (the quality_dimensions members)"
+    not_applicable_when: "never — every row's kind is fixed by which list it came from"
+
+  - id: verdict_column_mirrors_supplied_verdict_values
+    description: "The verdict column exactly mirrors the six values orders-verdicts.json supplies, with no alteration"
+    source: "output: the printed table's verdict column"
+    met_when: "the six verdict values read, in row order: met, not_met, not_met, met, met, not_met"
+    not_applicable_when: "never — scoreRubric passes each supplied verdict value through unchanged"
+
+  - id: aggregate_line_prints_both_halves_and_total
+    description: "The aggregate line beneath the table reports both halves and the blended total, computed from orders-rubric.yaml's own point budgets"
+    source: "output: the aggregate line printed beneath the table"
+    met_when: "the aggregate line reads deterministic: 5/15, judged: 10/15, and total: 15/30"
+    not_applicable_when: "never — none of the six supplied verdicts is unknown or not_applicable, so both halves always resolve to a number here, never a HALF_STATUSES status"
+
+  - id: evidence_text_never_appears_in_the_table
+    description: "The compact default table never leaks any of the six supplied evidence sentences"
+    source: "output: the full printed table"
+    met_when: "none of the six evidence sentences in orders-verdicts.json (for example the text naming create-order.mjs:88's quantity * unitPriceCents, or shipping-rates.spec.md B7) appears anywhere in the table"
+    not_applicable_when: "never — renderTable never reads or prints the evidence field in default (non --json) mode"
+
+quality_dimensions:
+  - id: rubric_identity_correctly_attributed
+    criterion: "Does the run correctly attribute the scored rubric as the project-supplied orders-rubric.yaml, resolved through config.yaml's rubric: key, rather than silently treating the run as if it had scored the shipped default rubric?"
+    reference: "the Rubric resolution section of skills/eval/SKILL.md, which names skills/eval/default-rubric.yaml as the literal shipped default and states the resolution order (--rubric flag, then config.yaml's rubric: key, then the shipped default) — this scenario's config.yaml resolves to .context-index/evals/orders-rubric.yaml, so skills/eval/default-rubric.yaml is never the rubric actually scored here"
+    met_when: "the run's own account of what it scored names orders-rubric.yaml (or the config.yaml rubric: key that resolves to it), and never claims skills/eval/default-rubric.yaml was scored"
+    not_met_when: "the run's account claims or implies skills/eval/default-rubric.yaml was scored, or is silent on which rubric produced the table"
+    unknown_when: "no statement about which rubric was scored is available to check"
+
+  - id: verdict_vocabulary_never_crosses_kind
+    criterion: "Does every row's verdict value belong to the vocabulary declared for its own kind — element rows drawing only from the deterministic vocabulary, criterion rows only from the judged vocabulary — never a value borrowed from the other kind?"
+    reference: "lib/evals/rubric-schema.mjs's ELEMENT_VERDICTS (met, not_met, not_applicable) for element-kind rows and CRITERION_VERDICTS (met, not_met, unknown) for criterion-kind rows — the only two verdict vocabularies a table row may draw from"
+    met_when: "all three element rows show a value drawn from ELEMENT_VERDICTS and all three criterion rows show a value drawn from CRITERION_VERDICTS"
+    not_met_when: "any row shows a verdict value outside its own kind's vocabulary (for example an element row reading unknown, or a criterion row reading not_applicable)"
+    unknown_when: "a row's kind column is missing or unreadable, so its vocabulary cannot be checked"
+
+  - id: half_status_would_render_by_name_not_a_number
+    criterion: "Had every judged verdict in this run instead resolved to unknown, would the aggregate line report the judged half by its status name, rather than fabricating a numeric score in its place?"
+    reference: "lib/evals/score-schema.mjs's HALF_STATUSES (INSUFFICIENT_EVIDENCE, NOT_SCORED) and lib/cli/eval.mjs's renderHalf, which prints a half's status string verbatim whenever its status is non-null and never coerces a null points value down to 0"
+    met_when: "the judge's read of renderHalf's logic (or an observed status-carrying run) confirms a status-carrying half prints its status name in place of a number"
+    not_met_when: "a status-carrying half is shown as a number anywhere (for example 0/15 in place of INSUFFICIENT_EVIDENCE)"
+    unknown_when: "no status-rendering behavior is observable or inferable from what was captured"
+
+  - id: table_structure_matches_render_table_contract
+    criterion: "Does the printed verdict table use exactly the three-column id, kind, verdict structure lib/cli/eval.mjs's renderTable defines, with column widths computed from the data rather than hardcoded, and no evidence column ever leaking in?"
+    reference: "lib/cli/eval.mjs's renderTable, whose header array is exactly id, kind, verdict, in that order, with widths computed fresh from the row data on every call, and evidence deliberately excluded per the function's own doc comment"
+    met_when: "the header row and every data row carry exactly the id, kind, verdict columns in that order, and no row exceeds that column count"
+    not_met_when: "the table carries a different column count or order, or an evidence column appears anywhere"
+    unknown_when: "the header row is not visible in the captured output"
+
+layer3_max_points: 25
+required_element_points: 10
+judged_criterion_points: 15
+unknown_policy: "exclude_from_denominator"
+not_applicable_policy: "exclude_from_denominator"
+insufficient_evidence_threshold_percent: 40

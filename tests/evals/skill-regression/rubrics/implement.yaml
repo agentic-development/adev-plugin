@@ -1,0 +1,128 @@
+# Layer 3 rubric for /adev:implement, scored against the skill-regression
+# fixture (tests/evals/skill-regression/). Field shapes verbatim from
+# skills/eval/default-rubric.yaml — the exemplar. All values flat: no nested
+# maps, since the repo's minimal YAML readers cannot represent them.
+#
+# Scored input: the task diffs AND the per-task review records — commits,
+# Review-round trailers, review_round events, and plan_task lifecycle-log
+# transitions. No catalog id is cited: the ten planted classes in
+# catalog.yaml describe artifacts a DETECTOR reads (a drifted spec, a stale
+# frontmatter date, an unbound board entry, a missing test declaration) —
+# none of them describes a commit history or a review-cycle record, which is
+# what this run actually produces. A per-file predicate in
+# rubric-coverage.test.mjs asserts this file's raw text carries no catalog
+# citation marker at all — RUBRIC_TWIN_UNCITED alone cannot express "cites
+# nothing", only "a PV without its KC". (That predicate is necessarily
+# self-excluding: naming the literal marker string here would make this very
+# comment fail its own check.)
+#
+# THE TIER'S BOARD-TOUCHING SKILL, SECOND OF TWO. rubrics/issues.yaml (the
+# change-imminent tier) already confirmed the board-containment contract for
+# a board-touching skill; this rubric inherits it rather than re-deriving
+# it. `tasks.db_path` is spliced into the copy's manifest as the realpathed
+# copy root (scenarios/implement.md), so both `resolveStorageRoot`'s
+# manifest branch and `/adev:implement`'s epic claim/release land inside the
+# copy — the vacuity trap this class of scenario carries (an absent
+# `db_path` still passes containment, vacuously, via the git-common-dir
+# fallback) is stated in the scenario, not repeated here.
+#
+# Spec: .context-index/specs/features/eval-harness/rubric-set-core-lifecycle.spec.md
+
+rubric_id: "skill-regression-implement"
+version: 1
+layer: 3
+verdict_values: "met | not_met | unknown (judged criteria) | not_applicable (deterministic elements)"
+skill: implement
+scenario: implement
+
+required_elements:
+  - id: commit_per_task
+    description: "Task 2 produces exactly one commit in the copy"
+    source: "the copy's git log"
+    met_when: "`git -C <copy-root> log --oneline` shows exactly one new commit for Task 2 beyond the scenario's pre-run HEAD, per Step 2h.3's 'Commit-per-task is MANDATORY'"
+    not_applicable_when: "never — every completed task produces exactly one commit"
+
+  - id: review_round_trailers_present
+    description: "The task's commit carries a Review-round trailer for both review stages"
+    source: "the task commit's trailers"
+    met_when: "the commit message carries one `Review-round: spec-compliance=<n>` line and one `Review-round: code-quality=<n>` line, each built by `buildReviewRoundTrailer` (lib/lifecycle-state.mjs), per Step 2h.4 Output Contract A"
+    not_applicable_when: "never — Step 2h is reached only after both review stages pass, and both trailers are written for every task that reaches it"
+
+  - id: spec_compliance_before_code_quality
+    description: "Stage 2 (code quality) never dispatches before Stage 1 (spec compliance) has passed"
+    source: "the review_round lifecycle events"
+    met_when: "the recorded `review_round` events for Task 2 show the `spec-compliance` stage's terminal cycle preceding the `code-quality` stage's first cycle in timestamp order, per Step 2f's 'Only proceed to Stage 2 after Stage 1 passes'"
+    not_applicable_when: "never — this ordering is unconditional for every task, regardless of resolved review depth"
+
+  - id: plan_task_done_matches_commit
+    description: "The plan_task done event for Task 2 corresponds to exactly the one commit produced"
+    source: "the plan_task lifecycle events and the copy's git log"
+    met_when: "a single `plan_task` event with `status: done` and `task_id` matching Task 2 is recorded, timestamped after the Task 2 commit lands, per Step 2h.1's 'this is the only task-completion signal'"
+    not_applicable_when: "never — every task that reaches Step 2h emits exactly one done event"
+
+  - id: tdd_red_before_green
+    description: "A failing test for Task 2's behavior is recorded before the implementation edit that makes it pass"
+    source: "the write-test Handoff Block and the task diff"
+    met_when: "a Handoff Block dispatched under `ADEV_DISPATCHED_BY=implement` records RED state for Task 2's target behavior with a timestamp earlier than the corresponding production-code edit in the task diff, per the TDD mandate (tdd-mandate.md, included verbatim in the implementer prompt per Step 2c item 7)"
+    not_applicable_when: "never — the TDD mandate is non-negotiable for every task"
+
+  - id: epic_claim_and_release_in_copy
+    description: "The epic claim and its release both resolve inside the copy, never against this checkout's real board"
+    source: "artifact: the copy's .context-index/tasks/tasks.json"
+    met_when: "isContained(lenientRealpath(resolveStorageRoot(loadManifest(<copy-root>), <copy-root>)), lenientRealpath(<copy-root>)) holds, and the copy's tasks.json shows the epic claimed before Task 2's dispatch and released after Step 4, per Step 1's 'Claim the epic before dispatching any task' and Step 4's 'Release the epic claim'"
+    not_applicable_when: "never — tasks.backend: json is set in the copy's manifest, so the claim/release pair always runs"
+
+  - id: execution_state_cleared_on_completion
+    description: "Execution state is reset to idle after all tasks complete"
+    source: "artifact: the copy's .context-index/.execution-state.json"
+    met_when: "after the run, `.context-index/.execution-state.json` reads `status: idle`, per Step 4's 'Clear Execution State'"
+    not_applicable_when: "never — Step 4 always runs once every task in scope completes"
+
+  - id: no_plan_file_mutation
+    description: "shipping-rates.plan.md itself carries no diff from this run"
+    source: "the plan file diff"
+    met_when: "shipping-rates.plan.md carries no diff after the run — no checkbox flipped, no inline state stamp — per Step 2h.2's 'Do NOT mutate plan file checkboxes'"
+    not_applicable_when: "never — this rule applies to every /adev:implement run regardless of which tasks execute"
+
+quality_dimensions:
+  - id: two_stage_review_independent_verification
+    criterion: "Does the Stage 1 (spec compliance) reviewer's report show it read the actual code rather than trusting the implementer's own status report?"
+    reference: "Step 2f: Stage 1 Review: Spec Compliance, in skills/implement/SKILL.md"
+    met_when: "the spec reviewer's report cites specific lines or behavior from the diffed files themselves, not only a restatement of the implementer's report"
+    not_met_when: "the spec reviewer's report only restates the implementer's own claims with no independent reference to the diff"
+    unknown_when: "no spec reviewer report was recorded for this task"
+
+  - id: code_quality_convergence_discipline
+    criterion: "When Stage 2 findings recur across cycles, are they tracked by stable ids (cq-1, cq-2, ...) so persistence versus resolution is actually checkable, per the loop-convergence contract?"
+    reference: "Step 2g, and lib/loop-convergence.mjs's partitionBlockers/evaluateStopCondition, in skills/implement/SKILL.md"
+    met_when: "every Critical or Important finding across this task's code-quality cycles carries a stable id reused across cycles for the same underlying finding"
+    not_met_when: "a finding's id changes between cycles for what is otherwise the same underlying issue, making convergence unverifiable"
+    unknown_when: "code-quality review converged on the first cycle, so no second cycle exists to compare ids against"
+
+  - id: commit_scope_matches_task
+    criterion: "Does the Task 2 commit touch only the files Task 2's own file list names, with no unrelated refactor bundled in?"
+    reference: "Step 2c item 6: Scope discipline, in skills/implement/SKILL.md"
+    met_when: "every file in the Task 2 commit's diff appears in Task 2's own Create/Modify file list from the plan"
+    not_met_when: "the commit's diff touches a file outside Task 2's declared file list with no corresponding task-scope justification"
+    unknown_when: "the plan's File Structure section does not distinguish per-task file lists precisely enough to check"
+
+  - id: review_depth_resolution_correct
+    criterion: "Does the final review-depth resolution (2f-pre) correctly reflect Task 2's routing tag and any critical finding raised during the run, rather than defaulting to `full` or `quick` without cause?"
+    reference: "skills/implement/graduated-review-depth.md, and .context-index/specs/features/implementation/graduated-review-depth.spec.md"
+    met_when: "the recorded `review_depth_resolved` event's `depth` value is consistent with Task 2's routing tag from shipping-rates.routing.json and the presence or absence of a Critical finding raised during the run"
+    not_met_when: "the resolved depth contradicts the routing tag or the finding history with no stated floor-leg justification"
+    unknown_when: "no `review_depth_resolved` event was recorded for the final pass"
+
+  - id: escalation_discipline_on_blockers
+    criterion: "If the implementer subagent reports NEEDS_CONTEXT or BLOCKED at any point, does the skill follow the documented escalation path (check .context-index/, re-dispatch with added context, or surface to the user) rather than silently retrying or working around it?"
+    reference: "Step 2d: Dispatch and Handle Status, in skills/implement/SKILL.md"
+    met_when: "every NEEDS_CONTEXT or BLOCKED status this run produces is followed by the documented action for that status, recorded in the transcript"
+    not_met_when: "a NEEDS_CONTEXT or BLOCKED status is followed by a silent re-dispatch with no added context and no escalation"
+    unknown_when: "Task 2 completes DONE on the first dispatch, so neither status is ever produced"
+
+layer3_max_points: 25
+required_element_points: 10
+judged_criterion_points: 15
+unknown_policy: "exclude_from_denominator"
+not_applicable_policy: "exclude_from_denominator"
+insufficient_evidence_threshold_percent: 40

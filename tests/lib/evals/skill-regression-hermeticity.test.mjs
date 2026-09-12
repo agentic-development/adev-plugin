@@ -464,6 +464,17 @@ test("hermeticity property 7 — every path the fixture manifest declares stays 
   assert.deepEqual(escaping, [], "fixture manifest paths must resolve inside fixture_root");
 });
 
+test("the fixture manifest declares hygiene.source_roots so /adev:codehealth's orphan-file pass is reachable (tier-b-2026-09-07-01.md item 6)", () => {
+  // Without this key, dispatching /adev:codehealth refuses every pass with
+  // INVALID_MANIFEST (skills/codehealth/SKILL.md's upfront gate) — the
+  // planted PV-03/KC-03 orphan-source-file fixture (src/orders/orphaned-helper.mjs)
+  // could never actually be observed through the real skill.
+  const manifest = readYaml(join(PROJECT, ".context-index", "manifest.yaml"));
+  const roots = manifest?.hygiene?.source_roots;
+  assert.ok(Array.isArray(roots) && roots.length > 0, "the fixture manifest must declare a non-empty hygiene.source_roots");
+  assert.ok(roots.includes("src/"), `hygiene.source_roots must include src/ (where orphaned-helper.mjs lives); got: ${JSON.stringify(roots)}`);
+});
+
 test("the fixture's governance is command-free — five banned keys", () => {
   const files = governanceFiles();
   // Non-vacuity: every assertion below is a negative. Two files are the whole
