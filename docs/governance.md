@@ -19,7 +19,7 @@ Understanding how [`/adev:init`](skill-reference.md) scaffolds a project is help
 >
 > **Brownfield projects that just upgraded:** run `/adev:init` again — it's idempotent and will surface adoption opportunities against files that already exist. Absent that, keep reading for the five migration recipes at the bottom.
 >
-> **Zero-config is fine.** Bundled defaults ship with the plugin and reproduce the pre-0.18.0 hardcoded flow byte-for-byte. Nothing below is required.
+> **Zero-config is fine, but it means zero reviewers and no validate run.** Neither `review.yaml` nor `validate.yaml` has a bundled-defaults fallback: an absent `review.yaml` means `/adev:review-specs` dispatches zero reviewers, and an absent `validate.yaml` means `/adev:validate` cannot run at all (`MISSING_VALIDATE_CONFIG`). Nothing below is required, but "nothing" is a real, visible choice, not a hidden default set. See [`/adev:init`](skill-reference.md) Step 7c/7d to select what runs.
 
 ## The governance files
 
@@ -34,7 +34,9 @@ Understanding how [`/adev:init`](skill-reference.md) scaffolds a project is help
 | `.context-index/governance/diagnostics.yaml` | `adev diagnose` (write-time) | Tier-1 diagnostic producer registry tagging lifecycle events. |
 | `.context-index/profiles.yaml` | cross-cutting | Execution profiles: tool permissions, env allowlist, model tier, redaction. Consumed by every reviewer and check. |
 
-All are optional. Absent files mean "use bundled defaults."
+All are optional. For `review.yaml` and `validate.yaml`, an absent file means zero entries — not
+"use bundled defaults" — per `governance-opt-in-dispatch.spec.md`: nothing dispatches unless an
+operator explicitly selected it at `/adev:init` Step 7c/7d.
 
 ## The gate schema in `gates.yaml`
 
@@ -173,6 +175,25 @@ review/validate gate machinery documented above. See
 [Test Strategies — Test depth policy](test-strategies.md#test-depth-policy--a-second-independent-axis)
 for the full chain, and [Configuration Reference](configuration.md#test_policy-test-depth--granularity)
 for the `test_policy` manifest block that supplies the other axis (granularity).
+
+### Project risk tier — which `risk-policies.yaml` you start from
+
+`risk_level` (above) is per-spec. **Risk tier** is per-project: at `/adev:init` Step 7.0 you
+characterize the whole project's posture, and that choice picks which `risk-policies.yaml` (and,
+for the two non-default tiers, which `review.yaml`/`validate.yaml` overlay) gets seeded. It is
+orthogonal to `domain` — a `data-engineering` project can be any tier, and a `software` project
+can be any tier.
+
+| Tier | Every risk level gets | Reviewer/check registry effect |
+|---|---|---|
+| `prototype` | `require_hitl_approval: false`, `review_mode`/`validate_mode`/`implement_mode: quick`, `test_depth: minimal` (review is never skipped — just fast) | Bundled reviewers softened to `severity_cap: warning`; `validate.check-11-visual-verification` disabled; spec/constitution compliance downgraded to `warning` |
+| `standard` (default) | Framework defaults, unchanged since before tiers existed | No overlay — the bundled domain default runs exactly as documented above |
+| `strict` | `require_hitl_approval: true`, `review_mode`/`validate_mode`/`implement_mode: full`, `test_depth: thorough` | `structural-architect`/`security-reviewer` re-enabled (off by default in the bundled `software` domain); three checks escalated to `error`; a `project.strict-compliance` stub check appended |
+
+The choice is written to `manifest.yaml` as a top-level `risk_tier: <name>` key (a project with no
+key resolves to `standard`). Changing tier on a project whose `review.yaml`/`validate.yaml` are
+already materialized is not yet a supported re-adoption flow — see
+`.context-index/specs/features/setup/risk-tier-bundles.spec.md`.
 
 ### `sensitive-paths.yaml` — extend-only overlay
 
@@ -623,7 +644,11 @@ adev governance materialize --registry gates
 
 ## Migrating an existing project
 
-Zero-config projects migrate with nothing to do — the bundled defaults reproduce the pre-0.18.0 behavior bit-for-bit.
+A project that already ran `/adev:init` Step 7 under the old model is unaffected by this
+migration — its existing `review.yaml`/`validate.yaml` (or their absence) is left exactly as it
+was; there is no retroactive rewrite. A project running Step 7 for the first time after this
+shipped now sees an explicit selection prompt for both registries (Step 7c, Step 7d) instead of
+either an unconditional full-bundle copy or a silent zero-reviewer default.
 
 ### Recipe 1 — you have custom specialists in `manifest.yaml`
 

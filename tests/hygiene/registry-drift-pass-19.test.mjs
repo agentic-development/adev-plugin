@@ -317,7 +317,7 @@ test(
 );
 
 test(
-  "every finding from the pass is info except the disabled-entry sub-audit",
+  "every finding from the pass is info except the two warning sub-audits",
   withProject(async (ctx) => {
     addStarterEntry(ctx, "gates", { id: "new-gate" });
     seedEntry(ctx, "validate", { id: "project.custom-check", source: "project" });
@@ -325,8 +325,9 @@ test(
     seedEntry(ctx, "diagnostics", { id: "d1", source: "bundled", runner: "plugin:x.mjs" });
     const findings = await runPass19(ctx);
     assert.ok(findings.length > 0, "fixture should produce findings");
+    const WARN_IDS = new Set(["hygiene/disabled-bundled-entry", "hygiene/entry-field-drift"]);
     for (const f of findings) {
-      const expected = f.id === "hygiene/disabled-bundled-entry" ? "warning" : "info";
+      const expected = WARN_IDS.has(f.id) ? "warning" : "info";
       assert.equal(f.severity, expected, `${f.id} severity`);
     }
   }),

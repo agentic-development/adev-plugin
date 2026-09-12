@@ -50,3 +50,4 @@
 {"event":"validator_report","step":"validate","validator":"validate.check-1-quality-gates","severity":"warning","verdict":"PASS","notes":"npm test: 3559/3559 pass, 0 fail, duration 43.2s.","ts":"2026-05-20T00:38:30.660Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"validator_report","step":"validate","validator":"validate.check-1.6-code-drift","severity":"warning","verdict":"PASS","notes":"drift_detected flag is false; source manifest sha matches.","ts":"2026-05-20T00:38:31.680Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"step_completed","step":"validate","verdict":"PASS","ts":"2026-05-20T00:39:46.130Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"lib/sync/copilot.mjs","drift_at":"2026-08-23T20:27:03.675Z","ts":"2026-08-23T20:27:03.676Z"}

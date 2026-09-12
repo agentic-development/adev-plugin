@@ -17,6 +17,13 @@ project:
 # process-automation, …). The bundled default is "software".
 # domain: software
 
+# Project risk tier. Set by /adev:init Step 7.0 when governance is scaffolded.
+# Selects which risk-policies.yaml / review.yaml / validate.yaml bundle gets
+# seeded (prototype | standard | strict). Orthogonal to domain above — it
+# controls how much scrutiny the project needs, not what kind of software it
+# is. The bundled default is "standard" (unchanged framework defaults).
+# risk_tier: standard
+
 # ============================================================================
 # Sync Targets
 # Defines which agent files are generated from the constitution.

@@ -36,6 +36,7 @@ source-manifest:
     - tests/skills/epic-creation-verb-coverage.test.mjs
     - tests/skills/issues-skill-verb-coverage.test.mjs
   computed-at: "2026-08-20T03:07:08.408Z"
+drift_detected: true
 ---
 
 # Refactoring Spec: /adev:issues Lib-Directive Extraction

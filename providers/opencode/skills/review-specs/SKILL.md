@@ -187,6 +187,23 @@ Log any warnings from the `warnings` field.
 
 If `adev governance reviewers` reported any `errors`, abort with the error list. Warnings are surfaced in the report header.
 
+**Standing warning — zero enabled reviewers.** After the errors check above, evaluate
+`reviewers.filter(r => r.enabled !== false).length === 0` against the envelope's `reviewers`
+array — the exact predicate this behavior keys on. This is `true` for two distinct inputs, both
+covered: an empty `reviewers` array (no reviewer was ever selected at `/adev:init` Step 7c), and
+a non-empty array where every entry is disabled (all disabled). When true, print this standing
+warning as a report-header line — it is **not suppressible** by the normal report format, unlike
+an ordinary `warnings`/`notes` entry:
+
+```
+⚠ No reviewers are configured for this project — /adev:review-specs will dispatch zero
+reviewers. Run /adev:init to configure governance/review.yaml, or this is expected if the
+project intentionally selected none.
+```
+
+Then **continue** — the review still runs (and still completes) to a normal verdict; zero
+dispatched reviewers is a visible, deliberate state, not itself a failure that aborts the step.
+
 ## Step 4: Dispatch Reviewers
 
 **Heuristics:** Before dispatching reviewers, load module-scoped heuristics for the spec's charter module via the CLI:

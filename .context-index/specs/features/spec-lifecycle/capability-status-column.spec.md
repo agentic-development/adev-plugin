@@ -36,7 +36,7 @@ drift_detected: true
 
 2. **When** `/adev:specify` creates a spec for a charter capability **then** it updates that capability's Status to `specified` in the charter's Capability Map.
 
-3. **When** `/adev:review-specs` sets a spec to `review-passed` **then** it updates the corresponding capability's Status to `review-passed` in the charter.
+3. **When** `/adev:review-specs` sets a spec to `review-passed` **then** it updates the corresponding capability's Status to `review-passed` in the charter — but only when the row's current Status is earlier than `review-passed` in the canonical order (`—` or `specified`). When the row already reads `planned`, `implementing`, `implemented`, or `validated` — as happens when `/adev:validate` FAILs and the spec is revised and re-reviewed — the write is skipped and the skip is logged naming the row's current status, rather than regressing a capability that was already built past the point review had reached. This is the one behavior in this spec verified monotonic; Behaviors 2 and 4-7 describe the same unconditional-write shape and carry the same latent regression risk on re-entry (a spec re-specified, re-planned, or re-implemented after its capability has advanced further) — tracked as follow-up, not fixed here, since each is a separate root cause requiring its own guard.
 
 4. **When** `/adev:plan` creates a plan for a spec **then** it updates the corresponding capability's Status to `planned` in the charter.
 
@@ -87,6 +87,7 @@ drift_detected: true
 - [ ] Charter template includes `Status` column in Capability Map with `—` default
 - [ ] Each lifecycle skill updates the correct capability's Status in the charter
 - [ ] Capability Status values follow the order: `—` → `specified` → `review-passed` → `planned` → `implementing` → `implemented` → `validated`
+- [ ] `/adev:review-specs` re-reviewing a spec whose capability row already reads `planned`, `implementing`, `implemented`, or `validated` does not regress the row to `review-passed`; the skip is logged naming the row's current status
 - [ ] Charter `revision` increments when capability status changes
 - [ ] Missing or unmatched capability names produce a warning, not a block
 - [x] Capability Status writes are monotonic — a write to an earlier lifecycle value than the row's current one is skipped, not applied (`/adev:review-specs` Step 7; other writers pending, see Behavior 9)

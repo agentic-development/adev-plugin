@@ -26,6 +26,7 @@ source-manifest:
     - tests/skills/specify-domain-guidance.test.mjs
     - tests/templates/spec-template-error-code-header.test.mjs
   computed-at: "2026-08-18T23:00:11.641Z"
+drift_detected: true
 ---
 
 <!-- partial_schema: implement@1 -->
