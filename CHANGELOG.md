@@ -1,5 +1,43 @@
 # Changelog
 
+## [0.27.10](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.27.9...adev-cli-v0.27.10) (2026-09-12)
+
+
+### Features
+
+* **governance:** add shared explicit-selection registry write path ([c6ad5be](https://github.com/agentic-development/adev-plugin/commit/c6ad5be53fe90544fd1704c2f93f4321144b2d1a))
+* **review:** standing warning on zero enabled reviewers ([ad7aee2](https://github.com/agentic-development/adev-plugin/commit/ad7aee215b5f7da7db4b34c6d9d5ad759ebe57a4))
+* **setup:** add risk tier config loader and bundled prototype/regulated templates ([9d39b8c](https://github.com/agentic-development/adev-plugin/commit/9d39b8c229409b96f983e1eefd499af290c5a3fe))
+* **setup:** add risk tier resolution (resolveRiskTier) ([3cb727e](https://github.com/agentic-development/adev-plugin/commit/3cb727eaf01de9968d0c38d3991942a2bffdb7a9))
+* **setup:** add risk tier review/validate overlay merge functions ([91bf224](https://github.com/agentic-development/adev-plugin/commit/91bf224b73088a3b560d95167bf9fd9af31039f5))
+* **setup:** rework Step 7c to explicit per-reviewer selection with BEH-3 zero-write ([7c3ea6f](https://github.com/agentic-development/adev-plugin/commit/7c3ea6f3066ce335c9ef0193c87f207097199312))
+* **setup:** rework Step 7d.0 to explicit per-check selection ([dd95127](https://github.com/agentic-development/adev-plugin/commit/dd95127be740b48df4083ad487240342fdea667b))
+* **setup:** risk tier overlays apply against the operator's own selection ([8438b3a](https://github.com/agentic-development/adev-plugin/commit/8438b3a8943b2fbe5966dae8bedcd7e5c431d8e9))
+* **setup:** wire risk tier selection into /adev:init Step 7 ([b9fe83d](https://github.com/agentic-development/adev-plugin/commit/b9fe83df7730e33d48c89f1f56cc6bfa14a780da))
+* **validation:** standing warning on zero enabled checks, absent file still hard-crashes ([e3de232](https://github.com/agentic-development/adev-plugin/commit/e3de232cce308a8432f491f3048fbaa277f16ef8))
+
+
+### Bug Fixes
+
+* **bugfix-loop:** resolve adev-plugin-04jr.2 ([4a37791](https://github.com/agentic-development/adev-plugin/commit/4a377916a620562182a33133565e8c80772e77e1))
+* **bugfix-loop:** resolve adev-plugin-04jr.2 ([ec89364](https://github.com/agentic-development/adev-plugin/commit/ec893646b2617c0dcd785be4e21ead91bef020da))
+* **bugfix-loop:** resolve adev-plugin-5yfz.1 ([8657358](https://github.com/agentic-development/adev-plugin/commit/8657358422931883acc973874aad67d6e7b54cfe))
+* **bugfix-loop:** resolve adev-plugin-5yfz.1 ([77e6094](https://github.com/agentic-development/adev-plugin/commit/77e6094fb3b3007004ea8405b74b7d3a5ce59b3d))
+* **bugfix-loop:** resolve adev-plugin-issue-trailer-cross-session-oe8w ([77ad5c5](https://github.com/agentic-development/adev-plugin/commit/77ad5c58b21c2e3a5c8d16e251e215fed95eff63))
+* **bugfix-loop:** resolve adev-plugin-issue-trailer-cross-session-oe8w ([41361d8](https://github.com/agentic-development/adev-plugin/commit/41361d8b338057a2631d1b8bee220a9daa325376))
+* **bugfix-loop:** resolve adev-plugin-parity-guard-self-referential-gobk ([0f6d33c](https://github.com/agentic-development/adev-plugin/commit/0f6d33c5a26766167ff0b461db593f56d955f4ec))
+* **bugfix-loop:** resolve adev-plugin-parity-guard-self-referential-gobk ([1a5eb55](https://github.com/agentic-development/adev-plugin/commit/1a5eb55f9e2ad2874e6232537b7a5163c2888fde))
+* **bugfix-loop:** resolve adev-plugin-reviewer-tier-not-applied-wohx ([562bced](https://github.com/agentic-development/adev-plugin/commit/562bced6260ff11c349f2d4d142eeddc32e02804))
+* **bugfix-loop:** resolve adev-plugin-reviewer-tier-not-applied-wohx ([ac1f418](https://github.com/agentic-development/adev-plugin/commit/ac1f4184fc42f12cbd341da3f62e99c69d3cfab5))
+* **cli:** correct install/uninstall scope, cache pruning, and multi-profile handling ([14320e8](https://github.com/agentic-development/adev-plugin/commit/14320e8998565a15db90e80001620d41db23220c))
+* **cli:** stop ask() hanging on a second sequential prompt over piped stdin ([918258f](https://github.com/agentic-development/adev-plugin/commit/918258f57afee19ea0481bd7bd670c14837e8e88))
+* **cli:** strip backtick fence from plan header Spec: path ([643f950](https://github.com/agentic-development/adev-plugin/commit/643f9501a5e64b6324760b2d9b846043329be01e))
+* **hygiene:** add context_pack divergence audit to registry-drift (pass 19) ([a607c53](https://github.com/agentic-development/adev-plugin/commit/a607c533cd776f41142ff3a55f52ed1d512ac99f))
+* **hygiene:** add context_pack divergence audit to registry-drift (pass 19) ([0f7e49f](https://github.com/agentic-development/adev-plugin/commit/0f7e49f6a454c303de0aee13fc21d7fb2e97c6ea))
+* **install:** stop cross-scope cache collisions between Claude config dirs ([0fe2700](https://github.com/agentic-development/adev-plugin/commit/0fe2700289a9b7fd0ee2f1f556018a4d4c9b50cf))
+* **install:** stop cross-scope cache collisions between Claude config dirs ([2854b7c](https://github.com/agentic-development/adev-plugin/commit/2854b7c894df8f95181ce7c2bbc4b4ec073a9018))
+* **review-specs:** make Capability Map review-passed write monotonic ([87f3ae9](https://github.com/agentic-development/adev-plugin/commit/87f3ae93cf9822d2e4697453868ae9251393fe3f))
+
 ## [0.27.9](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.27.8...adev-cli-v0.27.9) (2026-09-04)
 
 
