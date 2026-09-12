@@ -4,3 +4,4 @@
 {"event":"code_drift_detected","drift_source":"skills/review-specs/SKILL.md","drift_at":"2026-05-20T03:55:15.586Z","ts":"2026-05-20T03:55:15.587Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"skills/implement/SKILL.md","drift_at":"2026-05-20T12:08:30.030Z","ts":"2026-05-20T12:08:30.030Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"debug_intervention","kind":"debug","note":"Model-id staleness fixed in 5 live files (build/init SKILL.md, model-routing.spec.md, model-selection.spec.md, docs/configuration.md); issue-538 reference confirmed valid (filer used br show, wrong lookup). Added allowlist guard test.","ts":"2026-08-20T22:59:47.381Z"}
+{"event":"debug_intervention","kind":"debug","note":"review-specs Step 4 dispatch prose omitted modelId; reviewers ran on session model, not their tier. Named modelId explicitly + warned of silent tier defeat.","ts":"2026-09-06T06:28:34.966Z"}
