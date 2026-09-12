@@ -1964,6 +1964,12 @@ const VERB_REGISTRY = new Map([
                             await mod.run({ projectRoot, argv: process.argv.slice(5), manifest: null });
                             return;
                           }
+                          if (sub === "prompt" && process.argv[4] === "implementation-mode") {
+                            const mod = await import("../lib/cli/init-prompt-implementation-mode.mjs");
+                            const projectRoot = process.cwd();
+                            await mod.run({ projectRoot, argv: process.argv.slice(5), manifest: null });
+                            return;
+                          }
                           if (sub === "ensure-gitignore") {
                             const mod = await import("../lib/cli/init-ensure-gitignore.mjs");
                             const projectRoot = process.cwd();
@@ -2026,6 +2032,7 @@ const VERB_REGISTRY = new Map([
   ["worktree",        () => import("../lib/cli/worktree.mjs")],
   ["parallel",        () => import("../lib/cli/parallel.mjs")],
   ["test-policy",     () => import("../lib/cli/test-policy.mjs")],
+  ["implementation-mode", () => import("../lib/cli/implementation-mode.mjs")],
   ["test-helpers",    () => import("../lib/cli/test-helpers.mjs")],
   ["coordination",    () => import("../lib/cli/coordination.mjs")],
   ["test-debt",       () => import("../lib/cli/test-debt.mjs")],

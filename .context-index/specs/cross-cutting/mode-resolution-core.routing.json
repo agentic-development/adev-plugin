@@ -1,0 +1,83 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Constants file with exact 3-mode shape given verbatim in the plan, mirroring lib/risk-tiers/constants.mjs. Single file, single module, purely mechanical mapping of literal config values."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Resolver logic and all BEH-1/2/3/4 test cases given nearly verbatim, closely mirroring lib/risk-tiers/resolve.mjs's validate-then-return shape. One file in lib/, plus a small wrapper function re-coding the uncoded YamlParseError."
+    },
+    {
+      "task_id": "t3",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.6,
+        "novelty": 1
+      },
+      "rationale": "Thin JSON-printing CLI wrapper following the domain.mjs/test-policy.mjs driver shape, with exact stdout/exit-code contract and tests given. Touches lib/cli and cli/index.mjs (two modules) via one small VERB_REGISTRY addition."
+    },
+    {
+      "task_id": "t4",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.6,
+        "novelty": 0.6
+      },
+      "rationale": "BEH-5/6 prompt behavior and splice-write contract closely mirror init-prompt-session-capture.mjs, but composing menu-ordering, no-silent-accept validation, and bypass-warning sequencing into one flow requires original design work. Spans lib/cli and cli/index.mjs."
+    },
+    {
+      "task_id": "t5",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 1,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Integration test wired verbatim from two already-built modules (Task 3, Task 4) via tests/helpers.mjs, a directly-matching golden sample. Single new file, no production code, mechanical composition."
+    },
+    {
+      "task_id": "t6",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "SKILL.md prose addition mirroring the Step 8a/Step 7.0 precedents in the same file, with exact test assertions given. Single file plus its test, single module (setup), no boundary crossing."
+    },
+    {
+      "task_id": "t7",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Documentation-only addition to manifest-template.yaml mirroring the existing test_policy comment block, with the WR-3 test given verbatim. Single file plus test extension, single module, purely mechanical."
+    }
+  ]
+}

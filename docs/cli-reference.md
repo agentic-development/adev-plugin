@@ -56,6 +56,7 @@ This file is the CLI counterpart to [`skill-reference.md`](skill-reference.md) (
 | `retro` | Gather session activity for a retrospective window | `lib/cli/retro.mjs` |
 | `heuristics` | Retrieve/sign/write/rekey project heuristics | `lib/cli/heuristics.mjs` |
 | `domain` | Resolve a module's domain and load domain config | `lib/cli/domain.mjs` |
+| `implementation-mode` | Resolve the effective `implementation_mode` config | `lib/cli/implementation-mode.mjs` |
 | `cost` | Aggregate per-spec/per-step token + USD totals | `lib/cli/cost.mjs` |
 | `worktree` | Manage adev-managed git worktrees for parallel execution | `lib/cli/worktree.mjs` |
 | `parallel` | Decision helpers for `/adev:implement --parallel` orchestration | `lib/cli/parallel.mjs` |
@@ -890,6 +891,19 @@ adev domain load-gates --module auth
 ```
 
 **Implementation:** `lib/cli/domain.mjs`. **Called by:** `/adev:validate`, `/adev:review-specs`, `/adev:implement`, `/adev:specify`, `/adev:brainstorm`, `/adev:write-test`.
+
+### `implementation-mode`
+
+**Purpose:** Resolve the effective `implementation_mode` config — explicit `--mode` override, the stored `manifest.yaml` value, or the `tdd` default — to `{dispatch_red, ordering_enforced, coverage_check}`.
+
+**Signature:** `implementation-mode resolve [--mode tdd|test-required|agent-default]`
+
+**Example:**
+```
+adev implementation-mode resolve --mode test-required
+```
+
+**Implementation:** `lib/cli/implementation-mode.mjs`. **Called by:** `/adev:init` (documents the read path — the write path is the `init prompt implementation-mode` sub-verb, invoked by `skills/init/SKILL.md` Step 8b).
 
 ### `domain-picker`
 
