@@ -195,15 +195,38 @@ Step 7/11: Governance Policies
   Skills enforce these automatically during planning, implementation,
   and validation.
 
-  Without governance files, adev uses the bundled defaults — the three
-  reviewers (structural-architect, security-reviewer, consistency-
-  analyzer) and the 12 bundled validate checks ship enabled; quality
-  gates come from the constitution.
+  Nothing ships enabled without an explicit selection. Without a
+  governance/review.yaml, /adev:review-specs dispatches zero reviewers;
+  without a governance/validate.yaml, /adev:validate cannot run. What
+  actually runs is exactly what you select below: Step 7c lets you choose
+  from the domain's 7-reviewer bundle, Step 7d from the domain's 8-check
+  bundle. Quality gates come from governance/gates.yaml, seeded at Step 7a
+  from the constitution's quality-gate commands.
 
   → Set up governance? (yes / skip)
 ```
 
-If yes, walk the sub-steps in order. Sub-steps 7a-7e are independent — the user may opt in or skip each.
+If yes, walk the sub-steps in order. Sub-steps 7a-7e are independent — the user may opt in or skip each. Step 7.0 below runs first and is not independent — it selects the bundle Steps 7a, 7c, and 7d scaffold from.
+
+### Step 7.0: Project risk tier
+
+Ask the operator to characterize the project's overall risk posture, distinct from any individual spec's `risk_level` frontmatter (high/medium/low) — this is a project-wide setting that changes which bundle Steps 7a/7c/7d seed from, analogous to how domain (`resolveDomain()`, `lib/domains/resolve.mjs`) selects a reviewer/check bundle by "what kind of software" while risk tier selects one by "how much scrutiny it needs." The two axes are orthogonal: any domain can be any tier.
+
+```
+  → Project risk tier?
+      prototype  — throwaway prototype / internal tool. Lightest review and
+                   validate rigor at every level; no HITL approval required.
+      standard   — (default) today's framework defaults, unchanged.
+      strict  — security-critical / compliance-bound. Full rigor and HITL
+                   approval at every level, regardless of a spec's own
+                   declared risk_level.
+```
+
+Default to `standard` on an unanswered prompt. Write the chosen value as a top-level `risk_tier: <name>` key in `manifest.yaml`, alongside the existing top-level `domain:` key. Validate the choice against the closed set in `lib/risk-tiers/constants.mjs` (`RISK_TIER_NAMES`) before writing.
+
+**Bundle resolution.** For each config type below, `loadRiskTierConfig(<tier>, <configType>, pluginRoot)` (`lib/risk-tiers/tier-config.mjs`) resolves the bundle content: for the `standard` tier, `risk-policies` resolves to the legacy fixed path `templates/risk-policies-template.yaml` (unchanged since before tier selection existed) and every overlay type resolves to `null` (a bundled default with no tier overlay IS the standard tier — Steps 7c/7d proceed exactly as they did before this step existed). For `prototype`/`strict`, `risk-policies` resolves to `templates/risk-tiers/<tier>/risk-policies.yaml`, and `review-overlay`/`validate-overlay` resolve to `templates/risk-tiers/<tier>/{review,validate}-overlay.yaml` if present.
+
+**Diagnostic Mode.** An existing project with no `risk_tier` key resolves to `standard` (`resolveRiskTier()`, `lib/risk-tiers/resolve.mjs`) with no prompt and no file rewrite — this step only runs interactively on a project's first pass through Step 7. Changing an already-materialized project's tier is a re-adoption action (like a domain upgrade), out of scope for this step; it is tracked separately (see `adev governance adopt`, adev-plugin-j7pq.5.2) rather than solved here with an ad hoc rewrite path that would conflict with that mechanism once it lands.
 
 ### Step 7a: Foundation files
 
@@ -241,10 +264,11 @@ If yes, walk the sub-steps in order. Sub-steps 7a-7e are independent — the use
   marker to `boundaries.yaml` or `validate.yaml`: both are marker-exempt single-source registries,
   and a marker there would enforce nothing while breaking the empty-`boundaries.yaml` SKIP path.
 - Copy `boundaries.yaml` from `templates/boundaries-template.yaml` (empty rules, commented examples)
-- Copy `risk-policies.yaml` from `templates/risk-policies-template.yaml` (sensible defaults). The
-  copied file carries a literal `test_depth` value per risk level (`thorough` / `standard` /
-  `minimal` for `high` / `medium` / `low`) — these are real scalars in the template, not `{{ }}`
-  placeholders, so no substitution step runs here.
+- Copy `risk-policies.yaml` from the Step 7.0-resolved tier's `risk-policies` bundle (sensible
+  defaults per tier — see Step 7.0's bundle resolution). The copied file carries a literal
+  `test_depth` value per risk level (`thorough` / `standard` / `minimal`, or the tier's own values
+  for `prototype`/`strict`) — these are real scalars in the template, not `{{ }}` placeholders,
+  so no substitution step runs here.
 - Do not emit `governance/sensitive-paths.yaml` on greenfield init. It is optional and
   extend-only — the built-in default applies until the project chooses to extend it. State this
   explicitly in the Step 7 summary (below) so the user does not read its absence as an oversight.
@@ -335,6 +359,23 @@ If "re-classify": swap between reviewer / validate-check / quality-gate; ambiguo
 
 ### Step 7c: Review registry (`governance/review.yaml`)
 
+#### Step 7c.0: Resolve risk tier overlay (applied after selection)
+
+Load the Step 7.0-resolved tier's `review-overlay` bundle (`loadRiskTierConfig(<tier>,
+'review-overlay', pluginRoot)`, `lib/risk-tiers/tier-config.mjs`) for later use. For the
+`standard` tier this resolves to `null` — proceed straight to sub-step 1 with nothing to apply
+anywhere below.
+
+**The overlay base is the operator's own selection, not the full domain bundle.** Earlier
+revisions of this step applied the overlay upfront, against every bundled reviewer, before the
+operator had chosen anything — which silently re-enabled or re-capped reviewers the operator
+never selected, and left an overlay target outside that set invisible rather than reported. That
+is corrected here: the overlay is **not** applied in this sub-step and **not** applied to the
+full bundle. It is applied in sub-step 5, immediately before the write, against exactly the
+subset the operator selects in sub-step 3 (plus sub-steps 1/2/4's own additions) — see sub-step 5
+for the mechanics and for how an overlay target outside that subset is reported
+(`RISK_TIER_OVERLAY_UNKNOWN_ID`).
+
 1. **Scan for existing charters.** Glob `.context-index/specs/features/*/charter.md`. If none exist, skip the "project-specific reviewers from charters" prompt.
 
 2. **Check for legacy specialists.** Read `.context-index/manifest.yaml`. If it contains a non-empty `specialists:` list AND `governance/review.yaml` does not yet exist:
@@ -352,22 +393,38 @@ If "re-classify": swap between reviewer / validate-check / quality-gate; ambiguo
 
    If yes: convert each specialist in-memory to a reviewer entry under the `reviewer-capable` profile with `dispatch: triggered`, and remove the `specialists:` block from `manifest.yaml` at write time.
 
-3. **Bundled reviewer customization.**
+3. **Bundled reviewer selection.**
+
+   Present the resolved domain's full reviewer bundle (unmodified by any risk tier overlay — the
+   overlay applies later, in sub-step 5, against whatever the operator selects here) as an
+   inclusion checklist, reusing Step 7d.0's checklist shape (DDR-1), with every entry defaulting
+   to **unselected** — opt-in, not pre-selected:
 
    ```
-   The three bundled reviewers run by default:
-     structural-architect  (reasoning tier, blocker cap)
-     security-reviewer     (capable tier,   blocker cap)
-     consistency-analyzer  (fast tier,      blocker cap)
+   Select the reviewers to enable for this project (unchecked by default —
+   none run until you select them):
+     [ ] referent-integrity     (reasoning tier, blocker cap)
+     [ ] wiring-reviewer        (capable tier,   blocker cap)
+     [ ] consistency-analyzer   (fast tier,      blocker cap)
+     [ ] boundary-reviewer      (capable tier,   blocker cap)
+     [ ] termination-reviewer   (fast tier,      blocker cap; triggered)
+     [ ] structural-architect   (reasoning tier, blocker cap; disabled in the bundle)
+     [ ] security-reviewer      (capable tier,   blocker cap; disabled in the bundle)
 
-   Customize?
-     [d] disable one
+   Select the ones to enable (space-separated numbers, "all", or "none"):
+   ```
+
+   Selecting `"none"` is a legitimate, first-class outcome (BEH-3) — it selects zero reviewers,
+   not an error, and proceeds to sub-step 5 exactly like any other selection.
+
+   After the inclusion selection, offer further customization over the selected subset:
+
+   ```
+   Customize the selected reviewers?
      [c] cap severity for one
      [p] propose project reviewers from detected charters
      [s] skip customization
    ```
-
-   On **[d]** — list the three ids; user picks one. Write `enabled: false`.
 
    On **[c]** — pick reviewer + new cap (`blocker` / `warning` / `suggestion`).
 
@@ -398,36 +455,110 @@ If "re-classify": swap between reviewer / validate-check / quality-gate; ambiguo
        [a] always    [t] triggered (paths + keywords)    [s] skip
    ```
 
-5. **Write the file.** If at least one customization / migration / adoption was selected, write `.context-index/governance/review.yaml` with:
+5. **Write the file.** Always write `.context-index/governance/review.yaml` now, regardless of
+   whether the operator selected anything in sub-steps 1-4 — an empty selection is a legitimate,
+   first-class outcome (BEH-3), not the old zero-config-preservation no-write path. This
+   supersedes that path for this file specifically: `review.yaml` gets written every time Step 7c
+   is reached.
 
-   - A `reviewers:` block containing all chosen entries.
-   - A commented `context_packs:` block seeded with `base: include: []` for easy extension.
-   - A top-level `materialized_at:` line, copied verbatim from the one at the bottom of
-     `templates/governance/review.example.yaml`. `review.yaml` is a marked registry: written
-     without that line it fails closed on the project's first `/adev:review-specs` and an
+   Assemble the operator's selection: the entries chosen from sub-step 3's checklist, plus any
+   further chosen entries from sub-steps 1-2 and 4 (possibly `[]` if the operator selected
+   `"none"` and made no other choices). **If Step 7c.0 resolved a non-null overlay**
+   (`prototype`/`strict`), apply it now, against this selection and nothing wider, with
+   `applyReviewTierOverlay()` (`lib/risk-tiers/merge-review-overlay.mjs`), and use the **full
+   result** — not just the changed entries — as `<selected-subset-json>` below. An overlay target
+   id that the operator did not select is not silently skipped: `applyReviewTierOverlay` reports
+   it as a `RISK_TIER_OVERLAY_UNKNOWN_ID` warning naming the id, meaning "this tier expects to
+   adjust `<id>`, but it is not part of what the operator selected" — collect these warnings for
+   the Step 7 summary (below) rather than discarding them. For the `standard` tier there is no
+   overlay to apply; `<selected-subset-json>` is the operator's selection unchanged.
+
+   Call `adev governance scaffold --registry review --entries <selected-subset-json>`. The verb:
+
+   - Writes a `reviewers:` block containing exactly that selection.
+   - Stamps a top-level `materialized_at:` marker unconditionally, including on an empty
+     selection — `review.yaml` is always a marked registry once scaffolded. `review.yaml` written
+     without that marker fails closed on the project's first `/adev:review-specs`, and an
      extension install into it is refused with `REGISTRY_NOT_MATERIALIZED`. Writing it here is
      what makes the scaffolded project born materialized. The marker is a claim about this file —
      that the reviewers listed above are the whole effective set, with nothing merged in behind
-     them at run time — so if you write a `review.yaml` that omits a bundled reviewer, that
-     reviewer does not run, which is the intended and now-visible behaviour.
-   - A pointer at the bottom: `# See templates/governance/review.example.yaml for more examples.`
+     them at run time — so a `review.yaml` that omits a bundled reviewer means that reviewer does
+     not run, which is the intended and now-visible behaviour. An empty selection writes a literal
+     `reviewers: []` with the marker still stamped — a real, visible file stating "zero reviewers
+     dispatch here," never an absent one.
 
-   If nothing was selected, DO NOT write the file — keep the repo on the zero-config path.
+   The verb's own header comment names its provenance (an explicit operator selection at scaffold
+   time); it does not seed a `context_packs:` block or a pointer comment — those were prose
+   artifacts of the pre-Task-2 direct-write path and are no longer produced, since the verb writes
+   the file in one atomic pass and refuses to run again against a file it already created. An
+   operator who wants a `context_packs:` block can add one by hand, or reference
+   `templates/governance/review.example.yaml` directly.
 
 ### Step 7d: Validate registry (`governance/validate.yaml`)
 
-#### Step 7d.0: Scaffold from domain starter (single-source model)
+#### Step 7d.0: Scaffold from an explicit per-check selection (single-source model)
 
-Before any customization, materialize the project's `governance/validate.yaml` from the resolved domain's starter. This makes the project's validate check registry self-contained and visible at a single path — the single-source model from `validate-config-single-source.spec.md`.
+Before any further customization, scaffold the project's `governance/validate.yaml` from an
+explicit operator selection over the resolved domain's starter checks — never an unconditional
+copy. This makes the project's validate check registry self-contained and visible at a single
+path — the single-source model from `validate-config-single-source.spec.md` — while making
+"what runs" always trace back to something the operator actually chose
+(`governance-opt-in-dispatch.spec.md` BEH-1/BEH-2).
 
-1. Call `loadDomainConfig(resolvedDomain, 'validate', repoRoot, pluginRoot)`.
-2. If the call returns a starter object AND `.context-index/governance/validate.yaml` does not yet exist:
-   - Read the starter file directly (the same file that `loadDomainConfig` resolved) and copy its bytes verbatim into `.context-index/governance/validate.yaml`.
-3. If `loadDomainConfig` returns `null` for the resolved domain (no starter shipped for this domain):
-   - Fall back to `loadDomainConfig('software', 'validate', repoRoot, pluginRoot)` and write from the software starter.
-   - Print exactly: `"No validate.yaml starter for domain '<domain>'; scaffolded from 'software' as fallback."`
-4. If `.context-index/governance/validate.yaml` already exists: no-op (idempotent).
-5. Do NOT prompt the user — this scaffold step is automatic, like `gates.yaml`.
+1. Call `loadDomainConfig(resolvedDomain, 'validate', repoRoot, pluginRoot)`. If it returns
+   `null` for the resolved domain (no starter shipped for this domain), fall back to
+   `loadDomainConfig('software', 'validate', repoRoot, pluginRoot)` and print exactly:
+   `"No validate.yaml starter for domain '<domain>'; scaffolded from 'software' as fallback."`
+2. If `.context-index/governance/validate.yaml` already exists: no-op (idempotent) — skip the
+   rest of this sub-step entirely, including the checklist prompt and the tier overlay
+   application below, since re-running it on every init pass would fight any manual edits the
+   project has since made to an existing file. This is the same idempotency guard the prior
+   scaffold shape had; it is preserved unchanged by this rework.
+3. Otherwise, present each check in the starter's `checks:` list (reusing Step 7d.1's existing
+   checklist UI shape, DDR-1) as an inclusion checklist, with every item defaulting to
+   **unchecked** — explicit inclusion, not pre-selected, mirrors Step 7c's own reworked reviewer
+   checklist below:
+
+   ```
+     Detected domain: software. Select the validate checks to enable for this project
+     (unchecked by default — nothing runs until you select it):
+       [ ] validate.check-1-quality-gates        (runs the resolved gate set)
+       [ ] validate.check-1.5-source-manifest     (verifies spec source-manifest SHAs)
+       [ ] validate.check-2-spec-compliance       (spec-vs-implementation review)
+       [ ] validate.check-4-constitution          (constitutional compliance review)
+       [ ] validate.check-8-boundaries            (governance boundary compliance)
+       [ ] validate.check-9-transition-gates      (transition gate compliance)
+       [ ] validate.check-11-visual-verification  (requires Playwright MCP)
+       [ ] validate.check-14-gate-executability   (verifies declared gates can run)
+
+     Select the ones to enable (space-separated numbers, "all", or "none"):
+   ```
+
+   Selecting `"none"` (or responding with an empty selection) is a legitimate, first-class
+   outcome — it selects zero checks, not an error, and proceeds to sub-step 4 exactly like any
+   other selection.
+4. **Apply risk tier overlay (if any), then write.** Call `loadRiskTierConfig(<Step
+   7.0-resolved tier>, 'validate-overlay', pluginRoot)` (`lib/risk-tiers/tier-config.mjs`). If it
+   returns non-null (`prototype`/`strict`), apply it now — against the operator's own sub-step 3
+   selection, not the full domain bundle — with `applyValidateTierOverlay()`
+   (`lib/risk-tiers/merge-validate-overlay.mjs`), and use the **full result** as
+   `<selected-subset-json>` below. An overlay target id the operator did not select is not
+   silently skipped: `applyValidateTierOverlay` reports it as a `RISK_TIER_OVERLAY_UNKNOWN_ID`
+   warning naming the id, meaning "this tier expects to adjust `<id>`, but it is not part of what
+   the operator selected" — collect these warnings for the Step 7 summary (below) rather than
+   discarding them. For the `standard` tier there is no overlay to apply;
+   `<selected-subset-json>` is the operator's sub-step 3 selection unchanged, and this still
+   counts as part of the automatic scaffold, not a user customization.
+
+   Call `adev governance scaffold --registry validate --entries <selected-subset-json>`, where
+   `<selected-subset-json>` is the JSON array from above (possibly `[]`). This is the only write
+   path for this file, called exactly once per scaffold — it always runs once sub-step 2's
+   idempotency guard has passed, regardless of whether the selection is empty. An empty selection
+   writes a literal `checks: []` — a real, visible file, not an absent one.
+5. Do NOT otherwise prompt the user beyond the checklist in sub-step 3 — everything past that
+   point is automatic, like `gates.yaml`.
+
+**Stub prompts for tier-added checks.** If the applied overlay's `extra_checks` names a `prompt` path under `.context-index/prompts/` that does not yet exist, scaffold it with a TODO framing (same convention as the Step 7c.3 charter-derived reviewer stub) — for the `strict` tier's `project.strict-compliance` check, a one-line stub naming the check's purpose and a `TODO: name this project's specific regulatory/compliance requirements` line is enough; the operator fills in the rest before the check first runs for real.
 
 Subsequent customization steps (7d.1–7d.5 below) operate on the already-scaffolded file.
 
@@ -509,6 +640,8 @@ After all sub-steps, print what was written:
 ```
   Governance setup complete.
 
+  Risk tier: standard (manifest.yaml: risk_tier)
+
   Files written:
     .context-index/governance/gates.yaml               (from constitution)
     .context-index/governance/boundaries.yaml          (template)
@@ -531,6 +664,26 @@ After all sub-steps, print what was written:
   Next: run /adev:review-specs --spec <path> to verify the registries load
   cleanly. See docs/governance.md for customization beyond this wizard.
 ```
+
+The "Risk tier" line always prints, using the Step 7.0 choice (or `standard` for a project that reached Step 7 without answering — Step 7.0 defaults there too). For `prototype`/`strict`, append the overlay's effect in one clause, e.g. `Risk tier: strict (2 reviewers re-enabled, 1 check added, 3 checks escalated to error)`.
+
+**Overlay warnings are surfaced in the Step 7 summary, not discarded.** If Step 7c sub-step 5 or
+Step 7d.0 sub-step 4 collected any `applyReviewTierOverlay`/`applyValidateTierOverlay` warnings
+(`RISK_TIER_OVERLAY_UNKNOWN_ID`, `RISK_TIER_OVERLAY_INVALID_EXTRA_CHECK`,
+`RISK_TIER_OVERLAY_DUPLICATE_ID`), print each one as its own line directly under the "Risk tier"
+line, the same treatment the summary already gives other warnings elsewhere in this step — never
+compute them and drop them on the floor:
+
+```
+  Risk tier: strict (2 reviewers re-enabled, 1 check added, 3 checks escalated to error)
+    ⚠ RISK_TIER_OVERLAY_UNKNOWN_ID: strict's review-overlay targets 'security-reviewer', but
+      it is not part of your selection — the overlay had nothing to adjust for this id.
+```
+
+A `RISK_TIER_OVERLAY_UNKNOWN_ID` warning here is a meaningful, operator-visible signal, not
+noise: it names a reviewer or check the resolved risk tier expects to adjust that the operator
+didn't select at Step 7c/7d, so the tier's intended posture (e.g. "strict re-enables
+security-reviewer") silently did not take effect for this project.
 
 **Legacy gate migration (brownfield folded into Step 7a).** When running Step 7a on a project that already has a `gates:` block in `manifest.yaml` AND no `governance/gates.yaml`, print the legacy-gates notice before copying the template:
 
@@ -760,7 +913,7 @@ adev Context Index — Health Check
 ✓ Orientation         architecture.md (last updated 12 days ago)
 ✗ Samples             empty directory
 ✓ External References references/ matches manifest (2 configured, 2 present)
-✓ Governance          gates.yaml, boundaries.yaml, risk-policies.yaml configured
+✓ Governance          gates.yaml, boundaries.yaml, risk-policies.yaml configured (risk tier: standard)
 ⚠ Gate Liveness       1 gate command still uses the pre-argv shell-string form
 ✓ Sync Status         CLAUDE.md matches constitution (synced 2 days ago)
 ⚠ Plugin Conflict     Superpowers is active globally but not disabled for this project
@@ -783,6 +936,8 @@ Issues found:
 → Fix issue 5: enable task management? (file / beads / skip)
 → Fix issue 6: migrate gate commands to argv form? (yes / skip)
 ```
+
+**Governance line's risk tier tag.** The `(risk tier: <name>)` suffix comes from `resolveRiskTier(manifest)` (`lib/risk-tiers/resolve.mjs`). A project with no `risk_tier` key resolves to `standard` silently — this is not listed under "Issues found" and there is no fix-it prompt for it, since `standard` is a legitimate, unconfigured-but-valid state, not a defect. Changing tier on an already-materialized project is out of scope here (see Step 7.0's note on re-adoption).
 
 **Gate Liveness check:** `Governance` above only checks that `gates.yaml` (and
 its siblings) exist — a project can have a well-formed, present gates.yaml

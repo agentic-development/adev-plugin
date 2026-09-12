@@ -1,0 +1,33 @@
+{"event":"lifecycle_step","step":"specify","status":"started","ts":"2026-09-07T22:58:25.256Z"}
+{"event":"step_completed","step":"specify","verdict":"PASS","ts":"2026-09-07T23:01:57.990Z"}
+{"event":"lifecycle_step","step":"review","status":"started","revision":1,"ts":"2026-09-07T23:02:17.769Z"}
+{"event":"reviewer_report","step":"review","reviewer":"quick-synthesized-reviewer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"1 warning (CON-1: missing charter-extension flag/Capability Map row), 1 suggestion.","revision":1,"ts":"2026-09-07T23:10:05.551Z"}
+{"event":"step_completed","step":"review","verdict":"PASS_WITH_NOTES","revision":1,"ts":"2026-09-07T23:10:59.188Z"}
+{"event":"lifecycle_step","step":"plan","status":"started","ts":"2026-09-07T23:18:18.518Z"}
+{"event":"plan_task","plan":".context-index/specs/features/setup/risk-tier-bundles.plan.md","task_id":"task-1","status":"pending","notes":null,"ts":"2026-09-07T23:29:13.816Z"}
+{"event":"plan_task","plan":".context-index/specs/features/setup/risk-tier-bundles.plan.md","task_id":"task-2","status":"pending","notes":null,"ts":"2026-09-07T23:29:13.865Z"}
+{"event":"plan_task","plan":".context-index/specs/features/setup/risk-tier-bundles.plan.md","task_id":"task-3","status":"pending","notes":null,"ts":"2026-09-07T23:29:13.910Z"}
+{"event":"plan_task","plan":".context-index/specs/features/setup/risk-tier-bundles.plan.md","task_id":"task-4","status":"pending","notes":null,"ts":"2026-09-07T23:29:13.957Z"}
+{"event":"plan_task","plan":".context-index/specs/features/setup/risk-tier-bundles.plan.md","task_id":"task-5","status":"pending","notes":null,"ts":"2026-09-07T23:29:14.002Z"}
+{"event":"step_completed","step":"plan","verdict":"PASS","ts":"2026-09-07T23:29:41.860Z"}
+{"event":"lifecycle_step","step":"implement","status":"started","ts":"2026-09-07T23:30:40.714Z"}
+{"event":"plan_task","plan":".context-index/specs/features/setup/risk-tier-bundles.plan.md","task_id":"task-1","status":"in_progress","notes":null,"ts":"2026-09-07T23:31:28.591Z"}
+{"event":"review_round","plan":".context-index/specs/features/setup/risk-tier-bundles.plan.md","task_id":"task-1","stage":"spec-compliance","cycles":1,"ts":"2026-09-07T23:33:42.863Z"}
+{"event":"review_round","plan":".context-index/specs/features/setup/risk-tier-bundles.plan.md","task_id":"task-1","stage":"code-quality","cycles":1,"findings":0,"ts":"2026-09-07T23:33:42.911Z"}
+{"event":"plan_task","plan":".context-index/specs/features/setup/risk-tier-bundles.plan.md","task_id":"task-1","status":"done","notes":"Verified pre-existing code; both reviews PASS; added 1 test for cq-2","ts":"2026-09-07T23:33:48.897Z"}
+{"event":"plan_task","plan":".context-index/specs/features/setup/risk-tier-bundles.plan.md","task_id":"task-2","status":"in_progress","notes":null,"ts":"2026-09-07T23:34:16.732Z"}
+{"event":"review_round","plan":".context-index/specs/features/setup/risk-tier-bundles.plan.md","task_id":"task-2","stage":"spec-compliance","cycles":1,"ts":"2026-09-07T23:39:56.435Z"}
+{"event":"review_round","plan":".context-index/specs/features/setup/risk-tier-bundles.plan.md","task_id":"task-2","stage":"code-quality","cycles":2,"findings":2,"ts":"2026-09-07T23:39:56.485Z"}
+{"event":"plan_task","plan":".context-index/specs/features/setup/risk-tier-bundles.plan.md","task_id":"task-2","status":"done","notes":"cq-1 (path-containment duplication) + cq-2 (missing error-path tests) fixed; re-review PASS","ts":"2026-09-07T23:39:56.552Z"}
+{"event":"plan_task","plan":".context-index/specs/features/setup/risk-tier-bundles.plan.md","task_id":"task-3","status":"in_progress","notes":null,"ts":"2026-09-07T23:40:18.284Z"}
+{"event":"review_round","plan":".context-index/specs/features/setup/risk-tier-bundles.plan.md","task_id":"task-3","stage":"spec-compliance","cycles":1,"ts":"2026-09-07T23:44:47.981Z"}
+{"event":"review_round","plan":".context-index/specs/features/setup/risk-tier-bundles.plan.md","task_id":"task-3","stage":"code-quality","cycles":2,"findings":1,"ts":"2026-09-07T23:44:48.026Z"}
+{"event":"plan_task","plan":".context-index/specs/features/setup/risk-tier-bundles.plan.md","task_id":"task-3","status":"done","notes":"cq-1 (duplicated overlay-application loops) extracted to overlay-helpers.mjs; re-review PASS","ts":"2026-09-07T23:44:48.095Z"}
+{"event":"plan_task","plan":".context-index/specs/features/setup/risk-tier-bundles.plan.md","task_id":"task-4","status":"in_progress","notes":null,"ts":"2026-09-07T23:45:09.663Z"}
+{"event":"review_round","plan":".context-index/specs/features/setup/risk-tier-bundles.plan.md","task_id":"task-4","stage":"spec-compliance","cycles":1,"ts":"2026-09-07T23:48:11.668Z"}
+{"event":"review_round","plan":".context-index/specs/features/setup/risk-tier-bundles.plan.md","task_id":"task-4","stage":"code-quality","cycles":1,"findings":0,"ts":"2026-09-07T23:48:11.715Z"}
+{"event":"plan_task","plan":".context-index/specs/features/setup/risk-tier-bundles.plan.md","task_id":"task-4","status":"done","notes":"Both reviews PASS; hook + provider-parity test clean","ts":"2026-09-07T23:48:11.759Z"}
+{"event":"plan_task","plan":".context-index/specs/features/setup/risk-tier-bundles.plan.md","task_id":"task-5","status":"in_progress","notes":null,"ts":"2026-09-07T23:48:45.715Z"}
+{"event":"plan_task","plan":".context-index/specs/features/setup/risk-tier-bundles.plan.md","task_id":"task-5","status":"done","notes":"Lifecycle artifacts committed; no code review needed (markdown/JSONL bookkeeping only)","ts":"2026-09-07T23:48:53.361Z"}
+{"event":"step_completed","step":"implement","verdict":"PASS","ts":"2026-09-09T10:50:05.602Z"}
+{"event":"code_drift_detected","drift_source":"skills/init/SKILL.md","drift_at":"2026-09-10T16:02:23.164Z","ts":"2026-09-10T16:02:23.164Z"}

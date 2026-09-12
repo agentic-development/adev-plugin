@@ -1,0 +1,116 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Spec-text edit with verbatim DDR-1 replacement text and exact regex tests given. One file, single module, purely mechanical prose correction plus a revision-number bump."
+    },
+    {
+      "task_id": "t10",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.8,
+        "novelty": 0.6
+      },
+      "rationale": "Full test code given for the hand-off suite, but the task explicitly authorizes fixing any real gap in Tasks 2-7 it uncovers — an open-ended verification/discovery scope, not pure test authoring. Depends on five prior tasks landing first."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.6,
+        "novelty": 0.8
+      },
+      "rationale": "Full implementation, API contract, and tests given nearly verbatim in the plan (DDR-2/3/4/7). Follows the established materialize/drift/reviewers sub-verb dispatch pattern in lib/cli/governance.mjs. Spans lib/governance and lib/cli plus two test dirs, so blast radius is moderate rather than minimal."
+    },
+    {
+      "task_id": "t3",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.8,
+        "novelty": 0.8
+      },
+      "rationale": "Reworks Step 7d.0 prose to an explicit inclusion checklist, reusing Step 7d.1's existing checklist UI shape per DDR-1. Behavior and tests are explicit, but no golden sample exists for this class of skill-prose rework, and it depends on Task 2 landing first."
+    },
+    {
+      "task_id": "t4",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.8,
+        "novelty": 0.6
+      },
+      "rationale": "Reverses Step 7c's zero-selection no-write behavior into an always-write path (BEH-3) — a semantic flip on existing prose that a subagent could easily under- or over-apply. Reuses the existing [d]/[c]/[p]/[s] prompt shape but the write-gate change needs a careful read of surrounding context."
+    },
+    {
+      "task_id": "t5",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Exact predicate (`enabled !== false`), exact wording (DDR-6), and full test code are all given. Touches two files in one module (review) with no boundary crossing."
+    },
+    {
+      "task_id": "t6",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Mirrors Task 5's fully-specified warning pattern for the validate registry, with the absent-vs-empty distinction spelled out explicitly. Two files, one module (validation), no boundary crossing."
+    },
+    {
+      "task_id": "t7",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.8,
+        "novelty": 0.6
+      },
+      "rationale": "Two edits (baseline-source change plus surfacing discarded overlay warnings in the Step 7 summary) touching two sections of the same file. The summary-template extension is only sketched, not spelled out verbatim, and misapplying either edit would silently reintroduce the full-bundle baseline bug BEH-6 exists to close."
+    },
+    {
+      "task_id": "t8",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.6,
+        "novelty": 1
+      },
+      "rationale": "Four stale-claim corrections, each with exact old/new text and line numbers given. Purely mechanical prose correction, but spans three distinct areas (skill, docs, charter) so blast radius is moderate."
+    },
+    {
+      "task_id": "t9",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.6,
+        "novelty": 1
+      },
+      "rationale": "Exact Postcondition and template-header substitutions given verbatim with matching tests. Mechanical text reconciliation spanning one spec and four template files."
+    }
+  ]
+}

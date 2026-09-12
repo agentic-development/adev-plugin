@@ -146,3 +146,4 @@
 {"event":"validator_report","step":"validate","validator":"validate.check-4-constitution","severity":"error","verdict":"PASS","notes":"Zero new deps; pure ESM; no inline-Node in SKILL.md; versions unbumped; trailers present; provider mirrors in parity","ts":"2026-08-21T02:15:16.867Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-08-21T02:17:00.401Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"docs/cli-reference.md","drift_at":"2026-08-21T17:46:34.837Z","ts":"2026-08-21T17:46:34.837Z"}
+{"event":"code_drift_detected","drift_source":"lib/evals/score.mjs","drift_at":"2026-08-23T20:23:30.144Z","ts":"2026-08-23T20:23:30.145Z"}

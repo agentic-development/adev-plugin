@@ -5,7 +5,7 @@ date: 2026-08-15
 verdict: PASS_WITH_NOTES
 verdict-source: operator-override
 overridden-verdict: BLOCK
-overridden-by: daniel@indicium.tech
+overridden-by: dpavancini
 overridden-at: 2026-08-15
 override-reason: >-
   Operator manually approved the review to unblock the LOOP_REGRESSED halt and

@@ -38,14 +38,40 @@ function heading(msg) {
   console.log(`\n  ${msg}\n`);
 }
 
-async function ask(question) {
-  const rl = createInterface({ input: process.stdin, output: process.stdout });
-  return new Promise((resolve) => {
-    rl.question(`  ${question} `, (answer) => {
-      rl.close();
-      resolve(answer.trim().toLowerCase());
-    });
-  });
+// Lazily created, then reused for every ask() call in this process — both
+// the readline.Interface AND its async line iterator. Node's readline,
+// fed piped (non-TTY) stdin containing more than one line, only reliably
+// delivers the FIRST line to `rl.question()`'s one-shot 'line' listener; a
+// second `.question()` call (whether on a fresh interface or the same one)
+// hangs forever waiting for a 'line' event that already fired and was
+// consumed (visible as "Detected unsettled top-level await"). This only
+// surfaced once a flow needed two sequential prompts in the common case
+// (the config-dir picker introduced alongside install/uninstall scope
+// selection) — one `ask()` call per run never hit it. Pulling from the
+// interface's own async iterator instead of `.question()` does not have
+// this problem: it is the documented way to read successive lines and
+// correctly serves one buffered line per call, TTY or piped alike.
+let sharedReadline = null;
+let sharedLineIterator = null;
+
+function ask(question) {
+  if (!sharedReadline) {
+    sharedReadline = createInterface({ input: process.stdin, output: process.stdout });
+    sharedLineIterator = sharedReadline[Symbol.asyncIterator]();
+  }
+  process.stdout.write(`  ${question} `);
+  return sharedLineIterator.next().then(({ value, done }) => (done ? "" : value).trim().toLowerCase());
+}
+
+/** Release the readline interface once no more prompts are expected — an
+ * open interface holds a real TTY's stdin resumed, which keeps the process
+ * alive after `dispatch()` resolves. */
+function closeAsk() {
+  if (sharedReadline) {
+    sharedReadline.close();
+    sharedReadline = null;
+    sharedLineIterator = null;
+  }
 }
 
 /**
@@ -852,6 +878,49 @@ function stampVersion() {
 }
 
 /**
+ * Ask which Claude config dir(s) an install/uninstall should target.
+ *
+ * Each config dir (CLAUDE_CONFIG_DIR profile, e.g. work vs personal) has its
+ * own plugin cache and its own settings.json. A machine running more than one
+ * needs the operator to pick which to touch, or an operation meant for one
+ * profile silently lands in — or deletes from — another's session
+ * (adev-plugin-cli-tag-scope-collision). Most machines have exactly one
+ * candidate, so this stays a silent no-op for them: the returned array holds
+ * exactly the ambient claudeHome and no prompt is shown.
+ *
+ * @param {object} provider
+ * @param {(q: string) => Promise<string>} askFn
+ * @param {string} verb - fills the prompt, e.g. "Install" / "Uninstall".
+ * @returns {Promise<string[]>} one or more claudeHome paths to operate on.
+ */
+async function selectClaudeConfigDirs(provider, askFn, verb) {
+  const discovered = typeof provider.discoverConfigDirs === "function" ? provider.discoverConfigDirs() : [];
+  if (discovered.length <= 1) {
+    return [discovered[0]?.path ?? provider.getClaudeHome?.()];
+  }
+
+  heading("Multiple Claude config directories found on this machine");
+  discovered.forEach((dir, i) => {
+    const tags = [dir.active ? "current session" : null, ...dir.sources].filter(Boolean).join(", ");
+    log(`${i + 1}) ${dir.path}${tags ? ` — ${tags}` : ""}`);
+  });
+  const activeIndex = discovered.findIndex((dir) => dir.active);
+  const defaultChoice = String((activeIndex >= 0 ? activeIndex : 0) + 1);
+  const answer = (
+    await askFn(`${verb} which? [1-${discovered.length}/all] (default: ${defaultChoice})`)
+  ).trim();
+  if (answer === "all") {
+    return discovered.map((dir) => dir.path);
+  }
+  const idx = parseInt(answer, 10);
+  const pick =
+    Number.isInteger(idx) && idx >= 1 && idx <= discovered.length
+      ? discovered[idx - 1]
+      : discovered[activeIndex >= 0 ? activeIndex : 0];
+  return [pick.path];
+}
+
+/**
  * Install providers (Claude Code, OpenCode, Codex, Cursor).
  * @param {string[]} providerNames
  * @param {{ ask?: (q: string) => Promise<string> }} [opts] — optional ask
@@ -871,29 +940,37 @@ async function installProviders(providerNames, { ask: askFn = ask } = {}) {
       const scope = await askFn("Install for all projects (user) or this project only (project)? [user/project]");
       const targetScope = scope === "project" ? "project" : "user";
 
-      const { installed, path: pluginPath } = await provider.install({ scope: targetScope });
-      if (installed) {
-        success(`Plugin v${PLUGIN_VERSION} installed to ${pluginPath}`);
-      } else {
-        success(`Plugin v${PLUGIN_VERSION} already installed`);
-      }
+      const targetHomes = await selectClaudeConfigDirs(provider, askFn, "Install into");
 
-      const settingsPath = provider.enable(targetScope);
-      success(`Plugin enabled in ${settingsPath}`);
-      if (targetScope === "project") {
-        log("Scoped to this project. Any machine-wide enablement of adev was removed.");
-      }
+      for (const claudeHome of targetHomes) {
+        if (targetHomes.length > 1) {
+          log(`— ${claudeHome} —`);
+        }
 
-      const conflicts = provider.detectConflicts();
-      if (conflicts.length === 0) {
-        success("No conflicting plugins detected");
-      } else {
-        for (const conflict of conflicts) {
-          warn(`${conflict.name} — ${conflict.reason}`);
-          const disable = await askFn(`Disable ${conflict.name} for THIS project? (yes/no)`);
-          if (disable === "yes" || disable === "y") {
-            provider.disableConflictingPlugin(conflict.key);
-            success(`${conflict.name} disabled for this project`);
+        const { installed, path: pluginPath } = await provider.install({ scope: targetScope, claudeHome });
+        if (installed) {
+          success(`Plugin v${PLUGIN_VERSION} installed to ${pluginPath}`);
+        } else {
+          success(`Plugin v${PLUGIN_VERSION} already installed`);
+        }
+
+        const settingsPath = provider.enable(targetScope, { claudeHome });
+        success(`Plugin enabled in ${settingsPath}`);
+        if (targetScope === "project") {
+          log("Scoped to this project. Any machine-wide enablement of adev was removed.");
+        }
+
+        const conflicts = provider.detectConflicts({ claudeHome });
+        if (conflicts.length === 0) {
+          success("No conflicting plugins detected");
+        } else {
+          for (const conflict of conflicts) {
+            warn(`${conflict.name} — ${conflict.reason}`);
+            const disable = await askFn(`Disable ${conflict.name} for THIS project? (yes/no)`);
+            if (disable === "yes" || disable === "y") {
+              provider.disableConflictingPlugin(conflict.key);
+              success(`${conflict.name} disabled for this project`);
+            }
           }
         }
       }
@@ -1445,7 +1522,11 @@ async function cmdUpgrade() {
   console.log();
 }
 
-async function cmdUninstall() {
+/**
+ * @param {{ ask?: (q: string) => Promise<string> }} [opts] — optional ask
+ *   injector for testability, mirroring installProviders.
+ */
+async function cmdUninstall({ ask: askFn = ask } = {}) {
   // --target <name> branch: per-target adapter invocation (Copilot uses this).
   const target = parseTargetFlag();
   if (target === "copilot") {
@@ -1459,8 +1540,23 @@ async function cmdUninstall() {
     heading(`Uninstalling from ${provider.name}`);
 
     if (providerName === "codex") {
-      const scope = await ask("Remove Codex skills for all projects (user) or this project only (project)? [user/project]");
+      const scope = await askFn("Remove Codex skills for all projects (user) or this project only (project)? [user/project]");
       await provider.uninstall({ scope: scope === "project" ? "project" : "user" });
+    } else if (providerName === "claude-code") {
+      // Mirror installProviders: ask scope and, when the machine has more than
+      // one Claude config dir, which to target — uninstall used to always
+      // default to scope "user" and the ambient claudeHome with no question
+      // asked, unable to target a project-scoped install or another profile.
+      const scope = await askFn("Remove for all projects (user) or this project only (project)? [user/project]");
+      const targetScope = scope === "project" ? "project" : "user";
+      const targetHomes = await selectClaudeConfigDirs(provider, askFn, "Uninstall from");
+
+      for (const claudeHome of targetHomes) {
+        if (targetHomes.length > 1) {
+          log(`— ${claudeHome} —`);
+        }
+        await provider.uninstall({ scope: targetScope, claudeHome });
+      }
     } else {
       await provider.uninstall();
     }
@@ -1914,6 +2010,7 @@ export {
   PLUGIN_VERSION,
   selectProviders,
   installProviders,
+  cmdUninstall,
   buildChainedHook,
   validateHooksPath,
   escapesRepoPhysically,
@@ -2159,6 +2256,7 @@ const isDirectRun = (() => {
 
 if (isDirectRun) {
   await dispatch(process.argv);
+  closeAsk();
 }
 
 export { VERB_REGISTRY, cmdExtension, dispatch, printVerbRegistry, stripAnsi };
