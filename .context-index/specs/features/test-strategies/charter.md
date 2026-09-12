@@ -77,7 +77,7 @@ Test Strategies provides a strategy abstraction layer that decouples the TDD lif
 | Manifest Schema Extension | `test_strategies` section in manifest.yaml for declaring available strategies, commands, tiers, and path globs | must-have | | review-passed |
 | Strategy Detection Heuristics | Auto-detect available strategies from project files (dbt_project.yml -> fixture, Terraform -> policy, etc.) and task file paths (migrations/ -> schema) | must-have | | review-passed |
 | Strategy Assignment Protocol | Rules for how plan assigns a strategy per task: spec-declared > manifest-declared > auto-detected > fallback to unit | must-have | | review-passed |
-| Strategy Profile Contract | Define what each profile Live Spec must contain: RED exit condition, GREEN exit condition, gaming blockers, assertion rules, seed data rule, handoff format | must-have | | review-passed |
+| Strategy Profile Contract | Define what each profile Live Spec must contain: RED exit condition, GREEN exit condition, gaming blockers, assertion rules, seed data rule, handoff format | must-have | | validated |
 | Plan Integration | Extend plan output to include `strategy` field per task with assignment source and confidence | must-have | | review-passed |
 | Plan Infrastructure Requirements | When plan includes non-unit strategies or the spec has `infra_requirements:`, emit a consolidated Test Infrastructure Requirements section listing accounts, credentials, pre-provisioned state, and CI invocation | should-have | | validated |
 | Write-test Dispatch | Write-test loads the matching strategy profile and follows its rules instead of hardcoded unit-test rules | must-have | | review-passed |

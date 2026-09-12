@@ -453,6 +453,51 @@ describe('Profile loading with fixtures', () => {
 });
 
 // ============================================================================
+// Profile content: unit
+// ============================================================================
+describe('Profile content: unit', () => {
+  const p = () => getStrategyProfile('unit', PROFILES_DIR).profile;
+
+  it('assertion rules retain the existing mocking-boundary rule', () => {
+    assert.ok(p().assertion_rules.toLowerCase().includes('external boundar'),
+      'Expected external-boundary mocking rule to remain present');
+  });
+
+  it('assertion rules state the entry-point boundary rule', () => {
+    assert.ok(p().assertion_rules.toLowerCase().includes('entry point') ||
+      p().assertion_rules.toLowerCase().includes('entry-point'),
+      'Expected entry-point boundary rule');
+  });
+
+  it('assertion rules name all three entry-point categories', () => {
+    const rules = p().assertion_rules.toLowerCase();
+    for (const category of ['cli', 'hook', 'public library api']) {
+      assert.ok(rules.includes(category), `Expected entry-point category: ${category}`);
+    }
+  });
+
+  it('assertion rules permit internal-function tests as a supplement, not a replacement', () => {
+    assert.ok(p().assertion_rules.toLowerCase().includes('supplement'),
+      'Expected supplement-not-replacement scoping language (BEH-2)');
+  });
+
+  it('assertion rules scope the rule to behaviors that have a public entry point', () => {
+    assert.ok(p().assertion_rules.toLowerCase().includes('no public entry point') ||
+      p().assertion_rules.toLowerCase().includes('when a public entry point exists') ||
+      p().assertion_rules.toLowerCase().includes('whenever'),
+      'Expected the rule to be conditioned on a public entry point existing (BEH-3)');
+  });
+
+  it('the hardcoded UNIT_PROFILE fallback constant stays in sync with unit.md', () => {
+    assert.strictEqual(UNIT_PROFILE.assertion_rules, p().assertion_rules,
+      'UNIT_PROFILE (lib/test-strategies/profiles.mjs, the fallback of last resort for any ' +
+      'strategy whose profile file is missing/unreadable/malformed/incomplete) must carry the ' +
+      'same assertion_rules text as unit.md, or the fallback path silently serves the ' +
+      'pre-amendment rule');
+  });
+});
+
+// ============================================================================
 // Profile content validation — each profile has domain-appropriate rules
 // ============================================================================
 

@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.6,
+        "novelty": 1
+      },
+      "rationale": "Prose-only profile amendment; spec/test text given verbatim in plan. Strong in-repo precedent (7 existing Profile content: <strategy> blocks) but no curated golden sample. Touches lib/test-strategies (sensitive path) + tests, 2 modules, no boundary-rule crossing."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.8,
+        "novelty": 1
+      },
+      "rationale": "Doc-only change; verbatim test and prose given in plan. Direct sibling test pattern (test-depth-policy-docs.test.mjs) exists in-repo, no curated golden sample. Small footprint: 2 files (docs/test-strategies.md, tests/docs new file)."
+    }
+  ]
+}
