@@ -370,4 +370,65 @@ describe("runToolUseCapture — token-usage enrichment", () => {
     assert.equal(entry.usage.cache_creation_tokens, expectedUsage.cacheCreationTokens);
     assert.equal(entry.usage.cost_usd, expectedCost);
   });
+
+  // adev-plugin-04jr.2: Claude Code keys ~/.claude/projects/<encoded>/ by the
+  // session's STARTING cwd, not the hook's current cwd. `projectRoot` here
+  // stands in for a worktree the session moved into after starting elsewhere
+  // — the transcript lives under a directory this hook invocation's cwd
+  // never encodes to.
+  it("recovers usage by session_id when the hook's cwd diverges from the session's starting cwd", async () => {
+    process.env.CLAUDE_PLUGIN_ROOT = PLUGIN_ROOT;
+    const tmp = createTempDir();
+    mkdirSync(join(tmp, ".context-index"), { recursive: true });
+
+    const sessionId = `divergent-cwd-${process.pid}-${Date.now()}`;
+    const startingCwd = `/tmp/adev-04jr-start-${process.pid}-${Date.now()}`;
+    const startingSessionDir = join(
+      homedir(),
+      ".claude",
+      "projects",
+      startingCwd.replace(/[/.]/g, "-")
+    );
+    mkdirSync(startingSessionDir, { recursive: true });
+    cleanupDirs.push(startingSessionDir);
+
+    const lines = [
+      JSON.stringify({
+        type: "assistant",
+        message: {
+          model: "claude-sonnet-4-6",
+          usage: { input_tokens: 60, output_tokens: 15, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
+        },
+      }),
+    ];
+    writeFileSync(join(startingSessionDir, `${sessionId}.jsonl`), lines.join("\n") + "\n");
+
+    writeFileSync(
+      join(tmp, ".context-index", ".token-cursor.json"),
+      JSON.stringify({
+        session_id: sessionId,
+        last_offset: 0,
+        cumulative: { input_tokens: 0, output_tokens: 0, cache_read_tokens: 0, cache_creation_tokens: 0 },
+        format_warning_emitted: false,
+      })
+    );
+
+    // `tmp` (the hook's current cwd) never held a transcripts directory for
+    // this session — only `startingCwd`'s encoding does.
+    const { entry } = await runToolUseCapture({
+      payload: {
+        provider: "native",
+        tool_name: "Edit",
+        tool_input: { file_path: "a.ts" },
+        session_id: sessionId,
+      },
+      projectRoot: tmp,
+    });
+
+    cleanupTempDir(tmp);
+
+    assert.ok(entry.usage, "usage must be recovered via the session-id fallback");
+    assert.equal(entry.usage.input_tokens, 60);
+    assert.equal(entry.usage.output_tokens, 15);
+  });
 });
