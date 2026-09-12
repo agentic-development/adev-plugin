@@ -71,4 +71,10 @@ The workflow passes `target-branch: ${{ github.ref_name }}` to the release-pleas
 
 **Publish fails with a 404 on the PUT.** This almost always means the `NPM_TOKEN` secret is expired or revoked, not that the package or version is missing. Rotate the token — it must be an automation or granular access token with publish rights on `@adev-org/*`.
 
+**A version bump landed but nothing was released or published.** This is the failure the `verify-published` job exists to catch. release-please talks to the GitHub API on every run, and a transient `API rate limit exceeded for installation` ends it in seconds — leaving the branch with a bumped `package.json`, `.release-please-manifest.json`, and CHANGELOG entry, but no git tag, no GitHub release, and nothing on npm.
+
+The recovery is to **re-run the Release workflow** on the affected branch. release-please is idempotent, so it will not double-release: it re-reads the manifest, cuts the missing tag and release, and the same run's `publish` job then ships it. The workflow now also retries release-please once after a 60s pause, so most occurrences self-heal without intervention.
+
+`publish` is deliberately *not* gated on release-please's `release_created` output. That output is true only in the single run that creates a release, which used to make this state permanent — every later run, including a re-run of the failed one, saw `release_created=false` and skipped publishing. Instead `publish` asks a question about the world: *is this version tagged, and missing from npm?* That makes an interrupted release complete itself on the next push to the branch, while remaining idempotent (a version already on npm is skipped, so re-runs never double-publish) and correctly ordered (a version with no tag is never published).
+
 **A pre-release PR targets `main`.** The `target-branch` input is missing or the workflow on that branch is out of date. Merge the current `main` workflow into the channel branch.
