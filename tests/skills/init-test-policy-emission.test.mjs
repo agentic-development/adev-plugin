@@ -1,8 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { readSkillSurface } from "../helpers.mjs";
 
-const skill = readFileSync(new URL("../../skills/init/SKILL.md", import.meta.url), "utf8");
+const skill = readSkillSurface("init");
 const manifestTemplate = readFileSync(new URL("../../templates/manifest-template.yaml", import.meta.url), "utf8");
 
 test("init SKILL.md emits literal test_policy.granularity into manifest.yaml (+4 more contract assertions)", () => {

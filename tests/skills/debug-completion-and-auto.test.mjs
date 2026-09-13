@@ -4,13 +4,14 @@ import assert from "node:assert";
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readSkillSurface } from "../helpers.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..", "..");
 const read = (rel) => readFileSync(resolve(ROOT, rel), "utf8");
 
 test("debug SKILL.md declares --auto in the Arguments section (BEH-5)", () => {
-  const md = read("skills/debug/SKILL.md");
+  const md = readSkillSurface("debug");
   assert.match(
     md,
     /## Arguments[\s\S]{0,600}--auto/,
@@ -19,7 +20,7 @@ test("debug SKILL.md declares --auto in the Arguments section (BEH-5)", () => {
 });
 
 test("debug SKILL.md skips the interactive ADR prompt under --auto and records a note instead (BEH-5)", () => {
-  const md = read("skills/debug/SKILL.md");
+  const md = readSkillSurface("debug");
   assert.match(
     md,
     /--auto[\s\S]{0,800}(skip|suppress)[\s\S]{0,400}(ADR|prompt)/i,
@@ -48,7 +49,7 @@ function assertGrammar(token) {
 }
 
 test("debug SKILL.md emits the ADEV-DEBUG completion token for FIXED and PARKED (BEH-1, BEH-2, BEH-4)", () => {
-  const md = read("skills/debug/SKILL.md");
+  const md = readSkillSurface("debug");
   for (const tok of ["ADEV-DEBUG: FIXED", "ADEV-DEBUG: PARKED"]) {
     assertGrammar(tok);
     assert.ok(md.includes(tok), `skills/debug/SKILL.md must instruct emitting "${tok}"`);
@@ -61,7 +62,7 @@ test("debug SKILL.md emits the ADEV-DEBUG completion token for FIXED and PARKED 
 });
 
 test("debug SKILL.md bounds --auto reproduction attempts and terminates UNREPRODUCIBLE (BEH-3, BEH-7)", () => {
-  const md = read("skills/debug/SKILL.md");
+  const md = readSkillSurface("debug");
   assert.match(
     md,
     /reproduction_attempt_limit/,
@@ -85,7 +86,7 @@ test("manifest template documents tasks.bugfix_loop.reproduction_attempt_limit",
 });
 
 test("debug SKILL.md writes a FAILING-CHECKS block into issue notes on the PARKED path under --auto (BEH-8, RI-1 fix)", () => {
-  const md = read("skills/debug/SKILL.md");
+  const md = readSkillSurface("debug");
   assert.match(md, /FAILING-CHECKS:/, "Phase 6 must define the FAILING-CHECKS: notes block");
   // RI-1: the FAILING-CHECKS write must land in the SAME update() call the
   // PARKED branch already makes -- not a separate write, and not a false
@@ -98,7 +99,7 @@ test("debug SKILL.md writes a FAILING-CHECKS block into issue notes on the PARKE
 });
 
 test("debug SKILL.md merges Phase 6 step 3's insight note into step 4's single update() call, for both the closing and parking branch (BEH-5/BEH-8 wiring)", () => {
-  const md = read("skills/debug/SKILL.md");
+  const md = readSkillSurface("debug");
   const step4Idx = md.indexOf("Update issue board with confidence");
   assert.ok(step4Idx !== -1, "Phase 6 step 4 heading must exist");
   const step4Window = md.slice(step4Idx, step4Idx + 2500);
@@ -115,7 +116,7 @@ test("debug SKILL.md merges Phase 6 step 3's insight note into step 4's single u
 });
 
 test("debug SKILL.md resolves ADEV_ISSUE_OWNER for both claim and release (BEH-9, RI-2 fix)", () => {
-  const md = read("skills/debug/SKILL.md");
+  const md = readSkillSurface("debug");
   assert.match(md, /ADEV_ISSUE_OWNER/, "Phase 1.6 must document ADEV_ISSUE_OWNER resolution");
   // RI-2: the same resolved owner value must be reused at the release call,
   // not re-derived as a second hardcoded "${USER}/local" literal.

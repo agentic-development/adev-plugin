@@ -147,3 +147,4 @@
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-08-21T02:17:00.401Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"docs/cli-reference.md","drift_at":"2026-08-21T17:46:34.837Z","ts":"2026-08-21T17:46:34.837Z"}
 {"event":"code_drift_detected","drift_source":"lib/evals/score.mjs","drift_at":"2026-08-23T20:23:30.144Z","ts":"2026-08-23T20:23:30.145Z"}
+{"event":"code_drift_detected","drift_source":"tests/skills/eval-default-rubric.test.mjs","drift_at":"2026-08-23T12:20:26.059Z","ts":"2026-08-23T12:20:26.060Z"}

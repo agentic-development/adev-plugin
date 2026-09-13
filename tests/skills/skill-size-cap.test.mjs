@@ -96,7 +96,7 @@ test("every shipped SKILL.md is under the Copilot size cap", () => {
     oversize,
     [],
     "SKILL.md files over the Copilot cap — extract a section to a " +
-      "conditional-loading companion (see skills/implement/parallel-mode.md " +
+      "conditional-loading companion (see skills/implement/references/parallel-mode.md " +
       "for the pattern):\n  " + oversize.join("\n  "),
   );
 });
@@ -123,4 +123,51 @@ test("skills approaching the cap are surfaced before they cross it", () => {
     console.log(`  note: within ${Math.round((1 - WARN_AT) * 100)}% of the cap — ${near.join(", ")}`);
   }
   assert.ok(true);
+});
+
+// ── Agent Skills spec guidance: body under ~5,000 tokens ──────────────────
+//
+// Distinct from the Copilot cap above, and enforced for a different reason.
+// The 65,536-byte cap is a HARD failure: crossing it throws
+// INVALID_SKILL_FRONTMATTER and breaks every Copilot adapter path. This is a
+// BUDGET: a SKILL.md body is loaded in full when the skill is invoked, then
+// re-read as part of the context prefix on every subsequent turn, so body size
+// is multiplied by turn count rather than paid once (measured on one real
+// lifecycle in adev-plugin-04jr: cache reads were 98.1% of token cost).
+//
+// The remedy is never to cut prose. It is progressive disclosure: move material
+// the agent needs only sometimes into references/ and load it on demand. Every
+// skill here got under the guidance that way, with nothing deleted.
+//
+// Tokens are ESTIMATED from bytes. That is honest for a budget — it is a
+// consistent ruler applied to a fixed corpus — but it must NOT be reused to
+// claim token savings, where the stored module heuristic warns byte proxies
+// overstate by 2-2.5x. A savings claim needs `adev cost summary` over a real
+// lifecycle.
+const BYTES_PER_TOKEN = 4.08; // hygiene measured 65,350 B / 16,018 tok by skill-validator v1.6.0
+const TOKEN_GUIDANCE = 5000;
+const GUIDANCE_BYTES = Math.round(TOKEN_GUIDANCE * BYTES_PER_TOKEN);
+
+test("every SKILL.md body is within the Agent Skills token guidance", () => {
+  const over = [];
+  for (const name of readdirSync(SKILLS_DIR)) {
+    const p = join(SKILLS_DIR, name, "SKILL.md");
+    let size;
+    try {
+      size = statSync(p).size;
+    } catch {
+      continue;
+    }
+    if (size > GUIDANCE_BYTES) {
+      over.push(`${name}: ~${Math.round(size / BYTES_PER_TOKEN)} tokens (${size} B)`);
+    }
+  }
+  assert.deepEqual(
+    over,
+    [],
+    `SKILL.md bodies over the ~${TOKEN_GUIDANCE}-token guidance. Do NOT fix this by ` +
+      "deleting prose — move a section into references/ and leave a " +
+      "conditional-loading pointer (see skills/hygiene/SKILL.md for the " +
+      "pattern):\n  " + over.join("\n  "),
+  );
 });

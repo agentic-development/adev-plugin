@@ -5,7 +5,12 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const content = readFileSync(join(__dirname, "..", "..", "skills", "init", "SKILL.md"), "utf8");
+// Step 7's sub-steps live in the references/ companion under progressive
+// disclosure, not inline in SKILL.md.
+const content = readFileSync(
+  join(__dirname, "..", "..", "skills", "init", "references", "behavior-by-project-state.md"),
+  "utf8"
+);
 
 test("Step 7c.0 states the overlay base is the operator's own selection, not the full bundle", () => {
   const start = content.indexOf("#### Step 7c.0");

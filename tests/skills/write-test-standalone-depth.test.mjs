@@ -1,8 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { readSkillSurface } from "../helpers.mjs";
 
-const skill = readFileSync(new URL("../../skills/write-test/SKILL.md", import.meta.url), "utf8");
+const skill = readSkillSurface("write-test");
 const preflight = skill.slice(skill.indexOf("## Step 0: Standalone Pre-flight"));
 
 test("standalone pre-flight pins depth to the built-in standard (+3 more contract assertions)", () => {

@@ -3,13 +3,22 @@ import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readSkillSurface } from "./helpers.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
-const SKILL = readFileSync(join(ROOT, "skills", "specify", "SKILL.md"), "utf8");
+const SKILL = readSkillSurface("specify");
 // Standard mode's Step 4 is the canonical block both describe blocks below
 // assert against. `section` is a hoisted function declaration, so deriving this
 // at module scope is safe and still fails loudly if the heading is renamed.
-const STEP4 = section(SKILL, "### Step 4: Interactive Spec Authoring");
+// Read Standard Mode's own companion, not the concatenated surface: the
+// heading "### Step 4: Interactive Spec Authoring" appears in cross-cutting
+// mode too, so indexOf over the concatenation would silently pick whichever
+// mode file sorts first and assert against the wrong mode's Step 4.
+const STANDARD_MODE = readFileSync(
+  join(ROOT, "skills", "specify", "references", "modes", "standard-mode.md"),
+  "utf8",
+);
+const STEP4 = section(STANDARD_MODE, "### Step 4: Interactive Spec Authoring");
 
 // Isolate a single heading's block so the assertions cannot be satisfied by
 // prose living somewhere else in the file. `indexOf` returns the FIRST

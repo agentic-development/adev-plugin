@@ -3,25 +3,25 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readSkillSurface } from "../helpers.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
-const SKILL_PATH = join(ROOT, "skills", "implement", "SKILL.md");
 const COMPANION_PATH = join(ROOT, "skills", "implement", "graduated-review-depth.md");
 
 test("/adev:implement captures git rev-parse HEAD as the task's base SHA before dispatch", () => {
-  const md = readFileSync(SKILL_PATH, "utf8");
+  const md = readSkillSurface("implement");
   assert.match(md, /git rev-parse HEAD/);
 });
 
 test("/adev:implement's review-cycle cap reads from implement.max_review_cycles, not either hardcoded 3", () => {
-  const md = readFileSync(SKILL_PATH, "utf8");
+  const md = readSkillSurface("implement");
   assert.match(md, /implement\.max_review_cycles/);
   assert.doesNotMatch(md, /Maximum 3 review cycles per task/);
   assert.doesNotMatch(md, /Maximum 3 code-quality review cycles per task/);
 });
 
 test("/adev:implement calls adev implement resolve-depth at both provisional and final passes", () => {
-  const md = readFileSync(SKILL_PATH, "utf8");
+  const md = readSkillSurface("implement");
   assert.match(md, /adev implement resolve-depth/);
   // Literal flag values only — a bare-word `provisional`/`final` match would
   // pass against the pre-graduated SKILL.md and prove nothing.
@@ -30,7 +30,7 @@ test("/adev:implement calls adev implement resolve-depth at both provisional and
 });
 
 test("/adev:implement dispatches the synthesized reviewer once under quick, and two reviewers unchanged under full", () => {
-  const md = readFileSync(SKILL_PATH, "utf8");
+  const md = readSkillSurface("implement");
   assert.match(md, /synthesized-reviewer-prompt\.md/);
   // quick: exactly one dispatch, both stages skipped.
   assert.match(md, /skip both stages; dispatch one synthesized reviewer/);
@@ -39,22 +39,22 @@ test("/adev:implement dispatches the synthesized reviewer once under quick, and 
 });
 
 test("/adev:implement reports review_depth_resolved for each resolution pass", () => {
-  const md = readFileSync(SKILL_PATH, "utf8");
+  const md = readSkillSurface("implement");
   assert.match(md, /reportReviewDepthResolved|review_depth_resolved/);
 });
 
 test("/adev:implement records the synthesized stage on the task's review-round provenance", () => {
-  const md = readFileSync(SKILL_PATH, "utf8");
+  const md = readSkillSurface("implement");
   assert.match(md, /stage.*synthesized|synthesized.*stage/);
 });
 
 test("/adev:implement accepts --review-cycles and threads it to the resolve-depth verb", () => {
-  const md = readFileSync(SKILL_PATH, "utf8");
+  const md = readSkillSurface("implement");
   assert.match(md, /--review-cycles/);
 });
 
 test("/adev:implement echoes REVIEW_DEPTH_FLOOR_APPLIED and ROUTING_SCORE_OUT_OF_RANGE to the operator-facing transcript, not just to the persisted event", () => {
-  const md = readFileSync(SKILL_PATH, "utf8");
+  const md = readSkillSurface("implement");
   assert.match(md, /REVIEW_DEPTH_FLOOR_APPLIED/);
   assert.match(md, /ROUTING_SCORE_OUT_OF_RANGE/);
 });

@@ -13,7 +13,7 @@ import { strict as assert } from 'node:assert';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadValidateConfig } from '../../lib/governance/validate-config.mjs';
-import { createTempDir, cleanupTempDir, writeFixture, PLUGIN_ROOT } from '../helpers.mjs';
+import { createTempDir, cleanupTempDir, writeFixture, PLUGIN_ROOT, readSkillSurface } from '../helpers.mjs';
 
 const STARTER_PATH = join(PLUGIN_ROOT, 'templates/domains/software/validate.yaml');
 const PROJECT_OVERRIDE_PATH = join(PLUGIN_ROOT, '.context-index/governance/validate.yaml');
@@ -89,7 +89,7 @@ describe('Validate check set restructure — registry trim', () => {
   });
 
   test('SKILL.md no longer contains Check 10 Platform Drift section', () => {
-    const skill = readFileSync(join(PLUGIN_ROOT, 'skills/validate/SKILL.md'), 'utf8');
+    const skill = readSkillSurface("validate");
     // The per-check prose section (### Check 10: ...) is removed; the migration
     // footer may still reference "Check 10" in informational language but
     // there should be no per-check prose section.
@@ -100,7 +100,7 @@ describe('Validate check set restructure — registry trim', () => {
   });
 
   test('SKILL.md no longer contains Check 12 Lifecycle Reconciliation section', () => {
-    const skill = readFileSync(join(PLUGIN_ROOT, 'skills/validate/SKILL.md'), 'utf8');
+    const skill = readSkillSurface("validate");
     assert.ok(
       !/^### Check 12: Lifecycle Reconciliation/m.test(skill),
       'SKILL.md must not retain the ### Check 12: Lifecycle Reconciliation prose section'
@@ -124,7 +124,7 @@ describe('Validate check set restructure — registry trim', () => {
   });
 
   test('SKILL.md no longer contains Check 5, 6, 7 prose sections', () => {
-    const skill = readFileSync(join(PLUGIN_ROOT, 'skills/validate/SKILL.md'), 'utf8');
+    const skill = readSkillSurface("validate");
     assert.ok(!/^### Check 5: /m.test(skill), 'SKILL.md must not retain ### Check 5 prose');
     assert.ok(!/^### Check 6: /m.test(skill), 'SKILL.md must not retain ### Check 6 prose');
     assert.ok(!/^### Check 7: /m.test(skill), 'SKILL.md must not retain ### Check 7 prose');
@@ -139,7 +139,7 @@ describe('Validate check set restructure — registry trim', () => {
   });
 
   test('SKILL.md no longer contains Check 13 Success Heuristic Extraction section', () => {
-    const skill = readFileSync(join(PLUGIN_ROOT, 'skills/validate/SKILL.md'), 'utf8');
+    const skill = readSkillSurface("validate");
     assert.ok(
       !/^### Check 13: Success Heuristic Extraction/m.test(skill),
       'SKILL.md must not retain the ### Check 13 prose section (relocated to post-validate hook)'
@@ -147,7 +147,7 @@ describe('Validate check set restructure — registry trim', () => {
   });
 
   test('SKILL.md report template references relocation destinations', () => {
-    const skill = readFileSync(join(PLUGIN_ROOT, 'skills/validate/SKILL.md'), 'utf8');
+    const skill = readSkillSurface("validate");
     // Task 11: the migration-orientation footer cites the three skills that
     // now own the relocated checks.
     assert.ok(skill.includes('/adev:hygiene'), 'Report template must reference /adev:hygiene');
@@ -156,7 +156,7 @@ describe('Validate check set restructure — registry trim', () => {
   });
 
   test('SKILL.md report template mentions relocated checks for migration orientation', () => {
-    const skill = readFileSync(join(PLUGIN_ROOT, 'skills/validate/SKILL.md'), 'utf8');
+    const skill = readSkillSurface("validate");
     // The footer enumerates Checks 3, 5, 6, 7, 10, 11 (conditional), 12, 13
     // so users comparing with historic .validate.md reports can find the new
     // home of each relocated check.
@@ -167,7 +167,7 @@ describe('Validate check set restructure — registry trim', () => {
   });
 
   test('SKILL.md "Overall Status" no longer claims all 13 checks pass', () => {
-    const skill = readFileSync(join(PLUGIN_ROOT, 'skills/validate/SKILL.md'), 'utf8');
+    const skill = readSkillSurface("validate");
     // Task 11: stale "All 13 checks passed" / "Skip any of the 13 checks"
     // language gets updated to reflect the trimmed inventory.
     assert.ok(

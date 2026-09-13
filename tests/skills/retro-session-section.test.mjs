@@ -9,7 +9,7 @@ import { strict as assert } from 'node:assert';
 import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { PLUGIN_ROOT, createTempDir, cleanupTempDir } from '../helpers.mjs';
+import { PLUGIN_ROOT, createTempDir, cleanupTempDir, readSkillSurface } from '../helpers.mjs';
 
 function runCli(args, { cwd } = {}) {
   const result = spawnSync('node', [join(PLUGIN_ROOT, 'cli', 'index.mjs'), ...args], {
@@ -24,8 +24,8 @@ function runCli(args, { cwd } = {}) {
   };
 }
 
-const RETRO_SKILL = readFileSync(join(PLUGIN_ROOT, 'skills/retro/SKILL.md'), 'utf8');
-const INIT_SKILL = readFileSync(join(PLUGIN_ROOT, 'skills/init/SKILL.md'), 'utf8');
+const RETRO_SKILL = readSkillSurface("retro");
+const INIT_SKILL = readSkillSurface("init");
 
 // ---- Task 14: § 1.8 Session Activity step inserted into retro skill ----
 
