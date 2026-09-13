@@ -1,11 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { readSkillSurface } from "../helpers.mjs";
 
 const SKILL_PATH = 'skills/write-test/SKILL.md';
 
 function readSkill() {
-  return readFileSync(SKILL_PATH, 'utf-8');
+  return readSkillSurface("write-test");
 }
 
 test('SKILL.md file exists and is non-empty', () => {

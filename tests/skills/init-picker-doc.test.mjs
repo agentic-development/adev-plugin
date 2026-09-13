@@ -9,13 +9,14 @@ import { strict as assert } from 'node:assert';
 import { readFileSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readSkillSurface } from "../helpers.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const PLUGIN_ROOT = resolve(__dirname, '..', '..');
 
 describe('skills/init/SKILL.md picker walkthrough', () => {
-  const md = readFileSync(join(PLUGIN_ROOT, 'skills', 'init', 'SKILL.md'), 'utf8');
+  const md = readSkillSurface("init");
 
   it("documents the domain extension picker section (+3 more contract assertions)", () => {
     // documents the domain extension picker section

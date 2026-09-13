@@ -139,3 +139,4 @@
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-08-19T20:49:06.810Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"docs/cli-reference.md","drift_at":"2026-08-21T17:46:34.840Z","ts":"2026-08-21T17:46:34.840Z"}
 {"event":"code_drift_detected","drift_source":"lib/cli/test-policy.mjs","drift_at":"2026-08-23T20:22:54.674Z","ts":"2026-08-23T20:22:54.675Z"}
+{"event":"code_drift_detected","drift_source":"tests/skills/implement-review-provenance.test.mjs","drift_at":"2026-08-23T12:27:00.579Z","ts":"2026-08-23T12:27:00.579Z"}

@@ -3,11 +3,12 @@ import assert from "node:assert/strict";
 import { readFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+import { readSkillSurface } from "../helpers.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 describe("init SKILL.md — workspace support", () => {
-  const content = readFileSync(join(__dirname, "..", "..", "skills", "init", "SKILL.md"), "utf8");
+  const content = readSkillSurface("init");
 
   it("documents --workspace flag (+3 more contract assertions)", () => {
     // documents --workspace flag

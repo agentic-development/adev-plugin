@@ -5,7 +5,11 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const skillPath = join(__dirname, "..", "..", "skills", "init", "SKILL.md");
+// Step 7's sub-steps live in the references/ companion under progressive
+// disclosure, not inline in SKILL.md.
+const skillPath = join(
+  __dirname, "..", "..", "skills", "init", "references", "behavior-by-project-state.md"
+);
 const content = readFileSync(skillPath, "utf8");
 const start = content.indexOf("#### Step 7d.0");
 const end = content.indexOf("\n#### Step 7d.1");
