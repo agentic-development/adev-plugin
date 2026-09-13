@@ -84,10 +84,10 @@ The emerging design for configurable reviewer/check registries (ADR-0003) was ab
 
 ## Related
 
-- `.context-index/specs/cross-cutting/execution-profiles.md` — full schema and behavioral spec
+- `.context-index/specs/cross-cutting/execution-profiles.spec.md` — full schema and behavioral spec
 - `.context-index/adrs/0003-configurable-review-registry.md` — registries that consume profiles
-- `.context-index/specs/features/review/configurable-reviewers.md` — primary v1 consumer
-- `.context-index/specs/features/validation/configurable-checks.md` — secondary v1 consumer
+- `.context-index/specs/features/review/configurable-reviewers.spec.md` — primary v1 consumer
+- `.context-index/specs/features/validation/configurable-checks.spec.md` — secondary v1 consumer
 - `providers/opencode/plugin.mjs` — existing harness adapter seam
 - `templates/platform-context.yaml` — `model_tiers` mapping that profiles defer to
 - CLAUDE.md "Architecture Boundaries" — this ADR introduces a plugin-wide primitive that touches the dispatch contract

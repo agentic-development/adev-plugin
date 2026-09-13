@@ -85,10 +85,10 @@ Both files follow the same shape as `governance/gates.yaml`: a declarative list 
 ## Related
 
 - `.context-index/adrs/0004-execution-profiles.md` — promoted-out primitive that the registries consume
-- `.context-index/specs/cross-cutting/execution-profiles.md` — profile schema and behavior
-- `.context-index/specs/features/review/configurable-reviewers.md` — reviewer registry spec (rev 2)
-- `.context-index/specs/features/validation/configurable-checks.md` — check registry spec (rev 2)
-- `.context-index/specs/features/unified-gates/unified-gate-system.md` — precedent for `governance/` migration
+- `.context-index/specs/cross-cutting/execution-profiles.spec.md` — profile schema and behavior
+- `.context-index/specs/features/review/configurable-reviewers.spec.md` — reviewer registry spec (rev 2)
+- `.context-index/specs/features/validation/configurable-checks.spec.md` — check registry spec (rev 2)
+- `.context-index/specs/features/unified-gates/unified-gate-system.spec.md` — precedent for `governance/` migration
 - `skills/review-specs/SKILL.md` — current hardcoded reviewer list
 - `skills/validate/SKILL.md` — current Check 2-12 prose
 - `templates/manifest-template.yaml` — current `specialists` section (to be deprecated)
