@@ -10,7 +10,7 @@ Accepted
 
 ## Context
 
-The Multi-Repo Workspace feature (see `specs/features/multi-repo-workspace/charter.md`) introduces a coordination layer that groups multiple repositories under a shared `adev-workspace.yaml`. Skills operating in workspace mode gain read access to sibling repositories' `.context-index/` directories for cross-repo spec references, dependency-aware planning, and workspace-level charters.
+The Multi-Repo Workspace feature (see `.context-index/specs/features/multi-repo-workspace/charter.md`) introduces a coordination layer that groups multiple repositories under a shared `adev-workspace.yaml`. Skills operating in workspace mode gain read access to sibling repositories' `.context-index/` directories for cross-repo spec references, dependency-aware planning, and workspace-level charters.
 
 This creates a risk: a skill running in repo A could inadvertently write files into repo B's `.context-index/`, causing context contamination, unexpected diffs, and ownership ambiguity. Without a clear invariant, each skill would need ad-hoc write guards, and the correctness of workspace mode would depend on every skill author independently getting it right.
 
