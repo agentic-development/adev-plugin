@@ -22,6 +22,7 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { readSkillSurface } from "../helpers.mjs";
 
 import { computeCommandSha, loadCheck1Gates } from "../../lib/gates/gate-sets.mjs";
 import { checkBoundaries } from "../../lib/governance/boundaries.mjs";
@@ -190,10 +191,15 @@ describe("the validate registries", () => {
 });
 
 describe("skills/validate/SKILL.md", () => {
-  // SKILL.md is ~40 KB; `assert.match` would dump the whole file into the
-  // failure output, so these assert on a boolean with a message instead.
+  // These assert on a boolean with a message rather than `assert.match`, so a
+  // failure does not dump the whole instruction surface into the output.
+  //
+  // The surface is SKILL.md plus its references/ companions -- deliberately NOT
+  // skills/validate/checks/, which holds the per-check PROMPT bodies. That is
+  // the distinction these tests draw: the normative sentences must be part of
+  // the skill's own instructions, not only of a prompt handed to a subagent.
   it("names Check 1 the sole sanctioned writer of gate_outcomes", () => {
-    const skill = readRepoFile("skills/validate/SKILL.md");
+    const skill = readSkillSurface("validate");
     assert.ok(
       /only sanctioned writer of `gate_outcomes`/.test(skill),
       "the normative sole-writer sentence must be in the skill, not only in the check body",
@@ -201,7 +207,7 @@ describe("skills/validate/SKILL.md", () => {
   });
 
   it("no longer claims Check 1 has no registry entry", () => {
-    const skill = readRepoFile("skills/validate/SKILL.md");
+    const skill = readSkillSurface("validate");
     assert.ok(
       !/Check 1 \(quality gates\) is not in this registry/.test(skill),
       "Task 6 registered Check 1; prose asserting otherwise sends emitters back to the default",

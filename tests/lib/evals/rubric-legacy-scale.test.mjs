@@ -185,12 +185,12 @@ test("conforming.yaml still loads — it carries no weight anywhere", () => {
 
 test("the shipped default rubric loads — its vestigial weight: 1 lines are gone", () => {
   // Regression guard for the five `weight: 1` lines deleted from
-  // skills/eval/default-rubric.yaml. That file's own header states its
+  // skills/eval/references/default-rubric.yaml. That file's own header states its
   // quality_dimensions are BINARY (met / not_met / unknown) and calls that a
   // deliberate deviation from the skill-compression pattern, so a uniform weight
   // of 1 on every entry was left-over scaffolding from the pattern the file says
   // it departs from — and carried no information even if it were read.
-  const rubric = loadRubric("skills/eval/default-rubric.yaml", { projectRoot: repoRoot });
+  const rubric = loadRubric("skills/eval/references/default-rubric.yaml", { projectRoot: repoRoot });
   assert.ok(rubric.quality_dimensions.length > 0);
   assert.ok(rubric.quality_dimensions.every((d) => d.weight === undefined));
 });

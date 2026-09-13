@@ -38,6 +38,7 @@ source-manifest:
     - tests/skills/validate-zero-checks-warning.test.mjs
     - tests/specs/governance-opt-in-dispatch-contract.test.mjs
   computed-at: "2026-09-10T16:25:27.464Z"
+drift_detected: true
 ---
 
 <!-- Cross-Cutting Live Spec. No single owning charter — affects setup

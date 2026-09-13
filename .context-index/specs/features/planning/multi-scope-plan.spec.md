@@ -12,8 +12,8 @@ tracker-ref: epic-9
 source-manifest:
   files:
     - path: skills/plan/SKILL.md
-    - path: skills/plan/mode-router.md
-    - path: skills/plan/plan-reviewer-prompt.md
+    - path: skills/plan/references/mode-router.md
+    - path: skills/plan/references/plan-reviewer-prompt.md
 ---
 
 # Live Spec: Multi-Scope /adev:plan with Natural-Language Triage
@@ -97,8 +97,8 @@ source-manifest:
 ### Postconditions
 
 - `skills/plan/SKILL.md` updated with mode detection section and per-mode flows
-- `skills/plan/mode-router.md` (new internal doc) describes detection precedence and keyword/state inference rules
-- `skills/plan/plan-reviewer-prompt.md` updated to validate plans at any scope
+- `skills/plan/references/mode-router.md` (new internal doc) describes detection precedence and keyword/state inference rules
+- `skills/plan/references/plan-reviewer-prompt.md` updated to validate plans at any scope
 - All created work items carry `next_action` per the convention table
 - Existing `--spec` invocations continue to work without behavior change
 - Tests cover mode detection for all five scopes plus ambiguity fallback

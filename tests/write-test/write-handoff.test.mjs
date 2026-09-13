@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { createTempDir, cleanupTempDir, writeFixture } from '../helpers.mjs';
-import { writeHandoff, verifyHandoff } from '../../skills/write-test/write-handoff.mjs';
+import { writeHandoff, verifyHandoff } from '../../skills/write-test/scripts/write-handoff.mjs';
 
 test('writes handoff block to correct path', async (t) => {
   const dir = await createTempDir();

@@ -1,0 +1,23 @@
+{
+  "scenario": "specify --extract",
+  "skill": "specify",
+  "why": "specify has seven mutually exclusive mode companions. Exactly one should load per invocation \u2014 that is the whole disclosure argument for this skill, and it is the largest single body reduction in the refactor (19,888 B of Standard Mode alone). An agent that loads the wrong mode acts on the wrong step sequence; one that loads all seven has paid the pre-refactor cost while looking split.",
+  "required": [
+    "skills/specify/references/modes/extract-mode.md",
+    "skills/specify/references/shared/lifecycle-events.md",
+    "skills/specify/references/shared/workspace-mode-detection.md"
+  ],
+  "requiredBodies": [
+    "skills/specify/SKILL.md"
+  ],
+  "mustNotRead": [
+    "skills/specify/references/modes/standard-mode.md",
+    "skills/specify/references/modes/refactor-mode.md",
+    "skills/specify/references/modes/from-diff-mode.md",
+    "skills/specify/references/modes/cross-cutting-mode.md",
+    "skills/specify/references/modes/revise-mode.md",
+    "skills/specify/references/modes/amend-mode.md"
+  ],
+  "mustNotReadWhy": "The six modes --extract does not select. standard-mode.md is the one that matters most: it is the default path and the largest companion, so an agent that reaches for it by habit rather than by flag is the likeliest failure here.",
+  "requiredWhy": "The one mode --extract selects, plus the two shared/ companions that apply to every mode regardless of flag. The shared pair is included deliberately: they are the companions most likely to be silently dropped, because nothing in a mode's own step list forces them and an agent can produce plausible-looking output without them."
+}

@@ -72,3 +72,4 @@
 {"event":"validator_report","step":"validate","validator":"validate.check-4-constitution","severity":"error","verdict":"PASS","notes":"Architecture boundaries PASS (11-file change set, no manifest/hook/cli files touched). Non-negotiable principles PASS. Coding standards PASS (no inline-Node, all 7 commits carry Spec: trailers).","ts":"2026-08-19T20:53:17.546Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-08-19T20:54:42.721Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"templates/manifest-template.yaml","drift_at":"2026-08-21T18:40:23.359Z","ts":"2026-08-21T18:40:23.359Z"}
+{"event":"code_drift_detected","drift_source":"tests/skills/debug-completion-and-auto.test.mjs","drift_at":"2026-08-23T12:46:38.556Z","ts":"2026-08-23T12:46:38.556Z"}

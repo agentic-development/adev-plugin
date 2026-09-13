@@ -1,0 +1,139 @@
+# Default Layer 3 rubric for /adev:eval
+#
+# Ships with the plugin as the bundled Layer 3 rubric.
+# Resolved when .context-index/evals/config.yaml says `rubric: default`, or when no
+# --rubric <path> override is supplied. A custom rubric must carry the same
+# top-level keys as this file.
+#
+# SHAPE: this follows the house rubric pattern established by
+# tests/evals/skill-compression/rubrics/*.yaml — deterministic
+# `required_elements` plus judged `quality_dimensions`, scored with flat
+# top-level weights.
+#
+# TWO DELIBERATE DEVIATIONS FROM THAT PATTERN:
+#
+#   1. `required_elements` here carry `source` + `met_when` instead of
+#      `match_pattern`. The skill-compression harness regex-matches a skill's
+#      own markdown output; /adev:eval scores an implementation diff, where a
+#      single regex over the whole diff is weak evidence. Each element names
+#      the artifact the check reads and the mechanical condition that decides
+#      it, so the check stays deterministic without pretending one regex can
+#      express it.
+#
+#   2. `quality_dimensions` are BINARY (met / not_met / unknown), not 1-5.
+#      Asking an LLM judge for a number is the documented failure mode
+#      (Zheng 2023 MT-Bench; Ye 2024; Shi 2024 position bias; Chen 2025 panel
+#      bias amplification): position, verbosity and self-enhancement biases
+#      dominate a numeric scale, and panels amplify shared bias. One judge per
+#      criterion, one reference-anchored yes/no question, and an explicit
+#      `unknown` so a judge that cannot tell does not guess. The numeric
+#      aggregate below exists for TREND TRACKING ONLY and is never the judged
+#      output.
+#
+# All values are flat (top-level scalars, or 2-space list items with 4-space
+# properties). No nested maps — the repo's minimal YAML readers do not parse
+# them, and a nested block would silently load as empty.
+
+rubric_id: "adev-eval-default"
+version: 1
+layer: 3
+verdict_values: "met | not_met | unknown (judged criteria) | not_applicable (deterministic elements)"
+
+# ---------------------------------------------------------------------------
+# Deterministic checks — decided by reading the diff. NO judge, NO subagent.
+# These are disjoint from Layer 1 (quality gates) and Layer 2 (boundaries,
+# complexity, golden-sample patterns) so nothing is scored twice.
+# ---------------------------------------------------------------------------
+required_elements:
+  - id: spec_criteria_referenced
+    description: "Every acceptance criterion in the spec is referenced verbatim by an added or modified test"
+    source: "the Live Spec's acceptance-criteria list, matched against test names and assertion messages in the diff"
+    met_when: "each criterion's identifier, or its literal wording, appears in at least one test name or assertion message"
+    not_applicable_when: "the spec declares no acceptance criteria — record NOT_APPLICABLE"
+
+  - id: tests_accompany_source
+    description: "Every changed non-test source file has an added or modified test in the same diff"
+    source: "the diff file list"
+    met_when: "no changed source file lacks a corresponding test change"
+    not_applicable_when: "never — the diff file list always answers this"
+
+  - id: no_debug_residue
+    description: "The diff adds no leftover debugging or placeholder markers"
+    source: "added lines in the diff"
+    met_when: "no added line introduces console.log, debugger, TODO, FIXME, or XXX"
+    not_applicable_when: "never — added lines always answer this"
+
+  - id: no_disabled_tests_added
+    description: "The diff adds no skipped, focused, or todo tests"
+    source: "added lines in test files in the diff"
+    met_when: "no added line introduces a skip, only, todo, or focused-test marker"
+    not_applicable_when: "never — added test lines always answer this"
+
+  - id: error_paths_asserted
+    description: "At least one added test asserts a failure or error path, not only the happy path"
+    source: "assertions in added or modified test files"
+    met_when: "at least one test asserts a thrown error, rejected promise, or non-zero exit"
+    not_applicable_when: "the change is documentation-only — record NOT_APPLICABLE"
+
+  - id: exported_symbols_documented
+    description: "Every newly exported symbol carries a doc comment"
+    source: "added export statements in the diff"
+    met_when: "each new export has a doc comment immediately above it"
+    not_applicable_when: "the diff adds no new exports — record NOT_APPLICABLE"
+
+# ---------------------------------------------------------------------------
+# Judged criteria — one criterion per judge dispatch, never bundled.
+# Each is a single reference-anchored yes/no question. A judge returns exactly
+# one of: MET, NOT_MET, UNKNOWN — plus one sentence of evidence citing
+# file:line. Absence of information is UNKNOWN, never NOT_MET.
+# ---------------------------------------------------------------------------
+quality_dimensions:
+  - id: readability_naming
+    criterion: "Can a developer unfamiliar with this module state what each newly added symbol does from its name and signature alone?"
+    reference: "the matched golden sample in .context-index/samples/, else the naming conventions in the constitution"
+    met_when: "every new symbol's name and signature convey its purpose without reading its body"
+    not_met_when: "at least one new symbol requires reading its body to know what it does"
+    unknown_when: "no golden sample and no naming convention is declared, so there is no anchor to compare against"
+
+  - id: separation_of_concerns
+    criterion: "Does each changed file hold a single responsibility, at the same boundary the reference draws?"
+    reference: "the matched golden sample's file/module split, else the Architecture Boundaries section of the constitution"
+    met_when: "no changed file mixes responsibilities the reference keeps apart"
+    not_met_when: "at least one changed file merges responsibilities the reference separates"
+    unknown_when: "the diff touches no file the reference covers"
+
+  - id: spec_intent_fidelity
+    criterion: "Does the implementation handle the edge cases the spec names, not just its literal acceptance criteria?"
+    reference: "the Live Spec's non-goals, edge cases, and error-behavior sections"
+    met_when: "every edge case named in the spec has corresponding handling in the diff"
+    not_met_when: "at least one spec-named edge case has no handling in the diff"
+    unknown_when: "the spec names no edge cases or error behavior"
+
+  - id: idiomatic_conformance
+    criterion: "Does the diff use the same language and framework idioms as the reference for this platform?"
+    reference: "the matched golden sample, else the Coding Standards section of the constitution"
+    met_when: "the diff uses the reference's idioms for imports, error handling, and module structure"
+    not_met_when: "the diff departs from a reference idiom without a comment explaining why"
+    unknown_when: "no golden sample exists and the constitution declares no platform idioms"
+
+  - id: error_handling_placement
+    criterion: "Are errors raised and handled at the layer the reference designates, with messages an operator could act on?"
+    reference: "the constitution's error-handling convention, else the matched golden sample"
+    met_when: "errors surface at the designated layer and each message names the failing input or condition"
+    not_met_when: "an error is swallowed, re-raised at the wrong layer, or carries a message with no actionable detail"
+    unknown_when: "the diff contains no error paths"
+
+# ---------------------------------------------------------------------------
+# Aggregation — TREND TRACKING ONLY.
+# The judged output of this layer is the per-criterion verdict table. The
+# number below exists so /adev:retro and /adev:hygiene can plot a series
+# across runs; it is never reported without its verdict table.
+# ---------------------------------------------------------------------------
+layer3_max_points: 25
+required_element_points: 10
+judged_criterion_points: 15
+unknown_policy: "exclude_from_denominator"
+not_applicable_policy: "exclude_from_denominator"
+# Expressed as a whole percent, not a 0-1 ratio: the repo's zero-dependency
+# YAML readers parse integers only, and a float would load as a string.
+insufficient_evidence_threshold_percent: 40

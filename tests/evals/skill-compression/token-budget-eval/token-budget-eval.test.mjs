@@ -53,7 +53,7 @@ function getAllSkillSizes() {
  *
  *   ## Feature Mode
  *
- *   > **Conditional loading:** Read `skills/plan/feature-mode.md` for ...
+ *   > **Conditional loading:** Read `skills/plan/references/feature-mode.md` for ...
  *
  * So the marker for a conditional section is no longer "a big inline mode block";
  * it is the `Conditional loading:` pointer plus a real companion file on disk.
@@ -171,11 +171,11 @@ describe("Strategy 1: Conditional Section Loading", () => {
     // Non-default plan modes. Spec Mode (`--spec`) is the default and stays
     // inline by design — it is not listed here.
     assertExternalizedModes("plan", [
-      { heading: "## Milestone Planning Mode", companion: "skills/plan/milestone-mode.md" },
-      { heading: "## Feature Mode", companion: "skills/plan/feature-mode.md" },
-      { heading: "## Release Mode", companion: "skills/plan/release-mode.md" },
-      { heading: "## Milestone Mode", companion: "skills/plan/milestone-mode.md" },
-      { heading: "## Epic Mode", companion: "skills/plan/epic-mode.md" },
+      { heading: "## Milestone Planning Mode", companion: "skills/plan/references/milestone-mode.md" },
+      { heading: "## Feature Mode", companion: "skills/plan/references/feature-mode.md" },
+      { heading: "## Release Mode", companion: "skills/plan/references/release-mode.md" },
+      { heading: "## Milestone Mode", companion: "skills/plan/references/milestone-mode.md" },
+      { heading: "## Epic Mode", companion: "skills/plan/references/epic-mode.md" },
     ]);
   });
 
@@ -219,10 +219,10 @@ describe("Strategy 1: Conditional Section Loading", () => {
     // and are deliberately excluded. `## Charter Mode` was externalized later, in
     // 8d1b3d28.
     assertExternalizedModes("build", [
-      { heading: "## Resume Mode", companion: "skills/build/resume-mode.md" },
-      { heading: "## Charter Mode", companion: "skills/build/charter-mode.md" },
-      { heading: "## Milestone Mode", companion: "skills/build/milestone-mode.md" },
-      { heading: "## Workspace-Mode Build", companion: "skills/build/workspace-mode.md" },
+      { heading: "## Resume Mode", companion: "skills/build/references/resume-mode.md" },
+      { heading: "## Charter Mode", companion: "skills/build/references/charter-mode.md" },
+      { heading: "## Milestone Mode", companion: "skills/build/references/milestone-mode.md" },
+      { heading: "## Workspace-Mode Build", companion: "skills/build/references/workspace-mode.md" },
     ]);
   });
 });
