@@ -10,8 +10,9 @@
 // Every assertion below reads the FILESYSTEM rather than a return value: the
 // contract is about which settings file gained (or must not gain) an entry.
 //
-// HOME is redirected to a temp dir for the whole file — getClaudeHome() resolves
-// ~/.claude from process.env.HOME, and a test that asserts "the user's settings
+// HOME is redirected to a temp dir for the whole file — and CLAUDE_CONFIG_DIR,
+// which outranks it, is cleared — because getClaudeHome() resolves the config
+// dir from those two variables, and a test that asserts "the user's settings
 // file was not written" must not be able to touch the real one.
 
 import { test, before, after, beforeEach } from "node:test";
@@ -25,22 +26,20 @@ const KEY = "adev@agentic-development";
 let tmpHome;
 let realHome;
 let realCwd;
-let realClaudeConfigDir;
 let projectDir;
+
+let realConfigDir;
 
 before(() => {
   realHome = process.env.HOME;
+  realConfigDir = process.env.CLAUDE_CONFIG_DIR;
   realCwd = process.cwd();
-  realClaudeConfigDir = process.env.CLAUDE_CONFIG_DIR;
 });
 
 after(() => {
   process.env.HOME = realHome;
-  if (realClaudeConfigDir === undefined) {
-    delete process.env.CLAUDE_CONFIG_DIR;
-  } else {
-    process.env.CLAUDE_CONFIG_DIR = realClaudeConfigDir;
-  }
+  if (realConfigDir === undefined) delete process.env.CLAUDE_CONFIG_DIR;
+  else process.env.CLAUDE_CONFIG_DIR = realConfigDir;
   process.chdir(realCwd);
   if (tmpHome) cleanupTempDir(tmpHome);
   if (projectDir) cleanupTempDir(projectDir);
@@ -52,9 +51,9 @@ beforeEach(() => {
   tmpHome = createTempDir();
   projectDir = createTempDir();
   process.env.HOME = tmpHome;
-  // getClaudeHome() prefers CLAUDE_CONFIG_DIR over HOME — an ambient value in
-  // the developer's own shell (a personal profile, say) must not leak into
-  // these tests, which assert on files under `tmpHome`.
+  // CLAUDE_CONFIG_DIR outranks HOME in getClaudeHome(), so an inherited one
+  // would defeat the redirect this whole file depends on and let the
+  // "the user's settings file was not written" assertions write to it.
   delete process.env.CLAUDE_CONFIG_DIR;
   process.chdir(projectDir);
 });
