@@ -5,7 +5,10 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const content = readFileSync(join(__dirname, "..", "..", "skills", "init", "SKILL.md"), "utf8");
+const content = readFileSync(
+  join(__dirname, "..", "..", "skills", "init", "references", "behavior-by-project-state.md"),
+  "utf8",
+);
 
 function extractSection(text, startMarker, endMarker) {
   const start = text.indexOf(startMarker);

@@ -7,7 +7,7 @@
  * not comparable across runs.
  *
  * The tests therefore derive the rubric path FROM SKILL.md rather than
- * hardcoding it — a test that only asserts `skills/eval/default-rubric.yaml`
+ * hardcoding it — a test that only asserts `skills/eval/references/default-rubric.yaml`
  * exists would still pass if the skill later pointed somewhere else, which is
  * the exact drift being fixed.
  *
@@ -58,7 +58,7 @@ const REQUIRED_KEYS = [
  * mention elsewhere in the file from standing in for the definition.
  */
 const KEYWORD_DEFINITION_PATTERN =
-  /The shipped default rubric is `(?:<ADEV_ROOT>\/)?(skills\/eval\/[A-Za-z0-9._-]+\.ya?ml)`[\s\S]{0,120}?`default` keyword resolves to/;
+  /The shipped default rubric is `(?:<ADEV_ROOT>\/)?(skills\/eval\/(?:references\/)?[A-Za-z0-9._-]+\.ya?ml)`[\s\S]{0,120}?`default` keyword resolves to/;
 
 /**
  * Pull the documented default-rubric path out of SKILL.md prose, reading it

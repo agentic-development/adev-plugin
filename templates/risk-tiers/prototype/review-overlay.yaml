@@ -1,0 +1,13 @@
+# Review registry overlay for the "prototype" risk tier.
+# Applied on top of the operator's own Step 7c/7d selection during
+# /adev:init Step 7c, immediately before the write. Softens every active
+# bundled reviewer to severity_cap: warning so review still runs and still
+# reports findings, but a finding never blocks completion on its own.
+# See lib/risk-tiers/merge-review-overlay.mjs.
+
+severity_caps:
+  referent-integrity: warning
+  wiring-reviewer: warning
+  consistency-analyzer: warning
+  boundary-reviewer: warning
+  termination-reviewer: warning

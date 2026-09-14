@@ -10,8 +10,8 @@ updated: 2026-05-04
 source-manifest:
   sha: "c2d7e43"
   files:
-    - skills/write-test/detect-gaming.mjs
-    - skills/write-test/detect-gaming.sh
+    - skills/write-test/scripts/detect-gaming.mjs
+    - skills/write-test/scripts/detect-gaming.sh
     - skills/write-test/SKILL.md
     - lib/test-strategies/gaming.mjs
     - tests/write-test/detect-gaming.test.mjs

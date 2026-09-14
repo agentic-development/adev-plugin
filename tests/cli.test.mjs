@@ -223,18 +223,29 @@ describe("enablePlugin", () => {
   let origCwd;
   let origHome;
 
+  let origClaudeConfigDir;
+
   beforeEach(() => {
     tempDir = createTempDir();
     origCwd = process.cwd();
     origHome = process.env.HOME;
-    // Point HOME to temp dir so user settings go there
+    origClaudeConfigDir = process.env.CLAUDE_CONFIG_DIR;
+    // Point HOME to temp dir so user settings go there. getClaudeHome()
+    // prefers CLAUDE_CONFIG_DIR over HOME, so an ambient value in the
+    // developer's own shell must not leak these writes into a real config dir.
     process.env.HOME = tempDir;
+    delete process.env.CLAUDE_CONFIG_DIR;
     process.chdir(tempDir);
   });
 
   afterEach(() => {
     process.chdir(origCwd);
     process.env.HOME = origHome;
+    if (origClaudeConfigDir === undefined) {
+      delete process.env.CLAUDE_CONFIG_DIR;
+    } else {
+      process.env.CLAUDE_CONFIG_DIR = origClaudeConfigDir;
+    }
     cleanupTempDir(tempDir);
   });
 
@@ -279,19 +290,30 @@ describe("detectConflicts", () => {
   let homeDir;
   let origCwd;
   let origHome;
+  let origClaudeConfigDir;
 
   beforeEach(() => {
     projectDir = createTempDir();
     homeDir = createTempDir();
     origCwd = process.cwd();
     origHome = process.env.HOME;
+    origClaudeConfigDir = process.env.CLAUDE_CONFIG_DIR;
     process.env.HOME = homeDir;
+    // getClaudeHome() prefers CLAUDE_CONFIG_DIR over HOME — clear it so an
+    // ambient value in the developer's own shell can't redirect these
+    // assertions onto a real config dir.
+    delete process.env.CLAUDE_CONFIG_DIR;
     process.chdir(projectDir);
   });
 
   afterEach(() => {
     process.chdir(origCwd);
     process.env.HOME = origHome;
+    if (origClaudeConfigDir === undefined) {
+      delete process.env.CLAUDE_CONFIG_DIR;
+    } else {
+      process.env.CLAUDE_CONFIG_DIR = origClaudeConfigDir;
+    }
     cleanupTempDir(projectDir);
     cleanupTempDir(homeDir);
   });

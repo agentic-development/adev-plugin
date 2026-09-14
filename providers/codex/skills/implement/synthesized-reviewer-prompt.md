@@ -5,7 +5,7 @@ You are a single reviewer performing a **synthesized** review of one implementat
 ## Your Review Scope (both lenses)
 
 1. **Stage 1's lens — spec compliance.** Verify the implementation against the Live Spec's acceptance criteria: missing requirements, extra/out-of-scope work, and the misunderstandings triad (scope misread, requirement misread, contract misread). You MUST verify this by reading the actual code and diff produced for the task — never by trusting the implementer's self-report of what was done. If the implementer's summary claims a behavior, confirm it against the code before crediting it.
-2. **Stage 2's lens — code quality.** Apply every item in `skills/implement/code-quality-checklist.md` (referenced by path — do not re-derive or duplicate its contents here; open that file and check the diff against each item it lists: single responsibility, test quality and integrity, TDD evidence, naming/readability, constitutional standards, YAGNI, file-size growth).
+2. **Stage 2's lens — code quality.** Apply every item in `<ADEV_ROOT>/skills/implement/references/code-quality-checklist.md` (referenced by path — do not re-derive or duplicate its contents here; open that file and check the diff against each item it lists: single responsibility, test quality and integrity, TDD evidence, naming/readability, constitutional standards, YAGNI, file-size growth).
 
 Spend effort proportional to the task's actual risk on each lens, but do not omit either lens — this prompt exists specifically to replace both stages, not just one.
 

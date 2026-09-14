@@ -95,8 +95,20 @@ describe("CursorAdapter.install — skill sanitization (end-to-end via real sour
     // Those colons must be preserved verbatim per Constitution Principle 2.
     await CursorAdapter.install({ scope: "user" });
 
-    const publishedInit = join(homeDir, ".cursor", "skills", "adev-init", "SKILL.md");
-    const body = readFileSync(publishedInit, "utf8");
+    // Read the published skill's whole tree, not just SKILL.md: init's step
+    // prose lives in references/ companions under progressive disclosure. This
+    // also pins that the adapter publishes those companions at all -- a
+    // SKILL.md-only copy would ship a skill whose pointers resolve to nothing.
+    const publishedDir = join(homeDir, ".cursor", "skills", "adev-init");
+    const collect = (dir) =>
+      readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+        e.isDirectory()
+          ? collect(join(dir, e.name))
+          : e.name.endsWith(".md")
+            ? [readFileSync(join(dir, e.name), "utf8")]
+            : [],
+      );
+    const body = collect(publishedDir).join("\n");
 
     assert.match(
       body,

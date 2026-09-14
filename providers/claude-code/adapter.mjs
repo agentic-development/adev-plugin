@@ -1,7 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync, cpSync, chmodSync, readdirSync, rmSync, realpathSync, lstatSync, readlinkSync } from "fs";
-import { join, dirname } from "path";
+import { join, dirname, resolve } from "path";
 import { fileURLToPath } from "url";
-import { execSync } from "child_process";
 import { readJson as readJsonRaw } from "../../lib/provider/json-io.mjs";
 import { installCopyFilter } from "../../lib/provider/ship-filter.mjs";
 import { lenientRealpath, isContained } from "../../lib/path-safety.mjs";
@@ -105,8 +104,137 @@ function readJson(path, root) {
   return readJsonRaw(path);
 }
 
+/**
+ * Claude Code itself resolves its config directory from `CLAUDE_CONFIG_DIR`
+ * when set, falling back to `~/.claude`. This adapter previously ignored the
+ * variable and always wrote to `~/.claude`, so an install run from a shell
+ * pointed at a different config dir (e.g. a "personal" profile) silently
+ * landed in a directory that session's Claude Code never reads.
+ */
 function getClaudeHome() {
+  if (process.env.CLAUDE_CONFIG_DIR) {
+    return resolve(process.env.CLAUDE_CONFIG_DIR);
+  }
   return join(process.env.HOME || process.env.USERPROFILE, ".claude");
+}
+
+const SHELL_RC_FILES = [
+  ".zshrc",
+  ".zprofile",
+  ".zshenv",
+  ".bashrc",
+  ".bash_profile",
+  ".profile",
+  join(".config", "fish", "config.fish"),
+];
+
+const CLAUDE_CONFIG_DIR_ASSIGNMENT = /(?:^|[\s;])(?:export\s+)?CLAUDE_CONFIG_DIR\s*=\s*["']?([^"'\s;]+)["']?/gm;
+
+function expandHomePath(rawPath, home) {
+  if (rawPath === "~") return home;
+  if (rawPath.startsWith("~/")) return join(home, rawPath.slice(2));
+  if (rawPath.startsWith("$HOME/")) return join(home, rawPath.slice(6));
+  if (rawPath.startsWith("${HOME}/")) return join(home, rawPath.slice(8));
+  return rawPath;
+}
+
+function findConfigDirAssignments(filePath) {
+  let contents;
+  try {
+    contents = readFileSync(filePath, "utf8");
+  } catch {
+    return [];
+  }
+  const found = [];
+  let match;
+  CLAUDE_CONFIG_DIR_ASSIGNMENT.lastIndex = 0;
+  while ((match = CLAUDE_CONFIG_DIR_ASSIGNMENT.exec(contents))) {
+    found.push(match[1]);
+  }
+  return found;
+}
+
+/**
+ * Find every Claude config directory this machine appears to have, not just
+ * the one this process would resolve to — so `install` can offer a choice
+ * instead of silently writing to whichever `CLAUDE_CONFIG_DIR` the invoking
+ * shell happens to have set. Candidates come from: the default `~/.claude`,
+ * this process's own `CLAUDE_CONFIG_DIR`, any `CLAUDE_CONFIG_DIR=` assignment
+ * found in a shell startup file (catches OTHER shells/profiles this process
+ * isn't running under), and sibling `~/.claude*` directories (catches config
+ * dirs that exist but were never wired through an env var this scan can see).
+ * This is a heuristic over the filesystem, not an exhaustive enumeration —
+ * it cannot see config dirs set only via a wrapper script or a per-invocation
+ * env var.
+ */
+function discoverConfigDirs() {
+  const home = process.env.HOME || process.env.USERPROFILE;
+  const active = getClaudeHome();
+  const entries = new Map();
+
+  const add = (rawPath, source) => {
+    if (!rawPath) return;
+    const resolved = resolve(expandHomePath(rawPath, home));
+    const existing = entries.get(resolved);
+    if (existing) {
+      if (!existing.sources.includes(source)) existing.sources.push(source);
+    } else {
+      entries.set(resolved, { path: resolved, sources: [source], exists: existsSync(resolved) });
+    }
+  };
+
+  add(join(home, ".claude"), "default");
+  if (process.env.CLAUDE_CONFIG_DIR) {
+    add(process.env.CLAUDE_CONFIG_DIR, "CLAUDE_CONFIG_DIR in this session");
+  }
+
+  for (const rcName of SHELL_RC_FILES) {
+    for (const dir of findConfigDirAssignments(join(home, rcName))) {
+      add(dir, `CLAUDE_CONFIG_DIR in ~/${rcName}`);
+    }
+  }
+
+  if (existsSync(home)) {
+    for (const name of readdirSync(home)) {
+      if (name !== ".claude" && !/^\.claude-/.test(name)) continue;
+      const full = join(home, name);
+      try {
+        if (lstatSync(full).isDirectory()) add(full, "sibling ~/.claude* directory");
+      } catch {
+        // Broken symlink — not a usable candidate.
+      }
+    }
+  }
+
+  // Active config dir first, then alphabetical, so a default/no-prompt caller
+  // that just takes entries[0] gets the one this process would actually use.
+  return [...entries.values()]
+    .map((entry) => ({ ...entry, active: entry.path === active }))
+    .sort((a, b) => (a.active === b.active ? a.path.localeCompare(b.path) : a.active ? -1 : 1));
+}
+
+const REGISTRY_KEY = "adev@agentic-development";
+
+function readRegistryRows(claudeHome) {
+  const registryPath = join(claudeHome, "plugins", "installed_plugins.json");
+  const registry = readJson(registryPath, claudeHome);
+  return Array.isArray(registry?.plugins?.[REGISTRY_KEY]) ? registry.plugins[REGISTRY_KEY] : [];
+}
+
+/**
+ * Delete every cache entry under `pluginCacheParent` whose name isn't in
+ * `keep`. Shared by `cleanOldVersions` (keeps every version some registry row
+ * still names, plus the version just installed) and `uninstall` (keeps only
+ * what survives after removing the uninstalled scope's own row) — the two
+ * differ in what they pass as `keep`, not in how pruning happens.
+ */
+function pruneUnreferencedVersions(pluginCacheParent, keep) {
+  if (!existsSync(pluginCacheParent)) return;
+  for (const entry of readdirSync(pluginCacheParent)) {
+    if (!keep.has(entry)) {
+      rmSync(join(pluginCacheParent, entry), { recursive: true, force: true });
+    }
+  }
 }
 
 /**
@@ -143,19 +271,22 @@ export const ClaudeCodeAdapter = {
     return process.env.CLAUDE === "true" || existsSync(".claude");
   },
 
+  getClaudeHome,
+  discoverConfigDirs,
+
   getAgentFile() {
     return "CLAUDE.md";
   },
 
   async install(opts = {}) {
     const scope = opts.scope || "user";
-    const claudeHome = getClaudeHome();
+    const claudeHome = opts.claudeHome || getClaudeHome();
     const pluginCacheParent = join(claudeHome, "plugins", "cache", "agentic-development", "adev");
     const cacheDir = join(pluginCacheParent, PLUGIN_VERSION);
 
     if (existsSync(cacheDir)) {
       this.updateRegistry(claudeHome, cacheDir, scope);
-      this.enable(scope);
+      this.enable(scope, { claudeHome });
       return { installed: false, path: cacheDir };
     }
 
@@ -175,20 +306,31 @@ export const ClaudeCodeAdapter = {
       }
     }
 
-    this.cleanOldVersions(pluginCacheParent);
+    // updateRegistry BEFORE cleanOldVersions: pruning must see this install's
+    // own row already pointing at the new version, or it would find the old
+    // row still "in use" and never clean this scope's superseded version.
     this.updateRegistry(claudeHome, cacheDir, scope);
-    this.enable(scope);
+    this.cleanOldVersions(pluginCacheParent, claudeHome);
+    this.enable(scope, { claudeHome });
 
     return { installed: true, path: cacheDir };
   },
 
-  cleanOldVersions(pluginCacheParent) {
-    if (!existsSync(pluginCacheParent)) return;
-    for (const entry of readdirSync(pluginCacheParent)) {
-      if (entry !== PLUGIN_VERSION) {
-        rmSync(join(pluginCacheParent, entry), { recursive: true, force: true });
-      }
-    }
+  /**
+   * Delete cached versions this claudeHome's registry no longer references.
+   *
+   * Deleting every OTHER directory unconditionally (as this used to) is wrong
+   * whenever one claudeHome's cache is shared by more than one scope/project —
+   * the default `~/.claude` used by every project on a machine, most commonly.
+   * Installing `@next` for project A used to delete the version project B's
+   * project-scope row (still `latest`) pointed at, breaking B's session with
+   * no warning (adev-plugin-cli-tag-scope-collision). A version stays only if
+   * some row in installed_plugins.json — for THIS claudeHome — still names it.
+   */
+  cleanOldVersions(pluginCacheParent, claudeHome) {
+    const rows = readRegistryRows(claudeHome);
+    const keep = new Set([PLUGIN_VERSION, ...rows.map((r) => r.version).filter(Boolean)]);
+    pruneUnreferencedVersions(pluginCacheParent, keep);
   },
 
   /**
@@ -202,7 +344,7 @@ export const ClaudeCodeAdapter = {
   updateRegistry(claudeHome, cacheDir, scope) {
     const registryPath = join(claudeHome, "plugins", "installed_plugins.json");
     const registry = readJson(registryPath, claudeHome) || { version: 2, plugins: {} };
-    const key = "adev@agentic-development";
+    const key = REGISTRY_KEY;
     const now = new Date().toISOString();
     const rows = Array.isArray(registry.plugins[key]) ? registry.plugins[key] : [];
 
@@ -243,8 +385,8 @@ export const ClaudeCodeAdapter = {
     writeJson(registryPath, registry, claudeHome);
   },
 
-  enable(scope = "user") {
-    const claudeHome = getClaudeHome();
+  enable(scope = "user", opts = {}) {
+    const claudeHome = opts.claudeHome || getClaudeHome();
     let settingsPath;
 
     if (scope === "user") {
@@ -328,7 +470,7 @@ export const ClaudeCodeAdapter = {
 
   async uninstall(opts = {}) {
     const scope = opts.scope || "user";
-    const claudeHome = getClaudeHome();
+    const claudeHome = opts.claudeHome || getClaudeHome();
 
     if (scope === "user" || scope === "all") {
       const userSettingsPath = join(claudeHome, "settings.json");
@@ -352,14 +494,53 @@ export const ClaudeCodeAdapter = {
       }
     }
 
-    const cacheDir = join(claudeHome, "plugins", "cache", "agentic-development");
-    if (existsSync(cacheDir)) {
-      execSync(`rm -rf "${cacheDir}"`);
+    // Drop this scope's row(s) BEFORE pruning the cache, so pruning sees the
+    // post-uninstall truth — otherwise a stale row for the scope just
+    // uninstalled would count as "still in use" and nothing would ever prune.
+    this.removeRegistryRows(claudeHome, scope);
+
+    // Unconditionally `rm -rf`-ing the whole marketplace cache here used to
+    // delete every OTHER scope/project's version too, the same shared-cache
+    // blast radius as the old `cleanOldVersions` bug: a project-scope
+    // uninstall in one repo deleted the cache a "latest"-pinned project in
+    // another repo (same claudeHome) was actively running. Only a version no
+    // remaining row references may go; only remove the (now possibly empty)
+    // `adev` cache folder itself, never its `agentic-development` parent,
+    // which this plugin does not own.
+    const pluginCacheParent = join(claudeHome, "plugins", "cache", "agentic-development", "adev");
+    const remainingVersions = new Set(readRegistryRows(claudeHome).map((r) => r.version).filter(Boolean));
+    pruneUnreferencedVersions(pluginCacheParent, remainingVersions);
+    if (existsSync(pluginCacheParent) && readdirSync(pluginCacheParent).length === 0) {
+      rmSync(pluginCacheParent, { recursive: true, force: true });
     }
   },
 
-  detectConflicts() {
-    const claudeHome = getClaudeHome();
+  /**
+   * Remove the row(s) belonging to `scope` from installed_plugins.json.
+   * "project" only ever removes the CURRENT working directory's row — an
+   * uninstall run from repo A must never touch repo B's row, even though
+   * both live in the same claudeHome's registry file.
+   */
+  removeRegistryRows(claudeHome, scope) {
+    const registryPath = join(claudeHome, "plugins", "installed_plugins.json");
+    const registry = readJson(registryPath, claudeHome);
+    const rows = Array.isArray(registry?.plugins?.[REGISTRY_KEY]) ? registry.plugins[REGISTRY_KEY] : null;
+    if (!rows) return;
+
+    const projectPath = process.cwd();
+    const remaining = rows.filter((r) => {
+      if ((scope === "user" || scope === "all") && r.scope === "user") return false;
+      if ((scope === "project" || scope === "all") && r.scope === "project" && r.projectPath === projectPath) return false;
+      return true;
+    });
+
+    if (remaining.length === rows.length) return;
+    registry.plugins[REGISTRY_KEY] = remaining;
+    writeJson(registryPath, registry, claudeHome);
+  },
+
+  detectConflicts(opts = {}) {
+    const claudeHome = opts.claudeHome || getClaudeHome();
     const projectRoot = process.cwd();
     const userSettings = readJson(join(claudeHome, "settings.json"), claudeHome) || {};
     const projectSettingsPath = join(projectRoot, ".claude", "settings.json");

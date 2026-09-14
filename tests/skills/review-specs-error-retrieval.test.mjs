@@ -28,6 +28,7 @@ import {
   createTempDir,
   cleanupTempDir,
   writeFixture,
+  readSkillSurface,
 } from "../helpers.mjs";
 import { buildBlockerId } from "../../lib/blocker-id.mjs";
 import { writeHeuristic } from "../../lib/heuristics.mjs";
@@ -72,7 +73,7 @@ const BLOCKER_ID = buildBlockerId({
 // ── skills/review-specs/SKILL.md BLOCK path ──────────────────────────────
 
 const SKILL_PATH = join(PLUGIN_ROOT, "skills", "review-specs", "SKILL.md");
-const SKILL = readFileSync(SKILL_PATH, "utf8");
+const SKILL = readSkillSurface("review-specs");
 
 test("the BLOCK path names the inherited-mode signature verb", () => {
   // assert.ok over assert.match: a failed assert.match on a large skill file
@@ -230,12 +231,20 @@ function walkHookScripts(dir) {
   });
 }
 
+/** Every markdown file under a skill: SKILL.md and its references/ companions. */
+function walkSkillDocs(dir) {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) return walkSkillDocs(full);
+    return entry.isFile() && entry.name.endsWith(".md") ? [full] : [];
+  });
+}
+
 function callSurfaces() {
-  const skillsDir = join(PLUGIN_ROOT, "skills");
-  const skillDocs = readdirSync(skillsDir, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => join(skillsDir, entry.name, "SKILL.md"))
-    .filter((path) => existsSync(path));
+  // Walks references/ as well as SKILL.md. Progressive disclosure moved several
+  // of these call sites into companions; a SKILL.md-only sweep would report ZERO
+  // matches and the equality below would degenerate into `[] === []`.
+  const skillDocs = walkSkillDocs(join(PLUGIN_ROOT, "skills"));
 
   return [...walkHookScripts(join(PLUGIN_ROOT, "hooks")), ...skillDocs].map((abs) =>
     relative(PLUGIN_ROOT, abs).split(sep).join("/"),
@@ -244,17 +253,17 @@ function callSurfaces() {
 
 test("implement-task failure does not trigger signature-keyed retrieval", () => {
   assert.equal(
-    usesSignatureRetrieval(readSurface("skills", "implement", "SKILL.md")),
+    usesSignatureRetrieval(readSkillSurface("implement")),
     false,
-    "skills/implement/SKILL.md must NOT perform signature-keyed retrieval: the spec defines no signature input for a failed implement task",
+    "implement must NOT perform signature-keyed retrieval anywhere in its instruction surface: the spec defines no signature input for a failed implement task",
   );
 });
 
 test("recover dispatch does not trigger signature-keyed retrieval", () => {
   assert.equal(
-    usesSignatureRetrieval(readSurface("skills", "recover", "SKILL.md")),
+    usesSignatureRetrieval(readSkillSurface("recover")),
     false,
-    "skills/recover/SKILL.md must NOT perform signature-keyed retrieval: recover MINTS a signature for the lesson it writes, it does not re-query by one",
+    "recover must NOT perform signature-keyed retrieval anywhere in its instruction surface: recover MINTS a signature for the lesson it writes, it does not re-query by one",
   );
 });
 
@@ -289,7 +298,10 @@ test("exactly two call surfaces name --signature on a retrieve", () => {
 
   assert.deepStrictEqual(
     matched,
-    ["skills/review-specs/SKILL.md", "skills/validate/SKILL.md"],
+    [
+      "skills/review-specs/references/steps/step-6-events-and-report.md",
+      "skills/validate/references/overall-status.md",
+    ],
     "signature-keyed retrieval is limited to the validate FAIL path and the review-specs BLOCK path; a third surface means one was wired without a spec-defined signature input",
   );
 });

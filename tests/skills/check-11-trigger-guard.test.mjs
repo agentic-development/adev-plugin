@@ -13,7 +13,7 @@ import { test, describe } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { PLUGIN_ROOT } from '../helpers.mjs';
+import { PLUGIN_ROOT, readSkillSurface } from '../helpers.mjs';
 
 const CHECK_11 = join(
   PLUGIN_ROOT,
@@ -58,10 +58,14 @@ describe('Check 11 trigger guard semantics', () => {
   });
 
   test('SKILL.md Check 11 section reflects the revised SKIP-not-BLOCK semantics', () => {
-    const skill = readFileSync(SKILL, 'utf8');
-    const idx = skill.indexOf('### Check 11:');
-    assert.ok(idx !== -1, 'SKILL.md must have ### Check 11: section');
-    const section = skill.slice(idx, idx + 3000);
+    // Check 11's body is its own companion under progressive disclosure, so
+    // the whole file IS the section -- a fixed-width slice of the concatenated
+    // surface would run past it into unrelated checks.
+    const section = readFileSync(
+      join(PLUGIN_ROOT, 'skills', 'validate', 'references',
+           'checks-orchestration', 'check-11-visual-verification.md'),
+      'utf8',
+    );
     // The revised semantics: SKIP when no UI files even if Playwright is
     // absent — i.e., the SKILL.md no longer says "Do not record SKIP" as
     // an absolute rule.

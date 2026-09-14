@@ -6,13 +6,15 @@
 
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { mkdirSync, writeFileSync, rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
 import { createTempDir, cleanupTempDir } from "../helpers.mjs";
 import {
   resolveSessionDir,
   resolveSessionUsage,
+  resolveSessionFilePath,
+  findSessionFileBySessionId,
 } from "../../lib/session-file-reader.mjs";
 
 // ── resolveSessionDir ───────────────────────────────────────────────────────
@@ -444,6 +446,157 @@ describe("resolveSessionDir — dot-directory encoding", () => {
         projectDir.replace(/[/.]/g, "-")
       ),
       "a missing session dir must still yield the current-encoding path so callers degrade per Behavior 2"
+    );
+  });
+});
+
+// ── resolveSessionFilePath — session-id fallback (adev-plugin-04jr.2) ───────
+//
+// Claude Code keys ~/.claude/projects/<encoded>/ by the session's STARTING
+// cwd, not whatever cwd is current when a hook fires. A session that changes
+// directory (adev's own EnterWorktree / `adev worktree` guidance) has its
+// transcript under the starting cwd's encoding while every later hook fires
+// with the worktree as its current cwd — encoding the current cwd resolves a
+// directory that was never created. Resolution must fall back to locating
+// the file by session_id across every directory under the projects root.
+
+describe("findSessionFileBySessionId", () => {
+  it("finds a session file under an unrelated directory", () => {
+    const stamp = `adev-04jr-find-${process.pid}-${Date.now()}`;
+    const unrelatedDir = join(homedir(), ".claude", "projects", `-unrelated-${stamp}`);
+    mkdirSync(unrelatedDir, { recursive: true });
+    const sessionId = `session-${stamp}`;
+    const filePath = join(unrelatedDir, `${sessionId}.jsonl`);
+    writeFileSync(filePath, "");
+    try {
+      assert.equal(findSessionFileBySessionId(sessionId), filePath);
+    } finally {
+      rmSync(unrelatedDir, { recursive: true, force: true });
+    }
+  });
+
+  it("returns null when no directory has a matching session file", () => {
+    const sessionId = `session-does-not-exist-${process.pid}-${Date.now()}`;
+    assert.equal(findSessionFileBySessionId(sessionId), null);
+  });
+});
+
+describe("resolveSessionFilePath — starting cwd vs current cwd", () => {
+  it("resolves via cwd encoding when the session's transcript lives there", () => {
+    const tmp = createTempDir();
+    try {
+      const encoded = tmp.replace(/\//g, "-");
+      const sessionDir = join(homedir(), ".claude", "projects", encoded);
+      mkdirSync(sessionDir, { recursive: true });
+      const sessionId = `session-cwd-match-${process.pid}-${Date.now()}`;
+      const filePath = join(sessionDir, `${sessionId}.jsonl`);
+      writeFileSync(filePath, "");
+
+      assert.equal(
+        resolveSessionFilePath({ sessionId, projectDir: tmp }),
+        filePath
+      );
+    } finally {
+      cleanupTempDir(tmp);
+    }
+  });
+
+  it("falls back to a session-id scan when the current cwd never held the transcript", () => {
+    // Simulates a session that started in `startingCwd` (where Claude Code
+    // actually wrote the transcript) and later moved to `currentCwd` (e.g.
+    // entering a worktree) before the hook fired — the encoded-current-cwd
+    // directory the naive lookup would try never exists.
+    const stamp = `adev-04jr-mismatch-${process.pid}-${Date.now()}`;
+    const startingCwd = `/tmp/${stamp}/main-checkout`;
+    const currentCwd = `/tmp/${stamp}/main-checkout/.adev/worktrees/wt-1`;
+    const startingDir = join(
+      homedir(),
+      ".claude",
+      "projects",
+      startingCwd.replace(/[/.]/g, "-")
+    );
+    mkdirSync(startingDir, { recursive: true });
+    const sessionId = `session-${stamp}`;
+    const filePath = join(startingDir, `${sessionId}.jsonl`);
+    writeFileSync(filePath, "");
+
+    try {
+      // Precondition: neither cwd-encoding candidate for currentCwd exists.
+      const currentEncoded = currentCwd.replace(/[/.]/g, "-");
+      const currentLegacy = currentCwd.replace(/\//g, "-");
+      assert.equal(
+        existsSync(join(homedir(), ".claude", "projects", currentEncoded)),
+        false
+      );
+      assert.equal(
+        existsSync(join(homedir(), ".claude", "projects", currentLegacy)),
+        false
+      );
+
+      assert.equal(
+        resolveSessionFilePath({ sessionId, projectDir: currentCwd }),
+        filePath,
+        "should locate the transcript under the session's STARTING cwd by session_id"
+      );
+    } finally {
+      rmSync(startingDir, { recursive: true, force: true });
+    }
+  });
+
+  it("resolveSessionUsage recovers usage data via the session-id fallback", () => {
+    const stamp = `adev-04jr-usage-${process.pid}-${Date.now()}`;
+    const startingCwd = `/tmp/${stamp}/main-checkout`;
+    const currentCwd = `/tmp/${stamp}/main-checkout/.adev/worktrees/wt-1`;
+    const startingDir = join(
+      homedir(),
+      ".claude",
+      "projects",
+      startingCwd.replace(/[/.]/g, "-")
+    );
+    mkdirSync(startingDir, { recursive: true });
+    const sessionId = `session-${stamp}`;
+    const lines = [
+      JSON.stringify({
+        type: "assistant",
+        message: {
+          model: "claude-sonnet-4-6",
+          usage: {
+            input_tokens: 42,
+            output_tokens: 7,
+            cache_read_input_tokens: 0,
+            cache_creation_input_tokens: 0,
+          },
+        },
+      }),
+    ];
+    writeFileSync(join(startingDir, `${sessionId}.jsonl`), lines.join("\n") + "\n");
+
+    try {
+      const result = resolveSessionUsage({ sessionId, projectDir: currentCwd });
+      assert.ok(
+        result !== null,
+        "usage must be recoverable even though the current cwd never held the transcript"
+      );
+      assert.equal(result.inputTokens, 42);
+      assert.equal(result.outputTokens, 7);
+    } finally {
+      rmSync(startingDir, { recursive: true, force: true });
+    }
+  });
+
+  it("returns the current-encoding candidate when nothing matches anywhere", () => {
+    const stamp = `adev-04jr-nomatch-${process.pid}-${Date.now()}`;
+    const projectDir = `/tmp/${stamp}/nowhere`;
+    const sessionId = `session-nomatch-${stamp}`;
+    assert.equal(
+      resolveSessionFilePath({ sessionId, projectDir }),
+      join(
+        homedir(),
+        ".claude",
+        "projects",
+        projectDir.replace(/[/.]/g, "-"),
+        `${sessionId}.jsonl`
+      )
     );
   });
 });

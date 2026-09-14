@@ -24,10 +24,10 @@ Recomputed SHA: `0cad31d` — **MATCH**.
 
 Files verified:
 - `skills/research/SKILL.md`
-- `skills/research/github-researcher-prompt.md`
-- `skills/research/internal-researcher-prompt.md`
-- `skills/research/synthesis-prompt.md`
-- `skills/research/web-researcher-prompt.md`
+- `skills/research/references/github-researcher-prompt.md`
+- `skills/research/references/internal-researcher-prompt.md`
+- `skills/research/references/synthesis-prompt.md`
+- `skills/research/references/web-researcher-prompt.md`
 - `templates/research-template.md`
 - `tests/skills/research.test.mjs`
 

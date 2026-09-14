@@ -3,7 +3,7 @@
  */
 
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync, chmodSync } from "fs";
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync, chmodSync, readFileSync, readdirSync } from "fs";
 import { join, resolve, dirname } from "path";
 import { execSync, spawnSync } from "child_process";
 import { tmpdir } from "os";
@@ -238,4 +238,85 @@ export function runCLI(command, inputs = [], { env = {}, cwd } = {}) {
     stdout: result.stdout || "",
     stderr: result.stderr || "",
   };
+}
+
+/**
+ * Read a skill's full instruction surface: SKILL.md plus every companion file
+ * under its `references/` tree, concatenated in a stable order.
+ *
+ * WHY THIS EXISTS. Oversized SKILL.md bodies were split into `references/`
+ * companions for progressive disclosure (the agent loads a companion only when
+ * it needs that mode/pass). That relocates prose without changing the contract:
+ * the instruction is still shipped, still normative, still exactly one file
+ * away. Tests asserting on that prose must therefore search the whole surface,
+ * or they would silently stop testing the thing they name the moment it moves.
+ *
+ * Use this ONLY for assertions about instruction CONTENT. An assertion about
+ * where something lives -- a conditional-loading pointer, the body's byte
+ * budget -- must keep reading SKILL.md directly, or it stops being that test.
+ *
+ * @param {string} skillName directory name under skills/
+ * @returns {string} SKILL.md followed by each references/**\/*.md|yaml, newline-joined
+ */
+export function readSkillSurface(skillName) {
+  return readSkillSurfaceAt(join(PLUGIN_ROOT, "skills", skillName));
+}
+
+/**
+ * As `readSkillSurface`, but for a skill directory given by path -- use this
+ * when a test already resolves the directory itself, e.g. to assert the same
+ * contract against a provider mirror under providers/<p>/skills/<name>/.
+ *
+ * @param {string} root directory containing SKILL.md
+ * @returns {string} SKILL.md followed by each references/**\/*.md|yaml
+ */
+export function readSkillSurfaceAt(root) {
+  const parts = [readFileSync(join(root, "SKILL.md"), "utf8")];
+  const refs = join(root, "references");
+  const walk = (dir) => {
+    let entries;
+    try {
+      entries = readdirSync(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const e of entries.sort((a, b) => a.name.localeCompare(b.name))) {
+      const p = join(dir, e.name);
+      if (e.isDirectory()) walk(p);
+      else if (/\.(md|ya?ml)$/.test(e.name)) parts.push(readFileSync(p, "utf8"));
+    }
+  };
+  walk(refs);
+  return parts.join("\n");
+}
+
+/**
+ * Resolve a conditional-loading pointer taken from skill prose to a real path.
+ *
+ * Pointers are written `<ADEV_ROOT>/skills/<name>/references/...` — anchored to
+ * the plugin root, because a bare `skills/...` path is repo-root-relative and
+ * resolves to nothing once the skill is installed (each provider publishes to a
+ * different location, and in a user project the agent's cwd is the project
+ * root). This performs the same substitution an agent does at runtime, so a
+ * test that resolves a pointer FROM THE PROSE keeps exercising the real
+ * indirection rather than hardcoding the companion's path.
+ *
+ * @param {string} pointer pointer text as it appears in the skill
+ * @returns {string} absolute path under PLUGIN_ROOT
+ */
+export function resolveSkillPointer(pointer) {
+  // STRICT on the anchor. The earlier version was
+  //   join(PLUGIN_ROOT, pointer.replace(/^<ADEV_ROOT>\//, ""))
+  // where the replace is a no-op on a bare `skills/...` pointer and the join
+  // yields an identical path — so callers could not distinguish anchored from
+  // unanchored, and a regression to the pre-fix form passed the whole suite.
+  // A resolver that accepts both forms cannot be the thing that enforces one.
+  if (!pointer.startsWith("<ADEV_ROOT>/")) {
+    throw new Error(
+      `unanchored skill pointer: ${JSON.stringify(pointer)} — pointers must be ` +
+        `written <ADEV_ROOT>/skills/<name>/references/... A bare skills/ path is ` +
+        `repo-root-relative and resolves to nothing once the skill is installed.`,
+    );
+  }
+  return join(PLUGIN_ROOT, pointer.slice("<ADEV_ROOT>/".length));
 }

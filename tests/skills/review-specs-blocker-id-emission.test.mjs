@@ -15,6 +15,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
+import { readSkillSurface } from '../helpers.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SKILLS_DIR = resolve(__dirname, '../../skills/review-specs');
@@ -57,7 +58,10 @@ test('consistency-analyzer prompt documents section_anchor + finding_type, no ha
 });
 
 test('review-specs SKILL.md documents aggregator validation rules', () => {
-  const body = readSkill('SKILL.md');
+  // Whole instruction surface: the aggregator contract moved into a Step
+  // companion under progressive disclosure. The reviewer-prompt assertions
+  // below still read their individual prompt files, which did not move.
+  const body = readSkillSurface('review-specs');
   // Validation contract — must mention all three advisory codes
   assert.ok(body.includes('LEGACY_REVIEWER_OUTPUT'),
     'must document the LEGACY_REVIEWER_OUTPUT fallback path');
@@ -68,7 +72,7 @@ test('review-specs SKILL.md documents aggregator validation rules', () => {
 });
 
 test('review-specs SKILL.md invokes the blockers write CLI verb (adev-plugin-heba)', () => {
-  const body = readSkill('SKILL.md');
+  const body = readSkillSurface('review-specs');
   // The skill was migrated off a bare lib-function reference to the CLI
   // driver surface per CLAUDE.md — SKILL.md must name the `adev` verb an
   // agent actually invokes, not the lib internals behind it.
@@ -141,7 +145,7 @@ for (const name of XF5D_REVIEWER_PROMPTS) {
 }
 
 test('review-specs SKILL.md documents the aggregator CONSTRUCTING blocker_id, not accepting one from reviewers', () => {
-  const body = readSkill('SKILL.md');
+  const body = readSkillSurface('review-specs');
   assert.ok(body.includes('buildBlockerId'), 'must reference the constructor function');
   assert.ok(body.includes('finding_type'), 'must document finding_type as the reviewer-supplied field');
   assert.match(

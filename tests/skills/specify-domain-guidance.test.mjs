@@ -10,12 +10,12 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { PLUGIN_ROOT } from "../helpers.mjs";
+import { PLUGIN_ROOT, readSkillSurface } from "../helpers.mjs";
 
 const SKILL = join(PLUGIN_ROOT, "skills", "specify", "SKILL.md");
 
 describe("specify Step 4 — domain-owned authoring guidance", () => {
-  const content = readFileSync(SKILL, "utf8");
+  const content = readSkillSurface("specify");
 
   it("contains no hardcoded HTTP-status / drag-and-drop examples", () => {
     assert.ok(!content.includes("column not found → 404"));

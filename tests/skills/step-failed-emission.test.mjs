@@ -24,9 +24,13 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { readFileSync } from "node:fs";
+import { readSkillSurface } from "../helpers.mjs";
 
+// Reads SKILL.md plus its references/ companions. These assertions are about
+// the emission contract the skill ships, which progressive disclosure moved
+// one file out of the body without weakening it.
 function readSkill(slug) {
-  return readFileSync(`skills/${slug}/SKILL.md`, "utf8");
+  return readSkillSurface(slug);
 }
 
 const NO_INLINE_NODE = /node -e|node --input-type=module|Run inline Node/;

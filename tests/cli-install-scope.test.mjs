@@ -25,15 +25,22 @@ const KEY = "adev@agentic-development";
 let tmpHome;
 let realHome;
 let realCwd;
+let realClaudeConfigDir;
 let projectDir;
 
 before(() => {
   realHome = process.env.HOME;
   realCwd = process.cwd();
+  realClaudeConfigDir = process.env.CLAUDE_CONFIG_DIR;
 });
 
 after(() => {
   process.env.HOME = realHome;
+  if (realClaudeConfigDir === undefined) {
+    delete process.env.CLAUDE_CONFIG_DIR;
+  } else {
+    process.env.CLAUDE_CONFIG_DIR = realClaudeConfigDir;
+  }
   process.chdir(realCwd);
   if (tmpHome) cleanupTempDir(tmpHome);
   if (projectDir) cleanupTempDir(projectDir);
@@ -45,6 +52,10 @@ beforeEach(() => {
   tmpHome = createTempDir();
   projectDir = createTempDir();
   process.env.HOME = tmpHome;
+  // getClaudeHome() prefers CLAUDE_CONFIG_DIR over HOME — an ambient value in
+  // the developer's own shell (a personal profile, say) must not leak into
+  // these tests, which assert on files under `tmpHome`.
+  delete process.env.CLAUDE_CONFIG_DIR;
   process.chdir(projectDir);
 });
 
