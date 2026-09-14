@@ -7,23 +7,24 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readSkillSurface } from "../helpers.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SKILL_PATH = resolve(__dirname, "../../skills/plan/SKILL.md");
 
 describe("plan SKILL.md drift gate", () => {
   it("contains CODE_DRIFT gate instruction", () => {
-    const content = readFileSync(SKILL_PATH, "utf-8");
+    const content = readSkillSurface("plan");
     assert.ok(content.includes("CODE_DRIFT"), "SKILL.md should reference CODE_DRIFT");
   });
 
   it("contains hasDrift check", () => {
-    const content = readFileSync(SKILL_PATH, "utf-8");
+    const content = readSkillSurface("plan");
     assert.ok(content.includes("hasDrift"), "SKILL.md should reference hasDrift");
   });
 
   it("contains verifyManifest fallback for non-Claude-Code hosts", () => {
-    const content = readFileSync(SKILL_PATH, "utf-8");
+    const content = readSkillSurface("plan");
     assert.ok(content.includes("verifyManifest"), "SKILL.md should reference verifyManifest fallback");
   });
 
@@ -35,7 +36,7 @@ describe("plan SKILL.md drift gate", () => {
     // sweep PR 3, the inline `reportStep(...)` block was replaced with
     // the `adev report --type step ... --status started` CLI call) so a
     // drifted spec cannot have its plan step opened.
-    const content = readFileSync(SKILL_PATH, "utf-8");
+    const content = readSkillSurface("plan");
     const driftIdx = content.indexOf("CODE_DRIFT");
     // Match either the legacy `reportStep(...)` JS form OR the new CLI form
     // emitted by Task 3 of the inline-Node extraction sweep.

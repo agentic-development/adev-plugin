@@ -56,6 +56,7 @@ This file is the CLI counterpart to [`skill-reference.md`](skill-reference.md) (
 | `retro` | Gather session activity for a retrospective window | `lib/cli/retro.mjs` |
 | `heuristics` | Retrieve/sign/write/rekey project heuristics | `lib/cli/heuristics.mjs` |
 | `domain` | Resolve a module's domain and load domain config | `lib/cli/domain.mjs` |
+| `implementation-mode` | Resolve the effective `implementation_mode` config | `lib/cli/implementation-mode.mjs` |
 | `cost` | Aggregate per-spec/per-step token + USD totals | `lib/cli/cost.mjs` |
 | `worktree` | Manage adev-managed git worktrees for parallel execution | `lib/cli/worktree.mjs` |
 | `parallel` | Decision helpers for `/adev:implement --parallel` orchestration | `lib/cli/parallel.mjs` |
@@ -299,9 +300,21 @@ adev boundaries check --json
 governance materialize --registry <review|diagnostics|gates> [--dry-run] [--json]
 governance drift [--registry <validate|review|diagnostics|gates>] [--json]
 governance migrate-gates [--dry-run] [--json]
+governance scaffold --registry <review|validate> --entries <json|@path>
 ```
 
 `validate.yaml` and `boundaries.yaml` are **exempt** (DDR-1): both are already explicit single-source registries, so naming either is refused. See [Governance](governance.md#materialized-registries-and-the-materialized_at-marker).
+
+`governance scaffold` writes an operator's explicit registry selection as a **fresh**
+`review.yaml` or `validate.yaml` — the write path `/adev:init` Step 7c/Step 7d.0 call once the
+operator has chosen which reviewers/checks to enable (`governance-opt-in-dispatch.spec.md`). It
+refuses to run against a file that already exists (`GOVERNANCE_SCAFFOLD_EXISTS`) — it is for first
+scaffold only, never an overwrite path. `--entries` takes a JSON array literal or `@path` to a
+JSON file; an empty array (`[]` or `@path` naming an empty array) is a legitimate, first-class
+selection and writes a literal `reviewers: []` / `checks: []` rather than leaving the file absent.
+`review.yaml` is stamped with the `materialized_at` marker unconditionally, including on an empty
+selection; `validate.yaml` is never marked (it is marker-exempt, matching `materialize`'s own
+exemption above).
 
 Materialization is **write-once**: a second run preserves the original stamp verbatim, so an unchanged effective set produces byte-identical output. Entries already on disk keep their positions and their bytes; contributed entries are appended; comments and sibling keys survive. Exit 1 covers an argument error, an unknown or exempt registry, a containment refusal, and the two write refusals `MATERIALIZE_LOAD_INCOMPLETE` (a row failed to load) and `MATERIALIZE_WOULD_DROP` (a row would be lost).
 
@@ -901,6 +914,19 @@ adev domain load-gates --module auth
 ```
 
 **Implementation:** `lib/cli/domain.mjs`. **Called by:** `/adev:validate`, `/adev:review-specs`, `/adev:implement`, `/adev:specify`, `/adev:brainstorm`, `/adev:write-test`.
+
+### `implementation-mode`
+
+**Purpose:** Resolve the effective `implementation_mode` config — explicit `--mode` override, the stored `manifest.yaml` value, or the `tdd` default — to `{dispatch_red, ordering_enforced, coverage_check}`.
+
+**Signature:** `implementation-mode resolve [--mode tdd|test-required|agent-default]`
+
+**Example:**
+```
+adev implementation-mode resolve --mode test-required
+```
+
+**Implementation:** `lib/cli/implementation-mode.mjs`. **Called by:** `/adev:init` (documents the read path — the write path is the `init prompt implementation-mode` sub-verb, invoked by `skills/init/SKILL.md` Step 8b).
 
 ### `domain-picker`
 

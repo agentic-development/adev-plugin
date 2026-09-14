@@ -13,11 +13,12 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { readFileSync } from "node:fs";
+import { readSkillSurface } from "../helpers.mjs";
 
 const SKILL_PATH = "skills/implement/SKILL.md";
 
 test("/adev:implement reads routing via `adev implement read-routing`", () => {
-  const md = readFileSync(SKILL_PATH, "utf8");
+  const md = readSkillSurface("implement");
   assert.match(
     md,
     /adev implement read-routing/,
@@ -26,22 +27,22 @@ test("/adev:implement reads routing via `adev implement read-routing`", () => {
 });
 
 test("/adev:implement documents ROUTING_SIDECAR_MISSING", () => {
-  const md = readFileSync(SKILL_PATH, "utf8");
+  const md = readSkillSurface("implement");
   assert.match(md, /ROUTING_SIDECAR_MISSING/);
 });
 
 test("/adev:implement documents ROUTING_ENTRY_MISSING", () => {
-  const md = readFileSync(SKILL_PATH, "utf8");
+  const md = readSkillSurface("implement");
   assert.match(md, /ROUTING_ENTRY_MISSING/);
 });
 
 test("/adev:implement documents ROUTING_AGENT_INVALID", () => {
-  const md = readFileSync(SKILL_PATH, "utf8");
+  const md = readSkillSurface("implement");
   assert.match(md, /ROUTING_AGENT_INVALID/);
 });
 
 test("/adev:implement does NOT instruct parsing inline Routing blocks from the plan body", () => {
-  const md = readFileSync(SKILL_PATH, "utf8");
+  const md = readSkillSurface("implement");
   // Defensive: ensure no instruction directs the agent to parse inline
   // **Routing:** blocks out of the plan body. The skill prose may
   // legitimately *mention* inline blocks (e.g., in a deprecation note),
@@ -59,7 +60,7 @@ test("/adev:implement does NOT instruct parsing inline Routing blocks from the p
 });
 
 test("/adev:implement states no silent fallback to inline parsing on ROUTING_SIDECAR_MISSING", () => {
-  const md = readFileSync(SKILL_PATH, "utf8");
+  const md = readSkillSurface("implement");
   // Look for either an explicit no-fallback rule or instructions to stop
   // and direct the user to /adev:route.
   assert.match(
@@ -76,7 +77,7 @@ test("/adev:implement states no silent fallback to inline parsing on ROUTING_SID
 // repetition without progress"). Every sibling loop in this skill caps at 3.
 
 test("/adev:implement Stage 2 code-quality loop is not unbounded", () => {
-  const md = readFileSync(SKILL_PATH, "utf8");
+  const md = readSkillSurface("implement");
   assert.doesNotMatch(
     md,
     /repeat\s+until\s+approved/i,
@@ -85,7 +86,7 @@ test("/adev:implement Stage 2 code-quality loop is not unbounded", () => {
 });
 
 test("/adev:implement Stage 2 code-quality loop declares a configurable cycle cap", () => {
-  const md = readFileSync(SKILL_PATH, "utf8");
+  const md = readSkillSurface("implement");
   assert.match(
     md,
     /Maximum `implement\.max_review_cycles` code-quality review cycles per task/i,
@@ -94,7 +95,7 @@ test("/adev:implement Stage 2 code-quality loop declares a configurable cycle ca
 });
 
 test("/adev:implement Stage 2 loop routes through the convergence primitive", () => {
-  const md = readFileSync(SKILL_PATH, "utf8");
+  const md = readSkillSurface("implement");
   assert.match(md, /lib\/loop-convergence\.mjs/);
   for (const verdict of [
     "NO_PROGRESS",
@@ -111,7 +112,7 @@ test("/adev:implement Stage 2 loop routes through the convergence primitive", ()
 });
 
 test("/adev:implement Stage 2 cap-trip escalates instead of proceeding", () => {
-  const md = readFileSync(SKILL_PATH, "utf8");
+  const md = readSkillSurface("implement");
   assert.match(
     md,
     /LOOP_BUDGET_EXHAUSTED/,
@@ -125,7 +126,7 @@ test("/adev:implement Stage 2 cap-trip escalates instead of proceeding", () => {
 });
 
 test("/adev:implement frontmatter must NOT declare context: fork", () => {
-  const md = readFileSync(SKILL_PATH, "utf8");
+  const md = readSkillSurface("implement");
   const frontmatterEnd = md.indexOf("---", 3);
   const frontmatter = md.slice(0, frontmatterEnd);
   assert.ok(

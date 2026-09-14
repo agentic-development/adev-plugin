@@ -1,8 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { readSkillSurface } from "../helpers.mjs";
 
-const skill = readFileSync(new URL("../../skills/implement/SKILL.md", import.meta.url), "utf8");
+const skill = readSkillSurface("implement");
 
 test("implement SKILL.md calls adev test-policy resolve before write-test dispatch (+3 more contract assertions)", () => {
   // implement SKILL.md calls adev test-policy resolve before write-test dispatch

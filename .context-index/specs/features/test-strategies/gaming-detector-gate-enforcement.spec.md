@@ -334,7 +334,7 @@ reaches disk** (Behavior 3-4). No advisory-only mode, no config flag to soften i
   silently routed around), but it is not free, and it is the main reason a future revision
   might add either an AST-aware, test-body-scoped rewrite of the 3 whole-file detectors or an
   explicit line-level exemption pragma — neither is in this spec's scope.
-- **`gaming-gate.sh` and `skills/write-test/detect-gaming.sh` remain two separate,
+- **`gaming-gate.sh` and `skills/write-test/scripts/detect-gaming.sh` remain two separate,
   unreconciled scanners.** `detect-gaming.sh` is an older, framework-specific (Jest/Vitest
   matcher-shaped) 9-pattern scanner invoked by agent prose in `skills/write-test/SKILL.md`
   Step 4; it is out of scope for this spec, is not modified, and is not superseded. This spec

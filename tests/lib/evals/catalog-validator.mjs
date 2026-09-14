@@ -37,7 +37,7 @@ export const CATALOG_PATH = join(FIXTURE_DIR, "catalog.yaml");
  */
 export const DEFAULT_RUBRIC_ROOTS = Object.freeze([
   "tests/evals/skill-regression/rubrics/*.yaml",
-  "skills/*/default-rubric.yaml",
+  "skills/*/references/default-rubric.yaml",
 ]);
 
 /** The five documented top-level keys — no `version`; see the spec's rationale. */

@@ -38,3 +38,4 @@
 {"event":"validator_report","step":"validate","validator":"validate.check-1.6-code-drift","severity":"warning","verdict":"PASS","notes":"No code-side drift detected (drifted: false).","ts":"2026-08-21T18:01:44.325Z"}
 {"event":"step_completed","step":"validate","verdict":"FAIL","ts":"2026-08-21T18:03:25.309Z"}
 {"event":"code_drift_detected","drift_source":"docs/cli-reference.md","drift_at":"2026-08-21T19:44:01.501Z","ts":"2026-08-21T19:44:01.501Z"}
+{"event":"code_drift_detected","drift_source":"docs/cli-reference.md","drift_at":"2026-09-02T14:21:11.825Z","ts":"2026-09-02T14:21:11.825Z"}

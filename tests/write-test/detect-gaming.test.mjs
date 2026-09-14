@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { detectGaming } from '../../skills/write-test/detect-gaming.mjs';
+import { detectGaming } from '../../skills/write-test/scripts/detect-gaming.mjs';
 
 // Helper: run detector on inline content
 async function scan(content) {

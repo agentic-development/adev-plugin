@@ -90,3 +90,4 @@
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-08-20T00:04:21.443Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"spec_amended","amendment_slug":"bug-selection-and-eligibility-rev-8-configurable-priority-floor","amendment_path":".context-index/specs/features/autonomous-bugfix-loop/bug-selection-and-eligibility-rev-8-configurable-priority-floor.spec.md","target_revision":8,"ts":"2026-08-21T16:45:57.667Z"}
 {"event":"code_drift_detected","drift_source":"tests/issues/next.test.mjs","drift_at":"2026-08-21T17:28:35.804Z","ts":"2026-08-21T17:28:35.805Z"}
+{"event":"code_drift_detected","drift_source":"docs/cli-reference.md","drift_at":"2026-09-02T14:21:11.828Z","ts":"2026-09-02T14:21:11.828Z"}

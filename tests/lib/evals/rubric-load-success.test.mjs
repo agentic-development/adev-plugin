@@ -134,7 +134,7 @@ test("a conforming rubric exposes every declared element and criterion", () => {
 
 test("the real shipped default rubric loads", () => {
   // guards against the schema drifting away from the artifact it describes
-  const rubric = loadRubric("skills/eval/default-rubric.yaml", { projectRoot: repoRoot });
+  const rubric = loadRubric("skills/eval/references/default-rubric.yaml", { projectRoot: repoRoot });
   assert.ok(rubric.required_elements.length > 0);
   assert.ok(rubric.quality_dimensions.length > 0);
 });

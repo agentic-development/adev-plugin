@@ -3,12 +3,13 @@ import assert from "node:assert/strict";
 import { readFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+import { readSkillSurface } from "../helpers.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 describe("hygiene SKILL.md — Pass 8 unified schema", () => {
   const skillPath = join(__dirname, "..", "..", "skills", "hygiene", "SKILL.md");
-  const content = readFileSync(skillPath, "utf8");
+  const content = readSkillSurface("hygiene");
 
   it("should validate tier values (fast/integration/e2e)", () => {
     const pass8Section = content.substring(content.indexOf("Pass 8"));

@@ -44,6 +44,8 @@ drift_detected: true
 
 7. **When** `writeExecutionState` is called with `status: "idle"` **then** `planRef`, `currentTask`, `issueBinding`, `blockers`, and `nextAction` are cleared regardless of input values.
 
+8. **When** `writeExecutionState` is called with `status: "active"` or `"blocked"` **then** `sourceBranch` is set to the git branch checked out at the caller's `projectRoot` (empty string when not inside a git worktree, detached HEAD, or `git` is unavailable) — recorded so a reader can tell which worktree/branch last claimed the binding, since storage is shared across every worktree of a repo (Behavior 9-adjacent: this does not change who can read the file, only what a reader can additionally infer about it). For `status: "idle"` or `"standalone"`, `sourceBranch` is cleared to `""` along with the other binding fields.
+
 ### Postconditions
 
 - After `writeExecutionState`: file exists at `<projectRoot>/.context-index/.execution-state.md` with valid YAML frontmatter, `updated` timestamp reflects write time
@@ -81,6 +83,7 @@ currentTask: <integer task number or empty>
 issueBinding: <issue ID or empty>
 blockers: <free text, single line, or empty>
 nextAction: <free text, single line, or empty>
+sourceBranch: <git branch checked out at the writer's projectRoot, or empty>
 updated: <ISO 8601 timestamp>
 ---
 ```
@@ -111,7 +114,7 @@ When `status` is `idle`, the body is empty.
 
 ## Consumer Guidance
 
-The module is `lib/execution-state.mjs` with three named exports: `readExecutionState`, `writeExecutionState`, `clearExecutionState`. Consumers import directly:
+The module is `lib/execution-state.mjs` with four named exports: `readExecutionState`, `writeExecutionState`, `clearExecutionState`, `getCurrentBranch` (best-effort `git branch --show-current` at a given path; never throws). Consumers import directly:
 
 ```js
 import { readExecutionState, writeExecutionState } from '../lib/execution-state.mjs';
@@ -121,6 +124,7 @@ Primary consumers:
 - **`session-start.sh` hook** — calls `readExecutionState` to inject resume context at session start
 - **`adev-implement` skill logic** — calls `writeExecutionState` at task boundaries to persist progress
 - **Issue reminder hook** — calls `readExecutionState` to include current task in reminder context
+- **`lib/session-capture.mjs`** (`runToolUseCapture`, `resolveExecutionStateBinding`) — calls `readExecutionState` to stamp `issue`/`epic` onto `.session-tracking.jsonl` entries, which the `prepare-commit-msg` hook turns into the commit's `Issue:` trailer. Because storage is shared across worktrees, this consumer additionally calls `getCurrentBranch()` and compares it against `state.sourceBranch` before trusting `issueBinding` — an active binding whose `sourceBranch` disagrees with the committing worktree's own branch belongs to a different, concurrently-active session and is never attributed to this one (omitted, not substituted).
 
 ## System Constitution Reference
 

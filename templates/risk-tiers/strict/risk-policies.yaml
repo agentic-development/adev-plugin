@@ -1,0 +1,36 @@
+# risk-policies.yaml — "strict" risk tier bundle
+# Seeded by /adev:init when the operator selects the "strict" project risk
+# tier (security-critical / compliance-bound work). Every level runs full
+# rigor and requires human-in-the-loop approval — a spec's own declared
+# risk_level still selects test_depth's meaning elsewhere, but this tier
+# removes the "low-risk specs get lighter review" relief the standard tier
+# grants.
+# See templates/risk-policies-template.yaml (the "standard" tier) and
+# templates/risk-tiers/prototype/risk-policies.yaml (the opposite end).
+# See .context-index/specs/cross-cutting/graduated-rigor-tiers.spec.md.
+
+policies:
+  high:
+    require_review: true
+    require_hitl_approval: true
+    review_mode: full
+    validate_mode: full
+    implement_mode: full
+    test_depth: thorough
+    additional_gates: []
+  medium:
+    require_review: true
+    require_hitl_approval: true
+    review_mode: full
+    validate_mode: full
+    implement_mode: full
+    test_depth: thorough
+    additional_gates: []
+  low:
+    require_review: true
+    require_hitl_approval: true
+    review_mode: full
+    validate_mode: full
+    implement_mode: full
+    test_depth: thorough
+    additional_gates: []

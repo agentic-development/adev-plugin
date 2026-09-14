@@ -50,3 +50,4 @@
 {"event":"validator_report","step":"validate","validator":"validate.check-8-boundaries","severity":"error","verdict":"PASS","notes":"boundaries.yaml has no rules; nothing to enforce","ts":"2026-05-19T19:54:05.584Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"validator_report","step":"validate","validator":"validate.check-9-transition-gates","severity":"warning","verdict":"PASS","notes":"No transitions configured in gates.yaml","ts":"2026-05-19T19:54:06.947Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"step_completed","step":"validate","verdict":"PASS","ts":"2026-05-19T19:54:59.076Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"code_drift_detected","drift_source":"lib/providers/copilot/event-table.mjs","drift_at":"2026-08-23T20:25:21.210Z","ts":"2026-08-23T20:25:21.211Z"}
