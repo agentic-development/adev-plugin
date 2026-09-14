@@ -9,15 +9,13 @@ const PLUGIN_ROOT = join(import.meta.dirname, "..");
 
 function runCLI(command, args = [], inputs = [], { env = {}, cwd } = {}) {
   const input = inputs.join("\n") + "\n";
-  const childEnv = { ...process.env, ...env, HOME: env.HOME || process.env.HOME };
-  // getClaudeHome() prefers CLAUDE_CONFIG_DIR over HOME, so an ambient value
-  // in the invoking shell (e.g. a developer's own profile) must not leak into
-  // the spawned CLI and redirect these assertions onto a real config dir.
-  if (!("CLAUDE_CONFIG_DIR" in env)) {
-    delete childEnv.CLAUDE_CONFIG_DIR;
-  }
+  // CLAUDE_CONFIG_DIR outranks HOME in the Claude Code adapter, so an
+  // inherited one would send every install in this file into the developer's
+  // real config directory no matter which HOME the case redirects. Cases that
+  // exercise the variable pass it through `env` explicitly.
+  const { CLAUDE_CONFIG_DIR: _inherited, ...baseEnv } = process.env;
   const result = spawnSync("node", [join(PLUGIN_ROOT, "cli", "index.mjs"), command, ...args], {
-    env: childEnv,
+    env: { ...baseEnv, ...env, HOME: env.HOME || process.env.HOME },
     cwd,
     input,
     encoding: "utf8",
