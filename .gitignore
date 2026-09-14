@@ -145,3 +145,5 @@ viz/dist/
 # <<< adev:gitignore <<<
 # br doctor per-run artifacts
 .doctor/
+# claude plugin eval run output
+evals/results/
