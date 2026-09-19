@@ -3,12 +3,13 @@ import assert from "node:assert/strict";
 import { readFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+import { readSkillSurface } from "../helpers.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 describe("build SKILL.md — unified dry-run gates", () => {
   const skillPath = join(__dirname, "..", "..", "skills", "build", "SKILL.md");
-  const content = readFileSync(skillPath, "utf8");
+  const content = readSkillSurface("build");
 
   it("should read gate display from governance/gates.yaml in dry-run (+1 more contract assertions)", () => {
     // should read gate display from governance/gates.yaml in dry-run

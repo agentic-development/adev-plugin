@@ -6,10 +6,10 @@ import { PLUGIN_ROOT } from "../helpers.mjs";
 
 const SKILL_PATH = join(PLUGIN_ROOT, "skills", "research", "SKILL.md");
 const TEMPLATE_PATH = join(PLUGIN_ROOT, "templates", "research-template.md");
-const INTERNAL_PROMPT = join(PLUGIN_ROOT, "skills", "research", "internal-researcher-prompt.md");
-const WEB_PROMPT = join(PLUGIN_ROOT, "skills", "research", "web-researcher-prompt.md");
-const GITHUB_PROMPT = join(PLUGIN_ROOT, "skills", "research", "github-researcher-prompt.md");
-const SYNTHESIS_PROMPT = join(PLUGIN_ROOT, "skills", "research", "synthesis-prompt.md");
+const INTERNAL_PROMPT = join(PLUGIN_ROOT, "skills", "research", "references", "internal-researcher-prompt.md");
+const WEB_PROMPT = join(PLUGIN_ROOT, "skills", "research", "references", "web-researcher-prompt.md");
+const GITHUB_PROMPT = join(PLUGIN_ROOT, "skills", "research", "references", "github-researcher-prompt.md");
+const SYNTHESIS_PROMPT = join(PLUGIN_ROOT, "skills", "research", "references", "synthesis-prompt.md");
 
 describe("adev:research template", () => {
   it("research-template.md documents the optional injection_warnings frontmatter field", () => {
@@ -23,7 +23,7 @@ describe("adev:research template", () => {
 
 describe("adev:research internal-researcher-prompt.md", () => {
   it("exists", () => {
-    assert.ok(existsSync(INTERNAL_PROMPT), "skills/research/internal-researcher-prompt.md must exist");
+    assert.ok(existsSync(INTERNAL_PROMPT), "skills/research/references/internal-researcher-prompt.md must exist");
   });
 
   it("caps return at 1,500 tokens", () => {
@@ -94,7 +94,7 @@ describe("adev:research internal-researcher-prompt.md", () => {
 
 describe("adev:research web-researcher-prompt.md", () => {
   it("exists", () => {
-    assert.ok(existsSync(WEB_PROMPT), "skills/research/web-researcher-prompt.md must exist");
+    assert.ok(existsSync(WEB_PROMPT), "skills/research/references/web-researcher-prompt.md must exist");
   });
 
   it("caps return at 1,500 tokens", () => {
@@ -145,7 +145,7 @@ describe("adev:research web-researcher-prompt.md", () => {
 
 describe("adev:research github-researcher-prompt.md", () => {
   it("exists", () => {
-    assert.ok(existsSync(GITHUB_PROMPT), "skills/research/github-researcher-prompt.md must exist");
+    assert.ok(existsSync(GITHUB_PROMPT), "skills/research/references/github-researcher-prompt.md must exist");
   });
 
   it("caps return at 1,500 tokens", () => {
@@ -204,7 +204,7 @@ describe("adev:research github-researcher-prompt.md", () => {
 
 describe("adev:research synthesis-prompt.md", () => {
   it("exists", () => {
-    assert.ok(existsSync(SYNTHESIS_PROMPT), "skills/research/synthesis-prompt.md must exist");
+    assert.ok(existsSync(SYNTHESIS_PROMPT), "skills/research/references/synthesis-prompt.md must exist");
   });
 
   it("instructs ultrathink usage", () => {

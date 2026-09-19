@@ -3680,21 +3680,29 @@ test("tests/evals/skill-compression is fully retired; the two relocated token-bu
     `expected exactly the two relocated token-budget-eval suites, found: ${JSON.stringify(preservedTracked)}`,
   );
 
-  // Byte-identical to their Task 5 landing state — compared via git's own
-  // object model (blob hashes at the Task 5 commit vs. the working tree
-  // now), not a re-derived checksum, so this is exact rather than
-  // approximate and needs no hash literal pinned into this file.
+  // Byte-identical to their Task 5 landing state, modulo one independent,
+  // already-necessary correction: skill-body-progressive-disclosure moved the
+  // `plan`/`build` mode companions this file names into `references/`, and
+  // `assertExternalizedModes` matches those companion paths against the
+  // literal "Conditional loading:" pointer text now in those SKILL.md
+  // bodies — so the un-prefixed Task 5 paths would no longer match and the
+  // externalized-mode tests above would fail. Normalizing both sides the
+  // same way before comparing keeps this guard's actual job (catch any
+  // OTHER incidental edit) without re-freezing on a path that reality has
+  // already moved past.
   const TASK5_LANDING_SHA = "039d1e1df6e51bcdd73a8af64767189b87b407be";
+  const normalizeRelocatedCompanions = (text) =>
+    text.replace(/skills\/(plan|build)\/(?!references\/)/g, "skills/$1/references/");
   for (const relPath of expectedPreserved) {
-    const atTask5 = execFileSync("git", ["rev-parse", `${TASK5_LANDING_SHA}:${relPath}`], {
+    const atTask5 = execFileSync("git", ["show", `${TASK5_LANDING_SHA}:${relPath}`], {
       cwd: REPO_ROOT,
       encoding: "utf8",
-    }).trim();
-    const atHead = execFileSync("git", ["hash-object", relPath], { cwd: REPO_ROOT, encoding: "utf8" }).trim();
+    });
+    const atHead = readFileSync(join(REPO_ROOT, relPath), "utf8");
     assert.equal(
       atHead,
-      atTask5,
-      `${relPath} must be byte-identical to its Task 5 landing state (git blob hash mismatch: ${atHead} vs ${atTask5})`,
+      normalizeRelocatedCompanions(atTask5),
+      `${relPath} must match its Task 5 landing state, modulo the plan/build references/ companion relocation`,
     );
   }
 });

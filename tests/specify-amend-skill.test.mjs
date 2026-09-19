@@ -13,6 +13,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readSkillSurface } from "./helpers.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SKILL = resolve(__dirname, '..', 'skills', 'specify', 'SKILL.md');
@@ -20,13 +21,13 @@ const SKILL = resolve(__dirname, '..', 'skills', 'specify', 'SKILL.md');
 const FORBIDDEN_INLINE_NODE = /Run inline Node|node\s+--input-type=module\s+-e|node\s+-e/;
 
 test('specify SKILL.md has an --amend arguments-table row', () => {
-  const text = readFileSync(SKILL, 'utf8');
+  const text = readSkillSurface("specify");
   assert.match(text, /\|\s*`--amend <base-spec>`\s*\|/,
     'arguments table must document the --amend <base-spec> flag');
 });
 
 test('specify SKILL.md has an Amend Mode section naming `adev specify amend`', () => {
-  const text = readFileSync(SKILL, 'utf8');
+  const text = readSkillSurface("specify");
   assert.match(text, /##\s+Amend Mode \(`--amend <base-spec>`\)/,
     'must have a "## Amend Mode (`--amend <base-spec>`)" section');
   // Section must name the CLI verb.
@@ -37,13 +38,13 @@ test('specify SKILL.md has an Amend Mode section naming `adev specify amend`', (
 });
 
 test('specify SKILL.md states --amend mutual-exclusion', () => {
-  const text = readFileSync(SKILL, 'utf8');
+  const text = readSkillSurface("specify");
   assert.match(text, /`--amend`[^]*mutually exclusive[^]*--revise/,
     'must state --amend is mutually exclusive with the other workflow flags');
 });
 
 test('specify SKILL.md contains no inline-Node directive (AC 8)', () => {
-  const text = readFileSync(SKILL, 'utf8');
+  const text = readSkillSurface("specify");
   assert.equal(FORBIDDEN_INLINE_NODE.test(text), false,
     'SKILL.md must contain no inline-Node directive');
 });

@@ -5,7 +5,12 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const content = readFileSync(join(__dirname, "..", "..", "skills", "validate", "SKILL.md"), "utf8");
+// Step 0's preflight/registry-loading prose lives in the references/ companion
+// under progressive disclosure, not inline in SKILL.md.
+const content = readFileSync(
+  join(__dirname, "..", "..", "skills", "validate", "references", "step-0-load-check-registry.md"),
+  "utf8"
+);
 const start = content.indexOf("**Domain-Aware Gate Loading:**");
 const end = content.indexOf("**Load Skill Extensions:**");
 const preflight = content.substring(start, end);

@@ -5,10 +5,10 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "fs";
 import { join } from "path";
-import { PLUGIN_ROOT } from "../helpers.mjs";
+import { PLUGIN_ROOT, readSkillSurface } from "../helpers.mjs";
 
 const SKILL_PATH = join(PLUGIN_ROOT, "skills", "review-specs", "SKILL.md");
-const skill = readFileSync(SKILL_PATH, "utf8");
+const skill = readSkillSurface("review-specs");
 
 describe("review-specs SKILL.md — file-sha ordering (issue-187)", () => {
   it("Step 6 does NOT capture file-sha before Step 7", () => {

@@ -16,10 +16,18 @@ import assert from "node:assert";
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readSkillSurface } from "../helpers.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..", "..");
-const read = (rel) => readFileSync(resolve(ROOT, rel), "utf8");
+// For a SKILL.md, read its full surface (SKILL.md + references/ companions):
+// progressive disclosure moved several completion-token directives one file out
+// of the body, and this suite is about the directive being shipped at all.
+const read = (rel) => {
+  const m = /^skills\/([^/]+)\/SKILL\.md$/.exec(rel);
+  if (m) return readSkillSurface(m[1]);
+  return readFileSync(resolve(ROOT, rel), "utf8");
+};
 
 // The canonical token grammar from the spec (Behavior B8 / acceptance criteria).
 const TOKEN_GRAMMAR = /^ADEV-[A-Z]+: [A-Z_]+$/;

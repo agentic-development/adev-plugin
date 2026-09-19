@@ -9,10 +9,13 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "fs";
 import { join } from "path";
-import { PLUGIN_ROOT } from "../helpers.mjs";
+import { PLUGIN_ROOT, readSkillSurface } from "../helpers.mjs";
 
+// SKILL.md plus its references/ companions: these are content-presence checks
+// on instructions the skill ships, and progressive disclosure moved several of
+// them one file out of the body without changing the contract.
 function readSkill(name) {
-  return readFileSync(join(PLUGIN_ROOT, "skills", name, "SKILL.md"), "utf8");
+  return readSkillSurface(name);
 }
 
 // ---------------------------------------------------------------------------

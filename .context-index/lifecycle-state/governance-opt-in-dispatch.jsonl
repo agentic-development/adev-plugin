@@ -90,3 +90,4 @@
 {"event":"validator_report","step":"validate","validator":"validate.check-8-boundaries","severity":"error","verdict":"PASS","notes":"0 findings across 26 changed files against 3 rules; 1 rule disabled with reason (no-manual-version-bump).","ts":"2026-09-10T16:34:36.915Z"}
 {"event":"validator_report","step":"validate","validator":"validate.check-9-transition-gates","severity":"warning","verdict":"PASS","notes":"implement-to-validate: required gate 'test' has a fresh, attested, passing outcome.","ts":"2026-09-10T16:34:36.966Z"}
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-09-10T16:35:43.413Z"}
+{"event":"code_drift_detected","drift_source":"tests/skills/init-governance-explicit-selection.test.mjs","drift_at":"2026-09-13T13:12:03.916Z","ts":"2026-09-13T13:12:03.917Z"}

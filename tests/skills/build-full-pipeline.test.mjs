@@ -3,10 +3,10 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "fs";
 import { join } from "path";
-import { PLUGIN_ROOT } from "../helpers.mjs";
+import { PLUGIN_ROOT, readSkillSurface } from "../helpers.mjs";
 
 const SKILL_PATH = join(PLUGIN_ROOT, "skills", "build", "SKILL.md");
-const skill = readFileSync(SKILL_PATH, "utf8");
+const skill = readSkillSurface("build");
 
 describe("adev:build SKILL.md — Full Pipeline and blocker-fix loop", () => {
   it("declares --full flag in Arguments section (+7 more contract assertions)", () => {

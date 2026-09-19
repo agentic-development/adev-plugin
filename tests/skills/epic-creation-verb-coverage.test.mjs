@@ -21,18 +21,16 @@
 
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import { join, resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = resolve(__dirname, "..", "..");
+import { readSkillSurface } from "../helpers.mjs";
 
 /** Skills whose process creates the plan-level epic on the board. */
 const EPIC_CREATING_SKILLS = ["plan", "implement", "reconcile"];
 
 function readSkill(slug) {
-  return readFileSync(join(REPO_ROOT, "skills", slug, "SKILL.md"), "utf8");
+  // The epic-creation step may live in a references/ companion under
+  // progressive disclosure rather than inline in SKILL.md — read the whole
+  // surface, not just the body.
+  return readSkillSurface(slug);
 }
 
 describe("plan-epic creation names the epic-store verb", () => {

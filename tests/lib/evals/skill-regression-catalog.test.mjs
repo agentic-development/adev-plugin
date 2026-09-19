@@ -141,7 +141,7 @@ test("the default rubric roots are non-vacuous — the scan reaches skills/eval/
     "the default rubric roots expanded to no files at all — the growth rule enforces nothing",
   );
   assert.ok(
-    scannedRubricFiles.includes(join("skills", "eval", "default-rubric.yaml")),
+    scannedRubricFiles.includes(join("skills", "eval", "references", "default-rubric.yaml")),
     `expected the citation scan to visit skills/eval/default-rubric.yaml, visited: ${JSON.stringify(scannedRubricFiles)}`,
   );
 });

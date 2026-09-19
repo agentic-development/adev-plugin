@@ -56,6 +56,7 @@ This file is the CLI counterpart to [`skill-reference.md`](skill-reference.md) (
 | `retro` | Gather session activity for a retrospective window | `lib/cli/retro.mjs` |
 | `heuristics` | Retrieve/sign/write/rekey project heuristics | `lib/cli/heuristics.mjs` |
 | `domain` | Resolve a module's domain and load domain config | `lib/cli/domain.mjs` |
+| `implementation-mode` | Resolve the effective `implementation_mode` config | `lib/cli/implementation-mode.mjs` |
 | `cost` | Aggregate per-spec/per-step token + USD totals | `lib/cli/cost.mjs` |
 | `worktree` | Manage adev-managed git worktrees for parallel execution | `lib/cli/worktree.mjs` |
 | `parallel` | Decision helpers for `/adev:implement --parallel` orchestration | `lib/cli/parallel.mjs` |
@@ -75,14 +76,25 @@ Invoked via `npx @adev-org/adev-cli <verb>` (before install) or `adev <verb>` (a
 
 **Purpose:** First-time plugin setup. Copies the plugin into the provider's plugin cache and makes hooks executable.
 
-**Signature:** `install [--provider claude-code|opencode|codex]...`
+**Signature:** `install [--provider claude-code|opencode|codex]... [--config-dir <path>]`
 
 Repeat `--provider` to install for multiple providers. Default is `claude-code`.
+
+`--config-dir <path>` targets a specific Claude Code config directory instead of
+the default `~/.claude` — for machines running more than one. It sets
+`CLAUDE_CONFIG_DIR` for the run, so the plugin cache, `installed_plugins.json`,
+and the user-scope `settings.json` all land in that directory (and it becomes
+the user-scope consent boundary). The path is used verbatim: no `.claude`
+segment is appended. If `CLAUDE_CONFIG_DIR` is already exported, adev honors it
+without the flag. A relative or blank value is refused
+(`CLAUDE_HOME_UNRESOLVED`) rather than resolved against the current repo. The
+flag is also accepted by `upgrade` and `uninstall`.
 
 **Example:**
 ```
 npx @adev-org/adev-cli install
 npx @adev-org/adev-cli install --provider opencode --provider codex
+npx @adev-org/adev-cli install --config-dir ~/.claude-work
 ```
 
 **Implementation:** `cli/index.mjs::cmdInstall`. After install, run `/adev:init` inside your AI assistant.
@@ -91,7 +103,7 @@ npx @adev-org/adev-cli install --provider opencode --provider codex
 
 **Purpose:** Update an existing install to the latest version (preserves project context).
 
-**Signature:** `upgrade [--provider <name>]...`
+**Signature:** `upgrade [--provider <name>]... [--config-dir <path>]`
 
 **Example:**
 ```
@@ -104,7 +116,7 @@ npx @adev-org/adev-cli upgrade
 
 **Purpose:** Remove the plugin from the selected providers.
 
-**Signature:** `uninstall [--provider <name>]...`
+**Signature:** `uninstall [--provider <name>]... [--config-dir <path>]`
 
 **Example:**
 ```
@@ -902,6 +914,19 @@ adev domain load-gates --module auth
 ```
 
 **Implementation:** `lib/cli/domain.mjs`. **Called by:** `/adev:validate`, `/adev:review-specs`, `/adev:implement`, `/adev:specify`, `/adev:brainstorm`, `/adev:write-test`.
+
+### `implementation-mode`
+
+**Purpose:** Resolve the effective `implementation_mode` config — explicit `--mode` override, the stored `manifest.yaml` value, or the `tdd` default — to `{dispatch_red, ordering_enforced, coverage_check}`.
+
+**Signature:** `implementation-mode resolve [--mode tdd|test-required|agent-default]`
+
+**Example:**
+```
+adev implementation-mode resolve --mode test-required
+```
+
+**Implementation:** `lib/cli/implementation-mode.mjs`. **Called by:** `/adev:init` (documents the read path — the write path is the `init prompt implementation-mode` sub-verb, invoked by `skills/init/SKILL.md` Step 8b).
 
 ### `domain-picker`
 
