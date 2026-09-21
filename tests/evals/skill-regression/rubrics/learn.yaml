@@ -1,0 +1,95 @@
+# Layer 3 rubric for /adev:learn, scored against the skill-regression fixture
+# (tests/evals/skill-regression/). Field shapes verbatim from
+# skills/eval/default-rubric.yaml. All values flat: no nested maps, since the
+# repo's minimal YAML readers cannot represent them.
+#
+# PRODUCER, NOT DETECTOR: this rubric cites no skill-regression PV/KC pair.
+# learn neither audits the fixture nor emits a finding about planted defects —
+# it captures a user-supplied lesson as a heuristic. Every
+# required_elements[].source below is `output:` or `artifact:` only.
+# `output:` names a span of the agent's own chat transcript (the presented
+# heuristic and its confirmation); it has NO v1 machine reader
+# (lib/evals/score.mjs never reads an element's `source` field at all —
+# scoring runs entirely off the verdict set a judge or the operator
+# supplies). Its v1 consumer is the operator's manual Tier B pass; its
+# automated consumer is a future CI-integration capability, not anything
+# this rubric or `score.mjs` do today.
+#
+# Scored input: the heuristic file /adev:learn writes. The fixture's
+# manifest.yaml declares two modules (orders, shipping); the committed
+# .context-index/memory/heuristics/ tree carries an orders.md with three
+# entries but NO shipping.md — so a lesson scoped to --module shipping
+# exercises Step 5's "If the scope file doesn't exist yet, create it with a
+# heading" branch, a cleaner signal than appending to an existing file would
+# give. The scenario's lesson: "the shipping rate calculator must validate
+# that weight is a positive number before looking up a rate band — a zero or
+# negative weight should throw, not silently match the lowest band."
+#
+# Spec: .context-index/specs/features/eval-harness/rubric-set-change-imminent.spec.md
+
+rubric_id: "skill-regression-learn"
+version: 1
+layer: 3
+verdict_values: "met | not_met | unknown (judged criteria) | not_applicable (deterministic elements)"
+skill: learn
+scenario: learn
+
+required_elements:
+  - id: heuristic_file_created_with_heading
+    description: "A new shipping.md heuristics file is created, with the store's standard heading"
+    source: "artifact: .context-index/memory/heuristics/shipping.md"
+    met_when: "the file exists (it did not before the run), and begins with a '# Heuristics: shipping' heading, per Step 5 of skills/learn/SKILL.md"
+    not_applicable_when: "never — the scope file is absent in the fixture before this run, so Step 5's create-fresh branch always applies"
+
+  - id: frontmatter_fields_complete
+    description: "The appended frontmatter block carries every field lib/heuristics.mjs's serializer expects"
+    source: "artifact: .context-index/memory/heuristics/shipping.md"
+    met_when: "the appended '---' delimited block carries id, scope, title, pattern, anti-pattern, confidence, evidence (a non-empty list with a source: learn entry), contradicted-by: [], created, and updated, per Step 5's File format block in skills/learn/SKILL.md"
+    not_applicable_when: "never — Step 5 always writes every one of these fields"
+
+  - id: scope_field_matches_module
+    description: "The written entry's scope matches the requested module"
+    source: "artifact: .context-index/memory/heuristics/shipping.md"
+    met_when: "the frontmatter's scope: field reads shipping, matching the --module shipping argument and an existing manifest.yaml module slug"
+    not_applicable_when: "never — the scenario always supplies --module shipping"
+
+  - id: confidence_low_for_first_time_lesson
+    description: "A first-time lesson is filed at low confidence, per Step 3's stated default"
+    source: "artifact: .context-index/memory/heuristics/shipping.md"
+    met_when: "the frontmatter's confidence: field reads low, matching Step 3's rule ('Start at low for first-time lessons') since the scenario supplies a single lesson with no 'this has happened multiple times' framing"
+    not_applicable_when: "never — the scenario's lesson text carries no repeated-occurrence framing"
+
+  - id: id_is_safe_slug_from_title
+    description: "The entry's id is a lowercase kebab-case slug derived from its title"
+    source: "artifact: .context-index/memory/heuristics/shipping.md"
+    met_when: "the frontmatter's id: value matches ^[a-z][a-z0-9-]*$, is at most 64 characters, and is recognizably derived from the title (shares at least two of its significant words), per Step 3's id derivation rule in skills/learn/SKILL.md"
+    not_applicable_when: "never — Step 3 always derives an id from the title"
+
+quality_dimensions:
+  - id: pattern_generalizes_not_records
+    criterion: "Does the written pattern read as a reusable rule an agent could apply to a future, differently-worded situation, rather than a narration of today's specific incident?"
+    reference: "the Key Principles section of skills/learn/SKILL.md ('Generalize, don't record. The lesson should be useful in future contexts, not just describe what happened today.')"
+    met_when: "the pattern text states a general rule (a condition and an action) with no incident-specific narration (no 'today', 'this time', or a reference to a single conversation)"
+    not_met_when: "the pattern text is phrased as a record of a specific incident rather than a generalizable rule"
+    unknown_when: "the pattern field is empty or was not written, so no judgment is possible"
+
+  - id: anti_pattern_distinct_and_concrete
+    criterion: "Does the anti-pattern name a concrete counter-behavior an agent could recognize itself doing, rather than merely restating the pattern's negation?"
+    reference: "the anti-pattern row of Step 3's field table in skills/learn/SKILL.md ('The \"don't do this\" counter-rule ... Derive from the lesson's failure case')"
+    met_when: "the anti-pattern describes a specific behavior distinct from a bare negation of the pattern (e.g. names what silently happens instead, not just 'don't validate weight')"
+    not_met_when: "the anti-pattern is the pattern's negation with no added concrete detail (e.g. 'don't skip validating weight')"
+    unknown_when: "no --anti-pattern was supplied and the transcript gives no evidence either way of how one was derived"
+
+  - id: redaction_check_applied
+    criterion: "Does the written pattern and anti-pattern text avoid credentials, tokens, PII, or literal file contents that Step 3's redaction check exists to catch?"
+    reference: "the Redaction check subsection of Step 3 in skills/learn/SKILL.md"
+    met_when: "neither field contains anything resembling a credential, token, API key, name, email, IP address, or a pasted block of file content"
+    not_met_when: "either field contains any of the categories the redaction check names"
+    unknown_when: "the raw lesson text the agent received is unavailable to compare against the written fields, so it cannot be confirmed whether anything was actually redacted or nothing needed to be"
+
+layer3_max_points: 25
+required_element_points: 10
+judged_criterion_points: 15
+unknown_policy: "exclude_from_denominator"
+not_applicable_policy: "exclude_from_denominator"
+insufficient_evidence_threshold_percent: 40

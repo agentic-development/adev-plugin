@@ -966,7 +966,9 @@ test("adev report --type step with out-of-bounds --spec path exits 1 (containmen
   }
 });
 
-test("adev report --type step with missing --spec file exits 1", () => {
+test("adev report --type step --status completed with missing --spec file exits 1", () => {
+  // Existence is still required for a TERMINAL status: reporting a step done
+  // against a spec that was never written is a genuine operator error.
   const dir = makeTempProject();
   try {
     const r = spawnSync(
@@ -981,12 +983,54 @@ test("adev report --type step with missing --spec file exits 1", () => {
         "--step",
         "validate",
         "--status",
-        "started",
+        "completed",
       ],
       { encoding: "utf8", cwd: dir },
     );
     assert.strictEqual(r.status, 1);
     assert.match(r.stderr, /spec not found/i);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("adev report --type step --status started succeeds with a not-yet-written --spec file (adev-plugin-eval-harness-xj3k.3 / issue-p1uqr8)", () => {
+  // /adev:specify's own Step 0 emits the "started" event for the step whose
+  // job is to WRITE the spec file — the file cannot exist yet at that point.
+  // The event is about the step beginning, not a claim that its artifact
+  // already exists; only completed/failed should require existence.
+  const dir = makeTempProject();
+  try {
+    const specRel = ".context-index/specs/features/m/not-yet-written.spec.md";
+
+    const r = spawnSync(
+      "node",
+      [
+        CLI,
+        "report",
+        "--type",
+        "step",
+        "--spec",
+        specRel,
+        "--step",
+        "specify",
+        "--status",
+        "started",
+      ],
+      { encoding: "utf8", cwd: dir },
+    );
+
+    assert.strictEqual(
+      r.status,
+      0,
+      `expected 0, got ${r.status}: stderr=${r.stderr} stdout=${r.stdout}`,
+    );
+
+    const events = readLog(dir, "not-yet-written");
+    const ev = events[events.length - 1];
+    assert.strictEqual(ev.event, "lifecycle_step");
+    assert.strictEqual(ev.step, "specify");
+    assert.strictEqual(ev.status, "started");
   } finally {
     cleanup(dir);
   }

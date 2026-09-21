@@ -211,13 +211,37 @@ test('bugfix-loop SKILL.md Step 2 documents stderr must not be redirected/suppre
   assert.match(STEP2, /BEH-12/);
 });
 
-test('every new bugfix-loop subverb (check-freshness, commit-pr) and skill arg (--worktree-per-bug, --auto-commit, --max-priority) appears in docs/cli-reference.md and/or docs/skill-reference.md (Plan-task 15)', () => {
+test('every new bugfix-loop subverb (check-freshness, commit-pr) and skill arg (--worktree-per-bug, --auto-commit, --max-priority, --epic) appears in docs/cli-reference.md and/or docs/skill-reference.md (Plan-task 15)', () => {
   const cliDocs = read('docs/cli-reference.md');
   const skillDocs = read('docs/skill-reference.md');
   const combined = cliDocs + skillDocs;
-  for (const term of ['check-freshness', 'commit-pr', '--worktree-per-bug', '--auto-commit', '--max-priority']) {
+  for (const term of ['check-freshness', 'commit-pr', '--worktree-per-bug', '--auto-commit', '--max-priority', '--epic']) {
     assert.ok(combined.includes(term), `docs must mention "${term}" somewhere (cli-reference.md or skill-reference.md)`);
   }
+});
+
+test('bugfix-loop SKILL.md documents --epic <id>, default unscoped (adev-plugin-j2ev.1)', () => {
+  const md = read('skills/bugfix-loop/SKILL.md');
+  const argsIdx = md.indexOf('## Arguments');
+  const step0Idx = md.indexOf('## Step 0: Resolve the run');
+  const argsText = md.slice(argsIdx, step0Idx);
+  assert.match(argsText, /--epic <id>/);
+  assert.match(argsText, /Default: unscoped/);
+});
+
+test('bugfix-loop SKILL.md Step 0 passes --epic to bugfix-loop create when the invocation named one', () => {
+  assert.match(STEP0, /adev bugfix-loop create --max-bugs <N> --max-turns <N> \[--epic <id>\]/);
+});
+
+test('bugfix-loop SKILL.md Step 2 passes --epic to adev issues next when the run has one', () => {
+  assert.match(STEP2, /adev issues next --type bug --max-priority <resolved-max-priority> \[--epic <id>\]/);
+});
+
+test('bugfix-loop SKILL.md Step 6 re-passes --epic on self-re-invocation, alongside every other original-invocation flag', () => {
+  const flagListIdx = STEP6.indexOf('plus every other flag the original invocation was given');
+  assert.ok(flagListIdx !== -1);
+  const flagListText = STEP6.slice(flagListIdx, flagListIdx + 200);
+  assert.match(flagListText, /--epic/);
 });
 
 test('using-adev gateway table lists /adev:bugfix-loop', () => {

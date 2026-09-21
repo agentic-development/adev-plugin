@@ -279,6 +279,66 @@ describe("JsonAdapter.claim — atomic check-and-set", () => {
   });
 });
 
+describe("JsonAdapter.claim / .get / .release — epics (adev-plugin-eval-harness-xj3k.4)", () => {
+  // `/adev:implement`'s documented "claim the epic before dispatching" step
+  // (`adev issues claim <epic-id>`) always failed with `Issue not found`
+  // against a real epic id on the JSON backend, because claim()/get()/
+  // release() only ever searched board.issues, never board.epics.
+  let dir, adapter;
+
+  before(async () => {
+    dir = makeProject();
+    adapter = new JsonAdapter(dir);
+    await adapter.init();
+  });
+
+  after(() => rmSync(dir, { recursive: true, force: true }));
+
+  it("get() finds an epic by id", async () => {
+    const epic = await adapter.createEpic({ title: "Auth epic" });
+    const found = await adapter.get(epic.id);
+    assert.equal(found.id, epic.id);
+    assert.equal(found.title, "Auth epic");
+  });
+
+  it("claim() sets owner/claimed_at on an epic and persists them", async () => {
+    const epic = await adapter.createEpic({ title: "Claimable epic" });
+    const claimed = await adapter.claim(epic.id, "agent-a");
+    assert.equal(claimed.owner, "agent-a");
+    assert.match(claimed.claimed_at, /^\d{4}-\d{2}-\d{2}T/);
+
+    const persisted = await new JsonAdapter(dir).get(epic.id);
+    assert.equal(persisted.owner, "agent-a");
+    assert.equal(persisted.claimed_at, claimed.claimed_at);
+  });
+
+  it("claim() still refuses a second owner on a claimed epic", async () => {
+    const epic = await adapter.createEpic({ title: "Contended epic" });
+    await adapter.claim(epic.id, "agent-a");
+    await assert.rejects(
+      () => adapter.claim(epic.id, "agent-b"),
+      (err) => err.code === "ISSUE_ALREADY_CLAIMED",
+    );
+  });
+
+  it("release() clears owner/claimed_at on an epic", async () => {
+    const epic = await adapter.createEpic({ title: "Releasable epic" });
+    await adapter.claim(epic.id, "agent-a");
+    const released = await adapter.release(epic.id, "agent-a");
+    assert.equal(released.owner, undefined);
+    assert.equal(released.claimed_at, undefined);
+
+    const persisted = await new JsonAdapter(dir).get(epic.id);
+    assert.equal(persisted.owner, undefined);
+  });
+
+  it("an issue id still resolves against board.issues, not board.epics", async () => {
+    const issue = await adapter.create({ title: "Ordinary issue" });
+    const claimed = await adapter.claim(issue.id, "agent-a");
+    assert.equal(claimed.owner, "agent-a");
+  });
+});
+
 describe("JsonAdapter.release", () => {
   let dir, adapter;
 

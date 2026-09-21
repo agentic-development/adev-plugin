@@ -1,0 +1,123 @@
+# Layer 3 rubric for /adev:specify, scored against the skill-regression
+# fixture (tests/evals/skill-regression/). Field shapes verbatim from
+# skills/eval/default-rubric.yaml — the exemplar. All values flat: no nested
+# maps, since the repo's minimal YAML readers cannot represent them.
+#
+# Scored input: the written `.spec.md` — this run drives /adev:specify
+# (charter: orders) to author a brand-new spec for "shipping rate
+# calculation", a capability the orders charter's own Scope and Boundaries
+# table lists under Out of Scope ("Shipping rate calculation — owned by the
+# `shipping` module"), and is therefore absent from its Capability Map. This
+# is the live, generative mirror of the already-planted
+# shipping-rates.spec.md/PV-07 defect: a producer that detects while
+# producing — writing a spec is where a charter-scope escape is either
+# introduced (silently accepted) or caught (Step 3's out-of-scope warning).
+# Written after a scenario run against a temp-tree copy of
+# tests/evals/skill-regression/project (see scenarios/specify.md).
+#
+# Citations: skill-regression:PV-07/KC-07 (charter-scope-escape) only. Every
+# met_when below is phrased against catalog.yaml's
+# detect_when/must_not_flag_when clause — the finding a correct authoring
+# run produces — never against the fixture's in-file answer-key label, so
+# the element survives the fixture's own redaction with no edit.
+#
+# Spec: .context-index/specs/features/eval-harness/rubric-set-core-lifecycle.spec.md
+
+rubric_id: "skill-regression-specify"
+version: 1
+layer: 3
+verdict_values: "met | not_met | unknown (judged criteria) | not_applicable (deterministic elements)"
+skill: specify
+scenario: specify
+
+required_elements:
+  - id: pv07_charter_scope_escape_warned_at_authoring
+    description: "Step 3 warns, at authoring time, that the requested capability sits outside the orders charter's Capability Map, and the written spec discloses the divergence when the author proceeds anyway"
+    source: "skill-regression:PV-07"
+    met_when: "Step 3's warning fires verbatim for the 'shipping rate calculation' request (naming it as not listed in the <module> charter), and, having proceeded on option 2, the written spec's frontmatter carries charter-extension: true plus a top-of-file comment noting the charter divergence — the spec covers a capability absent from the orders charter's Capability Map, per catalog.yaml PV-07's detect_when"
+    not_applicable_when: "never — the scenario always requests this out-of-charter capability"
+
+  - id: kc07_in_scope_capability_not_flagged
+    description: "The specificity twin of PV-07: the charter's one already-listed capability is presented with no out-of-scope warning attached"
+    source: "skill-regression:KC-07"
+    met_when: "Step 3's capability listing presents 'Validate and price an order payload' as an existing, in-scope capability of the orders charter with no ⚠ warning attached, confirming the warning fired above is specific to the absent capability rather than a blanket caution, per catalog.yaml KC-07's must_not_flag_when"
+    not_applicable_when: "never — the orders charter always ships this one already-specified capability"
+
+  - id: behavior_ids_follow_convention
+    description: "Behaviors render as an unordered BEH-<n> list under a retired-behavior-ids tombstone comment"
+    source: "the written spec's Behaviors section"
+    met_when: "the spec's Behaviors section is an unordered list, each item opening with a bolded BEH-<n> in When...then form, sitting under a <!-- retired-behavior-ids: (none) --> comment, per Step 4's Behavioral Contract convention"
+    not_applicable_when: "never — Step 4 always renders the Behaviors section this way for a newly authored spec"
+
+  - id: partial_write_atomic_rename_observed
+    description: "The spec body is authored incrementally to a .partial file carrying the spec@1 marker, then committed by atomic rename"
+    source: "the copy's on-disk .partial lifecycle during the run"
+    met_when: "a <spec-path>.partial file is observed to exist mid-run with a partial_schema: spec@1 frontmatter key, and the final <spec-path> is produced by an atomic rename rather than a direct write, per Step 5's Incremental authoring protocol"
+    not_applicable_when: "never — Step 5 always follows the .partial-then-rename protocol for a new spec"
+
+  - id: kind_field_explicit_no_default
+    description: "The written spec's kind: field is the value resolved at Step 3.5, never a silent default"
+    source: "the written spec's frontmatter"
+    met_when: "the spec's kind: field is present and equals the value the run actually selected at Step 3.5 (behavioral, the ask-first menu's default when no --kind flag is passed), written verbatim rather than left absent or defaulted at read time"
+    not_applicable_when: "never — Step 3.5 is mandatory for every new spec"
+
+  - id: feature_work_item_bound_or_skip_noted
+    description: "Step 5.6 binds the spec to a Feature work item, or the Summary explicitly notes the board is not configured"
+    source: "the copy's issue board state (or the Step 6 Summary output)"
+    met_when: "either a Feature work item exists on the copy's board with spec_ref equal to the absolute path of the written spec and no planRef/planTask fields, or — when tasks.backend is unset — the Step 6 Summary prints the exact 'Issue board not configured; skipping Feature work item creation.' line"
+    not_applicable_when: "never — Step 5.6 always resolves to one of these two outcomes"
+
+  - id: lifecycle_events_bracket_the_run
+    description: "A specify step-started event precedes authoring and a step-completed PASS event follows the Summary"
+    source: "the copy's lifecycle JSONL log"
+    met_when: "the copy's lifecycle log for the new spec carries a lifecycle_step specify started event before any spec content is written and a step_completed specify PASS event after Step 6, per the Shared: Lifecycle Events contract"
+    not_applicable_when: "never — Standard Mode always emits both events on a successful run"
+
+  - id: status_transitions_to_review_pending
+    description: "The saved spec's status is flipped from draft to review-pending after the atomic write"
+    source: "the written spec's frontmatter, read back after Step 5.5"
+    met_when: "the spec's status: field reads review-pending when read back after Step 5.5, having been written as draft at Step 5"
+    not_applicable_when: "never — Step 5.5 always performs this transition on a successful run"
+
+quality_dimensions:
+  - id: capability_map_check_reasoning_grounded
+    criterion: "Does Step 3's decision to warn trace to an actual absent row in the orders charter's Capability Map table, rather than an unanchored sense that the request 'seems' out of scope?"
+    reference: "Step 3: Identify Capability, in skills/specify/SKILL.md"
+    met_when: "the warning's text or the authoring subagent's reasoning names the specific charter (orders) and the absence of a matching Capability Map row, not a generic caution"
+    not_met_when: "the warning fires with no reference to the Capability Map at all"
+    unknown_when: "the run's reasoning trace does not surface Step 3's internal check"
+
+  - id: constitution_validation_performed
+    criterion: "Is the proposed spec actually checked against the loaded constitution's principles before writing, rather than the Constitution Validation section being silently skipped?"
+    reference: "Constitution Validation (All Modes), in skills/specify/SKILL.md"
+    met_when: "the run's trace shows the constitution being read and at least one principle being checked against the emerging spec content before Step 5's write"
+    not_met_when: "the spec is written with no evidence the constitution was consulted at all"
+    unknown_when: "the scenario capture does not resolve fine enough to distinguish a silent skip from an unremarkable pass"
+
+  - id: domain_guidance_influenced_prompts
+    criterion: "Does Step 4 render the loaded domain-aware guidance's illustrative examples (or its explicit fallback line) for the Behaviors and Error Cases prompts, rather than a hardcoded example unrelated to either?"
+    reference: "Step 4: Domain-Aware Authoring Guidance, in skills/specify/SKILL.md"
+    met_when: "the authoring subagent's prompts for Behaviors and Error Cases draw from the loaded guidance content, or explicitly print the 'No domain-specific authoring guidance available' fallback line when guidance is null"
+    not_met_when: "the prompts use a hardcoded example the guidance step never produced, with no fallback line printed"
+    unknown_when: "the scenario capture does not record which guidance branch fired"
+
+  - id: milestone_inheritance_confirmed
+    criterion: "Is the spec's milestone: value actually inherited from the orders charter's Milestone (v1), confirmed rather than invented?"
+    reference: "Shared: Frontmatter, Milestone inheritance (standard mode), in skills/specify/SKILL.md"
+    met_when: "the written spec's milestone: field equals v1, matching the capability's Milestone column in the orders charter's Capability Map, per the shared frontmatter section"
+    not_met_when: "the milestone: field is present but does not match the charter's actual Milestone value, with no user override recorded"
+    unknown_when: "the spec frontmatter carries no milestone: field to check at all"
+
+  - id: duplicate_detection_reasoning_grounded
+    criterion: "Does the Duplicate Detection pass compare the new spec's title and behavioral contract against shipping-rates.spec.md's actual content -- the fixture's planted near-duplicate, titled identically to the capability this scenario asks /adev:specify to author -- rather than asserting 'no duplicate' with nothing to point to?"
+    reference: "Duplicate Detection (All Modes), in skills/specify/SKILL.md"
+    met_when: "the run's trace shows shipping-rates.spec.md's title or behavioral contract was read and compared, and either the ⚠ possible-duplicate prompt fired naming it or the run's reasoning explains why an identically-titled existing spec is not actually the same capability"
+    not_met_when: "the run reports no duplicate with no evidence shipping-rates.spec.md specifically was read or considered, despite sharing the new spec's exact title"
+    unknown_when: "the module directory listing at Duplicate Detection time is not captured by the scenario"
+
+layer3_max_points: 25
+required_element_points: 10
+judged_criterion_points: 15
+unknown_policy: "exclude_from_denominator"
+not_applicable_policy: "exclude_from_denominator"
+insufficient_evidence_threshold_percent: 40

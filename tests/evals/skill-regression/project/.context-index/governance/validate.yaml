@@ -7,8 +7,8 @@
 #     fixture ships no governance/gates.yaml and why its constitution carries
 #     no Quality Gates block.
 #   - It still ADMITS real checks. A check-free registry would silently
-#     unscore the validate, review-specs and build rubrics and make the
-#     `esm-violation` planted-violation / known-clean pair unassertable.
+#     unscore the validate, review-specs and build rubrics and make one of
+#     their detection pairs unassertable.
 #
 # Every `prompt:` is a `plugin:` URI resolved against `<pluginRoot>/skills/`.
 # The hermeticity suite asserts the LOADER-resolved path for each, not the

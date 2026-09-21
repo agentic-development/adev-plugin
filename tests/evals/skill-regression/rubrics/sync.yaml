@@ -1,0 +1,106 @@
+# Layer 3 rubric for /adev:sync, scored against the skill-regression fixture
+# (tests/evals/skill-regression/). Field shapes verbatim from
+# skills/eval/default-rubric.yaml. All values flat: no nested maps, since the
+# repo's minimal YAML readers cannot represent them.
+#
+# PRODUCER, NOT DETECTOR: this rubric cites no skill-regression PV/KC pair.
+# sync neither audits the fixture nor emits a finding about planted defects —
+# it rewrites agent files from the constitution. Every required_elements[].source
+# below is `output:` or `artifact:` only. `output:` names a span of the
+# agent's own chat transcript (the printed sync summary); it has NO v1
+# machine reader (lib/evals/score.mjs never reads an element's `source` field
+# at all — scoring runs entirely off the verdict set a judge or the operator
+# supplies). Its v1 consumer is the operator's manual Tier B pass; its
+# automated consumer is a future CI-integration capability, not anything this
+# rubric or `score.mjs` do today.
+#
+# Scored input: the rewritten CLAUDE.md and AGENTS.md in the scenario copy.
+# The fixture's committed CLAUDE.md/AGENTS.md are deliberately UNSYNCED —
+# plain restatements of the constitution's content with none of the
+# generated header comment, Context Index / Project Context section, Task
+# Management section, or User Additions marker skills/sync/SKILL.md's Claude
+# and OpenCode format templates add (constitution.md's own header comment
+# confirms these two files are its content restated by hand, "the SOURCE" of
+# them, not already-synced output). Running /adev:sync against the copy is
+# therefore expected to rewrite both files, which is what this rubric scores.
+#
+# Reference anchor: the sync_target_mapping_fidelity criterion below anchors
+# its `reference` on the project fixture's own .context-index/manifest.yaml
+# sync.targets list (two entries: CLAUDE.md/format claude, AGENTS.md/format
+# agents) — the real declared mapping, so this rubric is not free to invent
+# which agent files "should" exist.
+#
+# Spec: .context-index/specs/features/eval-harness/rubric-set-change-imminent.spec.md
+
+rubric_id: "skill-regression-sync"
+version: 1
+layer: 3
+verdict_values: "met | not_met | unknown (judged criteria) | not_applicable (deterministic elements)"
+skill: sync
+scenario: sync
+
+required_elements:
+  - id: claude_md_synced_header
+    description: "CLAUDE.md carries the generated sync header comment"
+    source: "artifact: CLAUDE.md"
+    met_when: "CLAUDE.md's first non-blank line is the comment '<!-- Synced from .context-index/constitution.md by adev. Do not edit above the User Additions line. -->', per the Claude format template in skills/sync/SKILL.md"
+    not_applicable_when: "never — a full sync always rewrites CLAUDE.md with this header, since manifest.yaml declares it as a sync.targets entry"
+
+  - id: agents_md_synced_header
+    description: "AGENTS.md carries the generated sync header comment"
+    source: "artifact: AGENTS.md"
+    met_when: "AGENTS.md's first non-blank line is the comment '<!-- Synced from .context-index/constitution.md by adev. -->', per the OpenCode / Generic agents format template in skills/sync/SKILL.md"
+    not_applicable_when: "never — a full sync always rewrites AGENTS.md with this header, since manifest.yaml declares it as a sync.targets entry"
+
+  - id: both_files_carry_all_five_principles
+    description: "Every one of the constitution's five Non-Negotiable Principles is restated in both rewritten files"
+    source: "artifact: CLAUDE.md and AGENTS.md"
+    met_when: "both files restate all five numbered principles from the copy's .context-index/constitution.md, including principle 5 ('Every declared dependency is used'), with none dropped and none invented"
+    not_applicable_when: "never — the constitution always declares five principles in the fixture"
+
+  - id: context_or_project_section_present
+    description: "Each format's own named section for pointing back at the context index is present"
+    source: "artifact: CLAUDE.md and AGENTS.md"
+    met_when: "CLAUDE.md carries a '## Context Index' section and AGENTS.md carries a '## Project Context' section, each naming the Constitution path and the Manifest path, per skills/sync/SKILL.md's two format templates"
+    not_applicable_when: "never — both format templates always include this section on a full sync"
+
+  - id: task_management_section_included
+    description: "The conditional Task Management section is present, since the manifest declares a backend"
+    source: "artifact: CLAUDE.md and AGENTS.md"
+    met_when: "both files carry a '## Task Management' section referencing the json backend's board at .context-index/tasks/tasks.json, since the copy's manifest.yaml declares tasks.backend: json, per skills/sync/SKILL.md's conditional Task Management block"
+    not_applicable_when: "never — the fixture's manifest.yaml always declares tasks.backend: json"
+
+  - id: user_additions_marker_present
+    description: "Both files end with a fresh User Additions marker"
+    source: "artifact: CLAUDE.md and AGENTS.md"
+    met_when: "both files carry a '# User Additions' marker near the end, appended fresh since neither committed file carried one before the run, per step 4 (Preserve User Additions) of skills/sync/SKILL.md"
+    not_applicable_when: "never — step 4 always appends this marker when it is missing"
+
+quality_dimensions:
+  - id: sync_target_mapping_fidelity
+    criterion: "Does the set of agent files actually rewritten match exactly the sync.targets the project's own manifest.yaml declares — CLAUDE.md (format: claude) and AGENTS.md (format: agents) — with no other agent-file format written?"
+    reference: "the sync.targets list in the copy's .context-index/manifest.yaml — two entries, CLAUDE.md with format: claude and AGENTS.md with format: agents — the real constitution-to-agent-file mapping this rubric does not invent a standard for"
+    met_when: "exactly CLAUDE.md and AGENTS.md are rewritten, one for one with manifest.yaml's two declared sync.targets entries, and no .cursor/rules/adev.mdc or .github/copilot-instructions.md is written since neither format is declared as a target"
+    not_met_when: "a declared target (CLAUDE.md or AGENTS.md) is left unwritten, or a format absent from manifest.yaml's sync.targets is written anyway"
+    unknown_when: "the copy's manifest.yaml could not be read to confirm which targets were declared before the run"
+
+  - id: content_fidelity_to_constitution
+    criterion: "Does the rewritten content restate every principle, coding standard, and architecture-boundary entry the constitution declares, without paraphrasing away any constraint or inventing one the constitution does not state?"
+    reference: "the full body of the copy's .context-index/constitution.md"
+    met_when: "every numbered principle, every Coding Standards bullet, and every Architecture Boundaries row in the constitution appears, in substance, in both rewritten files"
+    not_met_when: "at least one constitution constraint is dropped, materially weakened, or a constraint not in the constitution is added as if it were"
+    unknown_when: "the copy's constitution.md could not be read to compare against"
+
+  - id: platform_summary_accuracy
+    criterion: "Does the Platform summary line in each file's Context Index / Project Context section accurately name the project's real stack, rather than a generic or placeholder string?"
+    reference: "the stack: block of the copy's .context-index/platform-context.yaml (language: JavaScript (ESM), runtime: Node.js 20)"
+    met_when: "the Platform summary line in both files names JavaScript (ESM) and Node.js, sourced from platform-context.yaml rather than left generic"
+    not_met_when: "the Platform summary line is a generic placeholder (e.g. 'see platform-context.yaml') or contradicts platform-context.yaml's declared stack"
+    unknown_when: "the copy's platform-context.yaml is absent, so no comparison is possible"
+
+layer3_max_points: 25
+required_element_points: 10
+judged_criterion_points: 15
+unknown_policy: "exclude_from_denominator"
+not_applicable_policy: "exclude_from_denominator"
+insufficient_evidence_threshold_percent: 40

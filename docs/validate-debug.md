@@ -92,6 +92,8 @@ Use `--layer <N>` to run only a specific evaluation layer (1-4), or `--configure
 
 See the [Skill Reference](skill-reference.md) for full details on evaluation layers and rubric configuration.
 
+**Working on adev itself, not building with it?** This section is about scoring *your* implementation against *your* spec. If you're changing an adev skill and need to know how *adev's own skills* get regression-tested, see [Eval Harness](eval-harness.md) instead — a related but separate system that happens to reuse the same scoring engine.
+
 ## Recover
 
 **Skill:** `/adev:recover`

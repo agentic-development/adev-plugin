@@ -1,0 +1,103 @@
+# Layer 3 rubric for /adev:repomap, scored against the skill-regression
+# fixture (tests/evals/skill-regression/). Field shapes verbatim from
+# skills/eval/default-rubric.yaml. All values flat.
+#
+# Scored input: .context-index/hygiene/dependency-graph.json and
+# .context-index/hygiene/symbol-ranks.json, written by a scenario run pinned
+# to --mode tree-sitter (see scenarios/repomap.md) — the only mode that
+# writes both JSON artifacts; runRegexMode writes repo-map.md alone.
+#
+# Citations: skill-regression:PV-03/KC-03 (orphan-source-file), PV-04/KC-04
+# (dead-export). repomap has no per-file "orphan list" or "dead-export list"
+# of its own — those are codehealth's language — so each element is phrased
+# against the reference-count surface repomap actually produces:
+# symbol-ranks.json's per-symbol `references` field. Every met_when is
+# phrased against catalog.yaml's detect_when/must_not_flag_when finding,
+# never against the fixture's in-file answer-key label (see issue-dzxjoa,
+# tracked separately, not resolved here).
+#
+# Spec: .context-index/specs/features/eval-harness/rubric-set-change-imminent.spec.md
+#
+# baseline_exception_issue: the module_slug_from_manifest criterion's baseline
+# authoring run found lib/repomap/graph.mjs's resolveModule building modPath + '/'
+# unconditionally, which double-slashes a directory-style manifest path that
+# already ends in '/' (this project's universal convention) and never matches —
+# every file under such a path gets module: null. Recorded met per the
+# baseline-fidelity contract's plainly-wrong-behavior exit; filed as
+# adev-plugin-pyy6. A rubric-file-level key, not a per-criterion one, since the
+# shared contract's RUBRIC_EXCEPTION_ID_MALFORMED check reads it from the
+# document root.
+
+rubric_id: "skill-regression-repomap"
+version: 1
+layer: 3
+verdict_values: "met | not_met | unknown (judged criteria) | not_applicable (deterministic elements)"
+skill: repomap
+scenario: repomap
+baseline_exception_issue: "adev-plugin-pyy6"
+
+required_elements:
+  - id: orphan_symbol_zero_references
+    description: "The planted orphan source file's sole export shows zero references in the symbol index"
+    source: "skill-regression:PV-03"
+    met_when: "symbol-ranks.json lists orphanedTotalCents (src/orders/orphaned-helper.mjs) with references: 0, the reference-count surface for catalog.yaml PV-03's detect_when (unreachable from src/index.mjs)"
+    not_applicable_when: "never — the fixture always plants this defect"
+
+  - id: orphan_known_clean_nonzero_references
+    description: "The specificity twin of PV-03: an export actually imported must show a nonzero reference count"
+    source: "skill-regression:KC-03"
+    met_when: "symbol-ranks.json lists calculateRate (src/shipping/rates.mjs) with references greater than 0, since src/index.mjs imports it — per catalog.yaml KC-03's must_not_flag_when"
+    not_applicable_when: "never — the fixture always ships this known-clean twin"
+
+  - id: dead_export_symbol_zero_references
+    description: "The planted dead export shows zero references in the symbol index"
+    source: "skill-regression:PV-04"
+    met_when: "symbol-ranks.json lists formatLegacyTotal (src/shipping/rates.mjs) with references: 0, the reference-count surface for catalog.yaml PV-04's detect_when"
+    not_applicable_when: "never — the fixture always plants this defect"
+
+  - id: dead_export_known_clean_nonzero_references
+    description: "The specificity twin of PV-04: an export referenced elsewhere must show a nonzero reference count"
+    source: "skill-regression:KC-04"
+    met_when: "symbol-ranks.json lists createOrder (src/orders/create-order.mjs) with references greater than 0, since src/index.mjs and tests/create-order.test.mjs both reference it — per catalog.yaml KC-04's must_not_flag_when"
+    not_applicable_when: "never — the fixture always ships this known-clean twin"
+
+  - id: both_json_artifacts_written
+    description: "repomap writes both JSON artifacts the tree-sitter mode produces, per Step 6 of skills/repomap/SKILL.md"
+    source: "the two artifacts repomap writes to .context-index/hygiene/ in the scenario copy"
+    met_when: "both .context-index/hygiene/dependency-graph.json and .context-index/hygiene/symbol-ranks.json exist and each parses as JSON"
+    not_applicable_when: "never — the pinned --mode tree-sitter run always writes both"
+
+  - id: shared_staleness_markers_consistent
+    description: "The three generated artifacts share one Generated timestamp and Commit hash, per Step 6's preamble"
+    source: "repo-map.md, dependency-graph.json and symbol-ranks.json's Generated/Commit fields"
+    met_when: "all three artifacts declare the identical Generated timestamp and the identical Commit hash"
+    not_applicable_when: "never — Step 6 requires all three to share both markers"
+
+quality_dimensions:
+  - id: symbol_kind_and_line_accuracy
+    criterion: "Does symbol-ranks.json record kind: function and the correct definition line number for calculateRate and createOrder, matching where each is actually defined in src/shipping/rates.mjs and src/orders/create-order.mjs?"
+    reference: "the actual export statements in src/shipping/rates.mjs and src/orders/create-order.mjs"
+    met_when: "both symbols' kind and line fields match their real definition"
+    not_met_when: "at least one symbol's kind or line field is wrong"
+    unknown_when: "symbol-ranks.json omits a kind or line field for either symbol entirely"
+
+  - id: module_slug_from_manifest
+    criterion: "Are dependency-graph.json's module keys derived from manifest.yaml's modules[].slug (orders, shipping) rather than a differently-shaped path-inferred slug?"
+    reference: "manifest.yaml's modules[] list in the scenario copy"
+    met_when: "the module keys present in dependency-graph.json are exactly orders and shipping"
+    not_met_when: "at least one module key does not match a manifest.yaml modules[].slug"
+    unknown_when: "dependency-graph.json declares no modules at all"
+
+  - id: reference_count_includes_test_and_hook_scope
+    criterion: "Does the reference count for createOrder include tests/create-order.test.mjs in its scope, per Step 4's instruction to count references across test files and hook scripts, not production source alone?"
+    reference: "Step 4 (Count References) in skills/repomap/SKILL.md"
+    met_when: "createOrder's references count is at least 2 (src/index.mjs plus tests/create-order.test.mjs)"
+    not_met_when: "createOrder's references count is 1 or fewer, indicating the test file was excluded from the count"
+    unknown_when: "symbol-ranks.json does not carry a references field for createOrder at all"
+
+layer3_max_points: 25
+required_element_points: 10
+judged_criterion_points: 15
+unknown_policy: "exclude_from_denominator"
+not_applicable_policy: "exclude_from_denominator"
+insufficient_evidence_threshold_percent: 40
