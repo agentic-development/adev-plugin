@@ -1,0 +1,1 @@
+{"event":"debug_intervention","kind":"debug","note":"Step 5b unconditionally skipped for --module mode, contradicting the rubric which requires 5b-4 Module Map Append to still run when product.md exists; qualified the skip by product.md absence.","ts":"2026-09-07T11:59:20.512Z"}

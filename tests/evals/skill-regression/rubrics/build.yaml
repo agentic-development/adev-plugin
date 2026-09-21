@@ -1,0 +1,140 @@
+# Layer 3 rubric for /adev:build, scored against the skill-regression
+# fixture (tests/evals/skill-regression/). Field shapes verbatim from
+# skills/eval/default-rubric.yaml — the exemplar. All values flat: no nested
+# maps, since the repo's minimal YAML readers cannot represent them.
+#
+# Scored input: the pipeline transcript (the build-state file's steps array,
+# .context-index/lifecycle-state/<slug>.json, per skills/build/SKILL.md's
+# Build State section) and the fact that each dispatched stage left its own
+# artifact — never the QUALITY of any of those six artifacts, which is each
+# stage's own rubric's job. This is one of this tier's two ORCHESTRATOR
+# rubrics (rubrics/work.yaml is the other): build does not produce an
+# artifact of its own, it chains five other skills' full dispatch (six
+# stages, since --full adds specify) and its rubric asserts on the
+# DECISION — did each stage run, in gate-enforced order, and leave the
+# evidence that it ran — never on what any child skill wrote.
+#
+# No fixture catalog citation of any kind anywhere in this file's raw text
+# (the exact marker string is deliberately not spelled out here — naming it
+# in this comment would make this file fail its own no-citation check), and
+# no "artifact:"-prefixed source at all (a per-file predicate, not
+# RUBRIC_TWIN_UNCITED, which only ever expresses "a PV cited without its
+# twin" and says nothing about "cites nothing"). Both absences are
+# deliberate: the ten planted catalog classes describe artifacts a
+# DETECTOR reads, none of which describes a six-stage dispatch sequence,
+# and scoring this orchestrator against a downstream stage's own artifact
+# path would double-count that stage's own rubric and mark this rubric
+# not_met for a child skill's regression — the exact hazard
+# rubric-set-core-lifecycle.spec.md's "The two orchestrators score
+# routing, not artifacts" section names. Every source below is therefore
+# plain descriptive prose over the ORCHESTRATOR's own state (the
+# build-state file, the dispatch sequence, the pipeline transcript) —
+# never an "artifact:"-prefixed pointer at a child stage's own file,
+# following rubrics/route.yaml's own precedent (its sources are "the
+# routing table", "the <plan-stem>.routing.json sidecar" — plain prose,
+# not "artifact:"-prefixed) even though route is not itself an
+# orchestrator.
+#
+# Scenario target: scenarios/build.md invokes `/adev:build --full` against
+# a brand-new "calculate a shipping rate" capability — the same
+# charter-scope-escape target scenarios/specify.md and scenarios/plan.md
+# each independently author into their own disposable copy. This is
+# deliberate, not incidental: shipping-rates.spec.md already exists in the
+# fixture project tree, and skills/build/SKILL.md:377's Step 0 skip
+# condition ("Spec file exists on disk -> skip") would skip specify
+# entirely against that path, defeating the one property --full exists to
+# exercise — the spec-writing step landing INSIDE the scenario's
+# before/after window, per rubric-set-core-lifecycle.spec.md's Gates
+# block. A fresh, not-yet-existing spec path is what makes Step 0 dispatch
+# rather than skip.
+#
+# ARCHITECTURE BOUNDARY, BOTH DIRECTIONS (rubric-set-core-lifecycle.
+# plan.md Task 7's own note): this rubric asserts the EXISTING lifecycle
+# order (skills/build/SKILL.md's Build Pipeline section, Steps 0-5) and
+# changing that order requires human approval, per this repo's
+# CLAUDE.md Architecture Boundaries table. When an approved reordering
+# lands, this file goes red — that is the expected, correct output of the
+# approval, not a regression, and the same-change discipline that applies
+# is a version bump here alongside the SKILL.md edit, mirroring Task 2's
+# same-commit rule for covers_skills.
+#
+# Spec: .context-index/specs/features/eval-harness/rubric-set-core-lifecycle.spec.md
+
+rubric_id: "skill-regression-build"
+version: 1
+layer: 3
+verdict_values: "met | not_met | unknown (judged criteria) | not_applicable (deterministic elements)"
+skill: build
+scenario: build
+
+required_elements:
+  - id: stage_specify_dispatched_and_completed
+    description: "Step 0 (Specify) dispatches a fresh subagent and the build-state file records it completed"
+    source: "the build-state file's steps array (.context-index/lifecycle-state/<slug>.json)"
+    met_when: "the steps array's first entry names \"specify\", status \"completed\" (never \"skipped\" — the fresh spec path has no pre-existing file and no completed lifecycle-log event, so skills/build/SKILL.md:377's three skip conditions all fail open), and a new .spec.md exists on disk at the path that entry implies"
+    not_applicable_when: "never — --full always runs Step 0 against a spec path that does not yet exist"
+
+  - id: stage_review_dispatched_and_completed
+    description: "Step 1 (Review) dispatches after specify and the build-state file records a verdict"
+    source: "the build-state file's steps array"
+    met_when: "the steps array carries a \"review\" entry after the \"specify\" entry, status \"completed\" (or, if a BLOCK verdict triggered the auto-retry loop per skills/build/SKILL.md:422, the loop's own terminal entry), and the loop is never silently abandoned mid-cycle"
+    not_applicable_when: "never — --full never skips review"
+
+  - id: stage_plan_dispatched_and_completed
+    description: "Step 2 (Plan) dispatches after review passes and the build-state file records it completed"
+    source: "the build-state file's steps array"
+    met_when: "the steps array carries a \"plan\" entry after the \"review\" entry, status \"completed\", and a new .plan.md exists on disk for the same spec"
+    not_applicable_when: "never — a PASS or PASS_WITH_NOTES review always reaches Step 2"
+
+  - id: stage_route_dispatched_and_completed
+    description: "Step 3 (Route) dispatches after plan and the build-state file records it completed"
+    source: "the build-state file's steps array"
+    met_when: "the steps array carries a \"route\" entry after the \"plan\" entry, status \"completed\" (this scenario does not pass --no-route), and a routing sidecar exists on disk for the same plan"
+    not_applicable_when: "the scenario invocation passes --no-route — not the case here"
+
+  - id: stage_implement_dispatched_and_completed
+    description: "Step 4 (Implement) dispatches after plan (or route) and the build-state file records it completed"
+    source: "the build-state file's steps array"
+    met_when: "the steps array carries an \"implement\" entry after the \"plan\"/\"route\" entries, status \"completed\", and the copy's git log carries at least one commit per plan task, per skills/build/SKILL.md's Step 4"
+    not_applicable_when: "never — --full always reaches Step 4 once plan passes"
+
+  - id: stage_validate_dispatched_and_completed
+    description: "Step 5 (Validate) dispatches after implement and the build-state file records its terminal verdict"
+    source: "the build-state file's steps array"
+    met_when: "the steps array's final entry names \"validate\", status \"completed\", carrying one of PASS, PASS_WITH_WARNINGS or FAIL per skills/build/SKILL.md's Step 5 — any of the three ends the pipeline's dispatch obligation, since validation FAIL does not retroactively block a build that already implemented"
+    not_applicable_when: "never — Step 5 has no skip condition"
+
+  - id: gate_sequencing_enforced_no_reordering
+    description: "No stage's build-state entry is marked completed before its predecessor's"
+    source: "the build-state file's steps array, cross-checked against each entry's timestamp"
+    met_when: "the six steps array entries appear in the order specify, review, plan, route, implement, validate, each entry's timestamp strictly later than its predecessor's, per requireGate's contract (skills/build/SKILL.md's \"Gate Between Sub-Skill Dispatches\" section) that a step never dispatches before its prior is resolved completed with a passing verdict"
+    not_applicable_when: "never — requireGate runs before every dispatch in this pipeline"
+
+quality_dimensions:
+  - id: build_state_reflects_actual_progress
+    criterion: "Does the persisted build-state JSON's steps array accurately reflect the pipeline's real step-by-step progress — six entries, monotonically increasing timestamps, statuses matching what each subagent actually reported — rather than a coarse end-of-run summary?"
+    reference: "Build State, Incremental Persistence in skills/build/SKILL.md"
+    met_when: "the build-state file was written after each step completed (six distinct writes inferable from six distinct timestamps), not only once at the end"
+    not_met_when: "the build-state file carries fewer than six distinct step entries, or all six share one timestamp — evidence of a single end-of-run write rather than incremental persistence"
+    unknown_when: "the build-state file cannot be located under .context-index/lifecycle-state/ in the copy"
+
+  - id: dispatch_isolation_respected
+    criterion: "Was each of the six stages dispatched as a fresh Agent() subagent per the Subagent Dispatch Model, rather than inlined or simulated by the orchestrator itself?"
+    reference: "Subagent Dispatch Model in skills/build/SKILL.md"
+    met_when: "the pipeline transcript shows six distinct Agent() dispatches, each with run_in_background: false and its own context-isolated prompt, per skills/build/SKILL.md's Dispatch Optimism and Context Packet Assembly sections"
+    not_met_when: "any stage's work appears to have been performed inline by the orchestrator's own context rather than a dispatched subagent"
+    unknown_when: "the transcript does not distinguish orchestrator prose from subagent dispatch calls clearly enough to tell"
+
+  - id: transcript_names_every_stage_verdict
+    criterion: "Does the summary presented to the user, at the end of the run, name all six stages and each one's actual verdict — not merely 'build complete'?"
+    reference: "One-Step-Per-Invocation Dispatch in skills/build/SKILL.md"
+    met_when: "the final summary lists all six stage names alongside each stage's recorded status/verdict, so a reader can tell which stage did what without re-deriving it from the build-state file"
+    not_met_when: "the final summary reports only a single aggregate result with no per-stage breakdown"
+    unknown_when: "the run halts mid-pipeline (a stage failure) before any final summary is produced"
+
+layer3_max_points: 25
+required_element_points: 10
+judged_criterion_points: 15
+unknown_policy: "exclude_from_denominator"
+not_applicable_policy: "exclude_from_denominator"
+insufficient_evidence_threshold_percent: 40

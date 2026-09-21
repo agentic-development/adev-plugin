@@ -13,10 +13,10 @@ _(no charter Business Intent on file)_
 
 | Symbol | Kind | Location | Score |
 |--------|------|----------|-------|
-| `detectGaming` | function | `skills/write-test/detect-gaming.mjs`:155 | 0.0008 |
-| `detectFramework` | function | `skills/write-test/detect-framework.mjs`:107 | 0.0006 |
-| `writeHandoff` | function | `skills/write-test/write-handoff.mjs`:68 | 0.0003 |
-| `verifyHandoff` | function | `skills/write-test/write-handoff.mjs`:191 | 0.0003 |
+| `detectGaming` | function | `skills/write-test/scripts/detect-gaming.mjs`:155 | 0.0008 |
+| `detectFramework` | function | `skills/write-test/scripts/detect-framework.mjs`:107 | 0.0006 |
+| `writeHandoff` | function | `skills/write-test/scripts/write-handoff.mjs`:68 | 0.0003 |
+| `verifyHandoff` | function | `skills/write-test/scripts/write-handoff.mjs`:191 | 0.0003 |
 
 ## Dependencies
 

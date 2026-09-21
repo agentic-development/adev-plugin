@@ -1,8 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { readSkillSurface } from "../helpers.mjs";
 
-const skill = readFileSync(new URL("../../skills/plan/SKILL.md", import.meta.url), "utf8");
+const skill = readSkillSurface("plan");
 
 test("plan SKILL.md documents granularity-driven Tests: field emission (+2 more contract assertions)", () => {
   // plan SKILL.md documents granularity-driven Tests: field emission

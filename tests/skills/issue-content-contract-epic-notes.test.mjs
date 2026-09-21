@@ -7,9 +7,9 @@ import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { readFileSync } from "node:fs";
 
-const PLAN_SKILL = "skills/plan/SKILL.md";
-const FEATURE_MODE = "skills/plan/feature-mode.md";
-const RELEASE_MODE = "skills/plan/release-mode.md";
+const PLAN_SKILL = "skills/plan/references/steps/step-7-execution-handoff.md";
+const FEATURE_MODE = "skills/plan/references/feature-mode.md";
+const RELEASE_MODE = "skills/plan/references/release-mode.md";
 const read = (p) => readFileSync(p, "utf8");
 
 function issueCreationSubsection(md) {

@@ -1,0 +1,144 @@
+# Layer 3 rubric for /adev:hygiene, scored against the skill-regression
+# fixture (tests/evals/skill-regression/). Field shapes verbatim from
+# skills/eval/default-rubric.yaml — the exemplar. All values flat: no nested
+# maps, since the repo's minimal YAML readers cannot represent them.
+#
+# Scored input: the audit report and its checklists, written to
+# .context-index/hygiene/drift-report.md after a scenario run against a
+# temp-tree copy of tests/evals/skill-regression/project (see scenarios/hygiene.md).
+#
+# Citations: skill-regression:PV-01/KC-01 (spec-code-drift), PV-02/KC-02
+# (stale-spec-frontmatter), PV-03/KC-03 (orphan-source-file), PV-09/KC-09
+# (missing-issue-binding) — the widest citation set in this tier: four
+# classes, eight ids, four twin pairs. Every met_when below is phrased
+# against catalog.yaml's detect_when/must_not_flag_when clause — the finding
+# a correct audit produces — never against the fixture's in-file answer-key
+# label, so the element survives the fixture's own redaction with no edit.
+#
+# Difference 1 (this tier's whole reason for existing): where skills/hygiene/
+# SKILL.md's own procedure and this rubric's judged criteria disagree about
+# HOW a finding is produced (which audit pass, which mechanism), the rubric
+# follows the governing spec named in each criterion's reference, and any
+# disagreement discovered when a scenario is actually run is the finding.
+#
+# BASELINE-FIDELITY FINDING (Task 3): pv01_spec_code_drift_detected and
+# kc01_spec_code_drift_not_flagged, plus their PV-02/KC-02 counterparts, do
+# NOT run clean against skills/hygiene/SKILL.md's real mechanism. Audit Pass
+# 17 (Code Drift) is a MECHANICAL reader of the spec's drift_detected
+# frontmatter flag and code_drift_detected JSONL event — never a semantic
+# read-the-spec-and-the-code comparison (that is /adev:validate Check 2's
+# job) — and the committed fixture sets neither for shipping-rates.spec.md.
+# No audit pass performs PV-02's spec-updated-vs-source-changed-date
+# comparison either. Filed as adev-plugin-y8kj, pinned below. The PV-09/
+# KC-09 pair had NO such gap — Audit Pass 15's "Orphaned plans" check does
+# produce a real, closely-matching finding (epic-2 carries no planRef
+# matching shipping-rates.plan.md) — so those two elements were reworded to
+# describe that actual finding shape instead, in this same commit.
+#
+# Spec: .context-index/specs/features/eval-harness/rubric-set-core-lifecycle.spec.md
+
+rubric_id: "skill-regression-hygiene"
+version: 1
+layer: 3
+verdict_values: "met | not_met | unknown (judged criteria) | not_applicable (deterministic elements)"
+skill: hygiene
+scenario: hygiene
+spec_behaviour_gap_issue: "adev-plugin-y8kj"
+
+required_elements:
+  - id: pv01_spec_code_drift_detected
+    description: "The report names the planted behavioral drift between shipping-rates.spec.md and its implementation"
+    source: "skill-regression:PV-01"
+    met_when: "the report names shipping-rates.spec.md behavior B7 as a rule src/shipping/rates.mjs does not implement, per catalog.yaml PV-01's detect_when"
+    not_applicable_when: "never — the fixture always plants this defect"
+
+  - id: kc01_spec_code_drift_not_flagged
+    description: "The specificity twin of PV-01: a spec behavior the code correctly implements must not be flagged as drifted"
+    source: "skill-regression:KC-01"
+    met_when: "the report does not name create-order.spec.md behavior B2 as drifted, given src/orders/create-order.mjs defaults discountCents to 0 exactly as worded, per catalog.yaml KC-01's must_not_flag_when"
+    not_applicable_when: "never — the fixture always ships this known-clean twin"
+
+  - id: pv02_stale_frontmatter_detected
+    description: "The report names the planted stale-frontmatter spec"
+    source: "skill-regression:PV-02"
+    met_when: "the report names shipping-rates.spec.md as stale against src/shipping/rates.mjs, whose recorded change date is sixteen days newer, per catalog.yaml PV-02's detect_when"
+    not_applicable_when: "never — the fixture always plants this defect"
+
+  - id: kc02_stale_frontmatter_not_flagged
+    description: "The specificity twin of PV-02: a spec whose frontmatter postdates its implementation must not be flagged as stale"
+    source: "skill-regression:KC-02"
+    met_when: "the report does not name create-order.spec.md as stale, given its updated date postdates src/orders/create-order.mjs's recorded change date, per catalog.yaml KC-02's must_not_flag_when"
+    not_applicable_when: "never — the fixture always ships this known-clean twin"
+
+  - id: pv03_orphan_source_file_detected
+    description: "The report names the planted orphan source file"
+    source: "skill-regression:PV-03"
+    met_when: "the report names src/orders/orphaned-helper.mjs as unreachable from src/index.mjs, per catalog.yaml PV-03's detect_when"
+    not_applicable_when: "never — the fixture always plants this defect"
+
+  - id: kc03_orphan_source_file_not_flagged
+    description: "The specificity twin of PV-03: a file reachable from the entry point must not be flagged as an orphan"
+    source: "skill-regression:KC-03"
+    met_when: "the report does not name src/shipping/rates.mjs as an orphan, given src/index.mjs imports calculateRate from it, per catalog.yaml KC-03's must_not_flag_when"
+    not_applicable_when: "never — the fixture always ships this known-clean twin"
+
+  - id: pv09_missing_issue_binding_detected
+    description: "The Issue Board Audit's Orphaned plans check names the planted unbound plan"
+    source: "skill-regression:PV-09"
+    met_when: "the Issue Board Audit section's Orphaned plans check names shipping-rates.plan.md, since epic-2 — the board's only entry for the shipping-rates capability, anchored by catalog.yaml PV-09 at \"id\": \"epic-2\" — carries no planRef matching it"
+    not_applicable_when: "never — the fixture always plants this defect"
+
+  - id: kc09_missing_issue_binding_not_flagged
+    description: "The specificity twin of PV-09: a plan whose epic DOES carry a matching planRef must not be flagged as orphaned"
+    source: "skill-regression:KC-09"
+    met_when: "the Issue Board Audit section's Orphaned plans check does not name create-order.plan.md, since epic-1's planRef matches it exactly, per catalog.yaml KC-09's must_not_flag_when"
+    not_applicable_when: "never — the fixture always ships this known-clean twin"
+
+  - id: report_and_checklist_emitted
+    description: "hygiene writes the audit report with a per-pass Summary table and an actionable Priority Actions checklist"
+    source: "the audit report written to .context-index/hygiene/drift-report.md in the scenario copy"
+    met_when: "the report's Summary table lists every conducted audit pass with a Status column and an Issues column, and the Priority Actions section renders as a numbered checklist of concrete next steps"
+    not_applicable_when: "never — hygiene always writes this report on completion, per skills/hygiene/SKILL.md's Report Format section"
+
+quality_dimensions:
+  - id: code_drift_procedure_fidelity
+    criterion: "Does the spec-code-drift finding trace to the documented Code Drift procedure — the spec's drift_detected frontmatter flag and its lifecycle JSONL code_drift_detected event — rather than an ad hoc textual comparison the report cannot reproduce?"
+    reference: "Audit Pass 17: Code Drift in skills/hygiene/SKILL.md"
+    met_when: "the finding's evidence names the drift_detected flag or the code_drift_detected event the documented procedure reads"
+    not_met_when: "the finding is reported with no reference to either input the documented procedure names"
+    unknown_when: "the report gives no evidence trail for the finding at all"
+
+  - id: code_health_dispatch_fidelity
+    criterion: "Does the orphan-source-file finding trace to a dispatched /adev:codehealth report rather than a re-implemented scan inside hygiene itself?"
+    reference: "Audit Pass 13: Code Health in skills/hygiene/SKILL.md"
+    met_when: "the finding cites the codehealth report path or its Orphan File Detection section as the source"
+    not_met_when: "the finding presents the orphan file with no reference to a dispatched codehealth run"
+    unknown_when: "Audit Pass 13 itself reports SKIP because repomap artifacts are missing or stale"
+
+  - id: issue_board_audit_completeness
+    criterion: "Does the missing-issue-binding finding land under one of Audit Pass 15's six named checks, with the offending spec or epic id cited, rather than as unclassified prose?"
+    reference: "Audit Pass 15: Issue Board Audit in skills/hygiene/SKILL.md"
+    met_when: "the finding appears in the Issue Board Audit section's table, naming epic-2 or shipping-rates.spec.md"
+    not_met_when: "the finding is reported outside the Issue Board Audit section, or names neither epic-2 nor shipping-rates.spec.md"
+    unknown_when: "Audit Pass 15 itself reports SKIP because tasks.backend is not configured in the copy's manifest"
+
+  - id: summary_table_completeness
+    criterion: "Does the report's Summary table list every audit pass the run actually conducted, each with a Status and an Issues column, matching the documented shape?"
+    reference: "Report Format in skills/hygiene/SKILL.md"
+    met_when: "every pass row in the Summary table carries a Status value and a non-empty Issues cell (including the literal 0 issues)"
+    not_met_when: "at least one conducted pass is absent from the Summary table, or a row omits its Status or Issues cell"
+    unknown_when: "the report was not written at all"
+
+  - id: priority_actions_actionable
+    criterion: "Does each Priority Actions item name a concrete next command, file, or artifact a developer could act on without opening the full report?"
+    reference: "Report Format in skills/hygiene/SKILL.md"
+    met_when: "every Priority Actions item names a specific command, path, or spec rather than a generic instruction like 'review issues'"
+    not_met_when: "at least one Priority Actions item is generic enough to apply to any finding"
+    unknown_when: "the Priority Actions section is empty because every pass reported PASS"
+
+layer3_max_points: 25
+required_element_points: 10
+judged_criterion_points: 15
+unknown_policy: "exclude_from_denominator"
+not_applicable_policy: "exclude_from_denominator"
+insufficient_evidence_threshold_percent: 40

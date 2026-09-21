@@ -11,7 +11,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { PLUGIN_ROOT } from "../helpers.mjs";
+import { PLUGIN_ROOT, readSkillSurface } from "../helpers.mjs";
 
 const BUILD_SKILL_PATH = join(PLUGIN_ROOT, "skills", "build", "SKILL.md");
 const STEP4_COMPANION_PATH = join(
@@ -22,12 +22,12 @@ const STEP4_COMPANION_PATH = join(
 );
 
 test("/adev:build Step 1 (review-specs) has a Rigor tier propagation clause", () => {
-  const md = readFileSync(BUILD_SKILL_PATH, "utf8");
+  const md = readSkillSurface("build");
   assert.match(md, /Rigor tier propagation.*review-specs/s);
 });
 
 test("/adev:build Step 5 (validate) has a Rigor tier propagation clause", () => {
-  const md = readFileSync(BUILD_SKILL_PATH, "utf8");
+  const md = readSkillSurface("build");
   assert.match(md, /Rigor tier propagation.*validate/s);
 });
 

@@ -79,10 +79,10 @@ sub-cent component.
 
 `tests/rates.test.mjs` covers B1 through B6, one `node:test` case per behavior,
 with the zone table read from the module rather than hardcoded. **B7 is not
-covered.** That gap is the visible half of the planted `spec-code-drift`
-violation: this document still specifies half-up rounding that
+covered.** That gap is the visible half of a divergence between this document
+and the implementation: it still specifies half-up rounding that
 `src/shipping/rates.mjs` no longer performs, so a test asserting B7 would either
-fail or encode the drifted behaviour as correct.
+fail or encode the current behaviour as correct.
 
 ## Traceability
 

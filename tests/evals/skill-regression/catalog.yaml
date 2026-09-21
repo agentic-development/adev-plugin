@@ -55,7 +55,7 @@ planted_violations:
     path: "src/orders/orphaned-helper.mjs"
     class: "orphan-source-file"
     anchor: "export function orphanedTotalCents"
-    covers_skills: "codehealth, repomap"
+    covers_skills: "codehealth, hygiene, repomap"
     twin: "KC-03"
     detect_when: "the orphan list names src/orders/orphaned-helper.mjs as unreachable from src/index.mjs"
 
@@ -141,7 +141,7 @@ known_clean:
     path: "src/shipping/rates.mjs"
     class: "orphan-source-file"
     anchor: "function zoneBaseCents"
-    covers_skills: "codehealth, repomap"
+    covers_skills: "codehealth, hygiene, repomap"
     twin: "PV-03"
     must_not_flag_when: "src/shipping/rates.mjs appears in the orphan list, when src/index.mjs imports calculateRate from it"
 

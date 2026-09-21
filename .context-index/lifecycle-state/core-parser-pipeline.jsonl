@@ -3,3 +3,4 @@
 {"event":"code_drift_detected","drift_source":"tests/repomap/parse.test.mjs","drift_at":"2026-05-18T22:24:57.941Z","ts":"2026-05-18T22:24:57.942Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"lib/repomap/index.mjs","drift_at":"2026-05-18T22:25:03.405Z","ts":"2026-05-18T22:25:03.405Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"debug_intervention","kind":"debug","note":"lib/repomap/ was fully built+tested but no SKILL.md ever called it. Added adev repomap generate/check-deps CLI verb wrapping it; rewired skills/repomap/SKILL.md to invoke the verb instead of hand-grepping.","ts":"2026-08-24T07:38:36.230Z"}
+{"event":"debug_intervention","kind":"debug","note":"getCommitHash() ran git rev-parse against ambient process.cwd() instead of the analyzed root; added an explicit cwd param, passed the root at all 3 call sites.","ts":"2026-09-07T12:03:36.676Z"}

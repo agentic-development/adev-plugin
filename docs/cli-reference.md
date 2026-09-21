@@ -56,6 +56,7 @@ This file is the CLI counterpart to [`skill-reference.md`](skill-reference.md) (
 | `retro` | Gather session activity for a retrospective window | `lib/cli/retro.mjs` |
 | `heuristics` | Retrieve/sign/write/rekey project heuristics | `lib/cli/heuristics.mjs` |
 | `domain` | Resolve a module's domain and load domain config | `lib/cli/domain.mjs` |
+| `implementation-mode` | Resolve the effective `implementation_mode` config | `lib/cli/implementation-mode.mjs` |
 | `cost` | Aggregate per-spec/per-step token + USD totals | `lib/cli/cost.mjs` |
 | `worktree` | Manage adev-managed git worktrees for parallel execution | `lib/cli/worktree.mjs` |
 | `parallel` | Decision helpers for `/adev:implement --parallel` orchestration | `lib/cli/parallel.mjs` |
@@ -75,14 +76,25 @@ Invoked via `npx @adev-org/adev-cli <verb>` (before install) or `adev <verb>` (a
 
 **Purpose:** First-time plugin setup. Copies the plugin into the provider's plugin cache and makes hooks executable.
 
-**Signature:** `install [--provider claude-code|opencode|codex]...`
+**Signature:** `install [--provider claude-code|opencode|codex]... [--config-dir <path>]`
 
 Repeat `--provider` to install for multiple providers. Default is `claude-code`.
+
+`--config-dir <path>` targets a specific Claude Code config directory instead of
+the default `~/.claude` — for machines running more than one. It sets
+`CLAUDE_CONFIG_DIR` for the run, so the plugin cache, `installed_plugins.json`,
+and the user-scope `settings.json` all land in that directory (and it becomes
+the user-scope consent boundary). The path is used verbatim: no `.claude`
+segment is appended. If `CLAUDE_CONFIG_DIR` is already exported, adev honors it
+without the flag. A relative or blank value is refused
+(`CLAUDE_HOME_UNRESOLVED`) rather than resolved against the current repo. The
+flag is also accepted by `upgrade` and `uninstall`.
 
 **Example:**
 ```
 npx @adev-org/adev-cli install
 npx @adev-org/adev-cli install --provider opencode --provider codex
+npx @adev-org/adev-cli install --config-dir ~/.claude-work
 ```
 
 **Implementation:** `cli/index.mjs::cmdInstall`. After install, run `/adev:init` inside your AI assistant.
@@ -91,7 +103,7 @@ npx @adev-org/adev-cli install --provider opencode --provider codex
 
 **Purpose:** Update an existing install to the latest version (preserves project context).
 
-**Signature:** `upgrade [--provider <name>]...`
+**Signature:** `upgrade [--provider <name>]... [--config-dir <path>]`
 
 **Example:**
 ```
@@ -104,7 +116,7 @@ npx @adev-org/adev-cli upgrade
 
 **Purpose:** Remove the plugin from the selected providers.
 
-**Signature:** `uninstall [--provider <name>]...`
+**Signature:** `uninstall [--provider <name>]... [--config-dir <path>]`
 
 **Example:**
 ```
@@ -288,9 +300,21 @@ adev boundaries check --json
 governance materialize --registry <review|diagnostics|gates> [--dry-run] [--json]
 governance drift [--registry <validate|review|diagnostics|gates>] [--json]
 governance migrate-gates [--dry-run] [--json]
+governance scaffold --registry <review|validate> --entries <json|@path>
 ```
 
 `validate.yaml` and `boundaries.yaml` are **exempt** (DDR-1): both are already explicit single-source registries, so naming either is refused. See [Governance](governance.md#materialized-registries-and-the-materialized_at-marker).
+
+`governance scaffold` writes an operator's explicit registry selection as a **fresh**
+`review.yaml` or `validate.yaml` — the write path `/adev:init` Step 7c/Step 7d.0 call once the
+operator has chosen which reviewers/checks to enable (`governance-opt-in-dispatch.spec.md`). It
+refuses to run against a file that already exists (`GOVERNANCE_SCAFFOLD_EXISTS`) — it is for first
+scaffold only, never an overwrite path. `--entries` takes a JSON array literal or `@path` to a
+JSON file; an empty array (`[]` or `@path` naming an empty array) is a legitimate, first-class
+selection and writes a literal `reviewers: []` / `checks: []` rather than leaving the file absent.
+`review.yaml` is stamped with the `materialized_at` marker unconditionally, including on an empty
+selection; `validate.yaml` is never marked (it is marker-exempt, matching `materialize`'s own
+exemption above).
 
 Materialization is **write-once**: a second run preserves the original stamp verbatim, so an unchanged effective set produces byte-identical output. Entries already on disk keep their positions and their bytes; contributed entries are appended; comments and sibling keys survive. Exit 1 covers an argument error, an unknown or exempt registry, a containment refusal, and the two write refusals `MATERIALIZE_LOAD_INCOMPLETE` (a row failed to load) and `MATERIALIZE_WOULD_DROP` (a row would be lost).
 
@@ -616,7 +640,7 @@ adev coordination scan --json --owner "$USER/local"
 | Subcommand | Purpose |
 |---|---|
 | `board [--milestone <name>] [--json]` | Print the whole board as canonical markdown on **stdout**. Read-only — never writes a file. `--milestone` restricts the epics section; `--json` emits `{ version, epics, issues }` unrendered |
-| `create <title> [--type <t>] [--priority 0-4] [--epic <id>] [--plan-ref <p>] [--spec-ref <p>] [--parent <id>] [--notes <text>] [--next-action <text>] [--id <id>] [--json]` | Create one board-granularity item in the **issue store**. Prints `Created <type> <id>: <title>`. `--type` defaults to `task`, `--priority` to `2`. **`--milestone` is refused here (exit 1)** — see `epic` |
+| `create <title> [--type <t>] [--priority 0-4] [--epic <id>] [--plan-ref <p>] [--spec-ref <p>] [--parent <id>] [--notes <text>] [--next-action <text>] [--id <id>] [--affected-modules <slug>[,<slug>...]] [--json]` | Create one board-granularity item in the **issue store**. Prints `Created <type> <id>: <title>`. `--type` defaults to `task`, `--priority` to `2`. **`--milestone` is refused here (exit 1)** — see `epic`. `--affected-modules` sets the module-safety tag `adev issues next`/`/adev:bugfix-loop` fail-closes on when absent, via a follow-up `update()` after `create()` succeeds — without it a bug is invisible to the loop until a separate `set-modules` call lands |
 | `epic <title> [--plan-ref <path>] [--milestone <name>] [--json]` | Create one epic in the **epic store**. Pass `--plan-ref` when the epic backs a plan — `/adev:implement` and `/adev:reconcile` look the epic up by `planRef`, and an epic minted without it is re-created on every run. Prints `Created epic <id>: <title>`. Not the same as `create --type epic` — see below |
 | `update <id> [--status <s>] [--milestone <name>] [--title <text>] [--priority 0-4] [--notes <text>] [--next-action <text>]` | Edit one item, issue or epic, **resolved from the id alone** by lookup — callers never read an id prefix. `--milestone` is epics-only, `--priority` issues-only. `--next-action` sets the next-step hint; an empty string clears it, same as `--notes`. `--status closed` is refused (exit 1): close goes through `close` |
 | `close <id> --reason <text>` | Close one item through the dependency/cascade guards. `--reason` is required and recorded on the item's notes |
@@ -747,7 +771,7 @@ adev issues set-modules issue-42 cli,hooks
 
 **`set-modules <id> <slug>[,<slug>...] [--json]`:** sets `WorkItem.affected_modules` — the module-safety tag `adev issues next` (bug-selection-and-eligibility.spec.md) consults for its blast-radius and reserved-tag safety checks. This is v1's only producer for the field: a direct, scriptable verb, deliberately unpolished (no validation against `manifest.modules[]`, no GitHub-label sync — both remain charter Deferred Capabilities). Works identically on the `json` and `beads` backends. An issue with no `affected_modules` set fails closed and is never autonomously selected.
 
-**`next [--type bug] [--max-priority P0-P4] [--json]`:** read-only bug-selection verb for the autonomous bugfix loop. Returns the single highest-priority eligible `type: "bug"` WorkItem within the resolved priority bound, or `{"bug": null}` if none qualify — never a partial or ambiguous result, and never a write (no claim, no close, no AttemptRecord mutation). `--type` currently only accepts `"bug"` (the default); any other value exits non-zero with `UNSUPPORTED_TYPE`. `--max-priority` defaults to `P3` (covering `P2`/`P3`) and accepts the full `P0`-`P4` range — a malformed value (not `P0`-`P4`) still exits non-zero with `INVALID_PRIORITY_BOUND`. The module-exclusion floor below (reserved safety tags and any manifest-configured `tasks.bugfix_loop.excluded_modules`) is the actual safety boundary, not the priority band — it is unconditional and applies regardless of `--max-priority`. When `--max-priority P0` or `P1` is used, `adev issues next` additionally prints the effective excluded-module set to stderr before returning, so the operator can see what remains protected at the widened bound. Eligibility also requires: `status` other than `closed`/`deferred`; a single `affected_modules` entry that is a real `manifest.modules[].slug` and not a reserved safety tag (`review-gate`, `convergence-detector`, `retry-loop`, `bugfix-loop`) or a manifest-configured `tasks.bugfix_loop.excluded_modules` entry; no live (non-expired) claim; no open blocking dependencies; and no `AttemptRecord.last_verdict` of `NO_PROGRESS`, `REGRESSED`, or `BUDGET_EXHAUSTED`. Ties within a priority band resolve FIFO by oldest `created`. Exits non-zero with `ISSUE_BOARD_NOT_CONFIGURED` if `tasks.backend` is unset.
+**`next [--type bug] [--max-priority P0-P4] [--epic <id>] [--json]`:** read-only bug-selection verb for the autonomous bugfix loop. Returns the single highest-priority eligible `type: "bug"` WorkItem within the resolved priority bound, or `{"bug": null}` if none qualify — never a partial or ambiguous result, and never a write (no claim, no close, no AttemptRecord mutation). `--type` currently only accepts `"bug"` (the default); any other value exits non-zero with `UNSUPPORTED_TYPE`. `--max-priority` defaults to `P3` (covering `P2`/`P3`) and accepts the full `P0`-`P4` range — a malformed value (not `P0`-`P4`) still exits non-zero with `INVALID_PRIORITY_BOUND`. `--epic <id>` restricts candidates to `<id>` and its tiered children (`<id>.N`) by plain id-prefix match — not `walkTree()`, whose `parseId()`-based matching doesn't recognize this repo's real slug-style epic ids; dependency resolution still consults the full board regardless of scoping. The module-exclusion floor below (reserved safety tags and any manifest-configured `tasks.bugfix_loop.excluded_modules`) is the actual safety boundary, not the priority band — it is unconditional and applies regardless of `--max-priority`. When `--max-priority P0` or `P1` is used, `adev issues next` additionally prints the effective excluded-module set to stderr before returning, so the operator can see what remains protected at the widened bound. Eligibility also requires: `status` other than `closed`/`deferred`; a single `affected_modules` entry that is a real `manifest.modules[].slug` and not a reserved safety tag (`review-gate`, `convergence-detector`, `retry-loop`, `bugfix-loop`) or a manifest-configured `tasks.bugfix_loop.excluded_modules` entry; no live (non-expired) claim; no open blocking dependencies; and no `AttemptRecord.last_verdict` of `NO_PROGRESS`, `REGRESSED`, or `BUDGET_EXHAUSTED`. Ties within a priority band resolve FIFO by oldest `created`. Exits non-zero with `ISSUE_BOARD_NOT_CONFIGURED` if `tasks.backend` is unset.
 
 Unlike `claim`/`release`, `next` is not yet called from any skill's preflight — no skill invokes `adev issues next` today; it is a standalone verb for the (separately specified) autonomous bugfix loop to call once that loop exists.
 
@@ -802,7 +826,7 @@ Sequence: snapshot `.beads/issues.jsonl` → create `beads-board` as an orphan b
 
 **Example:**
 ```
-adev bugfix-loop create --max-bugs 20 --max-turns 20 --starting-branch main --json
+adev bugfix-loop create --max-bugs 20 --max-turns 20 --starting-branch main [--epic <id>] --json
 adev bugfix-loop check-freshness --json
 adev bugfix-loop guard --run-id <id> --json
 adev bugfix-loop record-attempt --run-id <id> --issue <id> --verdict FIXED --files-touched 3 --tests-added 1 --priority-bound P3
@@ -890,6 +914,19 @@ adev domain load-gates --module auth
 ```
 
 **Implementation:** `lib/cli/domain.mjs`. **Called by:** `/adev:validate`, `/adev:review-specs`, `/adev:implement`, `/adev:specify`, `/adev:brainstorm`, `/adev:write-test`.
+
+### `implementation-mode`
+
+**Purpose:** Resolve the effective `implementation_mode` config — explicit `--mode` override, the stored `manifest.yaml` value, or the `tdd` default — to `{dispatch_red, ordering_enforced, coverage_check}`.
+
+**Signature:** `implementation-mode resolve [--mode tdd|test-required|agent-default]`
+
+**Example:**
+```
+adev implementation-mode resolve --mode test-required
+```
+
+**Implementation:** `lib/cli/implementation-mode.mjs`. **Called by:** `/adev:init` (documents the read path — the write path is the `init prompt implementation-mode` sub-verb, invoked by `skills/init/SKILL.md` Step 8b).
 
 ### `domain-picker`
 
@@ -1065,10 +1102,10 @@ adev test-debt scan --detector APPEND_CHAIN
 ### `eval`
 
 **Purpose:** Score a verdict set against a rubric — the CLI surface over the Layer 3 scoring
-engine (`lib/evals/rubric.mjs`'s `loadRubric`, `lib/evals/score.mjs`'s `scoreRubric`). `run()`
-dispatches on the first argument; `score` is the only subcommand today, and the verb is named
-`eval` rather than `eval-score` so a future Run-cost record capability can add `eval cost`
-beside it without a second registry entry.
+engine (`lib/evals/rubric.mjs`'s `loadRubric`, `lib/evals/score.mjs`'s `scoreRubric`) — and manage
+the durable pending-findings queue for operator-half eval passes. `run()` dispatches on the first
+argument; the verb is named `eval` rather than `eval-score` so capabilities like this one can add
+a subcommand without a second registry entry.
 
 **Signature:** `eval score --rubric <path|default> --input <path> [--json]`
 
@@ -1120,7 +1157,30 @@ adev eval score --rubric default --input .adev/eval/latest-verdicts.json
 adev eval score --rubric default --input .adev/eval/latest-verdicts.json --json
 ```
 
-**Implementation:** `lib/cli/eval.mjs` (engine: `lib/evals/rubric.mjs`, `lib/evals/score.mjs`).
+**Signature:** `eval findings <queue|list|file> [flags]`
+
+- `findings queue --title <t> --description <d> [--severity <s>] [--module <slug>] [--source <text>] [--json]`
+  — append one finding to `.context-index/evals/pending-findings.jsonl`. The durable fallback for
+  a manual eval pass (e.g. a Tier B pass) that surfaces a real defect while the issue board is
+  unreachable — before this, the only option was recording it in markdown prose nothing re-read
+  (`adev-plugin-tierb-findings-queue-bsb9`). `--title`/`--description` are required
+  (`EVAL_FINDING_INVALID` otherwise); `--severity`/`--module`/`--source` are free-text hints
+  carried through unchanged.
+- `findings list [--json]` — list queued findings (`id`, `title`, and every field `queue` was given).
+- `findings file <finding-id> [--json]` — file a queued finding as a real `bug` via the issue
+  store (`adev issues create`'s own path), setting `--affected-modules` from the finding's
+  `module` field when present, then drain it from the queue. An unknown `<finding-id>` exits 1
+  with `EVAL_FINDING_NOT_FOUND` and touches nothing.
+
+**Example:**
+```
+adev eval findings queue --title "repomap getCommitHash ignores cwd" --description "..." --module lib
+adev eval findings list --json
+adev eval findings file a1b2c3d4 --json
+```
+
+**Implementation:** `lib/cli/eval.mjs` (engine: `lib/evals/rubric.mjs`, `lib/evals/score.mjs`,
+`lib/eval-findings-queue.mjs`).
 **Called by:** `/adev:eval` Layer 3, Step 3 — aggregates the deterministic and judged halves into
 the half-level trend score once Steps 1 and 2 produce every verdict it needs.
 

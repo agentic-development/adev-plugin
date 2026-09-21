@@ -1,0 +1,110 @@
+# Layer 3 rubric for /adev:issues, scored against the skill-regression
+# fixture (tests/evals/skill-regression/). Field shapes verbatim from
+# skills/eval/default-rubric.yaml. All values flat: no nested maps, since the
+# repo's minimal YAML readers cannot represent them.
+#
+# PRODUCER, NOT DETECTOR: this rubric cites no catalog id. issues manages
+# work items rather than auditing them — it sits in this tier as a producer,
+# genuinely absent from the missing-issue-binding class's covers_skills in
+# catalog.yaml (PV-09/KC-09: "reconcile, status, hygiene" only). Every
+# required_elements[].source below is `output:` or `artifact:` only.
+# `output:` names a span of the agent's own chat transcript (the reported
+# "Created ..." confirmation); it has NO v1 machine reader
+# (lib/evals/score.mjs never reads an element's `source` field at all —
+# scoring runs entirely off the verdict set a judge or the operator
+# supplies). Its v1 consumer is the operator's manual Tier B pass; its
+# automated consumer is a future CI-integration capability, not anything
+# this rubric or `score.mjs` do today.
+#
+# Scored input: the created/updated work item(s) in the fixture's
+# tasks.backend: json board (.context-index/tasks/tasks.json). The fixture's
+# board carries epic-2 ("Shipping rates", open, milestone v2) with no bound
+# Feature issue — the exact gap catalog.yaml's PV-09 names ("the report
+# names shipping-rates.spec.md as having no Feature work item bound to it on
+# the board"). The scenario binds it: create a Feature issue under epic-2
+# whose spec_ref names shipping-rates.spec.md. This rubric never cites PV-09
+# itself (that citation form belongs to the detector tier's rubrics that
+# audit an unbound board); it scores the produced issue's shape directly.
+#
+# Reference anchor: the board_granularity_invariant_upheld criterion below
+# anchors its `reference` on the agent-reliable-state-artifacts charter,
+# which OWNS the invariant "no Issue on the board has a planRef + planTask
+# binding" — a Feature issue carries spec_ref alone, never planRef+planTask.
+# lib/issues/json-adapter.mjs enforces it at write time as
+# BOARD_GRANULARITY_VIOLATION; this rubric judges that the produced issue
+# actually conforms, not that the adapter would have rejected it otherwise.
+#
+# Spec: .context-index/specs/features/eval-harness/rubric-set-change-imminent.spec.md
+
+rubric_id: "skill-regression-issues"
+version: 1
+layer: 3
+verdict_values: "met | not_met | unknown (judged criteria) | not_applicable (deterministic elements)"
+skill: issues
+scenario: issues
+
+required_elements:
+  - id: issue_created_bound_to_epic2
+    description: "A new issue is added to the board, bound to epic-2"
+    source: "artifact: .context-index/tasks/tasks.json"
+    met_when: "the issues[] array carries a new entry (absent before the run) with epicId equal to \"epic-2\", per the Create Issue section of skills/issues/SKILL.md"
+    not_applicable_when: "never — the scenario always requests --epic epic-2"
+
+  - id: issue_type_feature
+    description: "The new issue's type is feature, matching what was requested"
+    source: "artifact: .context-index/tasks/tasks.json"
+    met_when: "the new issue's type field reads \"feature\""
+    not_applicable_when: "never — the scenario always requests --type feature"
+
+  - id: issue_spec_ref_set
+    description: "The new issue's spec_ref names the shipping-rates spec"
+    source: "artifact: .context-index/tasks/tasks.json"
+    met_when: "the new issue's spec_ref field equals \".context-index/specs/features/orders/shipping-rates.spec.md\", per BEH-3 (Traceability) in skills/issues/SKILL.md"
+    not_applicable_when: "never — the scenario always supplies --spec-ref for this path"
+
+  - id: issue_status_and_priority_default
+    description: "The new issue carries the documented creation defaults"
+    source: "artifact: .context-index/tasks/tasks.json"
+    met_when: "the new issue's status field reads \"open\" and its priority field is a number, matching the Create Issue defaults (\"type task, priority 2, status open\") in skills/issues/SKILL.md, unmodified by any --priority flag the scenario does not pass"
+    not_applicable_when: "never — the scenario passes no --priority flag, so the documented default always applies"
+
+  - id: seq_counter_advanced
+    description: "The board's seq counter advanced past its pre-run value and matches the new issue's numeric id suffix"
+    source: "artifact: .context-index/tasks/tasks.json"
+    met_when: "the top-level seq field is greater than its value before the run (12 in the committed fixture), and the new issue's id is issue-<N> where N equals the post-run seq — confirming lib/issues/json-adapter.mjs's atomic counter write actually landed"
+    not_applicable_when: "never — every create() call through the json adapter advances seq"
+
+  - id: no_plan_ref_or_plan_task_fields
+    description: "The new issue carries neither planRef nor planTask"
+    source: "artifact: .context-index/tasks/tasks.json"
+    met_when: "the new issue's JSON object has no planRef key and no planTask key (or both are null/absent) — a Feature-level binding never carries plan-task state"
+    not_applicable_when: "never — the scenario's create call never supplies either field"
+
+quality_dimensions:
+  - id: board_granularity_invariant_upheld
+    criterion: "Does the created issue conform to the board-granularity invariant that a Feature carries spec_ref alone, never planRef together with planTask — plan-task state belongs exclusively in the lifecycle event log?"
+    reference: ".context-index/specs/features/agent-reliable-state-artifacts/charter.md's Issue board granularity invariant (\"No Issue on the board has a planRef + planTask binding after the migration completes\"), enforced at write time by lib/issues/json-adapter.mjs as BOARD_GRANULARITY_VIOLATION"
+    met_when: "the produced issue carries spec_ref as its sole cross-reference field, with no planRef+planTask combination present, matching the charter's stated invariant"
+    not_met_when: "the produced issue carries both planRef and planTask, violating the charter's invariant"
+    unknown_when: "the board could not be read after the run to confirm which fields the produced issue actually carries"
+
+  - id: creation_report_accuracy
+    criterion: "Does the chat-facing confirmation line accurately restate the fields the board now actually holds for the new issue?"
+    reference: "the Create Issue report convention in skills/issues/SKILL.md ('Created <id>: <title> (status: open, priority: <N>)')"
+    met_when: "the reported id, status, and priority match the board's persisted values for the new issue exactly"
+    not_met_when: "the reported line names an id, status, or priority that does not match what was actually persisted"
+    unknown_when: "no confirmation line was printed at all"
+
+  - id: binding_gap_actually_closed
+    criterion: "Does the board, read after the run, now show epic-2 with a bound Feature issue whose spec_ref names shipping-rates.spec.md — the specific gap catalog.yaml's PV-09/KC-09 pair distinguishes?"
+    reference: "catalog.yaml's missing-issue-binding class entries for epic-2 (detect_when: an unbound Feature is reported; must_not_flag_when: a Feature issue's spec_ref names the spec)"
+    met_when: "after the run, epic-2 has at least one child issue of type feature whose spec_ref names shipping-rates.spec.md"
+    not_met_when: "after the run, epic-2 still has no child issue whose spec_ref names shipping-rates.spec.md"
+    unknown_when: "the board could not be read after the run to confirm epic-2's child issues"
+
+layer3_max_points: 25
+required_element_points: 10
+judged_criterion_points: 15
+unknown_policy: "exclude_from_denominator"
+not_applicable_policy: "exclude_from_denominator"
+insufficient_evidence_threshold_percent: 40

@@ -27,6 +27,7 @@ import { join } from 'node:path';
 
 import { writeBlockers } from '../../lib/blockers-writer.mjs';
 import { parseBlockerId } from '../../lib/blocker-id.mjs';
+import { readSkillSurface } from "../helpers.mjs";
 
 function makeSpec() {
   const root = mkdtempSync(join(tmpdir(), 'adev-legacy-fallback-'));
@@ -113,7 +114,7 @@ test('legacy-fallback: documented advisory codes are referenced in the build ski
   // higher-layer integration is traceable to a single source.
   const skillPath = join(process.cwd(), 'skills/build/SKILL.md');
   if (existsSync(skillPath)) {
-    const body = readFileSync(skillPath, 'utf8');
+    const body = readSkillSurface("build");
     assert.ok(
       body.includes('LEGACY_REVIEWER_OUTPUT'),
       'skills/build/SKILL.md must document the LEGACY_REVIEWER_OUTPUT advisory',
@@ -128,7 +129,7 @@ test('legacy-fallback: documented advisory codes are referenced in the build ski
 test('legacy-fallback: review-specs SKILL.md documents the validation contract', () => {
   const skillPath = join(process.cwd(), 'skills/review-specs/SKILL.md');
   if (existsSync(skillPath)) {
-    const body = readFileSync(skillPath, 'utf8');
+    const body = readSkillSurface("review-specs");
     assert.ok(body.includes('LEGACY_REVIEWER_OUTPUT'),
       'skills/review-specs/SKILL.md must document LEGACY_REVIEWER_OUTPUT');
     assert.ok(body.includes('INVALID_BLOCKER_ID'),

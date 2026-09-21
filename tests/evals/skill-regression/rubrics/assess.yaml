@@ -1,0 +1,112 @@
+# Layer 3 rubric for /adev:assess, scored against the skill-regression
+# fixture (tests/evals/skill-regression/). Field shapes verbatim from
+# skills/eval/default-rubric.yaml — the exemplar. All values flat: no nested
+# maps, since the repo's minimal YAML readers cannot represent them.
+#
+# PRODUCER, NOT DETECTOR: this rubric cites no skill-regression PV/KC pair.
+# assess is static file inspection over presence, not a diff-against-source
+# or a board-opening pass — none of its eleven dimensions detect a planted
+# defect class the way codehealth's three passes do, so there is nothing in
+# catalog.yaml for it to cite. Confirmed directly: catalog.yaml's
+# `covers_skills` field, across every planted_violations and known_clean
+# entry, never once names "assess" (grep across the file's twenty
+# covers_skills lines finds zero matches) — the omission is the fixture's,
+# not an oversight of this rubric.
+#
+# assess also has no backing lib/ module: unlike codehealth (lib/codehealth/),
+# repomap (lib/repomap/), or eval (lib/evals/), there is no lib/assess.mjs —
+# `git grep -l assess lib/` returns nothing. Every dimension score in
+# skills/assess/SKILL.md's Process is computed by the agent reading
+# Glob/Grep evidence against the skill's own Scoring Criteria tables, with no
+# deterministic formula module to trace instead. That is why the required
+# elements below check PRESENCE FACTS in the scenario copy and
+# SELF-CONSISTENCY within the report, never a precise predicted numeric
+# score — the skill's own Process step 5 ("weighted average of dimension
+# scores") names no per-mode formula precise enough to predict a number
+# from outside the run.
+#
+# Scored input: the maturity scorecard `/adev:assess --mode adev` writes when
+# run against the scenario copy of tests/evals/skill-regression/project. The
+# copy's `.context-index/` already exists (constitution.md, adrs/, specs/,
+# manifest.yaml, evals/, memory/heuristics/, samples/, governance/,
+# lifecycle-state/, tasks/), so mode auto-detects to adev — 11 dimensions,
+# never the 8-dimension raw mode. The copy's package.json declares no
+# `scripts` key at all and ships no tsconfig.json, no .ts file, no jsconfig,
+# no .eslintrc, and no package-lock.json/yarn.lock — every one of these
+# absences is a fact about the committed fixture tree, not something this
+# rubric invents.
+#
+# Spec: .context-index/specs/features/eval-harness/rubric-set-change-imminent.spec.md
+
+rubric_id: "skill-regression-assess"
+version: 1
+layer: 3
+verdict_values: "met | not_met | unknown (judged criteria) | not_applicable (deterministic elements)"
+skill: assess
+scenario: assess
+
+required_elements:
+  - id: mode_auto_detected_as_adev
+    description: "The scorecard's declared Mode is adev, the 11-dimension mode, since the copy carries .context-index/"
+    source: "output: the scorecard's Mode header line"
+    met_when: "the scorecard header reads Mode: adev"
+    not_applicable_when: "never — the copy always carries .context-index/, so Step 1's auto-detect always resolves to adev mode here"
+
+  - id: eleven_dimension_names_listed_verbatim
+    description: "The Dimensions table lists all eleven dimension names, spelled exactly as skills/assess/SKILL.md's dimension tables name them"
+    source: "output: the scorecard's Dimensions table"
+    met_when: "the table carries one row per dimension for Test Infrastructure, Type Safety, Modularity, Naming, Documentation, Dependency Hygiene, Build Configuration, Spec Sources, Adev Context Index, Adev Skills, and Adev Hooks — none renamed, abbreviated, merged, or dropped"
+    not_applicable_when: "never — adev mode always scores all eleven"
+
+  - id: type_safety_scored_in_lowest_evidence_band
+    description: "Type Safety's score falls in the 0-19 band, matching the copy's actual absence of any type-checking evidence"
+    source: "output: the scorecard's Type Safety row"
+    met_when: "Type Safety's printed score is between 0 and 19 inclusive, matching skills/assess/SKILL.md's 0-19 criteria row ('No type annotations') — the copy ships no tsconfig.json, no .ts file, and no checkJs in a jsconfig anywhere"
+    not_applicable_when: "never — the copy's absence of type-checking evidence is fixed and always applies"
+
+  - id: dependency_hygiene_evidence_notes_missing_lock_file
+    description: "Dependency Hygiene's evidence names the absence of a lock file, matching the copy's actual package.json"
+    source: "output: the scorecard's Dependency Hygiene row and its evidence"
+    met_when: "the row's evidence states or implies no package-lock.json or yarn.lock is present, and the score is not in the 80-100 band (whose criteria require a lock file present)"
+    not_applicable_when: "never — the copy's package.json ships with no companion lock file"
+
+  - id: build_configuration_evidence_notes_no_scripts
+    description: "Build Configuration's evidence names the absence of build/lint/test scripts, matching the copy's actual package.json"
+    source: "output: the scorecard's Build Configuration row and its evidence"
+    met_when: "the row's evidence states or implies package.json declares no scripts key, and the score is not in the 80-100 band (whose criteria require build scripts, lint config, and typecheck config all present)"
+    not_applicable_when: "never — the copy's package.json carries no scripts key at all"
+
+  - id: maturity_level_matches_declared_score_range_table
+    description: "The reported maturity level is self-consistent with the reported total score, per skills/assess/SKILL.md's own Maturity Levels table"
+    source: "output: the scorecard's Total Score line and its Maturity Levels mapping"
+    met_when: "the reported level (L1-L5) is exactly the level whose range in skills/assess/SKILL.md's Maturity Levels table contains the reported Total Score — for example a score of 35 is reported as L2 (Developing, 21-40), never any other level"
+    not_applicable_when: "never — Step 6 always maps a printed total score to exactly one level"
+
+quality_dimensions:
+  - id: evidence_grounded_not_generic
+    criterion: "Does each dimension's evidence cite concrete artifact names or paths the scan actually found or found absent in the copy, rather than a generic restatement of the scoring band's own wording?"
+    reference: "the per-dimension Evidence rows in skills/assess/SKILL.md (for example Test Infrastructure's 'Glob for **/*.test.*, **/*.spec.*, **/tests/**, check package.json for test scripts')"
+    met_when: "every dimension's evidence names at least one concrete file, path, or absence specific to the copy, not a restatement of the band's criteria text"
+    not_met_when: "at least one dimension's evidence is a bare restatement of its scoring band's criteria wording with no concrete artifact named"
+    unknown_when: "no evidence field is captured for a dimension, so nothing can be judged about it"
+
+  - id: score_band_matches_stated_criteria_table
+    criterion: "Does each dimension's numeric score fall within the band whose Scoring Criteria row the cited evidence actually satisfies, rather than a score chosen independently of that dimension's own table?"
+    reference: "the per-dimension Scoring Criteria tables in skills/assess/SKILL.md"
+    met_when: "every dimension's score falls inside the band range whose criteria row the dimension's own evidence satisfies"
+    not_met_when: "at least one dimension's score falls in a band whose criteria row the cited evidence does not support"
+    unknown_when: "a dimension's evidence is present but too sparse to determine which band's criteria it satisfies"
+
+  - id: no_execution_side_effects_beyond_static_inspection
+    criterion: "Did the assessment run stay within static file inspection only — no npm test, tsc, lint, or other command executed against the copy — per the skill's own stated scope?"
+    reference: "the Notes section of skills/assess/SKILL.md ('No external commands are executed (no npm test, tsc, etc.)')"
+    met_when: "the run's transcript shows no shell command executed against the copy beyond file reads (Glob/Grep/Read)"
+    not_met_when: "the transcript shows a shell command (npm test, tsc, eslint, or similar) executed against the copy"
+    unknown_when: "the transcript does not capture enough of the run to tell whether any command beyond file inspection ran"
+
+layer3_max_points: 25
+required_element_points: 10
+judged_criterion_points: 15
+unknown_policy: "exclude_from_denominator"
+not_applicable_policy: "exclude_from_denominator"
+insufficient_evidence_threshold_percent: 40

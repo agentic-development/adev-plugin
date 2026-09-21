@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readSkillSurface } from "../helpers.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(__dirname, '..', '..');
@@ -12,7 +13,7 @@ describe('debug SKILL.md playbook loading', () => {
   let content;
 
   it('skill file exists and is readable', () => {
-    content = readFileSync(skillPath, 'utf8');
+    content = readSkillSurface("debug");
     assert.ok(content.length > 0);
   });
 
