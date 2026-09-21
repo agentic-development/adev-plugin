@@ -3,10 +3,10 @@
 - **Fresh invocation (`--max-bugs`/`--max-turns`/no resume flags):**
 
   ```bash
-  adev bugfix-loop create --max-bugs <N> --max-turns <N> --json
+  adev bugfix-loop create --max-bugs <N> --max-turns <N> [--epic <id>] --json
   ```
 
-  Capture `run_id` from the result.
+  Capture `run_id` from the result. Pass `--epic <id>` only when the invocation named one; the loop remains unscoped by default.
 - **`--resume --resume-run-id <id>`:** use `<id>` directly — it was passed explicitly by the prior turn's own self-re-invocation, so no discovery is needed.
 - **`--resume` with no `--resume-run-id` (manual crash recovery):**
 
@@ -18,7 +18,7 @@
 
   **Orphan-worktree sweep (BEH-13):** when the recovered run had `--worktree-per-bug` active (the crash that necessitated a manual `--resume` may have happened mid-attempt, before Step 6's own teardown ran), perform the same single-attempt sweep Step 6 does: `adev worktree remove --slug bugfix-<issue-id>` for the in-flight bug's worktree, if any. Same failure handling as Step 6 — `REMOVE_FAILED` logs a non-blocking advisory and the turn proceeds anyway; never retried.
 
-- **`--max-priority` fail-fast validation:** once `run_id` is resolved (fresh or resumed — a run must exist before `finish` can be called below), validate `--max-priority <p>` if it was passed: `<p>` must be exactly one of `P0`, `P1`, `P2`, `P3`, `P4`. `P0`/`P1` are legal here — this is not the old rejection; only a value outside `P0`-`P4` is malformed. Omitting the flag resolves to `P3` (BEH-9, identical to today's behavior). On a malformed value (`INVALID_PRIORITY_BOUND`, BEH-10): halt immediately, before selecting any bug — go straight to Step 5 (Finish) with `--status blocked`, naming the rejected value in the finish note; Step 5 then prints the literal `ADEV-BUGFIXLOOP: BLOCKED` token (BEH-10). This check runs on every turn, including resumed ones — `--max-priority` (like `--max-turns`, `--github-sync`, `--worktree-per-bug`, `--auto-commit`) is one of the original invocation's flags Step 6 re-passes on every self-re-invocation (see Step 6).
+- **`--max-priority` fail-fast validation:** once `run_id` is resolved (fresh or resumed — a run must exist before `finish` can be called below), validate `--max-priority <p>` if it was passed: `<p>` must be exactly one of `P0`, `P1`, `P2`, `P3`, `P4`. `P0`/`P1` are legal here — this is not the old rejection; only a value outside `P0`-`P4` is malformed. Omitting the flag resolves to `P3` (BEH-9, identical to today's behavior). On a malformed value (`INVALID_PRIORITY_BOUND`, BEH-10): halt immediately, before selecting any bug — go straight to Step 5 (Finish) with `--status blocked`, naming the rejected value in the finish note; Step 5 then prints the literal `ADEV-BUGFIXLOOP: BLOCKED` token (BEH-10). This check runs on every turn, including resumed ones — `--max-priority` (like `--max-turns`, `--github-sync`, `--worktree-per-bug`, `--auto-commit`, `--epic`) is one of the original invocation's flags Step 6 re-passes on every self-re-invocation (see Step 6).
 
 - **Freshness guard:** once `run_id` is resolved (fresh or resumed), check branch freshness before the Step 1 status/budget guard:
 

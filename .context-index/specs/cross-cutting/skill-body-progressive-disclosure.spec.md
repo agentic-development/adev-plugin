@@ -573,9 +573,9 @@ mapping each pass to its `--check` slug and its companion path.
 
 | Problem | Resolution |
 |---------|------------|
-| 1. 16 bodies over guidance | 0 over. Total 856,056 → 378,449 B (−55.8%); ~209,818 → ~92,757 est. tokens. (30 bodies at the baseline, 31 today — `bugfix-loop` was added afterward and is included in the current figure.) |
+| 1. 16 bodies over guidance | 0 over. Total 856,056 → 378,827 B (−55.7%); ~209,818 → ~92,850 est. tokens. (30 bodies at the baseline, 31 today — `bugfix-loop` was added afterward and is included in the current figure.) |
 | 2. Four bodies near the hard cap | Smallest headroom across all 31 is now 46,028 B (`eval`) |
-| 3. Multiplied cost | 477,607 fewer bytes enter the prefix per invocation, so the reduction compounds per turn |
+| 3. Multiplied cost | 477,229 fewer bytes enter the prefix per invocation, so the reduction compounds per turn |
 | 4. Invisible at authoring time | Both limits documented in `constitution.md` / `CLAUDE.md` and `docs/skill-reference.md`; guarded by `tests/skills/skill-size-cap.test.mjs` |
 | 5. Layout divergence | 28 companions moved to `references/` and `scripts/` |
 
@@ -916,7 +916,7 @@ Describes the system after the refactor.
 
 ## Acceptance Criteria
 
-- [x] All 31 `SKILL.md` bodies are under the ~5,000-token guidance (16 of the original 30 were over; `bugfix-loop`, added after the baseline, ships at 7,521 B and was never over)
+- [x] All 31 `SKILL.md` bodies are under the ~5,000-token guidance (16 of the original 30 were over; `bugfix-loop`, added after the baseline, ships at 7,899 B and was never over)
 - [x] All 31 are under the 65,536-byte hard cap with ≥46,028 bytes of headroom (`eval`)
 - [x] No prose deleted — every relocated section moved whole (BEH-2)
 - [x] Every body retains heading + summary + `<ADEV_ROOT>`-anchored pointer per relocated section (BEH-3), pinned by the anchor sweep in `tests/skills/whole-invocation-rules-in-body.test.mjs`
@@ -990,7 +990,7 @@ Describes the system after the refactor.
 - [ ] **The token saving is estimated, not measured.** Every figure here is bytes, or
       bytes divided by 4.08. The stored module heuristic warns byte proxies overstate
       savings by 2–2.5x, so these must not be quoted as a measured token or cost
-      reduction. What is established: 477,607 fewer bytes enter the context prefix per
+      reduction. What is established: 477,229 fewer bytes enter the context prefix per
       invocation. Settling it needs `adev cost summary --spec <s> --include-checkpoints`
       over one comparable lifecycle before and after — possible now that
       adev-plugin-882a.1 has landed, but not yet run.
