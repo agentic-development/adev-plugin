@@ -3690,7 +3690,15 @@ test("tests/evals/skill-compression is fully retired; the two relocated token-bu
   // same way before comparing keeps this guard's actual job (catch any
   // OTHER incidental edit) without re-freezing on a path that reality has
   // already moved past.
-  const TASK5_LANDING_SHA = "039d1e1df6e51bcdd73a8af64767189b87b407be";
+  // Pinned to the mainline commit that actually introduced these files
+  // (`git merge-base --is-ancestor <sha> origin/main`) — an earlier version
+  // of this constant (039d1e1d) named a same-message, byte-identical commit
+  // that a later rebase orphaned before it ever reached main. A stray local
+  // clone that happened to retain that dangling object masked the mismatch;
+  // a fresh clone (CI) surfaces it immediately as "path ... does not exist
+  // in <sha>", indistinguishable at a glance from the shallow-clone symptom
+  // this same error text can also mean.
+  const TASK5_LANDING_SHA = "168f38c41acb6bc1bf8a1066bb8b9ec0b38c655d";
   const normalizeRelocatedCompanions = (text) =>
     text.replace(/skills\/(plan|build)\/(?!references\/)/g, "skills/$1/references/");
   for (const relPath of expectedPreserved) {
