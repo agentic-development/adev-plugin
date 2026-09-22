@@ -13,6 +13,15 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          # Full history, not the default shallow (fetch-depth 1). At least two
+          # things in this suite need commits that aren't the checked-out tip:
+          # tests/lib/evals/rubric-coverage.test.mjs pins a historical blob via
+          # `git show <sha>:<path>`, which fails with "path ... does not exist
+          # in <sha>" against a shallow clone even when that commit is a real
+          # ancestor; the provenance-trailer step below also walks
+          # origin/<base>..HEAD.
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
