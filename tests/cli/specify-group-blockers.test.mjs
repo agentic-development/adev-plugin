@@ -216,3 +216,29 @@ test('adev specify group-blockers fails on missing --spec — exit 1', () => {
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('adev specify group-blockers renders external remedy_ref through the shared renderer (truncates past 256 chars)', () => {
+  const longRef = 'x'.repeat(300);
+  const blockersYaml = [
+    '# Blockers',
+    '## a:1:11111111',
+    '```yaml',
+    'blocker_id: a:1:11111111',
+    'section_anchor: preconditions',
+    'finding_class: external',
+    `remedy_ref: ${longRef}`,
+    '```',
+    '```',
+    'needs an external system change',
+    '```',
+  ].join('\n');
+  const { root, specPath } = makeSpecWithBlockers({ blockersYaml });
+  try {
+    const result = runCli(root, ['group-blockers', '--spec', specPath]);
+    assert.equal(result.status, 0);
+    const payload = JSON.parse(result.stdout.trim());
+    assert.strictEqual(payload.external_blockers[0].remedy_ref, `${'x'.repeat(256)}...`);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});

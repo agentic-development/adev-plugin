@@ -573,9 +573,9 @@ mapping each pass to its `--check` slug and its companion path.
 
 | Problem | Resolution |
 |---------|------------|
-| 1. 16 bodies over guidance | 0 over. Total 856,056 → 378,962 B (−55.7%); ~209,818 → ~92,883 est. tokens. (30 bodies at the baseline, 31 today — `bugfix-loop` was added afterward and is included in the current figure.) |
+| 1. 16 bodies over guidance | 0 over. Total 856,056 → 378,960 B (−55.7%); ~209,818 → ~92,883 est. tokens. (30 bodies at the baseline, 31 today — `bugfix-loop` was added afterward and is included in the current figure.) |
 | 2. Four bodies near the hard cap | Smallest headroom across all 31 is now 46,028 B (`eval`) |
-| 3. Multiplied cost | 477,094 fewer bytes enter the prefix per invocation, so the reduction compounds per turn |
+| 3. Multiplied cost | 477,096 fewer bytes enter the prefix per invocation, so the reduction compounds per turn |
 | 4. Invisible at authoring time | Both limits documented in `constitution.md` / `CLAUDE.md` and `docs/skill-reference.md`; guarded by `tests/skills/skill-size-cap.test.mjs` |
 | 5. Layout divergence | 28 companions moved to `references/` and `scripts/` |
 
@@ -923,7 +923,7 @@ Describes the system after the refactor.
 - [x] Load Skill Extensions block present in all 31 bodies (BEH-6), pinned by `tests/skills-extension-coverage.test.mjs`
 - [x] Dispatch-discipline rules present in all 9 dispatching bodies (BEH-6), pinned by `tests/skills-dispatch-turn-discipline.test.mjs`
 - [x] `## Prerequisites` in the body for all 21 skills that carry it (BEH-6), pinned by `tests/skills/whole-invocation-rules-in-body.test.mjs` — an earlier version of that guard pinned only 3 of the 21
-- [x] Every `<ADEV_ROOT>`-anchored companion pointer in `skills/**` resolves; 0 broken (BEH-7). 194 occurrences naming 190 unique targets, swept by `tests/sync/provider-companion-parity.test.mjs`; earlier figures of "208" and "183" named no scope and were not reproducible (RI-6)
+- [x] Every `<ADEV_ROOT>`-anchored companion pointer in `skills/**` resolves; 0 broken (BEH-7). 199 occurrences naming 192 unique targets, swept by `tests/sync/provider-companion-parity.test.mjs`; earlier figures of "208" and "183" named no scope and were not reproducible (RI-6)
 - [x] Mirrors carry the identical companion set — 224 files each in canonical, codex and opencode, counted the way the guard counts (every non-`SKILL.md` file, `agents/` excluded) — and every mirror-body pointer resolves inside its own tree (BEH-8), pinned by `tests/sync/provider-companion-parity.test.mjs` in both set directions
 - [x] `/adev:work` carries the no-re-entry rule with a 3-per-stage cap, a stated cap-trip verdict, an unattended stop-at-first-failure default, and the companion-load carve-out (BEH-9, 9a, 9b, 9c), pinned by `tests/skills/work-no-skill-reentry.test.mjs`
 - [x] Test assertions follow the prose rather than being weakened (BEH-10)
@@ -990,7 +990,7 @@ Describes the system after the refactor.
 - [ ] **The token saving is estimated, not measured.** Every figure here is bytes, or
       bytes divided by 4.08. The stored module heuristic warns byte proxies overstate
       savings by 2–2.5x, so these must not be quoted as a measured token or cost
-      reduction. What is established: 477,094 fewer bytes enter the context prefix per
+      reduction. What is established: 477,096 fewer bytes enter the context prefix per
       invocation. Settling it needs `adev cost summary --spec <s> --include-checkpoints`
       over one comparable lifecycle before and after — possible now that
       adev-plugin-882a.1 has landed, but not yet run.

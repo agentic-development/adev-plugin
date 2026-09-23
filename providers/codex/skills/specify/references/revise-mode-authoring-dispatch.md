@@ -1,6 +1,6 @@
 # Revise Mode: Per-Anchor Authoring Dispatch (BEH-4)
 
-Full instructions for Revise Mode step 2 (`skills/specify/SKILL.md`). Loaded only when Revise Mode runs.
+Full instructions for `/adev:specify` Revise Mode step 2. Loaded only when Revise Mode runs.
 
 ## 1. Get the per-anchor grouping
 

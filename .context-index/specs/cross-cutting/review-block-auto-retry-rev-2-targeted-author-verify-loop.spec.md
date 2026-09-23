@@ -10,12 +10,13 @@ charter-revision: 1
 amends: .context-index/specs/cross-cutting/review-block-auto-retry.spec.md
 target-revision: 2
 created: 2026-08-21
-updated: 2026-08-23
+updated: 2026-09-23
 source-manifest:
-  sha: "b6f24f0"
+  sha: "50c8547"
   files:
     - .context-index/governance/diagnostics.yaml
     - lib/blockers-writer.mjs
+    - lib/cli/blockers.mjs
     - lib/cli/governance.mjs
     - lib/cli/specify.mjs
     - lib/diagnostics/tier2/mechanism-existence.mjs
@@ -26,10 +27,24 @@ source-manifest:
     - lib/specify-revise.mjs
     - lib/token-pricing.mjs
     - skills/build/SKILL.md
-    - skills/build/blocker-auto-retry-loop.md
+    - skills/build/references/blocker-auto-retry-loop.md
+    - skills/build/references/pipeline/step-1-review.md
     - skills/review-specs/SKILL.md
+    - skills/review-specs/boundary-reviewer-prompt.md
+    - skills/review-specs/consistency-analyzer-prompt.md
+    - skills/review-specs/quick-synthesized-reviewer-prompt.md
+    - skills/review-specs/references/steps/step-4-dispatch-reviewers.md
+    - skills/review-specs/references/steps/step-5-consolidate-findings.md
+    - skills/review-specs/references/steps/step-6-events-and-report.md
+    - skills/review-specs/referent-integrity-prompt.md
+    - skills/review-specs/security-reviewer-prompt.md
+    - skills/review-specs/structural-architect-prompt.md
+    - skills/review-specs/termination-reviewer-prompt.md
+    - skills/review-specs/wiring-reviewer-prompt.md
     - skills/specify/SKILL.md
-    - skills/specify/revise-mode-authoring-dispatch.md
+    - skills/specify/references/modes/revise-mode.md
+    - skills/specify/references/revise-mode-authoring-dispatch.md
+    - tests/cli/blockers-write.test.mjs
     - tests/cli/governance-diff-scope.test.mjs
     - tests/cli/specify-check-mechanisms.test.mjs
     - tests/cli/specify-group-blockers.test.mjs
@@ -55,8 +70,8 @@ source-manifest:
     - tests/lib/loop-convergence.test.mjs
     - tests/lib/manifest.test.mjs
     - tests/lib/specify-revise.test.mjs
-  computed-at: "2026-08-23T12:18:54.680Z"
-drift_detected: true
+    - tests/skills/review-specs-finding-class-prompts.test.mjs
+  computed-at: "2026-09-23T18:21:22.285Z"
 ---
 
 # Amendment: Live Spec: Auto-Retry Loop on Review BLOCK (targeting rev 2)

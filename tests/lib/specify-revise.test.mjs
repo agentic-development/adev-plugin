@@ -639,3 +639,99 @@ test('(k) parseBlockersSidecar defaults finding_class to defect when the sidecar
   assert.strictEqual(entries.length, 1);
   assert.strictEqual(entries[0].finding_class, 'defect');
 });
+
+// ── Same-revision mode (the build loop's mechanism-existence inner retry) ──
+
+test('(l) sameRevision re-splices the current revision without bumping it or emitting spec_revised', () => {
+  const { root, specPath } = makeBlockedSpecWithHeadings({ revision: 4, status: 'review-pending' });
+  try {
+    writeReviewSidecar(root, specPath);
+    writeBlockersSidecar(root, specPath, [
+      { blocker_id: 'build-loop:mechanism-existence:aaaaaaaa', section_anchor: 'preconditions', prose: 'cited lib/missing.mjs:3 does not exist' },
+    ]);
+    const before = readEvents(root, specPath).filter((e) => e.event === 'spec_revised').length;
+    const result = reviseSpec({
+      specPath,
+      projectRoot: root,
+      sameRevision: true,
+      authoredSections: new Map([['preconditions', 'Rewritten preconditions citing nothing missing.\n']]),
+    });
+    assert.equal(result.sameRevision, true);
+    assert.equal(result.fromRevision, 4);
+    assert.equal(result.toRevision, 4);
+    assert.deepEqual(result.addressed, ['build-loop:mechanism-existence:aaaaaaaa']);
+    assert.deepEqual(result.unresolved, []);
+    const text = readFileSync(join(root, specPath), 'utf8');
+    assert.match(text, /^revision: 4$/m);
+    assert.match(text, /^status: review-pending$/m);
+    assert.ok(text.includes('Rewritten preconditions citing nothing missing.'));
+    assert.ok(!text.includes('Original preconditions text.'));
+    const after = readEvents(root, specPath).filter((e) => e.event === 'spec_revised').length;
+    assert.equal(after, before, 'same-revision mode must not emit spec_revised');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('(m) sameRevision refuses a spec that is not review-pending with SPEC_NOT_PENDING, writing nothing', () => {
+  const { root, specPath } = makeBlockedSpecWithHeadings({ revision: 4, status: 'review-blocked' });
+  try {
+    writeReviewSidecar(root, specPath);
+    writeBlockersSidecar(root, specPath, [
+      { blocker_id: 'sa:missing-precondition:aaaaaaaa', section_anchor: 'preconditions', prose: 'block 1' },
+    ]);
+    const original = readFileSync(join(root, specPath), 'utf8');
+    assert.throws(
+      () => reviseSpec({ specPath, projectRoot: root, sameRevision: true }),
+      (err) => err.code === 'SPEC_NOT_PENDING',
+    );
+    assert.equal(readFileSync(join(root, specPath), 'utf8'), original);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('(n) the inner-retry sequence: revise → mechanism blocker via the real writer → same-revision re-author stays on N+1', async () => {
+  const { writeBlockers } = await import('../../lib/blockers-writer.mjs');
+  const { root, specPath } = makeBlockedSpecWithHeadings({ revision: 2 });
+  try {
+    writeReviewSidecar(root, specPath);
+    writeBlockersSidecar(root, specPath, [
+      { blocker_id: 'sa:missing-precondition:aaaaaaaa', section_anchor: 'preconditions', prose: 'block 1' },
+    ]);
+
+    // Outer pass: rev 2 → 3, status review-pending, sidecar cleared.
+    const first = reviseSpec({
+      specPath,
+      projectRoot: root,
+      autoMode: true,
+      authoredSections: new Map([['preconditions', 'First draft citing `lib/nope.mjs:9`.\n']]),
+    });
+    assert.equal(first.toRevision, 3);
+    assert.equal(existsSync(join(root, specPath.replace(/\.spec\.md$/, '.blockers.md'))), false);
+
+    // A second plain --auto revise is what the loop used to do here — and it
+    // refuses the review-pending spec. This is the failure same-revision fixes.
+    writeBlockers(root, specPath, [{
+      reviewer: 'build-loop', finding_type: 'mechanism-existence', section_anchor: 'preconditions',
+      prose: '`lib/nope.mjs:9` did not resolve', finding_class: 'defect',
+    }], { revision: 3 });
+    assert.throws(() => reviseSpec({ specPath, projectRoot: root, autoMode: true }), (err) => err.code === 'SPEC_NOT_BLOCKED');
+
+    // Inner pass on the same revision succeeds and stays at 3.
+    const inner = reviseSpec({
+      specPath,
+      projectRoot: root,
+      sameRevision: true,
+      authoredSections: new Map([['preconditions', 'Second draft with no dangling citation.\n']]),
+    });
+    assert.equal(inner.toRevision, 3);
+    assert.equal(inner.addressed.length, 1);
+    assert.match(inner.addressed[0], /^build-loop:mechanism-existence:[0-9a-f]{8}$/);
+    const text = readFileSync(join(root, specPath), 'utf8');
+    assert.match(text, /^revision: 3$/m);
+    assert.ok(text.includes('Second draft with no dangling citation.'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});

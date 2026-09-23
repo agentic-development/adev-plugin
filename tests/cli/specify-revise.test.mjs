@@ -251,3 +251,42 @@ test('adev specify revise fails on missing sidecars — NO_REVIEW_SIDECARS', () 
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('adev specify revise --same-revision re-authors a review-pending spec without bumping revision', () => {
+  const { root, specPath } = makeBlockedSpec({ revision: 2, status: 'review-pending' });
+  try {
+    writeFileSync(join(root, specPath), [
+      '# Live Spec', '', '---', 'revision: 2', 'created: 2026-05-01',
+      'updated: 2026-05-01', 'status: review-pending', '---', '',
+      '## Preconditions', '', 'First-pass text.', '',
+    ].join('\n'));
+    const result = runCli(root, [
+      'revise', '--spec', specPath, '--auto', '--same-revision',
+      '--authored-sections', JSON.stringify({ preconditions: 'Second-pass text.' }),
+    ]);
+    assert.equal(result.status, 0, `expected exit 0, got ${result.status}; stderr: ${result.stderr}`);
+    const payload = JSON.parse(result.stdout.trim());
+    assert.strictEqual(payload.same_revision, true);
+    assert.equal(payload.from_revision, 2);
+    assert.equal(payload.to_revision, 2);
+    const body = readFileSync(join(root, specPath), 'utf8');
+    assert.ok(body.includes('revision: 2'));
+    assert.ok(body.includes('Second-pass text.'));
+    assert.ok(!body.includes('First-pass text.'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('adev specify revise --same-revision on a review-blocked spec — SPEC_NOT_PENDING (exit 2)', () => {
+  const { root, specPath } = makeBlockedSpec({ revision: 1, status: 'review-blocked' });
+  try {
+    const before = readFileSync(join(root, specPath), 'utf8');
+    const result = runCli(root, ['revise', '--spec', specPath, '--auto', '--same-revision']);
+    assert.equal(result.status, 2);
+    assert.ok(result.stderr.includes('SPEC_NOT_PENDING'), `stderr: ${result.stderr}`);
+    assert.strictEqual(readFileSync(join(root, specPath), 'utf8'), before);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});

@@ -105,3 +105,34 @@ test('adev specify check-mechanisms fails on missing --spec — exit 1', () => {
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('adev specify check-mechanisms tags each unresolved referent with its enclosing section anchor', () => {
+  const { root, specPath } = makeSpec([
+    '## Preconditions', '', 'See `lib/foo.mjs:2` for the return.', '',
+    '## Behaviors', '', '### Retry', '', 'See `lib/missing.mjs:1` for details.', '',
+  ]);
+  try {
+    const result = runCli(root, ['check-mechanisms', '--spec', specPath]);
+    assert.equal(result.status, 2);
+    const payload = JSON.parse(result.stdout.trim());
+    assert.strictEqual(payload.unresolved.length, 1);
+    assert.strictEqual(payload.unresolved[0].section_anchor, 'retry');
+    assert.ok(payload.extracted, 'extracted is always present');
+    assert.ok(Array.isArray(payload.extracted.flags));
+    assert.ok(Array.isArray(payload.extracted.errorCodes));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('adev specify check-mechanisms reports section_anchor "(none)" for a referent above every heading', () => {
+  const { root, specPath } = makeSpec(['See `lib/missing.mjs:1` before any heading.', '']);
+  try {
+    const result = runCli(root, ['check-mechanisms', '--spec', specPath]);
+    assert.equal(result.status, 2);
+    const payload = JSON.parse(result.stdout.trim());
+    assert.strictEqual(payload.unresolved[0].section_anchor, '(none)');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});

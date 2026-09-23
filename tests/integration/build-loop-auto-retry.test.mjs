@@ -29,19 +29,24 @@ import {
   mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
 
 import { buildBlockerId } from '../../lib/blocker-id.mjs';
 import { writeBlockers } from '../../lib/blockers-writer.mjs';
-import {
-  reviseSpec, parseBlockersSidecar, resolveSectionAnchors, groupBlockersByAnchor,
-} from '../../lib/specify-revise.mjs';
+import { reviseSpec, parseBlockersSidecar } from '../../lib/specify-revise.mjs';
 import { readEvents, reportReviewer } from '../../lib/lifecycle-state.mjs';
 import {
   partitionBlockers, evaluateStopCondition,
 } from '../../lib/loop-convergence.mjs';
 import { renderRemedyRef } from '../../lib/governance/remedy-ref-render.mjs';
-import { run as runMechanismExistence } from '../../lib/diagnostics/tier2/mechanism-existence.mjs';
+
+const CLI = resolve(dirname(fileURLToPath(import.meta.url)), '../../cli/index.mjs');
+
+function runAdev(root, args) {
+  return spawnSync(process.execPath, [CLI, ...args], { cwd: root, encoding: 'utf8' });
+}
 
 function makeSpec({ revision }) {
   const root = mkdtempSync(join(tmpdir(), 'adev-build-loop-'));
@@ -254,39 +259,30 @@ test('build-loop: BUDGET_EXHAUSTED terminates the loop when retries run out', ()
   assert.deepEqual(verdict, { stop: true, verdict: 'BUDGET_EXHAUSTED' });
 });
 
-// ── Task 9: DECISION_REQUIRED / EXTERNAL_REMEDY / mechanism-existence inner
-// cap / NOT_CONVERGING — skills/build/SKILL.md's Blocker handling loop
-// (skills/build/blocker-auto-retry-loop.md) branches BEFORE dispatching
-// authoring, using the same finding_class breakdown
-// `adev specify group-blockers` computes at the CLI layer. These tests
-// exercise the underlying library functions the skill's prose describes,
-// the same style the pre-existing tests above use (no `simulateBuildLoop`
-// black box exists — the loop is orchestrated by the agent executing the
-// skill's prose, not by a callable JS function).
+// ── finding_class branches, mechanism-existence inner cap, NOT_CONVERGING ──
 
-test('build-loop: a decision-classed blocker is detected via groupBlockersByAnchor/parseBlockersSidecar and never reaches an authoring group', () => {
+test('build-loop: a decision-classed reviewer finding flows through blockers write + group-blockers into the DECISION_REQUIRED halt signal', () => {
   const { root, specPath } = makeSpec({ revision: 1 });
   try {
-    const id_decision = buildBlockerId({
-      reviewer: 'sa', type: 'y', sectionAnchor: 'behaviors-1', findingText: 'needs-human-call',
-    });
-    emitBlockers(root, specPath, [id_decision], 1, { findingClasses: ['decision'] });
+    // Reviewer output as review-specs Step 6 hands it over: finding_type, no
+    // blocker_id — the verb derives the id, so this exercises the same path.
+    const findings = [
+      { reviewer: 'sa', finding_type: 'y', section_anchor: 'behaviors-1', prose: 'needs a human call on retry semantics', finding_class: 'decision' },
+      { reviewer: 'sa', finding_type: 'y', section_anchor: 'behaviors-2', prose: 'missing error path', finding_class: 'defect' },
+    ];
+    const write = runAdev(root, ['blockers', 'write', '--spec', specPath, '--findings', JSON.stringify(findings), '--revision', '1', '--json']);
+    assert.equal(write.status, 0, write.stderr);
+    assert.strictEqual(JSON.parse(write.stdout).entries, 2);
 
-    const blockersText = readFileSync(
-      join(root, specPath.replace(/\.spec\.md$/, '.blockers.md')), 'utf8',
-    );
-    const entries = parseBlockersSidecar(blockersText);
-    assert.strictEqual(entries[0].finding_class, 'decision');
-
-    // Per skills/build/blocker-auto-retry-loop.md step 4: a decision-classed
-    // blocker halts BEFORE any authoring dispatch. Prove the data the skill
-    // branches on: groupBlockersByAnchor (defect-only) has no group for it,
-    // so no authoring subagent would ever be dispatched for this blocker.
-    const specBody = readFileSync(join(root, specPath), 'utf8');
-    const bodyOnly = specBody.split('---').slice(2).join('---');
-    const anchors = resolveSectionAnchors(bodyOnly);
-    const { grouped } = groupBlockersByAnchor(entries, anchors);
-    assert.strictEqual(grouped.size, 0, 'a decision-classed blocker must never form an authoring group');
+    const group = runAdev(root, ['specify', 'group-blockers', '--spec', specPath]);
+    assert.equal(group.status, 0, group.stderr);
+    const payload = JSON.parse(group.stdout.trim());
+    const decisionId = buildBlockerId({ reviewer: 'sa', type: 'y', sectionAnchor: 'behaviors-1', findingText: findings[0].prose });
+    // blocker-auto-retry-loop.md step 4 halts with DECISION_REQUIRED exactly
+    // when decision_blocker_ids is non-empty, before any authoring dispatch.
+    assert.deepStrictEqual(payload.decision_blocker_ids, [decisionId]);
+    assert.deepStrictEqual(Object.keys(payload.anchors), ['behaviors-2'],
+      'only the defect finding may form an authoring group');
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -315,12 +311,6 @@ test('build-loop: an external-classed blocker is excluded from convergence accou
     assert.strictEqual(externalEntry.finding_class, 'external');
     assert.strictEqual(externalEntry.remedy_ref, 'see ADR-0022');
 
-    // Per skills/build/blocker-auto-retry-loop.md step 4: the External
-    // Remedies progress line renders remedy_ref through the SAME
-    // renderRemedyRef helper Task 11 keeps in sync with review-specs'
-    // report section.
-    const line = `External remedy needed for ${externalEntry.blocker_id} (${externalEntry.section_anchor}): ${renderRemedyRef(externalEntry.remedy_ref)}`;
-    assert.ok(line.includes('see ADR-0022'));
 
     // Convergence accounting excludes the external id from both blocker
     // sets before partitioning — only the defect id participates. The
@@ -353,34 +343,52 @@ test('build-loop: an external-classed blocker is excluded from convergence accou
   }
 });
 
-test('build-loop: the mechanism-existence inner cap (3 attempts) exhausting does NOT decrement the outer retries_remaining, and vice versa', () => {
-  const root = mkdtempSync(join(tmpdir(), 'adev-build-loop-mech-'));
-  mkdirSync(join(root, 'lib'), { recursive: true });
+test('build-loop: mechanism-existence inner retries re-author the same revision, so they never consume an outer retry', () => {
+  const { root, specPath } = makeSpec({ revision: 1 });
   try {
-    // A spec citing a referent that will never resolve, simulating an
-    // authoring subagent that keeps citing a nonexistent file across
-    // 3 consecutive fix attempts.
-    const authoredText = 'see `lib/does-not-exist.mjs:1` for the fix';
+    const findings = [{ reviewer: 'sa', finding_type: 'y', section_anchor: 'behaviors-1', prose: 'X is underspecified', finding_class: 'defect' }];
+    assert.equal(runAdev(root, ['blockers', 'write', '--spec', specPath, '--findings', JSON.stringify(findings), '--revision', '1']).status, 0);
 
-    let innerCounter = 0;
-    let outerRetriesRemaining = 2; // build.max_review_retries default 2
-    const outerRetriesAtStart = outerRetriesRemaining;
+    // Step 5a: the outer pass produces revision 2, and the authored body cites
+    // a referent that does not exist.
+    const badBody = (n) => `1. **When** invoked **then** see \`lib/does-not-exist-${n}.mjs:1\`.`;
+    const first = runAdev(root, ['specify', 'revise', '--spec', specPath, '--auto',
+      '--authored-sections', JSON.stringify({ 'behaviors-1': badBody(0) })]);
+    assert.equal(first.status, 0, first.stderr);
+    assert.equal(JSON.parse(first.stdout.trim()).to_revision, 2);
 
-    let finalVerdict = null;
-    for (let attempt = 0; attempt < 5; attempt++) {
-      const result = runMechanismExistence({ projectRoot: root, authoredText });
-      if (!result.fired) { finalVerdict = 'RESOLVED'; break; }
-      innerCounter++;
-      if (innerCounter >= 3) { finalVerdict = 'BUDGET_EXHAUSTED'; break; }
-      // Per skills/build/blocker-auto-retry-loop.md step 5c: loop back to
-      // authoring on the SAME revision — retries_remaining is never touched
-      // here, only the inner counter.
+    // Steps 5b/5c: check, re-author on the same revision, re-check — up to
+    // the 3-attempt cap.
+    let attempts = 0;
+    for (let n = 1; n <= 3; n++) {
+      const check = runAdev(root, ['specify', 'check-mechanisms', '--spec', specPath]);
+      assert.equal(check.status, 2, 'the cited referent never resolves');
+      const unresolved = JSON.parse(check.stdout.trim()).unresolved;
+      assert.strictEqual(unresolved[0].section_anchor, 'behaviors-1');
+      attempts++;
+      if (attempts === 3) break;
+      const mechFindings = unresolved.map(u => ({
+        reviewer: 'build-loop', finding_type: 'mechanism-existence', finding_class: 'defect',
+        section_anchor: u.section_anchor, prose: `Unresolved referent ${u.candidate}: ${u.reason}`,
+      }));
+      const mechWrite = runAdev(root, ['blockers', 'write', '--spec', specPath, '--findings', JSON.stringify(mechFindings), '--revision', '2']);
+      assert.equal(mechWrite.status, 0, mechWrite.stderr);
+      const regroup = JSON.parse(runAdev(root, ['specify', 'group-blockers', '--spec', specPath]).stdout.trim());
+      assert.deepStrictEqual(Object.keys(regroup.anchors), ['behaviors-1']);
+      const retry = runAdev(root, ['specify', 'revise', '--spec', specPath, '--same-revision',
+        '--authored-sections', JSON.stringify({ 'behaviors-1': badBody(n) })]);
+      assert.equal(retry.status, 0, `inner retry ${n} must not hit SPEC_NOT_BLOCKED: ${retry.stderr}`);
+      assert.equal(JSON.parse(retry.stdout.trim()).to_revision, 2);
     }
+    assert.strictEqual(attempts, 3);
 
-    assert.strictEqual(finalVerdict, 'BUDGET_EXHAUSTED');
-    assert.strictEqual(innerCounter, 3);
-    assert.strictEqual(outerRetriesRemaining, outerRetriesAtStart,
-      'inner mechanism-check cap exhausting must never decrement retries_remaining');
+    // The outer budget is charged per revision produced (one spec_revised per
+    // outer pass). Three inner attempts left both at exactly one.
+    const body = readFileSync(join(root, specPath), 'utf8');
+    assert.ok(body.includes('revision: 2'));
+    assert.ok(body.includes('does-not-exist-2.mjs'), 'the last inner attempt was spliced');
+    const revised = readEvents(root, specPath).filter(e => e.event === 'spec_revised');
+    assert.strictEqual(revised.length, 1);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -404,56 +412,28 @@ test('build-loop: NOT_CONVERGING reaches the verdict-action table and halts dist
   assert.notStrictEqual(verdict.verdict, 'NO_PROGRESS');
 });
 
-// ── Task 11: External Remedies two-channel consistency (WR-3) ──────────────
-//
-// skills/build/blocker-auto-retry-loop.md's "External remedies" progress
-// line and skills/review-specs/SKILL.md's "External Remedies" report
-// section both render {blocker_id, section_anchor, remedy_ref} in the same
-// order, both routing remedy_ref through the SAME renderRemedyRef helper.
-// No dedicated "renderExternalRemedyProgressLine"/"renderExternalRemediesReportSection"
-// lib functions exist — the rendering happens in SKILL.md prose executed by
-// an agent, not by callable JS. This test proves the actual shared
-// mechanism (renderRemedyRef) produces byte-identical output for the same
-// input, which is what makes the two independently-composed strings agree.
+// ── External Remedies two-channel consistency (WR-3) ──────────────────────
 
-test('External Remedies: the build progress line and the review report section render remedy_ref byte-identically via the shared helper', () => {
-  const blocker = { blocker_id: 'sa:y:aabbccdd', section_anchor: 'behaviors-3', remedy_ref: 'see ADR-0022' };
+test('External Remedies: the review report rows and the build progress line carry byte-identical remedy_ref', () => {
+  const { root, specPath } = makeSpec({ revision: 1 });
+  try {
+    const longRef = `see ADR-0022 ${'x'.repeat(300)}`;
+    const findings = [{ reviewer: 'sa', finding_type: 'y', section_anchor: 'behaviors-3', prose: 'needs an external system change', finding_class: 'external', remedy_ref: longRef }];
+    // Report channel: review-specs Step 5 copies rows from externalRemedies.
+    const write = runAdev(root, ['blockers', 'write', '--spec', specPath, '--findings', JSON.stringify(findings), '--revision', '1', '--json']);
+    assert.equal(write.status, 0, write.stderr);
+    const reportRows = JSON.parse(write.stdout).externalRemedies;
+    // Progress-line channel: the build loop reads group-blockers after the
+    // sidecar round-trip.
+    const group = runAdev(root, ['specify', 'group-blockers', '--spec', specPath]);
+    assert.equal(group.status, 0, group.stderr);
+    const progressRows = JSON.parse(group.stdout.trim()).external_blockers;
 
-  // skills/build/blocker-auto-retry-loop.md step 4's documented format:
-  // "External remedy needed for <blocker_id> (<section_anchor>): <rendered remedy_ref>"
-  const progressLine =
-    `External remedy needed for ${blocker.blocker_id} (${blocker.section_anchor}): ${renderRemedyRef(blocker.remedy_ref)}`;
-
-  // skills/review-specs/SKILL.md Step 5's "External Remedies" table row:
-  // | <blocker_id> | <section_anchor> | <renderRemedyRef(remedy_ref)> |
-  const reportRow =
-    `| ${blocker.blocker_id} | ${blocker.section_anchor} | ${renderRemedyRef(blocker.remedy_ref)} |`;
-
-  const rendered = renderRemedyRef(blocker.remedy_ref);
-  assert.ok(progressLine.includes(rendered));
-  assert.ok(reportRow.includes(rendered));
-  // Both channels embed the exact same rendered substring — neither
-  // independently re-derives or re-sanitizes remedy_ref.
-  const progressSubstring = progressLine.slice(
-    progressLine.indexOf(rendered), progressLine.indexOf(rendered) + rendered.length,
-  );
-  const reportSubstring = reportRow.slice(
-    reportRow.indexOf(rendered), reportRow.indexOf(rendered) + rendered.length,
-  );
-  assert.strictEqual(progressSubstring, reportSubstring);
-  assert.strictEqual(progressSubstring, rendered);
-});
-
-test('External Remedies: a remedy_ref with control characters/ANSI escapes renders identically stripped on both channels', () => {
-  const blocker = { blocker_id: 'sa:y:11223344', section_anchor: 'behaviors-1', remedy_ref: '\x1b[31msee ADR-0099\x1b[0m\x07' };
-  const rendered = renderRemedyRef(blocker.remedy_ref);
-  assert.strictEqual(rendered, 'see ADR-0099');
-
-  const progressLine = `External remedy needed for ${blocker.blocker_id} (${blocker.section_anchor}): ${renderRemedyRef(blocker.remedy_ref)}`;
-  const reportRow = `| ${blocker.blocker_id} | ${blocker.section_anchor} | ${renderRemedyRef(blocker.remedy_ref)} |`;
-  assert.ok(progressLine.endsWith(rendered));
-  assert.ok(reportRow.includes(rendered));
-  // Neither channel leaks the raw escape sequence.
-  assert.ok(!progressLine.includes('\x1b'));
-  assert.ok(!reportRow.includes('\x1b'));
+    assert.strictEqual(reportRows.length, 1);
+    assert.deepStrictEqual(progressRows, reportRows);
+    assert.strictEqual(reportRows[0].remedy_ref, renderRemedyRef(longRef));
+    assert.ok(reportRows[0].remedy_ref.endsWith('...'), 'rendered, not raw');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });

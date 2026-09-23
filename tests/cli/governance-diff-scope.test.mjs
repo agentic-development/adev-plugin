@@ -96,6 +96,28 @@ test('adev governance diff-scope scopes to changed + cross-referenced sections o
   }
 });
 
+test('adev governance diff-scope falls back to full context (no-content-changed) when only frontmatter moved', () => {
+  const root = makeGitRoot();
+  const specPath = '.context-index/specs/cross-cutting/sample.spec.md';
+  try {
+    const body = ['## Preconditions', '', 'Same text.', ''];
+    writeSpec(root, specPath, 1, body);
+    sh(root, ['git', 'add', '.']);
+    sh(root, ['git', 'commit', '-q', '-m', 'rev1']);
+    sh(root, ['node', CLI, 'report', '--type', 'step', '--spec', specPath, '--step', 'review', '--status', 'started', '--revision', '1']);
+    sh(root, ['node', CLI, 'report', '--type', 'step', '--spec', specPath, '--step', 'review', '--status', 'completed', '--verdict', 'BLOCK', '--revision', '1']);
+    writeSpec(root, specPath, 2, body);
+
+    const result = runCli(root, ['diff-scope', '--spec', specPath, '--json']);
+    assert.equal(result.status, 0, `stderr: ${result.stderr}`);
+    const payload = JSON.parse(result.stdout.trim());
+    assert.strictEqual(payload.scoped, false, 'an empty scope must never be handed to reviewers as scoped content');
+    assert.strictEqual(payload.reason, 'no-content-changed');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('adev governance diff-scope reports scoped:false (git-unavailable) when the spec is not committed', () => {
   const root = makeGitRoot();
   const specPath = '.context-index/specs/cross-cutting/sample.spec.md';

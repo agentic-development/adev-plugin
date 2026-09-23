@@ -27,6 +27,6 @@ Agent({
 
 When review returns BLOCK and `--full` is set, the build dispatches `/adev:specify --revise <spec>` against the canonical `blocker_id`-keyed `<spec-stem>.blockers.md` sidecar, in the auto-retry loop reinstated by the `review-block-auto-retry` cross-cutting spec (amended by rev 2 with `finding_class`-branching, a `mechanism-existence` inner-cap check, and `NOT_CONVERGING`).
 
-> **Conditional loading:** Read `skills/build/blocker-auto-retry-loop.md` for the full loop steps, the `DECISION_REQUIRED`/`EXTERNAL_REMEDY` finding_class branches, the `mechanism-existence` inner-cap check, the verdict-action table (including `NOT_CONVERGING`), the `LEGACY_REVIEWER_OUTPUT` detection, and the sidecar+fail-loud fallback. Load it whenever review returns BLOCK with `--full` set.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/build/references/blocker-auto-retry-loop.md` for the full loop steps, the `DECISION_REQUIRED`/`EXTERNAL_REMEDY` finding_class branches, the `mechanism-existence` inner-cap check, the verdict-action table (including `NOT_CONVERGING`), the `LEGACY_REVIEWER_OUTPUT` detection, and the sidecar+fail-loud fallback. Load it whenever review returns BLOCK with `--full` set.
 
 When `--full` is NOT set: review BLOCK stops the build immediately (no auto-retry, no sidecar write — the Implement Pipeline assumes a pre-existing PASS review).

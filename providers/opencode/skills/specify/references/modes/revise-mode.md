@@ -14,15 +14,17 @@ Sixth workflow axis. Reads a BLOCKED spec at revision N together with the review
 1. **Gate** the prior step via the lifecycle log (the `review` step must have completed; the revise workflow only makes sense after a BLOCK).
 2. **Per-anchor authoring dispatch (BEH-4).**
 
-   > **Conditional loading:** Read `skills/specify/revise-mode-authoring-dispatch.md` — the `group-blockers` call, per-anchor `Agent({...})` fan-out, and `authoredSections` collection. Load it every time Revise Mode runs.
+   > **Conditional loading:** Read `<ADEV_ROOT>/skills/specify/references/revise-mode-authoring-dispatch.md` — the `group-blockers` call, per-anchor `Agent({...})` fan-out, and `authoredSections` collection. Load it every time Revise Mode runs.
 
 3. **Run the CLI verb**, passing the collected authored sections:
 
    ```bash
-   adev specify revise --spec <spec-path> [--auto] [--authored-sections <json-or-@path>]
+   adev specify revise --spec <spec-path> [--auto] [--same-revision] [--authored-sections <json-or-@path>]
    ```
 
    `--authored-sections` accepts a JSON object literal or `@<path>` naming a JSON file (argv limits). Omit when step 2 produced no entries.
+
+   `--same-revision` re-authors sections of the revision a preceding revise already produced, instead of producing a new one: it requires status `review-pending`, leaves `revision:` unchanged, and emits no `spec_revised` event. The build loop uses it for its mechanism-existence inner retry (`<ADEV_ROOT>/skills/build/references/blocker-auto-retry-loop.md` step 5b); a standalone revise never needs it.
 
    The verb wraps `lib/specify-revise.mjs::reviseSpec` and:
    - Bumps `revision:` N→N+1 (`REVISION_NOT_INCREMENTED` is a hard stop); sets `updated:` to today; `status: review-blocked → review-pending`.
@@ -51,6 +53,7 @@ Sixth workflow axis. Reads a BLOCKED spec at revision N together with the review
 | Spec status not `review-blocked` under `--auto` | 2 | `SPEC_NOT_BLOCKED` | Stop; ask the user to confirm explicit revision intent |
 | Path traversal or spec outside `projectRoot` | 1 | `INVALID_SPEC_PATH` | Stop; report the malformed path |
 | `revision:` did not increment by exactly 1 | 1 | `REVISION_NOT_INCREMENTED` | Stop; report — usually a bug in the library, not user input |
+| `--same-revision` on a spec whose status is not `review-pending` | 2 | `SPEC_NOT_PENDING` | Stop; the spec is not the revision this pass started from |
 | `--authored-sections` invalid JSON / non-string value | 1 | `INVALID_AUTHORED_SECTIONS` | Stop; report the malformed entry |
 | Authored body matched no heading anchor | advisory | `ANCHOR_NOT_FOUND` | Non-fatal; skip, blocker stays `unresolved` |
 | Authored body has a fence line or control char (BEH-5a) | advisory | `SPLICE_VALIDATION_FAILED` | Non-fatal; prior text kept, blocker stays `unresolved` |
