@@ -48,6 +48,7 @@ import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync, statSy
 import { join, dirname, resolve, basename } from 'path';
 import { fileURLToPath } from 'url';
 import { homedir } from 'os';
+import { computeCost } from '../../../lib/token-pricing.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, '..', '..', '..');
@@ -123,6 +124,7 @@ function parseSessionJsonl(filePath) {
           output: u.output_tokens || 0,
           cacheCreate: u.cache_creation_input_tokens || 0,
           cacheRead: u.cache_read_input_tokens || 0,
+          model: obj.message?.model || null,
           tools,
           toolCount: tools.length,
           outputChars,
@@ -134,6 +136,32 @@ function parseSessionJsonl(filePath) {
     } catch { /* skip malformed */ }
   }
   return turns;
+}
+
+// Cost from REAL per-model rates (lib/token-pricing.mjs), never a fixed
+// assumed tier. A session mixes models across turns (main-loop model vs.
+// each reviewer subagent's own profile.model.tier — fast/capable/reasoning
+// commonly resolve to different models), so cost is summed per turn using
+// that turn's own `model` field, not one rate applied to the whole session.
+// A model absent from PRICE_TABLE is reported as unpriced rather than
+// guessed at with someone else's rate — silently mis-costing one model as
+// another is worse than an honest "N tokens unpriced".
+function sumTurnsCost(turnsList) {
+  let cost = 0;
+  let unknownTokens = 0;
+  const unknownModels = new Set();
+  for (const t of turnsList) {
+    const c = t.model
+      ? computeCost(t.model, { inputTokens: t.input, outputTokens: t.output, cacheReadTokens: t.cacheRead, cacheCreationTokens: t.cacheCreate })
+      : null;
+    if (c === null) {
+      unknownTokens += t.input + t.output + t.cacheCreate + t.cacheRead;
+      unknownModels.add(t.model || '(missing model field)');
+    } else {
+      cost += c;
+    }
+  }
+  return { cost, unknownTokens, unknownModels: [...unknownModels] };
 }
 
 function analyzeSession(filePath) {
@@ -153,12 +181,10 @@ function analyzeSession(filePath) {
     outputChars: turns.reduce((s, t) => s + t.outputChars, 0),
   };
   stats.totalTokens = stats.input + stats.output + stats.cacheCreate + stats.cacheRead;
-  stats.cost = (
-    (stats.input / 1e6) * 15 +
-    (stats.output / 1e6) * 75 +
-    (stats.cacheCreate / 1e6) * 18.75 +
-    (stats.cacheRead / 1e6) * 1.5
-  );
+  const mainCost = sumTurnsCost(turns);
+  stats.cost = mainCost.cost;
+  stats.costUnknownTokens = mainCost.unknownTokens;
+  stats.costUnknownModels = mainCost.unknownModels;
 
   // Tool usage breakdown
   const toolCounts = {};
@@ -177,6 +203,7 @@ function analyzeSession(filePath) {
     for (const f of readdirSync(subDir).filter(f => f.endsWith('.jsonl'))) {
       const subTurns = parseSessionJsonl(join(subDir, f));
       if (subTurns) {
+        const subCost = sumTurnsCost(subTurns);
         const sub = {
           id: f.replace('.jsonl', ''),
           turns: subTurns.length,
@@ -185,6 +212,9 @@ function analyzeSession(filePath) {
           cacheCreate: subTurns.reduce((s, t) => s + t.cacheCreate, 0),
           cacheRead: subTurns.reduce((s, t) => s + t.cacheRead, 0),
           noToolTurns: subTurns.filter(t => t.isNoTool).length,
+          cost: subCost.cost,
+          costUnknownTokens: subCost.unknownTokens,
+          costUnknownModels: subCost.unknownModels,
         };
         stats.subagents.push(sub);
       }
@@ -203,9 +233,13 @@ function analyzeSession(filePath) {
   const subCR = stats.subagents.reduce((s, a) => s + a.cacheRead, 0);
   stats.totalTokensInclSub = stats.totalTokens + subIn + subOut + subCC + subCR;
   stats.outputInclSub = stats.output + subOut;
-  stats.costInclSub = stats.cost + (
-    (subIn / 1e6) * 15 + (subOut / 1e6) * 75 + (subCC / 1e6) * 18.75 + (subCR / 1e6) * 1.5
-  );
+  const subCostTotal = stats.subagents.reduce((s, a) => s + a.cost, 0);
+  stats.costInclSub = stats.cost + subCostTotal;
+  stats.costUnknownTokensInclSub = stats.costUnknownTokens + stats.subagents.reduce((s, a) => s + a.costUnknownTokens, 0);
+  stats.costUnknownModelsInclSub = [...new Set([
+    ...stats.costUnknownModels,
+    ...stats.subagents.flatMap((a) => a.costUnknownModels),
+  ])];
 
   return stats;
 }

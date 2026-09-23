@@ -78,6 +78,82 @@ test('adev specify revise succeeds on a properly-blocked spec (exit 0)', () => {
   }
 });
 
+test('adev specify revise (Task 6 real-diff): CLI does not yet wire authoredSections, so nothing is addressed by blanket acknowledgement', () => {
+  // Regression guard for the defect this task fixes: prior to Task 6,
+  // addressed_blocker_ids echoed the full blocker set unconditionally.
+  // The CLI verb does not pass `authoredSections` (that wiring is Task 7's
+  // job), so a plain `adev specify revise` must now report nothing
+  // addressed and everything unresolved — never a fabricated "addressed".
+  const { root, specPath } = makeBlockedSpec({ revision: 1 });
+  try {
+    const result = runCli(root, ['revise', '--spec', specPath]);
+    assert.equal(result.status, 0);
+    const payload = JSON.parse(result.stdout.trim());
+    assert.deepStrictEqual(payload.addressed_blocker_ids, []);
+    assert.deepStrictEqual(payload.unresolved_blocker_ids, ['sa:x:11111111']);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('adev specify revise --authored-sections (JSON literal) splices an authored body and reports it addressed', () => {
+  const { root, specPath } = makeBlockedSpec({ revision: 1 });
+  try {
+    // This fixture's spec only has a "## Behaviors" heading and the sidecar's
+    // blocker anchors to "preconditions" (no match) — swap in a spec whose
+    // heading actually matches the blocker's section_anchor.
+    writeFileSync(join(root, specPath), [
+      '# Live Spec', '', '---', 'revision: 1', 'created: 2026-05-01',
+      'updated: 2026-05-01', 'status: review-blocked', '---', '',
+      '## Preconditions', '', 'Original text.', '',
+    ].join('\n'));
+    const result = runCli(root, [
+      'revise', '--spec', specPath,
+      '--authored-sections', JSON.stringify({ preconditions: 'Newly authored text.' }),
+    ]);
+    assert.equal(result.status, 0, `expected exit 0, got ${result.status}; stderr: ${result.stderr}`);
+    const payload = JSON.parse(result.stdout.trim());
+    assert.deepStrictEqual(payload.addressed_blocker_ids, ['sa:x:11111111']);
+    assert.deepStrictEqual(payload.unresolved_blocker_ids, []);
+    const body = readFileSync(join(root, specPath), 'utf8');
+    assert.ok(body.includes('Newly authored text.'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('adev specify revise --authored-sections @<path> reads the map from a JSON file', () => {
+  const { root, specPath } = makeBlockedSpec({ revision: 1 });
+  try {
+    writeFileSync(join(root, specPath), [
+      '# Live Spec', '', '---', 'revision: 1', 'created: 2026-05-01',
+      'updated: 2026-05-01', 'status: review-blocked', '---', '',
+      '## Preconditions', '', 'Original text.', '',
+    ].join('\n'));
+    const sectionsPath = join(root, 'sections.json');
+    writeFileSync(sectionsPath, JSON.stringify({ preconditions: 'From a file.' }));
+    const result = runCli(root, [
+      'revise', '--spec', specPath, '--authored-sections', '@sections.json',
+    ]);
+    assert.equal(result.status, 0, `stderr: ${result.stderr}`);
+    const body = readFileSync(join(root, specPath), 'utf8');
+    assert.ok(body.includes('From a file.'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('adev specify revise --authored-sections rejects invalid JSON — INVALID_AUTHORED_SECTIONS', () => {
+  const { root, specPath } = makeBlockedSpec({ revision: 1 });
+  try {
+    const result = runCli(root, ['revise', '--spec', specPath, '--authored-sections', 'not json']);
+    assert.equal(result.status, 1);
+    assert.ok(result.stderr.includes('INVALID_AUTHORED_SECTIONS'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('adev specify revise rejects path-traversal — INVALID_SPEC_PATH (exit 1)', () => {
   const { root } = makeBlockedSpec();
   try {
@@ -171,6 +247,45 @@ test('adev specify revise fails on missing sidecars — NO_REVIEW_SIDECARS', () 
     const result = runCli(root, ['revise', '--spec', specPath]);
     assert.equal(result.status, 1);
     assert.ok(result.stderr.includes('NO_REVIEW_SIDECARS'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('adev specify revise --same-revision re-authors a review-pending spec without bumping revision', () => {
+  const { root, specPath } = makeBlockedSpec({ revision: 2, status: 'review-pending' });
+  try {
+    writeFileSync(join(root, specPath), [
+      '# Live Spec', '', '---', 'revision: 2', 'created: 2026-05-01',
+      'updated: 2026-05-01', 'status: review-pending', '---', '',
+      '## Preconditions', '', 'First-pass text.', '',
+    ].join('\n'));
+    const result = runCli(root, [
+      'revise', '--spec', specPath, '--auto', '--same-revision',
+      '--authored-sections', JSON.stringify({ preconditions: 'Second-pass text.' }),
+    ]);
+    assert.equal(result.status, 0, `expected exit 0, got ${result.status}; stderr: ${result.stderr}`);
+    const payload = JSON.parse(result.stdout.trim());
+    assert.strictEqual(payload.same_revision, true);
+    assert.equal(payload.from_revision, 2);
+    assert.equal(payload.to_revision, 2);
+    const body = readFileSync(join(root, specPath), 'utf8');
+    assert.ok(body.includes('revision: 2'));
+    assert.ok(body.includes('Second-pass text.'));
+    assert.ok(!body.includes('First-pass text.'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('adev specify revise --same-revision on a review-blocked spec — SPEC_NOT_PENDING (exit 2)', () => {
+  const { root, specPath } = makeBlockedSpec({ revision: 1, status: 'review-blocked' });
+  try {
+    const before = readFileSync(join(root, specPath), 'utf8');
+    const result = runCli(root, ['revise', '--spec', specPath, '--auto', '--same-revision']);
+    assert.equal(result.status, 2);
+    assert.ok(result.stderr.includes('SPEC_NOT_PENDING'), `stderr: ${result.stderr}`);
+    assert.strictEqual(readFileSync(join(root, specPath), 'utf8'), before);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
