@@ -186,4 +186,4 @@ Skills follow a strict pipeline: init → brainstorm → specify → review-spec
 - **Skills are markdown, not code** — they are portable across AI tools and contain no executable logic (companion code is allowed but not required).
 - **Hooks are bash** — they execute in the shell, read JSON from stdin and `CLAUDE_TOOL_INPUT_*` env vars, and communicate via exit codes and JSON stdout.
 - **Templates are static** — changes to templates only affect newly scaffolded projects, not existing ones.
-- **CLI dispatcher + verb modules** — `cli/index.mjs` (~1790 lines) handles install/scaffold/upgrade and dispatches `adev <verb>` commands, each implemented as `lib/cli/<verb>.mjs` (the cli-driver-surface model: prose names the verb, a helper does the work).
+- **CLI dispatcher + verb modules** — `cli/index.mjs` (~2323 lines) handles install/scaffold/upgrade and dispatches `adev <verb>` commands, each implemented as `lib/cli/<verb>.mjs` (the cli-driver-surface model: prose names the verb, a helper does the work).

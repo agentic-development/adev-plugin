@@ -1,5 +1,6 @@
 ---
 status: draft
+kind: feature
 revision: 1
 updated: 2026-05-09
 tracker-ref: issue-345
