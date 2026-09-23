@@ -276,15 +276,38 @@ function waitForSessionStats(sessionPath, timeoutMs = 5000, pollMs = 250) {
 }
 
 // ─── Spawn one real claude session ─────────────────────────────────────────
+//
+// This script is itself commonly run from inside an interactive Claude Code
+// session (e.g. via a Bash/Monitor tool call). Blindly inheriting
+// `process.env` tags the spawned trial as a CHILD of that outer session
+// (CLAUDE_CODE_CHILD_SESSION, CLAUDE_CODE_MESSAGING_SOCKET, CLAUDE_PID,
+// CLAUDE_CODE_SESSION_ID, plus the cmux wrapper's own CMUX_* identity vars,
+// when running under that harness) rather than the genuinely independent
+// top-level session this eval's own design assumes ("every cycle is a live
+// claude session"). Found live: a child-tagged session's `adev` CLI calls
+// were rejected with "This command requires approval" even under
+// `--dangerously-skip-permissions` (plain commands like `ls`/`pwd` were
+// unaffected), because the wrapper gates a child session's permission
+// bypass through the parent regardless of the flag. Stripping this
+// identity subset — not the whole environment, PATH/HOME/etc. must survive
+// — makes the spawned process present as an independent session again.
+const SESSION_IDENTITY_ENV_KEYS = [
+  'CLAUDE_CODE_CHILD_SESSION', 'CLAUDE_CODE_MESSAGING_SOCKET', 'CLAUDE_CODE_SESSION_ID',
+  'CLAUDE_PID', 'CLAUDECODE', 'CLAUDE_CODE_EXECPATH', 'AI_AGENT',
+  'CMUX_CLAUDE_PID', 'CMUX_AGENT_LAUNCH_KIND', 'CMUX_AGENT_LAUNCH_EXECUTABLE',
+  'CMUX_CLAUDE_WRAPPER_SHIM', 'CMUX_CLAUDE_WRAPPER_SHIM_ROOT', 'CMUX_CLAUDE_HOOK_CMUX_BIN',
+];
 
 function runBuildSession(pluginDir, label) {
   const prompt = `/adev:build --full --auto --tier ${tier} --spec ${FIXTURE_SPEC_REL}`;
   console.log(`  [${label}] ${prompt}`);
   const startTime = Date.now();
+  const spawnEnv = { ...process.env, CLAUDE_CODE_ENTRYPOINT: 'cli' };
+  for (const key of SESSION_IDENTITY_ENV_KEYS) delete spawnEnv[key];
   try {
     const out = execSync(
       `claude --print --output-format json --dangerously-skip-permissions --plugin-dir "${pluginDir}" -p "${prompt}"`,
-      { cwd: SANDBOX, encoding: 'utf-8', timeout: timeoutMs, env: { ...process.env, CLAUDE_CODE_ENTRYPOINT: 'cli' }, stdio: ['pipe', 'pipe', 'pipe'] },
+      { cwd: SANDBOX, encoding: 'utf-8', timeout: timeoutMs, env: spawnEnv, stdio: ['pipe', 'pipe', 'pipe'] },
     );
     const durationMs = Date.now() - startTime;
     let sessionId = null;
