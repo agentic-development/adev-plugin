@@ -108,8 +108,8 @@ The tree-sitter repomap module replaces heuristic-based code analysis with accur
 | `repo-map.md` | File artifact | Human-readable symbol table with parser mode annotation. Consumed by humans and `/adev:hygiene` |
 | `dependency-graph.json` | File artifact | File nodes + import edges with types. Only produced when tree-sitter is installed. Consumed by `/adev:route`, `/adev:validate`, `/adev:recover` |
 | `symbol-ranks.json` | File artifact | PageRank-scored symbols with kind, file, line, module. Only produced when tree-sitter is installed. Consumed by `/adev:implement`, `/adev:hygiene` |
-| `node lib/repomap/index.mjs` | CLI command (tree-sitter mode only) | Orchestrator: glob files → parse → graph → rank → output. Only called when tree-sitter is installed. In regex mode, the `/adev:repomap` skill works without any companion code. |
-| `node lib/repomap/check-deps.mjs` | CLI command | Returns exit 0 if web-tree-sitter is available, exit 1 if not. Called by skills to decide parser mode |
+| `adev repomap generate` | CLI verb (`lib/cli/repomap.mjs`) | Orchestrator wrapper: glob files → parse → graph → rank → output, delegating to `lib/repomap/index.mjs`'s `run(root, mode)`. Auto-detects tree-sitter vs. regex mode; `--mode` forces one. This is the surface `/adev:repomap` calls — the constitution's cli-driver-surface rule forbids a SKILL.md from invoking `node lib/repomap/index.mjs` directly. |
+| `adev repomap check-deps` | CLI verb (`lib/cli/repomap.mjs`) | Exit 0 if `web-tree-sitter` is available, exit 1 if not. Wraps `lib/repomap/check-deps.mjs`'s `isTreeSitterAvailable()`; called by `/adev:repomap` to report the mode a run will take. |
 
 ### Consumed APIs
 

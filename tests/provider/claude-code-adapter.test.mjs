@@ -18,6 +18,7 @@ describe("ClaudeCodeAdapter", () => {
     projectDir = mkdtempSync(join(tmpdir(), "claude-project-"));
     process.env.HOME = homeDir;
     delete process.env.USERPROFILE;
+    delete process.env.CLAUDE_CONFIG_DIR;
     process.chdir(projectDir);
   });
 
@@ -74,7 +75,332 @@ describe("ClaudeCodeAdapter", () => {
     const settings = JSON.parse(readFileSync(settingsPath, "utf8"));
 
     assert.equal(settings.enabledPlugins?.["adev@agentic-development"], undefined);
-    assert.equal(existsSync(join(homeDir, ".claude", "plugins", "cache", "agentic-development")), false);
+    // Only adev's own cache folder is removed (and only because nothing else
+    // referenced any version left in it) — the shared "agentic-development"
+    // marketplace directory itself is not this plugin's to delete.
+    assert.equal(
+      existsSync(join(homeDir, ".claude", "plugins", "cache", "agentic-development", "adev")),
+      false,
+    );
+  });
+});
+
+// adev-plugin-cli-tag-scope-collision: a machine with more than one Claude
+// config dir (CLAUDE_CONFIG_DIR profiles) shares a single plugin cache when
+// the adapter always resolves ~/.claude, so an install from one profile can
+// delete the version another profile's session is actively running.
+describe("ClaudeCodeAdapter CLAUDE_CONFIG_DIR support", () => {
+  let originalEnv;
+  let originalCwd;
+  let homeDir;
+  let projectDir;
+
+  beforeEach(() => {
+    originalEnv = { ...process.env };
+    originalCwd = process.cwd();
+    homeDir = mkdtempSync(join(tmpdir(), "claude-home-"));
+    projectDir = mkdtempSync(join(tmpdir(), "claude-project-"));
+    process.env.HOME = homeDir;
+    delete process.env.USERPROFILE;
+    delete process.env.CLAUDE_CONFIG_DIR;
+    process.chdir(projectDir);
+  });
+
+  afterEach(() => {
+    process.chdir(originalCwd);
+    process.env = originalEnv;
+    rmSync(homeDir, { recursive: true, force: true });
+    rmSync(projectDir, { recursive: true, force: true });
+  });
+
+  it("resolves the config dir from CLAUDE_CONFIG_DIR when set", () => {
+    const personalDir = mkdtempSync(join(tmpdir(), "claude-personal-"));
+    process.env.CLAUDE_CONFIG_DIR = personalDir;
+    try {
+      assert.equal(ClaudeCodeAdapter.getClaudeHome(), personalDir);
+    } finally {
+      rmSync(personalDir, { recursive: true, force: true });
+    }
+  });
+
+  it("falls back to ~/.claude when CLAUDE_CONFIG_DIR is unset", () => {
+    assert.equal(ClaudeCodeAdapter.getClaudeHome(), join(homeDir, ".claude"));
+  });
+
+  it("installs into an explicit claudeHome override instead of the ambient one", async () => {
+    const personalDir = mkdtempSync(join(tmpdir(), "claude-personal-"));
+    try {
+      const result = await ClaudeCodeAdapter.install({ scope: "user", claudeHome: personalDir });
+      const cacheDir = join(personalDir, "plugins", "cache", "agentic-development", "adev", ClaudeCodeAdapter.version);
+
+      assert.equal(result.path, cacheDir);
+      assert.ok(existsSync(cacheDir));
+      // The ambient (unset -> ~/.claude) home must be untouched.
+      assert.equal(existsSync(join(homeDir, ".claude", "plugins")), false);
+
+      const settings = JSON.parse(readFileSync(join(personalDir, "settings.json"), "utf8"));
+      assert.equal(settings.enabledPlugins["adev@agentic-development"], true);
+    } finally {
+      rmSync(personalDir, { recursive: true, force: true });
+    }
+  });
+
+  it("discoverConfigDirs returns only the default when nothing else is present", () => {
+    const discovered = ClaudeCodeAdapter.discoverConfigDirs();
+    assert.equal(discovered.length, 1);
+    assert.equal(discovered[0].path, join(homeDir, ".claude"));
+    assert.equal(discovered[0].active, true);
+  });
+
+  it("discoverConfigDirs surfaces CLAUDE_CONFIG_DIR as a second, active candidate", () => {
+    const personalDir = join(homeDir, ".claude-personal");
+    mkdirSync(personalDir, { recursive: true });
+    process.env.CLAUDE_CONFIG_DIR = personalDir;
+
+    const discovered = ClaudeCodeAdapter.discoverConfigDirs();
+    const paths = discovered.map((d) => d.path);
+
+    assert.ok(paths.includes(join(homeDir, ".claude")));
+    assert.ok(paths.includes(personalDir));
+    // Active entry sorts first regardless of alphabetical order.
+    assert.equal(discovered[0].path, personalDir);
+    assert.equal(discovered[0].active, true);
+  });
+
+  it("discoverConfigDirs finds a CLAUDE_CONFIG_DIR assignment in a shell rc file", () => {
+    const otherDir = join(homeDir, "other-profile");
+    writeFileSync(join(homeDir, ".zshrc"), `export CLAUDE_CONFIG_DIR="${otherDir}"\n`);
+
+    const discovered = ClaudeCodeAdapter.discoverConfigDirs();
+    const match = discovered.find((d) => d.path === otherDir);
+
+    assert.ok(match, "expected the .zshrc-declared dir to be discovered");
+    assert.ok(match.sources.some((s) => s.includes(".zshrc")));
+  });
+
+  it("discoverConfigDirs dedupes a path found through multiple sources", () => {
+    const personalDir = join(homeDir, ".claude-personal");
+    mkdirSync(personalDir, { recursive: true });
+    process.env.CLAUDE_CONFIG_DIR = personalDir;
+    writeFileSync(join(homeDir, ".zshrc"), `export CLAUDE_CONFIG_DIR="${personalDir}"\n`);
+
+    const discovered = ClaudeCodeAdapter.discoverConfigDirs();
+    const matches = discovered.filter((d) => d.path === personalDir);
+
+    assert.equal(matches.length, 1);
+    assert.ok(matches[0].sources.length >= 2);
+  });
+});
+
+// adev-plugin-cli-tag-scope-collision: cleanOldVersions used to delete every
+// cached version except the one just installed, with no regard for whether
+// another scope/project's registry row still pointed at it. Two projects
+// sharing one claudeHome (the common case — most machines have exactly one
+// `~/.claude`) but installed at different npm dist-tags (`@latest` vs `@next`)
+// resolve to different versions; installing one used to delete the other's
+// files out from under its running session.
+describe("ClaudeCodeAdapter cleanOldVersions", () => {
+  let originalEnv;
+  let originalCwd;
+  let homeDir;
+  let projectDir;
+  let claudeHome;
+  let pluginCacheParent;
+
+  beforeEach(() => {
+    originalEnv = { ...process.env };
+    originalCwd = process.cwd();
+    homeDir = mkdtempSync(join(tmpdir(), "claude-home-"));
+    projectDir = mkdtempSync(join(tmpdir(), "claude-project-"));
+    process.env.HOME = homeDir;
+    delete process.env.USERPROFILE;
+    delete process.env.CLAUDE_CONFIG_DIR;
+    process.chdir(projectDir);
+    claudeHome = join(homeDir, ".claude");
+    pluginCacheParent = join(claudeHome, "plugins", "cache", "agentic-development", "adev");
+    mkdirSync(pluginCacheParent, { recursive: true });
+  });
+
+  afterEach(() => {
+    process.chdir(originalCwd);
+    process.env = originalEnv;
+    rmSync(homeDir, { recursive: true, force: true });
+    rmSync(projectDir, { recursive: true, force: true });
+  });
+
+  function makeVersionDir(version) {
+    mkdirSync(join(pluginCacheParent, version), { recursive: true });
+  }
+
+  function writeRegistry(rows) {
+    mkdirSync(join(claudeHome, "plugins"), { recursive: true });
+    writeFileSync(
+      join(claudeHome, "plugins", "installed_plugins.json"),
+      JSON.stringify({ version: 2, plugins: { "adev@agentic-development": rows } }, null, 2),
+    );
+  }
+
+  it("keeps every version a registry row still references, not just the current one", () => {
+    makeVersionDir("0.27.0");
+    makeVersionDir("0.28.0");
+    makeVersionDir(ClaudeCodeAdapter.version);
+    writeRegistry([
+      { scope: "user", version: "0.27.0" },
+      { scope: "project", projectPath: "/some/other/project", version: "0.28.0" },
+    ]);
+
+    ClaudeCodeAdapter.cleanOldVersions(pluginCacheParent, claudeHome);
+
+    assert.ok(existsSync(join(pluginCacheParent, "0.27.0")), "still-referenced version must survive pruning");
+    assert.ok(existsSync(join(pluginCacheParent, "0.28.0")), "a different scope's version must survive pruning");
+    assert.ok(existsSync(join(pluginCacheParent, ClaudeCodeAdapter.version)));
+  });
+
+  it("deletes a version no registry row references and that isn't the current one", () => {
+    makeVersionDir("0.20.0");
+    makeVersionDir(ClaudeCodeAdapter.version);
+    writeRegistry([{ scope: "user", version: ClaudeCodeAdapter.version }]);
+
+    ClaudeCodeAdapter.cleanOldVersions(pluginCacheParent, claudeHome);
+
+    assert.equal(existsSync(join(pluginCacheParent, "0.20.0")), false, "orphaned version must be pruned");
+    assert.ok(existsSync(join(pluginCacheParent, ClaudeCodeAdapter.version)));
+  });
+
+  it("always keeps the current version even with no registry file yet", () => {
+    makeVersionDir(ClaudeCodeAdapter.version);
+
+    ClaudeCodeAdapter.cleanOldVersions(pluginCacheParent, claudeHome);
+
+    assert.ok(existsSync(join(pluginCacheParent, ClaudeCodeAdapter.version)));
+  });
+
+  it("end-to-end: installing this build for one project does not delete another project's already-installed version", async () => {
+    const otherVersion = "0.1.0-fake-latest";
+    makeVersionDir(otherVersion);
+    writeRegistry([
+      {
+        scope: "project",
+        projectPath: "/repo/project-a",
+        version: otherVersion,
+        installPath: join(pluginCacheParent, otherVersion),
+      },
+    ]);
+
+    await ClaudeCodeAdapter.install({ scope: "project", claudeHome });
+
+    assert.ok(
+      existsSync(join(pluginCacheParent, otherVersion)),
+      "another project's already-installed version must survive this install",
+    );
+    assert.ok(existsSync(join(pluginCacheParent, ClaudeCodeAdapter.version)));
+  });
+});
+
+// uninstall() used to `rm -rf` the entire shared marketplace cache
+// unconditionally, regardless of scope — a project-scope uninstall in one
+// repo deleted every OTHER scope/project's cached version under the same
+// claudeHome too. Same blast-radius class as adev-plugin-cli-tag-scope-collision.
+describe("ClaudeCodeAdapter uninstall cache and registry safety", () => {
+  let originalEnv;
+  let originalCwd;
+  let homeDir;
+  let projectDir;
+  let claudeHome;
+  let pluginCacheParent;
+
+  beforeEach(() => {
+    originalEnv = { ...process.env };
+    originalCwd = process.cwd();
+    homeDir = mkdtempSync(join(tmpdir(), "claude-home-"));
+    projectDir = mkdtempSync(join(tmpdir(), "claude-project-"));
+    process.env.HOME = homeDir;
+    delete process.env.USERPROFILE;
+    delete process.env.CLAUDE_CONFIG_DIR;
+    process.chdir(projectDir);
+    claudeHome = join(homeDir, ".claude");
+    pluginCacheParent = join(claudeHome, "plugins", "cache", "agentic-development", "adev");
+    mkdirSync(pluginCacheParent, { recursive: true });
+  });
+
+  afterEach(() => {
+    process.chdir(originalCwd);
+    process.env = originalEnv;
+    rmSync(homeDir, { recursive: true, force: true });
+    rmSync(projectDir, { recursive: true, force: true });
+  });
+
+  function makeVersionDir(version) {
+    mkdirSync(join(pluginCacheParent, version), { recursive: true });
+  }
+
+  function writeRegistry(rows) {
+    mkdirSync(join(claudeHome, "plugins"), { recursive: true });
+    writeFileSync(
+      join(claudeHome, "plugins", "installed_plugins.json"),
+      JSON.stringify({ version: 2, plugins: { "adev@agentic-development": rows } }, null, 2),
+    );
+  }
+
+  it("a project-scope uninstall does not delete another project's cached version", async () => {
+    const thisProjectVersion = "0.27.0";
+    const otherProjectVersion = "0.28.0";
+    makeVersionDir(thisProjectVersion);
+    makeVersionDir(otherProjectVersion);
+    writeRegistry([
+      { scope: "project", projectPath: process.cwd(), version: thisProjectVersion },
+      { scope: "project", projectPath: "/some/other/project", version: otherProjectVersion },
+    ]);
+
+    await ClaudeCodeAdapter.uninstall({ scope: "project", claudeHome });
+
+    assert.equal(
+      existsSync(join(pluginCacheParent, thisProjectVersion)),
+      false,
+      "this project's own version is no longer referenced and must be pruned",
+    );
+    assert.ok(
+      existsSync(join(pluginCacheParent, otherProjectVersion)),
+      "another project's version must survive this uninstall",
+    );
+
+    const registry = JSON.parse(readFileSync(join(claudeHome, "plugins", "installed_plugins.json"), "utf8"));
+    const rows = registry.plugins["adev@agentic-development"];
+    assert.equal(rows.length, 1, "only this project's own row should be removed");
+    assert.equal(rows[0].projectPath, "/some/other/project");
+  });
+
+  it("a user-scope uninstall does not delete a version a project-scope row still uses", async () => {
+    const userVersion = "0.27.0";
+    const projectVersion = "0.28.0";
+    makeVersionDir(userVersion);
+    makeVersionDir(projectVersion);
+    writeRegistry([
+      { scope: "user", version: userVersion },
+      { scope: "project", projectPath: "/some/other/project", version: projectVersion },
+    ]);
+
+    await ClaudeCodeAdapter.uninstall({ scope: "user", claudeHome });
+
+    assert.equal(existsSync(join(pluginCacheParent, userVersion)), false);
+    assert.ok(
+      existsSync(join(pluginCacheParent, projectVersion)),
+      "a project-scope row's version must survive a user-scope uninstall",
+    );
+
+    const registry = JSON.parse(readFileSync(join(claudeHome, "plugins", "installed_plugins.json"), "utf8"));
+    const rows = registry.plugins["adev@agentic-development"];
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].scope, "project");
+  });
+
+  it("removes the adev cache folder once nothing references it anymore", async () => {
+    makeVersionDir(ClaudeCodeAdapter.version);
+    writeRegistry([{ scope: "user", version: ClaudeCodeAdapter.version }]);
+
+    await ClaudeCodeAdapter.uninstall({ scope: "user", claudeHome });
+
+    assert.equal(existsSync(pluginCacheParent), false);
   });
 });
 
@@ -94,6 +420,7 @@ describe("ClaudeCodeAdapter settings-path symlink containment", () => {
     projectDir = mkdtempSync(join(tmpdir(), "claude-project-"));
     process.env.HOME = homeDir;
     delete process.env.USERPROFILE;
+    delete process.env.CLAUDE_CONFIG_DIR;
     process.chdir(projectDir);
   });
 

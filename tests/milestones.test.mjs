@@ -26,6 +26,7 @@ import {
   resolveStrategy,
   warnIfMilestoneUndefined,
   getMilestoneStatusData,
+  GATE_TIMEOUT_MS,
 } from "../lib/milestones.mjs";
 
 // ---------------------------------------------------------------------------
@@ -980,6 +981,34 @@ describe("evaluateShipCriteria — gates_pass via governance gates.yaml (issue-5
       const results = await evaluateShipCriteria(milestone, mockManager, {}, { projectRoot: dir });
       assert.equal(results[0].passed, false);
       assert.ok(results[0].detail.includes("boom-on-stdout"), results[0].detail);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("exports GATE_TIMEOUT_MS as the 5-minute default enforced when no timeoutMs is passed", () => {
+    assert.equal(GATE_TIMEOUT_MS, 5 * 60 * 1000);
+  });
+
+  it("classifies a real subprocess timeout as 'timed out', not a raw ETIMEDOUT/kill error", async () => {
+    const dir = makeProject("gates-exec-timeout-");
+    try {
+      writeGates(dir, [
+        "gates:",
+        "  - id: slow-gate",
+        "    tier: fast",
+        '    command: [sleep, "5"]',
+        "    required: true",
+        "    severity: error",
+        "",
+      ].join("\n"));
+      const results = await evaluateShipCriteria(milestone, mockManager, {}, {
+        projectRoot: dir,
+        timeoutMs: 300,
+      });
+      assert.equal(results[0].passed, false);
+      assert.equal(results[0].gates[0].detail, "timed out after 300ms", JSON.stringify(results[0]));
+      assert.ok(results[0].detail.includes("timed out after 300ms"), results[0].detail);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

@@ -38,14 +38,40 @@ function heading(msg) {
   console.log(`\n  ${msg}\n`);
 }
 
-async function ask(question) {
-  const rl = createInterface({ input: process.stdin, output: process.stdout });
-  return new Promise((resolve) => {
-    rl.question(`  ${question} `, (answer) => {
-      rl.close();
-      resolve(answer.trim().toLowerCase());
-    });
-  });
+// Lazily created, then reused for every ask() call in this process — both
+// the readline.Interface AND its async line iterator. Node's readline,
+// fed piped (non-TTY) stdin containing more than one line, only reliably
+// delivers the FIRST line to `rl.question()`'s one-shot 'line' listener; a
+// second `.question()` call (whether on a fresh interface or the same one)
+// hangs forever waiting for a 'line' event that already fired and was
+// consumed (visible as "Detected unsettled top-level await"). This only
+// surfaced once a flow needed two sequential prompts in the common case
+// (the config-dir picker introduced alongside install/uninstall scope
+// selection) — one `ask()` call per run never hit it. Pulling from the
+// interface's own async iterator instead of `.question()` does not have
+// this problem: it is the documented way to read successive lines and
+// correctly serves one buffered line per call, TTY or piped alike.
+let sharedReadline = null;
+let sharedLineIterator = null;
+
+function ask(question) {
+  if (!sharedReadline) {
+    sharedReadline = createInterface({ input: process.stdin, output: process.stdout });
+    sharedLineIterator = sharedReadline[Symbol.asyncIterator]();
+  }
+  process.stdout.write(`  ${question} `);
+  return sharedLineIterator.next().then(({ value, done }) => (done ? "" : value).trim().toLowerCase());
+}
+
+/** Release the readline interface once no more prompts are expected — an
+ * open interface holds a real TTY's stdin resumed, which keeps the process
+ * alive after `dispatch()` resolves. */
+function closeAsk() {
+  if (sharedReadline) {
+    sharedReadline.close();
+    sharedReadline = null;
+    sharedLineIterator = null;
+  }
 }
 
 /**
@@ -86,6 +112,46 @@ function ensureDir(path) {
   if (!existsSync(path)) {
     mkdirSync(path, { recursive: true });
   }
+}
+
+/**
+ * Apply `--config-dir <path>` (or `--config-dir=<path>`) by exporting
+ * `CLAUDE_CONFIG_DIR` for the rest of the process.
+ *
+ * The env var is the single seam every Claude Code path resolution already
+ * reads (`getClaudeHome()` in providers/claude-code/adapter.mjs), and the
+ * adapter resolves it lazily in install/enable/uninstall/detectConflicts.
+ * Threading an option through all four instead would let one call site keep
+ * the default and split an install across two config dirs — the exact failure
+ * the flag exists to prevent.
+ *
+ * Relative input is resolved against cwd here so the value handed to the
+ * adapter is always absolute; the adapter still rejects a non-absolute value,
+ * since it can also arrive straight from the environment.
+ */
+function applyConfigDirFlag(argv = process.argv) {
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    let raw = null;
+    if (arg === "--config-dir") {
+      raw = argv[i + 1];
+      if (!raw || raw.startsWith("-")) {
+        error("--config-dir requires a path argument");
+        process.exit(1);
+      }
+    } else if (arg.startsWith("--config-dir=")) {
+      raw = arg.slice("--config-dir=".length);
+      if (!raw) {
+        error("--config-dir requires a path argument");
+        process.exit(1);
+      }
+    }
+    if (raw !== null) {
+      process.env.CLAUDE_CONFIG_DIR = resolve(raw);
+      return process.env.CLAUDE_CONFIG_DIR;
+    }
+  }
+  return null;
 }
 
 function parseProviderFlags() {
@@ -852,6 +918,49 @@ function stampVersion() {
 }
 
 /**
+ * Ask which Claude config dir(s) an install/uninstall should target.
+ *
+ * Each config dir (CLAUDE_CONFIG_DIR profile, e.g. work vs personal) has its
+ * own plugin cache and its own settings.json. A machine running more than one
+ * needs the operator to pick which to touch, or an operation meant for one
+ * profile silently lands in — or deletes from — another's session
+ * (adev-plugin-cli-tag-scope-collision). Most machines have exactly one
+ * candidate, so this stays a silent no-op for them: the returned array holds
+ * exactly the ambient claudeHome and no prompt is shown.
+ *
+ * @param {object} provider
+ * @param {(q: string) => Promise<string>} askFn
+ * @param {string} verb - fills the prompt, e.g. "Install" / "Uninstall".
+ * @returns {Promise<string[]>} one or more claudeHome paths to operate on.
+ */
+async function selectClaudeConfigDirs(provider, askFn, verb) {
+  const discovered = typeof provider.discoverConfigDirs === "function" ? provider.discoverConfigDirs() : [];
+  if (discovered.length <= 1) {
+    return [discovered[0]?.path ?? provider.getClaudeHome?.()];
+  }
+
+  heading("Multiple Claude config directories found on this machine");
+  discovered.forEach((dir, i) => {
+    const tags = [dir.active ? "current session" : null, ...dir.sources].filter(Boolean).join(", ");
+    log(`${i + 1}) ${dir.path}${tags ? ` — ${tags}` : ""}`);
+  });
+  const activeIndex = discovered.findIndex((dir) => dir.active);
+  const defaultChoice = String((activeIndex >= 0 ? activeIndex : 0) + 1);
+  const answer = (
+    await askFn(`${verb} which? [1-${discovered.length}/all] (default: ${defaultChoice})`)
+  ).trim();
+  if (answer === "all") {
+    return discovered.map((dir) => dir.path);
+  }
+  const idx = parseInt(answer, 10);
+  const pick =
+    Number.isInteger(idx) && idx >= 1 && idx <= discovered.length
+      ? discovered[idx - 1]
+      : discovered[activeIndex >= 0 ? activeIndex : 0];
+  return [pick.path];
+}
+
+/**
  * Install providers (Claude Code, OpenCode, Codex, Cursor).
  * @param {string[]} providerNames
  * @param {{ ask?: (q: string) => Promise<string> }} [opts] — optional ask
@@ -871,29 +980,37 @@ async function installProviders(providerNames, { ask: askFn = ask } = {}) {
       const scope = await askFn("Install for all projects (user) or this project only (project)? [user/project]");
       const targetScope = scope === "project" ? "project" : "user";
 
-      const { installed, path: pluginPath } = await provider.install({ scope: targetScope });
-      if (installed) {
-        success(`Plugin v${PLUGIN_VERSION} installed to ${pluginPath}`);
-      } else {
-        success(`Plugin v${PLUGIN_VERSION} already installed`);
-      }
+      const targetHomes = await selectClaudeConfigDirs(provider, askFn, "Install into");
 
-      const settingsPath = provider.enable(targetScope);
-      success(`Plugin enabled in ${settingsPath}`);
-      if (targetScope === "project") {
-        log("Scoped to this project. Any machine-wide enablement of adev was removed.");
-      }
+      for (const claudeHome of targetHomes) {
+        if (targetHomes.length > 1) {
+          log(`— ${claudeHome} —`);
+        }
 
-      const conflicts = provider.detectConflicts();
-      if (conflicts.length === 0) {
-        success("No conflicting plugins detected");
-      } else {
-        for (const conflict of conflicts) {
-          warn(`${conflict.name} — ${conflict.reason}`);
-          const disable = await askFn(`Disable ${conflict.name} for THIS project? (yes/no)`);
-          if (disable === "yes" || disable === "y") {
-            provider.disableConflictingPlugin(conflict.key);
-            success(`${conflict.name} disabled for this project`);
+        const { installed, path: pluginPath } = await provider.install({ scope: targetScope, claudeHome });
+        if (installed) {
+          success(`Plugin v${PLUGIN_VERSION} installed to ${pluginPath}`);
+        } else {
+          success(`Plugin v${PLUGIN_VERSION} already installed`);
+        }
+
+        const settingsPath = provider.enable(targetScope, { claudeHome });
+        success(`Plugin enabled in ${settingsPath}`);
+        if (targetScope === "project") {
+          log("Scoped to this project. Any machine-wide enablement of adev was removed.");
+        }
+
+        const conflicts = provider.detectConflicts({ claudeHome });
+        if (conflicts.length === 0) {
+          success("No conflicting plugins detected");
+        } else {
+          for (const conflict of conflicts) {
+            warn(`${conflict.name} — ${conflict.reason}`);
+            const disable = await askFn(`Disable ${conflict.name} for THIS project? (yes/no)`);
+            if (disable === "yes" || disable === "y") {
+              provider.disableConflictingPlugin(conflict.key);
+              success(`${conflict.name} disabled for this project`);
+            }
           }
         }
       }
@@ -1060,6 +1177,43 @@ export async function maybeEnsureManagedGitignore(projectRoot, manifest) {
       return;
     }
     console.error(`warn: adev:gitignore dispatch skipped: ${err.message}`);
+  }
+}
+
+/**
+ * Auto-provision the shared beads issue board's `.beads/` git worktree on
+ * install/upgrade, when `tasks.backend` is `beads` (BEH-6). Mirrors
+ * `maybeEnsureManagedGitignore` immediately above: module-load and
+ * provisioning failures are downgraded to warnings, never block install.
+ *
+ * Idempotent by construction (`provisionBoardWorktree`'s own idempotency
+ * check) — safe to call unconditionally on every install/upgrade run.
+ *
+ * Spec: .context-index/specs/features/task-management/beads-board-git-topology.spec.md
+ * Plan-task: 4
+ *
+ * @param {string} projectRoot
+ * @param {object|null} manifest - parsed manifest.yaml or null
+ */
+export async function maybeProvisionBoardWorktree(projectRoot, manifest) {
+  if (manifest?.tasks?.backend !== "beads") return;
+  let provisionBoardWorktree;
+  try {
+    const mod = await import("../lib/issues/board-worktree.mjs");
+    provisionBoardWorktree = mod.provisionBoardWorktree;
+  } catch {
+    return; // module not present — skip silently
+  }
+  try {
+    const result = provisionBoardWorktree({ projectRoot });
+    if (result.mode === "already-provisioned") {
+      // Silent no-op on repeat install/upgrade — nothing changed (review finding).
+      return;
+    }
+    console.log(`beads board worktree: ${result.mode} (provisioned)`);
+  } catch (err) {
+    if (err?.code === "BOARD_ALREADY_EXISTS") return; // un-migrated repo — leave for `adev issues board migrate`
+    console.error(`warn: beads board worktree provisioning skipped: ${err.message}`);
   }
 }
 
@@ -1248,6 +1402,7 @@ async function cmdInstall() {
       m = null;
     }
     await maybeEnsureManagedGitignore(process.cwd(), m);
+    await maybeProvisionBoardWorktree(process.cwd(), m);
   }
 
   // --- Summary ---
@@ -1334,10 +1489,10 @@ async function cmdUpgrade() {
   // --- Stamp adev_version ---
   stampVersion();
 
-  // Provenance enforcement used to be prompted for here. It writes a
-  // `provenance:` block into manifest.yaml — context-layer configuration owned
-  // by /adev:init, not the CLI. `adev upgrade` still needs the delta below for
-  // its own reporting, but it no longer asks the question or writes the block.
+  // The `provenance:` block in manifest.yaml is context-layer configuration
+  // owned by /adev:init, not the CLI. `adev upgrade` still needs the delta
+  // below for its own reporting, but it does not ask the question or write
+  // the block itself.
   const manifestPath = join(process.cwd(), ".context-index", "manifest.yaml");
   const delta = computeUpgradeDelta(state.version);
   if (delta.provenance && existsSync(manifestPath)) {
@@ -1382,6 +1537,7 @@ async function cmdUpgrade() {
       m = null;
     }
     await maybeEnsureManagedGitignore(process.cwd(), m);
+    await maybeProvisionBoardWorktree(process.cwd(), m);
   }
 
   // --- Dual sync targets ---
@@ -1406,7 +1562,11 @@ async function cmdUpgrade() {
   console.log();
 }
 
-async function cmdUninstall() {
+/**
+ * @param {{ ask?: (q: string) => Promise<string> }} [opts] — optional ask
+ *   injector for testability, mirroring installProviders.
+ */
+async function cmdUninstall({ ask: askFn = ask } = {}) {
   // --target <name> branch: per-target adapter invocation (Copilot uses this).
   const target = parseTargetFlag();
   if (target === "copilot") {
@@ -1420,8 +1580,23 @@ async function cmdUninstall() {
     heading(`Uninstalling from ${provider.name}`);
 
     if (providerName === "codex") {
-      const scope = await ask("Remove Codex skills for all projects (user) or this project only (project)? [user/project]");
+      const scope = await askFn("Remove Codex skills for all projects (user) or this project only (project)? [user/project]");
       await provider.uninstall({ scope: scope === "project" ? "project" : "user" });
+    } else if (providerName === "claude-code") {
+      // Mirror installProviders: ask scope and, when the machine has more than
+      // one Claude config dir, which to target — uninstall used to always
+      // default to scope "user" and the ambient claudeHome with no question
+      // asked, unable to target a project-scoped install or another profile.
+      const scope = await askFn("Remove for all projects (user) or this project only (project)? [user/project]");
+      const targetScope = scope === "project" ? "project" : "user";
+      const targetHomes = await selectClaudeConfigDirs(provider, askFn, "Uninstall from");
+
+      for (const claudeHome of targetHomes) {
+        if (targetHomes.length > 1) {
+          log(`— ${claudeHome} —`);
+        }
+        await provider.uninstall({ scope: targetScope, claudeHome });
+      }
     } else {
       await provider.uninstall();
     }
@@ -1852,12 +2027,19 @@ function cmdHelp() {
     --provider claude-code --provider opencode  Install for both
     --provider claude-code --provider codex     Install for Claude + Codex
 
+  Claude Code Config Directory:
+    --config-dir <path>           Install into a specific Claude Code config
+                                  directory instead of ~/.claude (also
+                                  honors the CLAUDE_CONFIG_DIR env var).
+                                  Applies to install, upgrade, and uninstall.
+
   Examples:
     npx @adev-org/adev-cli install                          # Claude Code (default)
     npx @adev-org/adev-cli install --provider opencode      # OpenCode only
     npx @adev-org/adev-cli install --provider codex         # OpenAI Codex only
     npx @adev-org/adev-cli upgrade                          # Upgrade existing install
     npx @adev-org/adev-cli uninstall                        # Remove from selected providers
+    npx @adev-org/adev-cli install --config-dir ~/.claude-work   # Alternate config dir
 
   After install, run /adev:init inside your AI coding assistant
   to configure constitution, governance, and project context.
@@ -1875,6 +2057,7 @@ export {
   PLUGIN_VERSION,
   selectProviders,
   installProviders,
+  cmdUninstall,
   buildChainedHook,
   validateHooksPath,
   escapesRepoPhysically,
@@ -1915,12 +2098,18 @@ const VERB_REGISTRY = new Map([
   ["uninstall", () => ({ run: () => cmdUninstall(),              help: () => cmdHelp() })],
   ["init",      () => ({ run: async () => {
                           // Sub-verb: `adev init prompt session-capture` delegates to the
-                          // init-prompt-session-capture module (SA-5). This keeps the
+                          // init-prompt-session-capture module. This keeps the
                           // skills/init/SKILL.md prose readable as a 3-token verb while
                           // the dispatcher remains a single-token registry.
                           const sub = process.argv[3];
                           if (sub === "prompt" && process.argv[4] === "session-capture") {
                             const mod = await import("../lib/cli/init-prompt-session-capture.mjs");
+                            const projectRoot = process.cwd();
+                            await mod.run({ projectRoot, argv: process.argv.slice(5), manifest: null });
+                            return;
+                          }
+                          if (sub === "prompt" && process.argv[4] === "implementation-mode") {
+                            const mod = await import("../lib/cli/init-prompt-implementation-mode.mjs");
                             const projectRoot = process.cwd();
                             await mod.run({ projectRoot, argv: process.argv.slice(5), manifest: null });
                             return;
@@ -1953,6 +2142,7 @@ const VERB_REGISTRY = new Map([
   ["boundaries",      () => import("../lib/cli/boundaries.mjs")],
   ["governance",      () => import("../lib/cli/governance.mjs")],
   ["diagnose",        () => import("../lib/cli/diagnose.mjs")],
+  ["capability-map",  () => import("../lib/cli/capability-map.mjs")],
   ["heuristics",      () => import("../lib/cli/heuristics.mjs")],
   ["report",          () => import("../lib/cli/report.mjs")],
   ["manifest",        () => import("../lib/cli/manifest.mjs")],
@@ -1986,9 +2176,11 @@ const VERB_REGISTRY = new Map([
   ["worktree",        () => import("../lib/cli/worktree.mjs")],
   ["parallel",        () => import("../lib/cli/parallel.mjs")],
   ["test-policy",     () => import("../lib/cli/test-policy.mjs")],
+  ["implementation-mode", () => import("../lib/cli/implementation-mode.mjs")],
   ["test-helpers",    () => import("../lib/cli/test-helpers.mjs")],
   ["coordination",    () => import("../lib/cli/coordination.mjs")],
   ["test-debt",       () => import("../lib/cli/test-debt.mjs")],
+  ["repomap",         () => import("../lib/cli/repomap.mjs")],
 ]);
 
 // Strip ANSI color codes from messages before printing to stdout/stderr
@@ -2007,17 +2199,33 @@ function printVerbRegistry(stream = "stdout") {
   }
 }
 
+// Terminal exit codes are set via process.exitCode rather than process.exit()
+// so pending stdout/stderr writes are allowed to drain before the process
+// exits naturally. process.exit() tears down libuv immediately, and on a
+// piped stdout (unlike a captured/file-backed fd) that can truncate output
+// still queued behind the pipe's kernel buffer — no verb in VERB_REGISTRY
+// holds the event loop open with a timer/watcher/server, so natural exit
+// always follows once dispatch() returns.
 async function dispatch(argv) {
   const verb = argv[2];
   if (!verb) {
     printVerbRegistry();
-    process.exit(1);
+    process.exitCode = 1;
+    return;
   }
+  // Honored only for the verbs that touch a Claude Code config directory.
+  // Applied before the verb runs so every getClaudeHome() call inside it
+  // resolves the same directory.
+  if (verb === "install" || verb === "upgrade" || verb === "uninstall" || verb === "init") {
+    applyConfigDirFlag(argv);
+  }
+
   const factory = VERB_REGISTRY.get(verb);
   if (!factory) {
     console.error(`unknown verb: ${stripAnsi(verb)}`);
     printVerbRegistry("stderr");
-    process.exit(1);
+    process.exitCode = 1;
+    return;
   }
   const verbArgs = argv.slice(3);
 
@@ -2027,22 +2235,35 @@ async function dispatch(argv) {
   } catch (err) {
     // Module import failure (e.g., missing run export)
     console.error(stripAnsi(err && err.message ? err.message : String(err)));
-    process.exit(1);
+    process.exitCode = 1;
+    return;
   }
 
   // Validate that the resolved module exposes the contract.
   if (typeof mod.run !== "function") {
     console.error(`verb ${stripAnsi(verb)} missing run export`);
-    process.exit(1);
+    process.exitCode = 1;
+    return;
   }
 
   // --help short-circuit applies only to new-contract modules. Legacy
   // adapters (run.length === 0) read process.argv themselves and may
   // implement verb-specific --help; defer to them.
-  if (mod.run.length > 0 && (verbArgs.includes("--help") || verbArgs.includes("-h"))) {
+  //
+  // Parent dispatchers that route help to their OWN sub-verbs opt out via
+  // `dispatchesSubcommandHelp`. Without that escape hatch this branch swallows
+  // `adev <verb> <sub> --help` and prints the parent's subcommand list, so the
+  // sub-verb's flags are unreachable from the CLI — which matters most for the
+  // verbs skills are told to call by name.
+  if (
+    mod.run.length > 0 &&
+    mod.dispatchesSubcommandHelp !== true &&
+    (verbArgs.includes("--help") || verbArgs.includes("-h"))
+  ) {
     if (typeof mod.help === "function") {
       mod.help();
-      process.exit(0);
+      process.exitCode = 0;
+      return;
     }
   }
 
@@ -2072,17 +2293,18 @@ async function dispatch(argv) {
         returnCode = ret;
       }
     }
-    process.exit(returnCode);
+    process.exitCode = returnCode;
   } catch (err) {
     // GateError detection: use err.code === 'GATE_BLOCKED' rather than
     // instanceof — robust across module-instance boundaries.
     if (err && err.code === "GATE_BLOCKED") {
       console.error(stripAnsi(err.message));
-      process.exit(2);
+      process.exitCode = 2;
+      return;
     }
     console.error(stripAnsi(err && err.message ? err.message : String(err)));
     if (err && err.stack) console.error(stripAnsi(err.stack));
-    process.exit(1);
+    process.exitCode = 1;
   }
 }
 
@@ -2095,6 +2317,7 @@ const isDirectRun = (() => {
 
 if (isDirectRun) {
   await dispatch(process.argv);
+  closeAsk();
 }
 
-export { VERB_REGISTRY, cmdExtension, dispatch, printVerbRegistry, stripAnsi };
+export { VERB_REGISTRY, cmdExtension, dispatch, printVerbRegistry, stripAnsi, applyConfigDirFlag };

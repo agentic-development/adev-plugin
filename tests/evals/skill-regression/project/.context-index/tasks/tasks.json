@@ -1,0 +1,99 @@
+{
+  "version": 2,
+  "seq": 12,
+  "epics": [
+    {
+      "id": "epic-1",
+      "title": "Order intake: validate and price a payload",
+      "status": "closed",
+      "planRef": ".context-index/specs/features/orders/create-order.plan.md",
+      "milestone": "v1",
+      "notes": "The create-order slice: validation, pricing, the public surface, and the docs entries. Closed after validate returned PASS on 2026-07-28.",
+      "created": "2026-07-05T10:19:44.900Z",
+      "updated": "2026-07-28T11:10:12.640Z"
+    },
+    {
+      "id": "epic-2",
+      "title": "Shipping rates",
+      "status": "open",
+      "milestone": "v2",
+      "notes": "Rate lookup per destination and weight band. Specified; not yet reviewed or planned.",
+      "created": "2026-08-03T14:22:51.311Z",
+      "updated": "2026-08-03T14:22:51.311Z"
+    }
+  ],
+  "issues": [
+    {
+      "id": "issue-7",
+      "title": "Validate and price an order payload",
+      "status": "closed",
+      "priority": 1,
+      "type": "feature",
+      "epicId": "epic-1",
+      "spec_ref": ".context-index/specs/features/orders/create-order.spec.md",
+      "dependencies": [],
+      "notes": "Feature binding for the create-order spec. Shipped; the three implementation tasks under epic-1 closed with it.",
+      "created": "2026-07-03T11:05:18.204Z",
+      "updated": "2026-07-28T15:12:40.913Z"
+    },
+    {
+      "id": "issue-1",
+      "title": "Field validation and the error contract",
+      "status": "closed",
+      "priority": 1,
+      "type": "task",
+      "epicId": "epic-1",
+      "planRef": ".context-index/specs/features/orders/create-order.plan.md",
+      "spec_ref": ".context-index/specs/features/orders/create-order.spec.md",
+      "dependencies": [],
+      "notes": "B3, B4, B5. Shape violations throw TypeError; field problems are collected into errors and named by items[i] index.",
+      "created": "2026-07-05T10:19:44.906Z",
+      "updated": "2026-07-20T09:38:51.700Z"
+    },
+    {
+      "id": "issue-2",
+      "title": "Pricing and the discount bound",
+      "status": "closed",
+      "priority": 1,
+      "type": "task",
+      "epicId": "epic-1",
+      "planRef": ".context-index/specs/features/orders/create-order.plan.md",
+      "spec_ref": ".context-index/specs/features/orders/create-order.spec.md",
+      "dependencies": [
+        "issue-1"
+      ],
+      "notes": "B1, B2, B7. Line totals and subtotal in integer cents; discountCents defaults to 0 and is bounded by the subtotal after pricing.",
+      "created": "2026-07-05T10:19:44.907Z",
+      "updated": "2026-07-20T10:14:37.910Z"
+    },
+    {
+      "id": "issue-3",
+      "title": "Item-count bound, public surface, and docs/api.md",
+      "status": "closed",
+      "priority": 2,
+      "type": "task",
+      "epicId": "epic-1",
+      "planRef": ".context-index/specs/features/orders/create-order.plan.md",
+      "spec_ref": ".context-index/specs/features/orders/create-order.spec.md",
+      "dependencies": [
+        "issue-2"
+      ],
+      "notes": "B6. MAX_LINE_ITEMS guard, both symbols re-exported from src/index.mjs, both documented in docs/api.md.",
+      "created": "2026-07-05T10:19:44.908Z",
+      "updated": "2026-07-20T10:48:09.590Z"
+    },
+    {
+      "id": "issue-6",
+      "title": "createOrder mutates nothing but the spec does not assert it",
+      "status": "open",
+      "priority": 3,
+      "type": "bug",
+      "epicId": "epic-1",
+      "spec_ref": ".context-index/specs/features/orders/create-order.spec.md",
+      "dependencies": [],
+      "notes": "The no-mutation postcondition is stated in the spec but has no test case. Add one before the shipping module starts reusing the payload object.",
+      "created": "2026-08-06T16:41:02.559Z",
+      "updated": "2026-08-06T16:41:02.559Z"
+    }
+  ]
+}

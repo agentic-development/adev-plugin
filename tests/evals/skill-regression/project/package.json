@@ -1,0 +1,10 @@
+{
+  "name": "orders-service",
+  "version": "0.4.0",
+  "type": "module",
+  "description": "Fictional order-intake service used as committed eval fixture data.",
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "nanoid": "^5.0.7"
+  }
+}

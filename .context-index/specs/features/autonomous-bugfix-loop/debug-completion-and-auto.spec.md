@@ -18,6 +18,7 @@ source-manifest:
     - templates/manifest-template.yaml
     - tests/skills/debug-completion-and-auto.test.mjs
   computed-at: "2026-08-19T20:41:14.434Z"
+drift_detected: true
 ---
 
 # Live Spec: ADEV-DEBUG Completion Token and --auto Mode

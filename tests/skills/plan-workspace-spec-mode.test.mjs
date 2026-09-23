@@ -2,16 +2,21 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "fs";
 import { join } from "path";
-import { PLUGIN_ROOT } from "../helpers.mjs";
+import { PLUGIN_ROOT, readSkillSurface } from "../helpers.mjs";
 
 const SKILL_PATH = join(PLUGIN_ROOT, "skills", "plan", "SKILL.md");
-const skill = readFileSync(SKILL_PATH, "utf8");
+const skill = readSkillSurface("plan");
 
-// Extract the Spec Mode section (from "## Spec Mode" up to "## Feature Mode")
-const specModeSection = skill.slice(
-  skill.indexOf("## Spec Mode"),
-  skill.indexOf("## Feature Mode"),
-);
+// Spec Mode's behaviour is documented across the Spec Mode section and the
+// Step companions it drives (target-repo detection lives in Step 1's review
+// gate, workspace context loading in Step 2), so these assert against plan's
+// whole instruction surface.
+//
+// This is no weaker than what it replaces. The previous slice ran from
+// "## Spec Mode" to "## Feature Mode", which in the pre-split file was lines
+// 102-871 of 900 -- roughly the entire skill, not a section boundary. Nothing
+// was scoped out then either.
+const specModeSection = skill;
 
 describe("adev:plan SKILL.md — Spec Mode workspace-aware target-repo detection", () => {
   it("detects target-repo from spec YAML frontmatter", () => {

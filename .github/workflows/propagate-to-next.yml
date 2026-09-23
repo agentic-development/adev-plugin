@@ -50,9 +50,11 @@ jobs:
       - name: Configure version-aware merge driver
         # See .gitattributes and scripts/git-merge-keep-version.sh: without
         # this, package.json / .claude-plugin/plugin.json /
-        # .cursor-plugin/plugin.json conflict every time main touches a line
-        # near their "version" field, because release/next's own prerelease
-        # version is expected to permanently diverge from main's.
+        # .cursor-plugin/plugin.json / release-please-config.json conflict (or
+        # silently lose release/next's own value) every time main touches a
+        # line near their diverging fields, because release/next's own
+        # prerelease version and prerelease mode are expected to permanently
+        # diverge from main's.
         run: git config merge.release-next-version.driver 'scripts/git-merge-keep-version.sh %O %A %B'
 
       - name: Merge main into release/next

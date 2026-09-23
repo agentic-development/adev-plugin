@@ -1,10 +1,9 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { readSkillSurface } from "../helpers.mjs";
 
-const skillContent = readFileSync(
-  new URL("../../skills/hygiene/SKILL.md", import.meta.url), "utf8"
-);
+const skillContent = readSkillSurface("hygiene");
 
 describe("hygiene SKILL.md Pass 16", () => {
   it("defines Pass 16: Heuristic Index Health (+7 more contract assertions)", () => {

@@ -17,6 +17,13 @@ project:
 # process-automation, …). The bundled default is "software".
 # domain: software
 
+# Project risk tier. Set by /adev:init Step 7.0 when governance is scaffolded.
+# Selects which risk-policies.yaml / review.yaml / validate.yaml bundle gets
+# seeded (prototype | standard | strict). Orthogonal to domain above — it
+# controls how much scrutiny the project needs, not what kind of software it
+# is. The bundled default is "standard" (unchanged framework defaults).
+# risk_tier: standard
+
 # ============================================================================
 # Sync Targets
 # Defines which agent files are generated from the constitution.
@@ -117,6 +124,18 @@ specialists: []
   #     - "src/components/**"
   #     - "src/pages/**"
   #     - "*.css"
+
+# ============================================================================
+# Implementation Mode
+# Controls whether /adev:implement enforces TDD (RED phase before code),
+# requires tests without ordering enforcement, or defers test decisions to
+# agent judgment. One of: tdd | test-required | agent-default.
+# Default: tdd. Written by /adev:init's implementation-mode prompt — not
+# scaffolded here with a literal default value.
+# See .context-index/specs/cross-cutting/mode-resolution-core.spec.md
+# ============================================================================
+
+# implementation_mode: tdd   # tdd | test-required | agent-default
 
 # ============================================================================
 # Test Policy
@@ -270,12 +289,22 @@ tasks:
   # bugfix_loop.tracker_link_stale_days: age threshold (days) for the
   #   stale-tracker-link notice on an already-linked, never-attempted issue.
   #   Default: 30. Fires at most once per external ref per run.
+  # bugfix_loop.freshness.soft_threshold: commit-behind-count at which
+  #   `adev bugfix-loop check-freshness` (bugfix-loop-execution-hardening.spec.md
+  #   BEH-1/BEH-2) reports status "warn" instead of "ok". Default: 50.
+  # bugfix_loop.freshness.hard_threshold: commit-behind-count at which
+  #   check-freshness reports status "blocked" instead of "warn". Default:
+  #   unset (null) — disabled, warn-only, so no existing invocation's
+  #   pass/fail behavior changes until an operator opts in by setting this.
   # bugfix_loop:
   #   attempt_cap: 2
   #   reproduction_attempt_limit: 3
   #   excluded_modules: []
   #   tracker_provider: github
   #   tracker_link_stale_days: 30
+  #   freshness:
+  #     soft_threshold: 50
+  #     hard_threshold: 100
   # legacy_read: enabled | disabled
   #   When set to "enabled" (default) and tasks.json is absent, the json
   #   adapter falls back to reading tasks.md via the shared markdown parser.

@@ -1,4 +1,5 @@
 ---
+kind: module
 status: approved
 revision: 3
 updated: 2026-04-27

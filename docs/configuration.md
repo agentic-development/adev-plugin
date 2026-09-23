@@ -236,6 +236,8 @@ tasks:
   backend: json
 ```
 
+**Beads board git topology:** when `backend: beads`, the board (`.beads/issues.jsonl`) is not tracked inside `main`'s history. It lives on a dedicated `beads-board` orphan branch and `.beads/` is a linked git worktree checked out against that branch — so worktrees and clones share one live board without a PR cycle. No extra config is needed; `adev install`/`adev upgrade` auto-provision `.beads/` as that worktree. A repo that already tracks `.beads/` on `main` needs a one-time `adev issues board migrate` to move it. See [`adev issues board migrate`](cli-reference.md#issues) in the CLI reference for the full command, checkpoint/resume behavior, and error codes.
+
 ### provenance
 
 Controls commit provenance tracking for traceability between commits and lifecycle artifacts.
@@ -494,6 +496,27 @@ Domain names must match the pattern `/^[a-z0-9][a-z0-9-]*$/` (lowercase alphanum
 ### Resetting Customizations
 
 To reset all customizations and return to the bundled defaults, change `domain:` in your manifest back to a bundled domain name (e.g., `software`). The bundled profile is always pristine.
+
+---
+
+## Risk Tier
+
+Risk tier is a second, project-level axis orthogonal to domain — domain selects a bundle by "what
+kind of software," risk tier selects one by "how much scrutiny it needs." It is set at
+`/adev:init` Step 7.0 (only when governance is opted into) as a top-level `risk_tier` key:
+
+```yaml
+# .context-index/manifest.yaml
+risk_tier: standard   # prototype | standard (default) | strict
+```
+
+A project with no `risk_tier` key resolves to `standard` — `resolveRiskTier()` in
+`lib/risk-tiers/resolve.mjs` implements this, mirroring `resolveDomain()`'s shape but with no
+charter/module precedence chain, since risk tier characterizes the whole project rather than a
+per-spec or per-module setting. The tier selects which `risk-policies.yaml` gets scaffolded and,
+for `prototype`/`strict`, which `review.yaml`/`validate.yaml` overlay is applied on top of the
+resolved domain's bundle — see [Governance → Project risk tier](governance.md#project-risk-tier--which-risk-policiesyaml-you-start-from)
+for the full table and mechanism.
 
 ---
 

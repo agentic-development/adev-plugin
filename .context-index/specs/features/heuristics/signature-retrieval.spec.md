@@ -238,7 +238,7 @@ Two consequences bind this spec:
 | Failure surface has no derivable identity (no `checks[]`, no `blocker_id`) | Error-triggered retrieval is skipped; the entry-time context stands; no synthesized key is invented | 0 |
 | An entry carries a malformed `signature` | That entry is skipped for signature matching but remains available to keyword and module-scope retrieval | 0 |
 | Failure event carries no derivable signature | Error-triggered retrieval is skipped entirely; entry-time context stands | 0 |
-| Injection cap reached | Signature-matched entries are retained first (Behavior 2a), then the remainder fills the high/medium buckets by the existing split; drops are reported in the rendered output. **Not** "highest-confidence first retained" — that ordering would drop a `low` signature match before an unrelated `medium` module entry, the exact outcome Behavior 1 exists to prevent | 0 |
+| Injection cap reached | Signature-matched entries are retained first (Behavior 2a), then the remainder fills the high/medium buckets by the existing split, with unused `high` capacity reallocating to `medium` per `retrieval-filtering.spec.md` Behavior 3a; drops are reported in the rendered output. **Not** "highest-confidence first retained" — that ordering would drop a `low` signature match before an unrelated `medium` module entry, the exact outcome Behavior 1 exists to prevent | 0 |
 
 ## System Constitution Reference
 

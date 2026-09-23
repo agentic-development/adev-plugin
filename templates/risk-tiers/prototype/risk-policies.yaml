@@ -1,0 +1,37 @@
+# risk-policies.yaml — "prototype" risk tier bundle
+# Seeded by /adev:init when the operator selects the "prototype" project risk
+# tier (throwaway prototype / internal tool, minimal review overhead). See
+# templates/risk-policies-template.yaml for the "standard" tier (the
+# framework's original, unconditional default) and
+# templates/risk-tiers/strict/risk-policies.yaml for the opposite end.
+#
+# Every level still requires review — /adev:init never scaffolds a policy
+# that skips review outright — but every level runs at the lightest
+# graduated-rigor tier and no level requires HITL approval.
+# See .context-index/specs/cross-cutting/graduated-rigor-tiers.spec.md.
+
+policies:
+  high:
+    require_review: true
+    require_hitl_approval: false
+    review_mode: quick
+    validate_mode: quick
+    implement_mode: quick
+    test_depth: minimal
+    additional_gates: []
+  medium:
+    require_review: true
+    require_hitl_approval: false
+    review_mode: quick
+    validate_mode: quick
+    implement_mode: quick
+    test_depth: minimal
+    additional_gates: []
+  low:
+    require_review: true
+    require_hitl_approval: false
+    review_mode: quick
+    validate_mode: quick
+    implement_mode: quick
+    test_depth: minimal
+    additional_gates: []

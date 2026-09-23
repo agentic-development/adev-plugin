@@ -53,6 +53,40 @@ function makeBeadsProject() {
   return dir;
 }
 
+/**
+ * A git repo carrying only the committed `.beads/issues.jsonl` — the shape of
+ * a genuinely fresh clone (issue-i0ji37). `br init` never runs here: no
+ * `*.db` exists anywhere in the workspace, exactly like checking out a repo
+ * that has never had `br init` run inside this working copy before. Only
+ * `issues.jsonl` and `config.yaml` are git-tracked; `*.db` is gitignored.
+ */
+function makeFreshCloneBeadsProject() {
+  const dir = createTempDir();
+  mkdirSync(join(dir, ".context-index"), { recursive: true });
+  writeFileSync(
+    join(dir, ".context-index", "manifest.yaml"),
+    "tasks:\n  backend: beads\n",
+  );
+  execFileSync("git", ["init", "-q", "-b", "main", "."], { cwd: dir, stdio: "pipe" });
+  mkdirSync(join(dir, ".beads"), { recursive: true });
+  writeFileSync(join(dir, ".beads", "config.yaml"), "prefix: tst\n");
+  writeFileSync(
+    join(dir, ".beads", "issues.jsonl"),
+    JSON.stringify({
+      id: "tst-seed1",
+      title: "seeded from a prior session",
+      status: "open",
+      priority: 2,
+      issue_type: "task",
+      created_at: "2026-08-01T00:00:00Z",
+      created_by: "tester",
+      updated_at: "2026-08-01T00:00:00Z",
+      external_ref: "issue-seed1",
+    }) + "\n",
+  );
+  return dir;
+}
+
 /** Raw `br list -s all --json` records, straight from the binary. */
 function brRecords(dir) {
   const raw = execFileSync("br", ["list", "-s", "all", "--json"], {
@@ -669,6 +703,60 @@ describe("beads backend — live br parity", () => {
       const second = await a.claim(issue.id, "bob");
 
       assert.equal(second.owner, "bob");
+    } finally {
+      cleanupTempDir(dir);
+    }
+  });
+
+  // ───────────────────────────────────────────────────────────────────────
+  // Fresh-clone bootstrap gap (issue-i0ji37): no *.db exists anywhere in the
+  // workspace, only the committed issues.jsonl — the shape of a genuine
+  // fresh clone (or a from-scratch ephemeral sandbox) before `br init` has
+  // ever run there. `br` itself refuses every db-backed verb in this state
+  // with SYNC_CONFLICT ("pending sync-merge state is unknown because the
+  // authorized database is missing") — a real safety gate in the binary,
+  // not something a mock could reproduce or a fix could bypass. `--no-db`
+  // (JSONL-only mode) is br's own documented escape hatch for exactly this
+  // state, confirmed live to preserve atomic claim exclusivity.
+  // ───────────────────────────────────────────────────────────────────────
+
+  it("reads and mutates the board with no *.db anywhere in the workspace", async () => {
+    const dir = makeFreshCloneBeadsProject();
+    try {
+      assert.equal(
+        existsSync(join(dir, ".beads", "beads.db")),
+        false,
+        "fixture precondition: no db was ever created",
+      );
+
+      const a = new BeadsAdapter(dir);
+      assert.equal((await a.list()).length, 1, "the committed jsonl must be readable with no db");
+
+      const created = await a.create({ title: "filed on a fresh clone", type: "task", priority: 2 });
+      assert.ok(created.id);
+      assert.equal((await a.get(created.id)).title, "filed on a fresh clone");
+    } finally {
+      cleanupTempDir(dir);
+    }
+  });
+
+  it("still enforces atomic claim exclusivity with no *.db present", async () => {
+    const dir = makeFreshCloneBeadsProject();
+    try {
+      const a = new BeadsAdapter(dir);
+      const issue = await a.create({ title: "contended, no db", type: "task", priority: 2 });
+
+      const first = await a.claim(issue.id, "alice");
+      assert.equal(first.owner, "alice");
+
+      await assert.rejects(
+        () => a.claim(issue.id, "bob"),
+        (err) => {
+          assert.equal(err.code, "ISSUE_ALREADY_CLAIMED");
+          return true;
+        },
+        "the exclusivity guarantee must hold even in the no-db fallback path",
+      );
     } finally {
       cleanupTempDir(dir);
     }

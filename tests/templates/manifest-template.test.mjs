@@ -26,6 +26,13 @@ describe("manifest-template.yaml", () => {
   it("should not reference governance precedence over manifest gates", () => {
     assert.ok(!content.includes("take precedence over the gates:"), "Should not reference gates precedence");
   });
+
+  it("documents implementation_mode (WR-3)", () => {
+    assert.match(content, /implementation_mode/);
+    assert.match(content, /tdd/);
+    assert.match(content, /test-required/);
+    assert.match(content, /agent-default/);
+  });
 });
 
 describe("format-documentation.md template", () => {

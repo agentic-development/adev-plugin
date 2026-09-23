@@ -18,6 +18,7 @@ source-manifest:
   computed-at: "2026-08-20T13:15:12.347Z"
 created: 2026-08-19
 updated: 2026-08-20
+drift_detected: true
 ---
 
 # Live Spec: Per-Issue Attempt Cap

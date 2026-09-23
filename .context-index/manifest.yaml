@@ -7,7 +7,7 @@
 
 project:
   name: "adev-plugin"
-  adev_version: "0.28.0-next.4"
+  adev_version: "0.27.9"
   description: "Claude Code plugin and CLI implementing a full-lifecycle Agentic Development Framework"
   type: cli
 
@@ -284,6 +284,7 @@ repomap:
     # legitimately shares a name with the DEFAULT_EXCLUDE "build/**" entry),
     # so this nested dist/ needs its own explicit entry.
     - "tests/evals/adev-api-eval/dist/**"
+    - "tests/evals/skill-regression/**"
 
 # ============================================================================
 # Hygiene

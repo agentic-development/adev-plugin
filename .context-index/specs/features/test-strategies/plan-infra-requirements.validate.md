@@ -57,7 +57,7 @@ No `source-manifest` frontmatter block found in spec.
 
 - **AC: Plan does not block on unresolved requirements** — PASS. Line 514: "Plan does NOT block when infra requirements are unresolved."
 
-- **AC: plan-reviewer-prompt updated** — PASS. `skills/plan/plan-reviewer-prompt.md` line 28: Infrastructure Requirements row in Spec Mode Checks table.
+- **AC: plan-reviewer-prompt updated** — PASS. `skills/plan/references/plan-reviewer-prompt.md` line 28: Infrastructure Requirements row in Spec Mode Checks table.
 
 - **AC: All quality gates pass** — PASS.
 
@@ -67,7 +67,7 @@ No `source-manifest` frontmatter block found in spec.
 
 ## Check 3: Charter Consistency — PASS
 
-- **Scope:** The implementation touches only `skills/plan/SKILL.md`, `skills/specify/SKILL.md`, `skills/plan/plan-reviewer-prompt.md`, and `templates/live-spec-template.md` — all within the planning and design module bounds defined in the charter. No new executables, services, or dependencies.
+- **Scope:** The implementation touches only `skills/plan/SKILL.md`, `skills/specify/SKILL.md`, `skills/plan/references/plan-reviewer-prompt.md`, and `templates/live-spec-template.md` — all within the planning and design module bounds defined in the charter. No new executables, services, or dependencies.
 
 - **Domain model alignment:** `infra_requirements:` is treated as a spec frontmatter field (extends the StrategyDeclaration entity with infra metadata). Consistent with charter Domain Model.
 

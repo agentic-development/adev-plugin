@@ -17,6 +17,7 @@ source-manifest:
     - tests/lib/domains/constants.test.mjs
     - tests/lib/domains/resolve.test.mjs
   computed-at: "2026-05-11T16:09:28.530Z"
+drift_detected: true
 ---
 
 # Live Spec: Domain Resolution & Overlay Structure

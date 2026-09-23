@@ -53,6 +53,8 @@ The `cursor` branch (`cli/index.mjs:680`) hardcodes `scope: "user"` with no prom
 
 5. **When** either answer is given, **then** `~/.claude/plugins/installed_plugins.json` records the scope the user actually chose. `updateRegistry()` currently hardcodes `scope: existing?.scope || "user"` (`adapter.mjs:99-117`) and must instead receive and persist the chosen scope.
 
+   **REVISED (GH #378).** A non-`user` scope row must also carry `projectPath: process.cwd()` — Claude Code's own project/local-scope rows always carry one, and a `scope: "project"` row with none has nothing to bind to, so the plugin resolves in no project regardless of the `enabledPlugins` write. Because `registry.plugins[key]` holds a list precisely so multiple scope/project rows can coexist, `updateRegistry()` must **upsert** the row matching `(scope, projectPath)` rather than replace the whole array — a full-array replace made a project-scope install in one repo silently drop the row a project-scope install in a different repo had written.
+
 6. **When** a user who previously installed at `user` scope re-runs `adev install` and answers `project`, **then** the pre-existing user-scope entry is **removed**. (Operator decision, 2026-08-14. "Warn and leave it" was the other candidate and was rejected: it leaves the machine in exactly the state the operator declined.) Removal is surgical — only adev's own key is deleted, and other plugins' entries are untouched.
 
 7. **When** `adev install --target cursor` runs, **then** the hardcoded `scope: "user"` is either replaced by the same prompt or documented in the charter as intentional. This spec does not mandate which; it mandates that the choice stops being implicit.

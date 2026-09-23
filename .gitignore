@@ -24,6 +24,7 @@ skills/*/evals/
 # aside on first use, so both forms stay out of git.
 .beads-map.json
 .beads-map.json.migrated-*
+.context-index/tasks/tasks.json
 .context-index/tasks/tasks.json.migrated-*
 
 # Build orchestrator resume state (ephemeral — survives across sessions but never committed)
@@ -40,9 +41,8 @@ skills/*/evals/
 # Eval cached repos (cloned on demand, large)
 tests/evals/repomap/.cache/
 
-# Eval generated data (regenerate with: npm run eval / eval:skill-compression)
+# Eval generated data (regenerate with: npm run eval)
 tests/evals/repomap/*/
-tests/evals/skill-compression/outputs/
 
 # Viz build output (regenerate with: node viz/build.mjs)
 viz/dist/
@@ -128,6 +128,10 @@ viz/dist/
 .context-index/tasks/tasks.json.*.tmp
 # backend-migration resume state
 .context-index/tasks/.migrate-state.json
+# beads board — linked git worktree against beads-board, not main's tree
+.beads/
+# board-migrate resume checkpoint
+.context-index/tasks/.board-migrate-state.json
 # incremental artifact write — satisfies cross-cutting/incremental-artifact-writes:236
 *.partial
 # incremental artifact lock
@@ -141,3 +145,5 @@ viz/dist/
 # <<< adev:gitignore <<<
 # br doctor per-run artifacts
 .doctor/
+# claude plugin eval run output
+evals/results/

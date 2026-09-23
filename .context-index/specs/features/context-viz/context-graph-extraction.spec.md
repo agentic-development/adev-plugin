@@ -2,6 +2,7 @@
 charter: context-viz
 status: review-pending
 risk_level: medium
+revision: 1
 milestone:
 created: 2026-04-11
 updated: 2026-04-13

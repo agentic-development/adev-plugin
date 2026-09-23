@@ -86,7 +86,7 @@ If `lib/reality-check.mjs` fails to import, proceed without verification.
 Find `.plan.md` files that have no corresponding epic on the issue board.
 
 **Fix offered:** "Create an epic for this plan and seed plan-task events?"
-**Action:** Call `getIssueManager(manifest).createEpic({ title, planRef })` to create the epic at board-level granularity. Then call `reportPlanTask(projectRoot, specPath, { taskNumber, title, status: "pending" })` once per plan task to seed the lifecycle log's plan-task channel. Do NOT call `create({ planRef, planTask })` — per-task issues are forbidden by the board-granularity invariant.
+**Action:** Run `adev issues epic "<plan title>" --plan-ref "<plan-file-path>"` to create the epic at board-level granularity — `adev issues epic` is the only verb that writes to the epic store this pass scans, so `adev issues create` would leave the plan looking orphaned on every future run (never the backend binary directly — the verb resolves the storage root from the git common dir, so it works from a linked worktree, where a raw `br` call fails with `SYNC_CONFLICT`). Then call `reportPlanTask(projectRoot, specPath, { taskNumber, title, status: "pending" })` once per plan task to seed the lifecycle log's plan-task channel. Do NOT call `create({ planRef, planTask })` — per-task issues are forbidden by the board-granularity invariant.
 
 #### 1f. Untraced Code
 Find source files with no lifecycle trailers on any commit (post-pipeline only).

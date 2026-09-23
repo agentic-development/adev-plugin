@@ -82,7 +82,7 @@ Transform the raw lesson into the structured heuristic format. This is the criti
 | `pattern` | The "do this" rule (max 500 chars). Write as a concrete instruction an agent can follow. |
 | `anti-pattern` | The "don't do this" counter-rule (max 500 chars). Derive from the lesson's failure case, or from `--anti-pattern` if provided. |
 | `id` | Safe-slug derived from the title: lowercase, kebab-case, max 64 chars. e.g., `verify-hook-json-after-edits` |
-| `confidence` | Start at `low` for first-time lessons. If the user says "this has happened multiple times" or "we keep hitting this", use `medium`. |
+| `confidence` | Start at `medium` for first-time lessons. If the lesson is a guess not yet confirmed by a concrete failure, or the user signals low certainty, use `low` instead. If the user says "this has happened multiple times" or "we keep hitting this", use `high`. |
 
 **Redaction check:** Ensure the pattern and anti-pattern do NOT contain:
 - Credentials, tokens, API keys
@@ -104,7 +104,7 @@ Proposed heuristic:
   Pattern:      After editing any hook script or hooks.json, run the hook
                 test suite to confirm the stdin/stdout JSON contract is intact.
   Anti-pattern: Assume a hook edit is correct based on a manual dry-run alone.
-  Confidence:   low
+  Confidence:   medium
 
 Save this? (yes / edit / cancel)
 ```
@@ -126,7 +126,7 @@ Construct the heuristic entry object:
   title: "<title>",
   pattern: "<pattern>",
   antiPattern: "<anti-pattern>",
-  confidence: "low",
+  confidence: "medium",
   evidence: [{
     path: "<current-session-file-or-conversation-ref>",
     date: "<today YYYY-MM-DD>",
@@ -151,7 +151,7 @@ scope: <scope>
 title: <title>
 pattern: <pattern>
 anti-pattern: <anti-pattern>
-confidence: low
+confidence: medium
 evidence:
   - path: <evidence-path>
     date: <today>
@@ -181,7 +181,7 @@ Similar heuristic already exists:
 ## Step 6: Confirm
 
 ```
-Saved heuristic: <id> (scope: <scope>, confidence: low)
+Saved heuristic: <id> (scope: <scope>, confidence: medium)
 
 This lesson will be surfaced when agents work on the <scope> module
 via /adev:implement, /adev:plan, and /adev:debug.
@@ -225,6 +225,6 @@ Total: 2 heuristics (1 high, 0 medium, 1 low)
 
 - **Generalize, don't record.** The lesson should be useful in future contexts, not just describe what happened today.
 - **One lesson per heuristic.** If the user describes multiple lessons, file each separately.
-- **Low confidence by default.** A single data point isn't enough for high confidence. The store auto-promotes as evidence accumulates.
+- **Medium confidence by default.** A single data point isn't enough for high confidence, but a first-time lesson is more than a guess — start at `medium`, not `low`. The store auto-promotes as evidence accumulates.
 - **Always confirm before writing.** Never silently create a heuristic.
 - **Source is always `learn`.** This distinguishes user-captured heuristics from auto-extracted ones.

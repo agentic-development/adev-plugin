@@ -24,6 +24,15 @@
 # The driver is configured only in the propagate-to-next.yml workflow
 # (`git config merge.release-next-version.driver ...`) — without that config
 # these attributes are a no-op and git falls back to its default merge.
+#
+# release-please-config.json carries the same kind of by-design divergence in
+# its packages["."] "prerelease"/"prerelease-type"/"versioning" keys
+# (release/next always runs prerelease mode, main never does) but had no
+# driver assigned at all until 2026-08-24: a merge silently dropped
+# release/next's prerelease block via git's single-side-changed fast path
+# (main's side hadn't touched the file, so git took it as-is with no driver
+# invoked). The same driver now covers this file too.
 package.json merge=release-next-version
 .claude-plugin/plugin.json merge=release-next-version
 .cursor-plugin/plugin.json merge=release-next-version
+release-please-config.json merge=release-next-version

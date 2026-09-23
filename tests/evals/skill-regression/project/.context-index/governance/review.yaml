@@ -1,0 +1,38 @@
+# review.yaml — orders-service reviewer registry (FIXTURE)
+#
+# Command-free: no `package:` (external-skill dispatch) and no `prompt_text:`
+# (inline fixture-authored reviewer prose). Both are forms `review-config.mjs`
+# ADMITS, so the ban on them is asserted on the file's keys rather than on the
+# loader's admitted set — the loader cannot reject what it accepts by design.
+#
+# `structural-architect` is here because it is the reviewer that produces the
+# `charter-scope-escape` finding the ground-truth catalog plants: its prompt
+# asks "Does this spec respect its charter's scope?" (Module Boundaries).
+# Removing it leaves that planted violation with no detector.
+#
+# The `materialized_at` marker below is REQUIRED. `review.yaml` is a marked
+# registry, and `loadReviewConfig` calls `assertMaterialized` before it reads
+# anything: an unmarked file fails closed with REGISTRY_NOT_MATERIALIZED. The
+# marker also keeps this fixture off the `adev governance materialize` path,
+# which is the path that would pull a domain overlay into the file.
+
+reviewers:
+  - id: structural-architect
+    name: Structural Architect
+    dispatch: always
+    profile: reviewer-reasoning
+    context_pack: base
+    severity_cap: blocker
+    prompt: plugin:review-specs/structural-architect-prompt.md
+
+  - id: consistency-analyzer
+    name: Consistency Analyzer
+    dispatch: always
+    profile: reviewer-fast
+    context_pack: base
+    severity_cap: blocker
+    prompt: plugin:review-specs/consistency-analyzer-prompt.md
+
+# Stamped for the fixture — this file is the complete effective reviewer set;
+# nothing is contributed from anywhere else.
+materialized_at: 2026-08-21T00:00:00Z

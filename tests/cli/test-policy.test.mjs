@@ -133,6 +133,25 @@ test("resolve reads the spec's spec-declared test_depth via the plan header's Sp
   }
 });
 
+test("resolve strips a backtick-fenced path on the Spec: header line", async () => {
+  const dir = await createTempDir();
+  try {
+    const specRel = ".context-index/specs/features/demo/x.spec.md";
+    await writeFixture(dir, specRel, "---\ntest_depth: thorough\n---\n# X\n");
+    await writeFixture(
+      dir,
+      "plan.plan.md",
+      `> **Spec:** \`${specRel}\` (revision 2, status \`review-passed\`)\n\n## Task Structure\n\n### Task 1: X [specialist: none]\n**Files:**\n- Create: \`src/x.ts\`\n`,
+    );
+    await writeFixture(dir, ".context-index/manifest.yaml", "modules: []\n");
+    const result = await run({ projectRoot: dir, argv: ["resolve", "--plan", "plan.plan.md", "--task-id", "t1"] });
+    assert.equal(result.depth, "thorough");
+    assert.equal(result.source, "spec-declared");
+  } finally {
+    await cleanupTempDir(dir);
+  }
+});
+
 test("resolve consults a modules[].test_depth override by matching targetPaths against modules[].paths", async () => {
   const dir = await createTempDir();
   try {

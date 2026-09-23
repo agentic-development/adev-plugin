@@ -13,6 +13,10 @@ description: "Self-re-invoking, one-bug-per-turn loop that drains eligible P2/P3
 - `--max-turns <N>`: caps self-re-invocation turns. Default: 20 — a conservative bound preventing an unbounded run when neither flag is set.
 - `--github-sync`: enables the tracker-provider-bridge's inbound pull before each bug selection and outbound writeback after each attempt (`tracker-provider-bridge.spec.md`). Inbound sync runs once per turn in Step 0, before the status/budget guard; outbound writeback runs once per completed attempt in Step 4. Both degrade gracefully (never error the loop) when GitHub or `gh` is unreachable — see Failure Modes below.
 - `--resume [--resume-run-id <id>]` (internal): used only by this skill's own self-re-invocation, mirroring `/adev:build --resume`. Not intended for direct user invocation. `--resume-run-id` is always passed explicitly by the re-invocation call — the skill always knows its own `run_id` from the turn that just completed. A manual `--resume` without `--resume-run-id` falls back to `adev bugfix-loop latest` (the rare case of a manual `--resume` after a crash where the exact `run_id` wasn't captured).
+- `--worktree-per-bug`: default OFF. When set, each bug's claim, `/adev:debug --auto` attempt (Step 4), and any resulting commit happen inside a dedicated `adev`-managed worktree (`adev worktree add --slug bugfix-<issue-id> --base <ref>`) instead of the shared working tree — isolating each bug's diff from every other bug's in-flight changes (spec BEH-3).
+- `--auto-commit`: default OFF. When set (with or without `--worktree-per-bug`), a `FIXED` verdict triggers Step 4.5's commit/push/PR automation (spec BEH-4). Without either `--worktree-per-bug` or `--auto-commit`, Step 4.5 is skipped entirely and behavior is unchanged from before this capability existed.
+- `--max-priority <P0-P4>`: caps the priority band Step 2 selects from. Default: `P3` (covering `P2`/`P3`, identical to today's hardcoded behavior). The full `P0`-`P4` range is accepted — `P0`/`P1` are a deliberate, explicit operator opt-in (BEH-9), not rejected the way they were before the eligibility-floor amendment shipped. Validated fail-fast at Step 0, before any bug selection (BEH-10); malformed values (anything other than `P0`-`P4`) halt the run with `INVALID_PRIORITY_BOUND`. BEH-7's unconditional module-exclusion floor (reserved safety tags, always enforced) is unaffected by this flag at any value, including `P0` — it is the actual, non-configurable safety boundary, not the priority band.
+- `--epic <id>`: restricts Step 2's selection to `<id>` and its tiered children (`<id>.N`) for the whole run. Default: unscoped (candidates drawn from the entire board, today's behavior). Persisted on the run state at `create` time (adev-plugin-j2ev.1) and re-passed on every self-re-invocation exactly like `--max-priority`/`--worktree-per-bug`/etc. — see Step 2 and Step 6.
 
 **Load Skill Extensions:**
 
@@ -24,126 +28,51 @@ The following skill extension instructions apply to this invocation (source: ins
 
 ## Step 0: Resolve the run
 
-- **Fresh invocation (`--max-bugs`/`--max-turns`/no resume flags):**
+Resolves the run (fresh, resumed, or manual-recovery), validates `--max-priority`, checks branch freshness, and runs the `--github-sync` inbound pull.
 
-  ```bash
-  adev bugfix-loop create --max-bugs <N> --max-turns <N> --json
-  ```
-
-  Capture `run_id` from the result.
-- **`--resume --resume-run-id <id>`:** use `<id>` directly — it was passed explicitly by the prior turn's own self-re-invocation, so no discovery is needed.
-- **`--resume` with no `--resume-run-id` (manual crash recovery):**
-
-  ```bash
-  adev bugfix-loop latest --json
-  ```
-
-  If the result's `run` is `null`, there is nothing to resume — tell the user and stop. Otherwise use the returned `run.run_id`.
-
-- **`--github-sync` inbound pull:** once `run_id` is resolved (fresh or resumed), and only when `--github-sync` was passed, run inbound sync for this turn before the Step 1 guard:
-
-  ```bash
-  adev tracker-sync inbound --run-id <run_id> --json
-  ```
-
-  Capture the JSON result. Print any `notices` array entries as-is (each is already a formatted one-line stale-link message). This call degrades gracefully — a non-null `degraded: true` in the result means the turn proceeds with local-board-only candidates (see Failure Modes); it is never a reason to stop the run. Without `--github-sync`, skip this call entirely.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/bugfix-loop/references/steps/step-0-resolve-the-run.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Step 1: Turn guard (status + budget)
 
-Before selecting a bug, check the status guard and per-turn budget:
+Checks the status guard and per-turn budget before selecting a bug.
 
-```bash
-adev bugfix-loop guard --run-id <run_id> --json
-```
-
-- `{"proceed": false, "reason": "terminal_status", "status": "<s>"}`: this run already reached a terminal state. Do not call `adev issues next`, do not mutate `bugs_attempted[]`/`turns_completed`, do not re-print a completion token. Exit non-zero with a message naming `<s>` and instructing the operator to start a fresh `/adev:bugfix-loop` invocation (no `--resume-run-id`).
-- `{"proceed": false, "reason": "budget_exhausted", "budget_reason": "max_bugs"|"max_turns"}`: go straight to Step 5 (Finish) with `--status budget_exhausted`, distinguishing which cap tripped (`max_bugs` reached vs. `max_turns` reached) in the finish note.
-- `{"proceed": true}`: continue to Step 2.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/bugfix-loop/references/steps/step-1-turn-guard.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Step 2: Select a bug
 
-If `--github-sync` was set, inbound sync already ran in Step 0 — candidates below reflect the latest sync for this turn.
+Selects the next eligible bug via `adev issues next`, bounded by the resolved priority band.
 
-```bash
-adev issues next --type bug --max-priority P3 --json
-```
-
-If the result's `bug` is `null`: the board is drained. Go to Step 5 with `--status complete`.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/bugfix-loop/references/steps/step-2-select-a-bug.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Step 3: Claim (bounded 3-retry)
 
-```bash
-adev issues claim <id> --owner bugfix-loop --branch "$(git branch --show-current)"
-```
+Claims the selected bug (optionally inside a per-bug worktree), retrying up to 3 times on contention.
 
-`adev issues claim` failures release no lease — a failed bug is not re-eligible within this turn (its lease has not expired). On failure, call Step 2 again for the next-eligible bug and retry claim, **up to 3 total claim attempts in this turn**. If all 3 claim retries fail, this turn ends without an attempt: still call `adev bugfix-loop complete-turn --run-id <run_id>` (this failed-contention turn still counts toward `--max-turns`, per the Failure Modes table), then go to Step 6 (self-re-invoke) — do **not** fall through to Step 5's terminal path, since eligible bugs may remain.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/bugfix-loop/references/steps/step-3-claim.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Step 4: Attempt via /adev:debug --auto
 
-Set `ADEV_ISSUE_OWNER=bugfix-loop` in the environment for this invocation only, then invoke (via the Skill tool, in the current turn — not a background dispatch):
+Invokes `/adev:debug --auto` for the claimed bug, records the AttemptRecord, and releases the claim.
 
-```
-/adev:debug --issue <id> --apply --auto
-```
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/bugfix-loop/references/steps/step-4-attempt.md` for the full instructions. Do not act on this section from the summary above.
 
-`ADEV_ISSUE_OWNER=bugfix-loop` makes `/adev:debug`'s own Phase 1.6 re-claim and Phase 6 release resolve to the same owner this loop claimed with (`skills/debug/SKILL.md` — already shipped, reads `ADEV_ISSUE_OWNER` when set).
+## Step 4.5: Commit and open a PR (FIXED verdicts only, gated)
 
-Read the resulting `ADEV-DEBUG: FIXED|PARKED|UNREPRODUCIBLE` token from the last line of that turn's output.
+For `FIXED` verdicts when `--worktree-per-bug` or `--auto-commit` was passed, commits the fix and opens a PR.
 
-- **If `/adev:debug --auto` crashes** (errors out entirely rather than emitting a clean token): treat as `PARKED` with an explanatory note. Do not halt the run.
-
-Write the AttemptRecord, mapping the token onto `per-issue-attempt-cap`'s outcome contract:
-
-```bash
-adev issues record-attempt --issue <id> --outcome <FIXED|PARKED|UNREPRODUCIBLE> [--check-ids <csv-from-FAILING-CHECKS-block>] [--raw-output <text-if-no-discrete-ids>]
-```
-
-The check-ID data for `PARKED` is read from `IssueManager.get(id).notes`'s `FAILING-CHECKS:` block (`debug-completion-and-auto` BEH-8).
-
-Release the claim, using the same owner the loop claimed with:
-
-```bash
-adev issues release <id> --owner bugfix-loop
-```
-
-Regardless of outcome:
-
-```bash
-adev bugfix-loop record-attempt --run-id <run_id> --issue <id>
-adev bugfix-loop complete-turn --run-id <run_id>
-```
-
-- **`--github-sync` outbound writeback:** only when `--github-sync` was passed, after the AttemptRecord above is written, post the outcome comment for this attempt:
-
-  ```bash
-  adev tracker-sync outbound --local-issue-id <id> --verdict <FIXED|PARKED|UNREPRODUCIBLE> --completed-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --json
-  ```
-
-  This is a no-op (`{"posted": false, "reason": "no_link"}`) when the attempted WorkItem has no `TrackerSyncLink` — expected for any bug that did not originate from GitHub sync. Never blocks or retries within this turn on a post failure; the attempt's local state (`AttemptRecord`, `WorkItem`) is already correct regardless of whether the comment posted. Without `--github-sync`, skip this call entirely.
-
-**The skill never marks a bug fixed itself.** `FIXED` is entirely `/adev:debug`'s own Phase 6 confidence gate — this skill only reads the token it already emitted.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/bugfix-loop/references/steps/step-4.5-commit-and-pr.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Step 5: Finish (terminal turn only)
 
-```bash
-adev bugfix-loop finish --run-id <run_id> --status <complete|budget_exhausted|blocked> --json
-```
+Prints the running summary table and the final `ADEV-BUGFIXLOOP:` token, on a terminal turn only.
 
-Read `degraded_sync_note` from the JSON result — this reflects whatever `adev tracker-sync inbound` (Step 0) wrote into the same run-state file over the course of this run, not a placeholder. If non-null, print `GitHub sync degraded during this run: <degraded_sync_note>` as the line immediately before the token — the token itself is still unconditionally the literal last line.
-
-Print `ADEV-BUGFIXLOOP: <token-from-result>` as the **final line** (the last line, verbatim, with no trailing prose) of this turn's output — one of:
-
-- `ADEV-BUGFIXLOOP: COMPLETE` — board drained, no eligible bugs remain
-- `ADEV-BUGFIXLOOP: BUDGET_EXHAUSTED` — `--max-bugs`/`--max-turns` hit while eligible bugs remain
-- `ADEV-BUGFIXLOOP: BLOCKED` — a structural failure halted the run before any bug was attempted
-
-**Persona-exempt** (like `ADEV-BUILD`/`ADEV-VALIDATE`/`ADEV-DEBUG` — `skills/using-adev/SKILL.md`'s Persona Output Override carve-out names it explicitly). **Excluded from spine-skill chaining** — no "Next Step in the Lifecycle" footer follows this token (`single-front-door.spec.md`).
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/bugfix-loop/references/steps/step-5-finish.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Step 6: Self-re-invoke (non-terminal turns only)
 
-This is this turn's own last action — no human approval, confirmation, or manual re-entry:
+Tears down any per-bug worktree, then self-re-invokes `/adev:bugfix-loop --resume` with the original flags, on a non-terminal turn only.
 
-Immediately re-invoke `/adev:bugfix-loop --resume --resume-run-id <run_id>` via the Skill tool. The re-invocation starts a fresh turn with a clean context. **Ending this turn's response without re-invoking (when not terminal) is a loop failure.**
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/bugfix-loop/references/steps/step-6-self-reinvoke.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Failure Modes
 

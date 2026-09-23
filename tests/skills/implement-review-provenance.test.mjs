@@ -4,10 +4,16 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { buildReviewRoundTrailer } from '../../lib/lifecycle-state.mjs';
-import { createTempDir, cleanupTempDir, PLUGIN_ROOT } from '../helpers.mjs';
+import { createTempDir, cleanupTempDir, PLUGIN_ROOT, readSkillSurface } from '../helpers.mjs';
 
-const SKILL = readFileSync(join(PLUGIN_ROOT, 'skills/implement/SKILL.md'), 'utf8');
-const step2h = SKILL.slice(SKILL.indexOf('#### 2h.'), SKILL.indexOf('### Step 2.5'));
+// Step 2's body moved into its own companion under progressive disclosure.
+// 2h is the last subsection in that file, so it runs to end-of-file; slicing
+// against the concatenated surface would span unrelated files instead.
+const STEP_2 = readFileSync(
+  join(PLUGIN_ROOT, 'skills', 'implement', 'references', 'steps', 'step-2-per-task-loop.md'),
+  'utf8',
+);
+const step2h = STEP_2.slice(STEP_2.indexOf('#### 2h.'));
 
 test('step 2h names buildReviewRoundTrailer as the sole trailer producer', () => {
   assert.match(step2h, /buildReviewRoundTrailer/);
@@ -68,8 +74,9 @@ test('a multi-cycle task produces exactly one commit carrying both stage trailer
 });
 
 test('review-provenance prose changes no cap, threshold, or dispatch count (Contract D)', () => {
-  const stage1 = SKILL.slice(SKILL.indexOf('#### 2f.'), SKILL.indexOf('#### 2g.'));
-  const stage2 = SKILL.slice(SKILL.indexOf('#### 2g.'), SKILL.indexOf('#### 2h.'));
+  // Sliced from the Step 2 companion for the same reason as step2h above.
+  const stage1 = STEP_2.slice(STEP_2.indexOf('#### 2f.'), STEP_2.indexOf('#### 2g.'));
+  const stage2 = STEP_2.slice(STEP_2.indexOf('#### 2g.'), STEP_2.indexOf('#### 2h.'));
   assert.match(stage2, /Maximum `implement\.max_review_cycles` code-quality review cycles per task/);
   assert.match(stage2, /On any terminal non-PASS verdict, Stage 2 has NOT passed/);
   assert.ok(!/review[- ]round/i.test(stage1), 'Stage 1 prose must be untouched');

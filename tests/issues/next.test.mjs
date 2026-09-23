@@ -14,7 +14,7 @@
 import { test, describe, it, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
@@ -37,12 +37,11 @@ test("resolvePriorityBound: omitted --max-priority defaults to P3 (BEH-8 safety 
   assert.equal(result.error, null);
 });
 
-test("resolvePriorityBound: P0 and P1 are rejected (BEH-8)", () => {
-  for (const p of ["P0", "P1"]) {
-    const result = resolvePriorityBound(p);
-    assert.equal(result.bound, null);
-    assert.equal(result.error?.code, "INVALID_PRIORITY_BOUND");
-  }
+test("resolvePriorityBound: P0 and P1 are accepted (BEH-8 amendment — configurable priority band)", () => {
+  assert.equal(resolvePriorityBound("P0").bound, 0);
+  assert.equal(resolvePriorityBound("P0").error, null);
+  assert.equal(resolvePriorityBound("P1").bound, 1);
+  assert.equal(resolvePriorityBound("P1").error, null);
 });
 
 test("resolvePriorityBound: malformed value is rejected", () => {
@@ -194,12 +193,27 @@ test("selectNextEligibleBug: priority above bound excluded", () => {
   assert.equal(result.bug, null);
 });
 
-test("selectNextEligibleBug: P0/P1 bugs are NEVER returned even though maxPriorityBound (2 or 3) would numerically admit them (BEH-8 safety boundary — round-1 review blocker)", () => {
-  // maxPriorityBound can only ever resolve to 2 or 3 (Task 1 rejects P0/P1 at the flag),
-  // but a P0/P1 bug could still exist on the board — the ceiling check `priority > bound`
-  // does not exclude a priority NUMERICALLY BELOW the bound. An explicit floor is required.
-  const issues = [bug({ id: "p0-bug", priority: 0 }), bug({ id: "p1-bug", priority: 1 })];
-  const result = selectNextEligibleBug({ issues, manifest: { modules: [{ slug: "cli" }] }, maxPriorityBound: 3, attemptRecords: new Map() });
+test("selectNextEligibleBug: an eligible P0 bug is returned when maxPriorityBound admits it (BEH-8 amendment)", () => {
+  const issues = [bug({ id: "p0-bug", priority: 0 })];
+  const result = selectNextEligibleBug({ issues, manifest: { modules: [{ slug: "cli" }] }, maxPriorityBound: 0, attemptRecords: new Map() });
+  assert.equal(result.bug.id, "p0-bug");
+});
+
+test("selectNextEligibleBug: a P0 bug tagged against a reserved safety module is still excluded (BEH-7 unaffected by BEH-8 widening)", () => {
+  const issues = [bug({ id: "p0-bug", priority: 0, affected_modules: ["review-gate"] })];
+  const result = selectNextEligibleBug({ issues, manifest: { modules: [] }, maxPriorityBound: 0, attemptRecords: new Map() });
+  assert.equal(result.bug, null);
+});
+
+test("selectNextEligibleBug: a P0 bug with empty affected_modules is still excluded (BEH-10 unaffected by BEH-8 widening)", () => {
+  const issues = [bug({ id: "p0-bug", priority: 0, affected_modules: [] })];
+  const result = selectNextEligibleBug({ issues, manifest: { modules: [{ slug: "cli" }] }, maxPriorityBound: 0, attemptRecords: new Map() });
+  assert.equal(result.bug, null);
+});
+
+test("selectNextEligibleBug: a P0 bug with an unrecognized module slug is still excluded (BEH-11 unaffected by BEH-8 widening)", () => {
+  const issues = [bug({ id: "p0-bug", priority: 0, affected_modules: ["typo-slug"] })];
+  const result = selectNextEligibleBug({ issues, manifest: { modules: [{ slug: "cli" }] }, maxPriorityBound: 0, attemptRecords: new Map() });
   assert.equal(result.bug, null);
 });
 
@@ -239,6 +253,50 @@ test("selectNextEligibleBug: cascading exclusion — the more-urgent candidate i
 test("selectNextEligibleBug: deferred-status bug is excluded (round-4 cq-2)", () => {
   const issues = [bug({ id: "b1", status: "deferred" })];
   const result = selectNextEligibleBug({ issues, manifest: { modules: [{ slug: "cli" }] }, maxPriorityBound: 3, attemptRecords: new Map() });
+  assert.equal(result.bug, null);
+});
+
+// ─── epicId scoping (adev-plugin-eval-harness-xj3k.1 / adev-plugin-j2ev.1) ─
+//
+// `walkTree()`'s parseId-based prefix matching does not recognize this
+// repo's real tiered ids (slug-style roots like "adev-plugin-my-epic-ab12",
+// not the short "e1"/"f2" ids id-utils.mjs's SEGMENT_RE expects), so
+// epicId scoping here is plain string-prefix matching over `issue.id`,
+// matching how tiered children are actually minted (`<epic-id>.<n>`).
+
+test("selectNextEligibleBug: epicId scopes candidates to <epicId>.N children only", () => {
+  const issues = [
+    bug({ id: "epic-a.1", priority: 3 }),
+    bug({ id: "epic-b.1", priority: 1 }), // higher priority, wrong epic
+  ];
+  const result = selectNextEligibleBug({
+    issues, manifest: { modules: [{ slug: "cli" }] }, maxPriorityBound: 3, attemptRecords: new Map(), epicId: "epic-a",
+  });
+  assert.equal(result.bug.id, "epic-a.1");
+});
+
+test("selectNextEligibleBug: epicId does not match a bug whose id merely starts with the epic id as a substring", () => {
+  // "epic-ab.1" must not match epicId "epic-a" — id.startsWith(epicId + ".")
+  // requires the literal separator, not a prefix-of-a-prefix collision.
+  const issues = [bug({ id: "epic-ab.1", priority: 1 })];
+  const result = selectNextEligibleBug({
+    issues, manifest: { modules: [{ slug: "cli" }] }, maxPriorityBound: 3, attemptRecords: new Map(), epicId: "epic-a",
+  });
+  assert.equal(result.bug, null);
+});
+
+test("selectNextEligibleBug: omitted epicId is unscoped (backward compatible)", () => {
+  const issues = [bug({ id: "epic-a.1", priority: 3 }), bug({ id: "epic-b.1", priority: 1 })];
+  const result = selectNextEligibleBug({ issues, manifest: { modules: [{ slug: "cli" }] }, maxPriorityBound: 3, attemptRecords: new Map() });
+  assert.equal(result.bug.id, "epic-b.1"); // global highest priority wins, no scoping applied
+});
+
+test("selectNextEligibleBug: epicId still resolves dependencies against the FULL board, not just in-epic candidates", () => {
+  const blocker = { id: "f1", type: "feature", status: "open", dependencies: [], created: "2026-01-01T00:00:00.000Z" };
+  const blocked = bug({ id: "epic-a.1", dependencies: ["f1"] });
+  const result = selectNextEligibleBug({
+    issues: [blocked, blocker], manifest: { modules: [{ slug: "cli" }] }, maxPriorityBound: 3, attemptRecords: new Map(), epicId: "epic-a",
+  });
   assert.equal(result.bug, null);
 });
 
@@ -308,11 +366,37 @@ describe("adev issues next — CLI", () => {
     assert.match(result.stderr, /UNSUPPORTED_TYPE/);
   });
 
-  it("INVALID_PRIORITY_BOUND for P0/P1/malformed", () => {
-    for (const p of ["P0", "P1", "P9"]) {
+  it("INVALID_PRIORITY_BOUND for malformed --max-priority", () => {
+    const result = runCli(["--max-priority", "P9", "--json"], emptyBoardDir);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /INVALID_PRIORITY_BOUND/);
+  });
+
+  it("--max-priority P0/P1 succeed end-to-end (BEH-8 amendment — configurable priority band)", () => {
+    for (const p of ["P0", "P1"]) {
       const result = runCli(["--max-priority", p, "--json"], emptyBoardDir);
-      assert.notEqual(result.status, 0);
-      assert.match(result.stderr, /INVALID_PRIORITY_BOUND/);
+      assert.equal(result.status, 0);
+      assert.deepEqual(JSON.parse(result.stdout), { bug: null });
+    }
+  });
+
+  it("--max-priority P0/P1 print the effective excluded-module set to stderr (BEH-12)", () => {
+    for (const p of ["P0", "P1"]) {
+      const result = runCli(["--max-priority", p, "--json"], emptyBoardDir);
+      assert.equal(result.status, 0);
+      assert.deepEqual(JSON.parse(result.stdout), { bug: null });
+      assert.match(result.stderr, /review-gate/);
+      assert.match(result.stderr, /convergence-detector/);
+      assert.match(result.stderr, /retry-loop/);
+      assert.match(result.stderr, /bugfix-loop/);
+    }
+  });
+
+  it("--max-priority P2/P3/P4 and the default do NOT print the excluded-module set (BEH-12 — only widened invocations get it)", () => {
+    for (const args of [["--type", "bug", "--json"], ["--max-priority", "P3", "--json"], ["--max-priority", "P4", "--json"]]) {
+      const result = runCli(args, emptyBoardDir);
+      assert.equal(result.status, 0);
+      assert.equal(result.stderr, "");
     }
   });
 
@@ -337,5 +421,34 @@ describe("adev issues next — CLI", () => {
     // dependency map were ever rebuilt from a bug-only fetch, this assertion fails
     // because the blocked bug would surface with nothing to hide it.
     assert.equal(parsed.bug, null);
+  });
+
+  it("--epic scopes selection end-to-end, ignoring a higher-priority bug outside the epic", async () => {
+    const dir = makeProject();
+    try {
+      const adapter = new JsonAdapter(dir);
+      await adapter.init();
+      const epicChild = await adapter.create({ title: "in-epic bug", type: "bug", priority: 3 });
+      await adapter.update(epicChild.id, { affected_modules: ["cli"] });
+      const outsideEpic = await adapter.create({ title: "higher-priority, wrong epic", type: "bug", priority: 1 });
+      await adapter.update(outsideEpic.id, { affected_modules: ["cli"] });
+
+      // create() mints its own random id regardless of a caller-supplied
+      // `id` field, so the tiered `<epic-id>.N` shape this test needs is
+      // written directly to the board file rather than requested from create().
+      const boardPath = join(dir, ".context-index", "tasks", "tasks.json");
+      const board = JSON.parse(readFileSync(boardPath, "utf8"));
+      const tieredId = "adev-plugin-epic-a.1";
+      const idx = board.issues.findIndex((i) => i.id === epicChild.id);
+      board.issues[idx] = { ...board.issues[idx], id: tieredId };
+      writeFileSync(boardPath, JSON.stringify(board, null, 2));
+
+      const result = runCli(["--type", "bug", "--max-priority", "P3", "--epic", "adev-plugin-epic-a", "--json"], dir);
+      assert.equal(result.status, 0, result.stderr);
+      const parsed = JSON.parse(result.stdout);
+      assert.equal(parsed.bug.id, tieredId);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

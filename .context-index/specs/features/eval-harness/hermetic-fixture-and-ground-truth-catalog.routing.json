@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "task-1",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.6,
+        "novelty": 0.8
+      },
+      "rationale": "Criteria 27/29/35/41/52 are explicit with named perturbations, but eight files exceed the one-module band and tests/evals/adev-api-eval is the only fixture-project precedent — no curated sample. Checkpoint after the five properties, before authoring the tree."
+    },
+    {
+      "task_id": "task-2",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.6,
+        "novelty": 0.6
+      },
+      "rationale": "Loader-resolved prompt containment, the materialized_at marker pair, and five distinct key bans compose several mechanisms rather than applying one. Seven files, no boundary crossing; the fixture governance dir is not the sensitive .context-index/governance/**."
+    },
+    {
+      "task_id": "task-3",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.6,
+        "novelty": 0.6
+      },
+      "rationale": "Transitive @-import resolution to five hops is real implementation work, not pattern application, and the clean slice's lifecycle chain must be exactly right for Task 4's contrast to read. Ten files in one module."
+    },
+    {
+      "task_id": "task-4",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.6,
+        "novelty": 0.6
+      },
+      "rationale": "Task 3 authored the clean twin immediately before, so the shape has strong local precedent. Planting ten uniquely-anchorable violations that each map to one class still needs judgment, and the omitted plan event is easy to get subtly wrong."
+    },
+    {
+      "task_id": "task-5",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.6,
+        "novelty": 0.6
+      },
+      "rationale": "score-schema.mjs is the precedent for the code registry and rubric-legacy-scale.test.mjs for the test shape, but the containment ordering and the per-rule checked counters compose them newly. Crosses tests/ into lib/ for one frozen constant."
+    },
+    {
+      "task_id": "task-6",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 0.8
+      },
+      "rationale": "Write markdown and pin literals — the assertion idiom is already established in both suites by Tasks 1-5. Three files, no design decisions the spec leaves open. The only task in this plan eligible for tier quick."
+    },
+    {
+      "task_id": "task-7",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.4,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "One file, but the repo's rejecting-input precedents are all single-rule; requiring each of thirteen fixtures to trip exactly one code and no other is a mutual-exclusion constraint that needs iteration on rule ordering. Pattern coverage below 3 forces tier full."
+    },
+    {
+      "task_id": "task-8",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.4,
+        "blast_radius": 1,
+        "novelty": 0.4
+      },
+      "rationale": "One file, but no precedent exists for a before/after git-status equality across enumerated worktree roots, and the non-vacuity design (with-field vs without-field resolution must differ) is mechanism the spec prescribes only by outcome. Highest-risk task in the plan."
+    },
+    {
+      "task_id": "task-9",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.8,
+        "novelty": 0.8
+      },
+      "rationale": "Scores 16/20 and would route auto-agent on arithmetic, upgraded deliberately: the task carries a one-time manual /adev:codehealth check with no library entry point, which is definitionally a checkpoint. Root manifest is not a sensitive path and the splice crosses no boundary rule."
+    }
+  ]
+}

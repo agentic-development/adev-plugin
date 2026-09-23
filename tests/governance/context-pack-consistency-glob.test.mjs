@@ -57,13 +57,14 @@ describe("bundled consistency pack glob (BEH-1)", () => {
     );
   });
 
-  test("rendered against this repo, the pack names 20 cross-cutting specs, not 55 files", () => {
+  test("rendered against this repo, the pack names 23 cross-cutting specs, not 85 entries", () => {
     // LIVE COUNT against this repository's own .context-index/specs/cross-cutting/.
-    // 20 `*.spec.md` files: 19 at the top level plus
-    // `completion-tokens/completion-tokens.spec.md` one level down. Everything
-    // else there is a lifecycle sidecar that must never reach a reviewer
-    // prompt (`.review.md`, `.plan.md`, `.validate.md`, `.blockers.md`), plus
-    // a bare `lifecycle-gate-validation.md` and the nested `charter.md`.
+    // 85 entries live there; 23 are `*.spec.md` (22 at the top level plus
+    // `completion-tokens/completion-tokens.spec.md` one level down). The other 62
+    // must never reach a reviewer prompt: 18 `.review.md`, 15 `.plan.md`,
+    // 14 `.validate.md`, 3 `.blockers.md`, 9 `.routing.json`, 1 bare
+    // `lifecycle-gate-validation.md`, and the nested `completion-tokens/charter.md`
+    // and `implementation-mode/charter.md`.
     //
     // Raised 18 -> 19 on 2026-08-20 when the glob became recursive. The 19th
     // is a genuine spec that already existed; it was simply unreachable while
@@ -72,6 +73,20 @@ describe("bundled consistency pack glob (BEH-1)", () => {
     // Raised 19 -> 20 on 2026-08-23 when
     // review-block-auto-retry-rev-2-targeted-author-verify-loop.spec.md was
     // added as a new cross-cutting amendment spec.
+    //
+    // Raised 19 -> 20 on 2026-09-09 when governance-opt-in-dispatch.spec.md
+    // was added as a new cross-cutting spec.
+    //
+    // Raised 20 -> 21 on 2026-09-11 when mode-resolution-core.spec.md
+    // was added as a new cross-cutting spec.
+    //
+    // Raised 21 -> 22 on 2026-09-13 when skill-body-progressive-disclosure.spec.md
+    // was added as a new cross-cutting spec.
+    //
+    // Raised 22 -> 23 when the two independent additions above (review-block-
+    // auto-retry-rev-2 and the governance/mode-resolution/skill-body trio)
+    // were reconciled on merge — each raised the count independently from the
+    // same base of 19.
     //
     // FUTURE CONTRIBUTOR: bump this when you add or remove a cross-cutting
     // *spec*. NEVER bump it because a sidecar appeared — a sidecar reaching
@@ -86,7 +101,7 @@ describe("bundled consistency pack glob (BEH-1)", () => {
     const crossCuttingMatches = namedFiles(r.rendered, r.files, r.nonce).filter((f) =>
       f.startsWith(CROSS_CUTTING_PREFIX)
     );
-    assert.equal(crossCuttingMatches.length, 20);
+    assert.equal(crossCuttingMatches.length, 23);
   });
 
   test("no lifecycle sidecar reaches any bundled pack", () => {

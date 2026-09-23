@@ -12,19 +12,19 @@ import { test, describe } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { PLUGIN_ROOT } from '../helpers.mjs';
+import { PLUGIN_ROOT, readSkillSurface } from '../helpers.mjs';
 
 const SKILL_PATH = join(PLUGIN_ROOT, 'skills/hygiene/SKILL.md');
 
 describe('Hygiene Audit Pass 20: Platform Drift', () => {
   test('SKILL.md contains Audit Pass 20 section', () => {
-    const skill = readFileSync(SKILL_PATH, 'utf8');
+    const skill = readSkillSurface("hygiene");
     assert.ok(skill.includes('Audit Pass 20'), 'Missing Audit Pass 20');
     assert.ok(skill.includes('Platform Drift'), 'Missing Platform Drift title');
   });
 
   test('Pass 20 compares platform-context.yaml against package.json', () => {
-    const skill = readFileSync(SKILL_PATH, 'utf8');
+    const skill = readSkillSurface("hygiene");
     const idx = skill.indexOf('Audit Pass 20');
     assert.ok(idx !== -1, 'Pass 20 section not found');
     const section = skill.slice(idx, idx + 2500);
@@ -33,14 +33,14 @@ describe('Hygiene Audit Pass 20: Platform Drift', () => {
   });
 
   test('Pass 20 SKIPs when platform-context.yaml does not exist', () => {
-    const skill = readFileSync(SKILL_PATH, 'utf8');
+    const skill = readSkillSurface("hygiene");
     const idx = skill.indexOf('Audit Pass 20');
     const section = skill.slice(idx, idx + 2500);
     assert.ok(section.includes('SKIP'), 'Must document SKIP case');
   });
 
   test('description frontmatter no longer says nineteen audit passes', () => {
-    const skill = readFileSync(SKILL_PATH, 'utf8');
+    const skill = readSkillSurface("hygiene");
     // After adding Pass 20, description should mention twenty passes (was nineteen)
     assert.ok(
       !skill.includes('Runs nineteen audit passes'),

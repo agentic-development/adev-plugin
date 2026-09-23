@@ -463,7 +463,7 @@ Batching and `--parallel` operate at different scopes: batching groups cohesive,
 
 ### `/adev:bugfix-loop`
 
-**Purpose:** Self-re-invoking, one-bug-per-turn loop that drains eligible P2/P3 bugs from the issue board unattended, using `/adev:debug --auto` for each attempt. Each turn selects the next eligible bug (`adev issues next`), claims it, attempts a fix, records the outcome, and — unless the run is terminal — immediately self-re-invokes for the next turn via the Skill tool, so a single top-level invocation can drain many bugs across many turns without manual re-entry.
+**Purpose:** Self-re-invoking, one-bug-per-turn loop that drains eligible bugs from the issue board unattended, using `/adev:debug --auto` for each attempt. Each turn checks branch freshness, selects the next eligible bug (`adev issues next`), claims it (optionally inside a dedicated per-bug worktree), attempts a fix, records the outcome in a running summary table, optionally commits and opens a PR on a `FIXED` verdict, and — unless the run is terminal — immediately self-re-invokes for the next turn via the Skill tool, so a single top-level invocation can drain many bugs across many turns without manual re-entry.
 
 **Prerequisites:** `tasks.backend` configured (JSON or beads) and reachable.
 
@@ -472,16 +472,20 @@ Batching and `--parallel` operate at different scopes: batching groups cohesive,
 - `--max-turns <N>`: caps self-re-invocation turns. Default: 20, to keep an unattended run bounded when neither flag is set.
 - `--github-sync`: enables the tracker-provider bridge's inbound pull before bug selection and outbound comment writeback after each attempt. Degrades gracefully to local-board-only operation if GitHub/`gh` is unreachable — never halts the run.
 - `--resume [--resume-run-id <id>]`: internal, used only by the skill's own self-re-invocation between turns. Not intended for direct invocation.
+- `--worktree-per-bug`: default OFF. Each bug's claim, attempt, and any resulting commit run inside a dedicated `adev`-managed worktree instead of the shared working tree, isolating each bug's diff from every other bug's in-flight changes. The second and later bugs' worktrees stack on the previous bug's completed branch.
+- `--auto-commit`: default OFF. A `FIXED` verdict commits the isolated diff, pushes `adev/bugfix-<issue-id>`, and opens a PR (also triggered automatically when `--worktree-per-bug` is set). Without either flag, nothing is committed by the loop.
+- `--max-priority <P0-P4>`: caps the priority band bugs are selected from. Default: `P3` (covers `P2`/`P3`, the loop's original behavior). `P0`/`P1` are now reachable by explicit operator choice — a malformed value (anything other than `P0`-`P4`) halts the run before any bug is selected. The excluded-module safety floor (below) applies at every value, including `P0`.
 
-**Eligibility filter:** only bugs with `priority` P2/P3, a single `affected_modules` entry that isn't empty or on the excluded-module safety list (`review-gate`, `convergence-detector`, `retry-loop`, `bugfix-loop`, plus any manifest-configured additions), and an `AttemptRecord.last_verdict` that isn't `NO_PROGRESS`/`REGRESSED`/`BUDGET_EXHAUSTED` are selected. P0/P1 bugs are never selectable by this loop, regardless of flags — tag a bug's `affected_modules` via `adev issues set-modules <id> <slug>` to make it loop-eligible.
+**Eligibility filter:** only bugs with `priority` within the resolved `--max-priority` band (default `P2`/`P3`), a single `affected_modules` entry that isn't empty or on the excluded-module safety list (`review-gate`, `convergence-detector`, `retry-loop`, `bugfix-loop`, plus any manifest-configured additions), and an `AttemptRecord.last_verdict` that isn't `NO_PROGRESS`/`REGRESSED`/`BUDGET_EXHAUSTED` are selected. The excluded-module safety list is unconditional — it still excludes a matching bug even when `--max-priority P0` widens the priority band — tag a bug's `affected_modules` via `adev issues set-modules <id> <slug>` to make it loop-eligible.
 
 **Example:**
 ```
 /adev:bugfix-loop --max-bugs 5
 /adev:bugfix-loop --max-turns 10 --github-sync
+/adev:bugfix-loop --worktree-per-bug --auto-commit --max-priority P1
 ```
 
-**Expected Output:** One line per turn's outcome (bug attempted, verdict) as the loop progresses across self-re-invocations, ending with the final line `ADEV-BUGFIXLOOP: COMPLETE | BUDGET_EXHAUSTED | BLOCKED` — `COMPLETE` means the board was drained with no eligible bugs remaining, `BUDGET_EXHAUSTED` means `--max-bugs`/`--max-turns` was hit while eligible bugs remain, `BLOCKED` means a structural failure (e.g. an unreachable issue board) halted the run before any bug was attempted.
+**Expected Output:** One line per turn's outcome (bug attempted, verdict) as the loop progresses across self-re-invocations, plus a running summary table (issue id, verdict, files touched, tests added, priority bound, turn) reprinted before the terminal line, ending with the final line `ADEV-BUGFIXLOOP: COMPLETE | BUDGET_EXHAUSTED | BLOCKED` — `COMPLETE` means the board was drained with no eligible bugs remaining, `BUDGET_EXHAUSTED` means `--max-bugs`/`--max-turns` was hit while eligible bugs remain, `BLOCKED` means a structural failure (e.g. an unreachable issue board, a stale local branch past the configured hard threshold, or a malformed `--max-priority` value) halted the run before any bug was attempted.
 
 **Related Guides:** [Validate & Debug](validate-debug.md)
 
@@ -716,22 +720,21 @@ Batching and `--parallel` operate at different scopes: batching groups cohesive,
 
 ### `/adev:repomap`
 
-**Purpose:** Generate an AST-based symbol index of the repository. Extracts exported functions, classes, types, and interfaces, ranks by reference count, and outputs artifacts consumed by `/adev:hygiene` for drift detection.
+**Purpose:** Generate an AST-based symbol index of the repository. Extracts exported functions, classes, types, and interfaces, ranks by reference count, and outputs artifacts consumed by `/adev:hygiene`, `/adev:codehealth`, `/adev:route`, `/adev:validate`, `/adev:implement`, and `/adev:recover`. Wraps `adev repomap generate` (the tested `lib/repomap/` tree-sitter + PageRank pipeline) — no hand-grepping.
 
 **Prerequisites:** Source code must exist.
 
 **Arguments:**
-- No arguments: map the entire repository
-- `--path <dir>`: map a specific directory
-- `--depth <n>`: limit tree depth (default: unlimited)
+- No arguments: map the entire repository, auto-detecting parser mode (tree-sitter if `web-tree-sitter` is installed, regex fallback otherwise)
+- `--mode <tree-sitter|regex>`: force a specific parser mode
 
 **Example:**
 ```
 /adev:repomap
-/adev:repomap --path lib/
+/adev:repomap --mode regex
 ```
 
-**Expected Output:** Symbol index files at `.context-index/hygiene/` including `dependency-graph.json` and `symbol-ranks.json`.
+**Expected Output:** `.context-index/hygiene/repo-map.md` always; `dependency-graph.json` and `symbol-ranks.json` in tree-sitter mode only (regex mode is a documented degraded fallback with no JSON artifacts).
 
 **Related Guides:** [Maintain](maintain.md)
 
@@ -891,3 +894,75 @@ Batching and `--parallel` operate at different scopes: batching groups cohesive,
 **Expected Output:** A maturity scorecard with per-dimension scores, overall readiness rating, and prioritized improvement recommendations.
 
 **Related Guides:** [Getting Started Tutorial](getting-started.md), [Core Concepts](concepts.md)
+
+## How a skill is laid out on disk
+
+Each skill is a directory under `skills/`:
+
+```
+skills/<name>/
+├── SKILL.md          # the body — always loaded in full when the skill runs
+├── references/       # companions — loaded on demand, only when needed
+└── scripts/          # executable helpers the skill shells out to
+```
+
+**`SKILL.md` is the always-read part.** It is injected in full when the skill is
+invoked, and from then on it is re-read as part of the context prefix on every
+subsequent turn of that session. Its size is therefore multiplied by how long
+the session runs, not paid once.
+
+**`references/` is the on-demand part.** Material an agent needs only sometimes
+— one mode of a multi-mode skill, one audit pass, one pipeline step — lives
+here. The body keeps the heading, a one-line summary of what the section
+covers, and a pointer:
+
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/hygiene/references/audit-passes/pass-12-lifecycle-audit.md` for the full instructions.
+
+`<ADEV_ROOT>` is the **plugin root** — the directory containing `skills/`, `lib/`
+and `templates/` — resolved at runtime. Pointers **must** carry it.
+
+Where that is depends on how the skill was installed. It is the *plugin* root, not
+the directory the running skill happens to sit in, and for cursor those differ:
+
+| Surface | `<ADEV_ROOT>` resolves to |
+|---------|---------------------------|
+| Claude Code (plugin dir) | the plugin directory itself |
+| copilot | `<destRoot>/` — the skill tree is published under `<destRoot>/skills/<name>/` |
+| codex | symlinks `~/.agents/skills/<name>` into the live checkout, so `<ADEV_ROOT>` is that checkout |
+| opencode | `~/.config/opencode/plugins/cache/adev/` — install copies the plugin root into that cache, then symlinks `~/.config/opencode/skills/<name>` into it. Like cursor, the cache is the plugin root, **not** the checkout and not the skills dir |
+| cursor | `~/.cursor/plugins/local/adev/` — the plugin **cache**, NOT `~/.cursor/skills/` |
+
+Cursor is the one that catches people. It publishes a sanitized copy for discovery
+to `~/.cursor/skills/adev-<name>/`, with the directory renamed — so no root maps a
+`skills/<name>/references/...` pointer onto that layout. The cache is a full copy of
+the plugin root (`cpSync(PLUGIN_ROOT, cacheDir)`) and does contain a conforming
+`skills/<name>/references/...`, so a cursor-hosted agent resolves `<ADEV_ROOT>` to
+the cache.
+A bare `skills/...` path is repo-root-relative, and nothing anchors it once the
+skill is installed: cursor publishes to `~/.cursor/skills/adev-<name>/` with the
+directory renamed, copilot under `.github/` or `~/.copilot/`, codex to
+`~/.agents/skills/<name>/`. In a user project the agent's cwd is the *project*
+root, so a bare path resolves to nothing — or, worse, binds to a same-named file
+in a project-owned `skills/` tree, which the pointer prose then instructs the
+agent to treat as the authoritative instructions.
+
+The agent reads a companion immediately before it needs it, so a run that only
+touches one mode never loads the other six. `skills/hygiene/SKILL.md` is the
+clearest example: 23 audit passes live in `references/audit-passes/`, and the
+body carries a routing table mapping each pass to its `--check` slug and file.
+
+Some things stay in the body no matter how large it gets, because they govern
+the whole invocation rather than one branch: the Load Skill Extensions block,
+the dispatch-discipline rules, and `## Prerequisites`. A precondition behind a
+conditional-loading pointer is no longer unconditional.
+
+### Size limits
+
+| Limit | Value | What happens if you cross it |
+|-------|-------|------------------------------|
+| Copilot frontmatter cap | 65,536 bytes | Hard failure — `INVALID_SKILL_FRONTMATTER` breaks Copilot **install** (and its `--dry-run` branch) |
+| Agent Skills guidance | ~5,000 tokens | Soft — the body costs more on every turn of every session that loads it |
+
+Both are checked by `tests/skills/skill-size-cap.test.mjs`. If you trip either,
+move a section into `references/` — do not delete prose to fit.
+

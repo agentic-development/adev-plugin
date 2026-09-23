@@ -13,12 +13,20 @@ jobs:
     runs-on: ubuntu-latest
 
     outputs:
-      release_created: ${{ steps.release.outputs.release_created }}
-      tag_name: ${{ steps.release.outputs.tag_name }}
+      release_created: ${{ steps.outputs.outputs.release_created }}
+      tag_name: ${{ steps.outputs.outputs.tag_name }}
 
     steps:
+      # Attempt 1 is allowed to fail. release-please talks to the GitHub API on
+      # every run, and a transient "API rate limit exceeded for installation"
+      # kills the step in seconds, leaving the version bumped on the branch but
+      # never tagged or released. The action is idempotent, so re-running it
+      # against an already-created release is a no-op rather than a double
+      # release. `publish` below no longer depends on this job succeeding, so
+      # the retry is defence in depth rather than the only line of it.
       - name: Run release-please
         id: release
+        continue-on-error: true
         uses: googleapis/release-please-action@v4
         with:
           config-file: release-please-config.json
@@ -27,9 +35,59 @@ jobs:
           # even when triggered by a push to release/0.x or release/next.
           target-branch: ${{ github.ref_name }}
 
+      # A fixed pause, not exponential backoff: the installation rate limit
+      # resets on a clock, so spacing one retry out beats retrying instantly.
+      - name: Back off before retry
+        if: steps.release.outcome == 'failure'
+        run: sleep 60
+
+      - name: Run release-please (retry)
+        id: release_retry
+        if: steps.release.outcome == 'failure'
+        uses: googleapis/release-please-action@v4
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          target-branch: ${{ github.ref_name }}
+
+      # Both attempts failed. Without this the job would go green on the back
+      # of `continue-on-error`, and the only symptom would be an unpublished
+      # version noticed days later.
+      - name: Fail if both attempts failed
+        if: steps.release.outcome == 'failure' && steps.release_retry.outcome == 'failure'
+        run: |
+          echo "::error::release-please failed on both attempts. Nothing was released."
+          exit 1
+
+      # Whichever attempt ran last wins; the retry only exists when the first
+      # failed, so it is authoritative when present.
+      - name: Collect release outputs
+        id: outputs
+        run: |
+          if [ "${{ steps.release.outcome }}" = "failure" ]; then
+            echo "release_created=${{ steps.release_retry.outputs.release_created }}" >> "$GITHUB_OUTPUT"
+            echo "tag_name=${{ steps.release_retry.outputs.tag_name }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "release_created=${{ steps.release.outputs.release_created }}" >> "$GITHUB_OUTPUT"
+            echo "tag_name=${{ steps.release.outputs.tag_name }}" >> "$GITHUB_OUTPUT"
+          fi
+
   publish:
+    # Ordered after release-please so the tag exists before the artifact does,
+    # but NOT gated on its result. release_created is true only in the single
+    # run that creates the release, which made publishing unrecoverable: once
+    # a release existed, every later run — including a re-run of the failed
+    # one — saw release_created=false and skipped publishing forever. The
+    # branch could sit at a version npm had never received with no path back
+    # except a manual publish.
+    #
+    # The gate is now a fact about the world rather than about one job's
+    # outcome: publish when the branch's version is tagged but missing from
+    # npm. That is self-healing (any later push to the branch completes an
+    # interrupted release) and idempotent (a version already on npm is
+    # skipped, so re-runs cannot double-publish).
     needs: release-please
-    if: ${{ needs.release-please.outputs.release_created }}
+    if: always()
     runs-on: ubuntu-latest
 
     permissions:
@@ -39,6 +97,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          # Tags are needed by the tag-exists check below.
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -46,11 +107,78 @@ jobs:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
 
+      - name: Decide whether to publish
+        id: decide
+        run: |
+          set -euo pipefail
+          pkg="$(node -p "require('./package.json').name")"
+          version="$(node -p "require('./package.json').version")"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+          if [ -n "$(npm view "$pkg@$version" version 2>/dev/null || true)" ]; then
+            echo "$pkg@$version is already on npm — nothing to do."
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Never publish a version that has no tag: the tag is the input to
+          # the release, not a record of it. Matched by suffix rather than by
+          # a hardcoded "adev-cli-v" so a change to release-please's component
+          # naming does not silently disable publishing.
+          if [ -z "$(git tag --list "*v$version")" ]; then
+            echo "::warning::$pkg@$version is not on npm, but no v$version tag exists yet — release-please has not cut it. Skipping publish; a later run will pick it up once the tag lands."
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "$pkg@$version is tagged but not published — publishing."
+          echo "publish=true" >> "$GITHUB_OUTPUT"
+
       - name: Install dependencies
+        if: steps.decide.outputs.publish == 'true'
         run: npm ci
 
       - name: Run tests
+        if: steps.decide.outputs.publish == 'true'
         run: npm test
+
+      - name: Determine npm dist-tag
+        id: dist-tag
+        if: steps.decide.outputs.publish == 'true'
+        run: |
+          case "${{ github.ref_name }}" in
+            main)         echo "tag=latest" >> "$GITHUB_OUTPUT" ;;
+            release/next) echo "tag=next"   >> "$GITHUB_OUTPUT" ;;
+            *)            echo "tag=legacy" >> "$GITHUB_OUTPUT" ;;
+          esac
+
+      - name: Publish to npm
+        if: steps.decide.outputs.publish == 'true'
+        # NPM_TOKEN must be a valid automation or granular access token with publish
+        # rights on @adev-org/*. A 404 PUT response from npm here typically means
+        # the token is expired/revoked, not that the package or version is missing.
+        run: npm publish --access=public --provenance --tag ${{ steps.dist-tag.outputs.tag }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  # Fails the run when the branch's version is not the one the npm dist-tag
+  # serves. The publish job above heals most drift on its own, so reaching
+  # here means something it could not fix: an untagged version bump, a failed
+  # publish, or a dist-tag pointing at an older release. Until now nothing
+  # said so — the release job went red in a place nobody watches, git history
+  # looked like a clean release, and users kept installing the previous
+  # version with the bug the release was cut to fix.
+  #
+  # Runs even when release-please failed and when publish skipped, since both
+  # are states that leave drift behind.
+  verify-published:
+    needs: [release-please, publish]
+    if: always()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Determine npm dist-tag
         id: dist-tag
@@ -61,10 +189,25 @@ jobs:
             *)            echo "tag=legacy" >> "$GITHUB_OUTPUT" ;;
           esac
 
-      - name: Publish to npm
-        # NPM_TOKEN must be a valid automation or granular access token with publish
-        # rights on @adev-org/*. A 404 PUT response from npm here typically means
-        # the token is expired/revoked, not that the package or version is missing.
-        run: npm publish --access=public --provenance --tag ${{ steps.dist-tag.outputs.tag }}
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Compare branch version against the published dist-tag
+        run: |
+          set -euo pipefail
+          tag="${{ steps.dist-tag.outputs.tag }}"
+          pkg="$(node -p "require('./package.json').name")"
+          want="$(node -p "require('./package.json').version")"
+
+          # npm's registry CDN is read-through cached, so a just-completed
+          # publish can take a moment to be visible. Poll rather than fail on
+          # the first miss.
+          for attempt in 1 2 3 4 5 6; do
+            got="$(npm view "$pkg" "dist-tags.$tag" 2>/dev/null || true)"
+            if [ "$got" = "$want" ]; then
+              echo "npm dist-tag '$tag' serves $want — in sync."
+              exit 0
+            fi
+            echo "attempt $attempt: dist-tag '$tag' serves '${got:-<none>}', branch is at '$want'"
+            sleep 20
+          done
+
+          echo "::error::Version drift: $pkg@$want is on ${{ github.ref_name }}, but the '$tag' dist-tag still serves '${got:-<none>}'. Re-run this workflow — publish is self-healing once the version is tagged. If release-please never cut the tag, re-running it creates the tag and the same run publishes. See docs/releasing.md."
+          exit 1

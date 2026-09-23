@@ -3,7 +3,7 @@ import { strict as assert } from 'node:assert';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { join, dirname } from 'node:path';
-import { mkdirSync, writeFileSync, rmSync, readFileSync, existsSync, symlinkSync } from 'node:fs';
+import { mkdirSync, writeFileSync, rmSync, readFileSync, existsSync, symlinkSync, cpSync } from 'node:fs';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 
@@ -219,8 +219,14 @@ describe('repomap/index orchestrator', () => {
 // ---------------------------------------------------------------------------
 
 describe('integration - full pipeline', () => {
-  const FIXTURE_ROOT = join(__dirname, '..', 'fixtures', 'sample-project');
-  const HYGIENE_DIR = join(FIXTURE_ROOT, '.context-index', 'hygiene');
+  // Run against a temp copy, never the committed fixture directly: this
+  // block writes generated artifacts (and, in the symlink test, a planted
+  // symlink) into FIXTURE_ROOT while it runs, and doing that in place inside
+  // the repo tree races other suites that scan the repo's working-tree state
+  // (e.g. the hermeticity falsification test) concurrently.
+  const SOURCE_FIXTURE_ROOT = join(__dirname, '..', 'fixtures', 'sample-project');
+  let FIXTURE_ROOT;
+  let HYGIENE_DIR;
 
   const VALID_EDGE_TYPES = new Set([
     'import',
@@ -236,6 +242,10 @@ describe('integration - full pipeline', () => {
   let repoMapContent;
 
   before(() => {
+    FIXTURE_ROOT = mkdtempSync(join(tmpdir(), 'repomap-integration-fixture-'));
+    cpSync(SOURCE_FIXTURE_ROOT, FIXTURE_ROOT, { recursive: true });
+    HYGIENE_DIR = join(FIXTURE_ROOT, '.context-index', 'hygiene');
+
     // Run the full pipeline once for all integration tests
     execFileSync('node', [SCRIPT_PATH, '--root', FIXTURE_ROOT], {
       encoding: 'utf-8',
@@ -249,18 +259,7 @@ describe('integration - full pipeline', () => {
   });
 
   after(() => {
-    // Clean up generated artifacts
-    rmSync(HYGIENE_DIR, { recursive: true, force: true });
-    // Also remove .context-index if empty
-    try {
-      const ciDir = join(FIXTURE_ROOT, '.context-index');
-      if (existsSync(ciDir)) {
-        const entries = readFileSync; // not used, just check emptiness via rmSync
-        rmSync(ciDir, { recursive: true, force: true });
-      }
-    } catch {
-      // ignore
-    }
+    rmSync(FIXTURE_ROOT, { recursive: true, force: true });
   });
 
   // --- repo-map.md ---

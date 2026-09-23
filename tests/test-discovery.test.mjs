@@ -4,7 +4,7 @@ import { readdirSync, existsSync, readFileSync } from "node:fs";
 import { join, resolve, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { discoverTests, isNestedProjectFile } from "../scripts/run-tests.mjs";
+import { discoverTests, isNestedProjectFile, isLiveInfraFile } from "../scripts/run-tests.mjs";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const TESTS_DIR = join(REPO_ROOT, "tests");
@@ -35,16 +35,35 @@ describe("test discovery", () => {
 
   it("every test file on disk lands in exactly one bucket", () => {
     const onDisk = walk(TESTS_DIR).sort();
-    const { files, evals, excluded } = discoverTests();
-    const union = [...files, ...evals, ...excluded].sort();
+    const { files, evals, excluded, liveInfra } = discoverTests();
+    const union = [...files, ...evals, ...excluded, ...liveInfra].sort();
 
     assert.equal(
       union.length,
       onDisk.length,
-      "default + evals + excluded must account for every *.test.mjs on disk",
+      "default + evals + excluded + liveInfra must account for every *.test.mjs on disk",
     );
     assert.deepEqual(union, onDisk, "no file may be silently dropped");
     assert.equal(new Set(union).size, union.length, "buckets must not overlap");
+  });
+
+  it("live-infra suites (real external side effects) are separated from the default gate but reachable via npm run test:integration", () => {
+    const { files, liveInfra } = discoverTests();
+    const pkg = JSON.parse(readFileSync(join(REPO_ROOT, "package.json"), "utf8"));
+
+    for (const f of liveInfra) {
+      assert.ok(isLiveInfraFile(join(REPO_ROOT, f)), `${f} is in the liveInfra bucket but does not match isLiveInfraFile`);
+      assert.match(f, /-live\.test\.mjs$/, `${f} must use the -live.test.mjs naming convention`);
+    }
+    assert.ok(
+      files.every((f) => !f.endsWith("-live.test.mjs")),
+      "default gate must not include live-infra suites (they create real external side effects)",
+    );
+    assert.match(
+      pkg.scripts["test:integration"] ?? "",
+      /--live-infra/,
+      "live-infra suites must remain runnable via an explicit npm script — excluded, not hidden",
+    );
   });
 
   it("evals are separated from the default gate but reachable via npm run test:evals", () => {

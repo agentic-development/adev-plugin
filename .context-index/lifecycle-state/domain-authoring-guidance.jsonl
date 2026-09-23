@@ -49,3 +49,4 @@
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-08-18T23:23:23.750Z"}
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-08-18T23:27:26.726Z"}
 {"event":"code_drift_detected","drift_source":"skills/specify/SKILL.md","drift_at":"2026-08-22T23:21:01.250Z","ts":"2026-08-22T23:21:01.250Z"}
+{"event":"code_drift_detected","drift_source":"lib/cli/domain.mjs","drift_at":"2026-08-23T20:24:24.753Z","ts":"2026-08-23T20:24:24.753Z"}

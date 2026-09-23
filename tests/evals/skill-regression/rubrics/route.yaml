@@ -1,0 +1,96 @@
+# Layer 3 rubric for /adev:route, scored against the skill-regression
+# fixture (tests/evals/skill-regression/). Field shapes verbatim from
+# skills/eval/default-rubric.yaml — the exemplar. All values flat: no nested
+# maps, since the repo's minimal YAML readers cannot represent them.
+#
+# Scored input: the four-dimension routing table and the routing sidecar it
+# writes. This is this tier's floor case — exactly 7 required_elements,
+# exercising RUBRIC_CORE_ELEMENT_FLOOR's boundary (>= 7) on real data rather
+# than only on a synthetic fixture.
+#
+# Citations: skill-regression:PV-10/KC-10 (plan-task-without-test) only.
+# Every met_when below is phrased against catalog.yaml's
+# detect_when/must_not_flag_when clause — the finding a correct routing run
+# produces — never against the fixture's in-file answer-key label, so the
+# element survives the fixture's own redaction with no edit.
+#
+# Spec: .context-index/specs/features/eval-harness/rubric-set-core-lifecycle.spec.md
+
+rubric_id: "skill-regression-route"
+version: 1
+layer: 3
+verdict_values: "met | not_met | unknown (judged criteria) | not_applicable (deterministic elements)"
+skill: route
+scenario: route
+
+required_elements:
+  - id: pv10_plan_task_without_test_detected
+    description: "The routing table's spec-completeness rationale for Task 2 reflects its missing TDD expectation"
+    source: "skill-regression:PV-10"
+    met_when: "the finding names shipping-rates.plan.md Task 2 as declaring no TDD test expectation, per catalog.yaml PV-10's detect_when, and Task 2's spec-completeness rationale reflects it"
+    not_applicable_when: "never — the fixture always plants this defect"
+
+  - id: kc10_plan_task_without_test_not_flagged
+    description: "The specificity twin of PV-10: plan tasks that DO declare a TDD expectation must not be penalized for missing one"
+    source: "skill-regression:KC-10"
+    met_when: "Task 1's and Task 3's spec-completeness rationale does not penalize either for a missing test expectation, since both declare one, per catalog.yaml KC-10's must_not_flag_when"
+    not_applicable_when: "never — the fixture always ships this known-clean twin"
+
+  - id: four_dimensions_scored_per_task
+    description: "Every routed task carries all four dimension scores"
+    source: "the routing table"
+    met_when: "every task row in the routing table carries all four dimension scores — spec completeness, pattern coverage, blast radius, novelty — each an integer from 1 through 5"
+    not_applicable_when: "never — every routed task is scored on all four dimensions"
+
+  - id: total_and_route_consistent
+    description: "Each task's total and Route column agree with the documented threshold table"
+    source: "the routing table"
+    met_when: "each row's total equals the sum of its four dimension scores, and its Route column matches the documented threshold table for that total (16-20 auto-agent, 10-15 assisted-agent, 4-9 human-only)"
+    not_applicable_when: "never — every routed task's total and route are checkable against the threshold table"
+
+  - id: override_rule_applied
+    description: "A task with any dimension scoring 1 is never routed more permissively than assisted-agent"
+    source: "the routing table"
+    met_when: "any task row with a dimension score of 1 is routed assisted-agent or human-only, never auto-agent, per the Override rule, regardless of its total"
+    not_applicable_when: "no routed task has a dimension score of 1 in this run"
+
+  - id: sidecar_scores_normalized
+    description: "The routing sidecar's scores are the 1-5 dimension score divided by 5"
+    source: "the <plan-stem>.routing.json sidecar"
+    met_when: "every sidecar entry's four scores equal its corresponding 1-5 dimension score divided by 5, per the normalization table in Step 4"
+    not_applicable_when: "never — Step 4 always requires this normalization before writing"
+
+  - id: plan_body_unmodified
+    description: "The plan markdown file carries no diff from this run"
+    source: "the plan file diff"
+    met_when: "shipping-rates.plan.md carries no diff after the run — the routing decision lives only in the sidecar, per CON-8 and the skill's own rule against mutating the plan body"
+    not_applicable_when: "never — this rule applies to every /adev:route run"
+
+quality_dimensions:
+  - id: spec_completeness_grounded
+    criterion: "Does Task 2's spec-completeness score and rationale trace to the plan's actual missing checklist steps, rather than a generic low score?"
+    reference: "Dimension 1: Spec Completeness in skills/route/SKILL.md"
+    met_when: "Task 2's rationale names the specific missing checklist step (no red-phase step, no verification step, or no falsification step) that lowers its score"
+    not_met_when: "Task 2's score is low but its rationale gives no specific reason tied to the plan's actual checklist"
+    unknown_when: "the routing table does not carry a rationale field for Task 2"
+
+  - id: sidecar_schema_fidelity
+    criterion: "Does every sidecar entry match the field contract Behavior 2 declares — task_id, selected_agent, a four-key scores object, and a rationale under 400 characters?"
+    reference: ".context-index/specs/features/agent-reliable-state-artifacts/plan-routing-sidecar.spec.md"
+    met_when: "every sidecar entry carries exactly the fields task_id, selected_agent, scores (with all four dimension keys), and rationale, with rationale at or under 400 characters"
+    not_met_when: "an entry is missing one of the four fields, its scores object omits a dimension key, or its rationale exceeds 400 characters"
+    unknown_when: "the sidecar file was not written at all"
+
+  - id: human_only_rationale_actionable
+    criterion: "For any task routed assisted-agent or human-only, does the reported guidance name a concrete remedy — enriching the spec, adding a golden sample — rather than only repeating the low score?"
+    reference: "Step 5: Report to User in skills/route/SKILL.md"
+    met_when: "every assisted-agent or human-only task's guidance names a specific remedy action, such as /adev:specify or /adev:sample, tied to its lowest-scoring dimension"
+    not_met_when: "a task routed assisted-agent or human-only has guidance that only restates its scores with no remedy action"
+    unknown_when: "no task in this run routes assisted-agent or human-only, so no guidance block this criterion covers is rendered"
+
+layer3_max_points: 25
+required_element_points: 10
+judged_criterion_points: 15
+unknown_policy: "exclude_from_denominator"
+not_applicable_policy: "exclude_from_denominator"
+insufficient_evidence_threshold_percent: 40

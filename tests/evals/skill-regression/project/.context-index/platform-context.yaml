@@ -1,0 +1,25 @@
+# platform-context.yaml — orders-service technology stack (FIXTURE)
+#
+# Fixture content for the skill-regression eval suite. The stack described
+# here is the fictional orders service's, not adev-plugin's.
+#
+# Deliberately carries no command strings: nothing in this file may be read as
+# something to execute. `ci: none` and `deployment.primary: manual` say the
+# same thing the deploy.yaml step types do.
+
+stack:
+  language: JavaScript (ESM)
+  runtime: Node.js 20
+  framework: none
+  database: none
+  test_runner: node:test
+
+deployment:
+  primary: manual
+  regions: [local]
+  ci: none
+
+model_tiers:
+  fast: fixture-fast
+  capable: fixture-capable
+  reasoning: fixture-reasoning

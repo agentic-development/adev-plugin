@@ -122,6 +122,85 @@ describe("BeadsAdapter — dependencies read back (issue-bum897)", () => {
   });
 });
 
+describe("BeadsAdapter — _fetchEdges only carries 'blocks' edges (issue-p1uqr8)", () => {
+  // hasOpenBlockingDependencies (lib/issues/eligibility.mjs) treats every
+  // entry in WorkItem.dependencies as a hard blocker with no type filter of
+  // its own — that is the contract every other caller and test in this file
+  // relies on. br's own dependency graph carries "parent-child" (epic
+  // membership) and "related" (informational cross-reference) edges
+  // alongside real "blocks" edges; `br dep add` defaults to "blocks" for an
+  // actual blocker. _fetchEdges must filter to "blocks" before resolving
+  // ids, or a bug's containing epic (still open, as epics almost always are
+  // while the bug is open) or an unrelated "related" link permanently
+  // excludes it from `adev issues next` candidacy.
+  function makeAdapter(depsById) {
+    const adapter = new BeadsAdapter("/tmp/nonexistent-beads", { checkBr: false });
+    adapter._runBr = (args) => {
+      assert.equal(args[0], "show");
+      const ids = args.slice(1, -1); // drop leading "show" and trailing "--json"
+      return JSON.stringify(ids.map((id) => ({ id, dependencies: depsById.get(id) ?? [] })));
+    };
+    return adapter;
+  }
+
+  it("drops a parent-child edge to an open epic", () => {
+    const adapter = makeAdapter(
+      new Map([["br-1", [{ id: "br-epic", dependency_type: "parent-child" }]]]),
+    );
+    const items = [
+      { id: "br-1", external_ref: "issue-1", dependency_count: 1 },
+      { id: "br-epic", external_ref: "epic-1", dependency_count: 0 },
+    ];
+    const edges = adapter._fetchEdges(items);
+    assert.deepEqual(edges.get("br-1"), []);
+  });
+
+  it("drops a 'related' edge to an open issue", () => {
+    const adapter = makeAdapter(
+      new Map([["br-1", [{ id: "br-2", dependency_type: "related" }]]]),
+    );
+    const items = [
+      { id: "br-1", external_ref: "issue-1", dependency_count: 1 },
+      { id: "br-2", external_ref: "issue-2", dependency_count: 0 },
+    ];
+    const edges = adapter._fetchEdges(items);
+    assert.deepEqual(edges.get("br-1"), []);
+  });
+
+  it("keeps a genuine 'blocks' edge", () => {
+    const adapter = makeAdapter(
+      new Map([["br-1", [{ id: "br-2", dependency_type: "blocks" }]]]),
+    );
+    const items = [
+      { id: "br-1", external_ref: "issue-1", dependency_count: 1 },
+      { id: "br-2", external_ref: "issue-2", dependency_count: 0 },
+    ];
+    const edges = adapter._fetchEdges(items);
+    assert.deepEqual(edges.get("br-1"), ["issue-2"]);
+  });
+
+  it("keeps a 'blocks' edge and drops a sibling 'related' edge on the same issue", () => {
+    const adapter = makeAdapter(
+      new Map([
+        [
+          "br-1",
+          [
+            { id: "br-2", dependency_type: "blocks" },
+            { id: "br-epic", dependency_type: "parent-child" },
+          ],
+        ],
+      ]),
+    );
+    const items = [
+      { id: "br-1", external_ref: "issue-1", dependency_count: 2 },
+      { id: "br-2", external_ref: "issue-2", dependency_count: 0 },
+      { id: "br-epic", external_ref: "epic-1", dependency_count: 0 },
+    ];
+    const edges = adapter._fetchEdges(items);
+    assert.deepEqual(edges.get("br-1"), ["issue-2"]);
+  });
+});
+
 describe("BeadsAdapter — affected_modules round-trip (RI-2 fix, bug-selection-and-eligibility round-3 review)", () => {
   // Round-3 review found `IssueManager.update(id, { affected_modules })`
   // silently dropped on this backend: update() forwarded neither a br

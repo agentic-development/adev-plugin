@@ -1,0 +1,20 @@
+# Eval harness configuration — fixture content for the skill-regression suite.
+#
+# Scaffolding, not a planted violation: `skills/eval/SKILL.md` resolves the
+# project rubric ONLY through the `rubric:` key below, so a tier scenario that
+# drives /adev:eval against this fixture either resolves orders-rubric.yaml
+# from here or resolves nothing at all.
+#
+# The shape follows `skills/eval/SKILL.md`'s `--configure` output verbatim.
+
+layers:
+  deterministic: true       # Layer 1 always on
+  architectural: true       # Layer 2
+  llm_judge: true           # Layer 3 (binary verdicts, aggregated for trend only)
+  hitl: false               # Layer 4 (opt-in)
+
+thresholds:
+  minimum_score: 60         # Below this triggers a warning
+  exemplary_score: 90       # Above this flags as golden sample candidate
+
+rubric: .context-index/evals/orders-rubric.yaml
