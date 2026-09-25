@@ -38,3 +38,4 @@
 {"issue_id":"adev-plugin-eval-harness-xj3k.7","attempts":1,"updated_at":"2026-09-07T11:59:37.028Z","last_verdict":"PASS","curr_blockers":[],"parked_reason":null}
 {"issue_id":"adev-plugin-eval-harness-xj3k.9","attempts":1,"updated_at":"2026-09-07T12:03:53.742Z","last_verdict":"PASS","curr_blockers":[],"parked_reason":null}
 {"issue_id":"adev-plugin-eval-harness-xj3k.1","attempts":2,"updated_at":"2026-09-24T05:46:10.196Z","last_verdict":"BUDGET_EXHAUSTED","curr_blockers":["d3e3f8f7"],"parked_reason":null}
+{"issue_id":"adev-plugin-eval-harness-xj3k.1","attempts":2,"updated_at":"2026-09-25T05:48:23.099Z","last_verdict":"BUDGET_EXHAUSTED","curr_blockers":["695186c9"],"parked_reason":null}
