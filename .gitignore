@@ -1,0 +1,8 @@
+# br runtime state for this linked worktree — local working cache that br
+# regenerates on demand. Only issues.jsonl is the source of truth here.
+*.lock
+.br_history/
+.br_recovery/
+beads.db*
+beads.base.jsonl
+last-touched
