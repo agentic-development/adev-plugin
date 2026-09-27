@@ -48,10 +48,10 @@ adev-plugin/
 │   ├── merge-guard.sh          # PreToolUse:Bash — enforces merge policy from manifest
 │   ├── sync-trigger.sh         # PostToolUse:Edit — notifies to run /adev:sync
 │   ├── context-preflight.sh    # PreToolUse:Edit — warns if editing source without reading context
-│   ├── context-read-tracker.sh # PostToolUse:Read — tracks context file reads
-│   ├── lifecycle-gate-advisory.sh # PostToolUse — advisory warnings when no lifecycle session is active
-│   ├── lifecycle-gate-bash.sh  # PreToolUse:Bash — blocks shell commands outside lifecycle scope
-│   ├── lifecycle-gate-edit.sh  # PreToolUse:Edit — blocks source edits outside lifecycle scope
+│   ├── lifecycle-gate.sh       # PreToolUse — unified lifecycle gate (Edit/Bash/advisory); consolidates the former lifecycle-gate-{edit,bash,advisory}.sh trio
+│   ├── artifact-frontmatter-guard.sh # PreToolUse:Write/Edit — blocks edits to finalized review/validate artifact frontmatter
+│   ├── destructive-git-guard.sh # PreToolUse:Bash — blocks whole-tree-destructive git commands (reset --hard, clean -f, checkout/restore .)
+│   ├── gaming-gate.sh          # PreToolUse:Write/Edit (test files) — blocks new gaming violations in test files
 │   ├── plan-body-write-guard.sh # PreToolUse:Edit — blocks edits to immutable plan-task bodies
 │   ├── pre-commit-no-inline-node.sh # Git pre-commit — rejects inline-Node added to skills/**/SKILL.md
 │   ├── pre-compact.sh          # PreCompact — captures session state before context compaction
