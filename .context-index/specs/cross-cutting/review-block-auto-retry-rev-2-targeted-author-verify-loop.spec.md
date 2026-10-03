@@ -12,7 +12,7 @@ target-revision: 2
 created: 2026-08-21
 updated: 2026-09-23
 source-manifest:
-  sha: "50c8547"
+  sha: "aeaa937"
   files:
     - .context-index/governance/diagnostics.yaml
     - lib/blockers-writer.mjs
@@ -71,7 +71,7 @@ source-manifest:
     - tests/lib/manifest.test.mjs
     - tests/lib/specify-revise.test.mjs
     - tests/skills/review-specs-finding-class-prompts.test.mjs
-  computed-at: "2026-09-23T18:21:22.285Z"
+  computed-at: "2026-10-03T19:26:46.767Z"
 ---
 
 # Amendment: Live Spec: Auto-Retry Loop on Review BLOCK (targeting rev 2)

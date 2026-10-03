@@ -59,7 +59,9 @@ const WORKTREE_DIR = join(REPO_ROOT, '.eval-worktree-baseline');
 // Session JSONL location is derived from the CWD used when running claude.
 // Claude hashes the project path to create the session directory.
 const SANDBOX_PROJECT_KEY = '-Users-dpavancini-Development-adev-plugin-tests-evals-integration-sandbox';
-const SESSIONS_DIR = join(homedir(), '.claude', 'projects', SANDBOX_PROJECT_KEY);
+// Claude Code writes transcripts under CLAUDE_CONFIG_DIR when it is set;
+// reading ~/.claude unconditionally finds nothing and reports $0 cost.
+const SESSIONS_DIR = join(process.env.CLAUDE_CONFIG_DIR || join(homedir(), '.claude'), 'projects', SANDBOX_PROJECT_KEY);
 
 const args = process.argv.slice(2);
 const baselineOnly = args.includes('--baseline-only');

@@ -73,6 +73,14 @@ node tests/evals/convergence/run-convergence-eval.mjs \
 node tests/evals/convergence/run-convergence-eval.mjs --dry-run
 ```
 
+**Keep the machine awake.** A trial runs for 20–40 minutes per cycle. If the
+host sleeps mid-run, the API stream is suspended and a review dispatch in
+flight comes back as `[Request interrupted by user for tool use]`, so the
+trial ends with no data. On macOS, run on AC power under `caffeinate -dimsu`;
+on battery, maintenance sleep happens regardless of `caffeinate`. Pass
+`--model <alias>` to pin the model (the sandbox's empty `model_tiers` mean
+subagents inherit it).
+
 **Cost warning.** Each trial is a full, potentially multi-cycle
 `/adev:build --full --auto` run against the fixture — real reviewer
 subagents (up to 5, per the current registry) and real authoring

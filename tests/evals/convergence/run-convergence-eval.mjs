@@ -55,7 +55,7 @@
  *   tests/evals/convergence/results/convergence-eval-<date>-<fixture>.md
  */
 
-import { execSync } from 'node:child_process';
+import { execSync, spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -130,7 +130,9 @@ const FIXTURE_PATHS_TO_RESET = [
 // Claude Code creates for this exact checkout, not assumed. Computed, not
 // hardcoded, so this runs on any machine's checkout.
 const SANDBOX_PROJECT_KEY = SANDBOX.replace(/[^a-zA-Z0-9]/g, '-');
-const SESSIONS_DIR = join(homedir(), '.claude', 'projects', SANDBOX_PROJECT_KEY);
+// Claude Code writes transcripts under CLAUDE_CONFIG_DIR when it is set;
+// reading ~/.claude unconditionally finds nothing and reports $0 cost.
+const SESSIONS_DIR = join(process.env.CLAUDE_CONFIG_DIR || join(homedir(), '.claude'), 'projects', SANDBOX_PROJECT_KEY);
 
 // ─── CLI args ───────────────────────────────────────────────────────────────
 
@@ -144,6 +146,14 @@ const baselineRef = flag('--baseline-ref', null);
 const tier = flag('--tier', 'full');
 const timeoutMs = Math.max(60_000, parseInt(flag('--timeout-ms', '1200000'), 10) || 1_200_000);
 const dryRun = args.includes('--dry-run');
+// Passed straight to `claude --model`. The sandbox leaves platform-context
+// model_tiers empty, so reviewer and authoring subagents inherit it too.
+const model = flag('--model', null);
+if (model !== null && !/^[A-Za-z0-9._-]+$/.test(model)) {
+  console.error(`--model must be a model alias or id (got ${JSON.stringify(model)})`);
+  process.exit(1);
+}
+const modelArg = model ? ` --model ${model}` : '';
 
 // ─── `adev` CLI invocation (bypassing the shell-function-only `adev` alias) ─
 //
@@ -304,11 +314,28 @@ function runBuildSession(pluginDir, label) {
   const startTime = Date.now();
   const spawnEnv = { ...process.env, CLAUDE_CODE_ENTRYPOINT: 'cli' };
   for (const key of SESSION_IDENTITY_ENV_KEYS) delete spawnEnv[key];
+  // Without a shell nothing resets PWD, and claude takes its working
+  // directory from it: an inherited PWD points the trial at the repo root.
+  spawnEnv.PWD = SANDBOX;
+  // Spawned directly, not through `/bin/sh -c`: a shell-wrapped timeout
+  // kills only the shell, leaving `claude` running until it finishes on its
+  // own (observed: a 40-minute timeout reported after 3h10m).
+  const argv = [
+    '--print', '--output-format', 'json', '--dangerously-skip-permissions',
+    ...(model ? ['--model', model] : []),
+    '--plugin-dir', pluginDir, '-p', prompt,
+  ];
   try {
-    const out = execSync(
-      `claude --print --output-format json --dangerously-skip-permissions --plugin-dir "${pluginDir}" -p "${prompt}"`,
-      { cwd: SANDBOX, encoding: 'utf-8', timeout: timeoutMs, env: spawnEnv, stdio: ['pipe', 'pipe', 'pipe'] },
-    );
+    const r = spawnSync('claude', argv, {
+      cwd: SANDBOX, encoding: 'utf-8', timeout: timeoutMs, killSignal: 'SIGKILL',
+      env: spawnEnv, stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 64 * 1024 * 1024,
+    });
+    if (r.error) throw r.error;
+    if (r.status !== 0) {
+      const err = new Error(`claude exited ${r.status ?? r.signal}: ${(r.stderr || r.stdout || '').slice(0, 300)}`);
+      throw err;
+    }
+    const out = r.stdout;
     const durationMs = Date.now() - startTime;
     let sessionId = null;
     try { sessionId = JSON.parse(out).session_id || null; } catch { /* non-JSON */ }
@@ -407,7 +434,7 @@ function generateReport({ single, baseline, treatment }) {
   report += `**Date:** ${new Date().toISOString().split('T')[0]}\n`;
   report += `**Fixture:** tests/evals/integration-sandbox/${FIXTURE_SPEC_REL}\n`;
   report += `**Spec under test:** review-block-auto-retry.spec.md (base) / review-block-auto-retry-rev-2-targeted-author-verify-loop.spec.md (amendment)\n`;
-  report += `**Tier:** ${tier}  **Samples/arm:** ${samples}\n\n`;
+  report += `**Tier:** ${tier}  **Samples/arm:** ${samples}  **Model:** ${model ?? 'session default'}\n\n`;
   report += `Real \`/adev:build --full --auto\` sessions — real reviewer dispatch (referent-integrity, wiring-reviewer, consistency-analyzer, boundary-reviewer, termination-reviewer, matching the project's actual materialized registry), real \`/adev:specify --revise\`. No mocked output. Ground truth from the fixture's own lifecycle event log, not chat-prose parsing.\n\n`;
 
   const row = (label, s) => (
@@ -456,8 +483,9 @@ async function main() {
     console.log(`  Mode: ${baselineRef ? `A/B (baseline=${baselineRef})` : 'single-arm (current branch)'}`);
     console.log(`  Samples/arm: ${samples}`);
     console.log(`  Tier: ${tier}`);
+    console.log(`  Model: ${model ?? 'session default'}`);
     console.log(`  Fixture: ${FIXTURE_SPEC_REL}`);
-    console.log(`  Command per trial: claude --print --output-format json --dangerously-skip-permissions --plugin-dir <arm> -p "/adev:build --full --auto --tier ${tier} --spec ${FIXTURE_SPEC_REL}"`);
+    console.log(`  Command per trial: claude --print --output-format json --dangerously-skip-permissions${modelArg} --plugin-dir <arm> -p "/adev:build --full --auto --tier ${tier} --spec ${FIXTURE_SPEC_REL}"`);
     console.log(`  Timeout/session: ${timeoutMs}ms`);
     return;
   }
