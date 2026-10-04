@@ -55,7 +55,7 @@ The manifest was re-stamped to `50c8547` over 57 files, and `adev source-manifes
 | 8 | `NOT_CONVERGING` | PASS | `lib/loop-convergence.mjs`. |
 | 9 | `max_review_retries` default 2 | PASS | `lib/manifest.mjs:148` (the spec cites :147). |
 | 10 | Deterministic tests for every listed path | PASS (note) | The tautological inner-cap, decision-grouping and two-channel tests were replaced with CLI-driven ones, and the ANSI "two-channel" tautology was removed (the renderer keeps its own unit tests). The NO_PROGRESS/REGRESSED/BUDGET tests remain library-level. |
-| 11 | Real `--baseline-ref` A/B eval reaches PASS or a correct DECISION/EXTERNAL exit, cheaper | **FAIL** | No new run. The earlier results stand: 08-24 had every trial BLOCK, and 08-28 produced no data. Before this remediation the treatment arm could not emit `decision`/`external` at all (#1), so the old runs say nothing about the fixed loop. |
+| 11 | Real `--baseline-ref` A/B eval reaches PASS or a correct DECISION/EXTERNAL exit, cheaper | **FAIL** | `tests/evals/convergence/results/convergence-eval-2026-10-04-treatment-partial.md` | Sonnet run (2026-10-04): the treatment loop ran 3 real cycles, and `EXTERNAL_REMEDY` worked end to end (3 `external` blockers, rendered `remedy_ref`, excluded from accounting). It did not converge, and it cost $40.55 against the baseline's $17.55–20.48. Structural causes: blockers anchored to list items (`behaviors-N`) never resolve to a heading, so they can never be authored; a cycle with nothing to author still revises. Fix these before re-running. |
 | 12 | Reviewer set named as whatever the registry resolves | PASS | `skills/review-specs/SKILL.md:17` is corrected. |
 | 13 | Quality gates pass | PASS | Check 1. |
 | 14 | No constitutional violations | PASS | Check 4. |
@@ -97,7 +97,7 @@ No UI files.
 
 ## Remaining remediation
 
-1. **(#11)** Run `tests/evals/convergence/run-convergence-eval.mjs --baseline-ref eec2d6e1` to completion against the fixed loop. It is paid (about $80) and takes a few hours. The alternative is to formally descope the criterion through a spec amendment. This is the only open blocker.
+1. **(#11)** Fix the two structural loop gaps the 2026-10-04 Sonnet run exposed: resolve non-heading anchors such as `behaviors-N` (or have reviewers anchor to headings), and stop with `NO_PROGRESS` rather than revising when nothing was authored. Then re-run the treatment arm on AC power. This is the only open blocker.
 2. **(#15)** After merge, close `j7pq.1` and annotate `q6q0` with the spec path.
 
 ---

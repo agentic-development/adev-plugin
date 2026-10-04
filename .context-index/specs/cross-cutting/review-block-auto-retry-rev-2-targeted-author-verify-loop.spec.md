@@ -12,7 +12,7 @@ target-revision: 2
 created: 2026-08-21
 updated: 2026-09-23
 source-manifest:
-  sha: "aeaa937"
+  sha: "475278b"
   files:
     - .context-index/governance/diagnostics.yaml
     - lib/blockers-writer.mjs
@@ -55,6 +55,7 @@ source-manifest:
     - tests/evals/convergence/results/convergence-eval-2026-08-23.md
     - tests/evals/convergence/results/convergence-eval-2026-08-24.md
     - tests/evals/convergence/results/convergence-eval-2026-08-27-clean.md
+    - tests/evals/convergence/results/convergence-eval-2026-10-04-treatment-partial.md
     - tests/evals/convergence/run-convergence-eval.mjs
     - tests/evals/integration-sandbox/.context-index/governance/review.yaml
     - tests/evals/integration-sandbox/.context-index/specs/cross-cutting/broken-loop-fixture.spec.md
@@ -71,7 +72,7 @@ source-manifest:
     - tests/lib/manifest.test.mjs
     - tests/lib/specify-revise.test.mjs
     - tests/skills/review-specs-finding-class-prompts.test.mjs
-  computed-at: "2026-10-03T19:26:46.767Z"
+  computed-at: "2026-10-04T21:52:33.653Z"
 ---
 
 # Amendment: Live Spec: Auto-Retry Loop on Review BLOCK (targeting rev 2)

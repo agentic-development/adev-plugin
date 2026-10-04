@@ -332,7 +332,15 @@ function runBuildSession(pluginDir, label) {
     });
     if (r.error) throw r.error;
     if (r.status !== 0) {
-      const err = new Error(`claude exited ${r.status ?? r.signal}: ${(r.stderr || r.stdout || '').slice(0, 300)}`);
+      // A non-zero exit can still carry the --output-format json envelope
+      // (e.g. a usage-limit stop mid-trial); keep its session id so the
+      // partial run's cycles and cost are not lost.
+      let partialSessionId = null;
+      let resultText = '';
+      try { const j = JSON.parse(r.stdout); partialSessionId = j.session_id || null; resultText = String(j.result ?? ''); } catch { /* non-JSON */ }
+      const err = new Error(`claude exited ${r.status ?? r.signal}: ${(resultText || r.stderr || r.stdout || '').slice(0, 300)}`);
+      err.sessionId = partialSessionId;
+      err.limitHit = /usage limit|session limit|rate_limit|hit your .*limit/i.test(`${resultText}\n${r.stdout}\n${r.stderr}`);
       throw err;
     }
     const out = r.stdout;
@@ -344,7 +352,7 @@ function runBuildSession(pluginDir, label) {
   } catch (err) {
     const durationMs = Date.now() - startTime;
     console.log(`  [${label}] FAILED after ${(durationMs / 1000).toFixed(0)}s: ${err.message?.slice(0, 200)}`);
-    return { success: false, sessionId: null, durationMs, error: err.message?.slice(0, 200) };
+    return { success: false, sessionId: err.sessionId ?? null, limitHit: Boolean(err.limitHit), durationMs, error: err.message?.slice(0, 200) };
   }
 }
 
@@ -371,7 +379,15 @@ function runArm(pluginDir, armLabel, n) {
     resetFixture(pluginDir);
     const run = runBuildSession(pluginDir, `${armLabel}#${i + 1}`);
     if (!run.success || !run.sessionId) {
-      trials.push({ ok: false, error: run.error, durationMs: run.durationMs });
+      // Read the fixture log now: the next trial's reset deletes it.
+      const partial = summarizeTrial(readLifecycleEvents());
+      const stats = run.sessionId ? waitForSessionStats(join(SESSIONS_DIR, `${run.sessionId}.jsonl`)) : null;
+      trials.push({ ok: false, error: run.error, durationMs: run.durationMs, partial, partialCost: stats?.costInclSub ?? null });
+      console.log(`    partial: cycles=${partial.cycles} reviewerDispatches=${partial.reviewerDispatches} verdict=${partial.terminalVerdict} cost=$${(stats?.costInclSub ?? 0).toFixed(3)}`);
+      if (run.limitHit) {
+        console.log(`  [${armLabel}] usage limit hit — skipping this arm's remaining trials`);
+        break;
+      }
       continue;
     }
     const events = readLifecycleEvents();
