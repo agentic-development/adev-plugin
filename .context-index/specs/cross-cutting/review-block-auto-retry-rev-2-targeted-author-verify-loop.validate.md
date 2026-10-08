@@ -1,17 +1,17 @@
 ---
 spec: .context-index/specs/cross-cutting/review-block-auto-retry-rev-2-targeted-author-verify-loop.spec.md
 plan: .context-index/specs/cross-cutting/review-block-auto-retry-rev-2-targeted-author-verify-loop.plan.md
-date: 2026-09-23
-overall_status: FAIL
+date: 2026-10-08
+overall_status: PASS_WITH_NOTES
 rigor_tier: full
 ---
 
 # Validation Report: Amendment: Live Spec: Auto-Retry Loop on Review BLOCK (targeting rev 2)
 
-> **Date:** 2026-09-23 (second run)
+> **Date:** 2026-10-08 (updated: quality gates, source manifest and criterion #11 re-checked)
 > **Spec:** .context-index/specs/cross-cutting/review-block-auto-retry-rev-2-targeted-author-verify-loop.spec.md
 > **Plan:** .context-index/specs/cross-cutting/review-block-auto-retry-rev-2-targeted-author-verify-loop.plan.md
-> **Overall Status:** FAIL. The only blocker is #11, the A/B convergence eval, which has had no new run.
+> **Overall Status:** PASS_WITH_NOTES. #11 passed on the 2026-10-08 A/B run. #15 (issue closes) is left for after merge.
 
 **Rigor tier:** `full`. It resolves from `risk_level: high` → `validate_mode: full`.
 
@@ -21,7 +21,7 @@ rigor_tier: full
 
 ## Check 1: Quality Gates — PASS_WITH_NOTES
 
-- **1a (fast):** `npm test` — PASS (8,689 tests: 8,687 pass, 0 fail) [gates `test`, `quality-gate`].
+- **1a (fast):** `npm test` — PASS (8,699 tests: 8,697 pass, 0 fail) [gates `test`, `quality-gate`].
 - **1b (integration, severity warning):** `npm run test:evals` — 349/364 pass, 15 fail. This is the same set as the earlier run: no Postgres on :5433 (`build-with-db`, `build-without-db`, `reality-check`), plus `tier2-dispatch-shape` and `token-budget-eval`, which also fail on clean `main`. Non-blocking.
 - **1c (e2e):** none configured.
 
@@ -29,7 +29,7 @@ The attested `validator_report` was emitted with `--manifest-sha 50c8547`.
 
 ## Check 1.5: Source Manifest Verification — PASS
 
-The manifest was re-stamped to `50c8547` over 57 files, and `adev source-manifest verify` returns PASS. The re-stamp:
+The manifest was re-stamped to `341a1f2` over 59 files, and `adev source-manifest verify` returns PASS. The re-stamp:
 
 - replaces the two relocated companion paths with their new `references/` locations;
 - adds the post-merge `references/` prose files, `lib/cli/blockers.mjs`, and the eight reviewer prompts;
@@ -41,7 +41,7 @@ The manifest was re-stamped to `50c8547` over 57 files, and `adev source-manifes
 
 `adev verify spec --check-drift` → `drifted: false`.
 
-## Check 2: Spec Compliance — FAIL
+## Check 2: Spec Compliance — PASS_WITH_NOTES
 
 | # | Criterion (short) | Verdict | Evidence / note |
 |---|---|---|---|
@@ -55,7 +55,7 @@ The manifest was re-stamped to `50c8547` over 57 files, and `adev source-manifes
 | 8 | `NOT_CONVERGING` | PASS | `lib/loop-convergence.mjs`. |
 | 9 | `max_review_retries` default 2 | PASS | `lib/manifest.mjs:148` (the spec cites :147). |
 | 10 | Deterministic tests for every listed path | PASS (note) | The tautological inner-cap, decision-grouping and two-channel tests were replaced with CLI-driven ones, and the ANSI "two-channel" tautology was removed (the renderer keeps its own unit tests). The NO_PROGRESS/REGRESSED/BUDGET tests remain library-level. |
-| 11 | Real `--baseline-ref` A/B eval reaches PASS or a correct DECISION/EXTERNAL exit, cheaper | **FAIL** | `tests/evals/convergence/results/convergence-eval-2026-10-04-treatment-partial.md` | Sonnet run (2026-10-04): the treatment loop ran 3 real cycles, and `EXTERNAL_REMEDY` worked end to end (3 `external` blockers, rendered `remedy_ref`, excluded from accounting). It did not converge, and it cost $40.55 against the baseline's $17.55–20.48. Structural causes: blockers anchored to list items (`behaviors-N`) never resolve to a heading, so they can never be authored; a cycle with nothing to author still revises. Fix these before re-running. |
+| 11 | Real `--baseline-ref` A/B eval reaches PASS or a correct DECISION/EXTERNAL exit, cheaper | **PASS** | `tests/evals/convergence/results/convergence-eval-2026-10-08-ab.md` | Sonnet 5.5 A/B, 2 trials per arm, each arm pinned to its own CLI. The treatment halted with a correct `DECISION_REQUIRED` on the planted BEH-4 decision in 2/2 trials, before any authoring. Median cost was $2.16 vs $3.25 (−34%) and reviewer dispatches 5 vs 10. The baseline revised once and ended BLOCK / `REGRESSED`. The run never reached authoring past a decision halt. |
 | 12 | Reviewer set named as whatever the registry resolves | PASS | `skills/review-specs/SKILL.md:17` is corrected. |
 | 13 | Quality gates pass | PASS | Check 1. |
 | 14 | No constitutional violations | PASS | Check 4. |
@@ -97,12 +97,12 @@ No UI files.
 
 ## Remaining remediation
 
-1. **(#11)** Fix the two structural loop gaps the 2026-10-04 Sonnet run exposed: resolve non-heading anchors such as `behaviors-N` (or have reviewers anchor to headings), and stop with `NO_PROGRESS` rather than revising when nothing was authored. Then re-run the treatment arm on AC power. This is the only open blocker.
+1. **(#11)** Done: see the 2026-10-08 A/B result. Open follow-ups from the 2026-10-04 run that this run did not exercise: the splice that left a section's old table in place, and the retry-budget count.
 2. **(#15)** After merge, close `j7pq.1` and annotate `q6q0` with the spec path.
 
 ---
 
-**Summary:** 7 passed (1, 1.5, 1.6, 4, 8, 9, 14; 1 and 14 with notes), 1 failed (2, on #11 only), 1 skipped (11).
+**Summary:** 8 passed (1, 1.5, 1.6, 2, 4, 8, 9, 14; 1, 2 and 14 with notes), 0 failed, 1 skipped (11).
 
 ---
 
