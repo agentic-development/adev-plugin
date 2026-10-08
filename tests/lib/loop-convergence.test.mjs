@@ -146,3 +146,68 @@ test('evaluateStopCondition first revision (prev_blockers empty) — pure new_ d
   assert.equal(r.stop, false);
   assert.equal(r.verdict, 'CONTINUE');
 });
+
+// ── NOT_CONVERGING (BEH-9) ──────────────────────────────────────────────────
+
+test('evaluateStopCondition returns NOT_CONVERGING when blocker count is non-decreasing for the window', () => {
+  const r = evaluateStopCondition({
+    addressed: ['x'], persistent: ['a', 'b'], new_: ['x'],
+    prev_blockers: ['a', 'b', 'x'],
+    retries_remaining: 1, verdict: 'BLOCK', human_final_pass: false,
+    blocker_count_history: [2, 2, 2], not_converging_window: 2,
+  });
+  assert.equal(r.stop, true);
+  assert.equal(r.verdict, 'NOT_CONVERGING');
+});
+
+test('NOT_CONVERGING fires before NO_PROGRESS when both conditions hold', () => {
+  const result = evaluateStopCondition({
+    addressed: [], persistent: ['a', 'b'], new_: [], prev_blockers: ['a', 'b'],
+    retries_remaining: 1, verdict: 'BLOCK',
+    blocker_count_history: [2, 2, 2], not_converging_window: 2,
+  });
+  assert.strictEqual(result.verdict, 'NOT_CONVERGING');
+  assert.strictEqual(result.stop, true);
+});
+
+test('PASS always wins over NOT_CONVERGING', () => {
+  const r = evaluateStopCondition({
+    addressed: ['a'], persistent: [], new_: [], prev_blockers: ['a'],
+    retries_remaining: 1, verdict: 'PASS', human_final_pass: false,
+    blocker_count_history: [2, 2, 2], not_converging_window: 2,
+  });
+  assert.deepEqual(r, { stop: true, verdict: 'PASS' });
+});
+
+test('NOT_CONVERGING does not fire when history is shorter than the window', () => {
+  const r = evaluateStopCondition({
+    addressed: [], persistent: ['a', 'b'], new_: [], prev_blockers: ['a', 'b'],
+    retries_remaining: 1, verdict: 'BLOCK', human_final_pass: false,
+    blocker_count_history: [2], not_converging_window: 2,
+  });
+  // Not enough history to evaluate NOT_CONVERGING — falls through to NO_PROGRESS.
+  assert.equal(r.stop, true);
+  assert.equal(r.verdict, 'NO_PROGRESS');
+});
+
+test('NOT_CONVERGING does not fire when the blocker count is decreasing within the window', () => {
+  const r = evaluateStopCondition({
+    addressed: ['a'], persistent: ['b'], new_: [],
+    prev_blockers: ['a', 'b'],
+    retries_remaining: 1, verdict: 'BLOCK', human_final_pass: false,
+    blocker_count_history: [3, 2, 1], not_converging_window: 2,
+  });
+  assert.equal(r.stop, false);
+  assert.equal(r.verdict, 'CONTINUE');
+});
+
+test('NOT_CONVERGING window default (2) requires no opt-in — omitting the params preserves prior behavior', () => {
+  const r = evaluateStopCondition({
+    addressed: [], persistent: ['a', 'b'], new_: [],
+    prev_blockers: ['a', 'b'],
+    retries_remaining: 5, verdict: 'BLOCK', human_final_pass: false,
+  });
+  // No blocker_count_history supplied — NOT_CONVERGING cannot be evaluated,
+  // falls through to the pre-existing NO_PROGRESS check unaffected.
+  assert.deepEqual(r, { stop: true, verdict: 'NO_PROGRESS' });
+});

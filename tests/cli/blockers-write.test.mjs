@@ -119,3 +119,34 @@ test("blockers --help documents the write subcommand", () => {
     cleanup(dir);
   }
 });
+
+test("blockers write exits 2 with NO_USABLE_FINDINGS when every finding is dropped", () => {
+  const dir = makeProject();
+  try {
+    // No `reviewer`, so blocker_id cannot be derived and the entry is dropped.
+    const findings = JSON.stringify([
+      { finding_type: "mechanism-existence", section_anchor: "x", prose: "Unresolved referent lib/a.mjs:1" },
+    ]);
+    const r = runCli(dir, ["write", "--spec", SPEC_REL, "--findings", findings, "--revision", "1", "--json"]);
+    assert.strictEqual(r.status, 2);
+    assert.match(r.stderr, /NO_USABLE_FINDINGS/);
+    assert.match(r.stderr, /INVALID_BLOCKER_ID/);
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test("blockers write derives blocker_id from reviewer + finding_type", () => {
+  const dir = makeProject();
+  try {
+    const findings = JSON.stringify([
+      { reviewer: "build-loop", finding_type: "mechanism-existence", section_anchor: "x", prose: "Unresolved referent lib/a.mjs:1" },
+    ]);
+    const r = runCli(dir, ["write", "--spec", SPEC_REL, "--findings", findings, "--revision", "1", "--json"]);
+    assert.strictEqual(r.status, 0, r.stderr);
+    assert.strictEqual(JSON.parse(r.stdout).entries, 1);
+    assert.match(readFileSync(join(dir, SIDECAR_REL), "utf8"), /blocker_id: build-loop:mechanism-existence:/);
+  } finally {
+    cleanup(dir);
+  }
+});

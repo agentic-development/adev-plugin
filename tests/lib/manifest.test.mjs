@@ -207,6 +207,90 @@ test("loadManifest: rejects fractional build.max_review_retries — INVALID_MAX_
   }
 });
 
+// ── build.not_converging_window default + validation (Task 1) ────────────
+
+test("loadManifest: defaults build.not_converging_window to 2 when omitted", () => {
+  const root = createTempDir();
+  try {
+    mkdirSync(join(root, ".context-index"), { recursive: true });
+    writeFileSync(
+      join(root, ".context-index/manifest.yaml"),
+      "project:\n  name: t\n",
+    );
+    const m = loadManifest(root);
+    assert.equal(m.build.not_converging_window, 2,
+      "default build.not_converging_window must be 2 per BEH-9/BEH-11");
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test("loadManifest: respects explicit build.not_converging_window: 5", () => {
+  const root = createTempDir();
+  try {
+    mkdirSync(join(root, ".context-index"), { recursive: true });
+    writeFileSync(
+      join(root, ".context-index/manifest.yaml"),
+      "project:\n  name: t\nbuild:\n  not_converging_window: 5\n",
+    );
+    const m = loadManifest(root);
+    assert.equal(m.build.not_converging_window, 5);
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test("loadManifest: rejects negative build.not_converging_window — INVALID_NOT_CONVERGING_WINDOW", () => {
+  const root = createTempDir();
+  try {
+    mkdirSync(join(root, ".context-index"), { recursive: true });
+    writeFileSync(
+      join(root, ".context-index/manifest.yaml"),
+      "project:\n  name: t\nbuild:\n  not_converging_window: -1\n",
+    );
+    assert.throws(
+      () => loadManifest(root),
+      (err) => err.code === "INVALID_NOT_CONVERGING_WINDOW",
+    );
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test("loadManifest: rejects fractional build.not_converging_window — INVALID_NOT_CONVERGING_WINDOW", () => {
+  const root = createTempDir();
+  try {
+    mkdirSync(join(root, ".context-index"), { recursive: true });
+    writeFileSync(
+      join(root, ".context-index/manifest.yaml"),
+      "project:\n  name: t\nbuild:\n  not_converging_window: 2.5\n",
+    );
+    assert.throws(
+      () => loadManifest(root),
+      (err) => err.code === "INVALID_NOT_CONVERGING_WINDOW",
+    );
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
+test("loadManifest: rejects non-numeric build.not_converging_window — INVALID_NOT_CONVERGING_WINDOW", () => {
+  const root = createTempDir();
+  try {
+    mkdirSync(join(root, ".context-index"), { recursive: true });
+    writeFileSync(
+      join(root, ".context-index/manifest.yaml"),
+      'project:\n  name: t\nbuild:\n  not_converging_window: "two"\n',
+    );
+    assert.throws(
+      () => loadManifest(root),
+      (err) => err.code === "INVALID_NOT_CONVERGING_WINDOW",
+    );
+  } finally {
+    cleanupTempDir(root);
+  }
+});
+
 // loadManifestForStorage — tolerant wrapper lifted from the (formerly)
 // triplicated private helper in lib/execution-state.mjs, lib/milestones.mjs,
 // lib/migrate-state-artifacts.mjs, and lib/issues/render-markdown.mjs.
