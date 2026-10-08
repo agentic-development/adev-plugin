@@ -10,9 +10,9 @@ charter-revision: 1
 amends: .context-index/specs/cross-cutting/review-block-auto-retry.spec.md
 target-revision: 2
 created: 2026-08-21
-updated: 2026-09-23
+updated: 2026-10-08
 source-manifest:
-  sha: "405bd84"
+  sha: "c819f32"
   files:
     - .context-index/governance/diagnostics.yaml
     - lib/blockers-writer.mjs
@@ -72,7 +72,7 @@ source-manifest:
     - tests/lib/manifest.test.mjs
     - tests/lib/specify-revise.test.mjs
     - tests/skills/review-specs-finding-class-prompts.test.mjs
-  computed-at: "2026-10-08T13:41:26.381Z"
+  computed-at: "2026-10-08T13:51:55.921Z"
 ---
 
 # Amendment: Live Spec: Auto-Retry Loop on Review BLOCK (targeting rev 2)
@@ -118,6 +118,7 @@ This amendment therefore does two things together, because `j7pq.1`'s data shows
 
 - Base **Behavior 1** ("produces a TARGETED patch addressing each blocker") is superseded: the patch is produced by the per-section authoring subagents of BEH-4, not by the mechanics verb acknowledging blockers unconditionally.
 - Base **Behavior 2**'s event payload shape is unchanged (`spec_revised` still carries `addressed_blocker_ids`/`unresolved_blocker_ids`), but its semantics change per BEH-5: the arrays now reflect a verified text diff, not blanket acknowledgement.
+- Base **Behavior 7**'s `NO_PROGRESS` also fires before review, without a re-review cycle, when the revise step has nothing to change (`NOTHING_TO_REVISE`); found by the 2026-10-04 convergence run, where a revise with `addressed: []` still paid for a full review.
 - Base **Behavior 7**'s `NO_PROGRESS` definition is retained unmodified but is no longer the loop's primary stall guard — BEH-9's `NOT_CONVERGING` fires first in practice, per the `j7pq.1` evidence above.
 
 ### Behaviors Retired
@@ -142,7 +143,9 @@ None. All ten base behaviors remain in force; three are superseded as described 
 | A BLOCK finding has a present `finding_class` outside the closed enum, or a `remedy_ref` containing a YAML flow indicator/colon-space/type-coercing content | Retain the entry; force the offending field to its safe default (`defect` / omitted); log advisory naming the `blocker_id` — never drop the entry, never abort the write | `FINDING_CLASS_REJECTED` / `REMEDY_REF_REJECTED` (advisory) |
 | A `decision`-classed blocker reaches the loop | Halt immediately with `DECISION_REQUIRED`; do not dispatch authoring | `DECISION_REQUIRED` |
 | An `external`-classed blocker reaches the loop | Exclude from this spec's convergence accounting; surface `remedy_ref` | `EXTERNAL_REMEDY` (advisory) |
-| A `section_anchor` in `.blockers.md` matches no heading in the spec body | Report to operator; skip per-anchor authoring for that entry | `ANCHOR_NOT_FOUND` |
+| A `section_anchor` of the form `<heading>-<N>` matches no heading, but `<heading>` does | Group the blocker under `<heading>` and author that whole section; report the mapping | `ANCHOR_REMAPPED` (advisory) |
+| A `section_anchor` in `.blockers.md` matches no heading in the spec body, even after the `<heading>-<N>` fallback | Report to operator; skip per-anchor authoring for that entry | `ANCHOR_NOT_FOUND` |
+| An auto-retry revise (`--auto` or `--same-revision`) changes no section | Write nothing; the loop stops without re-reviewing an unchanged revision | `NOTHING_TO_REVISE` → `LOOP_NO_PROGRESS` |
 | An authored section body contains a frontmatter-fence line or control character, or the post-splice file fails to re-parse | Refuse the splice for that anchor; preserve prior text; mark `unresolved`; log advisory (BEH-5a) | `SPLICE_VALIDATION_FAILED` (advisory) |
 | A mechanism-existence candidate path resolves outside the repository root, or cannot be resolved at all (including a relative candidate refused by a lexical pre-check before any filesystem access, mirroring `assertContained`'s `../` guard) | Refuse the candidate at the CLI-verb level (never silently "not found"); the verb's refusal is itself recorded as one `mechanism-existence` finding | `MECHANISM_PATH_ESCAPE` (refusal-event code; the resulting blocker is uniformly classified below) |
 | Mechanism-existence check (BEH-6) finds an unresolved reference — whether a genuine non-existent referent or a path-escape refusal above | Record as a new `mechanism-existence` blocker (`finding_class: defect`); loop back to authoring, or stop with `BUDGET_EXHAUSTED` via the same sidecar+fail-loud, exit-non-zero path `NOT_CONVERGING` uses | `MECHANISM_NOT_FOUND` (the blocker's category; always this value regardless of which check above produced it) |

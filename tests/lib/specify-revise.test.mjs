@@ -735,3 +735,98 @@ test('(n) the inner-retry sequence: revise → mechanism blocker via the real wr
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('(o) groupBlockersByAnchor maps an item anchor `<heading>-<N>` to its parent heading', () => {
+  const known = new Map([['behaviors', { start: 0, end: 1 }], ['preconditions', { start: 2, end: 3 }]]);
+  const { grouped, anchorsNotFound, remapped } = groupBlockersByAnchor([
+    { blocker_id: 'a:1:11111111', section_anchor: 'behaviors-2' },
+    { blocker_id: 'a:2:22222222', section_anchor: 'behaviors-5' },
+    { blocker_id: 'a:3:33333333', section_anchor: 'behaviors' },
+  ], known);
+  assert.deepStrictEqual(grouped.get('behaviors'), ['a:1:11111111', 'a:2:22222222', 'a:3:33333333']);
+  assert.deepStrictEqual(anchorsNotFound, []);
+  assert.deepStrictEqual(remapped, [{ from: 'behaviors-2', to: 'behaviors' }, { from: 'behaviors-5', to: 'behaviors' }]);
+});
+
+test('(p) groupBlockersByAnchor keeps an exact heading match and leaves an unmappable anchor not-found', () => {
+  // `step-2` is itself a heading here, so it must not be folded into `step`.
+  const known = new Map([['step', { start: 0, end: 1 }], ['step-2', { start: 2, end: 3 }]]);
+  const { grouped, anchorsNotFound, remapped } = groupBlockersByAnchor([
+    { blocker_id: 'a:1:11111111', section_anchor: 'step-2' },
+    { blocker_id: 'a:2:22222222', section_anchor: 'nowhere-3' },
+  ], known);
+  assert.deepStrictEqual(grouped.get('step-2'), ['a:1:11111111']);
+  assert.deepStrictEqual(anchorsNotFound, ['nowhere-3']);
+  assert.deepStrictEqual(remapped, []);
+});
+
+test('(q) reviseSpec addresses an item-anchored blocker when its parent section is re-authored', () => {
+  const { root, specPath } = makeBlockedSpecWithHeadings({ revision: 1 });
+  try {
+    writeReviewSidecar(root, specPath);
+    writeBlockersSidecar(root, specPath, [
+      { blocker_id: 'con:x:11111111', section_anchor: 'behaviors-1', prose: 'item 1 contradicts item 2' },
+    ]);
+    const result = reviseSpec({
+      specPath, projectRoot: root,
+      authoredSections: new Map([['behaviors', '1. **When** invoked **then** does X, consistently.\n']]),
+    });
+    assert.deepStrictEqual(result.addressed, ['con:x:11111111']);
+    assert.deepStrictEqual(result.unresolved, []);
+    assert.ok(result.advisories.some(a => a.code === 'ANCHOR_REMAPPED' && a.anchor === 'behaviors-1' && a.to === 'behaviors'));
+    assert.ok(!result.advisories.some(a => a.code === 'ANCHOR_NOT_FOUND'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('(r) --auto revise that changes no section refuses NOTHING_TO_REVISE and writes nothing', () => {
+  const { root, specPath } = makeBlockedSpecWithHeadings({ revision: 3 });
+  try {
+    writeReviewSidecar(root, specPath);
+    writeBlockersSidecar(root, specPath, [
+      { blocker_id: 'con:x:11111111', section_anchor: 'preconditions', prose: 'a' },
+      { blocker_id: 'con:y:22222222', section_anchor: 'nowhere', prose: 'b' },
+    ]);
+    const specBefore = readFileSync(join(root, specPath), 'utf8');
+    const blockersPath = join(root, specPath.replace(/\.spec\.md$/, '.blockers.md'));
+    assert.throws(
+      () => reviseSpec({ specPath, projectRoot: root, autoMode: true }),
+      (err) => err.code === 'NOTHING_TO_REVISE' && /2 blocker/.test(err.message) && /nowhere/.test(err.message),
+    );
+    assert.strictEqual(readFileSync(join(root, specPath), 'utf8'), specBefore, 'spec untouched');
+    assert.ok(existsSync(blockersPath), 'blockers sidecar kept for the halt artifacts');
+    assert.ok(!readEvents(root, specPath).some(e => e.event === 'spec_revised'), 'no spec_revised emitted');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('(s) an authored body identical to the current section text also counts as nothing to revise under --auto', () => {
+  const { root, specPath } = makeBlockedSpecWithHeadings({ revision: 1 });
+  try {
+    writeReviewSidecar(root, specPath);
+    writeBlockersSidecar(root, specPath, [{ blocker_id: 'con:x:11111111', section_anchor: 'preconditions', prose: 'a' }]);
+    const body = readFileSync(join(root, specPath), 'utf8');
+    const current = body.slice(body.indexOf('## Preconditions') + '## Preconditions\n'.length, body.indexOf('## Behaviors'));
+    assert.throws(
+      () => reviseSpec({ specPath, projectRoot: root, autoMode: true, authoredSections: new Map([['preconditions', current]]) }),
+      (err) => err.code === 'NOTHING_TO_REVISE',
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('(t) interactive revise with nothing authored still bumps the revision (standalone use is unchanged)', () => {
+  const { root, specPath } = makeBlockedSpecWithHeadings({ revision: 1 });
+  try {
+    writeReviewSidecar(root, specPath);
+    writeBlockersSidecar(root, specPath, [{ blocker_id: 'con:x:11111111', section_anchor: 'preconditions', prose: 'a' }]);
+    const result = reviseSpec({ specPath, projectRoot: root });
+    assert.equal(result.toRevision, 2);
+    assert.deepStrictEqual(result.unresolved, ['con:x:11111111']);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});

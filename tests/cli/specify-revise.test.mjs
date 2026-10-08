@@ -290,3 +290,16 @@ test('adev specify revise --same-revision on a review-blocked spec — SPEC_NOT_
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('adev specify revise --auto with nothing authored exits 2 NOTHING_TO_REVISE and leaves the spec unchanged', () => {
+  const { root, specPath } = makeBlockedSpec({ revision: 1 });
+  try {
+    const before = readFileSync(join(root, specPath), 'utf8');
+    const result = runCli(root, ['revise', '--spec', specPath, '--auto']);
+    assert.equal(result.status, 2);
+    assert.ok(result.stderr.includes('NOTHING_TO_REVISE'), `stderr: ${result.stderr}`);
+    assert.strictEqual(readFileSync(join(root, specPath), 'utf8'), before);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});

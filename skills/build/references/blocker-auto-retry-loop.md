@@ -17,7 +17,7 @@ Full instructions for `/adev:build` Step 1's Blocker handling. Loaded whenever r
    adev specify group-blockers --spec <spec-path>
    ```
 
-   Prints `{ anchors, anchors_not_found, decision_blocker_ids, external_blockers }` (`lib/cli/specify.mjs`).
+   Prints `{ anchors, anchors_not_found, anchors_remapped, decision_blocker_ids, external_blockers }` (`lib/cli/specify.mjs`). A blocker anchored to an item inside a section (`behaviors-2`) is grouped under that section's heading (`behaviors`) and listed in `anchors_remapped`; the authoring pass re-authors the whole section. Only an anchor with no matching heading at all lands in `anchors_not_found`.
 
    - **`decision_blocker_ids` non-empty → `DECISION_REQUIRED`.** Halt immediately, before any authoring is dispatched. Write the sidecar+fail-loud artifacts (below) with terminal verdict `DECISION_REQUIRED`. These blockers need a human call, not an authored patch — never loop on them.
    - **`external_blockers` non-empty → `EXTERNAL_REMEDY`.** For each entry, print an "External remedies" progress line using the entry's fields exactly as `group-blockers` returned them — its `remedy_ref` is already rendered through the same `renderRemedyRef` that `adev blockers write` applies for `/adev:review-specs`'s "External Remedies" report section, so the two channels print byte-identical values. Do not re-render or reformat it:
@@ -39,7 +39,7 @@ Full instructions for `/adev:build` Step 1's Blocker handling. Loaded whenever r
       adev specify revise --spec <spec-path> --auto --authored-sections <json-or-@path>
       ```
 
-      Produces revision N+1, sets status `review-pending`, emits `spec_revised`, clears `.blockers.md`, exits 0 on success. `SPEC_NOT_BLOCKED` (exit 2): the build is misaligned with spec status — abort the loop, fall through to sidecar+fail-loud. Any other non-zero exit: abort the loop.
+      Produces revision N+1, sets status `review-pending`, emits `spec_revised`, clears `.blockers.md`, exits 0 on success. `NOTHING_TO_REVISE` (exit 2): no section changed — every implicated anchor was unresolvable or its authored text matched the current text — so a re-review could not make progress. Nothing is written; stop with `LOOP_NO_PROGRESS` via the sidecar+fail-loud path, without re-reviewing. `SPEC_NOT_BLOCKED` (exit 2): the build is misaligned with spec status — abort the loop, fall through to sidecar+fail-loud. Any other non-zero exit: abort the loop.
 
       On an **inner retry** (arriving from step 5c), the spec is already at N+1 and `review-pending`. Add `--same-revision`, which splices into that revision without bumping it again and emits no `spec_revised`:
 
@@ -47,7 +47,7 @@ Full instructions for `/adev:build` Step 1's Blocker handling. Loaded whenever r
       adev specify revise --spec <spec-path> --same-revision --authored-sections <json-or-@path>
       ```
 
-      `SPEC_NOT_PENDING` (exit 2) here means the spec is no longer the revision this pass started from — abort the loop, fall through to sidecar+fail-loud. Any other non-zero exit (including `NO_REVIEW_SIDECARS`, which means step 5c's `adev blockers write` did not leave a sidecar): abort the loop the same way.
+      `SPEC_NOT_PENDING` (exit 2) here means the spec is no longer the revision this pass started from — abort the loop, fall through to sidecar+fail-loud. `NOTHING_TO_REVISE` (exit 2): this inner pass changed no section — treat it as inner-cap exhaustion. Any other non-zero exit (including `NO_REVIEW_SIDECARS`, which means step 5c's `adev blockers write` did not leave a sidecar): abort the loop the same way.
 
    c. **Verify the revision's citations** (BEH-6/BEH-7):
 

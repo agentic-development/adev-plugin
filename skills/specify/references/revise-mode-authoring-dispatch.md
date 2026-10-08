@@ -11,7 +11,7 @@ adev specify group-blockers --spec <spec-path>
 The verb wraps `lib/specify-revise.mjs::groupBlockersByAnchor` (documented here only — this SKILL.md never imports or calls it inline) and prints:
 
 ```json
-{ "spec_path": "...", "anchors": { "<anchor>": { "blocker_ids": [...], "current_text": "..." } }, "anchors_not_found": [...] }
+{ "spec_path": "...", "anchors": { "<anchor>": { "blocker_ids": [...], "current_text": "..." } }, "anchors_not_found": [...], "anchors_remapped": [{ "from": "...", "to": "..." }] }
 ```
 
 `anchors` is already filtered to `defect`-classed blockers only — `decision`/`external`-classed blockers are never authored (see Preconditions Delta / BEH-2 / BEH-3): `decision` halts the build loop before authoring is ever dispatched, and `external` is excluded from convergence accounting entirely.
@@ -35,10 +35,10 @@ Collect each subagent's rewritten body into an `authoredSections` object keyed b
 
 ## 4. Report anchors with no matching heading
 
-Report every entry in `anchors_not_found` to the operator (a blocker's `section_anchor` matched no heading in the current spec — skip authoring for it; it stays `unresolved`, `ANCHOR_NOT_FOUND` advisory).
+Report every entry in `anchors_not_found` to the operator (a blocker's `section_anchor` matched no heading in the current spec — skip authoring for it; it stays `unresolved`, `ANCHOR_NOT_FOUND` advisory). Entries in `anchors_remapped` need no action: a reviewer anchored to an item inside a section (`behaviors-2`), and the verb already grouped it under the section's heading (`behaviors`), so it is authored with that section.
 
 ## 5. Hand off to the revise verb
 
-If `anchors` is empty (no `defect`-classed blockers — e.g. everything is `decision`/`external`), proceed to step 3 of Revise Mode with no `--authored-sections` flag; the revise verb still bumps the revision, but nothing is spliced.
+If `anchors` is empty (no `defect`-classed blockers — e.g. everything is `decision`/`external`), proceed to step 3 of Revise Mode with no `--authored-sections` flag. Interactively the revise verb still bumps the revision without splicing anything; under `--auto` (the build loop) it refuses with `NOTHING_TO_REVISE` instead, because an unchanged revision cannot pass a re-review.
 
 Otherwise, pass the collected `authoredSections` object to `adev specify revise --authored-sections <json-or-@path>` (step 3 of Revise Mode) — a JSON object literal for small revisions, or write it to a temp JSON file and pass `@<path>` when it would exceed a reasonable argv size.

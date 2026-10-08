@@ -56,6 +56,8 @@ Sixth workflow axis. Reads a BLOCKED spec at revision N together with the review
 | `--same-revision` on a spec whose status is not `review-pending` | 2 | `SPEC_NOT_PENDING` | Stop; the spec is not the revision this pass started from |
 | `--authored-sections` invalid JSON / non-string value | 1 | `INVALID_AUTHORED_SECTIONS` | Stop; report the malformed entry |
 | Authored body matched no heading anchor | advisory | `ANCHOR_NOT_FOUND` | Non-fatal; skip, blocker stays `unresolved` |
+| Blocker anchored to an item (`<heading>-<N>`) under an existing heading | advisory | `ANCHOR_REMAPPED` | Non-fatal; grouped and authored under `<heading>` |
+| `--auto` or `--same-revision` and no section changed | 2 | `NOTHING_TO_REVISE` | Nothing written; the build loop stops with `LOOP_NO_PROGRESS` |
 | Authored body has a fence line or control char (BEH-5a) | advisory | `SPLICE_VALIDATION_FAILED` | Non-fatal; prior text kept, blocker stays `unresolved` |
 | Combining `--revise` with another workflow flag | 1 | `CONFLICTING_FLAGS` | Stop; report which flags conflict |
 

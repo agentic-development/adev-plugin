@@ -242,3 +242,30 @@ test('adev specify group-blockers renders external remedy_ref through the shared
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('adev specify group-blockers folds item anchors into their parent heading and reports the remap', () => {
+  const blockersYaml = [
+    '# Blockers',
+    '## a:1:11111111',
+    '```yaml',
+    'blocker_id: a:1:11111111',
+    'section_anchor: behaviors-2',
+    '```',
+    '```',
+    'item 2 contradicts item 1',
+    '```',
+  ].join('\n');
+  const { root, specPath } = makeSpecWithBlockers({ blockersYaml });
+  try {
+    const result = runCli(root, ['group-blockers', '--spec', specPath]);
+    assert.equal(result.status, 0, result.stderr);
+    const payload = JSON.parse(result.stdout.trim());
+    assert.deepStrictEqual(Object.keys(payload.anchors), ['behaviors']);
+    assert.deepStrictEqual(payload.anchors.behaviors.blocker_ids, ['a:1:11111111']);
+    assert.ok(payload.anchors.behaviors.current_text.includes('Beh text.'), 'the parent section text is handed to authoring');
+    assert.deepStrictEqual(payload.anchors_not_found, []);
+    assert.deepStrictEqual(payload.anchors_remapped, [{ from: 'behaviors-2', to: 'behaviors' }]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
