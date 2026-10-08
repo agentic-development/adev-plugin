@@ -9,6 +9,15 @@ Reconstructed from the trial's own session transcript (`12da4208`), because the
 next trial's fixture reset deleted the lifecycle log before the harness read it.
 The harness now reads partial trials before resetting.
 
+> **Caveat — mixed CLI versions.** Trials before the arm-pinned `adev` shim ran
+> the branch's skill prose but resolved a bare `adev` to the host's installed
+> 0.27.9 plugin cache (via a `~/.zshrc` function). This trial hit missing verbs
+> and switched to the branch CLI by hand for the loop verbs (`group-blockers`,
+> `revise`, `check-mechanisms`, `blockers write`), but every `build-state` call
+> ran on 0.27.9. Findings 1–3 come from branch-CLI calls; finding 5 (retry
+> budget) is unconfirmed; costs and cycle counts are not comparable with the
+> baseline, whose bare `adev` calls also ran 0.27.9.
+
 ## What happened
 
 | Revision | Review verdict | Blockers | Loop action |

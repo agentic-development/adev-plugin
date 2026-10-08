@@ -81,6 +81,12 @@ on battery, maintenance sleep happens regardless of `caffeinate`. Pass
 `--model <alias>` to pin the model (the sandbox's empty `model_tiers` mean
 subagents inherit it).
 
+**Each arm runs its own CLI.** `--plugin-dir` pins only the skill prose. The
+harness puts an arm-specific `adev` shim first on `PATH` and runs trials under
+bash, so a host-installed `adev` (a `~/.local/bin` wrapper or an rc-defined
+shell function) cannot shadow it. Both arms are checked before any trial
+starts; `--check-cli` runs only that check, which costs nothing.
+
 **Cost warning.** Each trial is a full, potentially multi-cycle
 `/adev:build --full --auto` run against the fixture — real reviewer
 subagents (up to 5, per the current registry) and real authoring

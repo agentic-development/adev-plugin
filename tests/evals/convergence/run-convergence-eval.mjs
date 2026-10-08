@@ -56,10 +56,10 @@
  */
 
 import { execSync, spawnSync } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, rmSync, mkdtempSync, chmodSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { homedir } from 'node:os';
+import { homedir, tmpdir } from 'node:os';
 
 import { analyzeSession } from '../token-optimization/run-ab-eval.mjs';
 
@@ -146,6 +146,7 @@ const baselineRef = flag('--baseline-ref', null);
 const tier = flag('--tier', 'full');
 const timeoutMs = Math.max(60_000, parseInt(flag('--timeout-ms', '1200000'), 10) || 1_200_000);
 const dryRun = args.includes('--dry-run');
+const checkCliOnly = args.includes('--check-cli');
 // Passed straight to `claude --model`. The sandbox leaves platform-context
 // model_tiers empty, so reviewer and authoring subagents inherit it too.
 const model = flag('--model', null);
@@ -308,15 +309,58 @@ const SESSION_IDENTITY_ENV_KEYS = [
   'CMUX_CLAUDE_WRAPPER_SHIM', 'CMUX_CLAUDE_WRAPPER_SHIM_ROOT', 'CMUX_CLAUDE_HOOK_CMUX_BIN',
 ];
 
+// ─── Arm-pinned `adev` ──────────────────────────────────────────────────────
+//
+// `--plugin-dir` pins the skill prose a trial reads, but not the `adev` binary
+// its shell runs. A bare `adev` resolves to whatever the host has installed
+// (a `~/.local/bin` wrapper or a zsh function in ~/.zshrc, which Claude Code
+// copies into every session's shell snapshot and which beats PATH). Each arm
+// therefore gets a shim directory first on PATH, and trials run bash so no
+// rc-defined `adev` function shadows it.
+const shimDirs = new Map();
+function adevShimDir(pluginDir) {
+  if (shimDirs.has(pluginDir)) return shimDirs.get(pluginDir);
+  const dir = mkdtempSync(join(tmpdir(), 'adev-eval-shim-'));
+  const shimPath = join(dir, 'adev');
+  writeFileSync(shimPath, `#!/bin/sh\nADEV_ROOT=${JSON.stringify(pluginDir)} exec node ${JSON.stringify(join(pluginDir, 'cli', 'index.mjs'))} "$@"\n`);
+  chmodSync(shimPath, 0o755);
+  shimDirs.set(pluginDir, dir);
+  return dir;
+}
+
+function trialEnv(pluginDir) {
+  const env = { ...process.env, CLAUDE_CODE_ENTRYPOINT: 'cli' };
+  for (const key of SESSION_IDENTITY_ENV_KEYS) delete env[key];
+  // Without a shell nothing resets PWD, and claude takes its working
+  // directory from it: an inherited PWD points the trial at the repo root.
+  env.PWD = SANDBOX;
+  env.SHELL = '/bin/bash';
+  env.ADEV_ROOT = pluginDir;
+  env.PATH = `${adevShimDir(pluginDir)}:${process.env.PATH}`;
+  return env;
+}
+
+// Fails the run before any paid trial if a trial's shell would not reach this
+// arm's CLI. Runs the same login bash the trial gets.
+function assertArmCli(pluginDir, label) {
+  const env = trialEnv(pluginDir);
+  // `adev help` exists in every CLI generation; `--version` does not.
+  const r = spawnSync('/bin/bash', ['-lc', 'command -v adev && adev help >/dev/null'], { cwd: SANDBOX, env, encoding: 'utf-8' });
+  const resolved = (r.stdout || '').trim().split('\n')[0] ?? '';
+  const expected = join(adevShimDir(pluginDir), 'adev');
+  let version = '?';
+  try { version = JSON.parse(readFileSync(join(pluginDir, 'package.json'), 'utf8')).version; } catch { /* report as ? */ }
+  if (r.status !== 0 || resolved !== expected) {
+    throw new Error(`[${label}] trial shell resolves adev to ${JSON.stringify(resolved)}, expected ${expected} (stderr: ${(r.stderr || '').trim().slice(0, 200)})`);
+  }
+  console.log(`  [${label}] adev → ${pluginDir} (v${version})`);
+}
+
 function runBuildSession(pluginDir, label) {
   const prompt = `/adev:build --full --auto --tier ${tier} --spec ${FIXTURE_SPEC_REL}`;
   console.log(`  [${label}] ${prompt}`);
   const startTime = Date.now();
-  const spawnEnv = { ...process.env, CLAUDE_CODE_ENTRYPOINT: 'cli' };
-  for (const key of SESSION_IDENTITY_ENV_KEYS) delete spawnEnv[key];
-  // Without a shell nothing resets PWD, and claude takes its working
-  // directory from it: an inherited PWD points the trial at the repo root.
-  spawnEnv.PWD = SANDBOX;
+  const spawnEnv = trialEnv(pluginDir);
   // Spawned directly, not through `/bin/sh -c`: a shell-wrapped timeout
   // kills only the shell, leaving `claude` running until it finishes on its
   // own (observed: a 40-minute timeout reported after 3h10m).
@@ -511,6 +555,10 @@ async function main() {
     if (baselineRef) {
       console.log(`═══ Convergence Eval — A/B (baseline=${baselineRef}) ═══\n`);
       setupBaselineWorktree(baselineRef);
+      // Both arms are checked before either spends anything.
+      assertArmCli(WORKTREE_DIR, 'baseline');
+      assertArmCli(REPO_ROOT, 'treatment');
+      if (checkCliOnly) return;
       console.log(`━━━ baseline (${baselineRef}) ━━━`);
       const baseTrials = runArm(WORKTREE_DIR, 'baseline', samples);
       console.log(`━━━ treatment (current branch) ━━━`);
@@ -519,6 +567,8 @@ async function main() {
       treatment = armSummary(treatTrials);
     } else {
       console.log('═══ Convergence Eval — single-arm (current branch) ═══\n');
+      assertArmCli(REPO_ROOT, 'current');
+      if (checkCliOnly) return;
       const trials = runArm(REPO_ROOT, 'current', samples);
       single = armSummary(trials);
     }
