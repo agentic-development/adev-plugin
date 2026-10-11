@@ -1,7 +1,6 @@
 ---
 kind: feature
 status: approved
-kind: feature
 revision: 6
 updated: 2026-05-20
 ---
