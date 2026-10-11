@@ -1,6 +1,7 @@
 ---
 kind: feature
 status: approved
+kind: feature
 revision: 4
 updated: 2026-05-19
 tracker-ref: issue-355

@@ -1,6 +1,7 @@
 ---
 kind: feature
 status: draft
+kind: feature
 revision: 4
 updated: 2026-05-16
 ---
