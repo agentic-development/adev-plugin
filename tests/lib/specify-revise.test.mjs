@@ -19,7 +19,7 @@ import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, existsSync, rmSync
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 
-import { reviseSpec, resolveSectionAnchors, groupBlockersByAnchor, assertFrontmatterIntact, parseBlockersSidecar } from '../../lib/specify-revise.mjs';
+import { reviseSpec, resolveSectionAnchors, groupBlockersByAnchor, assertFrontmatterIntact, assertHeadingsOutsideSplicesIntact, parseBlockersSidecar } from '../../lib/specify-revise.mjs';
 import { readEvents } from '../../lib/lifecycle-state.mjs';
 
 function makeBlockedSpec({ revision = 1, status = 'review-blocked' } = {}) {
@@ -829,4 +829,73 @@ test('(t) interactive revise with nothing authored still bumps the revision (sta
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+test('(u) parseBlockersSidecar never borrows a field from the next entry', () => {
+  const text = [
+    '## a', '```yaml', 'blocker_id: a:x:11111111', 'section_anchor: one', 'finding_class: external', '```', '```', 'pa', '```',
+    '## b', '```yaml', 'blocker_id: b:x:22222222', 'section_anchor: two', 'finding_class: external', 'remedy_ref: "B-REF"', '```', '```', 'pb', '```',
+  ].join('\n');
+  const entries = parseBlockersSidecar(text);
+  assert.deepStrictEqual(entries.map(e => [e.blocker_id, e.section_anchor, e.remedy_ref]), [
+    ['a:x:11111111', 'one', null],
+    ['b:x:22222222', 'two', 'B-REF'],
+  ]);
+});
+
+test('(v) groupBlockersByAnchor folds a sub-section into its grouped parent so one pass owns the bytes', () => {
+  const body = '## Behaviors\n\nparent\n\n### Retry\n\nchild\n\n## Notes\n\nn\n';
+  const { grouped, remapped } = groupBlockersByAnchor([
+    { blocker_id: 'a:1:11111111', section_anchor: 'behaviors' },
+    { blocker_id: 'a:2:22222222', section_anchor: 'retry' },
+    { blocker_id: 'a:3:33333333', section_anchor: 'retry-1' },
+    { blocker_id: 'a:4:44444444', section_anchor: 'notes' },
+  ], resolveSectionAnchors(body));
+  assert.deepStrictEqual([...grouped.keys()].sort(), ['behaviors', 'notes']);
+  assert.deepStrictEqual(grouped.get('behaviors').sort(), ['a:1:11111111', 'a:2:22222222', 'a:3:33333333']);
+  assert.deepStrictEqual(remapped.find(r => r.from === 'retry-1'), { from: 'retry-1', to: 'behaviors' });
+});
+
+test('(w) a sub-section alone (no parent blocker) is authored on its own', () => {
+  const body = '## Behaviors\n\nparent\n\n### Retry\n\nchild\n';
+  const { grouped } = groupBlockersByAnchor([{ blocker_id: 'a:2:22222222', section_anchor: 'retry' }], resolveSectionAnchors(body));
+  assert.deepStrictEqual([...grouped.keys()], ['retry']);
+});
+
+test('(x) reviseSpec refuses an overlapping child splice and never damages the headings around it', () => {
+  const { root, specPath } = makeBlockedSpecWithHeadings({ revision: 1 });
+  try {
+    writeFileSync(join(root, specPath), [
+      '# Live Spec', '', '---', 'revision: 1', 'created: 2026-05-01', 'updated: 2026-05-01', 'status: review-blocked', '---', '',
+      '## Behaviors', '', 'parent text', '', '### Retry', '', 'child text', '', '## Notes', '', 'notes', '',
+    ].join('\n'));
+    writeReviewSidecar(root, specPath);
+    writeBlockersSidecar(root, specPath, [
+      { blocker_id: 'a:1:11111111', section_anchor: 'behaviors', prose: 'p1' },
+      { blocker_id: 'a:2:22222222', section_anchor: 'retry', prose: 'p2' },
+    ]);
+    const result = reviseSpec({
+      specPath, projectRoot: root,
+      authoredSections: new Map([['behaviors', 'New parent.\n\n### Retry\n\nNew child.\n'], ['retry', 'Stale child edit.\n']]),
+    });
+    const body = readFileSync(join(root, specPath), 'utf8');
+    assert.ok(body.includes('\n## Notes\n\nnotes\n'), 'the following heading is intact');
+    assert.ok(body.includes('New child.'));
+    assert.ok(!body.includes('Stale child edit.'));
+    assert.ok(result.advisories.some(a => a.code === 'SPLICE_OVERLAP' && a.anchor === 'retry'));
+    assert.deepStrictEqual(result.addressed.sort(), ['a:1:11111111', 'a:2:22222222'], 'the folded child blocker is addressed by the parent rewrite');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('(y) assertHeadingsOutsideSplicesIntact rejects a splice that loses an untouched heading', () => {
+  const prior = '## A\n\na\n\n## B\n\nb\n\n## C\n\nc\n';
+  const range = resolveSectionAnchors(prior).get('a');
+  const ok = assertHeadingsOutsideSplicesIntact(prior, prior.slice(0, range.start) + 'new a\n\n' + prior.slice(range.end), [range]);
+  assert.deepStrictEqual(ok, { ok: true });
+  const broken = prior.replace('## B\n', 'B\n');
+  const bad = assertHeadingsOutsideSplicesIntact(prior, broken, [range]);
+  assert.equal(bad.ok, false);
+  assert.match(bad.reason, /2:b/);
 });

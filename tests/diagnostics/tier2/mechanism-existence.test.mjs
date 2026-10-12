@@ -191,3 +191,27 @@ test('run() reports every unresolved referent, not just the first (for blocker c
     rmSync(projectRoot, { recursive: true, force: true });
   }
 });
+
+test('a file ending in a newline has as many lines as it has terminated lines', () => {
+  const root = mkdtempSync(join(tmpdir(), 'adev-mech-lines-'));
+  try {
+    mkdirSync(join(root, 'lib'));
+    writeFileSync(join(root, 'lib', 'two.mjs'), 'a\nb\n');
+    assert.equal(run({ projectRoot: root, authoredText: 'See `lib/two.mjs:2`.' }).fired, false);
+    const past = run({ projectRoot: root, authoredText: 'See `lib/two.mjs:3`.' });
+    assert.equal(past.fired, true);
+    assert.match(past.unresolved[0].reason, /has 2 lines/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('a host:port in backticks is not treated as a file:line citation', () => {
+  const root = mkdtempSync(join(tmpdir(), 'adev-mech-host-'));
+  try {
+    const r = run({ projectRoot: root, authoredText: 'Call `localhost/api:8080` or `example.com/v1:443`.' });
+    assert.equal(r.fired, false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});

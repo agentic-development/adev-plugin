@@ -17,6 +17,7 @@ import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, existsSync, rmSync
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+import { parseBlockersSidecar } from '../../lib/specify-revise.mjs';
 import { writeBlockers, _redactForBlockers, BLOCKER_PROSE_CAP } from '../../lib/blockers-writer.mjs';
 
 function makeRepo() {
@@ -346,9 +347,10 @@ test('writeBlockers forces defect and logs FINDING_CLASS_REJECTED on an invalid 
   }
 });
 
-test('writeBlockers omits an unsafe remedy_ref and logs REMEDY_REF_REJECTED, without dropping the entry', () => {
+test('writeBlockers keeps a remedy_ref with YAML-significant punctuation, quoted, and it reads back verbatim', () => {
   const { root, specPath } = makeRepo();
   try {
+    const remedy = "see the team's charter, section 2: {Capability Map} # owners";
     const result = writeBlockers(root, specPath, [
       {
         blocker_id: 'r:t:aaaaaaaa',
@@ -356,60 +358,44 @@ test('writeBlockers omits an unsafe remedy_ref and logs REMEDY_REF_REJECTED, wit
         reviewer: 'x',
         prose: 'body',
         finding_class: 'external',
-        remedy_ref: 'issue: {evil}',
+        remedy_ref: remedy,
       },
     ], { revision: 1 });
     const text = readFileSync(join(root, result.sidecarPath), 'utf8');
-    assert.doesNotMatch(text, /\{evil\}/);
+    assert.match(text, /^remedy_ref: ".*"$/m, 'written as one JSON-quoted line');
+    assert.ok(!result.advisories.some((a) => a.code === 'REMEDY_REF_REJECTED'));
+    assert.equal(parseBlockersSidecar(text)[0].remedy_ref, remedy);
+    assert.equal(result.externalRemedies[0].remedy_ref, remedy);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('writeBlockers drops an empty remedy_ref with REMEDY_REF_REJECTED, keeping the entry', () => {
+  const { root, specPath } = makeRepo();
+  try {
+    const result = writeBlockers(root, specPath, [
+      { blocker_id: 'r:t:aaaaaaaa', section_anchor: 'beh-1', reviewer: 'x', prose: 'body', finding_class: 'external', remedy_ref: '   ' },
+    ], { revision: 1 });
+    const text = readFileSync(join(root, result.sidecarPath), 'utf8');
     assert.doesNotMatch(text, /remedy_ref:/);
     assert.ok(result.advisories.some((a) => a.code === 'REMEDY_REF_REJECTED'));
-    assert.equal(result.entries, 1, 'entry must not be dropped');
+    assert.equal(result.entries, 1);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
 });
 
-test('writeBlockers preserves a safe remedy_ref when finding_class is external', () => {
-  const { root, specPath } = makeRepo();
-  try {
-    const result = writeBlockers(root, specPath, [
-      {
-        blocker_id: 'r:t:aaaaaaaa',
-        section_anchor: 'beh-1',
-        reviewer: 'x',
-        prose: 'body',
-        finding_class: 'external',
-        remedy_ref: 'ISSUE-123',
-      },
-    ], { revision: 1 });
-    const text = readFileSync(join(root, result.sidecarPath), 'utf8');
-    assert.match(text, /remedy_ref: ISSUE-123/);
-    assert.ok(!result.advisories.some((a) => a.code === 'REMEDY_REF_REJECTED'));
-  } finally {
-    rmSync(root, { recursive: true, force: true });
-  }
-});
-
-for (const coercing of ['true', 'No', 'null', '~', '123', '-4.5e3', '0x1F', '.inf', '& anchor', '| block']) {
-  test(`writeBlockers rejects remedy_ref ${JSON.stringify(coercing)} that would not re-parse as a string`, () => {
+for (const literal of ['true', 'No', 'null', '~', '123', '-4.5e3', '0x1F', '.inf', '& anchor', '| block', 'ISSUE-123']) {
+  test(`writeBlockers round-trips remedy_ref ${JSON.stringify(literal)} as that exact string`, () => {
     const { root, specPath } = makeRepo();
     try {
       const result = writeBlockers(root, specPath, [
-        {
-          blocker_id: 'r:t:aaaaaaaa',
-          section_anchor: 'beh-1',
-          reviewer: 'x',
-          prose: 'body',
-          finding_class: 'external',
-          remedy_ref: coercing,
-        },
+        { blocker_id: 'r:t:aaaaaaaa', section_anchor: 'beh-1', reviewer: 'x', prose: 'body', finding_class: 'external', remedy_ref: literal },
       ], { revision: 1 });
       const text = readFileSync(join(root, result.sidecarPath), 'utf8');
-      assert.doesNotMatch(text, /remedy_ref:/);
-      const rejected = result.advisories.filter((a) => a.code === 'REMEDY_REF_REJECTED');
-      assert.equal(rejected.length, 1);
-      assert.equal(rejected[0].value, coercing);
-      assert.equal(result.entries, 1, 'entry must not be dropped');
+      assert.match(text, new RegExp(`^remedy_ref: ${JSON.stringify(literal).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'm'));
+      assert.strictEqual(parseBlockersSidecar(text)[0].remedy_ref, literal);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -498,6 +484,51 @@ test('writeBlockers reports externalRemedies with remedy_ref passed through rend
       { blocker_id: 'r:t:aaaaaaaa', section_anchor: 'beh-1', remedy_ref: renderRemedyRef(longRef) },
     ]);
     assert.ok(result.externalRemedies[0].remedy_ref.endsWith('...'), 'long remedy_ref must be truncated by the renderer');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('writeBlockers leaves the existing sidecar alone when every supplied finding is dropped', () => {
+  const { root, specPath } = makeRepo();
+  try {
+    const first = writeBlockers(root, specPath, [
+      { reviewer: 'r', finding_type: 't', section_anchor: 'a', prose: 'prior round' },
+    ], { revision: 1 });
+    const sidecar = join(root, first.sidecarPath);
+    const before = readFileSync(sidecar, 'utf8');
+    // No `reviewer`, so the id cannot be derived and the only finding is dropped.
+    const result = writeBlockers(root, specPath, [{ finding_type: 't', section_anchor: 'a', prose: 'x' }], { revision: 2 });
+    assert.equal(result.entries, 0);
+    assert.ok(result.advisories.some((a) => a.code === 'INVALID_BLOCKER_ID'));
+    assert.strictEqual(readFileSync(sidecar, 'utf8'), before, 'prior sidecar untouched');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('writeBlockers still clears the sidecar for an explicitly empty findings list', () => {
+  const { root, specPath } = makeRepo();
+  try {
+    const first = writeBlockers(root, specPath, [{ reviewer: 'r', finding_type: 't', section_anchor: 'a', prose: 'x' }], { revision: 1 });
+    writeBlockers(root, specPath, [], { revision: 2 });
+    assert.equal(existsSync(join(root, first.sidecarPath)), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('writeBlockers normalizes an unsafe section_anchor to its heading slug, consistently in the id and the header', () => {
+  const { root, specPath } = makeRepo();
+  try {
+    const result = writeBlockers(root, specPath, [
+      { reviewer: 'r', finding_type: 't', section_anchor: 'Error Cases: table', prose: 'p' },
+    ], { revision: 1 });
+    const text = readFileSync(join(root, result.sidecarPath), 'utf8');
+    const [entry] = parseBlockersSidecar(text);
+    assert.equal(entry.section_anchor, 'error-cases-table');
+    assert.doesNotMatch(text, /unspecified/);
+    assert.ok(result.advisories.some((a) => a.code === 'SECTION_ANCHOR_NORMALIZED' && a.to === 'error-cases-table'));
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

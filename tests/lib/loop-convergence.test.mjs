@@ -211,3 +211,35 @@ test('NOT_CONVERGING window default (2) requires no opt-in — omitting the para
   // falls through to the pre-existing NO_PROGRESS check unaffected.
   assert.deepEqual(r, { stop: true, verdict: 'NO_PROGRESS' });
 });
+
+test('NOT_CONVERGING with the default window of 2 needs two flat transitions, not one', () => {
+  // [4, 4]: three blockers fixed, three new — one flat step is still progress
+  // on different blockers, so the loop continues.
+  const r = evaluateStopCondition({
+    addressed: ['a', 'b', 'c'], persistent: ['d'], new_: ['e', 'f', 'g'],
+    prev_blockers: ['a', 'b', 'c', 'd'],
+    retries_remaining: 1, verdict: 'BLOCK', human_final_pass: false,
+    blocker_count_history: [4, 4], not_converging_window: 2,
+  });
+  assert.equal(r.verdict, 'CONTINUE');
+});
+
+test('NOT_CONVERGING with window 1 compares one transition: a falling count never fires', () => {
+  const r = evaluateStopCondition({
+    addressed: ['a', 'b', 'c', 'd'], persistent: ['e'], new_: [],
+    prev_blockers: ['a', 'b', 'c', 'd', 'e'],
+    retries_remaining: 1, verdict: 'BLOCK', human_final_pass: false,
+    blocker_count_history: [5, 1], not_converging_window: 1,
+  });
+  assert.equal(r.verdict, 'CONTINUE');
+});
+
+test('NOT_CONVERGING with window 1 fires on one non-decreasing transition', () => {
+  const r = evaluateStopCondition({
+    addressed: ['a'], persistent: [], new_: ['b'],
+    prev_blockers: ['a'],
+    retries_remaining: 1, verdict: 'BLOCK', human_final_pass: false,
+    blocker_count_history: [1, 1], not_converging_window: 1,
+  });
+  assert.equal(r.verdict, 'NOT_CONVERGING');
+});

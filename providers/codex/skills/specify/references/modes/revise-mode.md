@@ -57,6 +57,8 @@ Sixth workflow axis. Reads a BLOCKED spec at revision N together with the review
 | `--authored-sections` invalid JSON / non-string value | 1 | `INVALID_AUTHORED_SECTIONS` | Stop; report the malformed entry |
 | Authored body matched no heading anchor | advisory | `ANCHOR_NOT_FOUND` | Non-fatal; skip, blocker stays `unresolved` |
 | Blocker anchored to an item (`<heading>-<N>`) under an existing heading | advisory | `ANCHOR_REMAPPED` | Non-fatal; grouped and authored under `<heading>` |
+| Blockers on a section and one of its sub-sections | advisory | `ANCHOR_REMAPPED` | Non-fatal; folded into the outer section, authored once |
+| Authored sections overlap (parent and sub-section both supplied) | advisory | `SPLICE_OVERLAP` | Non-fatal; the outer section is spliced, the inner one refused |
 | `--auto` or `--same-revision` and no section changed | 2 | `NOTHING_TO_REVISE` | Nothing written; the build loop stops with `LOOP_NO_PROGRESS` |
 | Authored body has a fence line or control char (BEH-5a) | advisory | `SPLICE_VALIDATION_FAILED` | Non-fatal; prior text kept, blocker stays `unresolved` |
 | Combining `--revise` with another workflow flag | 1 | `CONFLICTING_FLAGS` | Stop; report which flags conflict |

@@ -12,7 +12,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { extractChangedSections, expandWithCrossReferences } from '../../lib/governance/diff-scope.mjs';
+import { extractChangedSections, expandWithCrossReferences, renderScopedContent } from '../../lib/governance/diff-scope.mjs';
 
 test('extractChangedSections returns only sections whose text differs', () => {
   const prev = '## A\nold\n## B\nsame';
@@ -66,4 +66,19 @@ test('expandWithCrossReferences always includes the original changed anchors the
   const spec = '## A\nnew\n## B\nunrelated';
   const expanded = expandWithCrossReferences(spec, new Set(['a']));
   assert.ok(expanded.has('a'));
+});
+
+test('renderScopedContent sends a sub-section once when its parent is also selected', () => {
+  const spec = '## Behaviors\n\nP\n\n### Retry\n\nchild body\n\n## Notes\n\nn\n';
+  const content = renderScopedContent(spec, ['retry', 'behaviors']);
+  assert.equal(content.split('child body').length - 1, 1, 'child text appears exactly once');
+  assert.ok(content.startsWith('## Behaviors'));
+  assert.ok(!content.includes('## Notes'));
+});
+
+test('renderScopedContent keeps sibling sections in document order', () => {
+  const spec = '## A\n\na\n\n## B\n\nb\n\n## C\n\nc\n';
+  const content = renderScopedContent(spec, ['c', 'a']);
+  assert.ok(content.indexOf('## A') < content.indexOf('## C'));
+  assert.ok(!content.includes('## B'));
 });
