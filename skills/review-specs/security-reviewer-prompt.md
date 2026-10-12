@@ -27,6 +27,20 @@ For every BLOCK finding (severity = `blocker`), also emit:
 
 - **`finding_type`:** a stable kebab-case category aligned with the **Category** field above (e.g., `authentication`, `authorization`, `data-exposure`, `input-validation`, `secrets`, `rate-limiting`, `path-traversal`). Do NOT compute `blocker_id` yourself — you cannot produce a SHA-256 hash deterministically. Emit `finding_type` here; the aggregator builds the canonical `blocker_id` (`security-reviewer:<finding-type>:<location-hash>`) from your `finding_type` and `section_anchor` via `lib/blocker-id.mjs::buildBlockerId`.
 - **`section_anchor`:** the spec-section anchor the finding implicates (e.g., `preconditions`, `behaviors-3`, `error-cases`).
+- **`finding_class`:** exactly one of `defect`, `decision`, or `external` — what kind of fix the
+  finding needs, which decides how the BLOCK→revise auto-retry loop handles it:
+  - `defect` — the spec text itself is wrong or incomplete, and rewriting the implicated section
+    can resolve it. This is the common case; use it whenever a spec edit would fix the finding.
+  - `decision` — no rewrite can resolve it on its own: it needs a human to choose between
+    legitimate alternatives (a trade-off, a scope call, an open design question). The loop halts
+    with `DECISION_REQUIRED` instead of letting an author guess the answer.
+  - `external` — the fix lives outside this spec (another spec, an ADR, code, an upstream owner),
+    so rewriting this spec can never resolve it. The loop surfaces it and excludes it from
+    convergence accounting.
+- **`remedy_ref`:** required when `finding_class` is `external`, omitted otherwise — a single-line
+  pointer to where the fix belongs (a repo-relative path, a spec path, an ADR id, or an issue id).
+  Plain text only: no newlines, quotes, `#`, brackets/braces, or commas, no colon followed by a
+  space, and not a bare `true`/`false`/`null`/number.
 
 The aggregator constructs and validates `blocker_id` from your `finding_type` + `section_anchor`; a malformed `finding_type` produces `INVALID_BLOCKER_ID` advisory and falls through to `LEGACY_REVIEWER_OUTPUT` (no auto-retry).
 

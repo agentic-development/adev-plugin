@@ -56,6 +56,20 @@ For every BLOCK finding (severity = `blocker`), also emit:
 - **`finding-type`:** a stable kebab-case category naming what kind of referent failed
   verification (e.g., `missing-cli-flag`, `nonexistent-function`, `stale-file-path`,
   `renamed-error-code`, `undocumented-event-field`).
+- **`finding_class`:** exactly one of `defect`, `decision`, or `external` — what kind of fix the
+  finding needs, which decides how the BLOCK→revise auto-retry loop handles it:
+  - `defect` — the spec text itself is wrong or incomplete, and rewriting the implicated section
+    can resolve it. This is the common case; use it whenever a spec edit would fix the finding.
+  - `decision` — no rewrite can resolve it on its own: it needs a human to choose between
+    legitimate alternatives (a trade-off, a scope call, an open design question). The loop halts
+    with `DECISION_REQUIRED` instead of letting an author guess the answer.
+  - `external` — the fix lives outside this spec (another spec, an ADR, code, an upstream owner),
+    so rewriting this spec can never resolve it. The loop surfaces it and excludes it from
+    convergence accounting.
+- **`remedy_ref`:** required when `finding_class` is `external`, omitted otherwise — a single-line
+  pointer to where the fix belongs (a repo-relative path, a spec path, an ADR id, or an issue id).
+  Plain text only: no newlines, quotes, `#`, brackets/braces, or commas, no colon followed by a
+  space, and not a bare `true`/`false`/`null`/number.
 
 **Do not emit a `blocker_id` field.** See the note below on why, and what to do instead.
 

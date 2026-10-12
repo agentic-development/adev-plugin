@@ -17,6 +17,7 @@ import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, existsSync, rmSync
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+import { parseBlockersSidecar } from '../../lib/specify-revise.mjs';
 import { writeBlockers, _redactForBlockers, BLOCKER_PROSE_CAP } from '../../lib/blockers-writer.mjs';
 
 function makeRepo() {
@@ -280,6 +281,254 @@ test('writeBlockers reports every empty-prose finding, not just the first', () =
         && /r:c:cccccccc/.test(e.message)
         && !/r:b:bbbbbbbb/.test(e.message),
     );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+// ─── finding_class / remedy_ref sidecar schema + section_anchor BD-1 fix ───
+//
+// BEH-1: finding_class taxonomy (defect|decision|external) that routes
+// blockers through different paths later in the pipeline. blockers-writer's
+// posture is "refuse, don't sanitize, don't throw" — a bad field is forced
+// to a safe default and logged as an advisory in the return value; the
+// write always completes.
+
+test('writeBlockers round-trips a present, valid finding_class into the YAML block', () => {
+  const { root, specPath } = makeRepo();
+  try {
+    const findings = [
+      {
+        blocker_id: 'r:t:aaaaaaaa',
+        section_anchor: 'beh-1',
+        reviewer: 'x',
+        prose: 'body',
+        finding_class: 'decision',
+      },
+    ];
+    const result = writeBlockers(root, specPath, findings, { revision: 1 });
+    const text = readFileSync(join(root, result.sidecarPath), 'utf8');
+    assert.match(text, /finding_class: decision/);
+    assert.ok(
+      !result.advisories.some((a) => a.code === 'FINDING_CLASS_DEFAULTED' || a.code === 'FINDING_CLASS_REJECTED'),
+      'a valid, present finding_class must not generate a defaulted/rejected advisory',
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('writeBlockers defaults finding_class to defect when absent and logs FINDING_CLASS_DEFAULTED', () => {
+  const { root, specPath } = makeRepo();
+  try {
+    const result = writeBlockers(root, specPath, [
+      { blocker_id: 'r:t:aaaaaaaa', section_anchor: 'beh-1', reviewer: 'x', prose: 'body' },
+    ], { revision: 1 });
+    const text = readFileSync(join(root, result.sidecarPath), 'utf8');
+    assert.match(text, /finding_class: defect/);
+    assert.ok(result.advisories.some((a) => a.code === 'FINDING_CLASS_DEFAULTED'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('writeBlockers forces defect and logs FINDING_CLASS_REJECTED on an invalid enum value, without dropping the entry', () => {
+  const { root, specPath } = makeRepo();
+  try {
+    const result = writeBlockers(root, specPath, [
+      { blocker_id: 'r:t:aaaaaaaa', section_anchor: 'beh-1', reviewer: 'x', prose: 'body', finding_class: 'bogus' },
+    ], { revision: 1 });
+    const text = readFileSync(join(root, result.sidecarPath), 'utf8');
+    assert.match(text, /finding_class: defect/);
+    assert.ok(result.advisories.some((a) => a.code === 'FINDING_CLASS_REJECTED'));
+    assert.equal(result.entries, 1, 'entry must not be dropped');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('writeBlockers keeps a remedy_ref with YAML-significant punctuation, quoted, and it reads back verbatim', () => {
+  const { root, specPath } = makeRepo();
+  try {
+    const remedy = "see the team's charter, section 2: {Capability Map} # owners";
+    const result = writeBlockers(root, specPath, [
+      {
+        blocker_id: 'r:t:aaaaaaaa',
+        section_anchor: 'beh-1',
+        reviewer: 'x',
+        prose: 'body',
+        finding_class: 'external',
+        remedy_ref: remedy,
+      },
+    ], { revision: 1 });
+    const text = readFileSync(join(root, result.sidecarPath), 'utf8');
+    assert.match(text, /^remedy_ref: ".*"$/m, 'written as one JSON-quoted line');
+    assert.ok(!result.advisories.some((a) => a.code === 'REMEDY_REF_REJECTED'));
+    assert.equal(parseBlockersSidecar(text)[0].remedy_ref, remedy);
+    assert.equal(result.externalRemedies[0].remedy_ref, remedy);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('writeBlockers drops an empty remedy_ref with REMEDY_REF_REJECTED, keeping the entry', () => {
+  const { root, specPath } = makeRepo();
+  try {
+    const result = writeBlockers(root, specPath, [
+      { blocker_id: 'r:t:aaaaaaaa', section_anchor: 'beh-1', reviewer: 'x', prose: 'body', finding_class: 'external', remedy_ref: '   ' },
+    ], { revision: 1 });
+    const text = readFileSync(join(root, result.sidecarPath), 'utf8');
+    assert.doesNotMatch(text, /remedy_ref:/);
+    assert.ok(result.advisories.some((a) => a.code === 'REMEDY_REF_REJECTED'));
+    assert.equal(result.entries, 1);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+for (const literal of ['true', 'No', 'null', '~', '123', '-4.5e3', '0x1F', '.inf', '& anchor', '| block', 'ISSUE-123']) {
+  test(`writeBlockers round-trips remedy_ref ${JSON.stringify(literal)} as that exact string`, () => {
+    const { root, specPath } = makeRepo();
+    try {
+      const result = writeBlockers(root, specPath, [
+        { blocker_id: 'r:t:aaaaaaaa', section_anchor: 'beh-1', reviewer: 'x', prose: 'body', finding_class: 'external', remedy_ref: literal },
+      ], { revision: 1 });
+      const text = readFileSync(join(root, result.sidecarPath), 'utf8');
+      assert.match(text, new RegExp(`^remedy_ref: ${JSON.stringify(literal).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'm'));
+      assert.strictEqual(parseBlockersSidecar(text)[0].remedy_ref, literal);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+}
+
+test('writeBlockers keeps a section_anchor that looks like a YAML literal (heading slugs such as "on" or "2026")', () => {
+  const { root, specPath } = makeRepo();
+  try {
+    const result = writeBlockers(root, specPath, [
+      { blocker_id: 'r:t:aaaaaaaa', section_anchor: 'on', reviewer: 'x', prose: 'body' },
+      { blocker_id: 'r:t:bbbbbbbb', section_anchor: '2026', reviewer: 'x', prose: 'body' },
+    ], { revision: 1 });
+    const text = readFileSync(join(root, result.sidecarPath), 'utf8');
+    assert.match(text, /^section_anchor: on$/m);
+    assert.match(text, /^section_anchor: 2026$/m);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('writeBlockers refuses an unsafe section_anchor and forces a safe default (BD-1)', () => {
+  const { root, specPath } = makeRepo();
+  try {
+    const result = writeBlockers(root, specPath, [
+      { blocker_id: 'r:t:aaaaaaaa', section_anchor: 'beh-1: {evil}', reviewer: 'x', prose: 'body' },
+    ], { revision: 1 });
+    const text = readFileSync(join(root, result.sidecarPath), 'utf8');
+    assert.doesNotMatch(text, /\{evil\}/);
+    assert.equal(result.entries, 1, 'entry must not be dropped');
+    // The sidecar must still parse as clean, single-value YAML lines — no
+    // stray unescaped colon-space sequence left in the section_anchor value.
+    const anchorLine = text.split('\n').find((l) => l.trim().startsWith('section_anchor:'));
+    assert.ok(anchorLine, 'section_anchor line must be present');
+    assert.doesNotMatch(anchorLine, /:\s*\{|beh-1:\s/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('writeBlockers derives blocker_id from reviewer + finding_type + section_anchor + prose when none is supplied', async () => {
+  const { buildBlockerId } = await import('../../lib/blocker-id.mjs');
+  const { root, specPath } = makeRepo();
+  try {
+    const finding = { reviewer: 'wiring-reviewer', finding_type: 'missing-wiring', section_anchor: 'behaviors', prose: 'nothing calls X' };
+    const result = writeBlockers(root, specPath, [finding], { revision: 2 });
+    const expected = buildBlockerId({ reviewer: 'wiring-reviewer', type: 'missing-wiring', sectionAnchor: 'behaviors', findingText: 'nothing calls X' });
+    const text = readFileSync(join(root, result.sidecarPath), 'utf8');
+    assert.match(text, new RegExp(`^blocker_id: ${expected}$`, 'm'));
+    assert.equal(result.entries, 1);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('writeBlockers excludes a finding whose blocker_id cannot be derived, with INVALID_BLOCKER_ID, and keeps the rest', () => {
+  const { root, specPath } = makeRepo();
+  try {
+    const result = writeBlockers(root, specPath, [
+      { reviewer: 'wiring-reviewer', finding_type: 'Not Kebab', section_anchor: 'behaviors', prose: 'bad type' },
+      { reviewer: 'wiring-reviewer', finding_type: 'missing-wiring', section_anchor: 'behaviors', prose: 'good one' },
+    ], { revision: 2 });
+    assert.equal(result.entries, 1);
+    const invalid = result.advisories.filter((a) => a.code === 'INVALID_BLOCKER_ID');
+    assert.equal(invalid.length, 1);
+    assert.equal(invalid[0].finding_type, 'Not Kebab');
+    const text = readFileSync(join(root, result.sidecarPath), 'utf8');
+    assert.doesNotMatch(text, /bad type/);
+    assert.match(text, /good one/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('writeBlockers reports externalRemedies with remedy_ref passed through renderRemedyRef, defect/decision excluded', async () => {
+  const { renderRemedyRef } = await import('../../lib/governance/remedy-ref-render.mjs');
+  const { root, specPath } = makeRepo();
+  try {
+    const longRef = `docs/${'x'.repeat(300)}.md`;
+    const result = writeBlockers(root, specPath, [
+      { blocker_id: 'r:t:aaaaaaaa', section_anchor: 'beh-1', reviewer: 'x', prose: 'p', finding_class: 'external', remedy_ref: longRef },
+      { blocker_id: 'r:t:bbbbbbbb', section_anchor: 'beh-2', reviewer: 'x', prose: 'p', finding_class: 'decision' },
+      { blocker_id: 'r:t:cccccccc', section_anchor: 'beh-3', reviewer: 'x', prose: 'p' },
+    ], { revision: 1 });
+    assert.deepEqual(result.externalRemedies, [
+      { blocker_id: 'r:t:aaaaaaaa', section_anchor: 'beh-1', remedy_ref: renderRemedyRef(longRef) },
+    ]);
+    assert.ok(result.externalRemedies[0].remedy_ref.endsWith('...'), 'long remedy_ref must be truncated by the renderer');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('writeBlockers leaves the existing sidecar alone when every supplied finding is dropped', () => {
+  const { root, specPath } = makeRepo();
+  try {
+    const first = writeBlockers(root, specPath, [
+      { reviewer: 'r', finding_type: 't', section_anchor: 'a', prose: 'prior round' },
+    ], { revision: 1 });
+    const sidecar = join(root, first.sidecarPath);
+    const before = readFileSync(sidecar, 'utf8');
+    // No `reviewer`, so the id cannot be derived and the only finding is dropped.
+    const result = writeBlockers(root, specPath, [{ finding_type: 't', section_anchor: 'a', prose: 'x' }], { revision: 2 });
+    assert.equal(result.entries, 0);
+    assert.ok(result.advisories.some((a) => a.code === 'INVALID_BLOCKER_ID'));
+    assert.strictEqual(readFileSync(sidecar, 'utf8'), before, 'prior sidecar untouched');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('writeBlockers still clears the sidecar for an explicitly empty findings list', () => {
+  const { root, specPath } = makeRepo();
+  try {
+    const first = writeBlockers(root, specPath, [{ reviewer: 'r', finding_type: 't', section_anchor: 'a', prose: 'x' }], { revision: 1 });
+    writeBlockers(root, specPath, [], { revision: 2 });
+    assert.equal(existsSync(join(root, first.sidecarPath)), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('writeBlockers normalizes an unsafe section_anchor to its heading slug, consistently in the id and the header', () => {
+  const { root, specPath } = makeRepo();
+  try {
+    const result = writeBlockers(root, specPath, [
+      { reviewer: 'r', finding_type: 't', section_anchor: 'Error Cases: table', prose: 'p' },
+    ], { revision: 1 });
+    const text = readFileSync(join(root, result.sidecarPath), 'utf8');
+    const [entry] = parseBlockersSidecar(text);
+    assert.equal(entry.section_anchor, 'error-cases-table');
+    assert.doesNotMatch(text, /unspecified/);
+    assert.ok(result.advisories.some((a) => a.code === 'SECTION_ANCHOR_NORMALIZED' && a.to === 'error-cases-table'));
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
