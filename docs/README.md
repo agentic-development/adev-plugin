@@ -43,6 +43,7 @@ Specialized guides for power users and complex setups.
 
 Procedures for people who ship adev itself, rather than build with it.
 
+- [Release Highlights](release-highlights.md) — Human-friendly notes on what changed in each major release
 - [Releasing](releasing.md) — Release channels (`latest` / `next` / `legacy`), how release-please cuts versions, and how to publish a pre-release
 - [Copilot Smoke-Install Verification](smoke-install-copilot.md) — Manual checklist for verifying the GitHub Copilot adapter against a live project
 - [Eval Harness](eval-harness.md) — How adev scores its own skills: the tier system, rubric/scenario authoring, running `adev eval score`, and the manual Tier B pass workflow
