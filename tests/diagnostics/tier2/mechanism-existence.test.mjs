@@ -93,13 +93,46 @@ test('run() reports fired:false when a file::symbol candidate resolves inside th
   }
 });
 
-test('run() reports MECHANISM_NOT_FOUND when a file::symbol candidate\'s symbol is absent from the file', () => {
+test('run() reports a file::symbol whose symbol is not in the file yet as planned, not a failure', () => {
   const projectRoot = makeProject();
   try {
-    const ctx = { projectRoot, authoredText: 'see `lib/foo.mjs::qux` for the export' };
-    const result = run(ctx);
-    assert.strictEqual(result.severity, 'error');
+    const result = run({ projectRoot, authoredText: 'adds `lib/foo.mjs::qux` as a new export' });
+    assert.strictEqual(result.fired, false);
+    assert.deepStrictEqual(result.planned.map(p => p.candidate), ['`lib/foo.mjs::qux`']);
+  } finally {
+    rmSync(projectRoot, { recursive: true, force: true });
+  }
+});
+
+test('run() reports a file::symbol in a file that does not exist yet as planned', () => {
+  const projectRoot = makeProject();
+  try {
+    const result = run({ projectRoot, authoredText: 'creates `lib/new-module.mjs::start`' });
+    assert.strictEqual(result.fired, false);
+    assert.match(result.planned[0].reason, /does not exist yet/);
+  } finally {
+    rmSync(projectRoot, { recursive: true, force: true });
+  }
+});
+
+test('run() still fails a file:line in a file that does not exist: a line cannot be cited before the file exists', () => {
+  const projectRoot = makeProject();
+  try {
+    const result = run({ projectRoot, authoredText: 'see `lib/new-module.mjs:3`' });
+    assert.strictEqual(result.fired, true);
     assert.match(result.message, /MECHANISM_NOT_FOUND/);
+  } finally {
+    rmSync(projectRoot, { recursive: true, force: true });
+  }
+});
+
+test('run() still refuses a file::symbol that escapes the project, even though symbols may be planned', () => {
+  const projectRoot = makeProject();
+  try {
+    const result = run({ projectRoot, authoredText: 'see `../../etc/passwd::root`' });
+    assert.strictEqual(result.fired, true);
+    assert.match(result.message, /MECHANISM_PATH_ESCAPE/);
+    assert.ok(!result.planned);
   } finally {
     rmSync(projectRoot, { recursive: true, force: true });
   }

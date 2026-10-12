@@ -136,3 +136,16 @@ test('adev specify check-mechanisms reports section_anchor "(none)" for a refere
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('adev specify check-mechanisms lists a not-yet-created file::symbol under planned and exits 0', () => {
+  const { root, specPath } = makeSpec(['## Behaviors', '', '### Retry', '', 'Adds `lib/retry.mjs::backoff`.', '']);
+  try {
+    const result = runCli(root, ['check-mechanisms', '--spec', specPath]);
+    assert.equal(result.status, 0, result.stderr);
+    const payload = JSON.parse(result.stdout.trim());
+    assert.deepStrictEqual(payload.unresolved, []);
+    assert.deepStrictEqual(payload.planned.map(p => [p.candidate, p.section_anchor]), [['`lib/retry.mjs::backoff`', 'retry']]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
