@@ -11,9 +11,9 @@ npx @adev-org/adev-cli upgrade
 
 ---
 
-## 0.28.0 — Set how much rigor your project needs
+## 0.28.0 (Oct 12) — Set how much rigor your project needs, and reviews that actually converge
 
-adev now lets you tune *how strictly* the lifecycle runs, per project, instead of one-size-fits-all.
+adev now lets you tune *how strictly* the lifecycle runs, per project, instead of one-size-fits-all. The review-and-revise loop in `/adev:build` also now fixes what reviewers flag instead of retrying blindly.
 
 ### Implementation modes
 
@@ -47,6 +47,18 @@ See [Governance → Project risk tier](governance.md#project-risk-tier--which-ri
 `/adev:init` now has you pick each reviewer and validation check explicitly, and your choices are
 respected when a risk tier is applied. If you end up with **no** reviewers or checks enabled, adev
 now warns you instead of silently passing.
+
+### A review loop that converges
+
+When `/adev:build` hits a BLOCK from review, the automatic revise-and-retry loop now does real work:
+
+- **Real edits, verified:** `/adev:specify --revise` rewrites the sections reviewers flagged and checks the diff, so each blocker is marked addressed or unresolved based on what actually changed.
+- **Knows what it can't fix:** blockers are classed `defect`, `decision` or `external`. When a human choice is needed, the loop stops with `DECISION_REQUIRED` and names it, instead of burning retries.
+- **Cheap pre-check:** `adev specify check-mechanisms` catches references to files and symbols that don't exist, before paying for a reviewer round. Things a spec plans to create are accepted.
+- **Smaller re-reviews:** reviewers only see the sections that changed.
+- **Stall guard:** a trend-based `NOT_CONVERGING` stop replaces the old check that could never trigger.
+
+In an A/B run against the previous loop on a planted-defect fixture, it halted at the planted decision in half the reviewer dispatches (5 vs 10) and about a third less cost ($2.16 vs $3.25).
 
 ### Also new
 
