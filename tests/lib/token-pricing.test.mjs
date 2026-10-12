@@ -169,3 +169,18 @@ describe('computeCost', () => {
     assert.strictEqual(cost, 0);
   });
 });
+
+describe('Sonnet 5 family rates', () => {
+  it('prices Sonnet 5 at the standard $2/$10 rate (the intro price became permanent)', () => {
+    const r = getRate('claude-sonnet-5');
+    assert.strictEqual(r.input * 1_000_000, 2);
+    assert.strictEqual(r.output * 1_000_000, 10);
+  });
+
+  it('prices Sonnet 5.5 cache hits at 0.05x base input, not the default 0.1x', () => {
+    const r = getRate('claude-sonnet-5-5');
+    assert.strictEqual(r.input * 1_000_000, 2);
+    assert.strictEqual(r.output * 1_000_000, 10);
+    assert.ok(Math.abs(r.cacheRead * 1_000_000 - 0.10) < 1e-9);
+  });
+});
