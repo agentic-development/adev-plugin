@@ -1,4 +1,5 @@
 ---
+kind: feature
 status: approved
 revision: 5
 updated: 2026-04-17
