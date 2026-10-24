@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.28.1](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.28.0...adev-cli-v0.28.1) (2026-10-24)
+
+
+### Bug Fixes
+
+* **docs:** add breadcrumb and drop banned term from release highlights ([43d4789](https://github.com/agentic-development/adev-plugin/commit/43d4789179cfe80b944a914e7f0564caabec2e96))
+* **docs:** unblock 0.28.0 publish (release-highlights test failures) ([72a09a2](https://github.com/agentic-development/adev-plugin/commit/72a09a2feac676cbd448273920f74ec6245d7fb6))
+
 ## [0.28.0](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.27.9...adev-cli-v0.28.0) (2026-10-12)
 
 
