@@ -10,6 +10,7 @@
 * **specify:** repair the authoring path's splice, sidecar and scope bugs ([93dfb8a](https://github.com/agentic-development/adev-plugin/commit/93dfb8a0388a59ca1a8ed9dd1ddcd2b7ac0a950b))
 
 ## [0.28.0-next.8](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.28.0-next.7...adev-cli-v0.28.0-next.8) (2026-09-25)
+## [0.28.0](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.27.9...adev-cli-v0.28.0) (2026-10-12)
 
 
 ### ⚠ BREAKING CHANGES
@@ -72,6 +73,10 @@
 * **eval-harness:** add hygiene.source_roots to the skill-regression fixture ([5811ebd](https://github.com/agentic-development/adev-plugin/commit/5811ebddd0e646665fe9a613be8551ea75209aff))
 * **eval-harness:** point specify's duplicate-detection check at the actual near-duplicate ([5651275](https://github.com/agentic-development/adev-plugin/commit/56512750841c827bb06233a9eba4598e9bf507ff))
 * **evals:** re-pin the Task 5 landing SHA to its actual mainline commit ([a2561c5](https://github.com/agentic-development/adev-plugin/commit/a2561c5086a07c9888914a63a57cd32d81438eb4))
+* **evals:** make the convergence eval runnable unattended and its costs real ([e73dbea](https://github.com/agentic-development/adev-plugin/commit/e73dbeaa03e6d96cbb5b084deb1f528ddb37ce40))
+* **evals:** pin each convergence-eval arm to its own adev CLI ([2580570](https://github.com/agentic-development/adev-plugin/commit/258057073aa30ee2eae8cc07a1b6f881f57c0559))
+* **evals:** re-pin the Task 5 landing SHA to its actual mainline commit ([a2561c5](https://github.com/agentic-development/adev-plugin/commit/a2561c5086a07c9888914a63a57cd32d81438eb4))
+* **evals:** strip session-identity env vars before spawning eval trial sessions ([8105166](https://github.com/agentic-development/adev-plugin/commit/8105166af2b0f1a7e8dfcade2847f0213b22960c))
 * **hygiene:** add context_pack divergence audit to registry-drift (pass 19) ([a607c53](https://github.com/agentic-development/adev-plugin/commit/a607c533cd776f41142ff3a55f52ed1d512ac99f))
 * **hygiene:** add context_pack divergence audit to registry-drift (pass 19) ([0f7e49f](https://github.com/agentic-development/adev-plugin/commit/0f7e49f6a454c303de0aee13fc21d7fb2e97c6ea))
 * **implement:** commit a task before emitting its plan_task done event ([e478105](https://github.com/agentic-development/adev-plugin/commit/e4781053a061f39e3dbda61149e66a3f5971100c))
@@ -83,6 +88,14 @@
 * **repomap:** getCommitHash() reads the analyzed root, not ambient cwd ([3637065](https://github.com/agentic-development/adev-plugin/commit/3637065215dfff430f333e14f5cf048bc76dff80))
 * **review-specs:** make Capability Map review-passed write monotonic ([87f3ae9](https://github.com/agentic-development/adev-plugin/commit/87f3ae93cf9822d2e4697453868ae9251393fe3f))
 * **setup:** stop the implementation-mode init prompt hanging on re-prompt ([554cb8b](https://github.com/agentic-development/adev-plugin/commit/554cb8bea24631e68132a0e3677ede9094726338))
+* **pricing:** price Sonnet 5 at $2/$10 and add Sonnet 5.5 ([7b9d236](https://github.com/agentic-development/adev-plugin/commit/7b9d2365282f7881956c3588285410da40efd7bd))
+* **repomap:** getCommitHash() reads the analyzed root, not ambient cwd ([3637065](https://github.com/agentic-development/adev-plugin/commit/3637065215dfff430f333e14f5cf048bc76dff80))
+* **review-specs:** make Capability Map review-passed write monotonic ([87f3ae9](https://github.com/agentic-development/adev-plugin/commit/87f3ae93cf9822d2e4697453868ae9251393fe3f))
+* **review:** make the BLOCK auto-retry loop's finding_class and inner-retry paths reachable ([f95d084](https://github.com/agentic-development/adev-plugin/commit/f95d0842464c0d90aedbc48f958d15141be1c9c3))
+* **setup:** stop the implementation-mode init prompt hanging on re-prompt ([554cb8b](https://github.com/agentic-development/adev-plugin/commit/554cb8bea24631e68132a0e3677ede9094726338))
+* **specify:** author item-anchored blockers and stop on no-op revises ([44cb6d2](https://github.com/agentic-development/adev-plugin/commit/44cb6d220b010466115f6ae53744d288f80d1aa6))
+* **specify:** let check-mechanisms accept symbols a spec plans to create ([d8586fe](https://github.com/agentic-development/adev-plugin/commit/d8586feb3892bf00a25ec288fd3f446961d9ebce))
+* **specify:** repair the authoring path's splice, sidecar and scope bugs ([93dfb8a](https://github.com/agentic-development/adev-plugin/commit/93dfb8a0388a59ca1a8ed9dd1ddcd2b7ac0a950b))
 * **specify:** revise mode-resolution-core to rev 2, review still BLOCK ([472b344](https://github.com/agentic-development/adev-plugin/commit/472b34448f7063d492d6f7e1120ff168b62b2675))
 * **specify:** revise mode-resolution-core to rev 3, review PASSes ([76f5b6d](https://github.com/agentic-development/adev-plugin/commit/76f5b6d0e82fc2b1cf3523d83f6e0d10b943dd08))
 
