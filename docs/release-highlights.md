@@ -1,3 +1,5 @@
+[adev docs](README.md) > Release Highlights
+
 # Release Highlights
 
 Human-friendly notes for adev users. For the complete, commit-level list see
@@ -78,7 +80,7 @@ In an A/B run against the previous loop on a planted-defect fixture, it halted a
 
 ### Heads-up for maintainers
 
-The skill-compression eval harness was retired, and the specify, plan, and brainstorm rubrics were rewritten.
+The old skill-regression eval harness was retired, and the specify, plan, and brainstorm rubrics were rewritten.
 This only affects people running adev's own eval harness — see [eval-harness.md](eval-harness.md).
 
 ---
