@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.28.0-next.9](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.28.0-next.8...adev-cli-v0.28.0-next.9) (2026-10-24)
+
+
+### Bug Fixes
+
+* **pricing:** price Sonnet 5 at $2/$10 and add Sonnet 5.5 ([7b9d236](https://github.com/agentic-development/adev-plugin/commit/7b9d2365282f7881956c3588285410da40efd7bd))
+* **specify:** let check-mechanisms accept symbols a spec plans to create ([d8586fe](https://github.com/agentic-development/adev-plugin/commit/d8586feb3892bf00a25ec288fd3f446961d9ebce))
+* **specify:** repair the authoring path's splice, sidecar and scope bugs ([93dfb8a](https://github.com/agentic-development/adev-plugin/commit/93dfb8a0388a59ca1a8ed9dd1ddcd2b7ac0a950b))
+
 ## [0.28.0-next.8](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.28.0-next.7...adev-cli-v0.28.0-next.8) (2026-09-25)
 
 
