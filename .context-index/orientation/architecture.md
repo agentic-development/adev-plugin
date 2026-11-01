@@ -48,10 +48,10 @@ adev-plugin/
 │   ├── merge-guard.sh          # PreToolUse:Bash — enforces merge policy from manifest
 │   ├── sync-trigger.sh         # PostToolUse:Edit — notifies to run /adev:sync
 │   ├── context-preflight.sh    # PreToolUse:Edit — warns if editing source without reading context
-│   ├── context-read-tracker.sh # PostToolUse:Read — tracks context file reads
-│   ├── lifecycle-gate-advisory.sh # PostToolUse — advisory warnings when no lifecycle session is active
-│   ├── lifecycle-gate-bash.sh  # PreToolUse:Bash — blocks shell commands outside lifecycle scope
-│   ├── lifecycle-gate-edit.sh  # PreToolUse:Edit — blocks source edits outside lifecycle scope
+│   ├── lifecycle-gate.sh       # PreToolUse — unified lifecycle gate (Edit/Bash/advisory); consolidates the former lifecycle-gate-{edit,bash,advisory}.sh trio
+│   ├── artifact-frontmatter-guard.sh # PreToolUse:Write/Edit — blocks edits to finalized review/validate artifact frontmatter
+│   ├── destructive-git-guard.sh # PreToolUse:Bash — blocks whole-tree-destructive git commands (reset --hard, clean -f, checkout/restore .)
+│   ├── gaming-gate.sh          # PreToolUse:Write/Edit (test files) — blocks new gaming violations in test files
 │   ├── plan-body-write-guard.sh # PreToolUse:Edit — blocks edits to immutable plan-task bodies
 │   ├── pre-commit-no-inline-node.sh # Git pre-commit — rejects inline-Node added to skills/**/SKILL.md
 │   ├── pre-compact.sh          # PreCompact — captures session state before context compaction
@@ -186,4 +186,4 @@ Skills follow a strict pipeline: init → brainstorm → specify → review-spec
 - **Skills are markdown, not code** — they are portable across AI tools and contain no executable logic (companion code is allowed but not required).
 - **Hooks are bash** — they execute in the shell, read JSON from stdin and `CLAUDE_TOOL_INPUT_*` env vars, and communicate via exit codes and JSON stdout.
 - **Templates are static** — changes to templates only affect newly scaffolded projects, not existing ones.
-- **CLI dispatcher + verb modules** — `cli/index.mjs` (~1790 lines) handles install/scaffold/upgrade and dispatches `adev <verb>` commands, each implemented as `lib/cli/<verb>.mjs` (the cli-driver-surface model: prose names the verb, a helper does the work).
+- **CLI dispatcher + verb modules** — `cli/index.mjs` (~2323 lines) handles install/scaffold/upgrade and dispatches `adev <verb>` commands, each implemented as `lib/cli/<verb>.mjs` (the cli-driver-surface model: prose names the verb, a helper does the work).
