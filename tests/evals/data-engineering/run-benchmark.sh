@@ -20,7 +20,7 @@ set -euo pipefail
 TOOL="${1:?Usage: $0 <opencode|codex> [model]}"
 MODEL="${2:-}"
 EVAL_DIR="$(cd "$(dirname "$0")" && pwd)"
-PROJECT_DIR="$(cd "$EVAL_DIR/../adev:data-eval" && pwd)"
+PROJECT_DIR="$(cd "$EVAL_DIR/../adev-data-eval" && pwd)"
 SCENARIOS_DIR="$EVAL_DIR/scenarios"
 
 # Derive variant name from tool + model
