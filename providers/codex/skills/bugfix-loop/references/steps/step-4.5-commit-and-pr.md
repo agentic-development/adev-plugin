@@ -12,7 +12,7 @@ adev bugfix-loop commit-pr --run-id <run_id> --issue <id> --title "<WorkItem tit
 
 Read the JSON result:
 
-- `{"skipped": false, "branch": "...", "prUrl": "..."}`: the commit landed and a PR was opened — `commit-pr` already called `recordWorktreeBranch` internally on this path, so Step 3's next-bug base-ref resolution picks it up automatically; nothing further to do with `branch` here.
+- `{"skipped": false, "branch": "...", "prUrl": "..."}`: the commit landed and a PR was opened — `commit-pr` already called `recordWorktreeBranch` internally on this path, so Step 3's next-bug base-ref resolution picks it up automatically; nothing further to do with `branch` here. `commit-pr` also marks this issue's `AttemptRecord.pr_state` `"open"` (best effort — never blocks this step), so `adev issues next` excludes it from candidacy until a human or the orchestrating session runs `adev issues pr-resolved --issue <id> --status merged|closed` once the PR's outcome is known. Nothing in this loop polls GitHub for that outcome.
 - `{"skipped": true, "reason": "..."}`: `commit-pr` degraded (`COMMIT_PR_SKIPPED` — `gh` missing/unauthenticated, push rejected, or a git sub-stage failed). Log the reason and continue; the bug's `AttemptRecord`/board state (already written above) is unaffected, and this never blocks or halts the run (BEH-7). Note the `reason` text for Step 6's worktree-teardown decision below — it distinguishes a pre-commit failure (worktree removal deferred) from a post-commit push/PR failure (safe to remove).
 
 This step always exits 0 — there is no failure path here that halts the turn.

@@ -10,6 +10,8 @@ import {
   resolveAttemptCap,
   computeDegradedBlockerHash,
   recordDebugAttempt,
+  recordPrOpened,
+  recordPrResolved,
 } from '../../lib/bugfix-loop-attempts.mjs';
 
 test('readAttemptRecord returns null when no record exists for the issue (BEH-5)', () => {
@@ -115,5 +117,68 @@ test('recordDebugAttempt: PARKED without stable check IDs falls back to bounded 
   });
   assert.equal(rec.curr_blockers.length, 1);
   assert.match(rec.curr_blockers[0], /^[0-9a-f]{8}$/);
+  rmSync(root, { recursive: true, force: true });
+});
+
+// ─── BEH-8 (revision 4): recordPrOpened / recordPrResolved (issue-ypa68o / adev-plugin-hg4n) ──
+
+test('recordPrOpened: sets pr_state "open" and pr_url, carrying forward a prior FIXED verdict unchanged (BEH-8)', () => {
+  const root = mkdtempSync(join(tmpdir(), 'attempts-'));
+  recordDebugAttempt(root, {}, { issueId: 'issue-1', outcome: 'FIXED' });
+  const rec = recordPrOpened(root, 'issue-1', { prUrl: 'https://github.com/org/repo/pull/1' });
+  assert.equal(rec.attempts, 1);
+  assert.equal(rec.last_verdict, 'PASS');
+  assert.equal(rec.pr_state, 'open');
+  assert.equal(rec.pr_url, 'https://github.com/org/repo/pull/1');
+  assert.deepEqual(readAttemptRecord(root, 'issue-1'), rec);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('recordPrOpened: works with no prior AttemptRecord at all (defensive — commit-pr degrade paths should not crash)', () => {
+  const root = mkdtempSync(join(tmpdir(), 'attempts-'));
+  const rec = recordPrOpened(root, 'issue-1', { prUrl: 'https://github.com/org/repo/pull/2' });
+  assert.equal(rec.attempts, 0);
+  assert.equal(rec.last_verdict, null);
+  assert.equal(rec.pr_state, 'open');
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('recordPrOpened: rejects a missing/empty prUrl', () => {
+  const root = mkdtempSync(join(tmpdir(), 'attempts-'));
+  assert.throws(() => recordPrOpened(root, 'issue-1', {}), /INVALID_PR_URL/);
+  assert.throws(() => recordPrOpened(root, 'issue-1', { prUrl: '' }), /INVALID_PR_URL/);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('recordPrResolved: moves pr_state off "open" to "merged", carrying forward pr_url/last_verdict (BEH-8)', () => {
+  const root = mkdtempSync(join(tmpdir(), 'attempts-'));
+  recordDebugAttempt(root, {}, { issueId: 'issue-1', outcome: 'FIXED' });
+  recordPrOpened(root, 'issue-1', { prUrl: 'https://github.com/org/repo/pull/1' });
+  const rec = recordPrResolved(root, 'issue-1', { status: 'merged' });
+  assert.equal(rec.pr_state, 'merged');
+  assert.equal(rec.pr_url, 'https://github.com/org/repo/pull/1');
+  assert.equal(rec.last_verdict, 'PASS');
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('recordPrResolved: "closed" (closed without merging) is also accepted', () => {
+  const root = mkdtempSync(join(tmpdir(), 'attempts-'));
+  recordPrOpened(root, 'issue-1', { prUrl: 'https://github.com/org/repo/pull/1' });
+  const rec = recordPrResolved(root, 'issue-1', { status: 'closed' });
+  assert.equal(rec.pr_state, 'closed');
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('recordPrResolved: rejects an invalid status', () => {
+  const root = mkdtempSync(join(tmpdir(), 'attempts-'));
+  recordPrOpened(root, 'issue-1', { prUrl: 'https://github.com/org/repo/pull/1' });
+  assert.throws(() => recordPrResolved(root, 'issue-1', { status: 'bogus' }), /INVALID_PR_STATUS/);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('recordPrResolved: rejects an issue with no tracked PR (NO_TRACKED_PR)', () => {
+  const root = mkdtempSync(join(tmpdir(), 'attempts-'));
+  mkdirSync(join(root, '.context-index'), { recursive: true });
+  assert.throws(() => recordPrResolved(root, 'issue-1', { status: 'merged' }), /NO_TRACKED_PR/);
   rmSync(root, { recursive: true, force: true });
 });

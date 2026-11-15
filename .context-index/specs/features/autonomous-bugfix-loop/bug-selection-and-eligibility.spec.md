@@ -5,10 +5,10 @@ status: validated
 kind: behavioral
 risk_level: medium
 milestone: 1
-revision: 7
+revision: 8
 charter-revision: 7
 created: 2026-08-19
-updated: 2026-08-20
+updated: 2026-11-15
 source-manifest:
   sha: "a39dcc1"
   files:
@@ -58,6 +58,7 @@ drift_detected: true
 - **BEH-10 (fail-closed default)** — **When** a candidate WorkItem's `affected_modules` field is empty or absent **then** it is excluded from candidacy — an unclassified bug is never assumed safe. This is the deliberate default: the safety boundary (BEH-7) has nothing to check against an untagged WorkItem, so the only sound default is exclusion, not silent pass-through. A human (or maintainer, for GitHub-origin bugs) makes a WorkItem loop-eligible by setting `affected_modules`, not by leaving it unset.
 - **BEH-8 (safety floor)** — **When** `--max-priority` is omitted **then** the resolved bound defaults to `P3` (covering P2 and P3, the charter's fixed eligible band). **When** `--max-priority` is `P0` or `P1` **then** the verb rejects the invocation (see Error Cases) — P0/P1 are never selectable regardless of flags, since they are outside the eligibility filter's safety boundary by design, not merely deprioritized.
 - **BEH-9** — **When** `--type` is supplied with a value other than `"bug"` **then** the verb rejects the invocation (see Error Cases) — this milestone supports bug selection only.
+- **BEH-12 (revision 8 — closes issue-ypa68o / adev-plugin-hg4n)** — **When** a candidate WorkItem's `AttemptRecord.pr_state` is `"open"` **then** it is excluded from candidacy, exactly like BEH-5's verdict-based exclusion but on a disjoint signal: a `FIXED` verdict (`last_verdict: PASS`) alone does not exclude an issue (BEH-5 only names the four failure/budget verdicts), so without this behavior a committed fix with a still-open, unmerged PR was immediately reselectable on the very next `adev issues next` call — the issue this behavior exists to close. `pr_state` is written by `adev bugfix-loop commit-pr` (via `recordPrOpened`, per-issue-attempt-cap.spec.md BEH-8) and cleared off `"open"` only by `adev issues pr-resolved` (`recordPrResolved`), never by a live GitHub poll this verb performs itself. **When** a candidate WorkItem's `AttemptRecord` carries no `pr_state` at all (no PR was ever opened for it, or the record predates this field) **then** it is NOT excluded by this behavior — "no data available" is deliberately read as "not excluded," the same fail-open-on-absence posture BEH-5 already applies to a missing `AttemptRecord` entirely, rather than inventing a synchronous GitHub API call this verb would otherwise need to make on every invocation.
 
 ### Postconditions
 
@@ -90,6 +91,7 @@ drift_detected: true
 | Implement eligibility filter logic | Priority band (BEH-8/BEH-9, with the P0-P4↔0-4 mapping), fail-closed unclassified check (BEH-10), blast-radius/module check (BEH-6), excluded-module safety list (BEH-7), unrecognized-slug fail-closed check (BEH-11 — validates each `affected_modules` entry against `manifest.modules[].slug` at read time), attempt-cap consult (BEH-5) | medium |
 | Add manifest config for the additive excluded-module list | `tasks.bugfix_loop.excluded_modules`, layered on top of the four hardcoded reserved safety tags (`review-gate`, `convergence-detector`, `retry-loop`, `bugfix-loop`), which are never manifest-overridable | small |
 | Wire attempt-cap consult | Read `AttemptRecord` from `.context-index/lifecycle-state/` per the schema the sibling `per-issue-attempt-cap` spec defines | small |
+| Wire open-tracked-PR consult (revision 8, BEH-12) | `isOpenPrExcluded()` in `lib/issues/eligibility.mjs`, composed into `selectNextEligibleBug` alongside the attempt-cap check, both reading the same `AttemptRecord` lookup | small |
 | Tests | `node:test` coverage for the full eligibility matrix: priority band + P0-P4 mapping, lease state, blocking deps, attempt cap (exact 3-verdict exclusion set), unclassified-fail-closed, multi-module blast radius, reserved-tag safety list, unrecognized-slug fail-closed (BEH-11 — a slug present but absent from `manifest.modules[].slug`), tie-breaking. **Producer/adapter coverage done, this revision:** `tests/issues/beads-adapter.test.mjs` (affected_modules round-trip) and `tests/issues/set-modules.test.mjs` (CLI end-to-end, both backends) | medium |
 
 ## Acceptance Criteria
@@ -105,6 +107,7 @@ drift_detected: true
 - [ ] Claimed bugs with a non-expired lease are excluded from candidacy
 - [ ] Blocked bugs (open dependencies) are excluded from candidacy
 - [ ] Bugs with `AttemptRecord.last_verdict` ∈ `{NO_PROGRESS, REGRESSED, BUDGET_EXHAUSTED, UNREPRODUCIBLE}` are excluded from candidacy — the exact set the sibling spec defines, no subset; bugs with no `AttemptRecord` are treated as zero attempts
+- [ ] A `FIXED` bug (`last_verdict: PASS`) whose `AttemptRecord.pr_state` is `"open"` is excluded from candidacy (BEH-12); it becomes selectable again once `adev issues pr-resolved` moves `pr_state` off `"open"`; an `AttemptRecord` with no `pr_state` at all is NOT excluded by this check
 - [ ] Ties within a priority band resolve FIFO by `created` timestamp
 - [ ] Invalid `--type` (`UNSUPPORTED_TYPE`) or `--max-priority` values produce a clear, non-zero-exit error, not a silent empty result
 - [ ] All quality gates pass (`npm test`)
