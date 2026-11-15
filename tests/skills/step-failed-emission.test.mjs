@@ -137,12 +137,17 @@ test("/adev:implement no longer claims earlier failure modes already emit", () =
 
 // ── Scoping: aborts that precede the entry event must NOT emit ──────────────
 
-test("/adev:specify records that pre-write aborts cannot emit (spec must exist)", () => {
+test("/adev:specify records that pre-write aborts cannot emit a failure terminal (spec must exist for --status failed)", () => {
   const md = readSkill("specify");
+  // `--status started` is exempt from the existence check (adev-plugin-hw1t /
+  // adev-plugin-eval-harness-xj3k.3 / issue-p1uqr8) — the entry event is
+  // allowed to precede the spec's own creation. Only `--status failed` (the
+  // terminal a pre-write abort would need) still requires the file to exist,
+  // so pre-write aborts remain unable to emit it.
   assert.match(
     md,
-    /requires `<spec-path>` to exist on disk and exits `1` with `spec not found`/,
-    "the ordering constraint must be stated so future edits do not add unreachable emissions",
+    /requires `<spec-path>` to exist on disk for `--status completed` and `--status failed`, but \*\*not\*\* for `--status started`/,
+    "the ordering constraint must be stated so future edits do not add unreachable --status failed emissions",
   );
   assert.match(md, /CHARTER_CLOSED/, "the charter-status gate is named as a non-emitting abort");
   assert.match(md, /PARTIAL_ARTIFACT_OVERSIZE/, "the runaway-write guard is a non-emitting abort");
