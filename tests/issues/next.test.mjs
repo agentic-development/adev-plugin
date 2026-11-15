@@ -27,6 +27,7 @@ import {
   isLeaseExcluded,
   hasOpenBlockingDependencies,
   isAttemptCapExcluded,
+  isOpenPrExcluded,
   selectNextEligibleBug,
 } from "../../lib/issues/eligibility.mjs";
 import { JsonAdapter } from "../../lib/issues/json-adapter.mjs";
@@ -157,6 +158,22 @@ test("isAttemptCapExcluded: NO_PROGRESS/REGRESSED/BUDGET_EXHAUSTED/UNREPRODUCIBL
   assert.equal(isAttemptCapExcluded(null), false); // no AttemptRecord = zero attempts
 });
 
+// ─── BEH-12 (revision 8): isOpenPrExcluded (issue-ypa68o / adev-plugin-hg4n) ──
+
+test("isOpenPrExcluded: pr_state 'open' excludes (BEH-12)", () => {
+  assert.equal(isOpenPrExcluded({ last_verdict: "PASS", pr_state: "open" }), true);
+});
+
+test("isOpenPrExcluded: pr_state 'merged'/'closed' does not exclude", () => {
+  assert.equal(isOpenPrExcluded({ last_verdict: "PASS", pr_state: "merged" }), false);
+  assert.equal(isOpenPrExcluded({ last_verdict: "PASS", pr_state: "closed" }), false);
+});
+
+test("isOpenPrExcluded: no pr_state at all ('no data available') does not exclude", () => {
+  assert.equal(isOpenPrExcluded({ last_verdict: "PASS" }), false);
+  assert.equal(isOpenPrExcluded(null), false);
+});
+
 // ─── Task 4: Selection and tie-break composition (BEH-1, BEH-2) ───────────
 
 function bug(overrides) {
@@ -246,6 +263,45 @@ test("selectNextEligibleBug: cascading exclusion — the more-urgent candidate i
     bug({ id: "next-in-line", priority: 3 }),
   ];
   const attemptRecords = new Map([["urgent-but-excluded", { last_verdict: "REGRESSED" }]]);
+  const result = selectNextEligibleBug({ issues, manifest: { modules: [{ slug: "cli" }] }, maxPriorityBound: 3, attemptRecords });
+  assert.equal(result.bug.id, "next-in-line");
+});
+
+test("selectNextEligibleBug: a FIXED bug (last_verdict PASS) with an open tracked PR is excluded from candidacy (BEH-12, issue-ypa68o / adev-plugin-hg4n)", () => {
+  const issues = [bug({ id: "fixed-but-open-pr" })];
+  const attemptRecords = new Map([
+    ["fixed-but-open-pr", { last_verdict: "PASS", pr_url: "https://github.com/org/repo/pull/1", pr_state: "open" }],
+  ]);
+  const result = selectNextEligibleBug({ issues, manifest: { modules: [{ slug: "cli" }] }, maxPriorityBound: 3, attemptRecords });
+  assert.equal(result.bug, null);
+});
+
+test("selectNextEligibleBug: a FIXED bug becomes selectable again once pr_state moves off 'open' (BEH-12 resolution path)", () => {
+  const issues = [bug({ id: "fixed-and-merged" })];
+  const attemptRecords = new Map([
+    ["fixed-and-merged", { last_verdict: "PASS", pr_url: "https://github.com/org/repo/pull/1", pr_state: "merged" }],
+  ]);
+  const result = selectNextEligibleBug({ issues, manifest: { modules: [{ slug: "cli" }] }, maxPriorityBound: 3, attemptRecords });
+  assert.equal(result.bug.id, "fixed-and-merged");
+});
+
+test("selectNextEligibleBug: a FIXED bug with a closed-without-merging tracked PR is also reselectable (BEH-12 resolution path)", () => {
+  const issues = [bug({ id: "fixed-and-closed" })];
+  const attemptRecords = new Map([
+    ["fixed-and-closed", { last_verdict: "PASS", pr_url: "https://github.com/org/repo/pull/1", pr_state: "closed" }],
+  ]);
+  const result = selectNextEligibleBug({ issues, manifest: { modules: [{ slug: "cli" }] }, maxPriorityBound: 3, attemptRecords });
+  assert.equal(result.bug.id, "fixed-and-closed");
+});
+
+test("selectNextEligibleBug: open-PR exclusion yields to the next eligible candidate, mirroring the attempt-cap cascade (round-4 cq-1 pattern)", () => {
+  const issues = [
+    bug({ id: "urgent-but-pr-open", priority: 2 }),
+    bug({ id: "next-in-line", priority: 3 }),
+  ];
+  const attemptRecords = new Map([
+    ["urgent-but-pr-open", { last_verdict: "PASS", pr_url: "https://github.com/org/repo/pull/1", pr_state: "open" }],
+  ]);
   const result = selectNextEligibleBug({ issues, manifest: { modules: [{ slug: "cli" }] }, maxPriorityBound: 3, attemptRecords });
   assert.equal(result.bug.id, "next-in-line");
 });
