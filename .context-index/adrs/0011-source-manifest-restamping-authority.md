@@ -24,7 +24,7 @@ The spec-lifecycle charter establishes that the `source-manifest` block stamped 
 
 The stamp is written by `/adev:implement` after the GREEN phase. Two complementary mechanisms detect when the stamp goes stale:
 
-1. **Hook-side drift detection** (`hooks/spec-drift.sh`) stamps `drift_detected: true` on the spec frontmatter when any file in `source-manifest.files[]` is edited.
+1. **Hook-side drift detection** (`lib/spec-drift.mjs`) stamps `drift_detected: true` on the spec frontmatter when any file in `source-manifest.files[]` is edited.
 2. **Skill-side drift gate** (`/adev:plan`, `/adev:validate`) reads `drift_detected` and blocks workflows until the drift is resolved.
 
 Today, the only documented way to clear a drift flag is to re-run `/adev:implement` — which expects an unfinished plan and a TDD cycle. This is mismatched against the actual common case:
@@ -105,7 +105,7 @@ Opt-in (rather than auto-on) preserves the semantic weight of the stamp — oper
 
 ### Neutral
 
-- The hook-side drift detection (`hooks/spec-drift.sh`) is unchanged. It continues to flag `drift_detected: true` whenever a manifest file is edited. The flag is cleared at re-stamping time by `/adev:validate`.
+- The hook-side drift detection (`lib/spec-drift.mjs`) is unchanged. It continues to flag `drift_detected: true` whenever a manifest file is edited. The flag is cleared at re-stamping time by `/adev:validate`.
 - The initial-stamp path through `/adev:implement` is unchanged.
 - This decision does not address the related open questions: (a) precedence between spec-side and code-side drift gates when both fire, (b) host portability when hooks don't run, (c) whether session summaries should carry a manifest snapshot. Those remain open.
 
