@@ -1,8 +1,8 @@
 ---
 status: approved
 kind: feature
-revision: 12
-updated: 2026-08-21
+revision: 13
+updated: 2026-11-15
 ---
 
 # Feature Charter: Autonomous Bugfix Loop
@@ -198,6 +198,13 @@ approval per Architecture Boundaries — approved during brainstorm.
 
 ## Deferred Capabilities
 
+Revision 13 removes the `affected_modules` CLI Producer row that previously appeared here:
+`adev issues create --affected-modules` shipped pre-revision-13 (adev-plugin-j2ev.3), and is now
+*required*, not merely available, for `--type bug` — closing adev-plugin-di0x, the data-coverage
+gap where almost the entire untagged backlog silently failed `bug-selection-and-eligibility.spec.md`
+BEH-10's fail-closed default. `adev eval findings file` now enforces the same requirement for
+review/eval-finding auto-filing.
+
 | Capability | Reason | Target Milestone | Depends On |
 |-----------|--------|-------------|------------|
 | Route-Based Eligibility Scoring | Extends `/adev:route`'s blast-radius/novelty scoring to board issues, replacing the fixed single-module blast-radius heuristic | 3 | Eligibility Filter |
@@ -205,7 +212,6 @@ approval per Architecture Boundaries — approved during brainstorm.
 | GitHub Issue State Mirroring | Auto-close/reopen/relabel GitHub issues based on loop state, beyond comment writeback | — | GitHub Outbound Comment Writeback |
 | Cross-Harness Outer Drivers | Equivalents to Claude Code's `/goal` for opencode/codex/cursor/copilot hands-off runs | — | — |
 | Second Tracker Provider Adapter (GitLab, Azure DevOps, etc.) | Interface exists and is proven by the GitHub adapter; a second implementation is deferred until there's demand, and needs its own task-management charter carve-out first | — | Tracker Provider Adapter Interface |
-| `affected_modules` CLI Producer | `/adev:issues create/update --affected-modules <slug>` flag; v1 ships only a direct `IssueManager.update()` call as the producer (reviewed and found unwired as a polished UX in revision-2 review) | — | Bug Selection Verb |
 | `affected_modules` GitHub Label Producer | Maintainer-applied `module:<slug>` label populating `affected_modules` on inbound sync; asserted in an earlier tracker-provider-bridge revision but never implemented — deferred honestly here | — | Tracker Provider Adapter Interface |
 
 ## Interface Contracts

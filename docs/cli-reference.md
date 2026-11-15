@@ -640,7 +640,7 @@ adev coordination scan --json --owner "$USER/local"
 | Subcommand | Purpose |
 |---|---|
 | `board [--milestone <name>] [--json]` | Print the whole board as canonical markdown on **stdout**. Read-only — never writes a file. `--milestone` restricts the epics section; `--json` emits `{ version, epics, issues }` unrendered |
-| `create <title> [--type <t>] [--priority 0-4] [--epic <id>] [--plan-ref <p>] [--spec-ref <p>] [--parent <id>] [--notes <text>] [--next-action <text>] [--id <id>] [--affected-modules <slug>[,<slug>...]] [--json]` | Create one board-granularity item in the **issue store**. Prints `Created <type> <id>: <title>`. `--type` defaults to `task`, `--priority` to `2`. **`--milestone` is refused here (exit 1)** — see `epic`. `--affected-modules` sets the module-safety tag `adev issues next`/`/adev:bugfix-loop` fail-closes on when absent, via a follow-up `update()` after `create()` succeeds — without it a bug is invisible to the loop until a separate `set-modules` call lands |
+| `create <title> [--type <t>] [--priority 0-4] [--epic <id>] [--plan-ref <p>] [--spec-ref <p>] [--parent <id>] [--notes <text>] [--next-action <text>] [--id <id>] [--affected-modules <slug>[,<slug>...]] [--json]` | Create one board-granularity item in the **issue store**. Prints `Created <type> <id>: <title>`. `--type` defaults to `task`, `--priority` to `2`. **`--milestone` is refused here (exit 1)** — see `epic`. `--affected-modules` sets the module-safety tag `adev issues next`/`/adev:bugfix-loop` fail-closes on when absent, via a follow-up `update()` after `create()` succeeds. **Required when `--type bug`** (exit 1 otherwise, naming the flag) — leaving it to a later `set-modules` call is what let the entire untagged backlog silently fail BEH-10's closed default (adev-plugin-di0x); pass a reserved safety tag (`review-gate`, `convergence-detector`, `retry-loop`, `bugfix-loop`) to deliberately keep a bug out of the loop while still recording that decision |
 | `epic <title> [--plan-ref <path>] [--milestone <name>] [--json]` | Create one epic in the **epic store**. Pass `--plan-ref` when the epic backs a plan — `/adev:implement` and `/adev:reconcile` look the epic up by `planRef`, and an epic minted without it is re-created on every run. Prints `Created epic <id>: <title>`. Not the same as `create --type epic` — see below |
 | `update <id> [--status <s>] [--milestone <name>] [--title <text>] [--priority 0-4] [--notes <text>] [--next-action <text>]` | Edit one item, issue or epic, **resolved from the id alone** by lookup — callers never read an id prefix. `--milestone` is epics-only, `--priority` issues-only. `--next-action` sets the next-step hint; an empty string clears it, same as `--notes`. `--status closed` is refused (exit 1): close goes through `close` |
 | `close <id> --reason <text>` | Close one item through the dependency/cascade guards. `--reason` is required and recorded on the item's notes |
@@ -1167,10 +1167,14 @@ adev eval score --rubric default --input .adev/eval/latest-verdicts.json --json
   (`EVAL_FINDING_INVALID` otherwise); `--severity`/`--module`/`--source` are free-text hints
   carried through unchanged.
 - `findings list [--json]` — list queued findings (`id`, `title`, and every field `queue` was given).
-- `findings file <finding-id> [--json]` — file a queued finding as a real `bug` via the issue
-  store (`adev issues create`'s own path), setting `--affected-modules` from the finding's
-  `module` field when present, then drain it from the queue. An unknown `<finding-id>` exits 1
-  with `EVAL_FINDING_NOT_FOUND` and touches nothing.
+- `findings file <finding-id> [--module <slug>] [--json]` — file a queued finding as a real `bug`
+  via the issue store, setting `--affected-modules` from the finding's `module` field (or
+  `--module`, when the finding was queued without one), then drain it from the queue. A module is
+  **required** from one of those two sources — a finding with neither exits 1 with
+  `EVAL_FINDING_MISSING_MODULE` and stays queued, rather than filing an untagged bug that BEH-10's
+  fail-closed default would silently exclude from every `/adev:bugfix-loop` run
+  (adev-plugin-di0x). An unknown `<finding-id>` exits 1 with `EVAL_FINDING_NOT_FOUND` and touches
+  nothing.
 
 **Example:**
 ```
