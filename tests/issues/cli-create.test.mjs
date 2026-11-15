@@ -16,6 +16,8 @@
  * - a create issued from a linked worktree writes to the MAIN repo's board
  * - --epic records the parent epic on the created issue
  * - --milestone is refused here and names `adev issues epic` instead
+ * - --type bug requires --affected-modules (adev-plugin-di0x: an untagged
+ *   bug is invisible to /adev:bugfix-loop's fail-closed eligibility filter)
  */
 
 import { describe, it, before, after } from "node:test";
@@ -192,7 +194,7 @@ describe("adev issues create", () => {
     assert.deepEqual(JSON.parse(r.stdout).affected_modules, ["cli", "lib"]);
   });
 
-  it("leaves affected_modules unset when the flag is omitted (unchanged default)", () => {
+  it("leaves affected_modules unset when the flag is omitted on a non-bug type", () => {
     const r = runCli(root, ["No module tag", "--json"]);
     assert.equal(r.status, 0, r.stderr);
     assert.equal(JSON.parse(r.stdout).affected_modules, undefined);
@@ -207,5 +209,23 @@ describe("adev issues create", () => {
       readBoard(root).issues.find((i) => i.title === "Empty modules"),
       undefined
     );
+  });
+
+  it("requires --affected-modules for --type bug (adev-plugin-di0x)", () => {
+    const r = runCli(root, ["Untagged bug", "--type", "bug"]);
+    assert.equal(r.status, 1);
+    assert.match(r.stderr, /--affected-modules.*is required for --type bug/);
+
+    // Refused means refused: nothing may reach the board.
+    assert.equal(
+      readBoard(root).issues.find((i) => i.title === "Untagged bug"),
+      undefined
+    );
+  });
+
+  it("accepts a reserved safety tag as a deliberate loop-exclusion for --type bug", () => {
+    const r = runCli(root, ["Deliberately excluded bug", "--type", "bug", "--affected-modules", "bugfix-loop", "--json"]);
+    assert.equal(r.status, 0, r.stderr);
+    assert.deepEqual(JSON.parse(r.stdout).affected_modules, ["bugfix-loop"]);
   });
 });

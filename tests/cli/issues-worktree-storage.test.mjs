@@ -72,7 +72,10 @@ function makeProject() {
 /** Seed the board deterministically through the CLI and return the ids. */
 function seedBoard(root) {
   const first = createItem(root, ["Seeded alpha", "--type", "task"]);
-  const second = createItem(root, ["Seeded beta", "--type", "bug"]);
+  // --type bug requires --affected-modules (adev-plugin-di0x); this fixture only
+  // needs a second, differently-typed item, not loop eligibility, so a reserved
+  // safety tag satisfies the requirement without implying a real module.
+  const second = createItem(root, ["Seeded beta", "--type", "bug", "--affected-modules", "bugfix-loop"]);
   return [first.id, second.id];
 }
 

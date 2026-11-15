@@ -10,7 +10,12 @@
  * - queue requires --title and --description
  * - list reports queued findings, empty or not
  * - file creates a real bug via the issue store, sets --affected-modules
- *   from the finding's module when present, and drains the finding
+ *   from the finding's module (or a --module override), and drains the
+ *   finding
+ * - file requires a module (from the finding or --module) — a finding with
+ *   neither exits 1 and stays queued (adev-plugin-di0x: filing untagged
+ *   silently joined the bugfix-loop eligibility filter's fail-closed
+ *   backlog)
  * - file on an unknown finding id exits 1
  */
 
@@ -126,18 +131,33 @@ describe("adev eval findings file", () => {
     assert.deepEqual(stillQueued.findings, []);
   });
 
-  it("files a queued finding with no module unset (no affected_modules)", () => {
+  it("requires a module: a finding queued with none exits 1 and stays queued", () => {
     root = makeProject();
     const queued = JSON.parse(
       runCli(root, ["queue", "--title", "No module", "--description", "x", "--json"]).stdout
     );
     const r = runCli(root, ["file", queued.id, "--json"]);
+    assert.equal(r.status, 1);
+    assert.match(r.stderr, /EVAL_FINDING_MISSING_MODULE/);
+
+    // Refused means refused: no bug landed, and the finding is still queued.
+    assert.equal(existsSync(join(root, ".context-index", "tasks", "tasks.json")), false);
+    const stillQueued = JSON.parse(runCli(root, ["list", "--json"]).stdout);
+    assert.equal(stillQueued.findings.length, 1);
+  });
+
+  it("files a queued finding with no module given --module at file time", () => {
+    root = makeProject();
+    const queued = JSON.parse(
+      runCli(root, ["queue", "--title", "No module yet", "--description", "x", "--json"]).stdout
+    );
+    const r = runCli(root, ["file", queued.id, "--module", "cli", "--json"]);
     assert.equal(r.status, 0, r.stderr);
     const result = JSON.parse(r.stdout);
 
     const board = readBoard(root);
     const filed = board.issues.find((i) => i.id === result.filed);
-    assert.equal(filed.affected_modules, undefined);
+    assert.deepEqual(filed.affected_modules, ["cli"]);
   });
 
   it("exits 1 for an unknown finding id, without touching the board", () => {

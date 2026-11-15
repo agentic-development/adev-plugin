@@ -67,10 +67,12 @@ Standalone issues (no epic) appear under "Unassigned." When any epic has a `mile
 Create one board item in one step:
 
 ```bash
-adev issues create "<title>" [--type <bug|feature|task>] [--priority 0-4] [--epic <epic-id>] [--spec-ref <path>] [--next-action <text>] [--notes <text>]
+adev issues create "<title>" [--type <bug|feature|task>] [--priority 0-4] [--epic <epic-id>] [--spec-ref <path>] [--next-action <text>] [--notes <text>] [--affected-modules <slug>[,<slug>...]]
 ```
 
 The command owns the defaults — type `task`, priority `2`, status `open` — so nothing here restates them per call. `--epic <id>` files the new issue under an existing epic; no id prefix is inspected anywhere, which keeps this correct on backends whose ids carry no prefix. Pass `--json` when you need the full created record rather than the summary line.
+
+**Module tag required for bugs:** `--type bug` requires `--affected-modules <slug>[,<slug>...]` — the command exits 1 naming the flag otherwise. This is the module-safety tag `/adev:bugfix-loop`'s eligibility filter fail-closes on when absent (bug-selection-and-eligibility.spec.md BEH-10); filing a bug without it makes the bug invisible to the autonomous loop. Resolve the slug from the affected area (a `manifest.modules[].slug`), or, when the bug deliberately should never be autonomously selected, pass one of the reserved safety tags (`review-gate`, `convergence-detector`, `retry-loop`, `bugfix-loop`). If the module is genuinely unknown at filing time, ask the author rather than guessing — an incorrect slug routes the bug to the wrong module's loop runs.
 
 **Content template (BEH-1, BEH-2):** When `--type bug|feature` is given and no `--notes` was supplied, prompt the author before creating the issue:
 
