@@ -4,10 +4,10 @@ status: validated
 kind: behavioral
 risk_level: medium
 milestone:
-revision: 7
+revision: 8
 charter-revision: 3
 created: 2026-08-10
-updated: 2026-08-13
+updated: 2026-11-17
 charter-extension: true
 affects:
   - planning
@@ -158,12 +158,19 @@ was shared with the rigor mechanism; revision 2 tried to make that true. Both ar
 
 ### Ownership
 
-`/adev:implement` owns depth resolution for plan tasks. It already reads the routing sidecar
-per task and dispatches write-test (`skills/implement/SKILL.md:362`), so it holds every input
-at the moment tests are authored. It calls `adev test-policy resolve`, and passes the
-resolved depth into the write-test subagent — the established pattern at
-`skills/implement/SKILL.md:~378`, where `adev domain load-test-config` output is passed in the
-same way. `/adev:write-test` never resolves depth; it consumes what it is given.
+`/adev:implement` owns depth resolution for plan tasks. It reads the routing sidecar per task,
+so it holds every input at the moment tests are authored. It calls `adev test-policy resolve`
+for **every** task, before composing the implementer prompt, and passes the resolved depth to
+whoever authors the tests: the implementer (which writes its own RED tests under the TDD
+mandate) and, when one is dispatched, the write-test subagent. `/adev:write-test` never
+resolves depth; it consumes what it is given.
+
+**Corrected in rev 8.** Revisions 1-7 placed the call "before dispatching the write-test
+subagent", on the premise that implement dispatches write-test per task. It does not: the
+cited line only says how to configure write-test *when* it is dispatched, and the per-task loop
+has no dispatch step for it. Resolution therefore never ran. A consumer project recorded zero
+`test_depth_assigned` events across 136 implemented tasks, so neither the risk-level nor the
+sensitive-path floor ever reached the agent writing the tests.
 
 ### Preconditions
 
@@ -359,9 +366,10 @@ same way. `/adev:write-test` never resolves depth; it consumes what it is given.
     meaning the last matching event in the log's append order — position in the JSONL file,
     not timestamp, which can tie.
 
-14. **When** `/adev:implement` accepts a write-test subagent's suite for a task **then** it
-    calls `adev test-policy assert-assigned --plan <path> --task-id <id>`, which verifies that
-    an assignment event exists for the task; a missing event fails the write-test step with
+14. **When** `/adev:implement`'s implementer reports a task done, or `/adev:implement` accepts a
+    write-test subagent's suite for a task, **then** it calls
+    `adev test-policy assert-assigned --plan <path> --task-id <id>`, which verifies that an
+    assignment event exists for the task; a missing event fails the task's test step with
     `MISSING_DEPTH_ASSIGNMENT` rather than passing silently.
 
     **This is a presence check, not a conformance check.** It proves depth was resolved and

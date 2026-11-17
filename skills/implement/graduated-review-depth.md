@@ -30,18 +30,21 @@ derives them itself from the plan's `Files:` block.
 
 This call reports the `review_depth_resolved` event for the provisional pass.
 
-## 2. Base SHA (Step 2d, before the implementer dispatch)
+## 2. Task base (Step 2d, before the implementer dispatch)
 
-`git rev-parse HEAD`, captured immediately before dispatch. Used only for this
-task's final-pass depth resolution; it is not persisted anywhere and does not
-survive past this single dispatch.
+`adev implement snapshot-base`, captured immediately before dispatch. It prints
+a git tree id recording the worktree as it stands (index plus every non-ignored
+file, untracked included) without touching the index. Used only for this task's
+final-pass depth resolution; it is not persisted anywhere and does not survive
+past this single dispatch. A bare `git rev-parse HEAD` also works, but then
+every file that was untracked before the task counts as a task addition.
 
 ## 3. Final pass (Step 2f-pre, after GREEN, against the real diff)
 
 ```bash
 adev implement resolve-depth --spec <spec-path> --plan <plan-path> --task-id <task-id> \
   [--tier <t>] [--review-cycles <n>] [--in-batch] [--had-critical-finding] \
-  --base-sha <captured-sha> --pass final
+  --base-sha <captured-base> --pass final
 ```
 
 Pass `--had-critical-finding` whenever any prior cycle on this task's own review

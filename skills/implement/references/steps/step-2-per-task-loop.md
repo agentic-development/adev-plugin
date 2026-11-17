@@ -130,21 +130,21 @@ Build the implementer subagent prompt with these sections in order:
 
    Stdout is a single JSON object `{ domain, config, warnings }` where `config` contains `permitted_tools`, `skip_patterns`, and `max_test_file_size`. Pass `config.permitted_tools` to the write-test subagent for test framework detection. Pass `config.skip_patterns` for domain-specific skipped test detection.
 
-   **Test Depth Resolution:** Before dispatching the write-test subagent, resolve the task's assigned test depth via the CLI:
+   **Test Depth Resolution (every task):** Before composing the implementer prompt, resolve the task's assigned test depth via the CLI. Do this for every task, not only when a write-test subagent is dispatched: the implementer writes the RED tests itself under the TDD mandate, so it is the one that needs the depth.
 
    ```bash
    adev test-policy resolve --plan <plan-path> --task-id <task-id>
    ```
 
-   Stdout is a single JSON object carrying a `depth` field (`minimal | standard | thorough`). Pass the resolved depth into the write-test subagent's prompt alongside `config.permitted_tools`/`config.skip_patterns` — it tells the subagent how many case classes the suite must cover.
+   Stdout is a single JSON object carrying a `depth` field (`minimal | standard | thorough`). Pass the resolved depth into the implementer prompt as a `## Test Depth` section naming the depth, plus `floor_legs` when the floor applied, so the implementer knows why a task was raised to `thorough`. If this task also dispatches a write-test subagent, pass the same resolved depth into the write-test subagent's prompt alongside `config.permitted_tools`/`config.skip_patterns`. Never resolve twice for one dispatch: each call appends another `test_depth_assigned` event.
 
-   After the write-test subagent hands back a suite and it is accepted, verify an assignment was recorded:
+   After the implementer reports (DONE or DONE_WITH_CONCERNS in Step 2d), or after a write-test subagent's suite is accepted, verify an assignment was recorded:
 
    ```bash
    adev test-policy assert-assigned --plan <plan-path> --task-id <task-id>
    ```
 
-   A non-zero exit fails the write-test step for that task with `MISSING_DEPTH_ASSIGNMENT` rather than passing silently — do not proceed to GREEN phase or accept the suite.
+   A non-zero exit fails the task's test step with `MISSING_DEPTH_ASSIGNMENT` rather than passing silently. Do not proceed to Stage 1 review or accept the suite.
 
 7. **Specialist context** (if routed). Load the specialist prompt template from `.context-index/specialists/<name>.md` (for `invoke: subagent`) or note the skill to invoke (for `invoke: skill`). Include domain-specific guidelines.
 8. **Blocker flag protocol.** If the subagent encounters an unresolvable issue, it must write a structured blocker file to `.context-index/hygiene/blockers/<task-slug>.md` using the blocker template (category, description, what was tried, what is needed) and STOP. The blocker file triggers `/adev:recover` for diagnosis. Never loop on a problem — file a blocker and halt.
@@ -185,7 +185,7 @@ The verb wraps `lib/execution-state.mjs::writeExecutionState`. If the CLI call e
 
 #### 2d. Dispatch and Handle Status
 
-- **Capture the task's base SHA** immediately before dispatch: `git rev-parse HEAD`. Used only by this task's final-pass depth resolution (2f-pre); never persisted.
+- **Capture the task's base** immediately before dispatch: `adev implement snapshot-base`. It prints a git tree id recording the worktree as it stands, including untracked and already-modified files, without touching the index. Pass it as `--base-sha` to this task's final-pass depth resolution (2f-pre). Files that predate the task (session logs, other specs' untracked lifecycle logs, uncommitted edits from earlier work) are then not counted as the task's changes by the scope-mismatch floor. Do not substitute `git rev-parse HEAD`: against a commit, every untracked file in the worktree counts as a task addition. Never persisted.
 
 Dispatch the subagent with `Agent({description, prompt, run_in_background: false})` and nothing else.
 
@@ -281,7 +281,7 @@ Do not proceed. Do not skip. Do not fall back to code-only review for UI tasks.
 
 > **Required reading:** `skills/implement/graduated-review-depth.md`.
 
-Immediately before 2f's dispatch — after GREEN, against the real diff — run the provisional call again with `[--had-critical-finding] --base-sha <captured-sha> --pass final`. Echo `REVIEW_DEPTH_FLOOR_APPLIED` (naming `floor_legs`) and any `ROUTING_SCORE_OUT_OF_RANGE` warning to the operator-facing transcript, not only to the persisted `review_depth_resolved` event. Then branch on the resolved `depth`:
+Immediately before 2f's dispatch — after GREEN, against the real diff — run the provisional call again with `[--had-critical-finding] --base-sha <captured-base> --pass final`. Echo `REVIEW_DEPTH_FLOOR_APPLIED` (naming `floor_legs`) and any `ROUTING_SCORE_OUT_OF_RANGE` warning to the operator-facing transcript, not only to the persisted `review_depth_resolved` event. Then branch on the resolved `depth`:
 
 - **`full`** — run 2f then 2g below exactly as written.
 - **`quick`** — skip both stages; dispatch one synthesized reviewer carrying `synthesized-reviewer-prompt.md` and the union of both stages' context, under the same `cq-<n>` / `evaluateStopCondition` discipline, capped at the returned `review_cycles`. Record `stage: "synthesized"` provenance (`Review-round: synthesized=<n>`) instead of the two stage records.

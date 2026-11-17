@@ -8,9 +8,14 @@ import { readSkillSurface } from "../helpers.mjs";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const COMPANION_PATH = join(ROOT, "skills", "implement", "graduated-review-depth.md");
 
-test("/adev:implement captures git rev-parse HEAD as the task's base SHA before dispatch", () => {
+// The base used to be `git rev-parse HEAD`. Against a commit, every file
+// already untracked in the worktree counts as a task addition, so the
+// scope-mismatch floor fired on every task. The base is now a worktree
+// snapshot taken at dispatch.
+test("/adev:implement captures a worktree snapshot as the task's base before dispatch", () => {
   const md = readSkillSurface("implement");
-  assert.match(md, /git rev-parse HEAD/);
+  assert.match(md, /\*\*Capture the task's base\*\* immediately before dispatch: `adev implement snapshot-base`/);
+  assert.match(md, /Do not substitute `git rev-parse HEAD`/);
 });
 
 test("/adev:implement's review-cycle cap reads from implement.max_review_cycles, not either hardcoded 3", () => {

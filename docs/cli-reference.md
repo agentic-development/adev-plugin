@@ -577,7 +577,7 @@ Exit codes: `0` success, `1` argument error / `CONFLICTING_BATCH_FLAGS` / `INVAL
 
 **Signature:**
 ```
-implement resolve-depth --spec <path> --plan <path> --task-id <id> [--tier full|quick] [--review-cycles <n>] [--base-sha <sha>] [--pass provisional|final] [--in-batch] [--had-critical-finding]
+implement resolve-depth --spec <path> --plan <path> --task-id <id> [--tier full|quick] [--review-cycles <n>] [--base-sha <commit-or-tree>] [--pass provisional|final] [--in-batch] [--had-critical-finding]
 ```
 
 **Example:**
@@ -588,6 +588,22 @@ adev implement resolve-depth --spec <s> --plan <p> --task-id t3 --tier quick --r
 Exit codes: `0` success — `resolveImplementReviewDepth()` result plus `review_cycles` printed as JSON on stdout; `1` argument error / `INVALID_REVIEW_CYCLES` / `INVALID_SPEC_PATH` / `INVALID_PLAN_PATH` / `INVALID_TIER`; `2` `MISSING_DIFF_RANGE` (final pass without `--base-sha`); `3` `ROUTING_SIDECAR_MISSING` / `ROUTING_ENTRY_MISSING`.
 
 **Implementation:** `lib/cli/implement.mjs`. **Called by:** `/adev:implement` only.
+
+#### `implement snapshot-base`
+
+**Purpose:** Record the worktree as it stands (index plus every non-ignored file, untracked included) as a git tree object, without touching the index or working tree. `/adev:implement` captures it at task dispatch and passes it as `resolve-depth --base-sha`, so the final pass's `scope-mismatch` leg counts only what the task changed: files that were untracked or modified before the task are part of the base.
+
+**Signature:** `implement snapshot-base`
+
+**Example:**
+```
+BASE=$(adev implement snapshot-base)
+adev implement resolve-depth --spec <s> --plan <p> --task-id t3 --base-sha "$BASE" --pass final
+```
+
+Exit codes: `0` success — tree id on stdout; `1` `SNAPSHOT_FAILED` (not a git repository, or git failed).
+
+**Implementation:** `lib/cli/implement.mjs` → `lib/implement/review-depth.mjs::snapshotWorkingTree()`. **Called by:** `/adev:implement` only.
 
 ### `specify`
 
