@@ -12,7 +12,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { writeFileSync, mkdirSync, appendFileSync, rmSync } from "node:fs";
+import { writeFileSync, mkdirSync, appendFileSync, rmSync, utimesSync } from "node:fs";
 import { join } from "node:path";
 import {
   resolveImplementReviewDepth,
@@ -149,6 +149,39 @@ test("a commit base keeps the previous semantics: tracked changes plus every unt
       "A new.mjs",
       "M tracked.txt",
     ]);
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+// The snapshot seeds its throwaway index from the real one to reuse the stat
+// cache. Git re-hashes an entry only if its stat changed or it is "racily
+// clean" (file mtime not older than the index file's mtime). A copied index
+// with a fresh mtime disabled that second check, so a same-size edit made in
+// the same timestamp tick as the commit was missed (about 1 run in 20).
+// Pinning every mtime to one whole second builds that racy state on purpose.
+test("a same-size edit whose stat matches the index is still seen (racy-git stat cache)", () => {
+  const dir = createTempDir();
+  try {
+    git(dir, "init", "-q");
+    git(dir, "config", "user.email", "t@t.com");
+    git(dir, "config", "user.name", "t");
+    git(dir, "config", "core.trustctime", "false");
+    const T0 = 1_700_000_000;
+    const file = join(dir, "e.txt");
+    writeFileSync(file, "1");
+    utimesSync(file, T0, T0);
+    git(dir, "add", "-A");
+    git(dir, "commit", "-q", "-m", "base");
+    const head = git(dir, "rev-parse", "HEAD").trim();
+
+    writeFileSync(file, "2");
+    utimesSync(file, T0, T0);
+    utimesSync(join(dir, ".git", "index"), T0, T0);
+
+    // `git status` refreshes and rewrites the real index, so it runs after.
+    assert.deepEqual(sorted(computeTouchedFiles(dir, head)), ["M e.txt"]);
+    assert.match(git(dir, "status", "--porcelain"), /^ M e\.txt/m, "git itself sees the edit too");
   } finally {
     cleanupTempDir(dir);
   }
