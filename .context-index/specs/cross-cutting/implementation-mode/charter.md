@@ -40,7 +40,7 @@ Give projects control over how rigorously `/adev:implement` enforces test-first 
 | `planning` | high | Task template's "Write failing test"/"Verify test fails" checkboxes, `plan-reviewer-prompt.md`'s "no task skips test-first" criterion, `epic-mode.md`'s routing-table wording. |
 | `assessment` (owns `/adev:route`) | medium | `assisted-agent`'s RED-phase-dependent pause point and `auto-agent`'s "full TDD cycle" description need mode-conditional wording. |
 | `maintenance` (owns `/adev:hygiene`) | medium | Audit Pass 22 (Test-Policy Drift) must treat a missing `**Tests:**` field as expected, not drift, under `agent-default`. |
-| `strategic-planning` (owns `/adev:status`) | medium | `/adev:status`'s test-depth-assignment count needs a note (or different framing) for `agent-default`-mode projects, where the count is structurally always 0 — `test_depth_assigned` events are only emitted when `/adev:implement` calls `adev test-policy resolve` immediately before dispatching `write-test`, which never happens under `agent-default`. |
+| `strategic-planning` (owns `/adev:status`) | medium | `/adev:status`'s test-depth-assignment count needs a note (or different framing) for `agent-default`-mode projects, where the count is structurally always 0 — `test_depth_assigned` events are only emitted when `/adev:implement` calls `adev test-policy resolve` before composing a task's implementer prompt, which never happens under `agent-default`. |
 | `lib` | medium | New `lib/implementation-modes/constants.mjs` resolver module, following the existing `lib/risk-tiers/` pattern. |
 | `cli` | low | One new CLI verb (e.g. `adev implementation-mode resolve`) wiring the resolver into the existing driver-surface pattern. |
 

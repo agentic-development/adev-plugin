@@ -188,9 +188,10 @@ a derived signal outranked it.
 **The floor is advisory, not enforced.** It determines the depth a task is *assigned* and
 records that assignment (`floor_applied`, `floor_legs`, `floor_inputs` on the
 `test_depth_assigned` event) — nothing in this capability verifies that the authored suite
-actually matches the assigned depth. A task floored to `thorough` gets `thorough` in its
-write-test prompt and an auditable record; if the subagent authors a shallower suite anyway,
-nothing here catches it. Treat the floor as an intent-and-audit-trail mechanism, not a
+actually matches the assigned depth. `/adev:implement` resolves depth for every task and
+passes it to whoever writes the tests (the implementer, and the write-test subagent when one is
+dispatched). A task floored to `thorough` gets `thorough` in that prompt and an auditable
+record; if the agent authors a shallower suite anyway, nothing here catches it. Treat the floor as an intent-and-audit-trail mechanism, not a
 guarantee.
 
 **Standalone `/adev:write-test` behavior.** When `/adev:write-test` runs outside a plan task

@@ -130,21 +130,21 @@ Build the implementer subagent prompt with these sections in order:
 
    Stdout is a single JSON object `{ domain, config, warnings }` where `config` contains `permitted_tools`, `skip_patterns`, and `max_test_file_size`. Pass `config.permitted_tools` to the write-test subagent for test framework detection. Pass `config.skip_patterns` for domain-specific skipped test detection.
 
-   **Test Depth Resolution:** Before dispatching the write-test subagent, resolve the task's assigned test depth via the CLI:
+   **Test Depth Resolution (every task):** Before composing the implementer prompt, resolve the task's assigned test depth via the CLI. Do this for every task, not only when a write-test subagent is dispatched: the implementer writes the RED tests itself under the TDD mandate, so it is the one that needs the depth.
 
    ```bash
    adev test-policy resolve --plan <plan-path> --task-id <task-id>
    ```
 
-   Stdout is a single JSON object carrying a `depth` field (`minimal | standard | thorough`). Pass the resolved depth into the write-test subagent's prompt alongside `config.permitted_tools`/`config.skip_patterns` — it tells the subagent how many case classes the suite must cover.
+   Stdout is a single JSON object carrying a `depth` field (`minimal | standard | thorough`). Pass the resolved depth into the implementer prompt as a `## Test Depth` section naming the depth, plus `floor_legs` when the floor applied, so the implementer knows why a task was raised to `thorough`. If this task also dispatches a write-test subagent, pass the same resolved depth into the write-test subagent's prompt alongside `config.permitted_tools`/`config.skip_patterns`. Never resolve twice for one dispatch: each call appends another `test_depth_assigned` event.
 
-   After the write-test subagent hands back a suite and it is accepted, verify an assignment was recorded:
+   After the implementer reports (DONE or DONE_WITH_CONCERNS in Step 2d), or after a write-test subagent's suite is accepted, verify an assignment was recorded:
 
    ```bash
    adev test-policy assert-assigned --plan <plan-path> --task-id <task-id>
    ```
 
-   A non-zero exit fails the write-test step for that task with `MISSING_DEPTH_ASSIGNMENT` rather than passing silently — do not proceed to GREEN phase or accept the suite.
+   A non-zero exit fails the task's test step with `MISSING_DEPTH_ASSIGNMENT` rather than passing silently. Do not proceed to Stage 1 review or accept the suite.
 
 7. **Specialist context** (if routed). Load the specialist prompt template from `.context-index/specialists/<name>.md` (for `invoke: subagent`) or note the skill to invoke (for `invoke: skill`). Include domain-specific guidelines.
 8. **Blocker flag protocol.** If the subagent encounters an unresolvable issue, it must write a structured blocker file to `.context-index/hygiene/blockers/<task-slug>.md` using the blocker template (category, description, what was tried, what is needed) and STOP. The blocker file triggers `/adev:recover` for diagnosis. Never loop on a problem — file a blocker and halt.

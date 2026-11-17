@@ -115,7 +115,7 @@ Harness-specific progress reporting during a long implement run.
 
 ### Step 2: Per-Task Execution Loop
 
-The core loop: for each routed task, dispatch write-test then implement, then run the two review stages.
+The core loop: for each routed task, resolve its test depth, dispatch the implementer (tests first, under the TDD mandate), then run the two review stages.
 
 > **Conditional loading:** Read `<ADEV_ROOT>/skills/implement/references/steps/step-2-per-task-loop.md` for the full instructions. Do not act on this section from the summary above.
 
