@@ -13,6 +13,54 @@ npx @adev-org/adev-cli upgrade
 
 ---
 
+## 0.28.1 — Faster implement runs, and test and review depth that apply
+
+A bug-fix release for `/adev:implement`. Slow test suites stop running after every task, and the
+test-depth and review-depth settings now affect the run as they were meant to.
+
+### Slow suites run once, not after every task
+
+A gate declared `triggers: [post-implement]` now runs **once, after the last task**. Before, it
+also ran after every task, so a long suite ran once per task. To keep a slow suite out of the
+per-task loop, declare it `post-implement` only:
+
+```yaml
+- id: test
+  tier: fast
+  command: [pytest]
+  triggers:
+    - post-implement
+```
+
+A gate that declares both `post-task` and `post-implement` (the default template) still runs
+after every task, and is not run a second time at the end. After a `--parallel` run it does run
+once more, against the merged result. See [Governance → When gates run](governance.md#when-gates-run).
+
+### Test depth reaches the agent writing the tests
+
+`/adev:implement` now resolves each task's test depth (`minimal`, `standard` or `thorough`) and
+gives it to the implementer, with the case classes each depth requires. That includes the
+`thorough` floor for `risk_level: high` specs and sensitive paths. Before, depth was only resolved
+for a separate test-writing step that implement never ran, so no task received a depth.
+
+### Review depth is no longer always `full`
+
+The scope check that can force a task into full review now compares against a snapshot of your
+working tree taken when the task starts. Files that were already untracked or modified before
+the task (session logs, other specs' lifecycle logs, `.DS_Store`) no longer count as the task's
+changes, so quick review is reachable again for tasks that qualify. A new CLI verb,
+`adev implement snapshot-base`, takes the snapshot.
+
+### Fixes
+
+- `/adev:implement`'s per-task loop, final review and completion steps each have their own entry
+  in the skill again. Before, they were only reachable through a section about workspace mode.
+- Retro history is kept in git: `.context-index/hygiene/retros/`, `recoveries/` and `blockers/`
+  are no longer gitignored, while regenerated reports such as `repo-map.md` stay ignored. The
+  managed `.gitignore` block updates on your next `adev init` or `adev upgrade`.
+
+---
+
 ## 0.28.0 (Oct 12) — Set how much rigor your project needs, and reviews that actually converge
 
 adev now lets you tune *how strictly* the lifecycle runs, per project, instead of one-size-fits-all. The review-and-revise loop in `/adev:build` also now fixes what reviewers flag instead of retrying blindly.
@@ -31,6 +79,9 @@ Choose how `/adev:implement` treats tests. `/adev:init` now asks, and the answer
 ```bash
 adev implementation-mode resolve --mode test-required
 ```
+
+> **Not enforced yet.** `/adev:init` records the mode and `adev implementation-mode resolve`
+> reports it, but `/adev:implement` does not read it yet: every mode currently runs the `tdd` flow.
 
 ### Risk tiers
 
