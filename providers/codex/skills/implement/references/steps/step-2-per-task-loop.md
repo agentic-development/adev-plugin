@@ -185,7 +185,7 @@ The verb wraps `lib/execution-state.mjs::writeExecutionState`. If the CLI call e
 
 #### 2d. Dispatch and Handle Status
 
-- **Capture the task's base SHA** immediately before dispatch: `git rev-parse HEAD`. Used only by this task's final-pass depth resolution (2f-pre); never persisted.
+- **Capture the task's base** immediately before dispatch: `adev implement snapshot-base`. It prints a git tree id recording the worktree as it stands, including untracked and already-modified files, without touching the index. Pass it as `--base-sha` to this task's final-pass depth resolution (2f-pre). Files that predate the task (session logs, other specs' untracked lifecycle logs, uncommitted edits from earlier work) are then not counted as the task's changes by the scope-mismatch floor. Do not substitute `git rev-parse HEAD`: against a commit, every untracked file in the worktree counts as a task addition. Never persisted.
 
 Dispatch the subagent with `Agent({description, prompt, run_in_background: false})` and nothing else.
 
@@ -281,7 +281,7 @@ Do not proceed. Do not skip. Do not fall back to code-only review for UI tasks.
 
 > **Required reading:** `skills/implement/graduated-review-depth.md`.
 
-Immediately before 2f's dispatch — after GREEN, against the real diff — run the provisional call again with `[--had-critical-finding] --base-sha <captured-sha> --pass final`. Echo `REVIEW_DEPTH_FLOOR_APPLIED` (naming `floor_legs`) and any `ROUTING_SCORE_OUT_OF_RANGE` warning to the operator-facing transcript, not only to the persisted `review_depth_resolved` event. Then branch on the resolved `depth`:
+Immediately before 2f's dispatch — after GREEN, against the real diff — run the provisional call again with `[--had-critical-finding] --base-sha <captured-base> --pass final`. Echo `REVIEW_DEPTH_FLOOR_APPLIED` (naming `floor_legs`) and any `ROUTING_SCORE_OUT_OF_RANGE` warning to the operator-facing transcript, not only to the persisted `review_depth_resolved` event. Then branch on the resolved `depth`:
 
 - **`full`** — run 2f then 2g below exactly as written.
 - **`quick`** — skip both stages; dispatch one synthesized reviewer carrying `synthesized-reviewer-prompt.md` and the union of both stages' context, under the same `cq-<n>` / `evaluateStopCondition` discipline, capped at the returned `review_cycles`. Record `stage: "synthesized"` provenance (`Review-round: synthesized=<n>`) instead of the two stage records.
