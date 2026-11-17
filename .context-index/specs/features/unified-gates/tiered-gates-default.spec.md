@@ -4,10 +4,10 @@ status: validated
 kind: behavioral
 risk_level: medium
 milestone:
-revision: 3
+revision: 4
 charter-revision: 4
 created: 2026-08-13
-updated: 2026-08-14
+updated: 2026-11-17
 charter-extension: true
 affects:
   - setup
@@ -311,6 +311,27 @@ a fresh scaffold, the exact failure mode this spec exists to avoid.
     this repo has no YAML writer, and re-emitting the document would discard
     the comments that explain each gate.
 
+12. **When** `/adev:implement` selects gates **then** `triggers` decides
+    where each one runs. Step 2h (per task) runs only gates whose `triggers`
+    include `post-task`. Step 2-post (once, after the last task) runs merged
+    entries whose `triggers` include `post-implement`, whatever their tier.
+    Merged entries that declare no `triggers` fall back to `tier: integration`.
+    `mergeGates` therefore keeps `triggers` on the merged entry. The `e2e`
+    tier stays excluded from implement.
+
+    A `__source: governance` gate that declares both `post-task` and
+    `post-implement` is skipped at Step 2-post with a named reason after a
+    serial or batched run, because the last task's Step 2h already ran it
+    against the same tree. After `--parallel` it runs, because Step 2h ran
+    inside each group's worktree and nothing has gated the merged result.
+
+    Before rev 4, Step 2h selected `post-task` **or** `post-implement`, and
+    Step 2-post selected by tier alone from a merged list that had dropped
+    `triggers`. So the template's `integration-test`, declared
+    `post-implement` only, ran after every task and again at Step 2-post, and
+    no project could declare an end-of-implement-only gate. Observed in a
+    consumer project as a 34-minute suite running after each of ~119 tasks.
+
 ### Postconditions
 
 - Every newly scaffolded project declares at least two tiers, and its
@@ -318,6 +339,8 @@ a fresh scaffold, the exact failure mode this spec exists to avoid.
   reachable because behavior 9 routes Step 2-post through the merged gate list.
 - Both integration-gate consumers agree on their source: `/adev:validate`
   Check 1b and `/adev:implement` Step 2-post read the same merged list.
+- A gate declared `triggers: [post-implement]` runs exactly once per full
+  `/adev:implement` run, never per task (behavior 12).
 - An unwired (`command: ""`) gate is never executed by any consumer: dropped by
   `mergeGates`, and skipped-with-reason by Step 2-post's own guard.
 - No template or starter surface teaches string-form `command`.
@@ -390,6 +413,10 @@ a fresh scaffold, the exact failure mode this spec exists to avoid.
       is reachable at `post-implement` and not only from `/adev:validate`.
 - [ ] `/adev:implement` Step 2-post skips any gate whose `command` is empty or
       not an argv list, recording a named reason and executing nothing.
+- [ ] Step 2h runs only `post-task` gates; Step 2-post selects merged entries by
+      the `post-implement` trigger, falling back to `tier: integration` only for
+      entries that declare no `triggers`; `mergeGates` preserves `triggers`
+      (behavior 12).
 - [ ] `docs/governance.md` documents the shipped default and the graduation
       path, in one scoped section.
 - [ ] This repo's own `.context-index/governance/gates.yaml` is **not**

@@ -35,7 +35,7 @@ The core loop: for each routed task, dispatch write-test then implement, then ru
 ### Step 2-post: Integration Gate
 
 > **Conditional loading:** Read `<ADEV_ROOT>/skills/implement/references/integration-gate.md` for the full Integration Gate instructions.
-> Load it only when the plan declares integration-tier gates; it is not needed on a serial run.
+> Load it after every task of a full plan run has completed (skip under `--task <N>`). It selects the end-of-implement gates itself and skips silently when none apply.
 
 ### Step 3: Final Review
 

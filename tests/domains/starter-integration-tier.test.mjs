@@ -9,7 +9,7 @@
  * Plan decision D2 governs the gate id (`integration-test` is reused across the
  * template and all three domain surfaces on purpose).
  * Plan decision D3 governs the assertion style: `mergeGates` narrows every entry
- * to `{ id, command, description?, severity?, tier? }` and injects `__source`,
+ * to `{ id, command, description?, severity?, tier?, triggers? }` and injects `__source`,
  * so assertions compare NAMED FIELDS, never deep-equality against the raw YAML.
  */
 import { describe, it } from "node:test";

@@ -54,7 +54,7 @@ A gate entry carries nine fields, plus `group` on the e2e tier only:
 | `scope` | `project` \| `charter` | `project` |
 | `required` | `true` \| `false` | `true` |
 | `severity` | `error` \| `warning` | tier default (see below) |
-| `triggers` | lifecycle events (`post-task`, `post-implement`, `pre-merge`) | — |
+| `triggers` | lifecycle events (`post-task`, `post-implement`, `pre-merge`) — see [When gates run](#when-gates-run) | — |
 | `group` | e2e tier only: `smoke` \| `full` — smoke runs first | — |
 
 ```yaml
@@ -72,7 +72,18 @@ gates:
       - post-implement
 ```
 
-`lib/domains/merge-gates.mjs` narrows each merged entry to `id`, `command`, `description`, `severity`, and `tier`. The remaining fields are read from the raw `gates.yaml` entry by the consumer — [`/adev:validate`](skill-reference.md) Check 1 — so `required` and `triggers` govern only where the raw entry is visible. Domain starter gates use `description` rather than `name`.
+`lib/domains/merge-gates.mjs` narrows each merged entry to `id`, `command`, `description`, `severity`, `tier`, and `triggers`. The remaining fields are read from the raw `gates.yaml` entry by the consumer — [`/adev:validate`](skill-reference.md) Check 1 — so `required` governs only where the raw entry is visible. Domain starter gates use `description` rather than `name`.
+
+### When gates run
+
+| Trigger | Runs in | How often |
+|---|---|---|
+| `post-task` | `/adev:implement` Step 2h | after every task |
+| `post-implement` | `/adev:implement` Step 2-post | once, after the last task |
+| (none declared) | `/adev:implement` Step 2-post, `tier: integration` only | once, after the last task |
+| any, or none | `/adev:validate` Check 1 | every gate, by tier; triggers are not consulted |
+
+To keep a slow suite out of the per-task loop, declare it `triggers: [post-implement]`. A gate that declares both `post-task` and `post-implement` is not re-run at Step 2-post after a serial or batched run, since the last task's Step 2h already ran it against the same tree. After `--parallel` it is re-run, because no per-task run has seen the merged result. The `e2e` tier never runs inside `/adev:implement`.
 
 ### `command` is argv-only
 
