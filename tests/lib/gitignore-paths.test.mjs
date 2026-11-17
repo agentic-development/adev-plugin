@@ -30,10 +30,13 @@ test("MANAGED_GITIGNORE_PATHS is frozen", () => {
   assert.ok(Object.isFrozen(MANAGED_GITIGNORE_PATHS));
 });
 
-test("MANAGED_GITIGNORE_PATHS contains the spec-declared 21 entries in declared order", () => {
+test("MANAGED_GITIGNORE_PATHS contains the spec-declared 24 entries in declared order", () => {
   const paths = MANAGED_GITIGNORE_PATHS.map((e) => e.path);
   const expected = [
-    ".context-index/hygiene/",
+    ".context-index/hygiene/*",
+    "!.context-index/hygiene/retros/",
+    "!.context-index/hygiene/recoveries/",
+    "!.context-index/hygiene/blockers/",
     ".context-index/packets/",
     ".context-index/.token-cursor.json",
     ".context-index/.reminder-counter",
