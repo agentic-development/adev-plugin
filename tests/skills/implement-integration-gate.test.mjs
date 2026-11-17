@@ -170,3 +170,54 @@ describe("implement SKILL.md — Step 2-post merged gate source and severity", (
     assert.ok(!/Run inline Node/i.test(section), "no `Run inline Node` heading in Step 2-post");
   });
 });
+
+describe("implement — post-implement gates run once, after the last task", () => {
+  // Step 2h is the per-task loop; Step 2-post is the once-per-run executor.
+  // When 2h selected `post-task` OR `post-implement`, a gate declared
+  // `post-implement` only (the template's integration-test) ran after every
+  // task, and nothing could declare an end-of-implement-only fast gate.
+  const skill = readSkillSurface("implement");
+  const stepPointer = skill.match(
+    /### Step 2: Per-Task Execution Loop[\s\S]*?> \*\*Conditional loading:\*\* Read `([^`]+)`/,
+  );
+  const postPointer = skill.match(
+    /### Step 2-post: Integration Gate\s*\n\s*\n> \*\*Conditional loading:\*\* Read `([^`]+)`(.*)\n(.*)/,
+  );
+  assert.ok(stepPointer, "Step 2 must carry a Conditional loading pointer");
+  assert.ok(postPointer, "Step 2-post must carry a Conditional loading pointer");
+  const loop = readFileSync(resolveSkillPointer(stepPointer[1]), "utf8");
+  const step2h = loop.substring(loop.indexOf("#### 2h."));
+  const step2hGates = step2h.substring(0, step2h.indexOf("After both reviews pass:"));
+  const post = readFileSync(resolveSkillPointer(postPointer[1]), "utf8");
+
+  it("Step 2h selects post-task gates only", () => {
+    assert.ok(step2hGates.length > 0, "Step 2h gate block must exist");
+    assert.ok(!/"post-task" or "post-implement"/.test(step2hGates),
+      "Step 2h must not treat post-implement as a per-task trigger");
+    assert.match(step2hGates, /`triggers` includes "post-task"/);
+    assert.match(step2hGates, /post-implement[\s\S]*Step 2-post/,
+      "Step 2h must say where a post-implement-only gate runs instead");
+  });
+
+  it("Step 2-post selects by the post-implement trigger, with a tier fallback only for gates that declare no triggers", () => {
+    assert.match(post, /`triggers`[^\n]*`post-implement`/);
+    assert.match(post, /no `triggers`[^\n]*`tier: integration`/);
+  });
+
+  it("Step 2-post does not re-run a gate the last task's Step 2h already ran against the same tree, except after --parallel", () => {
+    assert.match(post, /`post-task`/);
+    assert.match(post, /`--parallel`/);
+    assert.match(post, /`__source: governance`/,
+      "the dedupe applies only to gates Step 2h can see (it reads governance/gates.yaml)");
+  });
+
+  it("Step 2-post keeps the e2e tier out of implement", () => {
+    assert.match(post, /E2E[\s\S]*excluded/);
+  });
+
+  it("the Step 2-post pointer does not gate loading on the plan declaring gates", () => {
+    const loadCondition = `${postPointer[2]}\n${postPointer[3]}`;
+    assert.ok(!/plan declares integration-tier gates/.test(loadCondition),
+      "plans never declare gates; gates.yaml does, so this condition is never true");
+  });
+});

@@ -349,7 +349,7 @@ Use the same message shape for `LOOP_NO_PROGRESS` and `LOOP_REGRESSED`, substitu
 #### 2h. Mark Task Complete
 
 After both reviews pass, if `governance/gates.yaml` exists:
-1. Read gates where `triggers` includes "post-task" or "post-implement"
+1. Read gates where `triggers` includes "post-task". A gate whose `triggers` include `post-implement` but not `post-task` is not a per-task gate: it runs once, after the last task, in Step 2-post. Running it here would run it once per task.
 2. For each gate with `kind: deterministic` and non-empty `command`: run it. If fail + `required: true` → task failure. If fail + `required: false` → log warning.
 3. `kind: probabilistic` or no `command` → log "Skipped (requires platform runtime)"
 4. `approver_role` → log informational note
