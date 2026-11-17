@@ -20,7 +20,15 @@ If the CLI call fails, fall back to reading each file individually.
 
 4. **The spec:** Read the Live Spec itself. Extract behavioral contract, acceptance criteria, and actionable task map (if present).
 
-5. **Review verdict and notes:** The review-gate read in Step 1 already returned `state.steps.review`. Use its `verdict` and `notes` fields directly — do not re-read or parse the `.review.md` artifact. The plan should address or acknowledge any `PASS_WITH_NOTES` notes.
+5. **Implementation mode:** Resolve the project's test discipline once:
+
+   ```bash
+   adev implementation-mode resolve
+   ```
+
+   Stdout is `{ mode, config, source }`; `mode` is `tdd`, `test-required` or `agent-default`. It selects the per-task step list in Step 5 (Task Structure) and is recorded in the plan header, so `/adev:implement` and the plan reviewer can see which discipline the plan was written for. A non-zero exit with `UNKNOWN_IMPLEMENTATION_MODE` means the manifest holds an invalid value: stop and report it. If the CLI cannot run at all, use `tdd` and say so.
+
+6. **Review verdict and notes:** The review-gate read in Step 1 already returned `state.steps.review`. Use its `verdict` and `notes` fields directly — do not re-read or parse the `.review.md` artifact. The plan should address or acknowledge any `PASS_WITH_NOTES` notes.
 
 ### Workspace-Aware Target-Repo Context Loading
 

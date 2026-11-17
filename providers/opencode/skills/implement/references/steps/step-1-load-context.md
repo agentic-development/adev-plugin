@@ -20,6 +20,16 @@ adev skill-ext load --skill implement
 
 If the output is not `__NONE__`, incorporate it as additional standing instructions that apply to this skill's entire execution. Frame it as: *"The following skill extension instructions apply to this invocation (source: installed domain extensions and/or project-level overrides)."* If the output is `__NONE__`, continue normally.
 
+**Resolve the implementation mode** once for the whole run:
+
+```bash
+adev implementation-mode resolve
+```
+
+Stdout is `{ mode, config, source }`, where `mode` is `tdd`, `test-required` or `agent-default` (`tdd` with `source: default` when the manifest sets none). Use this one value for every task: it selects the implementer's test-discipline section (Step 2c item 7), whether test depth is resolved, and the test criterion the reviewers apply. A non-zero exit with `UNKNOWN_IMPLEMENTATION_MODE` means the manifest holds an invalid value: stop and report it. If the CLI cannot run at all, use `tdd` and say so in the run output.
+
+Also read the plan header's `> **Implementation mode:**` line. Plans written before this line existed have none and were authored as TDD.
+
 1. The plan file. Extract every task with its full text, file lists, dependencies, and specialist hints.
 2. `.context-index/constitution.md`. Extract the Non-Negotiable Principles, Coding Standards, Architecture Boundaries, and Quality Gates sections.
 3. `.context-index/manifest.yaml`. Extract the `specialists` registry.

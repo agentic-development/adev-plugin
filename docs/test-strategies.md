@@ -96,9 +96,8 @@ test_strategies:
 
 Each entry declares:
 - `strategy_id` — one of the 8 strategy types
-- `command` — array of command + args (executed via `spawn`, never shell-interpolated)
-- `tier` — which gate tier runs this (`fast`, `integration`, or `e2e`). Defaults to `fast`
-- `paths` — file glob patterns that trigger this strategy
+- `paths` — file glob patterns that assign this strategy to a task
+- `command`, `tier` — accepted and validated, but **not executed by adev**. Matching an entry assigns the strategy (and so its profile's test rules) to a task; it does not run the command. To run a strategy's suite, declare it as a gate in `governance/gates.yaml` with the same argv and `tier` (see [Governance](governance.md)).
 
 Manifest entries take precedence over auto-detection. The first matching entry wins when paths overlap.
 
@@ -188,8 +187,8 @@ a derived signal outranked it.
 **The floor is advisory, not enforced.** It determines the depth a task is *assigned* and
 records that assignment (`floor_applied`, `floor_legs`, `floor_inputs` on the
 `test_depth_assigned` event) — nothing in this capability verifies that the authored suite
-actually matches the assigned depth. `/adev:implement` resolves depth for every task and
-passes it to whoever writes the tests (the implementer, and the write-test subagent when one is
+actually matches the assigned depth. `/adev:implement` resolves depth for every task (except under
+`implementation_mode: agent-default`) and passes it to whoever writes the tests (the implementer, and the write-test subagent when one is
 dispatched). A task floored to `thorough` gets `thorough` in that prompt and an auditable
 record; if the agent authors a shallower suite anyway, nothing here catches it. Treat the floor as an intent-and-audit-trail mechanism, not a
 guarantee.

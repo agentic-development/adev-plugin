@@ -149,13 +149,15 @@ specialists: []
 
 test_policy:
   granularity: per-behavior   # per-task | per-behavior | per-spec
-  escalation: true            # allow risk-based depth escalation on top of granularity
+  escalation: true            # apply escalation_rules (none by default) to raise test depth from routing scores
 
 # ============================================================================
 # Test Strategies
 # Declare which test strategies apply to this project.
-# Strategies customize how /adev:write-test and /adev:plan handle TDD
-# for different domains (migrations, IaC, data pipelines, etc.).
+# Strategies customize the test rules /adev:plan, /adev:implement and
+# /adev:write-test give for different domains (migrations, IaC, data
+# pipelines, etc.). `paths` assigns a strategy to a task; `command` and `tier`
+# are not executed by adev — declare a gate in governance/gates.yaml to run one.
 # If omitted, all tasks default to the 'unit' strategy.
 # ============================================================================
 
