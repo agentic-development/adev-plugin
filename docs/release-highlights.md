@@ -13,10 +13,32 @@ npx @adev-org/adev-cli upgrade
 
 ---
 
-## 0.28.1 — Faster implement runs, and test and review depth that apply
+## 0.28.1 — Your implementation mode applies, and faster implement runs
 
-A bug-fix release for `/adev:implement`. Slow test suites stop running after every task, and the
-test-depth and review-depth settings now affect the run as they were meant to.
+A bug-fix release for `/adev:plan` and `/adev:implement`. Your implementation mode now applies,
+slow test suites stop running after every task, and the test-depth and review-depth settings now
+affect the run as they were meant to.
+
+### Your implementation mode now applies
+
+`implementation_mode` (set by `/adev:init`) now changes how tasks are planned and briefed. In
+0.28.0 it was recorded but ignored, so every project got strict TDD:
+
+| Mode | Plan steps | Implementer is told | Test depth |
+|---|---|---|---|
+| `tdd` (default) | failing test → verify fail → implement → verify pass → commit | test first, always | resolved per task |
+| `test-required` | implement → write or extend tests → verify pass → commit | tests must cover the change, any order | resolved per task |
+| `agent-default` | implement → verify → commit | add tests where they are needed | not resolved |
+
+Plans written before this release were written as TDD; `/adev:implement` tells the implementer
+that your mode takes precedence over their step order, so you do not need to re-plan. The
+test-integrity rules (keep assertions strict, no conditional skips, fix the code rather than the
+test) still apply in every mode. Under `test-required`, code review flags changes without test
+coverage. See [Configuration](configuration.md) (`implementation_mode`).
+
+The implementer now also receives the task's test-strategy profile (assertion rules, seed-data
+rule, gaming blockers) and your domain's test config. Before, only `/adev:write-test` saw them.
+`adev test-policy strategy` shows which strategy a task resolves to.
 
 ### Slow suites run once, not after every task
 
@@ -80,8 +102,8 @@ Choose how `/adev:implement` treats tests. `/adev:init` now asks, and the answer
 adev implementation-mode resolve --mode test-required
 ```
 
-> **Not enforced yet.** `/adev:init` records the mode and `adev implementation-mode resolve`
-> reports it, but `/adev:implement` does not read it yet: every mode currently runs the `tdd` flow.
+> **Applied from 0.28.1.** In 0.28.0, `/adev:init` recorded the mode but `/adev:plan` and
+> `/adev:implement` did not read it, so every mode ran the `tdd` flow. See 0.28.1 below.
 
 ### Risk tiers
 
