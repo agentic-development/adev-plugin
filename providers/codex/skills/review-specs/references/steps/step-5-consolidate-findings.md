@@ -61,8 +61,8 @@ Produce one section per dispatched reviewer, in registry order. For each reviewe
 > zero blockers), BLOCK (>= `verdict_rules.blocker_threshold` blockers,
 > default 1). See `configurable-reviewers.spec.md` behaviors 37-38. An
 > individual reviewer signals a blocker by emitting FAIL with a
-> blocker-severity finding, which is what the `reportReviewer` snippet in
-> Step 6a records.
+> blocker-severity finding, which is what the `adev report --type reviewer`
+> invocation in Step 6a records.
 
 ---
 
