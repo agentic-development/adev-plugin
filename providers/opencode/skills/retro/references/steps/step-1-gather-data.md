@@ -109,7 +109,7 @@ Classify each entry by path pattern into one of two classes:
 | `.context-index/lifecycle-state/*.jsonl` | **durable** | Tracked context layer (CLAUDE.md routing); written by `lib/lifecycle-state.mjs` and `lib/lifecycle-events.mjs` without commit. |
 | `.context-index/sessions/*.md` | **durable** | Session-file convention; written by `.githooks/post-commit` after the triggering commit, so always one commit behind. |
 | `.spec.md` diff that is *only* `+drift_detected:` / `-drift_detected:` frontmatter changes | **durable** | Spec-drift scanner stamps; written by `lib/spec-drift.mjs` without commit. |
-| `.context-index/hygiene/drift-report.md` (modified) | **durable** | Hygiene audit output; expected to be committed. |
+| `.context-index/hygiene/retros/*.md`, `hygiene/recoveries/*.md`, `hygiene/blockers/*.md` | **durable** | Append-only history that retro and recover read back in later runs. The managed `adev:gitignore` block keeps these three directories tracked while ignoring the rest of `hygiene/`. |
 | `.claude/scheduled_tasks.lock` | **transient** | Harness operational state. |
 | `.context-index/.execution-state.json` | **transient** | Current-run execution state. |
 | `.context-index/.context-preflight-ok` | **transient** | Per-session preflight flag (cleared by `hooks/session-start.sh`). |

@@ -12,8 +12,8 @@ node_modules/
 skills/*-workspace/
 skills/*/evals/
 
-# adev hygiene reports (generated, not committed)
-.context-index/hygiene/
+# adev review packets (generated, not committed); hygiene/ is handled by the
+# adev:gitignore block below, which keeps retros/recoveries/blockers tracked
 .context-index/packets/
 
 # Context-preflight session flag (ephemeral, cleared each session)
@@ -101,7 +101,13 @@ viz/dist/
 
 # >>> adev:gitignore >>>
 # hygiene reports (regenerated)
-.context-index/hygiene/
+.context-index/hygiene/*
+# retrospective history — read back by /adev:retro
+!.context-index/hygiene/retros/
+# recovery records — read back by /adev:recover and /adev:retro
+!.context-index/hygiene/recoveries/
+# blocker records — read back by /adev:retro
+!.context-index/hygiene/blockers/
 # review packets (regenerated)
 .context-index/packets/
 # session-tracking cursor

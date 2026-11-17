@@ -359,7 +359,10 @@ paired-marker `.gitignore` block bracketed by the sentinels:
 
 The block lists ephemeral adev artifacts that must never be committed —
 lifecycle state, hygiene reports, atomic-write temps, partial-artifact
-writes, the prototype workspace, and similar. The canonical path list
+writes, the prototype workspace, and similar. Under `hygiene/`, the
+history directories `retros/`, `recoveries/` and `blockers/` are kept
+tracked, because `/adev:retro` and `/adev:recover` read them back in
+later runs. The canonical path list
 lives in `lib/gitignore-paths.mjs` and is the single source of truth: the
 installer renders it verbatim, and a dogfood parity test
 (`tests/lib/gitignore-installer.test.mjs`) pins this repo's own
