@@ -95,11 +95,51 @@ Legal task state transitions and the events each one emits.
 
 > **Conditional loading:** Read `<ADEV_ROOT>/skills/implement/references/task-transitions.md` for the full instructions. Do not act on this section from the summary above.
 
-## Repo-Mode-Inside-Workspace Advisory
+### Repo-Mode-Inside-Workspace Advisory
 
 The one-line advisory printed when running repo-scoped inside a workspace.
 
-> **Conditional loading:** Read `<ADEV_ROOT>/skills/implement/references/repo-mode-advisory.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/implement/references/repo-mode-advisory.md` for the full instructions. Load it only when `detectWorkspace(cwd)` is non-null; it is not needed in a single repo.
+
+### Step 1.5: Infrastructure Preflight
+
+Runs only when the spec or plan declares infra_requirements.
+
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/implement/references/steps/step-1.5-infra-preflight.md` for the full instructions. Do not act on this section from the summary above.
+
+### Step 1.6: Progress Tracking (Claude Code)
+
+Harness-specific progress reporting during a long implement run.
+
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/implement/references/steps/step-1.6-progress-tracking.md` for the full instructions. Do not act on this section from the summary above.
+
+### Step 2: Per-Task Execution Loop
+
+The core loop: for each routed task, resolve its test depth, dispatch the implementer (tests first, under the TDD mandate), then run the two review stages.
+
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/implement/references/steps/step-2-per-task-loop.md` for the full instructions. Do not act on this section from the summary above.
+
+### Step 2.5: Parallel Group Execution
+
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/implement/references/parallel-mode.md` for the full Parallel Group Execution instructions.
+> Load it only when `--parallel` is passed; it is not needed on a serial run.
+
+### Step 2-post: Integration Gate
+
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/implement/references/integration-gate.md` for the full Integration Gate instructions.
+> Load it after every task of a full plan run has completed (skip under `--task <N>`). It selects the end-of-implement gates itself and skips silently when none apply.
+
+### Step 3: Final Review
+
+The whole-plan review that runs once every task has completed.
+
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/implement/references/steps/step-3-final-review.md` for the full instructions. Do not act on this section from the summary above.
+
+### Step 4: Completion
+
+Closing actions once the final review passes.
+
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/implement/references/steps/step-4-completion.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Step 5: Update Spec Status and Source Manifest
 

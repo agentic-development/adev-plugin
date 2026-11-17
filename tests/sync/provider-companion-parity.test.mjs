@@ -167,11 +167,11 @@ test("the pointer graph is a DAG rooted at SKILL.md, at most 3 hops deep", () =>
   // in the skill's surface references a companion, which a mutually-referencing
   // pair A<->B satisfies while being both cyclic and unreachable from the body.
   //
-  // The shipping tree sits exactly ON the ceiling — implement/SKILL.md ->
-  // repo-mode-advisory.md -> steps/step-2-per-task-loop.md -> batched-mode.md is
-  // 3 hops — so the next added hop violates the invariant. That is precisely why
-  // a guard is needed rather than an eyeball: the violation is one edit away and
-  // invisible in review.
+  // The ceiling is easy to reach without noticing: a chain such as
+  // SKILL.md -> companion -> steps/<step>.md -> <mode>.md is already 3 hops, so
+  // one more nested pointer violates the invariant. That is why a guard is
+  // needed rather than an eyeball: the violation is one edit away and invisible
+  // in review.
   const MAX_DEPTH = 3;
 
   const walk = (dir, out = []) => {

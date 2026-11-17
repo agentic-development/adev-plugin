@@ -9,10 +9,9 @@ import { resolveSkillPointer } from "../helpers.mjs";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 describe("implement SKILL.md — unified integration gate", () => {
-  // Search the whole instruction surface: Step 2-post's pointer itself moved
-  // out of SKILL.md into a companion when the body was split further. The
-  // resolve-from-the-pointer discipline below is unchanged and still catches a
-  // rename or a dropped pointer.
+  // Search the whole instruction surface (body plus companions), so the
+  // resolve-from-the-pointer discipline below catches a rename or a dropped
+  // pointer wherever the Step 2-post pointer lives.
   const skill = readSkillSurface("implement");
 
   // The Step 2-post body was extracted to a conditional-loading companion when
@@ -67,10 +66,9 @@ describe("implement SKILL.md — unified integration gate", () => {
 });
 
 describe("implement SKILL.md — Step 2-post merged gate source and severity", () => {
-  // Search the whole instruction surface: Step 2-post's pointer itself moved
-  // out of SKILL.md into a companion when the body was split further. The
-  // resolve-from-the-pointer discipline below is unchanged and still catches a
-  // rename or a dropped pointer.
+  // Search the whole instruction surface (body plus companions), so the
+  // resolve-from-the-pointer discipline below catches a rename or a dropped
+  // pointer wherever the Step 2-post pointer lives.
   const skill = readSkillSurface("implement");
 
   // Same extraction as the block above: Step 2-post's body now lives in a

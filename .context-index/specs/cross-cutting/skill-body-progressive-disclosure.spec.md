@@ -5,8 +5,8 @@ mode: cross-cutting
 kind: refactor
 status: validated
 created: 2026-08-19
-updated: 2026-09-13
-revision: 10
+updated: 2026-11-17
+revision: 11
 diff-source: "main..61064c9a — the implementation range (5 commits, 417 files). The branch has since gained the reconciliation and review-fix commits."
 source-manifest:
   sha: "9582bcd"
@@ -573,9 +573,9 @@ mapping each pass to its `--check` slug and its companion path.
 
 | Problem | Resolution |
 |---------|------------|
-| 1. 16 bodies over guidance | 0 over. Total 856,056 → 378,960 B (−55.7%); ~209,818 → ~92,883 est. tokens. (30 bodies at the baseline, 31 today — `bugfix-loop` was added afterward and is included in the current figure.) |
+| 1. 16 bodies over guidance | 0 over. Total 856,056 → 381,094 B (−55.5%); ~209,818 → ~93,405 est. tokens. (30 bodies at the baseline, 31 today — `bugfix-loop` was added afterward and is included in the current figure.) |
 | 2. Four bodies near the hard cap | Smallest headroom across all 31 is now 46,028 B (`eval`) |
-| 3. Multiplied cost | 477,096 fewer bytes enter the prefix per invocation, so the reduction compounds per turn |
+| 3. Multiplied cost | 474,962 fewer bytes enter the prefix per invocation, so the reduction compounds per turn |
 | 4. Invisible at authoring time | Both limits documented in `constitution.md` / `CLAUDE.md` and `docs/skill-reference.md`; guarded by `tests/skills/skill-size-cap.test.mjs` |
 | 5. Layout divergence | 28 companions moved to `references/` and `scripts/` |
 
@@ -760,9 +760,19 @@ Properties that held at every step, and must keep holding for any future split.
 
 7. **The pointer graph is a DAG rooted at each SKILL.md, at most 3 levels deep.**
    A companion may point at another companion — the shipped tree does, e.g.
-   `implement/SKILL.md` → `references/repo-mode-advisory.md` →
-   `references/steps/step-2-per-task-loop.md` → `references/batched-mode.md` — but
-   the graph must stay acyclic and reachable from the body.
+   `implement/SKILL.md` → `references/steps/step-2-per-task-loop.md` →
+   `references/batched-mode.md` — but the graph must stay acyclic and reachable
+   from the body.
+
+   A companion must not be the only route to sections it does not describe
+   (rev 11). The first split of `implement` extracted the whole
+   `## Repo-Mode-Inside-Workspace Advisory` H2 — which happened to contain Steps
+   1.5 through 4 as H3 children — so the body summarized the per-task loop, the
+   final review and completion as "the one-line advisory printed when running
+   repo-scoped inside a workspace". That breaks BEH-3: those steps lost their body
+   headings, and an agent outside a workspace had reason to skip the only pointer
+   that reached them. Each step now has its own heading and pointer in the body,
+   and `tests/skills/implement-step-pointers.test.mjs` pins it.
 
    BEH-7's reachability test does not imply this: a mutually-referencing pair
    A↔B satisfies "some file in that skill's surface references it" while being
@@ -990,7 +1000,7 @@ Describes the system after the refactor.
 - [ ] **The token saving is estimated, not measured.** Every figure here is bytes, or
       bytes divided by 4.08. The stored module heuristic warns byte proxies overstate
       savings by 2–2.5x, so these must not be quoted as a measured token or cost
-      reduction. What is established: 477,096 fewer bytes enter the context prefix per
+      reduction. What is established: 474,962 fewer bytes enter the context prefix per
       invocation. Settling it needs `adev cost summary --spec <s> --include-checkpoints`
       over one comparable lifecycle before and after — possible now that
       adev-plugin-882a.1 has landed, but not yet run.

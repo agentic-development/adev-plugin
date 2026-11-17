@@ -5,10 +5,10 @@ kind: skill
 status: validated
 risk_level: high
 milestone:
-revision: 11
+revision: 12
 charter-revision: 1
 created: 2026-08-17
-updated: 2026-08-19
+updated: 2026-11-17
 research-ref: .context-index/research/tdd-cycle-graduation-design-analysis.md
 depends-on:
   - .context-index/specs/features/implementation/review-provenance.spec.md
@@ -330,6 +330,36 @@ git ls-files --others --exclude-standard -z
   file is genuinely untracked at final-pass time whenever the implementer
   hasn't separately staged it.
 
+**Rev 12: the base is a worktree snapshot, not HEAD.** The union above
+assumes that an untracked file at final-pass time was created by the
+implementer. That premise fails whenever untracked files predate the task,
+and in practice they always do: session logs written by the post-commit hook,
+other specs' untracked lifecycle logs, editor droppings, uncommitted edits
+from earlier work. Against `HEAD`, each one counts as an undeclared `A`, so
+the leg held on every final pass. A consumer project recorded 14 of 14 final
+passes floored by `scope-mismatch`.
+
+The mechanism is now one primitive applied twice. `snapshotWorkingTree()`
+(`adev implement snapshot-base`) copies the real index into a throwaway index,
+runs `git add -A` there, and writes the result as a tree object. It never
+touches the real index, the working tree or HEAD. The orchestrator captures
+one at task dispatch and passes it as `--base-sha`. The final pass takes a
+second snapshot and diffs the two with
+`git diff-tree -r --no-renames --name-status -z <base>^{tree} <now>`. That
+yields the same `A`/`M`/`D`/`T` records, with `--no-renames` intact, but only
+for what changed during the task. A pre-existing untracked file the task
+modifies or deletes still surfaces as `M` or `D`, and so still holds the leg.
+
+With a commit as the base, the result equals the rev-11 union exactly, since
+the current snapshot holds tracked edits and untracked files alike. Callers
+that still pass `HEAD` keep the previous behaviour. The base is a git object id
+computed by the CLI, never a caller-supplied file list, so the "no
+self-reported touched files" rule above stands.
+
+This also closes a gap in (K): a current-spec log that was untracked at
+dispatch and appended during the task now reports `M` against the snapshot.
+That is exactly the status (K) excludes, where previously it reported `A`.
+
 This is a departure from `lib/cli/boundaries.mjs`'s own default mode
 (`--diff-filter=ACMR`, renames left on), which is correct for *that*
 module's purpose — deciding whether a boundary rule applies to a changed
@@ -615,6 +645,10 @@ Stage 2's diff range already is informally today. It is not stamped into any
 lifecycle event or execution-state file, and nothing downstream may assume it
 survives past that single dispatch.
 
+**Rev 12:** the captured value is `adev implement snapshot-base` (a tree id
+recording the worktree at dispatch), not `git rev-parse HEAD`; see (A). It is
+still threaded through the single dispatch and never persisted.
+
 ### J. A new canonical event: `review_depth_resolved`
 
 An earlier revision claimed resolution advisories persist via `plan_task`'s
@@ -772,7 +806,8 @@ Output Contract A and C must be revised to match before implementation.
 - [ ] An explicit `--tier quick` does **not** force `quick` on a task that fails predicate (B); a test asserts a task with e.g. `novelty: 0.4` resolves `full` even under a run-wide `--tier quick`.
 - [ ] A task whose provisional-pass depth was `quick` but whose actual diff touches a file outside its declared additive-only set resolves `full` on the final pass; a test constructs exactly this divergence.
 - [ ] A task whose actual diff modifies (not adds) a file that predicate B declared additive resolves `full` on the final pass, even though every touched file is a **member** of the declared set; a test constructs this case specifically (change-type `M` on a declared-additive path) to prove membership alone is insufficient.
-- [ ] `adev implement resolve-depth`'s final pass computes its touched-file set itself as the union of `git diff --no-renames --name-status -z <base-sha>` (tracked changes, status-tagged `A`/`M`/`D`/`T`) and `git ls-files --others --exclude-standard -z` (untracked files, treated as status `A`) against the working tree (single ref, no head SHA); a test asserts there is no code path that accepts a caller-supplied file list as the primary source for the `scope-mismatch` leg.
+- [ ] `adev implement resolve-depth`'s final pass computes its touched-file set itself, as `git diff-tree -r --no-renames --name-status -z` from the base's tree to a fresh worktree snapshot (status-tagged `A`/`M`/`D`/`T`, untracked files included). With a commit base this equals the union of `git diff --no-renames --name-status -z <base-sha>` and `git ls-files --others --exclude-standard -z` (untracked as `A`). A test asserts there is no code path that accepts a caller-supplied file list as the primary source for the `scope-mismatch` leg (rev 12).
+- [ ] With the dispatch-time `adev implement snapshot-base` tree as the base, files that were untracked or modified before the task and left untouched are not in the touched-file set, while a pre-existing untracked file the task modifies or deletes still reports `M`/`D` and holds the leg; `tests/lib/implement/review-depth-task-snapshot.test.mjs` covers each case (rev 12).
 - [ ] A test constructs a task that deletes, or symlink-swaps, a tracked file outside the declared additive-only set during a nominally-additive task, and asserts the `scope-mismatch` leg still fires — proving deletions and type-changes are visible to the leg, not just additions/modifications.
 - [ ] A test constructs a task that deletes an out-of-scope tracked file and adds a new in-scope file with similar-enough content that `git diff` would pair them as a rename once staged, stages both (`git add`), and asserts the `scope-mismatch` leg still fires on the out-of-scope deletion — proving `--no-renames` prevents the collapse rather than merely widening the filter.
 - [ ] A test constructs a task where the implementer creates a wholly new, never-staged file outside the declared additive-only set, and asserts the `scope-mismatch` leg still fires — proving the untracked-file half of the union is load-bearing, not decorative.

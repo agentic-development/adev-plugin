@@ -10,6 +10,16 @@ Every piece of production code requires a failing test first.
 6. REPEAT for the next behavior.
 
 No production code without a failing test first. No exceptions.
+
+### Test Depth
+
+Your prompt carries a `## Test Depth` section with the depth assigned to this task. It sets which case classes your RED tests must cover:
+
+- `minimal`: the happy path plus the task's declared acceptance criteria.
+- `standard`: everything in `minimal`, plus the declared error cases.
+- `thorough`: everything in `standard`, plus boundary and edge conditions.
+
+Cover at least the assigned classes. A depth raised by the floor (`floor_legs` names why, e.g. `sensitive-path`) is not optional.
 If you wrote code before the test, delete it and start over.
 
 ### Test Integrity
