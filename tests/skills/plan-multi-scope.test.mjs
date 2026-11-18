@@ -170,8 +170,8 @@ describe("adev:plan SKILL.md — multi-scope mode detection and per-mode flows",
   it("SKILL.md next_action table includes Task placeholder token", () => {
     const c = readFullSkill();
     assert.ok(
-      c.includes("/adev:implement") && c.includes("RED-GREEN-REFACTOR"),
-      "Task next_action must reference /adev:implement and RED-GREEN-REFACTOR"
+      c.includes('"Run /adev:implement to implement this Task"'),
+      "Task next_action must reference /adev:implement without naming a test discipline the project may not use"
     );
   });
 

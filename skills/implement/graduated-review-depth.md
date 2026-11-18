@@ -13,7 +13,7 @@ adev implement resolve-depth --spec <spec-path> --plan <plan-path> --task-id <ta
 
 Pass `--in-batch` when this task is part of a batch resolved earlier in Step 2
 (`adev implement batches`) — batch membership is a static, plan-level fact known
-before RED begins, so it is available on the provisional pass too.
+before the implementer is dispatched, so it is available on the provisional pass too.
 
 The printed `depth` briefs the implementer (whether elevated scrutiny should be
 expected) and decides nothing about which reviewer(s) dispatch yet — that
@@ -39,7 +39,7 @@ final-pass depth resolution; it is not persisted anywhere and does not survive
 past this single dispatch. A bare `git rev-parse HEAD` also works, but then
 every file that was untracked before the task counts as a task addition.
 
-## 3. Final pass (Step 2f-pre, after GREEN, against the real diff)
+## 3. Final pass (Step 2f-pre, after the implementer reports, against the real diff)
 
 ```bash
 adev implement resolve-depth --spec <spec-path> --plan <plan-path> --task-id <task-id> \

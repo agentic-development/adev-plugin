@@ -44,7 +44,7 @@ Or use skills directly:
 
 ```
 /adev:brainstorm            # Explore a feature idea
-/adev:implement             # Build from a plan with TDD
+/adev:implement             # Build from a plan (TDD by default)
 /adev:debug                 # Fix a bug with full context
 ```
 
@@ -63,7 +63,7 @@ Skills are slash commands that guide your AI assistant through each phase of dev
 
 ### Building Features
 
-The core workflow: brainstorm an idea, write a spec, review it, plan the tasks, implement with TDD, then validate.
+The core workflow: brainstorm an idea, write a spec, review it, plan the tasks, implement (TDD by default), then validate.
 
 | Skill | What It Does |
 |-------|-------------|
@@ -74,7 +74,7 @@ The core workflow: brainstorm an idea, write a spec, review it, plan the tasks, 
 | `/adev:plan` | Decompose at any scope: spec→tasks (default), or `--feature`, `--release`, `--milestone`, `--epic` |
 | `/adev:route` | Score tasks: which can run autonomously vs. need human review |
 | `/adev:build` | Run the full pipeline end-to-end — single spec (`--spec`), all specs in a charter (`--charter`), or a milestone phase (`--phase`) |
-| `/adev:implement` | Execute tasks with TDD — each in a fresh subagent |
+| `/adev:implement` | Execute tasks (TDD by default) — each in a fresh subagent |
 | `/adev:write-test` | Standalone TDD test authoring with gaming detection |
 | `/adev:validate` | 13-check verification against specs, constitution, and ADRs |
 | `/adev:deploy` | Run a structured deployment pipeline defined in `deploy.yaml` |
@@ -141,7 +141,7 @@ Skills enforce gates automatically:
 
 - **Brainstorm before implement** — no code without a charter or spec
 - **Review before plan** — specs must pass architecture review first
-- **TDD** — implementation follows RED-GREEN-REFACTOR
+- **Test discipline** — implementation follows RED-GREEN-REFACTOR by default; `implementation_mode` can relax it to tests-required or agent judgment
 - **Constitution compliance** — every phase checks against your principles
 
 ### Specialist Routing

@@ -50,7 +50,7 @@ After fixing, invoke `/adev:implement --task <N>` for each affected task,
 or make targeted fixes and run the quality gates to verify no regressions.
 ```
 
-The implement skill's internal logic handles the scoped re-implementation. The retry subagent gets the full implement SKILL.md via the Skill tool, so it follows all protocols (TDD, review, source manifest update).
+The implement skill's internal logic handles the scoped re-implementation. The retry subagent gets the full implement SKILL.md via the Skill tool, so it follows all protocols (the project's test discipline, review, source manifest update).
 
 #### 3. Re-dispatch Validate
 

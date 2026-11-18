@@ -10,7 +10,7 @@ The build phase turns reviewed specifications into working code. You decompose s
 
 **Skill:** `/adev:plan`
 
-**What it does:** Decomposes a reviewed Live Spec into an ordered task list ready for `/adev:implement`. Every task follows TDD (write failing test, verify fail, implement, verify pass, commit) and traces back to a charter capability. The plan includes context packets, parallelization hints, and specialist routing annotations.
+**What it does:** Decomposes a reviewed Live Spec into an ordered task list ready for `/adev:implement`. Every task carries the test steps of the project's [`implementation_mode`](configuration.md#implementation_mode) (under the default `tdd`: write failing test, verify fail, implement, verify pass, commit) and traces back to a charter capability. The plan includes context packets, parallelization hints, and specialist routing annotations.
 
 **When to use it:** After specs pass review, as the first step in the build phase. Planning bridges the gap between "what to build" (the spec) and "how to build it" (the task list).
 
@@ -54,7 +54,7 @@ See the [Skill Reference](skill-reference.md) for full details on the scoring ma
 
 **What it does:** TDD test authoring specialist. Authors failing tests (RED phase), produces immutable handoff blocks, and detects specification gaming. Can work from a Live Spec, a source file's interface, or a free-form behavioral description.
 
-**When to use it:** Before implementation (to write failing tests first), or standalone when you need test coverage for existing code. The RED phase of TDD ensures tests define expected behavior before any code is written.
+**When to use it:** Before implementation (to write failing tests first), or standalone when you need test coverage for existing code. It is a test-first tool. `/adev:implement` does not dispatch it by default, because the implementer writes its own tests.
 
 **Prerequisites:** A spec defining expected behavior, or a source file to test against.
 
@@ -72,7 +72,7 @@ See the [Skill Reference](skill-reference.md) for full details on invocation mod
 
 **Skill:** `/adev:implement`
 
-**What it does:** Executes an implementation plan by dispatching a fresh subagent per task, routing to domain specialists when applicable, enforcing TDD (RED-GREEN-REFACTOR), and running 2-stage review (spec compliance then code quality) after each task. Supports resuming interrupted implementations and single-task re-runs.
+**What it does:** Executes an implementation plan by dispatching a fresh subagent per task, routing to domain specialists when applicable, applying the test discipline of the project's [`implementation_mode`](configuration.md#implementation_mode) (TDD by default), and running 2-stage review (spec compliance then code quality) after each task. Supports resuming interrupted implementations and single-task re-runs.
 
 **When to use it:** After planning (and optionally routing). This is the core execution engine — it turns plan tasks into working, tested, reviewed code.
 
@@ -86,19 +86,19 @@ See the [Skill Reference](skill-reference.md) for full details on invocation mod
 
 You can re-run a single task with `--task <N>` or preview routing decisions with `--dry-run`.
 
-**Output:** Implemented code with passing tests, commit trailers linking back to specs and tasks, and updated plan checkboxes showing completion status.
+**Output:** Implemented code with passing tests, commit trailers linking back to specs and tasks, and a `plan_task` completion event per task in the lifecycle log. The plan file itself is not modified.
 
 See the [Skill Reference](skill-reference.md) for full details on the TDD mandate, review stages, and specialist routing.
 
-### TDD Workflow
+### Test Discipline
 
-The implement skill enforces a strict TDD cycle for every task:
+What the implementer is told about tests depends on the project's [`implementation_mode`](configuration.md#implementation_mode):
 
-1. **RED** — Write a failing test that defines the expected behavior
-2. **GREEN** — Write the minimum code to make the test pass
-3. **REFACTOR** — Clean up without changing behavior, keeping tests green
+- **`tdd`** (the default): RED-GREEN-REFACTOR for every task. Write a failing test, write the minimum code to pass it, then clean up while keeping the tests green. No production code is written without a failing test first.
+- **`test-required`**: tests that cover the change are required, in any order. Stage 2 review reports missing coverage as an Important finding.
+- **`agent-default`**: the implementer decides whether a change needs tests.
 
-This cycle is non-negotiable. The agent will not skip writing tests first, and it will not loosen test assertions to make them pass. If a test fails, the code is fixed — not the test.
+In every mode the agent does not loosen assertions to make a test pass. If a test fails, the code is fixed — not the test.
 
 ### Parallel Execution (`--parallel`)
 
@@ -149,7 +149,7 @@ See the [Skill Reference](skill-reference.md) for full details on pipeline steps
 
 Before moving to the validation phase, verify:
 
-- All plan tasks are implemented (checkboxes marked in the plan file)
+- All plan tasks are implemented (`/adev:status` shows each task done)
 - All tests pass (`npm test` or your project's test command)
 - All quality gates are green
 - Code has been committed with proper spec and plan-task trailers

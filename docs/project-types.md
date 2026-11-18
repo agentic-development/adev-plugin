@@ -48,11 +48,11 @@ Regardless of tech stack, every adev project follows the same structural pattern
 
 1. **Constitution captures project identity.** The constitution describes what the project is, what principles it follows, and what coding standards apply. For a React app, principles might focus on component isolation and accessibility. For a machine learning project, they might focus on reproducibility and evaluation metrics. The content changes; the structure stays the same.
 
-2. **Manifest declares platform and quality gates.** The `gates.test` field always points to whatever runs your tests — `npm test`, `pytest`, `dbt test`, `go test`, `make test`. The `modules` list always maps your project's directory structure to logical units adev can reason about.
+2. **Manifest declares the platform; `governance/gates.yaml` declares the quality gates.** A gate's argv `command` is whatever runs your tests — `npm test`, `pytest`, `dbt test`, `go test`, `make test`. The `modules` list always maps your project's directory structure to logical units adev can reason about.
 
 3. **Specs use behavioral contracts.** The When/Then format works for any domain. For a frontend component: "When the user clicks Submit, then the form validates and shows a success message." For a data model: "When the pipeline runs, then the mart table has one row per customer." The pattern transfers.
 
-4. **Plans decompose into TDD tasks.** Every plan task follows RED-GREEN-REFACTOR regardless of project type. Write a failing test, make it pass, clean up. The test runner and assertion style change; the discipline does not.
+4. **Plans decompose into tasks with test steps.** The steps follow the project's `implementation_mode`, whatever the project type: under the default `tdd`, write a failing test, make it pass, clean up. The test runner and assertion style change with the project type; the discipline is set by the mode.
 
 ### Adapting for Unlisted Project Types
 
