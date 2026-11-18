@@ -42,7 +42,7 @@ operator explicitly selected it at `/adev:init` Step 7c/7d.
 
 ### Fields
 
-A gate entry carries nine fields, plus `group` on the e2e tier only:
+A gate entry carries ten fields, plus `group` on the e2e tier only:
 
 | Field | Values | Default |
 |---|---|---|
@@ -55,6 +55,7 @@ A gate entry carries nine fields, plus `group` on the e2e tier only:
 | `required` | `true` \| `false` | `true` |
 | `severity` | `error` \| `warning` | tier default (see below) |
 | `triggers` | lifecycle events (`post-task`, `post-implement`, `pre-merge`) — see [When gates run](#when-gates-run) | — |
+| `paths` | project-relative globs — the gate runs only when the change touches a matching file. See [Path-scoped gates](#path-scoped-gates) | — (runs on every change) |
 | `group` | e2e tier only: `smoke` \| `full` — smoke runs first | — |
 
 ```yaml
@@ -72,7 +73,7 @@ gates:
       - post-implement
 ```
 
-`lib/domains/merge-gates.mjs` narrows each merged entry to `id`, `command`, `description`, `severity`, `tier`, and `triggers`. The remaining fields are read from the raw `gates.yaml` entry by the consumer — [`/adev:validate`](skill-reference.md) Check 1 — so `required` governs only where the raw entry is visible. Domain starter gates use `description` rather than `name`.
+`lib/domains/merge-gates.mjs` narrows each merged entry to `id`, `command`, `description`, `severity`, `tier`, `triggers`, and `paths`. The remaining fields are read from the raw `gates.yaml` entry by the consumer — [`/adev:validate`](skill-reference.md) Check 1 — so `required` governs only where the raw entry is visible. Domain starter gates use `description` rather than `name`.
 
 ### When gates run
 
@@ -83,7 +84,26 @@ gates:
 | (none declared) | `/adev:implement` Step 2-post, `tier: integration` only | once, after the last task |
 | any, or none | `/adev:validate` Check 1 | every gate, by tier; triggers are not consulted |
 
+In every row, a gate that declares `paths` is skipped when the change touches none of them.
+
 To keep a slow suite out of the per-task loop, declare it `triggers: [post-implement]`. A gate that declares both `post-task` and `post-implement` is not re-run at Step 2-post after a serial or batched run, since the last task's Step 2h already ran it against the same tree. After `--parallel` it is re-run, because no per-task run has seen the merged result. The `e2e` tier never runs inside `/adev:implement`.
+
+### Path-scoped gates
+
+A gate with `paths` runs only when the change touches a file matching one of its globs (`**` crosses directories, `*` does not):
+
+```yaml
+  - id: strategy-fixture
+    command: [dbt, test]
+    tier: integration
+    paths: ["models/**", "macros/**"]
+```
+
+The change is what `adev domain load-gates --changed-since <base>` diffs: committed, uncommitted and untracked files since the base, deletions included. `/adev:validate` uses the merge base with the default branch, `/adev:implement` Step 2h the tree captured before the task, and Step 2-post the merge base. Each gate in the output carries `applies: true|false`. A gate that does not apply keeps its row and is recorded as `skip` with a `skip_reason`, never left out. If the base cannot be read (`CHANGED_BASE_UNRESOLVED`), every gate applies.
+
+A `skip` never satisfies a transition's `required_gates`, so do not list a path-scoped gate there. A malformed `paths` value (empty, absolute, containing `../`, not a list of strings) is dropped with `INVALID_GATE_PATHS` and the gate runs on every change.
+
+**From manifest test strategies.** A `test_strategies[]` entry in `manifest.yaml` that declares a `command` becomes a `strategy-<strategy_id>` gate with that entry's `command`, `tier` and `paths` when you run `adev governance materialize --registry gates`. Like every other gate, it runs only once it has a row in `gates.yaml`; until then `adev gate doctor` reports `gate-doctor/strategy-gate-not-adopted`. A strategy is not adopted again if `gates.yaml` already has its `strategy-<id>` row or a gate with the same argv. Adopted rows are stamped `source: project`, since the manifest is a project file.
 
 ### `command` is argv-only
 
