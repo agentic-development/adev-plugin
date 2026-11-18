@@ -8,7 +8,7 @@ status: validated
 risk_level: medium
 revision: 5
 created: 2026-08-14
-updated: 2026-08-16
+updated: 2026-11-17
 tracker-ref: adev-plugin-8ekd.1
 source-manifest:
   sha: "bf3de1d"
@@ -178,7 +178,7 @@ drift_detected: true
 | `validate.yaml` | Explicit single-source (unchanged) | 7 checks; Checks 8 and 9 flip to `kind: deterministic-check` |
 | `review.yaml` | **Explicit single-source** | 3 reviewers named in full, each with `enabled: true\|false` |
 | `diagnostics.yaml` | **Explicit single-source** | 4 entries named in full, bundled `plugin:` runners still referenced by path |
-| `gates.yaml` | **Explicit single-source** | Merged result materialized; `transitions` populated |
+| `gates.yaml` | **Explicit single-source** | Merged result materialized; `transitions` populated. Materialize also adopts manifest `test_strategies[]` commands as path-scoped `strategy-<id>` rows (`features/test-strategies/manifest-schema-extension.spec.md` rev 2); like the domain overlay, they are composed only on that path |
 | `boundaries.yaml` | unchanged role | Populated from the constitution's mechanical anti-patterns |
 
 ### Improvements

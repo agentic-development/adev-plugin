@@ -13,16 +13,18 @@ When heuristics are present (output is not `__NONE__`), include them in the vali
 **Domain-Aware Gate Loading:** Resolve the active domain and load domain-specific gates before running checks via the CLI:
 
 ```bash
-adev domain load-gates --module <module-slug> [--charter <charter-path>]
+adev domain load-gates --module <module-slug> [--charter <charter-path>] --changed-since merge-base
 ```
 
-The verb resolves the active domain (charter frontmatter → manifest.modules[].domain → manifest.project.domain → 'software'), loads `templates/domains/<domain>/gates.yaml`, and merges `.context-index/governance/gates.yaml` on top (governance wins on `id` conflict). Stdout is a single JSON object:
+`--changed-since merge-base` marks every gate `applies: true|false`. A gate that declares `paths` (for example a `strategy-<id>` gate adopted from manifest `test_strategies[]`) applies only when a file changed since the merge base with the default branch, committed or not, matches one of them; every other gate applies. A `CHANGED_BASE_UNRESOLVED` warning means the change set could not be read and every gate is marked as applying.
+
+The verb resolves the active domain (charter frontmatter → manifest.modules[].domain → manifest.project.domain → 'software') for reporting, and loads the project's materialized `.context-index/governance/gates.yaml`. Stdout is a single JSON object:
 
 ```json
 { "domain": { "resolved_domain": "...", "source_level": "..." }, "gates": [...], "warnings": [...] }
 ```
 
-Log any warnings from the `warnings` field. The `gates` list is the resolved gate set for Check 1. When Check 1 resolves gates, use this merged list instead of reading `governance/gates.yaml` directly — domain gates are already merged in. Gate commands continue to execute via `execFile` (no shell interpolation).
+Log any warnings from the `warnings` field. The `gates` list is the resolved gate set for Check 1. When Check 1 resolves gates, use this list instead of reading `governance/gates.yaml` directly. Gate commands continue to execute via `execFile` (no shell interpolation).
 
 Before running any check, call `loadValidateConfig(repoRoot)` from `lib/governance/validate-config.mjs`. The loader follows the **single-source model** (per `validate-config-single-source.spec.md`):
 

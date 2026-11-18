@@ -156,8 +156,9 @@ test_policy:
 # Declare which test strategies apply to this project.
 # Strategies customize the test rules /adev:plan, /adev:implement and
 # /adev:write-test give for different domains (migrations, IaC, data
-# pipelines, etc.). `paths` assigns a strategy to a task; `command` and `tier`
-# are not executed by adev — declare a gate in governance/gates.yaml to run one.
+# pipelines, etc.). `paths` assigns a strategy to a task. `command` and `tier`
+# become a `strategy-<id>` gate scoped to `paths` when you run
+# `adev governance materialize --registry gates`; it runs once that row exists.
 # If omitted, all tasks default to the 'unit' strategy.
 # ============================================================================
 

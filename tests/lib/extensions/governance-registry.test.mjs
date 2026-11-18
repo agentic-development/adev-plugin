@@ -114,6 +114,7 @@ const MAXIMAL_ENTRIES = {
     description: 'Lints the repository',
     severity: 'error',
     tier: 1,
+    paths: ['src/**'],
     enabled: true,
     disabled_reason: 'not-disabled',
   },
