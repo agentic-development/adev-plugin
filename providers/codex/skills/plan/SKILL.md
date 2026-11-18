@@ -1,11 +1,11 @@
 ---
 name: adev:plan
-description: "Decompose reviewed Live Specs into ordered implementation tasks with TDD expectations and context routing. Use to break specs into actionable tasks. In Codex, invoke with $adev:plan"
+description: "Decompose reviewed Live Specs into ordered implementation tasks with test expectations (per the project's implementation_mode) and context routing. Use to break specs into actionable tasks. In Codex, invoke with $adev:plan"
 ---
 
 # Plan Implementation
 
-Decompose a reviewed Live Spec into an ordered task list ready for `/adev:implement`. Every task follows TDD (write failing test, verify fail, implement, verify pass, commit) and traces back to a charter capability.
+Decompose a reviewed Live Spec into an ordered task list ready for `/adev:implement`. Every task carries the test discipline of the project's `implementation_mode` (under the default `tdd`: write failing test, verify fail, implement, verify pass, commit) and traces back to a charter capability.
 
 **Announce at start:** "I'm using the adev:plan skill to create the implementation plan."
 
@@ -124,7 +124,7 @@ These tags tell `/adev:implement` which subagent to dispatch for each task.
 
 ## Step 5: Write the Plan
 
-Emits the ordered task list with TDD expectations and per-task context routing.
+Emits the ordered task list with each task's test steps for the resolved `implementation_mode` and per-task context routing.
 
 > **Conditional loading:** Read `<ADEV_ROOT>/skills/plan/references/steps/step-5-write-the-plan.md` for the full instructions. Do not act on this section from the summary above.
 

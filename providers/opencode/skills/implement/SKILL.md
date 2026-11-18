@@ -1,11 +1,11 @@
 ---
 name: adev:implement
-description: "Execute implementation plans using specialist-routed subagents with TDD enforcement and 2-stage review per task. Use after planning to begin development. In OpenCode, invoke with skill({ name: 'adev:implement' })"
+description: "Execute implementation plans using specialist-routed subagents, the project's test discipline (TDD by default, per implementation_mode), and 2-stage review per task. Use after planning to begin development. In OpenCode, invoke with skill({ name: 'adev:implement' })"
 ---
 
 # Implement Plan
 
-Execute an implementation plan by dispatching a fresh subagent per task, routing to domain specialists when applicable, enforcing TDD, and running 2-stage review (spec compliance then code quality) after each task.
+Execute an implementation plan by dispatching a fresh subagent per task, routing to domain specialists when applicable, applying the test discipline of the project's `implementation_mode` (TDD by default), and running 2-stage review (spec compliance then code quality) after each task.
 
 ### Dispatch Turn Discipline
 
@@ -115,7 +115,7 @@ Harness-specific progress reporting during a long implement run.
 
 ### Step 2: Per-Task Execution Loop
 
-The core loop: for each routed task, resolve its test depth, dispatch the implementer (tests first, under the TDD mandate), then run the two review stages.
+The core loop: for each routed task, resolve its test depth (except under `agent-default`), dispatch the implementer under the test discipline of the resolved `implementation_mode`, then run the two review stages.
 
 > **Conditional loading:** Read `<ADEV_ROOT>/skills/implement/references/steps/step-2-per-task-loop.md` for the full instructions. Do not act on this section from the summary above.
 
@@ -180,7 +180,7 @@ The completeness bar a feature must clear before implement may report done.
 - Start code quality review before spec compliance passes (wrong order)
 - Move to the next task while either review has open issues
 - Re-dispatch a BLOCKED subagent without changing something
-- Skip TDD for any task (RED-GREEN-REFACTOR, no exceptions)
+- Skip the test discipline of the resolved `implementation_mode` for any task (under `tdd`: RED-GREEN-REFACTOR, no exceptions)
 - Loosen a test assertion to make it pass (fix the code, not the test)
 - Add conditional skip logic to tests (`if visible`, `try/catch`, `>= 0`)
 - Change a test without first investigating the actual behavior (screenshot, DOM, logs)

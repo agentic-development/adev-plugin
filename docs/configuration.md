@@ -124,6 +124,24 @@ gates:
   test: "npm test"
 ```
 
+### implementation_mode
+
+How `/adev:plan` and `/adev:implement` treat tests. Written by `/adev:init`; check the value with `adev implementation-mode resolve`.
+
+| Value | Plan step list | Implementer is told | Test depth | Stage 2 review checks |
+|---|---|---|---|---|
+| `tdd` (default) | write failing test → verify fail → implement → verify pass → commit | RED-GREEN-REFACTOR, no production code without a failing test | resolved per task | test-first evidence |
+| `test-required` | implement → write or extend tests → verify pass → commit | tests must cover the change, any order | resolved per task | tests cover the change (missing coverage is Important) |
+| `agent-default` | implement → verify → commit (`**Tests:**` optional) | add tests where judgment says they are needed | not resolved, so the sensitive-path and risk-level floors do not apply | only that added or changed tests are meaningful |
+
+The test-integrity rules (investigate before changing an assertion, keep matchers strict, no conditional skips, fix the code rather than the test) and the `gaming-gate` hook apply in every mode.
+
+Plans record the mode in their header. When the project's mode differs from the one a plan was written for, including plans written before modes existed (those were written as TDD), `/adev:implement` tells the implementer that the project's mode supersedes the plan's step order.
+
+```yaml
+implementation_mode: agent-default
+```
+
 ### test_policy (test depth & granularity)
 
 Controls the test depth policy: how test suites map onto units of change (**granularity**,

@@ -20,8 +20,8 @@ Log any warnings from the `warnings` field.
 
 Before writing any tests, resolve the test strategy for this task:
 
-1. Read the task's `Strategy` field from the plan (set by `/adev:plan`'s Strategy Assignment step).
-2. Call `getStrategyProfile(strategyId, profilesDir)` from `lib/test-strategies/profiles.mjs` to load the matching strategy profile.
+1. Resolve the strategy and its profile file via the CLI. In a plan task, run `adev test-policy strategy --plan <plan-path> --task-id <task-id>`; it uses the task's `**Strategy:**` line when the plan recorded one. For a standalone run, use `adev test-policy strategy --files <comma-separated paths> [--spec <spec-path>]`. When dispatched by `/adev:implement` with a `strategy_id` already given, use that value and skip the call.
+2. Read the profile file at the `profile_path` it printed. Surface any `warnings` (an unknown strategy falls back to `unit`).
 3. If the profile loads successfully, use its rules for the remainder of this skill:
    - `red_exit_condition` replaces the hardcoded "test runner fails for behavioral reasons" check in RED State Verification
    - `gaming_blockers` replaces the 9 canonical blocking patterns in Gaming Violation Detection (strategy-specific patterns)

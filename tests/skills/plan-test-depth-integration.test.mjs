@@ -8,7 +8,10 @@ const skill = readSkillSurface("plan");
 test("plan SKILL.md documents granularity-driven Tests: field emission (+2 more contract assertions)", () => {
   // plan SKILL.md documents granularity-driven Tests: field emission
   assert.match(skill, /### Granularity Assignment/);
-  assert.match(skill, /resolveGranularity/);
+  // Resolved through the CLI verb that wraps resolveGranularity(), not a fenced
+  // `import` the agent cannot execute.
+  assert.match(skill, /adev test-policy show/);
+  assert.doesNotMatch(skill, /import \{ resolveGranularity \}/);
 
   // plan SKILL.md still mandates a **Files:** block on every emitted task (Behavior 2)
   assert.match(skill, /every task .*carries its own \*\*Files:\*\* block/i);

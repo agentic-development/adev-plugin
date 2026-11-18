@@ -118,19 +118,32 @@ Build the implementer subagent prompt with these sections in order:
 5. **Spec excerpt.** The acceptance criteria from the Live Spec that this task addresses.
 5b. **Shared Test Helper Inventory.** The `## Shared Test Helper Inventory` section assembled in step 2a item 7, verbatim, when it is non-empty. Omit the section entirely when the inventory is empty. This is what stops a contextless implementer from re-deriving fixtures the project already has.
 6. **Scope discipline.** Only make changes directly required by the task. Do not refactor surrounding code, add abstractions, create helper files, or introduce patterns unless the task explicitly requires it. If you notice improvements outside the task scope, note them in your Concerns section but do not implement them. **Cross-repo isolation constraint (workspace mode):** When operating inside a workspace, do NOT modify files in sibling repos. Cross-repo reference context is read-only — it informs your implementation but all changes must be confined to the current repo. If a task requires changes in a sibling repo, report it as NEEDS_CONTEXT with a note identifying the sibling repo and required changes.
-7. **TDD mandate.** This section is non-negotiable. Include the full content of `<ADEV_ROOT>/skills/implement/references/tdd-mandate.md`.
+7. **Test discipline.** Chosen by the implementation mode resolved in Step 1. Include the full content of the file for that mode:
+
+   | Mode | Include |
+   |---|---|
+   | `tdd` | `<ADEV_ROOT>/skills/implement/references/tdd-mandate.md` |
+   | `test-required` | `<ADEV_ROOT>/skills/implement/references/test-required-mandate.md` |
+   | `agent-default` | `<ADEV_ROOT>/skills/implement/references/agent-default-mandate.md` |
+
+   Then include `<ADEV_ROOT>/skills/implement/references/test-integrity.md` in every mode. It governs how existing and new tests may be changed, not whether or when tests are written, so it is not relaxed by `test-required` or `agent-default`.
+
+   **Plan written under another mode:** the task text from item 3 carries the step list of the mode recorded in the plan header. If that mode differs from the resolved one, or the header has no `Implementation mode` line (older plans were written as TDD), add this line to the section: "This project's implementation mode is `<resolved-mode>`. Its test discipline above supersedes the task's step order." Without it, the pasted plan steps would reintroduce the order the project opted out of.
 
    **Write-test subagent dispatch:** When dispatching write-test subagents, set `ADEV_DISPATCHED_BY=implement` in the subagent environment so write-test can detect dispatch mode and skip its own preflight (implement already verified infrastructure).
 
-   **Domain-Aware Test Config:** Load domain test config for test framework detection and gaming thresholds via the CLI:
+   **Test strategy and domain test config (every mode):** Resolve the task's test strategy and load the domain test config via the CLI:
 
    ```bash
+   adev test-policy strategy --plan <plan-path> --task-id <task-id>
    adev domain load-test-config --module <module-slug> [--charter <charter-path>]
    ```
 
-   Stdout is a single JSON object `{ domain, config, warnings }` where `config` contains `permitted_tools`, `skip_patterns`, and `max_test_file_size`. Pass `config.permitted_tools` to the write-test subagent for test framework detection. Pass `config.skip_patterns` for domain-specific skipped test detection.
+   The first prints `{ strategy_id, source, confidence, profile_path, warnings }`. It uses the task's `**Strategy:**` line when the plan recorded one, and otherwise the spec, manifest and path-detection chain. The second prints `{ domain, config, warnings }`, where `config` holds `permitted_tools`, `skip_patterns` and `max_test_file_size`.
 
-   **Test Depth Resolution (every task):** Before composing the implementer prompt, resolve the task's assigned test depth via the CLI. Do this for every task, not only when a write-test subagent is dispatched: the implementer writes the RED tests itself under the TDD mandate, so it is the one that needs the depth.
+   Add both to the implementer prompt as a `## Test Strategy: <strategy_id>` section: the body of the file at `profile_path` (its `assertion_rules`, `seed_data_rule`, `gaming_blockers` and `permitted_tools`), then the domain `permitted_tools`, `skip_patterns` (patterns that count as skipped tests) and `max_test_file_size`. Under `tdd`, also give the profile's `red_exit_condition` and `green_exit_condition`. Under the other modes, leave both out: there is no RED phase. The implementer writes the tests, so it is the agent these rules must reach. When a write-test subagent is dispatched, pass it the same `strategy_id` and `config` values.
+
+   **Test Depth Resolution (`tdd` and `test-required`):** Before composing the implementer prompt, resolve the task's assigned test depth via the CLI. Do this for every task under these two modes, not only when a write-test subagent is dispatched: the implementer writes the tests itself, so it is the one that needs the depth. Under `agent-default`, run neither `adev test-policy resolve` nor `assert-assigned`, and add no `## Test Depth` section: the mode imposes no test requirement, and the sensitive-path and risk-level floors deliberately do not apply (the trade-off `/adev:init` warns about when the mode is chosen).
 
    ```bash
    adev test-policy resolve --plan <plan-path> --task-id <task-id>
@@ -138,7 +151,7 @@ Build the implementer subagent prompt with these sections in order:
 
    Stdout is a single JSON object carrying a `depth` field (`minimal | standard | thorough`). Pass the resolved depth into the implementer prompt as a `## Test Depth` section naming the depth, plus `floor_legs` when the floor applied, so the implementer knows why a task was raised to `thorough`. If this task also dispatches a write-test subagent, pass the same resolved depth into the write-test subagent's prompt alongside `config.permitted_tools`/`config.skip_patterns`. Never resolve twice for one dispatch: each call appends another `test_depth_assigned` event.
 
-   After the implementer reports (DONE or DONE_WITH_CONCERNS in Step 2d), or after a write-test subagent's suite is accepted, verify an assignment was recorded:
+   Under `tdd` and `test-required`, after the implementer reports (DONE or DONE_WITH_CONCERNS in Step 2d), or after a write-test subagent's suite is accepted, verify an assignment was recorded:
 
    ```bash
    adev test-policy assert-assigned --plan <plan-path> --task-id <task-id>
@@ -157,7 +170,7 @@ Build the implementer subagent prompt with these sections in order:
 When done, report:
 - **Status:** DONE | DONE_WITH_CONCERNS | NEEDS_CONTEXT | BLOCKED
 - **What you implemented** (or attempted, if blocked)
-- **Tests written and results** (which tests, pass/fail, TDD cycle count)
+- **Tests written and results** (which tests, pass/fail; under `tdd`, the RED→GREEN cycle count; under `agent-default`, why no tests were added if none were)
 - **Files changed** (created, modified, deleted)
 - **Self-review findings** (issues found and fixed during self-review)
 - **Concerns** (if DONE_WITH_CONCERNS: what you are unsure about)
@@ -314,6 +327,7 @@ Dispatch a fresh code quality reviewer subagent with:
 - The Coding Standards section from the constitution
 - Any concerns from the implementer (if DONE_WITH_CONCERNS)
 - Secondary specialist matches from step 2a (so the reviewer checks those domains)
+- `Implementation mode: <mode>` (resolved in Step 1), so the reviewer applies the checklist's test criterion for that mode rather than assuming TDD
 - Instructions to tag every Critical or Important finding with a stable short id (for example `cq-1`, `cq-2`) and to reuse the same id across cycles for the same underlying finding. The ids are what make the convergence check below meaningful — without them, "the same three issues came back" is indistinguishable from "three different issues".
 
 The code quality reviewer checks the items in `<ADEV_ROOT>/skills/implement/references/code-quality-checklist.md`.

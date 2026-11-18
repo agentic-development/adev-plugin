@@ -252,7 +252,7 @@ detector).
 When a task's `selected_agent` is resolved from the sidecar, `/adev:implement`
 adjusts its execution behavior:
 
-- **auto-agent:** Standard dispatch. No additional checkpoints. The subagent implements the full TDD cycle (RED, GREEN, REFACTOR, COMMIT) without pausing.
+- **auto-agent:** Standard dispatch. No additional checkpoints. The subagent runs the full per-task cycle under the project's `implementation_mode` (under `tdd`: RED, GREEN, REFACTOR, COMMIT) without pausing.
 - **assisted-agent:** After the subagent writes tests and verifies they fail (RED phase), pause execution and present the test code to the user for review. Wait for approval before proceeding to the GREEN phase. This catches misunderstandings early, before implementation effort is spent.
 - **human-only:** Generate scaffolding only: file stubs with correct paths, type definitions from the spec, test structure with `describe`/`it` blocks and placeholder assertions, and import statements. Present this as a manual task checklist for the human to implement. Do not attempt the GREEN phase.
 

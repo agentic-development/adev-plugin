@@ -14,7 +14,7 @@ Agent({
 })
 ```
 
-This is the longest-running step. The implement skill manages TDD loops, specialist routing, subagent dispatch, 2-stage review, visual verification, integration gates, source manifest stamping, commit trailers, and feature completeness DoD — all within the subagent's isolated context.
+This is the longest-running step. The implement skill manages the per-task test discipline (per `implementation_mode`), specialist routing, subagent dispatch, 2-stage review, visual verification, integration gates, source manifest stamping, commit trailers, and feature completeness DoD — all within the subagent's isolated context.
 
 **After subagent returns:**
 - If verdict indicates quality gate or integration gate failure: run `recordStepResult()` with `status: "failed"` and the failure details (including tier-specific context: tier name, failing command, severity). Report the failures to the user and stop the build for this spec.

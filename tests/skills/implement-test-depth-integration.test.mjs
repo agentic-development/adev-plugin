@@ -37,7 +37,9 @@ test("implement resolves test depth for every task and hands it to the implement
 
   assert.ok(!/Before dispatching the write-test subagent, resolve/.test(loop),
     "resolution must not be conditional on a write-test dispatch the loop never makes");
-  assert.match(loop, /\*\*Test Depth Resolution \(every task\):\*\*/);
+  // Every task under `tdd` and `test-required`; `agent-default` resolves no depth by design
+  // (implementation-mode-consumers.spec.md Behavior 6).
+  assert.match(loop, /\*\*Test Depth Resolution \(`tdd` and `test-required`\):\*\*/);
   assert.match(loop, /resolved depth into the implementer prompt/i);
   assert.match(loop, /never resolve twice/i,
     "a task that also dispatches write-test must reuse the one resolved depth");
