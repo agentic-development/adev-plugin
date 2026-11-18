@@ -78,7 +78,7 @@ Strategy Distribution:
 
 > **Note on task status.** The per-task `- [ ]` checkboxes shown below are authoring guides only — they help human reviewers scan a plan but are not mutated by skills. `/adev:plan`, `/adev:implement`, `/adev:status`, and any other skill read authoritative task state from the spec's lifecycle event log (`plan_task` events) via `currentState(projectRoot, specPath).planTasks`, never from these checkboxes. Plan-task tables MUST NOT include a `Status` column — status belongs in the lifecycle log, not in the plan markdown. See `agent-reliable-state-artifacts/plan-task-events.spec.md` for the contract.
 
-Each task follows TDD. Steps are granular (2-5 minutes each).
+Each task's steps follow the implementation mode resolved in Step 2 and recorded in the plan header. Use the step list for that mode below; the rest of the task block is the same in every mode. Emit only that mode's steps, followed by the Commit step, and drop the `#### Steps for` / `#### Every mode ends with` headings: they label the alternatives in this template and do not belong in the plan. Steps are granular (2-5 minutes each).
 
 ````markdown
 ### Task N: <Component Name> [specialist: <name|none>]
@@ -90,11 +90,13 @@ Each task follows TDD. Steps are granular (2-5 minutes each).
 - Modify: `exact/path/to/existing.ts:123-145`
 - Test: `tests/exact/path/to/test.ts`
 
-**Tests:** `tests/exact/path/to/test.ts` — every task must reference at least one test file. If no test file exists yet, the task must create one. This field is required; a task without a `tests:` field is incomplete.
+**Tests:** `tests/exact/path/to/test.ts` — under `tdd` and `test-required`, every task must reference at least one test file; if none exists yet, the task creates one, and a task without this field is incomplete. Under `agent-default` the `**Tests:**` field is optional: list the suites the task is expected to touch, or omit it.
 
 **Context to load:**
 - `.context-index/adrs/001-session-store-redis.md` (relevant decision)
 - `.context-index/samples/service-sample.md` (follow this pattern)
+
+#### Steps for `tdd`
 
 - [ ] **Write failing test**
 
@@ -125,6 +127,40 @@ export function functionUnderTest(input: InputType): OutputType {
 
 Run: `<test command from constitution quality gates> -- <path to test file>`
 Expected: PASS
+
+#### Steps for `test-required`
+
+- [ ] **Implement**
+
+```typescript
+export function functionUnderTest(input: InputType): OutputType {
+  // implementation
+  return expected;
+}
+```
+
+- [ ] **Write or extend tests covering the change**
+
+```typescript
+describe('specificBehavior', () => {
+  it('should do the expected thing', () => {
+    expect(functionUnderTest(input)).toEqual(expected);
+  });
+});
+```
+
+- [ ] **Verify tests pass**
+
+Run: `<test command from constitution quality gates> -- <path to test file>`
+Expected: PASS
+
+#### Steps for `agent-default`
+
+- [ ] **Implement**
+
+- [ ] **Verify** — run the tests relevant to the change; add or update tests where judgment says the behavior needs them
+
+#### Every mode ends with
 
 - [ ] **Commit**
 

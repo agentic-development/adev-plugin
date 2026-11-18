@@ -4,7 +4,7 @@ status: validated
 kind: behavioral
 risk_level: medium
 milestone:
-revision: 8
+revision: 9
 charter-revision: 3
 created: 2026-08-10
 updated: 2026-11-17
@@ -161,8 +161,9 @@ was shared with the rigor mechanism; revision 2 tried to make that true. Both ar
 `/adev:implement` owns depth resolution for plan tasks. It reads the routing sidecar per task,
 so it holds every input at the moment tests are authored. It calls `adev test-policy resolve`
 for **every** task, before composing the implementer prompt, and passes the resolved depth to
-whoever authors the tests: the implementer (which writes its own RED tests under the TDD
-mandate) and, when one is dispatched, the write-test subagent. `/adev:write-test` never
+whoever authors the tests. The one exception is `implementation_mode: agent-default`, under which
+no depth is resolved (rev 9; `implementation-mode-consumers.spec.md` Behavior 6). Depth goes to the implementer (which writes its own tests under the mode's
+test discipline) and, when one is dispatched, the write-test subagent. `/adev:write-test` never
 resolves depth; it consumes what it is given.
 
 **Corrected in rev 8.** Revisions 1-7 placed the call "before dispatching the write-test

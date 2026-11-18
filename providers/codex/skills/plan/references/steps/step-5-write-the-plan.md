@@ -51,6 +51,7 @@ Every plan starts with this header:
 > **Spec:** .context-index/specs/features/<module>/<task>.spec.md
 > **Review:** <PASS|PASS_WITH_NOTES> (YYYY-MM-DD)
 > **Platform:** <framework> <version>, <language>, <key deps>
+> **Implementation mode:** <mode>
 
 **Goal:** <One sentence describing what this builds>
 
@@ -58,6 +59,8 @@ Every plan starts with this header:
 
 ---
 ```
+
+`<mode>` is the value resolved in Step 2 (`tdd`, `test-required` or `agent-default`).
 
 ### Scope Check
 
@@ -194,7 +197,13 @@ This table is always emitted, regardless of project complexity or strategy confi
 
 ### Strategy Assignment
 
-For each task, resolve its test strategy using the priority chain defined in `lib/test-strategies/assignment.mjs`:
+For each task, resolve its test strategy via the CLI, passing the task's file paths:
+
+```bash
+adev test-policy strategy --files <comma-separated task file paths> --spec <spec-path>
+```
+
+It prints `{ strategy_id, source, confidence, profile_path, warnings }`; write `strategy_id`, `source` and `confidence` into the task's `**Strategy:**` line. The verb applies this priority chain (shown for reference; do not re-derive it):
 
 1. Check if the parent spec declares `test_strategy` in its YAML frontmatter → use it (source: spec-declared, confidence: high)
 2. Check if `manifest.yaml` has a `test_strategies` entry whose path globs match the task's file paths → use it (source: manifest, confidence: high)
@@ -219,13 +228,13 @@ Omit this section entirely when all tasks resolve to `unit` (backward compatible
 
 ### Granularity Assignment
 
-Resolve granularity **once for the whole plan**, not per task, using `resolveGranularity()`:
+Resolve granularity **once for the whole plan**, not per task, via the CLI:
 
-```javascript
-import { resolveGranularity } from '<ADEV_ROOT>/lib/test-strategies/policy.mjs';
-// resolveGranularity({ moduleOverride, manifestPolicy, domainDefault }) →
-//   { granularity: "per-task" | "per-behavior" | "per-spec", source }
+```bash
+adev test-policy show [--module <module-slug>]
 ```
+
+It prints the effective policy, including `granularity` (`per-task` | `per-behavior` | `per-spec`) and `granularity_source`.
 
 It resolves from static configuration only — no routing input — in priority order: a
 `modules[].test_policy.granularity` override for the task's module (source: module), then

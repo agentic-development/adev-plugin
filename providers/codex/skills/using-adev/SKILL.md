@@ -61,7 +61,7 @@ The constitution is synced into CLAUDE.md (and other agent files). For deeper co
 | Architecture review of specs | `/adev:review-specs` |
 | Decompose specs into tasks | `/adev:plan` |
 | Score tasks for autonomy vs review | `/adev:route` |
-| Execute tasks (TDD, subagent review) | `/adev:implement` |
+| Execute tasks (tests per `implementation_mode`, subagent review) | `/adev:implement` |
 | End-to-end pipeline (review → validate) | `/adev:build` |
 | Post-implementation checks | `/adev:validate` |
 | Systematic debugging | `/adev:debug` |
@@ -103,7 +103,7 @@ These gates enforce quality:
 - **Brainstorm before implement.** Do not write implementation code without a charter or spec.
 - **Review before plan.** `/adev:plan` blocks if specs have not passed `/adev:review-specs`.
 - **Constitution compliance.** Every phase checks against constitutional principles.
-- **TDD.** Implementation follows RED-GREEN-REFACTOR (test first, then code).
+- **Test discipline.** Set per project by `implementation_mode` in `manifest.yaml`. `tdd` (the default) follows RED-GREEN-REFACTOR (test first, then code). `test-required` requires tests that cover each change, in any order. `agent-default` leaves testing to agent judgment and also skips test-depth resolution, so the sensitive-path `thorough` floor does not apply.
 
 ## Context-First Rule
 
