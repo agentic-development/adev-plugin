@@ -67,6 +67,10 @@ jobs:
             exit 1
           fi
 
+          # Take the resolver from main (the commit that triggered this run)
+          # before switching branches, so release/next's copy never matters.
+          cp scripts/release-next-merge.mjs "$RUNNER_TEMP/release-next-merge.mjs"
+
           git checkout -B release/next origin/release/next
 
           # release/next can never fast-forward (it carries a branch-only
@@ -74,12 +78,28 @@ jobs:
           # commit. A three-way merge keeps release/next's own version of
           # release-please-config.json because only that branch changed those
           # lines — main must never impose prerelease: false here.
-          if git merge origin/main --no-edit --no-ff \
-               -m "chore(release): merge main into release/next"; then
+          #
+          # --no-commit leaves the merge open for scripts/release-next-merge.mjs,
+          # which resolves the files every stable release conflicts on
+          # (.release-please-manifest.json, CHANGELOG.md, package-lock.json) and
+          # moves the prerelease line onto main's stable version once main has
+          # shipped it. Without that, release-please keeps bumping the old line
+          # (0.28.0-next.N after 0.28.0 shipped), which sorts below stable.
+          set +e
+          git merge origin/main --no-ff --no-commit
+          merge_status=$?
+          set -e
+
+          if git rev-parse -q --verify MERGE_HEAD >/dev/null; then
+            if ! node "$RUNNER_TEMP/release-next-merge.mjs"; then
+              git merge --abort || true
+              echo "::error::Merge conflict merging main into release/next outside the files the propagation resolves. Resolve manually: git checkout release/next && git merge origin/main && node scripts/release-next-merge.mjs. Do NOT take main's release-please-config.json."
+              exit 1
+            fi
+            git commit --no-edit -m "chore(release): merge main into release/next"
             echo "merged=true" >> "$GITHUB_OUTPUT"
-          else
-            git merge --abort || true
-            echo "::error::Merge conflict merging main into release/next. Resolve manually: git checkout release/next && git merge origin/main. Do NOT take main's release-please-config.json."
+          elif [ "$merge_status" -ne 0 ]; then
+            echo "::error::git merge origin/main failed before starting a merge (exit $merge_status)."
             exit 1
           fi
 
