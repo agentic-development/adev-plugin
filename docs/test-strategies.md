@@ -2,7 +2,7 @@
 
 # Test Strategies
 
-Guide for configuring domain-specific TDD in your project. Test strategies customize how [`/adev:plan`](skill-reference.md) and [`/adev:write-test`](skill-reference.md) handle the RED-GREEN-REFACTOR cycle for different types of work.
+Guide for configuring domain-specific testing in your project. Test strategies customize how [`/adev:plan`](skill-reference.md), [`/adev:implement`](skill-reference.md) and [`/adev:write-test`](skill-reference.md) write and judge tests for different types of work, under whichever [`implementation_mode`](configuration.md#implementation_mode) the project uses.
 
 ## Prerequisites
 
@@ -290,7 +290,7 @@ For a `unit` task, behavior is identical to before — the unit profile codifies
 ### What stays the same
 
 - Projects without `test_strategies` config behave identically to before
-- The TDD cycle is still RED-GREEN-REFACTOR
+- The test discipline is still set by `implementation_mode` (RED-GREEN-REFACTOR under the default `tdd`)
 - Gaming detection still blocks vacuous tests
 - Handoff blocks are still immutable
 - All existing tests continue to pass

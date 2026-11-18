@@ -248,7 +248,7 @@ Enumerated failure modes and the required orchestrator response to each.
 - Read source code, run tests, dispatch implementation subagents, or write reports from the orchestrator — these happen inside the step subagent's isolated context
 - Attempt to "summarize" what a child skill does and do it yourself — each skill has dozens of substeps you cannot see from this file
 - Skip the Agent tool dispatch because "it's just a small step" — even the route step (the lightest) must be a subagent to maintain the isolation guarantee
-- Inline implementation work (TDD, specialist routing, review) because it "seems simpler" — the subagent handles this when it loads `/adev:implement` via the Skill tool
+- Inline implementation work (test discipline, specialist routing, review) because it "seems simpler" — the subagent handles this when it loads `/adev:implement` via the Skill tool
 - Inline validation checks because it "seems faster" — the subagent runs the full 13-check suite when it loads `/adev:validate` via the Skill tool
 - Modify build state for a step before the subagent has returned its result
 - Continue to the next step if the subagent has not fully completed and returned its STEP_RESULT

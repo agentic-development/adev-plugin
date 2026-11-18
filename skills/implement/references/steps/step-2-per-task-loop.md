@@ -60,7 +60,9 @@ Before routing or dispatching, assemble the task's context packet:
 
 **Routing tag check:** If the task has a routing tag from `/adev:route`:
 - `auto-agent`: proceed with standard dispatch
-- `assisted-agent`: proceed with dispatch, but pause after RED phase (tests written) for user review before GREEN phase
+- `assisted-agent`: proceed with dispatch, with one human checkpoint whose position depends on the implementation mode resolved in Step 1:
+  - `tdd`: add to the implementer prompt: "Checkpoint: write this task's failing tests, verify they fail, then stop and report the tests. Do not write production code yet." Present the reported tests to the user. On approval, send the same implementer on to implementation. On rejection, pass the user's feedback back to it for revised tests.
+  - `test-required` and `agent-default`: dispatch normally. When the implementer reports DONE or DONE_WITH_CONCERNS (2d), present the diff and any tests it added, and wait for approval before 2e and the reviews. These modes have no tests-before-code point, so this is the earliest checkpoint where there is work to review.
 - `human-only`: generate scaffolding only (type stubs, file structure, test shells), present as a manual task checklist, emit `reportPlanTask(projectRoot, specPath, { plan: planFilePath, task_id, status: "skipped", notes: "MANUAL — requires human implementation" })`, skip to next task
 
 **Provisional review depth.** Alongside the routing-tag check, before dispatch: `adev implement resolve-depth --spec <spec> --plan <plan> --task-id <id> [--tier <t>] [--review-cycles <n>] [--in-batch] --pass provisional`. It briefs the implementer and reports `review_depth_resolved`; the final pass (2f-pre) decides which reviewer(s) dispatch. Contract: `graduated-review-depth.md`.
@@ -130,7 +132,7 @@ Build the implementer subagent prompt with these sections in order:
 
    **Plan written under another mode:** the task text from item 3 carries the step list of the mode recorded in the plan header. If that mode differs from the resolved one, or the header has no `Implementation mode` line (older plans were written as TDD), add this line to the section: "This project's implementation mode is `<resolved-mode>`. Its test discipline above supersedes the task's step order." Without it, the pasted plan steps would reintroduce the order the project opted out of.
 
-   **Write-test subagent dispatch:** When dispatching write-test subagents, set `ADEV_DISPATCHED_BY=implement` in the subagent environment so write-test can detect dispatch mode and skip its own preflight (implement already verified infrastructure).
+   **Write-test subagent dispatch:** The implementer writes its own tests, so this loop does not dispatch `/adev:write-test` by default. write-test authors failing tests ahead of the code, so dispatch it only under `tdd`, and only when the task or the user asks for a separate test author. When you do, set `ADEV_DISPATCHED_BY=implement` in the subagent environment. write-test then detects dispatch mode and skips its own preflight, because implement has already verified the infrastructure.
 
    **Test strategy and domain test config (every mode):** Resolve the task's test strategy and load the domain test config via the CLI:
 
@@ -208,7 +210,7 @@ Dispatch the subagent with `Agent({description, prompt, run_in_background: false
 
 Handle the returned status:
 
-**DONE.** Proceed to visual verification (step 2e) then 2-stage review (steps 2f-2g).
+**DONE.** Proceed to visual verification (step 2e) then 2-stage review (steps 2f-2g). For an `assisted-agent` task under `test-required` or `agent-default`, hold the human checkpoint from 2a first.
 
 **DONE_WITH_CONCERNS.** Read the concerns carefully.
 - Observational concerns (e.g., "this file is getting large", "naming could be improved"): note them and proceed to review. Pass them to the code quality reviewer.
@@ -294,7 +296,7 @@ Do not proceed. Do not skip. Do not fall back to code-only review for UI tasks.
 
 > **Required reading:** `skills/implement/graduated-review-depth.md`.
 
-Immediately before 2f's dispatch — after GREEN, against the real diff — run the provisional call again with `[--had-critical-finding] --base-sha <captured-base> --pass final`. Echo `REVIEW_DEPTH_FLOOR_APPLIED` (naming `floor_legs`) and any `ROUTING_SCORE_OUT_OF_RANGE` warning to the operator-facing transcript, not only to the persisted `review_depth_resolved` event. Then branch on the resolved `depth`:
+Immediately before 2f's dispatch — once the implementer has reported, against the real diff — run the provisional call again with `[--had-critical-finding] --base-sha <captured-base> --pass final`. Echo `REVIEW_DEPTH_FLOOR_APPLIED` (naming `floor_legs`) and any `ROUTING_SCORE_OUT_OF_RANGE` warning to the operator-facing transcript, not only to the persisted `review_depth_resolved` event. Then branch on the resolved `depth`:
 
 - **`full`** — run 2f then 2g below exactly as written.
 - **`quick`** — skip both stages; dispatch one synthesized reviewer carrying `synthesized-reviewer-prompt.md` and the union of both stages' context, under the same `cq-<n>` / `evaluateStopCondition` discipline, capped at the returned `review_cycles`. Record `stage: "synthesized"` provenance (`Review-round: synthesized=<n>`) instead of the two stage records.
@@ -365,12 +367,12 @@ Use the same message shape for `LOOP_NO_PROGRESS` and `LOOP_REGRESSED`, substitu
 After both reviews pass, if `governance/gates.yaml` exists:
 1. Read gates where `triggers` includes "post-task". A gate whose `triggers` include `post-implement` but not `post-task` is not a per-task gate: it runs once, after the last task, in Step 2-post. Running it here would run it once per task.
 2. A gate that declares `paths` runs only when this task changed a matching file. When any selected gate declares `paths`, run `adev domain load-gates --module <module-slug> --changed-since <captured-base>` (the base captured before this task's dispatch) and log a gate with `applies: false` as "Skipped: <skip_reason>" instead of running it.
-3. For each remaining gate with `kind: deterministic` and non-empty `command`: run it. If fail + `required: true` → task failure. If fail + `required: false` → log warning.
-4. `kind: probabilistic` or no `command` → log "Skipped (requires platform runtime)"
+3. For each remaining deterministic gate with a non-empty argv `command`, run it. A gate that omits `kind` is `deterministic`, which is the documented default, so never require a literal `kind: deterministic`. A gate that omits `required` is `required: true`. If a required gate fails, the task fails. If a gate with `required: false` fails, log a warning.
+4. `kind: probabilistic` → log "Skipped (requires platform runtime)". A deterministic gate with an empty, absent or non-argv `command` → log "Skipped: no runnable command — set it in governance/gates.yaml". Neither is spawned.
 5. `approver_role` → log informational note
 6. If `governance/gates.yaml` does not exist, skip governance gate checks.
 
-After both reviews pass:
+Then, once the gates above pass (or there are none), finish the task in this order:
 1. **Do NOT mutate plan file checkboxes.** The `- [ ]` markers in the plan file are authoring guides for human reviewers; they are not authoritative state and are never flipped by skills. Authoritative status lives in `currentState(spec).planTasks` (folded from `plan_task` events in the lifecycle log).
 2. **Commit-per-task is MANDATORY.** Per `incremental-artifact-writes.spec.md` Integration Point 2, every plan task MUST produce exactly one git commit before the orchestrator moves on. The commit IS the checkpoint — if a later task fails or a session crashes mid-pipeline, the prior task's work is preserved in git history. Multi-task implementations with a single combined commit are forbidden; they defeat the recovery guarantee.
 3. Emit a `plan_task` `done` event, AFTER the commit above (never before — the commit is the durable checkpoint): `reportPlanTask(projectRoot, specPath, { plan: planFilePath, task_id, status: "done", notes: <optional 1-line summary or null> })`. This is the **only** task-completion signal — the plan file itself is not modified.

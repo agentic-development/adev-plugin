@@ -106,12 +106,12 @@ For each task, sum the four dimension scores to get a total (range: 4-20).
 | Total Score | Route | Meaning |
 |-------------|-------|---------|
 | 16-20 | `auto-agent` | Run without checkpoints. Agent can handle this independently. |
-| 10-15 | `assisted-agent` | Pause for human review at mid-point (after tests written, before full implementation). May need context enrichment. |
+| 10-15 | `assisted-agent` | One human checkpoint per task (before production code under `tdd`, before review otherwise). May need context enrichment. |
 | 4-9 | `human-only` | Agent generates scaffolding (types, test stubs, file structure) but human implements the core logic. |
 
 **Override rule:** If any single dimension scores 1, force `assisted-agent` as the minimum routing regardless of total score. A score of 1 in any dimension indicates a significant risk factor that warrants human oversight.
 
-**Secondary override:** If the task touches files flagged as `high` risk in `risk-policies.yaml`, force `assisted-agent` as the minimum routing.
+**Secondary override:** Force `assisted-agent` as the minimum routing when the spec declares `risk_level: high`, or a task file matches a sensitive path: `sensitive_paths.built_in` or `.configured` from `adev test-policy show` (run once). `risk-policies.yaml` is keyed by risk level, not by file.
 
 ### Rigor Tier Signal (graduated-rigor-tiers)
 
@@ -253,8 +253,8 @@ When a task's `selected_agent` is resolved from the sidecar, `/adev:implement`
 adjusts its execution behavior:
 
 - **auto-agent:** Standard dispatch. No additional checkpoints. The subagent runs the full per-task cycle under the project's `implementation_mode` (under `tdd`: RED, GREEN, REFACTOR, COMMIT) without pausing.
-- **assisted-agent:** After the subagent writes tests and verifies they fail (RED phase), pause execution and present the test code to the user for review. Wait for approval before proceeding to the GREEN phase. This catches misunderstandings early, before implementation effort is spent.
-- **human-only:** Generate scaffolding only: file stubs with correct paths, type definitions from the spec, test structure with `describe`/`it` blocks and placeholder assertions, and import statements. Present this as a manual task checklist for the human to implement. Do not attempt the GREEN phase.
+- **assisted-agent:** One human checkpoint per task, placed by `implementation_mode`: under `tdd`, after the failing tests are written and before production code; under `test-required` and `agent-default`, after the implementer reports and before review. `/adev:implement` Step 2a defines it.
+- **human-only:** Generate scaffolding only: file stubs with correct paths, type definitions from the spec, test structure with `describe`/`it` blocks and placeholder assertions, and import statements. Present this as a manual task checklist for the human to implement. Do not implement the core logic.
 
 If the sidecar is missing when `/adev:implement` runs, the read verb exits
 with `ROUTING_SIDECAR_MISSING` and instructs the operator to re-run

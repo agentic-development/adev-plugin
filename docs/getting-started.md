@@ -131,7 +131,7 @@ Each reviewer produces findings categorized as CRITICAL, IMPORTANT, or MINOR. Th
 The reviewed spec is decomposed into ordered implementation tasks. Each task includes:
 
 - **File lists** — Which files to create, modify, and test
-- **TDD expectations** — What the failing test should look like before implementation
+- **Test expectations** — The test steps for the project's `implementation_mode` (under the default `tdd`, what the failing test should look like before implementation)
 - **Context routing** — Hints for which specialist (if any) should handle the task
 - **Dependencies** — Which tasks must complete before this one can start
 
@@ -143,11 +143,13 @@ The plan is a concrete, step-by-step roadmap. Tasks are ordered so that each one
 /adev:implement
 ```
 
-Each task is executed by a fresh subagent following strict test-driven development (TDD):
+Each task is executed by a fresh subagent. Under the default `implementation_mode`, `tdd`, it follows strict test-driven development:
 
 1. **RED** — Write a failing test that captures the expected behavior
 2. **GREEN** — Write the minimum code to make the test pass
 3. **REFACTOR** — Clean up the code while keeping all tests green
+
+`test-required` requires tests that cover the change in any order, and `agent-default` leaves tests to the implementer's judgment. See [Configuration](configuration.md#implementation_mode).
 
 After each task, two review stages run automatically:
 

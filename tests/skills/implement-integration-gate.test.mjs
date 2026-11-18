@@ -148,8 +148,10 @@ describe("implement SKILL.md — Step 2-post merged gate source and severity", (
   it("applies the D3 deterministic default rather than requiring a literal kind", () => {
     assert.ok(section.includes("deterministic"),
       "Step 2-post must state the deterministic default for merged entries");
-    assert.ok(section.includes("drops `kind`") || section.includes("no `kind`"),
-      "Step 2-post must state that the merged list drops `kind`, so absent means deterministic");
+    assert.ok(section.includes("no `kind`"),
+      "Step 2-post must state that an entry with no `kind` is deterministic");
+    assert.ok(!section.includes("drops `kind`"), "the merged list carries a declared `kind`");
+    assert.match(section, /`kind: probabilistic` gate is recorded as `skipped/);
   });
 
   it("surfaces loader warnings rather than swallowing them (+2 more contract assertions)", () => {
@@ -185,8 +187,15 @@ describe("implement — post-implement gates run once, after the last task", () 
   assert.ok(postPointer, "Step 2-post must carry a Conditional loading pointer");
   const loop = readFileSync(resolveSkillPointer(stepPointer[1]), "utf8");
   const step2h = loop.substring(loop.indexOf("#### 2h."));
-  const step2hGates = step2h.substring(0, step2h.indexOf("After both reviews pass:"));
+  const step2hGates = step2h.substring(0, step2h.indexOf("finish the task in this order"));
   const post = readFileSync(resolveSkillPointer(postPointer[1]), "utf8");
+
+  it("Step 2h runs a gate that omits kind or required, using the documented defaults", () => {
+    // Most gates omit `kind`; a filter on the literal value would skip them all.
+    assert.ok(!/For each (remaining )?gate with `kind: deterministic`/.test(step2hGates));
+    assert.match(step2hGates, /omits `kind` is `deterministic`/);
+    assert.match(step2hGates, /omits `required` is `required: true`/);
+  });
 
   it("Step 2h selects post-task gates only", () => {
     assert.ok(step2hGates.length > 0, "Step 2h gate block must exist");

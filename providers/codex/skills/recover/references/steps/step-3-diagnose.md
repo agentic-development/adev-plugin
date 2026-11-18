@@ -48,7 +48,7 @@ No golden sample, established pattern, or prior implementation covers this case.
 
 #### Category 5: TOOL_FAILURE
 
-An external tool (test runner, linter, build tool, package manager) failed, preventing the subagent from completing its TDD cycle or verifying its work.
+An external tool (test runner, linter, build tool, package manager) failed, preventing the subagent from running its tests or verifying its work.
 
 **Indicators:**
 - Subagent reported BLOCKED with a command error
