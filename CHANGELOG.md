@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.28.1-next](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.28.0...adev-cli-v0.28.1-next) (2026-11-18)
+
+
+### Features
+
+* **test-strategies:** run test_strategies commands as path-scoped gates ([7878c16](https://github.com/agentic-development/adev-plugin/commit/7878c167e9eaa77b376be4b7ad89c25f935011ab))
+* **test-strategies:** run test_strategies commands as path-scoped gates ([fb4adc5](https://github.com/agentic-development/adev-plugin/commit/fb4adc5984b553d14baf29fe13b5f21b4cc6ddb3))
+
+
+### Bug Fixes
+
+* **docs:** add breadcrumb and drop banned term from release highlights ([43d4789](https://github.com/agentic-development/adev-plugin/commit/43d4789179cfe80b944a914e7f0564caabec2e96))
+* **docs:** unblock 0.28.0 publish (release-highlights test failures) ([72a09a2](https://github.com/agentic-development/adev-plugin/commit/72a09a2feac676cbd448273920f74ec6245d7fb6))
+* gate fields survive the merge; test and gate instructions match implementation_mode ([#430](https://github.com/agentic-development/adev-plugin/issues/430)) ([51ba4de](https://github.com/agentic-development/adev-plugin/commit/51ba4deec5d5abe85ec0aeacfd5e1e6ea63a7336))
+* **implement:** give every step its own heading and pointer in the SKILL body ([500aa28](https://github.com/agentic-development/adev-plugin/commit/500aa284eaa3a2a0fb3fbacbd87d43151fc6b8b4))
+* **implement:** honour implementation_mode; give the implementer its test strategy ([ed9dcca](https://github.com/agentic-development/adev-plugin/commit/ed9dccabdeb233fdea92ab899785288b1b4fe667))
+* **implement:** honour implementation_mode; give the implementer its test strategy ([47fb3cb](https://github.com/agentic-development/adev-plugin/commit/47fb3cb2ed0d9944bb92ce7512fd543a72e78a74))
+* **implement:** judge scope-mismatch against a dispatch-time worktree snapshot ([0fed8b1](https://github.com/agentic-development/adev-plugin/commit/0fed8b160f1bf75f77ab37a01bdc76d71560e264))
+* **implement:** keep racy-git detection working in the worktree snapshot ([c1952ad](https://github.com/agentic-development/adev-plugin/commit/c1952adbd78aa2a953611c66a974139494e57184))
+* **implement:** resolve test depth for every task, not only before write-test ([c9ef05f](https://github.com/agentic-development/adev-plugin/commit/c9ef05feef28fb628119f94595725580a51324a5))
+* **implement:** run post-implement gates once, not after every task ([52c5dd2](https://github.com/agentic-development/adev-plugin/commit/52c5dd2dee9a9cc914446cb9d88d1c529b498560))
+* **implement:** run post-implement gates once, not after every task ([8c39b77](https://github.com/agentic-development/adev-plugin/commit/8c39b773e5a019cc7d202dc08f4d3964820b5a07))
+* **implement:** step pointers in SKILL body, per-task test depth, snapshot-based scope-mismatch ([028350b](https://github.com/agentic-development/adev-plugin/commit/028350b726eff1ed0073773130b0cf3b9dcc7abd))
+* **setup:** keep hygiene history tracked; ignore only regenerated hygiene output ([0780f59](https://github.com/agentic-development/adev-plugin/commit/0780f59eeff13a91f73211b3b3b55d9ba31867f3))
+* **setup:** keep hygiene history tracked; ignore only regenerated hygiene output ([05ada9b](https://github.com/agentic-development/adev-plugin/commit/05ada9b6461c9bd99e1f1d90e8437b4faa014be8))
+
 ## [0.28.0-next.10](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.28.0-next.9...adev-cli-v0.28.0-next.10) (2026-11-17)
 
 
