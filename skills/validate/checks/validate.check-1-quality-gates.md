@@ -15,7 +15,7 @@ nobody ran, and the attestation rule will refuse it.
 1. Resolve the gate set. `/adev:validate` Step 0 has already run:
 
    ```
-   adev domain load-gates --module <module-slug> [--charter <charter-path>]
+   adev domain load-gates --module <module-slug> [--charter <charter-path>] --changed-since merge-base
    ```
 
    Reuse that JSON envelope — do not re-read `governance/gates.yaml` directly, and do not call the
@@ -23,11 +23,13 @@ nobody ran, and the attestation rule will refuse it.
    `id`, `command` (an argv list), `tier`, `severity`, and **`command_sha`** — the SHA-256 of that
    gate's resolved argv, computed by the loader. The loader is where that hash is computed
    precisely so this check never has to compute one, and it is also where the `tier` default is
-   applied, so every gate in the envelope already carries a tier.
+   applied, so every gate in the envelope already carries a tier. Each gate also carries
+   `applies`: a gate with `applies: false` declares `paths` and no changed file matches them.
 
 2. Execute the gates by tier (fast → integration → e2e) with the semantics described in
    `skills/validate/SKILL.md` § Check 1: intra-tier fail-fast on an error-severity failure, and
-   later tiers skipped once an error-severity tier fails.
+   later tiers skipped once an error-severity tier fails. Do not run a gate with `applies: false`;
+   record it as `skip` and show its `skip_reason` in the tier summary.
 
 3. Build one outcome object per gate in the resolved set — including gates that never ran because
    an earlier gate failed, and gates skipped as probabilistic. A gate absent from the array is
@@ -76,7 +78,7 @@ nobody ran, and the attestation rule will refuse it.
 |---|---|
 | `pass` | The gate ran to completion and exited zero. |
 | `fail` | The gate ran and exited non-zero. Severity decides whether that fails validation. |
-| `skip` | The gate did not run: probabilistic (no machine verdict available), or its tier was skipped after an earlier error-severity failure, or it declares no runnable command. |
+| `skip` | The gate did not run: probabilistic (no machine verdict available), or its tier was skipped after an earlier error-severity failure, or it declares no runnable command, or it declares `paths` and the change touches none of them (`applies: false`). |
 
 An empty resolved gate set is not an outcome array of zero elements plus a PASS — it is a SKIP of
 this check with the advisory `/adev:validate` § Check 1 specifies. Emitting a PASS with no outcomes

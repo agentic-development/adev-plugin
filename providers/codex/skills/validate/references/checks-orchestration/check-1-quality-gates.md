@@ -12,6 +12,7 @@
 - Gates without explicit `kind` default to `deterministic`
 - Default severity: `error` for fast/integration, `warning` for e2e
 - `required: false` forces `severity: warning` regardless of other settings
+- A gate with `applies: false` (it declares `paths` and the change touches none of them) → skip with its `skip_reason`. It is recorded as `skip` in `gate_outcomes`, never omitted. A `skip` does not satisfy a transition's `required_gates`, so do not list a path-scoped gate there.
 - `kind: probabilistic` gates → skip with note: "Gate '<id>' is probabilistic — requires manual or eval-based verification."
 - Probabilistic with `command` → ignore command, emit WARN: "Gate '<id>' is probabilistic but has a command — command ignored."
 - E2E `group: smoke` runs before `group: full`, with independent severity defaults (error for smoke, warning for full). If smoke fails with error severity, skip full.

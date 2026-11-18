@@ -364,10 +364,11 @@ Use the same message shape for `LOOP_NO_PROGRESS` and `LOOP_REGRESSED`, substitu
 
 After both reviews pass, if `governance/gates.yaml` exists:
 1. Read gates where `triggers` includes "post-task". A gate whose `triggers` include `post-implement` but not `post-task` is not a per-task gate: it runs once, after the last task, in Step 2-post. Running it here would run it once per task.
-2. For each gate with `kind: deterministic` and non-empty `command`: run it. If fail + `required: true` → task failure. If fail + `required: false` → log warning.
-3. `kind: probabilistic` or no `command` → log "Skipped (requires platform runtime)"
-4. `approver_role` → log informational note
-5. If `governance/gates.yaml` does not exist, skip governance gate checks.
+2. A gate that declares `paths` runs only when this task changed a matching file. When any selected gate declares `paths`, run `adev domain load-gates --module <module-slug> --changed-since <captured-base>` (the base captured before this task's dispatch) and log a gate with `applies: false` as "Skipped: <skip_reason>" instead of running it.
+3. For each remaining gate with `kind: deterministic` and non-empty `command`: run it. If fail + `required: true` → task failure. If fail + `required: false` → log warning.
+4. `kind: probabilistic` or no `command` → log "Skipped (requires platform runtime)"
+5. `approver_role` → log informational note
+6. If `governance/gates.yaml` does not exist, skip governance gate checks.
 
 After both reviews pass:
 1. **Do NOT mutate plan file checkboxes.** The `- [ ]` markers in the plan file are authoring guides for human reviewers; they are not authoritative state and are never flipped by skills. Authoritative status lives in `currentState(spec).planTasks` (folded from `plan_task` events in the lifecycle log).

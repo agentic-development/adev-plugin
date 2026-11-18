@@ -924,9 +924,12 @@ adev skill-ext load --skill review-specs
 
 Resolution precedence: `charter.domain > module.domain > project.domain > software`.
 
+`load-gates` also takes `--changed-since <base|merge-base>` or `--changed-files <csv>`. Either adds `applies: true|false` to every gate: a gate that declares `paths` applies only when a changed file matches one of them, and one that does not apply carries a `skip_reason`. `merge-base` means the merge base of `HEAD` with `origin/HEAD`, `main` or `master`. An unreadable base emits `CHANGED_BASE_UNRESOLVED` and marks every gate as applying.
+
 **Example:**
 ```
 adev domain load-gates --module auth
+adev domain load-gates --module auth --changed-since merge-base
 ```
 
 **Implementation:** `lib/cli/domain.mjs`. **Called by:** `/adev:validate`, `/adev:review-specs`, `/adev:implement`, `/adev:specify`, `/adev:brainstorm`, `/adev:write-test`.

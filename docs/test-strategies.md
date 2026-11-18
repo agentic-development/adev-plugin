@@ -97,7 +97,7 @@ test_strategies:
 Each entry declares:
 - `strategy_id` — one of the 8 strategy types
 - `paths` — file glob patterns that assign this strategy to a task
-- `command`, `tier` — accepted and validated, but **not executed by adev**. Matching an entry assigns the strategy (and so its profile's test rules) to a task; it does not run the command. To run a strategy's suite, declare it as a gate in `governance/gates.yaml` with the same argv and `tier` (see [Governance](governance.md)).
+- `command`, `tier` — the suite to run for this strategy. `adev governance materialize --registry gates` writes the entry into `governance/gates.yaml` as a `strategy-<strategy_id>` gate with this `command`, `tier` and `paths`, so it runs only when a change touches one of those paths. It does not run until that row exists, and `adev gate doctor` reports one that is missing (`gate-doctor/strategy-gate-not-adopted`). If `gates.yaml` already has a gate with the same argv, no second gate is added. See [Path-scoped gates](governance.md#path-scoped-gates).
 
 Manifest entries take precedence over auto-detection. The first matching entry wins when paths overlap.
 
