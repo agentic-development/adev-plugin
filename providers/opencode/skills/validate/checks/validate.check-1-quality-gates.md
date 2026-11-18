@@ -20,8 +20,10 @@ nobody ran, and the attestation rule will refuse it.
 
    Reuse that JSON envelope — do not re-read `governance/gates.yaml` directly, and do not call the
    verb a second time. It carries `domain`, `gates`, and `warnings`. Each element of `gates` has
-   `id`, `command` (an argv list), `tier`, `severity`, and **`command_sha`** — the SHA-256 of that
-   gate's resolved argv, computed by the loader. The loader is where that hash is computed
+   `id`, `tier`, `command` (an argv list), and **`command_sha`** — the SHA-256 of that gate's
+   resolved argv, computed by the loader — plus `kind`, `severity`, `required` and `group` when
+   the gate declares them. A `kind: probabilistic` gate may have no `command` and then has no
+   `command_sha`; it is never run. The loader is where that hash is computed
    precisely so this check never has to compute one, and it is also where the `tier` default is
    applied, so every gate in the envelope already carries a tier. Each gate also carries
    `applies`: a gate with `applies: false` declares `paths` and no changed file matches them.
@@ -40,7 +42,7 @@ nobody ran, and the attestation rule will refuse it.
    | `id` | the gate's `id`, verbatim from the resolved set |
    | `verdict` | `pass`, `fail`, or `skip` — lowercase, this closed set only |
    | `tier` | the gate's `tier`, verbatim from the resolved set (`fast`, `integration`, `e2e`) — the loader already defaults a gate that declares none to `fast`, so take the value as given and never leave it empty |
-   | `command_sha` | the gate's `command_sha`, verbatim from the resolved set |
+   | `command_sha` | the gate's `command_sha`, verbatim from the resolved set. A probabilistic gate with no `command` has none: omit the key for that outcome |
 
    No other key is accepted. `reportValidator` refuses an unknown key rather than dropping it.
 

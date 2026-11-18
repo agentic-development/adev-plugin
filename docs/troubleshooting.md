@@ -54,7 +54,7 @@ This page covers common issues you may encounter when using adev, organized by s
 
 **What you see:** A lifecycle gate blocks `/adev:implement` because no implementation plan exists for the spec.
 
-**Why it happens:** Implementation requires a structured plan that decomposes the spec into ordered tasks with TDD expectations. The gate checks for a `.plan.md` file adjacent to the spec.
+**Why it happens:** Implementation requires a structured plan that decomposes the spec into ordered tasks with test expectations. The gate checks for a `.plan.md` file adjacent to the spec.
 
 **How to fix it:** Run `/adev:plan` on the spec. The plan skill reads the reviewed spec and produces a task-by-task implementation plan. Each task includes file lists, test strategies, and dependency information.
 

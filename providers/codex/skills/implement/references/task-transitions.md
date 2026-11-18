@@ -8,7 +8,7 @@ reportPlanTask(projectRoot, specPath, {
   plan: planFilePath, task_id, status: 'in_progress', notes: null,
 });
 
-// At task done (after GREEN + REFACTOR + both reviews pass):
+// At task done (after implementation, both reviews and the post-task gates pass):
 reportPlanTask(projectRoot, specPath, {
   plan: planFilePath, task_id, status: 'done',
   notes: '<optional ≤200-char summary or null>',
@@ -20,7 +20,7 @@ reportPlanTask(projectRoot, specPath, {
   notes: '<≤200-char operator-facing summary — no stack traces, no env values, no full command output>',
 });
 
-// On a user-declined optional task (e.g., user skips a REFACTOR-only task):
+// On a user-declined optional task (e.g., user skips a cleanup-only task):
 reportPlanTask(projectRoot, specPath, {
   plan: planFilePath, task_id, status: 'skipped', notes: null,
 });

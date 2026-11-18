@@ -20,7 +20,7 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 | `/adev:prototype` | Design | Rapidly sketch UI screens and flows from charters | Feature Charter exists |
 | `/adev:plan` | Build | Decompose reviewed specs into ordered implementation tasks | Reviewed spec exists |
 | `/adev:route` | Build | Score tasks for auto/assisted/human execution routing | Plan exists |
-| `/adev:implement` | Build | Execute plans with TDD, specialist routing, and 2-stage review | Reviewed plan exists |
+| `/adev:implement` | Build | Execute plans under the project's test discipline (TDD by default), specialist routing, and 2-stage review | Reviewed plan exists |
 | `/adev:write-test` | Build | TDD test authoring (RED phase) with gaming detection | Spec or source file exists |
 | `/adev:build` | Build | End-to-end pipeline chaining review through validate | Spec exists |
 | `/adev:validate` | Validation | Post-implementation validation with 13 ordered checks | Implementation complete |
@@ -259,7 +259,7 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 
 ### `/adev:plan`
 
-**Purpose:** Decompose a reviewed Live Spec into an ordered task list ready for `/adev:implement`. Every task follows TDD (write failing test, verify fail, implement, verify pass, commit) and traces back to a charter capability.
+**Purpose:** Decompose a reviewed Live Spec into an ordered task list ready for `/adev:implement`. Every task carries the test steps of the project's `implementation_mode` (under the default `tdd`: write failing test, verify fail, implement, verify pass, commit) and traces back to a charter capability.
 
 **Prerequisites:** A reviewed spec (with passing `.review.md`) must exist.
 
@@ -279,7 +279,7 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 /adev:plan --milestone v1
 ```
 
-**Expected Output:** A plan file at `<spec-path>.plan.md` with ordered tasks, file lists, dependencies, TDD expectations, and context routing.
+**Expected Output:** A plan file at `<spec-path>.plan.md` with ordered tasks, file lists, dependencies, test steps for the resolved `implementation_mode`, and context routing.
 
 **Related Guides:** [Build Phase](build-phase.md)
 
@@ -312,7 +312,7 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 
 ### `/adev:implement`
 
-**Purpose:** Execute implementation plans by dispatching a fresh subagent per task, routing to domain specialists when applicable, enforcing TDD, and running 2-stage review (spec compliance then code quality) after each task. This is the core build skill.
+**Purpose:** Execute implementation plans by dispatching a fresh subagent per task, routing to domain specialists when applicable, applying the test discipline of the project's `implementation_mode` (TDD by default), and running 2-stage review (spec compliance then code quality) after each task. This is the core build skill.
 
 **Prerequisites:** A reviewed plan must exist. The current branch must not be main or master.
 
@@ -340,7 +340,7 @@ Batching and `--parallel` operate at different scopes: batching groups cohesive,
 /adev:implement --parallel .context-index/specs/features/auth/login.plan.md
 ```
 
-**Expected Output:** Implemented code for each task, with tests written first (TDD), spec compliance verified, and code quality reviewed. Commits created per task with Spec and Plan-task trailers.
+**Expected Output:** Implemented code for each task, with tests per the `implementation_mode` (written first under `tdd`), spec compliance verified, and code quality reviewed. Commits created per task with Spec and Plan-task trailers.
 
 **Domain-aware:** Loads `gates`, `gate-config`, and `test-config` overlays from the resolved domain profile to configure quality gates and test strategies per domain. See [Domain Profiles](configuration.md#domain-profiles).
 
@@ -350,7 +350,7 @@ Batching and `--parallel` operate at different scopes: batching groups cohesive,
 
 ### `/adev:write-test`
 
-> **Utility skill.** Primarily invoked by `/adev:implement` during the RED phase of TDD. You can also use it standalone when you want to write tests independently of a full implementation cycle.
+> **Utility skill.** A test-first tool. `/adev:implement` does not dispatch it by default, because the implementer writes its own tests; under `tdd` it may dispatch it for a separate test author. You can also use it standalone when you want to write tests independently of a full implementation cycle.
 
 **Purpose:** TDD test authoring specialist. Writes failing tests (RED phase), produces immutable handoff blocks, and detects specification gaming. Use before implementation to establish the test contract.
 

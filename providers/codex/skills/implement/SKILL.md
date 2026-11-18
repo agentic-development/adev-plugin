@@ -56,7 +56,7 @@ Before starting, verify all five conditions. If any fails, stop and tell the use
 
    In strict mode (default — resolved from `manifest.yaml`'s `lifecycle.gate_mode`), `adev gate require` exits `2` if `plan` did not complete with a passing verdict — the skill stops and the operator is told which prior step is missing. In advisory mode, it emits a warning and exits `0`. Do NOT catch the failure — surface the helper's stderr unchanged. Path-containment is enforced by the helper (`INVALID_PROJECT_ROOT` / `INVALID_SPEC_PATH`); skill prose MUST NOT pre-validate paths.
 
-   When all tasks finish in Step 4, emit the matching exit event with an explicit `--verdict PASS`. Downstream gates (`/adev:validate::adev gate require`) require the prior step to have completed with a passing verdict; omitting it forces the operator to re-emit the event manually. This point is only reached after all tasks completed and the GREEN-phase gate fired, so success here implies PASS. Failures after that gate emit `--status failed` instead — see "Failure-path exit event" below.
+   When all tasks finish in Step 4, emit the matching exit event with an explicit `--verdict PASS`. Downstream gates (`/adev:validate::adev gate require`) require the prior step to have completed with a passing verdict; omitting it forces the operator to re-emit the event manually. This point is only reached after all tasks completed and the Step 2-post integration gate passed, so success here implies PASS. Failures after that gate emit `--status failed` instead — see "Failure-path exit event" below.
 
    ```bash
    adev report --type step --spec <spec-path> --step implement --status completed --verdict PASS --from-summary

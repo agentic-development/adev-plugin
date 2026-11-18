@@ -5,10 +5,10 @@ affects: [planning, implementation, assessment, strategic-planning, setup]
 kind: behavioral
 status: draft
 risk_level: medium
-revision: 1
+revision: 2
 charter-revision: 2
 created: 2026-11-17
-updated: 2026-11-17
+updated: 2026-11-18
 tracker-ref: adev-plugin-8u2a
 depends-on:
   - .context-index/specs/cross-cutting/mode-resolution-core.spec.md
@@ -69,6 +69,11 @@ This spec makes the consuming skills read the resolved mode.
    `agent-default`, only that any added or changed tests are meaningful.
 8. **When** `/adev:status` reports a spec **then** it shows the resolved mode, and under
    `agent-default` it notes that a zero test-depth assignment count is expected.
+9. **When** a task is routed `assisted-agent` **then** `/adev:implement` holds one human
+   checkpoint, placed by mode: under `tdd`, after the implementer has written the failing tests
+   and before any production code; under `test-required` and `agent-default`, which have no
+   tests-before-code point, after the implementer reports and before visual verification and
+   review. `/adev:route` describes the same placement.
 
 ## Postconditions
 
@@ -100,4 +105,5 @@ possible as follow-up work.
 - [ ] Test depth is resolved and asserted only outside `agent-default` (Behavior 6).
 - [ ] Reviewers receive the mode; the checklist's test criterion is per mode (Behavior 7).
 - [ ] `/adev:status` shows the mode (Behavior 8).
+- [ ] The `assisted-agent` checkpoint is placed per mode in implement Step 2a and in route (Behavior 9).
 - [ ] `npm test` passes.

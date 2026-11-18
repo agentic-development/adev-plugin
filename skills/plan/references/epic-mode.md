@@ -30,7 +30,7 @@ Every work item created in any mode must have its `next_action` field populated.
 | Work Item | State | next_action value |
 |-----------|-------|-------------------|
 | Task | plan exists, not yet routed | `"Run /adev:route --plan <plan_path> to score tasks for execution mode"` |
-| Task | routed | `"Run /adev:implement to do RED-GREEN-REFACTOR for this Task"` |
+| Task | routed | `"Run /adev:implement to implement this Task"` |
 | Feature | without spec | `"Run /adev:specify --module <module> to author this Feature"` |
 | Feature | spec exists, needs review | `"Run /adev:review-specs --module <module>"` |
 | Feature | spec reviewed and passing | `"Run /adev:plan --spec <spec_ref> to decompose into Tasks"` |

@@ -99,3 +99,27 @@ test("no implement or route instruction describes TDD as unconditional", () => {
   assert.ok(!/The per-task TDD loop/.test(read("skills/implement/references/parallel-mode.md")));
   assert.ok(!/implements the full TDD cycle/.test(read("skills/route/SKILL.md")));
 });
+
+test("the assisted-agent checkpoint is placed per mode, never at a RED phase other modes lack (B9)", () => {
+  const ROUTE = read("skills/route/SKILL.md");
+  for (const text of [IMPL_LOOP, ROUTE]) {
+    assert.ok(!/pause after RED phase/.test(text));
+    assert.ok(!/proceeding to the GREEN phase/.test(text));
+  }
+  const step2a = IMPL_LOOP.slice(IMPL_LOOP.indexOf("**Routing tag check:**"), IMPL_LOOP.indexOf("**Provisional review depth.**"));
+  assert.match(step2a, /`tdd`:[^\n]*failing tests[^\n]*stop/);
+  assert.match(step2a, /`test-required` and `agent-default`:[^\n]*DONE[^\n]*before 2e and the reviews/);
+  assert.match(ROUTE, /under `test-required` and `agent-default`, after the implementer reports and before review/);
+});
+
+test("no instruction describes the task cycle in RED/GREEN terms outside tdd", () => {
+  for (const p of [
+    "skills/implement/references/batched-mode.md",
+    "skills/implement/references/task-transitions.md",
+    "skills/implement/graduated-review-depth.md",
+    "skills/plan/references/epic-mode.md",
+  ]) {
+    assert.ok(!/\b(RED|GREEN|REFACTOR)\b/.test(read(p)), p);
+  }
+  assert.ok(!/GREEN-phase gate/.test(IMPL_BODY));
+});
