@@ -316,3 +316,36 @@ describe("prior-round findings are handed to the next round", () => {
     assert.ok(res.warnings.some((w) => w.code === "CONTEXT_PACK_FENCE_COLLISION" && /prior review/i.test(w.message)));
   });
 });
+
+describe("heuristics are a fenced, optional dispatch input", () => {
+  test("non-empty heuristics add a fenced ## Heuristics section to reviewing stages only", () => {
+    const repo = fixtureRepo();
+    const ctx = ctxFor(repo, { heuristics: "### H-1\nPrefer adapters.\n" });
+    const [sub] = build(subagentReviewer(repo, "plain"), ctx).dispatches;
+    assert.match(sub.prompt, /## Heuristics\n\nThe following heuristics are lessons learned/);
+    assert.match(sub.prompt, /role="heuristics">>>\n### H-1/);
+    const { dispatches } = build(packageReviewer(repo, "plain"), ctx);
+    assert.match(dispatches.find((d) => d.stage === "runner").prompt, /## Heuristics/);
+    assert.equal(dispatches.find((d) => d.stage === "adapter").prompt.includes("## Heuristics"), false);
+  });
+
+  test("absent or blank heuristics add nothing", () => {
+    const repo = fixtureRepo();
+    for (const heuristics of [undefined, "", "  \n"]) {
+      const [d] = build(subagentReviewer(repo, "plain"), ctxFor(repo, { heuristics })).dispatches;
+      assert.equal(d.prompt.includes("## Heuristics"), false);
+    }
+  });
+});
+
+describe("orchestrator notes are a fenced, optional dispatch input", () => {
+  test("notes add a fenced ## Orchestrator Notes section; none adds nothing", () => {
+    const repo = fixtureRepo();
+    const ctx = ctxFor(repo, { notes: ["Cross-repo dependency '@a/b' is in draft status", "  "] });
+    const [d] = build(subagentReviewer(repo, "plain"), ctx).dispatches;
+    assert.match(d.prompt, /## Orchestrator Notes/);
+    assert.match(d.prompt, /role="orchestrator-notes">>>\n- Cross-repo dependency '@a\/b' is in draft status\n/);
+    const [none] = build(subagentReviewer(repo, "plain"), ctxFor(repo, { notes: [] })).dispatches;
+    assert.equal(none.prompt.includes("## Orchestrator Notes"), false);
+  });
+});

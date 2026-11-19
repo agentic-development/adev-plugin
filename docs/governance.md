@@ -529,6 +529,10 @@ its verdict and reviewed revision. Reviewers are told those findings belong to t
 that re-raising one requires saying why the current spec's resolution does not hold. A first review
 has no `.review.md`, so its prompt is unchanged.
 
+These sections reach reviewers through `adev governance dispatch --spec <path> --json`, which `/adev:review-specs`
+Step 4 calls to build every reviewer prompt; the orchestrator passes each prompt and model through
+unchanged (see [CLI reference](cli-reference.md#governance)).
+
 #### Known limitations (manifest delivery)
 
 Two gaps are open and tracked as `adev-plugin-j7pq.7`. Both matter most when a `manifest` pack is

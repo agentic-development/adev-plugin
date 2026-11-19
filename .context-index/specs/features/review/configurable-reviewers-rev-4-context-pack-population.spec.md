@@ -19,6 +19,10 @@ source-manifest:
     - lib/governance/context-pack.mjs
     - lib/governance/dispatch-shape.mjs
     - lib/governance/prior-review.mjs
+    - lib/governance/dispatch-plan.mjs
+    - lib/governance/diff-scope-decision.mjs
+    - lib/cli/governance.mjs
+    - skills/review-specs/references/steps/step-4-dispatch-reviewers.md
     - skills/review-specs/SKILL.md
     - skills/review-specs/consistency-analyzer-prompt.md
     - templates/domains/software/reviewers.yaml
@@ -276,6 +280,38 @@ first review has no `.review.md`, so its prompt is unchanged.
 *Why:* every round started with no memory of what was raised and resolved, so a resolved finding
 came back each round.
 
+**22u.** **When** `/adev:review-specs` Step 4 dispatches reviewers **then** it obtains every
+dispatch from `adev governance dispatch --spec <path> [--tier <full|quick>] [--harness
+<claude-code|opencode>] [--module <slug>] [--note <text>]... [--json]` and passes each entry's
+`description`, `prompt` and `model` to its Agent call unchanged. The orchestrator never assembles a
+reviewer prompt, so the 22i/22j fencing and preamble, rev-5's manifest read contract, and the 22s/22t
+sections all reach the reviewers. The verb (`lib/governance/dispatch-plan.mjs`):
+
+- loads the materialized `review.yaml` through `loadReviewConfig`, so `REGISTRY_NOT_MATERIALIZED`
+  fails it closed;
+- selects reviewers with `shouldDispatch`, against the BEH-8 scoped content when the shared
+  `resolveDiffScope` decision (the same one `adev governance diff-scope` reports) scopes the cycle,
+  and against the full spec otherwise;
+- builds each one with `buildReviewerDispatches`, passing `modelIdFromTier` from
+  `platform-context.yaml`, the prior review loaded once for the whole panel, module heuristics
+  (`--module`, summary tier, non-blocking), and orchestrator notes (`--note`, e.g. Step 2b cross-repo
+  warnings). Heuristics and notes are fenced (`role="heuristics"`, `role="orchestrator-notes"`) and
+  reach reviewing stages only.
+
+`--tier quick` plans exactly one `quick-synthesized-reviewer` subagent with the bundled prompt,
+under `reviewer-capable` unless a registry entry with that id overrides it, and with `review-base`
+when declared, else `base`. A missing bundled prompt fails with `QUICK_PROMPT_MISSING`. Each
+dispatch record carries `reviewer_id`, `stage`, `description`, `prompt`, `model` (`null` when no
+tier model is configured), `allowed_tools`, `env_keys` (never env values), `prompt_source`, and
+`append_runner_output`. That last field is `true` only on a package-mode `adapter` entry, which
+follows its `runner` entry and expects the runner's output appended to its prompt. Exit 1 on an
+argument error, an invalid spec path, a loader refusal, or any plan error (`UNKNOWN_HARNESS`,
+`QUICK_PROMPT_MISSING`, per-reviewer build errors); exit 0 otherwise.
+
+*Why:* `buildReviewerDispatches` was described as the single source of truth for prompt assembly,
+but no CLI verb called it, so a skill (which may not run inline Node) could only hand-assemble
+prompts, and every block the lib added was lost.
+
 ### Populated bundled packs
 
 **22o.** **When** the bundled `templates/review-specs/defaults.yaml` is loaded **then** the
@@ -401,6 +437,8 @@ implied.
 | Pack truncated or omitted any file | Not an error; reviewing stages get the `## Truncated Context` verification rule (Behavior 22s). |
 | Prior `.review.md` contains a literal nonce fence token | Neutralize, emit `CONTEXT_PACK_FENCE_COLLISION` naming the prior review, continue (Behavior 22t). |
 | Prior `.review.md` missing, unreadable, or outside the repo | No prior-round section; dispatch proceeds as a first review (Behavior 22t). |
+| `adev governance dispatch` against an unmaterialized `review.yaml` | Exit 1 with `REGISTRY_NOT_MATERIALIZED`; no plan (Behavior 22u). |
+| `adev governance dispatch --tier quick` with the bundled quick prompt missing | Exit 1 with `QUICK_PROMPT_MISSING`; never a weaker review (Behavior 22u). |
 | Denylist match inside a **bundled wildcard** include | Skip the file, emit `CONTEXT_PACK_DENYLIST_SKIP` warning, continue rendering (Behavior 22p-bis). |
 | Denylist match on an **explicitly enumerated** include path | Hard error, unchanged `CONTEXT_PACK_DENYLIST` / `CONTEXT_PACK_DENYLIST_MATCH` (Behavior 22p-bis). |
 | `base` rendered with no `targetSpecPath` (e.g. a future check consumer) | Renders normally — `base` carries no target-relative token (Behavior 22o). |
@@ -478,6 +516,11 @@ implied.
 - [ ] With a prior `<x>.review.md` on disk, the reviewing stages carry it nonce-fenced as
       `role="prior-review"`, labeled prior-round with its verdict and revision, before the target
       spec; with none, or with `priorReview: null`, no such section appears (Behavior 22t).
+- [ ] `adev governance dispatch --spec <path> --json` over a materialized registry returns one
+      Agent-ready record per dispatch (subagent; package runner then adapter; quick tier → only
+      `quick-synthesized-reviewer`). A truncated sibling spec yields `## Truncated Context`, and a
+      prior `.review.md` yields `## Prior-Round Review`, in the verb's prompts. Step 4 instructs
+      the orchestrator to pass `description`/`prompt`/`model` through unchanged (Behavior 22u).
 - [ ] Reviewer capability posture is unchanged: `execute: deny` still holds and no reviewer
       profile gains a tool category.
 - [ ] All quality gates pass (`npm test`).
