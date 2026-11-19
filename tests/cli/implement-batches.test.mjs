@@ -177,4 +177,45 @@ describe("adev implement batches", () => {
       assert.deepEqual(overriddenOut.batches[0].taskIds, ["1", "2", "3"]);
     } finally { rmSync(dir, { recursive: true, force: true }); }
   });
+  it("pairs /adev:route's t<n> sidecar ids with the plan's `Task <n>` group members and forms a batch", () => {
+    const dir = makeTempProject();
+    try {
+      const plan = join(dir, "p.plan.md");
+      writeFileSync(plan, "## Parallelization\n\n- Group A (sequential): Task 1 → Task 2\n\n## Next\n");
+      writeFileSync(join(dir, "p.routing.json"), JSON.stringify({
+        ...TWO_TASK_ENTRIES,
+        entries: TWO_TASK_ENTRIES.entries.map((e) => ({ ...e, task_id: `t${e.task_id}` })),
+      }));
+      const r = runIn(dir, "--plan", plan);
+      assert.equal(r.status, 0, r.stderr);
+      const out = JSON.parse(r.stdout);
+      assert.equal(out.batches.length, 1, JSON.stringify(out));
+      assert.deepEqual(out.batches[0].taskIds, ["1", "2"]);
+    } finally { rmSync(dir, { recursive: true, force: true }); }
+  });
+
+  it("Behavior E: a prior `blocked` plan_task recorded as t<n> still forces the group solo", () => {
+    const dir = makeTempProject();
+    try {
+      const plan = join(dir, "p.plan.md");
+      writeFileSync(
+        plan,
+        "> **Spec:** .context-index/specs/features/m/feat.spec.md (revision 1)\n\n" +
+          "## Parallelization\n\n- Group A (sequential): Task 1 → Task 2\n\n## Next\n",
+      );
+      writeFileSync(join(dir, "p.routing.json"), JSON.stringify({
+        ...TWO_TASK_ENTRIES,
+        entries: TWO_TASK_ENTRIES.entries.map((e) => ({ ...e, task_id: `t${e.task_id}` })),
+      }));
+      writeFileSync(
+        join(dir, ".context-index", "lifecycle-state", "feat.jsonl"),
+        JSON.stringify({ event: "plan_task", plan: "p.plan.md", task_id: "t2", status: "blocked", ts: "2026-01-01T00:00:00.000Z" }) + "\n",
+      );
+      const r = runIn(dir, "--plan", plan);
+      assert.equal(r.status, 0, r.stderr);
+      const out = JSON.parse(r.stdout);
+      assert.equal(out.batches.length, 0);
+      assert.ok(out.solo.every((s) => s.reason === "prior-failure"), JSON.stringify(out.solo));
+    } finally { rmSync(dir, { recursive: true, force: true }); }
+  });
 });

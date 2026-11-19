@@ -413,3 +413,63 @@ test("eligibility row 'size' is upper-bound inclusive: a group exactly at max_ba
   assert.equal(result.solo.length, 0);
   assert.equal(result.advisories.some((a) => a.type === "BATCH_SOLO_FORCED"), false);
 });
+
+// --- Task-id spelling: /adev:route emits `t<n>`, the plan's Parallelization says `Task <n>` ---
+
+test("route-emitted t<n> sidecar ids pair with the plan's Task <n> parallelization ids and form a batch", () => {
+  const result = resolveBatches({
+    planContent: PLAN,
+    manifest: { implement: { batch_mode: "on", max_batch_size: 4 } },
+    routingEntries: [autoEntry("t1"), autoEntry("t2"), autoEntry("t3")],
+    boundaryVerdicts: {},
+    priorPlanTasks: {},
+  });
+  assert.equal(result.batches.length, 1);
+  assert.deepEqual(result.batches[0].taskIds, ["1", "2"]);
+  assert.equal(
+    result.advisories.some((a) => a.type === "BATCH_SOLO_FORCED" && a.reason === "routing-unusable"),
+    false,
+  );
+});
+
+test("t<n> sidecar ids still apply the per-task gate rows (an assisted-agent t2 goes solo with human-checkpoint)", () => {
+  const result = resolveBatches({
+    planContent: PLAN,
+    manifest: { implement: { batch_mode: "on", max_batch_size: 4 } },
+    routingEntries: [
+      autoEntry("t1"),
+      autoEntry("t2", { selected_agent: "assisted-agent" }),
+      autoEntry("t3"),
+    ],
+    boundaryVerdicts: {},
+    priorPlanTasks: {},
+  });
+  assert.equal(result.batches.length, 0);
+  assert.equal(result.solo.find((s) => s.taskId === "2").reason, "human-checkpoint");
+  assert.equal(result.solo.find((s) => s.taskId === "1").reason, "size");
+});
+
+test("Behavior E matches a prior blocked plan_task recorded under t<n> against the plan's Task <n>", () => {
+  const result = resolveBatches({
+    planContent: PLAN,
+    manifest: { implement: { batch_mode: "on", max_batch_size: 4 } },
+    routingEntries: [autoEntry("t1"), autoEntry("t2"), autoEntry("t3")],
+    boundaryVerdicts: {},
+    priorPlanTasks: { t2: { status: "blocked" } },
+  });
+  assert.equal(result.batches.length, 0);
+  assert.equal(result.solo.find((s) => s.taskId === "1").reason, "prior-failure");
+  assert.equal(result.solo.find((s) => s.taskId === "2").reason, "prior-failure");
+});
+
+test("a FAIL boundary verdict keyed t<n> forces the plan's Task <n> solo", () => {
+  const result = resolveBatches({
+    planContent: PLAN,
+    manifest: { implement: { batch_mode: "on", max_batch_size: 4 } },
+    routingEntries: [autoEntry("t1"), autoEntry("t2"), autoEntry("t3")],
+    boundaryVerdicts: { t1: "FAIL" },
+    priorPlanTasks: {},
+  });
+  assert.equal(result.batches.length, 0);
+  assert.equal(result.solo.find((s) => s.taskId === "1").reason, "boundary");
+});
