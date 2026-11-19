@@ -14,7 +14,7 @@ Cadence: one section (H2 boundary or coherent block) per append. The first autho
 ...
 ```
 
-Section append order matches the plan header → File Structure → Context Packets → Parallelization → Task Summary → Task Structure → Quality Gates flow defined below. Each section, once written, is durable: a kill/crash mid-write leaves the prior sections on disk and only the in-flight section is lost.
+Section append order matches the plan header → File Structure → Context Packets → Parallelization → Task Summary → Review Notes → Task Structure → Quality Gates flow defined below. Each section, once written, is durable: a kill/crash mid-write leaves the prior sections on disk and only the in-flight section is lost.
 
 **Runaway-write guard (PARTIAL_ARTIFACT_OVERSIZE).** Before each append, run `adev partial check-size --artifact <plan-path>` to verify the in-progress partial has not exceeded `partial_oversize_multiplier × expected` bytes (defaults: 3× max(prior plan size, 50 KB)). The verb exits 2 with `PARTIAL_ARTIFACT_OVERSIZE` when the cap is breached — treat that as a hard stop: do NOT continue appending, do NOT commit the rename, preserve the partial for inspection, and surface the error to the user. This protects against retry loops that re-write prior chunks instead of appending only the new section.
 
@@ -194,6 +194,34 @@ After the Parallelization section, emit a `## Task Summary` table that provides 
 - **Files** — count of files to create and modify
 
 This table is always emitted, regardless of project complexity or strategy configuration.
+
+### Review Notes Section
+
+When Step 1's `adev review-notes show` returned a non-empty `warnings` list (a `PASS_WITH_NOTES` review), emit a `## Review Notes` section immediately after the Task Summary. This is how PASS_WITH_NOTES warnings are resolved: in the plan, by the tasks that already touch the cited text, not by another revise-and-review round on the spec. Omit the section when `warnings` is empty.
+
+```markdown
+## Review Notes
+
+> Carried forward from the PASS_WITH_NOTES review (`<path to .review.md>`). Each open
+> warning is assigned to the first task that touches the spec section it cites.
+
+| ID | Warning | Cited section | Assigned to |
+|----|---------|---------------|-------------|
+| SA-1 | Error row names no exit code for the unreadable-store case | Error Cases | Task 3 |
+| SEC-1 | Path containment is not re-asserted for the new `--out` flag | behaviors-3 | Task 2 |
+| CON-1 | "floor warning" vs "floor-bypass warning" naming mismatch | — | unassigned — address in Task 1 |
+```
+
+One row per warning, in the order the verb returned them:
+
+- **ID** — the warning's `id`; `(no ID)` when it is `null`.
+- **Warning** — one line, from `summary`. Do not paste the reviewer's full finding; the `.review.md` stays the record.
+- **Cited section** — the warning's `section`, or `—` when it is `null`.
+- **Assigned to** — the **first task** (lowest task number) whose work touches that spec section: its Context Packet `Spec:` line cites the section or its criteria, or its files implement the behavior the section describes. When `section` is `null`, or no task touches the section, write exactly `unassigned — address in Task 1`.
+
+For every assigned warning (including the `unassigned` ones, which belong to Task 1), add `- Review notes: <IDs> (see ## Review Notes)` to that task's `### Task N Context` packet, so `/adev:implement` dispatches the task with the warnings it owns.
+
+The section is written during authoring, before Step 7 emits the `plan_task` `pending` events, so it is part of the immutable plan rather than a later edit (see `lib/plan-immutability.mjs`). A warning resolved during implementation is recorded on that task's lifecycle events and commit, never by editing this table afterwards.
 
 ### Strategy Assignment
 

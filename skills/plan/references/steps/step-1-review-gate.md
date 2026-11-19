@@ -14,7 +14,15 @@ Before planning, verify the spec has passed architecture review by reading the l
    - In `mode === "advisory"`, the helper emits a warning and exits `0`.
    - Path-containment is enforced by the helper (`INVALID_PROJECT_ROOT` / `INVALID_SPEC_PATH`). Skill prose MUST NOT pre-validate or normalize paths.
 
-3. **Note any `PASS_WITH_NOTES` warnings.** Read `state.steps.review` for verdict notes; print them for the user but do not block.
+3. **Collect `PASS_WITH_NOTES` warnings to carry forward.** They do not block, and they are not just printed: every open warning becomes a row in the plan's `## Review Notes` section (Step 5). Read them with:
+
+   ```bash
+   adev review-notes show --spec <spec-path> --json
+   ```
+
+   Stdout is `{ spec, review, verdict, unchangedSinceReview, warnings }`; each `warnings[]` entry is `{ id, reviewer, section, summary }`, where `section` is the spec section the finding cites (or `null`) and `id` is `null` for a legacy finding written without one. `verdict` comes from the lifecycle log, and `warnings` is always `[]` when it is `PASS`. Print the warnings for the user, keep the list for Step 5, and do not re-run `/adev:review-specs` to clear them — warning counts do not converge to zero under re-review, and a revision made to clear a warning can regress the spec to BLOCK.
+
+   The verb's parse of `.review.md` is best-effort (reviewer prose has no fixed finding grammar). If `warnings` is empty but `verdict` is `PASS_WITH_NOTES`, open the `.review.md` named in `review` and take the warning-severity findings from it by hand.
 
 4. **Code-Side Drift Check (CODE_DRIFT gate).** Independent from the review gate:
 
