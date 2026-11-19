@@ -459,9 +459,17 @@ adev state current --spec .context-index/specs/features/auth/login.spec.md
 
 **Purpose:** Read/write/clear `.context-index/.execution-state.json` — the live snapshot of current work in progress (drives the lifecycle gate's active/idle/standalone modes).
 
-**Signature:** `execution-state read` · `execution-state write --status <idle|active|blocked|standalone> [flags]` · `execution-state clear`
+**Signature:** `execution-state read` · `execution-state write --status <idle|active|blocked|standalone> [flags] [--force]` · `execution-state clear [--force]`
 
 `active` additionally requires `--plan-ref` and `--current-task`.
+
+The file is shared by every worktree of the repository, so `write` and `clear` refuse to replace another build's live state. They exit `2` with `EXECUTION_STATE_CONFLICT` on stderr, followed by a JSON line `{"owner":{status,sourceBranch,planRef,currentTask,updated}}`, and write nothing when:
+
+- the state is `blocked` and was written from a different branch (at any age), or
+- the state is `active`, written from a different branch, and updated within `tasks.claim_ttl_minutes` (default 240; `0` means it never lapses), or
+- the state is `active` on the same branch (or an unknown one), updated within that window, and names a different `--plan-ref` than this write.
+
+`--force` overwrites anyway; use it only when the owning build is abandoned. Exit `1` remains usage, validation, and path errors.
 
 **Example:**
 ```
