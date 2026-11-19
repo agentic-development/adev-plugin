@@ -224,6 +224,8 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 
 **Expected Output:** A review file at `<spec-path>.review.md` with PASS, PASS_WITH_NOTES, or BLOCK verdict from each specialist reviewer.
 
+**PASS_WITH_NOTES means plan next.** The report recommends `/adev:plan` and says the warnings carry forward into the plan's `## Review Notes` section. It does not invite another revise-and-review round: warning counts do not converge to zero under re-review, and edits made to clear a warning can regress the spec to BLOCK. Re-running `--spec` on a spec that already passed and is unchanged since (its `.review.md` `file-sha` matches) prints a non-blocking advisory saying so, then reviews as asked.
+
 **Domain-aware:** Loads `reviewers` overlay from the resolved domain profile to configure domain-specific specialist reviewers. See [Domain Profiles](configuration.md#domain-profiles).
 
 **Related Guides:** [Design Phase](design-phase.md), [Governance](governance.md)
@@ -279,7 +281,7 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 /adev:plan --milestone v1
 ```
 
-**Expected Output:** A plan file at `<spec-path>.plan.md` with ordered tasks, file lists, dependencies, test steps for the resolved `implementation_mode`, and context routing.
+**Expected Output:** A plan file at `<spec-path>.plan.md` with ordered tasks, file lists, dependencies, test steps for the resolved `implementation_mode`, and context routing. After a PASS_WITH_NOTES review, the plan also carries a `## Review Notes` table: one row per open review warning (ID and one line), each assigned to the first task that touches the spec section it cites, or `unassigned — address in Task 1`. The warnings are read with `adev review-notes show`.
 
 **Related Guides:** [Build Phase](build-phase.md)
 
