@@ -46,6 +46,8 @@ The aggregator in `skills/review-specs/SKILL.md` constructs and validates `block
 
 ## Rules
 
+- A `blocker` that cites a context-pack file shown only in part (its section ends with an `…[adev: truncated …]` marker) or named in a `role="truncation-notice"` section MUST first be verified by reading the full file, and MUST quote the conflicting text from it. The `## Truncated Context` section, when present, has the details.
+- Findings in a `## Prior-Round Review` section, when present, come from the previous round: do not re-raise one the current spec resolves, and if you do re-raise one, state why the spec's resolution does not hold.
 - Be precise. Reference specific sections, entities, or contracts in the spec.
 - Do not suggest implementation approaches. Focus on whether the spec is structurally sound.
 - A spec with no blockers and clear contracts is a good spec. Do not invent problems.
