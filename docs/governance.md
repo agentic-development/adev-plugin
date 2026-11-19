@@ -492,6 +492,12 @@ reached, remaining files are omitted and a single aggregate notice lists the omi
 reviewer can Glob/Grep those on demand). File ordering is deterministic — declaration order across
 includes, byte-order path sort within one — so truncation is reproducible.
 
+When a render truncated or omitted anything, the reviewer's prompt gains a `## Truncated Context`
+section after the pack: a `blocker` that cites a truncated or omitted file, or that such a file could
+settle, must first be verified by reading the full file and must quote the conflicting text. A
+reviewer whose profile grants no read tools can report that evidence as a `warning` at most. Nothing
+is added when the pack was not cut.
+
 Both caps above describe `delivery: inline`. Under `delivery: manifest`:
 
 - The **target spec is exempt from both caps and is never truncated.** When it alone exceeds
@@ -513,6 +519,15 @@ Rendered sections are wrapped in fences bearing a **per-run nonce** rather than 
 stage (`subagent`, `runner`, `adapter`). A provenance preamble tells the reviewer that only content
 inside a fence carrying that exact token is repository-sourced. This prevents an artifact under
 review from forging a pack section that appears to carry repository authority.
+
+#### Prior-round findings
+
+When the target spec already has a `.review.md`, that file is the previous round's report, and it is
+handed to every reviewing stage as a `## Prior-Round Review` section: the report body is fenced as
+`role="prior-review"` with the same nonce, after the pack and before the target spec, and labeled with
+its verdict and reviewed revision. Reviewers are told those findings belong to the last round and
+that re-raising one requires saying why the current spec's resolution does not hold. A first review
+has no `.review.md`, so its prompt is unchanged.
 
 #### Known limitations (manifest delivery)
 

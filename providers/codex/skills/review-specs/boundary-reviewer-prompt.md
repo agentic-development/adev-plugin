@@ -119,6 +119,8 @@ For every BLOCK finding (severity = `blocker`), also emit:
 
 ## Rules
 
+- A `blocker` that cites a context-pack file shown only in part (its section ends with an `…[adev: truncated …]` marker) or named in a `role="truncation-notice"` section MUST first be verified by reading the full file, and MUST quote the conflicting text from it. The `## Truncated Context` section, when present, has the details.
+- Findings in a `## Prior-Round Review` section, when present, come from the previous round: do not re-raise one the current spec resolves, and if you do re-raise one, state why the spec's resolution does not hold.
 - Ground every finding in one of the six checklist items and cite the specific existing contract
   (file, function, behavior) the spec's design is being measured against — not generic security
   advice or an OWASP category with no tie to this codebase.

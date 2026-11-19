@@ -18,6 +18,7 @@ source-manifest:
   files:
     - lib/governance/context-pack.mjs
     - lib/governance/dispatch-shape.mjs
+    - lib/governance/prior-review.mjs
     - skills/review-specs/SKILL.md
     - skills/review-specs/consistency-analyzer-prompt.md
     - templates/domains/software/reviewers.yaml
@@ -237,6 +238,44 @@ sorted by repo-root-relative path (byte order). Truncation is therefore reproduc
 runs for identical inputs — a requirement inherited from the base spec's byte-stable-report
 guarantee.
 
+### Review integrity: truncated evidence and prior-round findings
+
+**22s.** **When** an inline render truncates any file under 22l or omits any file under 22m
+**then** `renderPack` reports them (`truncated: [{ path, keptBytes, totalBytes }]`, `omitted:
+[path]`; both empty under `delivery: manifest`), and `buildReviewerDispatches` emits a
+`## Truncated Context` section after the `## Context Pack` block in every reviewing stage
+(`subagent`, `runner`; never `adapter`). It states the counts, points at the 22l marker and the 22m
+`role="truncation-notice"` section, and requires that a `blocker` citing one of those files, or one
+those files could settle, is first verified by **reading the full file** with the read tools the
+reviewer's resolved profile grants (named through the adapter, as in rev-5 BEH-7), and that the
+finding **quotes the conflicting text**. A profile with no read tools is told to report such
+evidence as a `warning` at most. File paths are not repeated in this section because it sits
+outside every fence. When nothing was cut the section is absent and the prompt is byte-identical to
+the composition without it. Every bundled reviewer prompt, the quick-tier synthesized prompt
+included, also states this rule in its own `## Rules`, so it holds for a hand-assembled dispatch.
+
+*Why:* 22m made truncation recoverable but nothing told reviewers to recover it. A reviewer raised
+the same blocker in successive rounds because the sibling spec that had already settled it was cut
+at `max_file_bytes`.
+
+**22t.** **When** the target spec `<x>.spec.md` has a `<x>.review.md` on disk at dispatch time
+**then** that file is the previous round's report (Step 6 overwrites it only after this round's
+reviewers return), and `buildReviewerDispatches` includes it in every reviewing stage as a
+`## Prior-Round Review` section after the truncation section and before the target spec. The
+frontmatter is stripped. The body is fenced with the dispatch's nonce as
+`role="prior-review" path="<x>.review.md"`, with 22h neutralization and a
+`CONTEXT_PACK_FENCE_COLLISION` warning naming the prior review. The framing labels every finding in
+it as a **prior-round** finding, gives the prior `verdict` and `last-reviewed-revision` (only when
+they match their closed shapes; any other value is dropped, never interpolated), and requires a
+reviewer that re-raises one to name it and **state why the current spec's resolution does not
+hold**. `loadPriorReview(repoRoot, specPath)` in `lib/governance/prior-review.mjs` reads the file
+and fails soft to `null` when it is missing or unreadable, when the spec is not a `.spec.md`, or
+when the path is outside the repo. A caller passes `priorReview: null` to dispatch without it. A
+first review has no `.review.md`, so its prompt is unchanged.
+
+*Why:* every round started with no memory of what was raised and resolved, so a resolved finding
+came back each round.
+
 ### Populated bundled packs
 
 **22o.** **When** the bundled `templates/review-specs/defaults.yaml` is loaded **then** the
@@ -359,6 +398,9 @@ implied.
 | File body contains the literal nonce fence token | Neutralize the token, emit `CONTEXT_PACK_FENCE_COLLISION` warning, continue (Behavior 22h). |
 | Single file exceeds `max_file_bytes` | Truncate with per-file marker; not an error (Behavior 22l). |
 | Cumulative size exceeds `max_total_bytes` | Stop emitting; append aggregate truncation notice listing omitted paths (Behavior 22m). |
+| Pack truncated or omitted any file | Not an error; reviewing stages get the `## Truncated Context` verification rule (Behavior 22s). |
+| Prior `.review.md` contains a literal nonce fence token | Neutralize, emit `CONTEXT_PACK_FENCE_COLLISION` naming the prior review, continue (Behavior 22t). |
+| Prior `.review.md` missing, unreadable, or outside the repo | No prior-round section; dispatch proceeds as a first review (Behavior 22t). |
 | Denylist match inside a **bundled wildcard** include | Skip the file, emit `CONTEXT_PACK_DENYLIST_SKIP` warning, continue rendering (Behavior 22p-bis). |
 | Denylist match on an **explicitly enumerated** include path | Hard error, unchanged `CONTEXT_PACK_DENYLIST` / `CONTEXT_PACK_DENYLIST_MATCH` (Behavior 22p-bis). |
 | `base` rendered with no `targetSpecPath` (e.g. a future check consumer) | Renders normally — `base` carries no target-relative token (Behavior 22o). |
@@ -429,6 +471,13 @@ implied.
 - [ ] A file exceeding `max_file_bytes` is truncated with the per-file marker present in output.
 - [ ] `dispatch-shape.mjs` emits a `## Context Pack` block for the bundled reviewers (it is
       currently omitted because `rendered` is empty).
+- [ ] A pack that truncates or omits a file yields a `## Truncated Context` section in the
+      `subagent` and `runner` prompts (not the `adapter`) requiring a full-file read and a quote of
+      the conflicting text before a `blocker`; every bundled reviewer prompt, the quick-tier one
+      included, receives it; a pack that cut nothing yields none (Behavior 22s).
+- [ ] With a prior `<x>.review.md` on disk, the reviewing stages carry it nonce-fenced as
+      `role="prior-review"`, labeled prior-round with its verdict and revision, before the target
+      spec; with none, or with `priorReview: null`, no such section appears (Behavior 22t).
 - [ ] Reviewer capability posture is unchanged: `execute: deny` still holds and no reviewer
       profile gains a tool category.
 - [ ] All quality gates pass (`npm test`).

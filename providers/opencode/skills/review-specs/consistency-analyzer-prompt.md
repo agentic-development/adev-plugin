@@ -62,6 +62,8 @@ The aggregator constructs and validates `blocker_id` from your `finding_type` + 
 
 ## Rules
 
+- A `blocker` that cites a context-pack file shown only in part (its section ends with an `…[adev: truncated …]` marker) or named in a `role="truncation-notice"` section MUST first be verified by reading the full file, and MUST quote the conflicting text from it. The `## Truncated Context` section, when present, has the details.
+- Findings in a `## Prior-Round Review` section, when present, come from the previous round: do not re-raise one the current spec resolves, and if you do re-raise one, state why the spec's resolution does not hold.
 - Always cite the specific file and section where the conflict exists.
 - Do not flag intentional deviations that are documented in the spec (e.g., "This module uses snake_case because it wraps a Python API").
 - Consistency matters most at module boundaries (shared interfaces, events, types). Internal naming within a module is lower priority.
