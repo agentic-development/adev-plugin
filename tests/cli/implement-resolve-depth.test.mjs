@@ -101,6 +101,28 @@ describe("adev implement resolve-depth", () => {
     assert.equal(JSON.parse(r.stdout).depth, "full");
   });
 
+  it("a bare plan-side --task-id (as `adev implement batches` emits) resolves the same as the sidecar's t<n>", () => {
+    const { dir, specPath, planPath } = makeFixture();
+    const viaT = run(dir, "--spec", specPath, "--plan", planPath, "--task-id", "t1");
+    const viaBare = run(dir, "--spec", specPath, "--plan", planPath, "--task-id", "1");
+    assert.equal(viaBare.status, 0, viaBare.stderr);
+    const t = JSON.parse(viaT.stdout);
+    const bare = JSON.parse(viaBare.stdout);
+    assert.equal(bare.depth, t.depth);
+    assert.equal(bare.source, t.source);
+    assert.deepEqual(bare.floor_legs, t.floor_legs);
+  });
+
+  it("a bare --task-id still sees the task's Modify: entry and resolves full", () => {
+    const { dir, specPath, planPath } = makeFixture();
+    writeFileSync(planPath,
+      "> **Spec:** x.spec.md\n\n### Task 1: Example [specialist: none]\n\n" +
+      "**Files:**\n- Modify: `existing.txt`\n\n**Tests:** `new.test.mjs`\n");
+    const r = run(dir, "--spec", specPath, "--plan", planPath, "--task-id", "1");
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(JSON.parse(r.stdout).depth, "full");
+  });
+
   it("--in-batch forces full via the batched-task floor leg", () => {
     const { dir, specPath, planPath } = makeFixture();
     const r = run(dir, "--spec", specPath, "--plan", planPath, "--task-id", "t1", "--in-batch");

@@ -6,7 +6,7 @@ risk_level: medium
 revision: 2
 charter-revision: 8
 created: 2026-05-19
-updated: 2026-05-20
+updated: 2026-11-19
 ---
 
 # Live Spec: Plan-Routing Sidecar (`.routing.json`)
@@ -44,7 +44,7 @@ updated: 2026-05-20
 1. **When** `/adev:route` runs Step 4 against a plan with N tasks, **then** it writes a single file `<plan-stem>.routing.json` containing one entry per task. The plan markdown body is NOT modified; its mtime and content hash are unchanged across the run.
 2. **When** `/adev:route` writes `<plan-stem>.routing.json`, **then** the file is a JSON document with shape `{ version: 1, _generated_by: "<header string>", entries: [...] }` where each entry carries the fields: `task_id` (matching the plan's anchor), `selected_agent` (specialist slug or `auto-agent` / `assisted-agent` / `human-only`), `scores` (object with the four routing dimensions: `spec_completeness`, `pattern_coverage`, `blast_radius`, `novelty`, each `0..1`), and `rationale` (short prose, ≤ 400 chars).
 3. **When** `/adev:route` is re-run on the same plan, **then** `<plan-stem>.routing.json` is fully rewritten (writer-owned, not append-only). The earlier file is replaced atomically via temp-then-rename. Entries are emitted sorted by `task_id` ascending with deterministic key order so re-runs produce byte-identical output for identical input.
-4. **When** `/adev:implement` looks up the routing for `task_id`, **then** it parses `<plan-stem>.routing.json` (single `JSON.parse`), locates the entry whose `task_id` matches, and uses `selected_agent` to dispatch the subagent. It never reads `**Routing:**` blocks from the plan body, even if present.
+4. **When** `/adev:implement` looks up the routing for `task_id`, **then** it parses `<plan-stem>.routing.json` (single `JSON.parse`), locates the entry whose `task_id` matches, and uses `selected_agent` to dispatch the subagent. Matching compares `lib/plan-task-id.mjs::taskIdKey()` keys, so a plan-side `1` or `Task 1` (the spelling `adev implement batches` emits) finds the sidecar's `t1`; an exact-spelling entry is preferred when both exist. The on-disk `task_id` is never rewritten. It never reads `**Routing:**` blocks from the plan body, even if present.
 5. **When** `/adev:implement` looks up routing and the sidecar is missing, **then** it errors with `ROUTING_SIDECAR_MISSING` and instructs the user to run `/adev:route` against the plan. It does not silently fall back to inline parsing.
 6. **When** the plan-immutability detector runs against a plan, **then** it flags a violation if the plan body contains an inline `**Routing:**`, `**Scores:**`, or `**Rationale:**` block AND no sibling `<plan-stem>.routing.json` exists at the same path. This check is independent of git history — it catches plans committed as a single add commit.
 7. **When** the plan-immutability detector runs against a plan that has a sibling `<plan-stem>.routing.json`, **then** inline `**Routing:**` blocks are tolerated (treated as legacy / migration noise) but the per-task M-commit history check still applies. Migration commits stamped in `manifest.yaml :: hygiene.plan_immutability.exempt_commits[]` are exempted as usual.

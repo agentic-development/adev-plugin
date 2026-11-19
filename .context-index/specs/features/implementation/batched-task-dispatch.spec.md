@@ -8,7 +8,7 @@ milestone:
 revision: 1
 charter-revision: 1
 created: 2026-08-17
-updated: 2026-08-18
+updated: 2026-11-19
 research-ref: .context-index/research/tdd-cycle-graduation-design-analysis.md
 depends-on:
   - .context-index/specs/features/implementation/review-provenance.spec.md
@@ -177,6 +177,21 @@ satisfaction of every row, while a single failure revokes it. Missing sidecar,
 malformed `## Parallelization`, absent group, unreadable manifest — each lands
 on today's solo behavior.
 
+**Task ids are matched by key, not by spelling.** The same task is spelled
+differently on each side of the gate: `## Parallelization` says `Task 1` (the
+parser yields a bare `1`), while `/adev:route` writes `t1` into `.routing.json`
+and `plan_task` events carry whatever id the implementer was given. Every
+lookup the gate makes — routing entry, boundary verdict, prior `plan_task`
+status for (E) — goes through `lib/plan-task-id.mjs::taskIdKey()`, which maps
+`t1`, `1`, and `Task 1` to one key. A raw string comparison would miss every
+route-emitted entry and fail closed to `routing-unusable` on every task, so a
+plan routed exactly as `/adev:route` documents could never batch. The verb's
+output keeps the plan's spelling (`"taskIds": ["1", "2"]`); the downstream
+per-task verbs (`read-routing`, `resolve-depth`, `test-policy`) accept `t1` or `1`
+through the same key. The sidecar's on-disk `t<n>` format is
+unchanged. When two spellings of one task both carry `plan_task` state, the
+later `updatedAt` is the task's current status.
+
 ### C. Invariants preserved inside a batch
 
 Batching changes *who holds the context*, and nothing else. Within a batch, per
@@ -277,6 +292,7 @@ is worse, the reviews are still running and should say so.
 
 - [ ] A `(sequential)` group of 2–4 eligible tasks dispatches to exactly one subagent, and that agent produces one commit per task.
 - [ ] Every eligibility row in Output Contract B is covered by a test that asserts the offending task is forced solo and that `BATCH_SOLO_FORCED` names the failing row.
+- [ ] A `t<n>` routing sidecar (as `/adev:route` emits) paired with a `Task <n>` `## Parallelization` section forms a batch; prior `plan_task` state and boundary verdicts keyed `t<n>` still apply to the plan's `Task <n>`.
 - [ ] A task requiring a human checkpoint is never batched, and a test asserts the checkpoint still fires.
 - [ ] Per-task RED, gaming detection, mocking-boundary classification, and one immutable Handoff Block per task all hold inside a batch; a test asserts a batch of *N* tasks produces *N* handoff blocks.
 - [ ] Both review stages run per task inside a batch at unchanged depth; no group-level review is dispatched.

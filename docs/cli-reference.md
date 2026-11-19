@@ -562,6 +562,8 @@ Exit codes: `0` success (entry JSON on stdout), `1` argument error / `INVALID_PL
 
 Prints `{ batches, solo, advisories }` as JSON to stdout. `--no-batch` forces every task solo and is rejected with `CONFLICTING_BATCH_FLAGS` when combined with `--parallel`. `--max-batch <n>` overrides `implement.max_batch_size` for this run; an invalid value is rejected with `INVALID_MAX_BATCH_SIZE`.
 
+Task ids are matched by key, not spelling: the sidecar's `t1` (as `/adev:route` writes it), the plan's `Task 1`, and a bare `1` all name the same task. Output `taskIds` keep the plan's spelling (`"1"`), and `read-routing`, `resolve-depth`, and `test-policy` accept either `t1` or `1` as `--task-id`.
+
 **Example:**
 ```
 adev implement batches --plan <p> --max-batch 4

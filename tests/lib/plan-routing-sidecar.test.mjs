@@ -305,6 +305,20 @@ test("lookupRoutingEntry returns entry for matching task_id", () => {
   }
 });
 
+test("lookupRoutingEntry matches a plan-side bare or `Task <n>` id against the sidecar's t<n>", () => {
+  const dir = mkPlanDir("lookup-alias");
+  try {
+    const planPath = join(dir, "foo.plan.md");
+    writeFileSync(planPath, "# Plan\n");
+    writeRoutingSidecar(planPath, [ENTRY_T1, ENTRY_T2]);
+
+    assert.deepEqual(lookupRoutingEntry(planPath, "2"), ENTRY_T2);
+    assert.deepEqual(lookupRoutingEntry(planPath, "Task 1"), ENTRY_T1);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test("lookupRoutingEntry throws ROUTING_ENTRY_MISSING for unknown task_id", () => {
   const dir = mkPlanDir("lookup-miss");
   try {
