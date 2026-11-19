@@ -56,6 +56,24 @@ Determine which specs need review:
 
 If no specs need review, report that and exit.
 
+**Re-review advisory (explicit `--spec` only).** Before reviewing a spec named with `--spec`, run:
+
+```bash
+adev review-notes show --spec <path> --json
+```
+
+If `verdict` is `PASS` or `PASS_WITH_NOTES` and `unchangedSinceReview` is `true`, print this advisory, then continue with the review the user asked for (it does not block):
+
+```
+Advisory: <spec-slug> already passed review (<verdict>) and is unchanged since
+(file-sha matches). Re-reviewing an unchanged spec rarely helps: each round
+surfaces new non-blocking warnings and can regress to BLOCK. Recommended:
+/adev:plan --spec <path> (open warnings carry forward into the plan).
+Continuing with the re-review as requested.
+```
+
+Print nothing when `unchangedSinceReview` is `false` or `null`, or the verdict is anything else.
+
 ## Step 2: Load Context for Each Spec
 
 Builds the per-spec context pack handed to every reviewer.
@@ -216,8 +234,14 @@ Review complete. Specs passed with notes.
   - SEC-1: [brief description]
 
 Review the full report at <path to .review.md>.
-You can proceed to /adev:plan or address the warnings first.
+Next: /adev:plan --spec <path>. The warnings carry forward into the plan
+(its Review Notes section), each assigned to the task that touches its section.
+Another revise-and-review round is not recommended: warning counts do not
+converge to zero under re-review, and edits made to clear a warning can
+regress the spec to BLOCK.
 ```
+
+Do not present fixing the warnings before planning as a co-equal next step. The plan is where PASS_WITH_NOTES warnings get resolved; `/adev:plan` reads them with `adev review-notes show` and records each one against a task.
 
 **If BLOCK:**
 ```
@@ -271,7 +295,7 @@ Library functions this skill wraps, for reference when reading its CLI verbs.
 ## Next Step in the Lifecycle
 
 Review complete. The next step depends on the verdict:
-- **PASS / PASS_WITH_NOTES** → **`/adev:plan`**
+- **PASS / PASS_WITH_NOTES** → **`/adev:plan`** (PASS_WITH_NOTES warnings carry forward into the plan's `## Review Notes`)
 - **BLOCK** → **`/adev:specify --revise`** to address the blockers, then re-review.
 
 If invoked via `/adev:work`, offer to continue to the appropriate next step. The user can stop here.
