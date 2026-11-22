@@ -1,9 +1,9 @@
 ---
-partial_schema: spec@1
+partial_schema: implement@1
 mode: cross-cutting
 affects: [review, spec-lifecycle, strategic-planning, agent-reliable-state-artifacts]
 kind: behavioral
-status: review-passed
+status: implemented
 risk_level: medium
 revision: 4
 charter-revision: 1
@@ -12,6 +12,54 @@ target-revision: 3
 tracker-ref: adev-plugin-lifecycle-cycle-time-qa41.5
 created: 2026-11-22
 updated: 2026-11-22
+source-manifest:
+  sha: "de82aa4"
+  files:
+    - .context-index/adrs/0012-plan-adjacent-sidecar-artifacts.md
+    - cli/index.mjs
+    - docs/cli-reference.md
+    - docs/skill-reference.md
+    - lib/blockers-writer.mjs
+    - lib/cli/blockers.mjs
+    - lib/cli/decisions.mjs
+    - lib/cli/specify.mjs
+    - lib/decision-text.mjs
+    - lib/decisions-of-record.mjs
+    - lib/decisions.mjs
+    - lib/governance/remedy-ref-render.mjs
+    - lib/specify-revise.mjs
+    - skills/build/SKILL.md
+    - skills/build/references/blocker-auto-retry-loop.md
+    - skills/build/references/pipeline/step-1-review.md
+    - skills/build/references/resume-mode.md
+    - skills/review-specs/SKILL.md
+    - skills/review-specs/boundary-reviewer-prompt.md
+    - skills/review-specs/consistency-analyzer-prompt.md
+    - skills/review-specs/quick-synthesized-reviewer-prompt.md
+    - skills/review-specs/references/steps/step-5-consolidate-findings.md
+    - skills/review-specs/references/steps/step-6-events-and-report.md
+    - skills/review-specs/references/steps/step-8-decision-ask-round.md
+    - skills/review-specs/referent-integrity-prompt.md
+    - skills/review-specs/security-reviewer-prompt.md
+    - skills/review-specs/structural-architect-prompt.md
+    - skills/review-specs/termination-reviewer-prompt.md
+    - skills/review-specs/wiring-reviewer-prompt.md
+    - skills/specify/references/revise-mode-authoring-dispatch.md
+    - tests/cli/blockers-write.test.mjs
+    - tests/cli/decisions.test.mjs
+    - tests/cli/specify-group-blockers.test.mjs
+    - tests/cli/specify-revise.test.mjs
+    - tests/integration/decisions-end-to-end.test.mjs
+    - tests/lib/blockers-writer.test.mjs
+    - tests/lib/decision-text.test.mjs
+    - tests/lib/decisions-of-record.test.mjs
+    - tests/lib/decisions.test.mjs
+    - tests/lib/governance/remedy-ref-render.test.mjs
+    - tests/lib/specify-revise.test.mjs
+    - tests/skills/build/blocker-loop-decisions.test.mjs
+    - tests/skills/review-specs-decisions-ask-round.test.mjs
+    - tests/skills/review-specs-finding-class-prompts.test.mjs
+  computed-at: "2026-11-22T22:58:15.720Z"
 ---
 
 # Amendment: Live Spec: Auto-Retry Loop on Review BLOCK — Batched Operator Decisions (targeting rev 3)
