@@ -1,6 +1,6 @@
 ---
 charter: cli
-kind: behavioral
+kind: behavior
 status: validated
 risk_level: low
 revision: 2

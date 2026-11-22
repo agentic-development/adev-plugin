@@ -1,6 +1,6 @@
 ---
 charter: domain-extensions
-kind: behavioral
+kind: behavior
 status: validated
 risk_level: low
 milestone:

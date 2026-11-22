@@ -1,7 +1,7 @@
 ---
 charter: setup
 status: validated
-kind: behavioral
+kind: behavior
 risk_level: low
 milestone:
 revision: 1

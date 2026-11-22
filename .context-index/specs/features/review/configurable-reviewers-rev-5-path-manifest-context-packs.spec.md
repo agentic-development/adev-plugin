@@ -1,6 +1,6 @@
 ---
 charter: review
-kind: behavioral
+kind: behavior
 status: review-passed
 risk_level: medium
 revision: 2

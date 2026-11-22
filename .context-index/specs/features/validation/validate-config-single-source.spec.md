@@ -1,7 +1,7 @@
 ---
 charter: validation
 status: validated
-kind: behavioral
+kind: behavior
 mode: refactor
 revision: 2
 charter-revision: 1

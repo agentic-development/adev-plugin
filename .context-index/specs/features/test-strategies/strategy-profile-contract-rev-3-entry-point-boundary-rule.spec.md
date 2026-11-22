@@ -1,6 +1,6 @@
 ---
 charter: test-strategies
-kind: behavioral
+kind: behavior
 status: validated
 risk_level: medium
 revision: 1

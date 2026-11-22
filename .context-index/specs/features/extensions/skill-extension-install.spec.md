@@ -1,6 +1,6 @@
 ---
 charter: extensions
-kind: behavioral
+kind: behavior
 status: validated
 risk_level: low
 revision: 1

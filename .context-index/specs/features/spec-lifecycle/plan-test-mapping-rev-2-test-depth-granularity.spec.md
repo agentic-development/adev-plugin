@@ -1,6 +1,6 @@
 ---
 charter: spec-lifecycle
-kind: behavioral
+kind: behavior
 status: review-pending
 risk_level: medium
 revision: 1

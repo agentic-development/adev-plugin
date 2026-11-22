@@ -22,7 +22,7 @@ extracted-from:
   - skills/init/SKILL.md
   - docs/governance.md
   - docs/configuration.md
-kind: behavioral
+kind: behavior
 revision: 1
 charter-revision: 4
 created: 2026-09-07

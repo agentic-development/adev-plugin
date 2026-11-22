@@ -1,6 +1,6 @@
 ---
 charter: completion-tokens
-kind: behavioral
+kind: behavior
 status: validated
 affects: [strategic-planning, validation, setup]
 mode: cross-cutting

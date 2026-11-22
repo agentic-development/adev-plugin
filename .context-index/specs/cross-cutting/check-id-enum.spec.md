@@ -1,7 +1,7 @@
 ---
 mode: cross-cutting
 affects: [lifecycle-state, validation, governance]
-kind: behavioral
+kind: behavior
 status: draft
 risk_level: medium
 tracker-ref: issue-562

@@ -1,7 +1,7 @@
 ---
 mode: cross-cutting
 affects: [lifecycle-artifacts, spec-lifecycle, review, validation, planning]
-kind: behavioral
+kind: behavior
 status: implemented
 source-manifest:
   sha: 3539b26

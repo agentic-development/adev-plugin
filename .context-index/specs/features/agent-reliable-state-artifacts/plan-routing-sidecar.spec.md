@@ -1,6 +1,6 @@
 ---
 charter: agent-reliable-state-artifacts
-kind: behavioral
+kind: behavior
 status: review-pending
 risk_level: medium
 revision: 2
