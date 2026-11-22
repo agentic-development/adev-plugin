@@ -20,6 +20,8 @@ Produce one section per dispatched reviewer, in registry order. For each reviewe
 
 **External Remedies (consistent with the build loop's progress line).** When any surviving BLOCK finding carries `finding_class: external`, emit one `## External Remedies` table row per entry in the `externalRemedies` array that `adev blockers write --json` returns (Step 6b-bis — run it before committing this report whenever an `external` finding exists): `blocker_id`, `section_anchor`, and `remedy_ref`, copied as-is. These are the SAME three fields, in the SAME order, that the build loop's "External remedies" progress line prints (`<ADEV_ROOT>/skills/build/references/blocker-auto-retry-loop.md`), and both come from the same production renderer, so a human reading `.review.md` on disk and the loop's live console output see byte-identical `remedy_ref` values. Never re-render or reformat `remedy_ref` yourself. Omit the section when no finding is `external`-classed.
 
+**Decisions Required.** When the `decisionsRequiredTable` returned by `adev blockers write --json` (Step 6b-bis) is non-empty, write it verbatim under `## Decisions Required` in the report. It is ready-made markdown (columns `blocker_id | section | question | options`), already stripped and pipe-escaped: never assemble, reformat or re-escape rows yourself. Because the value exists only after the sidecar is written, run Step 6b-bis before committing the report whenever the verdict is BLOCK and any finding is `decision`-classed, as for External Remedies. Omit the section when the table is `''`.
+
 ```markdown
 # Architecture Review: <spec-slug>
 
@@ -46,6 +48,10 @@ Produce one section per dispatched reviewer, in registry order. For each reviewe
 | Blocker ID | Section Anchor | Remedy Ref |
 |------------|-----------------|------------|
 | <blocker_id> | <section_anchor> | <renderRemedyRef(remedy_ref)> |
+
+## Decisions Required
+
+<decisionsRequiredTable, verbatim>
 
 ## <Reviewer Name> (<id>)
 
