@@ -12,6 +12,15 @@ Call `listLifecycleStates(projectRoot)` from `<ADEV_ROOT>/lib/lifecycle-state.mj
 
 Call `currentState(projectRoot, specPath)`. The next step to dispatch is the one whose `state.steps[name]` is missing or non-completed in pipeline order (`specify` → `review` → `plan` → `route` → `implement` → `validate`). Before dispatching, run `requireGate(state, "<prior-step>", { mode })` to confirm the prior step actually passed.
 
+### Resuming a `DECISION_REQUIRED` halt
+
+Resume recognises the halt from the build state: `adev build-state read --spec <path>` returns a `review` step with `status: failed` and `verdict: DECISION_REQUIRED` (recorded by the loop's sidecar+fail-loud path). In that case `/adev:build --resume` re-enters the loop at step 4 (`adev specify group-blockers`, see `<ADEV_ROOT>/skills/build/references/blocker-auto-retry-loop.md`). It never re-dispatches `/adev:review-specs`, because a fresh review would rewrite `.blockers.md` and discard the recorded answers.
+
+- If `group-blockers` still returns open `decision_blocker_ids`, the halt repeats with the pending list.
+- Otherwise the loop continues at step 5 (authoring, then revise) on the same revision.
+- A resume is a fresh entry into the loop. The loop keeps `retries_remaining` only in its own working state and never persists it, so on resume `retries_remaining` is re-seeded from `build.max_review_retries`, exactly as on any loop entry. Each resume is operator-initiated, so the operator's resume is the budget boundary.
+- `BLOCKERS_REVISION_MISMATCH` from `adev decisions record` is the signal that the sidecar is stale (the spec was hand-edited and its revision bumped). The fix is a fresh `/adev:review-specs`, then record the answers against the new sidecar.
+
 ### Resume with `--milestone <name>`
 
 Re-discover all specs with `milestone: <name>` in their frontmatter by scanning `.context-index/specs/`. Do NOT rely solely on the orchestrator's resume cache -- specs may have been added or modified between sessions. For each discovered spec, call `currentState(projectRoot, specPath)`:
