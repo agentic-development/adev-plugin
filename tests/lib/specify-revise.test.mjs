@@ -919,3 +919,15 @@ test('parseBlockersSidecar reads question/options/answer keys and defaults them 
   assert.equal(b.decision_note, null);
   assert.equal(b.decision_recorded, null);
 });
+
+test('parseBlockersSidecar exposes each entry\'s own first prose block, or null when it has none', () => {
+  const text = [
+    '# Blockers: x', '',
+    '## a:t:00000001', '', '```yaml', 'blocker_id: a:t:00000001', 'section_anchor: s', '```', '',
+    '**Reviewer:** r', '', '```', 'First prose. ', '## a:t:00000002', '```', '',
+    '## a:t:00000002', '', '```yaml', 'blocker_id: a:t:00000002', 'section_anchor: s', '```', '',
+  ].join('\n');
+  const [one, two] = parseBlockersSidecar(text);
+  assert.equal(one.prose, 'First prose. \n## a:t:00000002');
+  assert.equal(two.prose, null);
+});
