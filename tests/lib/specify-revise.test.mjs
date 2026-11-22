@@ -899,3 +899,23 @@ test('(y) assertHeadingsOutsideSplicesIntact rejects a splice that loses an unto
   assert.equal(bad.ok, false);
   assert.match(bad.reason, /2:b/);
 });
+
+test('parseBlockersSidecar reads question/options/answer keys and defaults them for legacy entries', () => {
+  const text = [
+    '## r:t:aaaaaaaa', '', '```yaml', 'blocker_id: r:t:aaaaaaaa', 'section_anchor: x', 'finding_class: decision',
+    'question: "Pick?"', 'options: [{"label":"A","implications":"a"},{"label":"B","implications":"b"}]',
+    'reviewer_count: 1', 'decision_choice: "A"', 'decision_note: "n"', 'decision_recorded: 2026-01-01T00:00:00.000Z', '```', '',
+    '## r:t:bbbbbbbb', '', '```yaml', 'blocker_id: r:t:bbbbbbbb', 'section_anchor: y', 'finding_class: defect', 'reviewer_count: 1', '```', '',
+  ].join('\n');
+  const [a, b] = parseBlockersSidecar(text);
+  assert.equal(a.question, 'Pick?');
+  assert.deepEqual(a.options, [{ label: 'A', implications: 'a' }, { label: 'B', implications: 'b' }]);
+  assert.equal(a.decision_choice, 'A');
+  assert.equal(a.decision_note, 'n');
+  assert.equal(a.decision_recorded, '2026-01-01T00:00:00.000Z');
+  assert.equal(b.question, null);
+  assert.deepEqual(b.options, []);
+  assert.equal(b.decision_choice, null);
+  assert.equal(b.decision_note, null);
+  assert.equal(b.decision_recorded, null);
+});

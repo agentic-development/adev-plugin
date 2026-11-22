@@ -150,3 +150,30 @@ test("blockers write derives blocker_id from reviewer + finding_type", () => {
     cleanup(dir);
   }
 });
+
+test("--json output carries decisionsRequired, decisionsRequiredTable and every advisory; non-JSON prints the decision line", () => {
+  const dir = makeProject();
+  try {
+    const findings = JSON.stringify([
+      { blocker_id: "r:t:aaaaaaaa", section_anchor: "x", reviewer: "r", finding_class: "decision", prose: "Pick one. More.", question: "Pick?", options: [{ label: "A", implications: "a" }, { label: "B", implications: "b" }] },
+      { blocker_id: "r:t:bbbbbbbb", section_anchor: "y", reviewer: "r", finding_class: "defect", prose: "Defect.", question: "Ignored?", decision_choice: "A" },
+    ]);
+    const r = runCli(dir, ["write", "--spec", SPEC_REL, "--findings", findings, "--revision", "1", "--json"]);
+    assert.strictEqual(r.status, 0, r.stderr);
+    const result = JSON.parse(r.stdout);
+    assert.deepStrictEqual(result.decisionsRequired, [
+      { blocker_id: "r:t:aaaaaaaa", section_anchor: "x", question: "Pick?", options: [{ label: "A", implications: "a" }, { label: "B", implications: "b" }] },
+    ]);
+    assert.match(result.decisionsRequiredTable, /^\| blocker_id \| section \| question \| options \|/);
+    assert.deepStrictEqual(
+      result.advisories.filter((a) => a.code === "DECISION_FIELDS_IGNORED"),
+      [{ code: "DECISION_FIELDS_IGNORED", blocker_id: "r:t:bbbbbbbb", fields: ["decision_choice", "question"] }],
+    );
+
+    const plain = runCli(dir, ["write", "--spec", SPEC_REL, "--findings", findings, "--revision", "1"]);
+    assert.strictEqual(plain.status, 0, plain.stderr);
+    assert.match(plain.stdout, /^  Decision required for r:t:aaaaaaaa \(x\): Pick\?$/m);
+  } finally {
+    cleanup(dir);
+  }
+});

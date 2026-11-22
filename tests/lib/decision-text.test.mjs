@@ -175,3 +175,19 @@ test('headerFor strips control/ANSI and caps at 12 code points', () => {
   assert.equal(headerFor('a'.repeat(12)), 'a'.repeat(12));
   assert.equal(headerFor(undefined), '');
 });
+
+import { renderDecisionsRequiredTable } from '../../lib/decision-text.mjs';
+
+test('renderDecisionsRequiredTable: header, option labels in order, | and \\ escaped (\\ first); "" for empty', () => {
+  assert.equal(renderDecisionsRequiredTable([]), '');
+  const out = renderDecisionsRequiredTable([{
+    blocker_id: 'r:t:aaaaaaaa', section_anchor: 'a|b',
+    question: 'Use a\\b | c?',
+    options: [{ label: 'One', implications: 'x' }, { label: 'T|wo', implications: 'y' }],
+  }]);
+  assert.deepEqual(out.split('\n'), [
+    '| blocker_id | section | question | options |',
+    '| --- | --- | --- | --- |',
+    '| r:t:aaaaaaaa | a\\|b | Use a\\\\b \\| c? | One, T\\|wo |',
+  ]);
+});
