@@ -402,6 +402,14 @@ adev review-notes show --spec .context-index/specs/features/auth/login.spec.md -
 
 **Implementation:** `lib/cli/review-notes.mjs` (wraps `lib/review-notes.mjs::readReviewNotes`). **Called by:** `/adev:plan` Step 1 (warnings for the plan's `## Review Notes`), `/adev:review-specs` Step 1 (re-review advisory).
 
+### `decisions`
+
+**Purpose:** List and record operator answers to decision-classed review blockers on a spec's `.blockers.md` sidecar.
+
+**Signature:** `decisions pending --spec <path> [--json]` / `decisions record --spec <path> --answers <json-or-@path> [--json]`
+
+**Implementation:** `lib/cli/decisions.mjs` (wraps `lib/decisions.mjs`).
+
 ### `diagnose`
 
 **Purpose:** Run registered diagnostics over lifecycle artifacts (write-time integrity checks). Exit 2 if any error-severity diagnostic fires.
