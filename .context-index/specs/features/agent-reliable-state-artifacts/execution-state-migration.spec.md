@@ -3,10 +3,10 @@ charter: agent-reliable-state-artifacts
 status: validated
 risk_level: medium
 milestone: 0.26.0
-revision: 3
+revision: 4
 charter-revision: 3
 created: 2026-05-11
-updated: 2026-08-13
+updated: 2026-11-19
 source-manifest:
   sha: "2f19a02"
   files:
@@ -89,6 +89,26 @@ Rev 3 makes execution state use that same resolver. No second resolver is introd
 - All rev 2 write-path invariants survive unchanged, now anchored at the storage root: the `.execution-state.json` basename check, the realpath-prefix containment, and the `<statePath>.<hex>.tmp` atomic temp-then-rename with best-effort cleanup.
 - **Accepted consequence (precedent: `milestones-migration.spec.md`):** where a project's `.context-index/` sits *below* the git root, the state file follows the git root, and `writeExecutionState` will create `.context-index/` there on first write. The issue board and the milestone registry already behave this way; execution state is not given a bespoke guard against it.
 
+## Concurrent Writers (rev 4 — adev-plugin-lifecycle-cycle-time-qa41.2)
+
+Shared storage means one file per repository, so two builds running at once (in separate worktrees, or on one branch) used to overwrite each other's live state, last writer wins. Moving a build into its own worktree did not help, because the worktrees share the file on purpose. Rev 4 keeps the single shared file, and with it everything rev 3 delivers: every checkout sees the one state, and every reader is unchanged. What it adds is a write-side guard: a write that would replace another build's live state is refused.
+
+**Owner identity** is the existing `sourceBranch` (the branch checked out at the writer's own `projectRoot`) plus `planRef`. Only `active` and `blocked` states have an owner worth protecting; `idle` and `standalone` carry no binding and are free to replace.
+
+**A write or clear is refused** (`EXECUTION_STATE_CONFLICT`, nothing written, `err.owner = { status, sourceBranch, planRef, currentTask, updated }`) when the state on disk is:
+
+1. `blocked` and written from a different branch than the writer's, **at any age**. A blocked state is a parked resume point that nothing refreshes while it waits, so age says nothing about whether someone still means to come back to it.
+2. `active`, written from a different branch, and `updated` within the lease window: the same `tasks.claim_ttl_minutes` the issue board's claims use (default 240; `0` means it never lapses; an invalid value falls back to the default). An active build rewrites the state at every task boundary, so one silent for longer than the lease is treated like an expired claim and may be taken over.
+3. `active` on the same branch (or where either side's branch is unknown: detached HEAD, non-git checkout, or a file written before `sourceBranch` existed), `updated` within the lease window, and naming a different `planRef` than the incoming write. This is two builds in one checkout, which branch identity alone cannot separate. Writes that name no plan (`blocked` without `--plan-ref`, `clear`, `standalone`) are taken to be the owner's.
+
+Freshness is fail-closed: a missing or unparseable `updated` counts as live, mirroring how the board treats a malformed `claimed_at`.
+
+**Escape:** `writeExecutionState(root, state, { force: true })`, `clearExecutionState(root, { force: true })`, or `--force` on the CLI. Callers must not force on their own; `/adev:implement` surfaces the owner, continues without execution state for the run, and skips its Step 4 clear.
+
+**Known limits.** The check and the rename are separate steps, so two writes landing in the same instant can still race. The guard covers builds that overlap for minutes or hours, which is the failure seen in practice. Two builds on one branch that both write no `planRef` cannot be told apart.
+
+**Design alternative not taken: a per-branch or per-plan keyed map inside the file.** It would let concurrent builds each keep resumable state, but every reader would change meaning: the session-start resume block, the lifecycle gate's `active`/`standalone` bypass, `/adev:work`'s state scan, the issue-reminder hook, and session-capture's binding attribution would each have to pick "the caller's entry" or "all entries". It also cannot key two builds on one branch, and a reader that picks only its own entry brings back the very blindness issue-607 fixed (a checkout reporting `idle` while another holds work) unless every reader moves to a list view. That is a product decision about whether concurrent builds should be first-class; the guard is the smaller, compatible step that stops silent data loss in the meantime.
+
 ## Hook Protocol Compliance (CON-4)
 
 Per constitution Non-Negotiable Principle 4 ("Hook protocol compliance — hooks read JSON from stdin + env vars, exit 0 (allow) or 2 (block), output JSON to stdout"):
@@ -151,10 +171,11 @@ Not applicable — `lib/execution-state.mjs` and the new hook helpers are passiv
 
 ## Acceptance Criteria
 
-- [ ] `lib/execution-state.mjs` exports unchanged signatures: `writeExecutionState(projectRoot, state)`, `readExecutionState(projectRoot)`, `clearExecutionState(projectRoot)`. No new public exports beyond the constants needed for tests.
+- [ ] `lib/execution-state.mjs` exports unchanged signatures: `writeExecutionState(projectRoot, state, options?)`, `readExecutionState(projectRoot)`, `clearExecutionState(projectRoot, options?)`. The trailing `options` (`{ force }`, rev 4) is optional, so every existing call site is unaffected. No new public exports beyond the constants needed for tests.
 - [ ] All writes go through `JSON.stringify(state, null, 2) + "\n"` followed by temp-then-rename. A grep test asserts no `yaml` / `YAML` (case-insensitive) string and no `^---` regex match (legacy frontmatter sentinel) appears in `lib/execution-state.mjs` after the rewrite. CI gate. Addresses review-rev-1 SA-2 — the rev 1 `---\n`-literal grep was overzealous (could match markdown headings and JSDoc).
 - [ ] `readExecutionState(projectRoot)` returns the parsed state object on success; returns `null` on a missing file, malformed JSON, or any `fs`/parse error. Throws only on `INVALID_PROJECT_ROOT` / `INVALID_STORAGE_PATH`.
 - [ ] **Worktree-shared storage (rev 3 — issue-607).** Storage resolution goes through `lib/issues/resolve-root.mjs::resolveStorageRoot`; `lib/execution-state.mjs` defines no resolver of its own and adds no public export (AC 1 still holds — the behavior is asserted through `readExecutionState` / `writeExecutionState` / `clearExecutionState` only). Tests, against a real `git worktree add` fixture: (a) `writeExecutionState(<worktree>, …)` creates `<mainRepo>/.context-index/.execution-state.json` and leaves `<worktree>/.context-index/.execution-state.json` absent; (b) `readExecutionState(<worktree>)` returns what was written from `<mainRepo>`; (c) a stale worktree-local `.execution-state.json` is ignored in favour of the shared file; (d) `clearExecutionState(<worktree>)` clears the shared file.
+- [ ] **Concurrent writers (rev 4).** Tests in `tests/lib/execution-state-concurrent-writers.test.mjs`, against a real `main` + `feature-b` worktree fixture: (a) a fresh `active` state from `main` survives an `active` write from the worktree, which throws `EXECUTION_STATE_CONFLICT` with `err.owner` naming `main` and its plan; (b) a `blocked` state from `main` backdated months survives the same write; (c) `clearExecutionState` and a `standalone` write from the worktree are refused too; (d) `{ force: true }` overwrites; (e) an `active` state past `tasks.claim_ttl_minutes` is taken over, and `claim_ttl_minutes: 0` never lapses; (f) on one branch, a fresh `active` state for plan A refuses an `active` write for plan B; (g) the owning branch writes, blocks, resumes, and clears its own state freely, and an `idle` state is free to claim; (h) a legacy file with no `sourceBranch` does not count as another branch's; (i) the CLI exits `2` with `EXECUTION_STATE_CONFLICT` on stderr for `write` and `clear`, and `--force` exits `0`.
 - [ ] **`tasks.db_path` unified knob (rev 3 — issue-607).** With `tasks.db_path: <dir>` set in the manifest, the state file resolves to `<dir>/.context-index/.execution-state.json` and no project-local copy is created. A `db_path` pointing at a regular file or a nonexistent path throws `INVALID_STORAGE_PATH` ("must point at an existing directory"). Outside a git checkout with no `db_path`, the caller-supplied root is still the storage root (rev 2 behavior preserved).
 - [ ] `writeExecutionState(projectRoot, state)` validates `state.status` against the existing `VALID_STATUSES` set (`idle`, `active`, `blocked`, `standalone`). `active` status still requires `planRef` and non-null `currentTask` (existing semantics preserved). Throws `INVALID_STATUS`, `MISSING_PLAN_REF`, or `MISSING_CURRENT_TASK` per today's contract.
 - [ ] Idle/standalone normalization is preserved: when `state.status` is `idle` or `standalone`, all binding fields (`planRef`, `currentTask`, `issueBinding`, `blockers`, `nextAction`) are cleared to `""` and `progress` is cleared to `[]` before writing. Test fixture exercises both statuses.
@@ -200,6 +221,7 @@ Not applicable — `lib/execution-state.mjs` and the new hook helpers are passiv
 - **When** any public function is called with a `projectRoot` that does not resolve to a directory containing `.context-index/manifest.yaml` **then** `INVALID_PROJECT_ROOT` is thrown before any I/O occurs.
 - **When** the resolved state path or temp-file path escapes `<storageRoot>/.context-index/` **then** `INVALID_STORAGE_PATH` is thrown before any write occurs (defense against crafted `projectRoot` traversal).
 - **When** any public function is called from inside a linked `git worktree` **then** the state file resolves to the main repository root (`git rev-parse --git-common-dir`), so every worktree of a repository reads and writes one execution state (issue-607). A stale worktree-local `.execution-state.json` left behind by an earlier revision is ignored, never read and never written.
+- **When** `writeExecutionState` or `clearExecutionState` would replace a live (`active`/`blocked`) state owned by another build, per the three rules in "Concurrent Writers" **then** `EXECUTION_STATE_CONFLICT` is thrown, the file is left byte-for-byte unchanged, and `err.owner` names the holder. **When** `{ force: true }` is passed **then** the guard is skipped.
 - **When** the manifest sets `tasks.db_path` **then** that directory is the storage root for `.execution-state.json`, exactly as it already is for `tasks/tasks.json` and `milestones.json` (unified knob). **When** it points at a path that is not an existing directory **then** `INVALID_STORAGE_PATH` is thrown before any I/O.
 - **When** the git probe fails (no repository, git unavailable) and no `tasks.db_path` is set **then** the caller-supplied `projectRoot` remains the storage root (rev 2 behavior).
 - **When** `hooks/_execution-state.mjs` is invoked with `ADEV_CONTEXT_ROOT` set to a valid project root containing `.execution-state.json` **then** the helper writes a single line of JSON to stdout (the parsed state object) and exits 0.
@@ -231,6 +253,7 @@ Not applicable — `lib/execution-state.mjs` and the new hook helpers are passiv
 | Any public function called with a `projectRoot` that does not resolve to a directory containing `.context-index/manifest.yaml` after `path.resolve()` | Throws `INVALID_PROJECT_ROOT` with the resolved path | INVALID_PROJECT_ROOT |
 | Any public function whose resolved state-file path escapes `<storageRoot>/.context-index/` (e.g., via a crafted `projectRoot` symlink) | Throws `INVALID_STORAGE_PATH` with the offending resolved path before any I/O | INVALID_STORAGE_PATH |
 | `tasks.db_path` resolves to a regular file, a nonexistent path, or a path that cannot be canonicalized | Throws `INVALID_STORAGE_PATH` ("must point at an existing directory") before any I/O. Same defense as `lib/milestones.mjs`. | INVALID_STORAGE_PATH |
+| `writeExecutionState` / `clearExecutionState` would replace another build's live state (see "Concurrent Writers") and `force` is not set | Throws; `err.owner = { status, sourceBranch, planRef, currentTask, updated }`; `.execution-state.json` unchanged. The CLI prints the code and an owner JSON line on stderr and exits `2`. | EXECUTION_STATE_CONFLICT |
 | `writeExecutionState` rename step fails (`EACCES`, `ENOSPC`, etc.) | Best-effort `fs.unlinkSync` on the temp file, then rethrows the underlying `fs` error code unchanged. `.execution-state.json` is unchanged. | FS_ERROR |
 | `writeExecutionState` temp-file write step fails | Propagates `fs` error. No rename attempted. `.execution-state.json` unchanged. | FS_ERROR |
 | `readExecutionState` encounters a missing file | Returns `null` (no error thrown) | — (no error) |
