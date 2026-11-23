@@ -104,7 +104,7 @@ This charter retains ownership of *what* the issue board means: lifecycle, tiere
 - Per-parent counters are monotonic (closing or deleting `e1.f1.t1` does not free that ID for future tasks under `e1.f1`)
 - Hierarchy depth is determined by dot count in the ID; no maximum depth
 - Legacy flat IDs (`epic-N`, `issue-N`, `bd-XXXXXX`) continue to parse and operate as root-level WorkItems with no enforced parent relationship
-- Tree walking via `walkTree(parentId)` is defined only for tiered IDs (`e1.*`, `e1.f1.*`, etc.). For legacy flat IDs, `walkTree` returns an empty list; hierarchy queries against legacy items are out of scope by design. Callers needing hierarchy semantics on legacy items must explicitly migrate them to tiered IDs first.
+- Tree walking via `walkTree(parentId)` is a plain ID-prefix match against `<parentId>.`, defined for any parent id shape — tiered (`e1.*`, `e1.f1.*`), legacy flat, or a `parseId()`-unrecognized id (`mintFlatId()` hashes, br `--slug` ids). It returns an empty list only when no item is literally prefixed that way, never because the parent id's own shape was rejected upfront (adev-plugin-walktree-parseid-real-ids-sa9i: production boards mint non-tiered-shaped parent ids that still carry literal `<parentId>.<n>` children outside `create()`'s tiered path).
 
 ## Capability Map
 

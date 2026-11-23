@@ -1,0 +1,1 @@
+{"event":"debug_intervention","kind":"debug","note":"walkTree() gated on parseId(parentId) legacy/null check; real board ids (mintFlatId hashes, br slug ids) fail that check despite real .N children. Removed gate; prefix match alone now used.","ts":"2026-11-23T05:38:10.610Z"}

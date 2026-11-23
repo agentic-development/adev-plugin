@@ -384,19 +384,23 @@ describe("BeadsAdapter — affected_modules round-trip (RI-2 fix, bug-selection-
   /**
    * Tests for tiered hierarchy in lib/issues/beads-adapter.mjs
    *
-   * These tests are mock-only (do not require `br` to be installed).
-   * They verify that the beads adapter exposes walkTree and cascade-aware
-   * close per the tiered-hierarchy spec.
+   * These tests are mock-only (do not require `br` to be installed) — they
+   * stub `list()`, the collaborator walkTree() reads from, the same way
+   * `makeAdapter()` above stubs `_scan`/`_scanRaw`.
    *
-   * Full walkTree logic is tested through the file adapter since beads
-   * delegates epic and tiered operations to it. Here we test that:
-   * - walkTree is exposed as a function
-   * - walkTree for legacy IDs returns empty list
-   * - close throws CASCADE_BLOCKED when children are unclosed
+   * walkTree() does a plain string-prefix match over `list()`'s result; it
+   * does not consult parseId() at all (adev-plugin-walktree-parseid-real-ids-sa9i).
+   * Real boards mint parent ids `parseId()` cannot classify as tiered
+   * (mintFlatId hash suffixes, br --slug ids) that still carry literal
+   * "<parentId>.<n>" children, so "legacy-shaped id" is not proof of "no
+   * children" — only an empty `list()` result is.
    */
 
-
-
+  function withListStub(items) {
+    const adapter = new BeadsAdapter("/tmp/nonexistent", { checkBr: false });
+    adapter.list = async () => items;
+    return adapter;
+  }
 
 
 
@@ -406,30 +410,52 @@ describe("BeadsAdapter — affected_modules round-trip (RI-2 fix, bug-selection-
       assert.equal(typeof adapter.walkTree, "function");
     });
 
-    it("walkTree for legacy flat ID returns empty list", async () => {
-      const adapter = new BeadsAdapter("/tmp/nonexistent", { checkBr: false });
-      // Delegates to file adapter which returns [] for legacy IDs without reading disk
-      // (no .beads-map.json, no tasks.md — both read as empty)
+    it("walkTree for legacy flat ID with no real children returns empty list", async () => {
+      const adapter = withListStub([{ id: "epic-1" }]);
       const result = await adapter.walkTree("epic-1");
       assert.deepEqual(result, []);
     });
 
-    it("walkTree for issue-N legacy ID returns empty list", async () => {
-      const adapter = new BeadsAdapter("/tmp/nonexistent", { checkBr: false });
+    it("walkTree for issue-N legacy ID with no real children returns empty list", async () => {
+      const adapter = withListStub([{ id: "issue-10" }]);
       const result = await adapter.walkTree("issue-10");
       assert.deepEqual(result, []);
     });
 
-    it("walkTree for bd-XXXXXX legacy ID returns empty list", async () => {
-      const adapter = new BeadsAdapter("/tmp/nonexistent", { checkBr: false });
+    it("walkTree for bd-XXXXXX legacy ID with no real children returns empty list", async () => {
+      const adapter = withListStub([{ id: "bd-abc123" }]);
       const result = await adapter.walkTree("bd-abc123");
       assert.deepEqual(result, []);
     });
 
     it("walkTree for invalid ID returns empty list", async () => {
-      const adapter = new BeadsAdapter("/tmp/nonexistent", { checkBr: false });
+      const adapter = withListStub([{ id: "GARBAGE!!" }]);
       const result = await adapter.walkTree("GARBAGE!!");
       assert.deepEqual(result, []);
+    });
+
+    it("walkTree returns real .N children minted under a legacy-shaped (epic-<hash>) parent id, not []", async () => {
+      // Regression for adev-plugin-walktree-parseid-real-ids-sa9i: parseId()
+      // flags "epic-9zqjfj" legacy:true, but the real board still mints
+      // literal "epic-9zqjfj.N" children outside create()'s tiered path.
+      const adapter = withListStub([
+        { id: "epic-9zqjfj" },
+        { id: "epic-9zqjfj.1" },
+        { id: "epic-9zqjfj.2" },
+        { id: "epic-other.1" },
+      ]);
+      const result = await adapter.walkTree("epic-9zqjfj");
+      assert.deepEqual(result.map((i) => i.id), ["epic-9zqjfj.1", "epic-9zqjfj.2"]);
+    });
+
+    it("walkTree returns real .N children minted under a slug-style root id that parseId() cannot classify at all", async () => {
+      const adapter = withListStub([
+        { id: "adev-plugin-eval-harness-xj3k" },
+        { id: "adev-plugin-eval-harness-xj3k.1" },
+        { id: "adev-plugin-eval-harness-xj3k.11" },
+      ]);
+      const result = await adapter.walkTree("adev-plugin-eval-harness-xj3k");
+      assert.deepEqual(result.map((i) => i.id), ["adev-plugin-eval-harness-xj3k.1", "adev-plugin-eval-harness-xj3k.11"]);
     });
   });
 
