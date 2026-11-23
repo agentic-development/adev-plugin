@@ -195,6 +195,17 @@ After the Parallelization section, emit a `## Task Summary` table that provides 
 
 This table is always emitted, regardless of project complexity or strategy configuration.
 
+### Task Sizing
+
+Size each task before writing it. Split it when either holds:
+
+- **Its `**Files:**` block lists more than 5 non-test files.** The plan reviewer flags the same limit.
+- **It changes behavior that more than 8 existing tests assert.** Each of those tests must be updated in the same task, so the suite stays green at that task's commit, and that update is work of its own size. In one measured plan, a task that reordered validation checks had to update about 15 existing tests and took as long as the other five tasks combined. Before writing the task, search the test tree for the function, message, or error code it changes to estimate the count. Split the behavior change itself into steps that each break fewer tests. Do not split off the test updates into a later task: that leaves the suite red at the first task's commit.
+
+A task labelled `large` that meets neither condition carries a `**Why not split:**` line saying what keeps it whole. If no reason holds, split it.
+
+**Machine-dependent fixtures.** Some tests compare against a recorded value that depends on the machine: computed styles, font metrics, screenshots or visual snapshots, OS-specific paths or line endings, locale, or timezone. A task with such tests carries a `**Fixture platform:**` line naming where the fixture is recorded (the CI Linux container unless the project names another), and its steps record the fixture there from the start. A fixture first recorded on the author's machine fails on CI and has to be recorded a second time.
+
 ### Review Notes Section
 
 When Step 1's `adev review-notes show` returned a non-empty `warnings` list (a `PASS_WITH_NOTES` review), emit a `## Review Notes` section immediately after the Task Summary. This is how PASS_WITH_NOTES warnings are resolved: in the plan, by the tasks that already touch the cited text, not by another revise-and-review round on the spec. Omit the section when `warnings` is empty.
