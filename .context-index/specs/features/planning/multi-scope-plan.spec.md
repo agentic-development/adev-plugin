@@ -6,7 +6,7 @@ milestone:
 revision: 1
 charter-revision: 2
 created: 2026-04-16
-updated: 2026-04-16
+updated: 2026-11-23
 depends-on: ["tiered-hierarchy-and-tree-walking", "unified-create-api", "next-action-and-type-fields"]
 tracker-ref: epic-9
 source-manifest:
@@ -14,6 +14,7 @@ source-manifest:
     - path: skills/plan/SKILL.md
     - path: skills/plan/references/mode-router.md
     - path: skills/plan/references/plan-reviewer-prompt.md
+    - path: skills/plan/references/steps/step-5-write-the-plan.md
 ---
 
 # Live Spec: Multi-Scope /adev:plan with Natural-Language Triage
@@ -94,6 +95,8 @@ source-manifest:
    - Epic with no Features → `"Run /adev:plan --feature <module> to break into Features"`
    - Epic with all Features planned → `"Run /adev:plan --epic <id> to verify decomposition"`
 
+21. **When** spec mode writes a task **then** it is split if its `**Files:**` block lists more than 5 non-test files or it changes behavior that more than 8 existing tests assert, with the behavior change itself split so every task's commit leaves the suite green. A `large` task that meets neither condition carries a `**Why not split:**` line. A task whose tests compare against machine-dependent fixtures (computed styles, font metrics, snapshots, OS paths or line endings, locale, timezone) carries a `**Fixture platform:**` line naming where those fixtures are recorded, the CI Linux container by default. The plan reviewer's Task Sizing check flags any task that breaks these rules.
+
 ### Postconditions
 
 - `skills/plan/SKILL.md` updated with mode detection section and per-mode flows
@@ -145,3 +148,4 @@ source-manifest:
 - [ ] `mode-router.md` exists and documents all five mode detection rules with concrete keyword/state examples
 - [ ] All existing tests pass; new tests cover all modes
 - [ ] No constitutional violations (no new deps, SKILL.md remains primary surface)
+- [ ] `step-5-write-the-plan.md` states the split thresholds (more than 5 non-test files; more than 8 existing tests asserting the changed behavior), the `**Why not split:**` line for `large` tasks, and the `**Fixture platform:**` line for machine-dependent fixtures, and the plan reviewer's Task Sizing check flags each (Behavior 21)
