@@ -58,8 +58,10 @@ Adopt **sibling-file artifacts** with a documented naming convention as the cano
 |---|---|---|---|
 | `<spec-stem>.review.md` | `/adev:review-specs` | `/adev:build` (skip-condition), hygiene Pass 12 | Rewritten on each review run |
 | `<spec-stem>.validate.md` | `/adev:validate` | `/adev:build` (skip-condition), hygiene | Rewritten on each validate run |
-| `<spec-stem>.blockers.md` | `/adev:build` Step 1 (BLOCK path) | Human reviser; future `/adev:specify --revise` (`issue-527`) | Written on review BLOCK; cleared when superseded review passes |
+| `<spec-stem>.blockers.md` | `/adev:build` Step 1 / `/adev:review-specs` (BLOCK path); `adev decisions record` (answer keys only) | Human reviser; future `/adev:specify --revise` (`issue-527`) | Written on review BLOCK; cleared when superseded review passes |
 | `<plan-stem>.routing.json` | `/adev:route` | `/adev:implement` (via `adev implement read-routing`) | Rewritten on each route run. Machine-primary; markdown view via `adev route render-sidecar`. |
+
+The Producer column is informational. What binds is the closed-peer rule below. A new producer of an existing peer is a table update, not an amendment.
 
 The set is closed by ADR. Adding a new peer requires either an ADR amendment or a follow-on ADR that enumerates it. Skills MUST NOT write arbitrary `<stem>.<x>.md` files outside this enumeration.
 

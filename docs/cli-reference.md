@@ -51,6 +51,7 @@ This file is the CLI counterpart to [`skill-reference.md`](skill-reference.md) (
 | `route` | Emit/render the plan routing sidecar | `lib/cli/route.mjs` |
 | `implement` | Read a task's routing entry from the sidecar | `lib/cli/implement.mjs` |
 | `specify` | Revise a BLOCKED spec (revision N → N+1) | `lib/cli/specify.mjs` |
+| `decisions` | List open operator decisions on a spec's blockers sidecar and record the answers | `lib/cli/decisions.mjs` |
 | `prototype` | Prototype helpers (charter discovery, preview server) | `lib/cli/prototype.mjs` |
 | `issues` | Issue-board subcommands (board, create, epic, update, close, dep, list, ready, milestone, migrate, claim, release, stale, set-modules, next, record-attempt, show) | `lib/cli/issues.mjs` |
 | `coordination` | Scan open PRs, remote branches, and issues owned elsewhere | `lib/cli/coordination.mjs` |
@@ -387,6 +388,11 @@ adev manifest lint --json
 adev blockers write --spec <p> --findings @findings.json --revision 3 --json
 ```
 
+**JSON result additions (decision-classed findings):**
+- `decisionsRequired`: one `{ blocker_id, section_anchor, question, options: [{ label, implications }] }` per decision-classed entry written (`[]` when none).
+- `decisionsRequiredTable`: the same data as a markdown table (`''` when none).
+- Advisories (never fail the write): `DECISION_TEXT_REJECTED` (a `question` or option text failed the unsafe-text gate and was not stored; `field` is `question` or `options`), `OPTIONS_REJECTED` (`options` was not an array of 2-4 entries each with a non-empty `label`), and `DECISION_FIELDS_IGNORED` (decision-only fields supplied on a non-decision finding).
+
 **Implementation:** `lib/cli/blockers.mjs` (wraps `lib/blockers-writer.mjs::writeBlockers`). **Called by:** `/adev:review-specs` Step 6b-bis.
 
 ### `review-notes`
@@ -401,6 +407,27 @@ adev review-notes show --spec .context-index/specs/features/auth/login.spec.md -
 ```
 
 **Implementation:** `lib/cli/review-notes.mjs` (wraps `lib/review-notes.mjs::readReviewNotes`). **Called by:** `/adev:plan` Step 1 (warnings for the plan's `## Review Notes`), `/adev:review-specs` Step 1 (re-review advisory).
+
+### `decisions`
+
+**Purpose:** List and record operator answers to decision-classed review blockers on a spec's `.blockers.md` sidecar.
+
+**Signature:** `decisions pending --spec <path> [--json]` / `decisions record --spec <path> --answers <json-or-@path> [--json]`
+
+**`pending --json` shape:** `{ spec, pending, answered, decided, ask_round, advisories }`.
+- `pending`: open decision blockers in spec section order. Each item: `blocker_id`, `section_anchor`, `question`, `options` (`[{ label, implications }]`), `header` (short label derived from the section heading), `structured` (true when there are 2-4 options), `ask` (whether its group falls inside the ask round), and `duplicate_of` (the first blocker id with the same anchor and normalized question, present only on duplicates).
+- `answered`: decision blockers already answered on the sidecar: `{ blocker_id, section_anchor, decision_choice, decision_note, decision_recorded }`.
+- `decided`: entries already in the spec's `## Decisions of Record`: `{ dec, blocker_ids }`.
+- `ask_round`: `{ limit, asked, overflow }`. Duplicates collapse into one group; `limit` is 16 groups, and groups beyond it count as `overflow` and are not asked this round.
+- `advisories`: `QUESTION_DERIVED` (no stored question, so one was derived from the finding prose), `DECISION_TEXT_REJECTED` (stored question or options failed the unsafe-text gate), plus advisories from parsing `## Decisions of Record`.
+
+**`record`:** `--answers` is a JSON array of `{ blocker_ids: string[], choice: string, note?: string }`, given inline or as `@<path>`. The `@path` file must resolve inside the project root, and the input is capped at 64 KiB either way. A blocker id may appear in only one entry. All answers are validated before anything is written, then applied in one write. `--json` returns `{ recorded: [blocker_id, ...], advisories }`.
+
+**Exit codes:** 0 on success. 1 on an argument error or a coded error printed as `<CODE>: <message>` (messages never echo file or answer content): `INVALID_SPEC_PATH`, `NO_REVIEW_SIDECARS` (`record` only; no `.blockers.md` yet, whereas `pending` tolerates a missing sidecar), `BLOCKERS_REVISION_MISMATCH` (`record` only; sidecar written for a different spec revision; re-run review), `INVALID_DECISION_ANSWERS` (bad shape, bad JSON, over 64 KiB, or `@path` outside the project), `UNKNOWN_DECISION_BLOCKER`, `NOT_A_DECISION_BLOCKER`, `UNSAFE_DECISION_TEXT` (answer text over its length bound or failing the unsafe-text gate; refused, never truncated).
+
+**Review and storage:** `.blockers.md` is a committed file. Answer text is redacted before storage, so a pasted secret does not reach the sidecar or, through `specify revise`, the spec. The review point for an operator's decisions is the pull-request diff of the spec's `## Decisions of Record` section.
+
+**Implementation:** `lib/cli/decisions.mjs` (wraps `lib/decisions.mjs`). **Called by:** `/adev:review-specs` (decision ask round), `/adev:build` (review auto-retry loop).
 
 ### `diagnose`
 
@@ -651,6 +678,12 @@ Exit codes: `0` success — tree id on stdout; `1` `SNAPSHOT_FAILED` (not a git 
 ```
 adev specify revise --spec <p>
 ```
+
+**`revise` result additions:** `decisions_written` lists the answered decision blockers written into the spec's `## Decisions of Record` section in the same atomic write as the revised sections.
+- `SPLICE_VALIDATION_FAILED` has two severities. As a per-anchor advisory (in `advisories`, with `anchor` and `reason`) it means one authored section was rejected and left unchanged while the rest of the revise proceeds. As a fatal error it means the post-compose byte-identity check failed on the whole result: the revise aborts (exit 1) and nothing is written.
+- `UNSAFE_DECISION_TEXT` (exit 1): an answered decision failed the unsafe-text re-check at revise time; nothing is written.
+
+**`group-blockers`:** `specify group-blockers --spec <path>` returns `{ spec_path, anchors, anchors_not_found, anchors_remapped, decision_blocker_ids, external_blockers, advisories }`. Each `anchors[a]` carries `blocker_ids`, `current_text` and `decisions` (the answered decisions to author under that anchor). `decision_blocker_ids` lists only unanswered decisions; an answered one appears under its anchor instead. A recorded answer that fails the decision-text gate counts as unanswered and is reported in `advisories` as `DECISION_TEXT_REJECTED` with `blocker_id`, `field` and `reason`.
 
 **Implementation:** `lib/cli/specify.mjs`. **Called by:** `/adev:specify`, `/adev:build` (BLOCK→revise loop).
 

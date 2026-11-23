@@ -1,7 +1,7 @@
 ---
 name: adev:review-specs
 description: "Run parallel specialist reviews (structural, security, consistency) on Live Specs before planning. Use for architecture review and expert evaluation."
-allowed-tools: [Read, Glob, Grep, Agent]
+allowed-tools: [Read, Glob, Grep, Agent, AskUserQuestion]
 ---
 
 # Review Specs
@@ -36,6 +36,7 @@ If the output is not `__NONE__`, incorporate it as additional standing instructi
 - `--spec <path>`: review a specific spec file
 - `--charter <module>`: review all specs under a feature charter
 - `--tier <full|quick>`: rigor tier (graduated-rigor-tiers spec). `full` (default) dispatches whatever reviewer set `adev governance reviewers` resolves for the project (never a fixed count or named trio — the registry is project-configurable); `quick` dispatches a single synthesized reviewer instead. Overrides any routing/risk-policy signal. Invalid value → `INVALID_TIER`.
+- `--defer-decisions`: never ask. List pending decisions in the BLOCK summary and return. Required for every non-interactive caller (build passes it on every dispatch).
 
 ## Step 0: Specify-step gate (FIRST action)
 
@@ -257,6 +258,10 @@ These issues must be resolved before planning can begin.
 Review the full report at <path to .review.md>.
 Run /adev:specify to revise the spec, then /adev:review-specs to re-review.
 ```
+
+**BLOCK with pending decisions.** When `adev decisions pending` lists any item, `--defer-decisions` lists every pending question and its options in the summary and asks nothing; without the flag, one bounded ask round runs with an attending operator, records the answers, and lists the rest.
+
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/review-specs/references/steps/step-8-decision-ask-round.md` on every BLOCK verdict; it runs `adev decisions pending` and routes the rest. Do not act on this section from the summary above.
 
 ## Gate Behavior
 

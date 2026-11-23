@@ -55,3 +55,4 @@
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-05-20T04:41:23.154Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-05-20T12:58:34.345Z","ts":"2026-05-20T12:58:34.345Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"spec_amended","amendment_slug":"review-block-auto-retry-rev-2-targeted-author-verify-loop","amendment_path":".context-index/specs/cross-cutting/review-block-auto-retry-rev-2-targeted-author-verify-loop.spec.md","target_revision":2,"ts":"2026-08-21T20:35:08.303Z"}
+{"event":"spec_amended","amendment_slug":"review-block-auto-retry-rev-3-batched-operator-decisions","amendment_path":".context-index/specs/cross-cutting/review-block-auto-retry-rev-3-batched-operator-decisions.spec.md","target_revision":3,"ts":"2026-11-22T12:28:43.048Z"}

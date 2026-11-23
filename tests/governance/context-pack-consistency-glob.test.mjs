@@ -57,7 +57,7 @@ describe("bundled consistency pack glob (BEH-1)", () => {
     );
   });
 
-  test("rendered against this repo, the pack names 24 cross-cutting specs, not 85 entries", () => {
+  test("rendered against this repo, the pack names 25 cross-cutting specs, not 85 entries", () => {
     // LIVE COUNT against this repository's own .context-index/specs/cross-cutting/.
     // 85 entries live there; 23 are `*.spec.md` (22 at the top level plus
     // `completion-tokens/completion-tokens.spec.md` one level down). The other 62
@@ -91,6 +91,10 @@ describe("bundled consistency pack glob (BEH-1)", () => {
     // Raised 23 -> 24 on 2026-11-17 when implementation-mode-consumers.spec.md
     // was added as a new cross-cutting spec.
     //
+    // Raised 24 -> 25 on 2026-11-22 when
+    // review-block-auto-retry-rev-3-batched-operator-decisions.spec.md was
+    // added as a new cross-cutting amendment spec.
+    //
     // FUTURE CONTRIBUTOR: bump this when you add or remove a cross-cutting
     // *spec*. NEVER bump it because a sidecar appeared — a sidecar reaching
     // this count means the glob regressed, which is the bug this test exists
@@ -104,7 +108,7 @@ describe("bundled consistency pack glob (BEH-1)", () => {
     const crossCuttingMatches = namedFiles(r.rendered, r.files, r.nonce).filter((f) =>
       f.startsWith(CROSS_CUTTING_PREFIX)
     );
-    assert.equal(crossCuttingMatches.length, 24);
+    assert.equal(crossCuttingMatches.length, 25);
   });
 
   test("no lifecycle sidecar reaches any bundled pack", () => {
