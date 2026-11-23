@@ -2,7 +2,7 @@
 
 # CLI Reference
 
-> Last updated: 2026-08-19
+> Last updated: 2026-11-19
 
 Reference for the `adev` command-line verbs. There are two audiences:
 
@@ -37,6 +37,7 @@ This file is the CLI counterpart to [`skill-reference.md`](skill-reference.md) (
 | `governance` | Materialize a registry's effective set; audit registry drift; build the reviewer dispatch plan | `lib/cli/governance.mjs` |
 | `report` | Append a lifecycle event to the per-spec event log | `lib/cli/report.mjs` |
 | `diagnose` | Run registered write-time diagnostics over artifacts | `lib/cli/diagnose.mjs` |
+| `review-notes` | Report a spec's latest review verdict, whether it is unchanged since, and its open PASS_WITH_NOTES warnings | `lib/cli/review-notes.mjs` |
 | `capability-map` | Monotonic writer for a charter's Capability Map `Status` column | `lib/cli/capability-map.mjs` |
 | `source-manifest` | Verify or compute a spec's source-file manifest | `lib/cli/source-manifest.mjs` |
 | `verify` | Reality-check whether spec/issue work exists in code | `lib/cli/verify.mjs` |
@@ -387,6 +388,19 @@ adev blockers write --spec <p> --findings @findings.json --revision 3 --json
 ```
 
 **Implementation:** `lib/cli/blockers.mjs` (wraps `lib/blockers-writer.mjs::writeBlockers`). **Called by:** `/adev:review-specs` Step 6b-bis.
+
+### `review-notes`
+
+**Purpose:** Report a spec's latest architecture review for carry-forward: the verdict (from the lifecycle log), whether the spec is byte-identical to what was reviewed (sha256 of the spec against the `.review.md` `file-sha`), and the open warning-severity findings parsed from `.review.md` (`{ id, reviewer, section, summary }`; struck-through, resolved, and fenced findings are skipped). `warnings` is always empty when the verdict is PASS. The parse is best-effort because reviewer prose has no fixed finding grammar.
+
+**Signature:** `review-notes show --spec <path> [--json]`
+
+**Example:**
+```
+adev review-notes show --spec .context-index/specs/features/auth/login.spec.md --json
+```
+
+**Implementation:** `lib/cli/review-notes.mjs` (wraps `lib/review-notes.mjs::readReviewNotes`). **Called by:** `/adev:plan` Step 1 (warnings for the plan's `## Review Notes`), `/adev:review-specs` Step 1 (re-review advisory).
 
 ### `diagnose`
 
