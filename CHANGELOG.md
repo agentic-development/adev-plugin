@@ -1,5 +1,40 @@
 # Changelog
 
+## [0.28.2-next](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.28.1...adev-cli-v0.28.2-next) (2026-11-23)
+
+
+### Features
+
+* **build:** batched operator decisions in the review auto-retry loop ([e7f5cfd](https://github.com/agentic-development/adev-plugin/commit/e7f5cfd556ed3ab5c0ba6324e596e7e67a0178ad))
+* **cli:** add adev decisions pending and record verbs ([8f20162](https://github.com/agentic-development/adev-plugin/commit/8f20162d3573bfaf3f3903c0388e91fca17b4087))
+* **governance:** add `adev governance dispatch` so review-specs stops hand-assembling reviewer prompts ([9e9928c](https://github.com/agentic-development/adev-plugin/commit/9e9928cc7f56a38409226fb4c8fd183cd4d2dde9))
+* **plan:** split tasks by existing-test churn and pin machine-dependent fixtures ([8d62aac](https://github.com/agentic-development/adev-plugin/commit/8d62aac3e3ae3d9295f99433444d4b066bdfda9a))
+* **review:** add decisions library for pending and record ([37c709a](https://github.com/agentic-development/adev-plugin/commit/37c709a5f2902e9ea05d34fe59ff07f29494cf0b))
+* **review:** add shared decision-text gate and strip-only display helper ([ca4766d](https://github.com/agentic-development/adev-plugin/commit/ca4766d8bc81a3d425ae87b62e4a4f83c787f0e4))
+* **review:** ask every operator decision in one batched round ([5a6dbc5](https://github.com/agentic-development/adev-plugin/commit/5a6dbc58048e047817064f00955f6d2cb43ab59f))
+* **review:** bounded decision ask round and Decisions Required table in review-specs ([afaf08f](https://github.com/agentic-development/adev-plugin/commit/afaf08f4de5212fe9851fb8848c18a66910cf6b4))
+* **review:** persist decision question/options and answer keys on .blockers.md ([74a8c4e](https://github.com/agentic-development/adev-plugin/commit/74a8c4e324e8fe0927bf3cb647f09bfd005cffc9))
+* **review:** reviewers state decision questions, options, and honor Decisions of Record ([92e23f3](https://github.com/agentic-development/adev-plugin/commit/92e23f36faaf084de2748752a0a56560fae77844))
+* **spec-lifecycle:** add Decisions of Record section grammar module ([f03f973](https://github.com/agentic-development/adev-plugin/commit/f03f9732dff3a69fdcf7ad3b8ab46f41eb807d0e))
+* **spec-lifecycle:** make answered decision blockers authorable ([9391e85](https://github.com/agentic-development/adev-plugin/commit/9391e854f9129762ad22013a912bf96c89d64994))
+* **spec-lifecycle:** revise writes Decisions of Record entries ([3afed13](https://github.com/agentic-development/adev-plugin/commit/3afed1346b6eac53779c93578289fd3c8c94a46b))
+
+
+### Bug Fixes
+
+* consistency reviewer tier, --parallel in harness worktrees, plan task-size rule ([cafe9e7](https://github.com/agentic-development/adev-plugin/commit/cafe9e730cc4b897c440928d26a3f3d6e664f725))
+* **execution-state:** refuse to overwrite another build's live state ([1a44a8e](https://github.com/agentic-development/adev-plugin/commit/1a44a8e779a8896728cf8f9fff8b50ed5561e760))
+* **execution-state:** refuse to overwrite another build's live state ([3b4532b](https://github.com/agentic-development/adev-plugin/commit/3b4532bf787d2cbaca980e32a02c0997b201a029))
+* **implement:** match plan and routing-sidecar task ids by key so route-emitted t&lt;n&gt; plans batch ([49f3af0](https://github.com/agentic-development/adev-plugin/commit/49f3af09edf20149eb8e5b53e163bf254ade1bda))
+* **implement:** match plan and routing-sidecar task ids by key so route-emitted t&lt;n&gt; plans batch ([282538d](https://github.com/agentic-development/adev-plugin/commit/282538d94ab536d3e2bda3ce1ce4023f4533136b))
+* **plan:** carry PASS_WITH_NOTES warnings into the plan instead of inviting re-review ([cbe270b](https://github.com/agentic-development/adev-plugin/commit/cbe270b9bf0844691d0dde9d2ebe98a8f9a34274))
+* **plan:** carry PASS_WITH_NOTES warnings into the plan instead of inviting re-review ([5dfa1c3](https://github.com/agentic-development/adev-plugin/commit/5dfa1c3590dd8bc184070245b1ecb30f160c3846))
+* **review-specs:** verify truncated evidence and carry prior-round findings into reviewer prompts ([0a1ee9a](https://github.com/agentic-development/adev-plugin/commit/0a1ee9ad1cf64ee7a0df2246ffd8df4e6e5c9cc5))
+* **review-specs:** verify truncated evidence, carry prior-round findings, add adev governance dispatch ([4912ffa](https://github.com/agentic-development/adev-plugin/commit/4912ffa92efbd66b1260a1252fb69ff6f209e1ed))
+* **review:** run consistency-analyzer on the capable tier ([a30f444](https://github.com/agentic-development/adev-plugin/commit/a30f444ce3fb0438cf992860650be5e10690624e))
+* **spec-lifecycle:** gate recorded decision answers before group-blockers hands them to the author ([836d88a](https://github.com/agentic-development/adev-plugin/commit/836d88ab3e8954bf6220d5c9d23e11ed714aba62))
+* **worktree:** allow --parallel from a harness worktree and merge back into its branch ([55b92d8](https://github.com/agentic-development/adev-plugin/commit/55b92d8070f07c0a2cee7a570663672bd0b2610a))
+
 ## [0.28.1](https://github.com/agentic-development/adev-plugin/compare/adev-cli-v0.28.0...adev-cli-v0.28.1) (2026-11-18)
 
 
