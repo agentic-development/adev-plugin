@@ -11,7 +11,7 @@ When invoked with `--parallel`, file-disjoint task groups run concurrently in ad
 **Fall back to the serial Step 2 loop** (printing the reason) when any of these holds:
 - the `--parallel` flag is absent (no message);
 - `adev parallel groups --plan <plan>` reports `malformed: true`, or yields 0 or 1 independent group (`serial: no/malformed parallelization section` / `serial: single group`);
-- `adev worktree guard` reports `nested: true` (`serial: nested in <kind> worktree`).
+- `adev worktree guard` reports `parallel: false` (`serial: nested in adev worktree`). That happens only inside an adev group worktree. A harness worktree (`.claude/worktrees/`) reports `parallel: true` and runs groups normally: they are created at the main root and merge back into the harness worktree's branch.
 
 **Otherwise, orchestrate:**
 
