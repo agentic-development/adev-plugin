@@ -11,11 +11,12 @@ amends: .context-index/specs/cross-cutting/review-block-auto-retry.spec.md
 target-revision: 3
 tracker-ref: adev-plugin-lifecycle-cycle-time-qa41.5
 created: 2026-11-22
-updated: 2026-11-22
+updated: 2026-11-23
 source-manifest:
-  sha: "de82aa4"
+  sha: "5c10b1e"
   files:
     - .context-index/adrs/0012-plan-adjacent-sidecar-artifacts.md
+    - .context-index/specs/cross-cutting/skill-body-progressive-disclosure.spec.md
     - cli/index.mjs
     - docs/cli-reference.md
     - docs/skill-reference.md
@@ -49,6 +50,7 @@ source-manifest:
     - tests/cli/decisions.test.mjs
     - tests/cli/specify-group-blockers.test.mjs
     - tests/cli/specify-revise.test.mjs
+    - tests/governance/context-pack-consistency-glob.test.mjs
     - tests/integration/decisions-end-to-end.test.mjs
     - tests/lib/blockers-writer.test.mjs
     - tests/lib/decision-text.test.mjs
@@ -59,7 +61,7 @@ source-manifest:
     - tests/skills/build/blocker-loop-decisions.test.mjs
     - tests/skills/review-specs-decisions-ask-round.test.mjs
     - tests/skills/review-specs-finding-class-prompts.test.mjs
-  computed-at: "2026-11-22T22:58:15.720Z"
+  computed-at: "2026-11-23T11:44:50.732Z"
 ---
 
 # Amendment: Live Spec: Auto-Retry Loop on Review BLOCK — Batched Operator Decisions (targeting rev 3)
@@ -164,7 +166,11 @@ remove those that depend on an answer not yet given.
   derived question always passes BEH-9's re-check. Within one section, when two or more pending entries have an
   identical normalized question (lowercased, whitespace runs collapsed to one space, trimmed), every entry after
   the first in `pending` order is marked `duplicate_of: <blocker_id of the first>`; the verb owns this grouping
-  and the skill makes no dedup judgment of its own. Entries carrying `decision_choice` are listed under
+  and the skill makes no dedup judgment of its own. A group is one entry with no `duplicate_of` together with its
+  duplicates; groups are counted in `pending` order, and every entry carries `ask`, true for the first 16 groups
+  (`ASK_ROUND_GROUP_LIMIT`) and false for every later one, so one ask round never asks more than 16 questions.
+  The output's `ask_round: { limit, asked, overflow }` reports the cap, the groups inside it, and the groups
+  beyond it. Entries carrying `decision_choice` are listed under
   `answered` with `decision_choice`, `decision_note`, and `decision_recorded`; they have no `DEC-<n>` yet,
   because only `adev specify revise` allocates one (BEH-9). Entries parsed from the spec's
   `## Decisions of Record` section are listed under `decided`, each with its `DEC-<n>` and its `blocker_id`s; a
@@ -183,15 +189,15 @@ remove those that depend on an answer not yet given.
   other non-interactive (headless, scheduled, or scripted) invocation should pass — Step 8 never asks: it lists
   every pending decision (question and options) in the BLOCK summary and returns, leaving the ask round or the
   `DECISION_REQUIRED` halt to the caller (BEH-7). **Without the flag**, Step 8 runs exactly **one bounded ask
-  round** against `adev decisions pending`, asking each `duplicate_of` group once through its first entry:
+  round** against `adev decisions pending`, asking each `ask: true` group once through its first entry:
   structured groups through the harness's structured-question tool (`AskUserQuestion` on Claude Code, listed in
   the skill's `allowed-tools`), at most 4 questions per call (the tool's per-call limit), so at most
-  ceil(n/4) calls for n structured groups, issued back-to-back with no reviewer dispatch, spec edit, or other
+  ceil(n/4) calls for the n structured groups marked `ask: true` (n ≤ 16, so at most 4 calls), issued back-to-back with no reviewer dispatch, spec edit, or other
   prompt between them, each option shown with its `implications` as the description; then at most one message
   carrying every unstructured group as numbered questions — or, where the harness has no structured-question
   tool, every group. The skill never re-asks or loops. A question whose call returns no answer or an error, or
   that gets no reply — including a headless or scripted session that reached the ask round without the flag,
-  and a numbered message whose turn ends unanswered — stays **open**: no answer is recorded for it, and no
+  a numbered message whose turn ends unanswered, and every `ask: false` overflow group — stays **open**: no answer is recorded for it, and no
   timeout or default answer exists, because nothing waits; the round is bounded by its call count whatever the
   caller. The skill records every answer it did receive with one `adev decisions record`, each group's answer
   against every `blocker_id` in that group. The verdict stays BLOCK whatever was answered. The BLOCK summary
@@ -225,14 +231,22 @@ remove those that depend on an answer not yet given.
   `decision_choice` **then** that answered blocker is grouped into `anchors` under its `section_anchor` like a
   `defect` blocker, with its answer attached as `decisions: [{ blocker_id, choice, note }]` on the anchor
   (`choice` from `decision_choice`, `note` from `decision_note`, both read back with `JSON.parse`; no `DEC-<n>`
-  yet, since BEH-9 allocates it), and is excluded from `decision_blocker_ids`. The per-anchor authoring dispatch
+  yet, since BEH-9 allocates it), and is excluded from `decision_blocker_ids`. Before grouping, the parsed
+  `decision_choice` and `decision_note` go through the BEH-2 gate, because they enter the author's prompt
+  verbatim and the sidecar can be edited by hand: an answer that fails it counts as no answer, so the blocker is
+  not grouped, stays in `decision_blocker_ids`, and is reported in the output's `advisories` array as
+  `DECISION_TEXT_REJECTED` with `blocker_id`, `field`, and `reason` (never the refused value). Re-recording the
+  answer (BEH-5) replaces it. The per-anchor authoring dispatch
   (`revise-mode-authoring-dispatch.md`) passes each attached decision to the section's author as a binding
   instruction — the section must be rewritten to implement the recorded choice, not to reopen it. A
   `decision`-classed blocker with no `decision_choice` stays in `decision_blocker_ids` and halts the loop exactly
   as rev-2 BEH-2 specifies. `addressed_blocker_ids` is computed unchanged (rev-2 BEH-5): an answered blocker whose
-  anchored section comes back unchanged is not addressed. When no section changed at all, revise exits
-  `NOTHING_TO_REVISE` and writes nothing — no `DEC-<n>` entry either, so the answers stay in the sidecar — and
-  the `/adev:build` loop stops with `LOOP_NO_PROGRESS`.
+  anchored section comes back unchanged is not addressed. When no section changed at all and revise runs under
+  `--auto` (the build loop) or `--same-revision`, it exits `NOTHING_TO_REVISE` and writes nothing — no `DEC-<n>`
+  entry either, so the answers stay in the sidecar — and the `/adev:build` loop stops with `LOOP_NO_PROGRESS`.
+  An interactive revise with no changed section bumps the revision as rev-2 specifies, writes the `DEC-<n>`
+  entries for the answered blockers, and then clears the sidecar: an operator ran it deliberately, and the
+  recorded answers are carried into the spec rather than discarded with the sidecar.
 
 - **BEH-7** — **When** the `/adev:build` review auto-retry loop gets a non-empty `decision_blocker_ids` from
   `adev specify group-blockers` in interactive mode (no `--auto`) **then**, instead of halting, the top-level
@@ -477,7 +491,8 @@ None.
 - [ ] `adev decisions pending --json` lists under `pending` only OPEN `decision` blockers (no `decision_choice`)
       from the sidecar, in spec-section order, with `structured` set correctly; answered sidecar blockers are
       listed under `answered` and Decisions of Record entries under `decided`, read from the spec's
-      `## Decisions of Record` section; an absent sidecar yields an empty `pending` list and exit 0 (BEH-3).
+      `## Decisions of Record` section; an absent sidecar yields an empty `pending` list and exit 0; groups past
+      the 16th are marked `ask: false` and counted in `ask_round.overflow` (BEH-3).
 - [ ] `adev decisions pending --json` reports in its `advisories` array: `QUESTION_DERIVED` for every derived
       question, whose unsafe-text fallback is exactly `Which option resolves blocker <blocker_id>?`; and
       `DECISION_MARKER_MALFORMED` for a marker that does not parse or whose `blockers=` list holds an id
@@ -486,8 +501,8 @@ None.
       same section has an identical normalized question (lowercased, whitespace-collapsed), and not when the
       questions differ or sit in different sections (BEH-3).
 - [ ] `/adev:review-specs` Step 8 on a BLOCK with pending decisions and no `--defer-decisions` runs one bounded ask
-      round before the summary — at most ceil(n/4) structured-question calls plus at most one message, each
-      `duplicate_of` group asked once and its answer recorded against every id in the group, no re-ask or loop;
+      round before the summary — at most ceil(n/4) structured-question calls plus at most one message, only the
+      first 16 groups (`ask: true`) asked and every overflow group left open, each `duplicate_of` group asked once and its answer recorded against every id in the group, no re-ask or loop;
       any question unanswered, errored, or without a reply stays open with no answer recorded, the verdict stays
       BLOCK, and the summary lists every open decision with question and options and names
       `adev decisions record` then `/adev:specify --revise`. With `--defer-decisions` it asks nothing and lists
@@ -508,8 +523,11 @@ None.
 - [ ] `adev specify group-blockers` moves answered `decision` blockers into `anchors` with `decisions` attached
       and omits them from `decision_blocker_ids`; open ones still halt with `DECISION_REQUIRED`; a test checks the
       per-anchor authoring dispatch receives the attached decisions as binding. An answered blocker whose anchored
-      section comes back unchanged is not addressed, and when no section changed revise exits
-      `NOTHING_TO_REVISE` and the loop stops `LOOP_NO_PROGRESS` (BEH-6).
+      section comes back unchanged is not addressed, and when no section changed revise under `--auto` exits
+      `NOTHING_TO_REVISE` and the loop stops `LOOP_NO_PROGRESS`, while an interactive revise writes the
+      `DEC-<n>` entries and clears the sidecar. A recorded `decision_choice` or `decision_note` that fails the
+      BEH-2 gate is not authored: the blocker stays in `decision_blocker_ids` and a `DECISION_TEXT_REJECTED`
+      advisory appears in the `group-blockers` output's `advisories` array (BEH-6).
 - [ ] `adev specify revise` authoring answered blockers creates or updates `## Decisions of Record` (immediately
       before `## Acceptance Criteria`, located ignoring headings inside fenced code blocks, or at end of file when
       that heading is absent) with one marker-plus-entry per decision, `DEC-<n>` allocated as the highest present
