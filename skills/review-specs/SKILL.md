@@ -14,7 +14,7 @@ Run an architecture review on one or more Live Specs using parallel specialist s
 
 **Never end your turn to wait for a dispatched subagent.** A synchronous dispatch (`run_in_background: false`) returns its final result directly in the tool call — there is nothing to wait for. If a dispatch ever returns a task ID instead of a result, that is a bug in the dispatch (the rule above was violated, or the harness backgrounded it anyway): fix the dispatch and re-run it synchronously. Do not end the turn hoping a completion notification will resume you — in a nested subagent context it will not. If this skill is itself running as a dispatched subagent (e.g., a build pipeline step), your own caller is waiting on a result contract — for build pipeline steps this is the `STEP_RESULT` format defined in `skills/build/SKILL.md`. Ending your turn without that result to report is a protocol violation, not a valid pause point.
 
-**Quick tier branch (Step 2.5).** If the resolved rigor tier is `quick`, **skip the registry loop below** and dispatch exactly one subagent — the synthesized reviewer — using the bundled prompt `plugin:review-specs/quick-synthesized-reviewer-prompt.md` under the `reviewer-capable` profile, with the same rendered context pack and target spec appended. Pass `run_in_background: false` on this dispatch, exactly as the full-tier reviewers do (see the parallel-dispatch note below): the harness backgrounds Agent dispatches by default, and review-specs frequently runs as a build-step subagent where a backgrounded dispatch never re-invokes the caller and stalls the review. It returns `SA-`/`SEC-`/`CON-` findings in the standard format plus a consolidated verdict. Apply the same severity cap, `blocker_id` validation, and parse-failure fallback as any other reviewer, then proceed to Step 5. Do not dispatch the registry's reviewer set in `quick` mode. If the bundled prompt file is missing, fail loud (do not silently fall back to a weaker or empty review). Otherwise (tier `full`, the default), dispatch the registry reviewers as described next.
+**Quick tier branch (Step 2.5).** If the resolved rigor tier is `quick`, Step 4 builds the plan with `adev governance dispatch --tier quick`, which plans exactly one subagent, the synthesized reviewer (bundled `plugin:review-specs/quick-synthesized-reviewer-prompt.md`, `reviewer-capable` profile), instead of the registry's reviewer set. Dispatch it with `run_in_background: false`, exactly as the full-tier reviewers are dispatched: the harness backgrounds Agent dispatches by default, and review-specs frequently runs as a build-step subagent where a backgrounded dispatch never re-invokes the caller and stalls the review. It returns `SA-`/`SEC-`/`CON-` findings in the standard format plus a consolidated verdict. Apply the same severity cap, `blocker_id` validation, and parse-failure fallback as any other reviewer, then proceed to Step 5. If the bundled prompt file is missing, the verb fails loud with `QUICK_PROMPT_MISSING`; do not fall back to a weaker or empty review. Otherwise (tier `full`, the default), dispatch the registry reviewers the verb plans.
 
 ---
 
@@ -78,7 +78,7 @@ For each `depends-on` entry that matches the `@repo-slug/spec-slug` pattern:
 3. If resolved successfully, read the referenced spec's `status` frontmatter field:
    - If `status: draft`, flag a **warning**: `"Cross-repo dependency '@repo-slug/spec-slug' is in draft status"`
    - If `status: superseded`, flag a **warning**: `"Cross-repo dependency '@repo-slug/spec-slug' is superseded"`
-4. Include all cross-repo reference warnings in the context package passed to reviewer subagents (Step 4), so the Structural Architect can factor them into the review.
+4. Pass each cross-repo reference warning to `adev governance dispatch` as a `--note` (Step 4), so every reviewer receives it and can factor it into the review.
 
 **If cross-repo references are present but no workspace detected:**
 
@@ -127,7 +127,7 @@ dispatched reviewers is a visible, deliberate state, not itself a failure that a
 
 ## Step 4: Dispatch Reviewers
 
-Dispatches the registry reviewers (or the single quick-tier reviewer) with the rendered context pack.
+Builds the dispatch plan with `adev governance dispatch` and dispatches each planned reviewer (or the single quick-tier reviewer) with its prompt and model unchanged.
 
 > **Conditional loading:** Read `<ADEV_ROOT>/skills/review-specs/references/steps/step-4-dispatch-reviewers.md` for the full instructions. Do not act on this section from the summary above.
 
