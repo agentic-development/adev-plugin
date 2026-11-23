@@ -1048,7 +1048,7 @@ adev cost summary --spec .context-index/specs/features/auth/login.spec.md --form
 
 **Purpose:** Manage adev-managed git worktrees used for parallel isolated execution. Worktrees are anchored to the main repo root (via `git rev-parse --git-common-dir`) so they never nest, and live under `.adev/worktrees/` (git-ignored).
 
-**Signature:** `worktree <add|list|merge|remove|guard> [flags]` — e.g. `worktree add --slug <slug> [--base <ref>]`, `worktree merge --slug <slug>`, `worktree remove --slug <slug> [--delete-branch] [--force]`, `worktree guard` (reports whether the current cwd is nested inside a worktree).
+**Signature:** `worktree <add|list|merge|remove|guard> [flags]` — e.g. `worktree add --slug <slug> [--base <ref>]`, `worktree merge --slug <slug>`, `worktree remove --slug <slug> [--delete-branch] [--force]`, `worktree guard` (reports `{ nested, kind, parallel }` for the current cwd; `parallel` is false only inside an adev worktree). `worktree merge` merges into the current branch of the checkout it is run from, so from a harness worktree the group lands on the harness branch.
 
 **Example:**
 ```
@@ -1310,7 +1310,7 @@ adev repomap generate --mode regex
 
 **Purpose:** Manage adev-managed git worktrees used for parallel isolated execution. Worktrees are anchored to the main repo root (via `git rev-parse --git-common-dir`) so they never nest, and live under `.adev/worktrees/` (git-ignored).
 
-**Signature:** `worktree <add|list|merge|remove|guard> [flags]` — e.g. `worktree add --slug <slug> [--base <ref>]`, `worktree merge --slug <slug>`, `worktree remove --slug <slug> [--delete-branch] [--force]`, `worktree guard` (reports whether the current cwd is nested inside a worktree).
+**Signature:** `worktree <add|list|merge|remove|guard> [flags]` — e.g. `worktree add --slug <slug> [--base <ref>]`, `worktree merge --slug <slug>`, `worktree remove --slug <slug> [--delete-branch] [--force]`, `worktree guard` (reports `{ nested, kind, parallel }` for the current cwd; `parallel` is false only inside an adev worktree). `worktree merge` merges into the current branch of the checkout it is run from, so from a harness worktree the group lands on the harness branch.
 
 **Example:**
 ```

@@ -58,7 +58,7 @@ drift_detected: true
 
 9. **When** a reviewer entry has a `profile: <name>` field **then** the named profile is resolved via `loadProfiles(repoRoot)` from the cross-cutting spec. Tier, tool permissions, env, MCP requirements, limits, and thinking directive all come from the profile.
 
-10. **When** a reviewer omits `profile` **then** `reviewer-capable` is used as the default. (Bundled defaults override per-reviewer: structural-architect → `reviewer-reasoning`, security-reviewer → `reviewer-capable`, consistency-analyzer → `reviewer-fast`.)
+10. **When** a reviewer omits `profile` **then** `reviewer-capable` is used as the default. (Bundled defaults override per-reviewer: structural-architect → `reviewer-reasoning`, security-reviewer → `reviewer-capable`, consistency-analyzer → `reviewer-capable`. consistency-analyzer keeps `severity_cap: blocker` and runs on the capable tier rather than the fast one, because a false blocker costs a full revise-and-review round plus the operator's wait.)
 
 11. **When** a reviewer's referenced profile does not exist **then** load fails per cross-cutting spec Behavior 4.
 

@@ -99,7 +99,7 @@ drift_detected: true
 | implementation | High | `adev:implement` dispatches 3+ subagents per task. Each dispatch must specify tier. Implementer = `capable`, spec reviewer = `capable`, code quality reviewer = `capable`, visual verifier = `capable` |
 | adev:write-test | High | RED phase authoring = `capable`, verify mode = `fast`, gaming judgment = `fast` |
 | validation | Medium | `adev:eval` LLM-as-judge dispatch = `reasoning`. `adev:validate` dispatches = `capable` |
-| assessment | Medium | `adev:review-specs` dispatches structural architect = `reasoning`, security reviewer = `capable`, consistency analyzer = `fast` |
+| assessment | Medium | `adev:review-specs` dispatches structural architect = `reasoning`, security reviewer = `capable`, consistency analyzer = `capable` |
 | design | Low | `adev:brainstorm` charter reviewer = `capable` |
 
 ## Integration Points

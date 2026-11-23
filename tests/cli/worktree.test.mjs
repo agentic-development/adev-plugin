@@ -66,7 +66,7 @@ test("worktree guard reports not-nested JSON at repo root, exit 0", () => {
   try {
     const r = run(dir, "guard");
     assert.equal(r.status, 0);
-    assert.deepEqual(JSON.parse(r.stdout), { nested: false, kind: null });
+    assert.deepEqual(JSON.parse(r.stdout), { nested: false, kind: null, parallel: true });
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

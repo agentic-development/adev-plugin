@@ -46,8 +46,10 @@ library (`lib/worktree.mjs`) and a CLI verb (`adev worktree`).
   whose resolved path is under `<mainRoot>/.adev/worktrees/` — each as
   `{ slug, path, branch, head }`, excluding the main checkout and any non-adev worktrees.
 - **When** `merge({ slug, cwd?, noFf? })` is called and the branch `adev/<slug>` merges without
-  conflict **then** it is merged into the **main root's current branch** (the primitive runs
-  `git merge` in the main root, resolved via `resolveMainRoot`, NOT the invoking cwd's branch)
+  conflict **then** it is merged into the **invoking checkout's current branch**: the primitive
+  runs `git merge` in the top level of `cwd` (`git rev-parse --show-toplevel`). From the main
+  checkout that is the main root's branch; from a harness worktree it is the harness worktree's
+  branch, never the main checkout's, whose checked-out branch is unrelated to the caller's work
   with `--no-edit` (optional `--no-ff`), and `{ slug, branch, merged: true, conflicts: [] }` is
   returned.
 - **When** `merge(...)` encounters a merge conflict **then** the conflicted paths are collected,
@@ -57,9 +59,12 @@ library (`lib/worktree.mjs`) and a CLI verb (`adev worktree`).
   removed via `git worktree remove` (`--force` when requested); when `deleteBranch` is set the
   `adev/<slug>` branch is also deleted (non-fatal if the branch is unmerged or absent).
 - **When** `detectNesting(cwd?)` (CLI: `guard`) is called **then** it returns
-  `{ nested, kind }` where `kind` is `harness` if the path contains a `.claude/worktrees/`
-  segment, `adev` if it contains a `.adev/worktrees/` segment, or `null` otherwise. This lets
-  orchestrators fall back to serial execution when already inside a worktree.
+  `{ nested, kind, parallel }` where `kind` is `harness` if the path contains a `.claude/worktrees/`
+  segment, `adev` if it contains a `.adev/worktrees/` segment, or `null` otherwise. `parallel` is
+  `false` only for `kind: adev`: an adev worktree is itself a parallel group, so fanning out again
+  from it would recurse. A harness worktree may fan out, because group worktrees are still created
+  at the main root and merge back into the harness worktree's own branch. Orchestrators fall back to
+  serial execution when `parallel` is `false`.
 
 ## Preconditions
 
@@ -144,8 +149,12 @@ library (`lib/worktree.mjs`) and a CLI verb (`adev worktree`).
 - [x] `merge` conflict aborts, leaves a clean tree, and throws `MERGE_CONFLICT` naming files.
 - [x] `remove` deletes the worktree (and branch with `--delete-branch`).
 - [x] `detectNesting`/`guard` classifies `harness` / `adev` / `null` correctly.
+- [x] `detectNesting`/`guard` reports `parallel: true` at the main root and in a harness worktree,
+      `parallel: false` in an adev worktree.
+- [x] `merge` invoked from a harness worktree integrates the group branch into the harness
+      worktree's branch and leaves the main checkout's HEAD and working tree unchanged.
 - [x] CLI verb emits JSON on stdout and uses exit codes 0 (success) / 1 (error).
 - [ ] `.adev/worktrees/` is guaranteed git-ignored (Coverage Gap — deferred).
-- [x] All quality gates pass (`npm test`): `tests/lib/worktree.test.mjs` (13) +
+- [x] All quality gates pass (`npm test`): `tests/lib/worktree.test.mjs` (19) +
       `tests/cli/worktree.test.mjs` (7), all green.
 - [x] No constitutional violations.
