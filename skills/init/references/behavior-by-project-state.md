@@ -379,7 +379,7 @@ for the mechanics and for how an overlay target outside that subset is reported
    none run until you select them):
      [ ] referent-integrity     (reasoning tier, blocker cap)
      [ ] wiring-reviewer        (capable tier,   blocker cap)
-     [ ] consistency-analyzer   (fast tier,      blocker cap)
+     [ ] consistency-analyzer   (capable tier,   blocker cap)
      [ ] boundary-reviewer      (capable tier,   blocker cap)
      [ ] termination-reviewer   (fast tier,      blocker cap; triggered)
      [ ] structural-architect   (reasoning tier, blocker cap; disabled in the bundle)
