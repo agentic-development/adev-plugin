@@ -11,6 +11,8 @@ import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
+import { writeBlockers, writeDecisionAnswers } from '../../lib/blockers-writer.mjs';
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const CLI = resolve(__dirname, '../../cli/index.mjs');
 
@@ -299,6 +301,34 @@ test('adev specify revise --auto with nothing authored exits 2 NOTHING_TO_REVISE
     assert.equal(result.status, 2);
     assert.ok(result.stderr.includes('NOTHING_TO_REVISE'), `stderr: ${result.stderr}`);
     assert.strictEqual(readFileSync(join(root, specPath), 'utf8'), before);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('adev specify revise: tampered answered decision exits 1 UNSAFE_DECISION_TEXT, spec unchanged; valid decision reports decisions_written', () => {
+  const { root, specPath } = makeBlockedSpec({ revision: 1 });
+  try {
+    const blockers = join(root, specPath.replace(/\.spec\.md$/, '.blockers.md'));
+    const finding = {
+      blocker_id: 'r:t:aaaaaaaa', section_anchor: 'behaviors', reviewer: 'r', finding_class: 'decision',
+      prose: 'Pick one.', question: 'Which one?',
+      options: [{ label: 'A', implications: 'Uses A' }, { label: 'B', implications: 'Uses B' }],
+    };
+    writeBlockers(root, specPath, [finding], { revision: 1 });
+    writeDecisionAnswers(root, specPath, [{ blocker_id: 'r:t:aaaaaaaa', choice: 'bad **x**', note: null, recorded: '2026-05-02T00:00:00.000Z' }]);
+    const before = readFileSync(join(root, specPath), 'utf8');
+    const bad = runCli(root, ['revise', '--spec', specPath]);
+    assert.equal(bad.status, 1);
+    assert.ok(bad.stderr.includes('UNSAFE_DECISION_TEXT'), bad.stderr);
+    assert.strictEqual(readFileSync(join(root, specPath), 'utf8'), before);
+    assert.ok(existsSync(blockers));
+
+    writeDecisionAnswers(root, specPath, [{ blocker_id: 'r:t:aaaaaaaa', choice: 'A', note: null, recorded: '2026-05-02T00:00:00.000Z' }]);
+    const ok = runCli(root, ['revise', '--spec', specPath]);
+    assert.equal(ok.status, 0, ok.stderr);
+    assert.deepStrictEqual(JSON.parse(ok.stdout.trim()).decisions_written, [{ dec: 'DEC-1', blocker_ids: ['r:t:aaaaaaaa'] }]);
+    assert.ok(readFileSync(join(root, specPath), 'utf8').includes('- **DEC-1** — Which one? → **A**. Uses A.'));
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

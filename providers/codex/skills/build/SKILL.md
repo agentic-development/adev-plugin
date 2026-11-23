@@ -174,7 +174,7 @@ When and how the orchestrator flushes build state to disk.
 
 ## Resume Mode
 
-> **Conditional loading:** Read `<ADEV_ROOT>/skills/build/references/resume-mode.md` for the full Resume Mode instructions.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/build/references/resume-mode.md` for the full Resume Mode instructions, including resuming a `DECISION_REQUIRED` halt after `adev decisions record`.
 
 ---
 

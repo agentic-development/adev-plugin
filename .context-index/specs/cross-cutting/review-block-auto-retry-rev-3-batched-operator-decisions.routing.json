@@ -1,0 +1,138 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 0.8
+      },
+      "rationale": "New leaf lib with exact BEH-2/3 rules and tests; 17/20 but modifies lib/governance/remedy-ref-render.mjs (configured sensitive path), so the secondary override floors it at assisted-agent; keep renderRemedyRef byte-identical."
+    },
+    {
+      "task_id": "t10",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.8,
+        "novelty": 0.6
+      },
+      "rationale": "Rewrites build's auto-retry loop step 4 and resume re-entry (WR-5) in orchestrator prose; lifecycle-critical control flow verified only by a contract test."
+    },
+    {
+      "task_id": "t11",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Single new integration test following build-loop-auto-retry fixture pattern; AC 18 spells out the exact trace."
+    },
+    {
+      "task_id": "t12",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.4,
+        "novelty": 0.8
+      },
+      "rationale": "Docs-only but spans an ADR, two docs files and regenerated provider mirrors across many modules; ADR wording must stay a table update, not an amendment."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.6,
+        "novelty": 0.6
+      },
+      "rationale": "Extends blockers-writer, specify-revise parser and blockers CLI (8 files across lib and lib/cli); byte-surgical answer-key fence edit and advisory set combine existing patterns non-trivially."
+    },
+    {
+      "task_id": "t3",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "Pure no-I/O leaf module plus its test; BEH-9 grammar and the BD-3 entry-extent rule are fully pinned in the plan; fence-aware scanning is moderate novelty."
+    },
+    {
+      "task_id": "t4",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "New module plus test only; containment reuses assertContained and BD-1/BD-2/BD-4/TR-2 resolutions settle every design choice; composes Tasks 1-3 with exhaustive error-code tests."
+    },
+    {
+      "task_id": "t5",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 1
+      },
+      "rationale": "Thin CLI wrapper mirroring lib/cli/review-notes.mjs plus a one-line verb-table registration in cli/index.mjs; mechanical."
+    },
+    {
+      "task_id": "t6",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.6,
+        "novelty": 0.6
+      },
+      "rationale": "Crosses lib (specify-revise, cli/specify) and skills/specify reference prose; changes grouping semantics in the revise path, so a checkpoint guards the decisions map carry-through."
+    },
+    {
+      "task_id": "t7",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.6,
+        "novelty": 0.4
+      },
+      "rationale": "Modifies reviseSpec, the destructive spec writer: new section write in the temp-then-rename, re-check, and a new fatal SPLICE_VALIDATION_FAILED byte-identity abort with a test seam; highest design load."
+    },
+    {
+      "task_id": "t8",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.6,
+        "novelty": 1
+      },
+      "rationale": "One identical prose block appended to 8 reviewer prompts, pinned by the existing finding_class contract test; mechanical despite the file count."
+    },
+    {
+      "task_id": "t9",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 0.6
+      },
+      "rationale": "Skill prose in review-specs (frontmatter allowed-tools, Step 8, new reference) following the hygiene progressive-disclosure pattern; the headless/ask-round rules (TR-1) and size caps warrant a checkpoint."
+    }
+  ]
+}

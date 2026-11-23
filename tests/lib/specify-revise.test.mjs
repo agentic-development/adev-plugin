@@ -19,8 +19,9 @@ import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, existsSync, rmSync
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 
-import { reviseSpec, resolveSectionAnchors, groupBlockersByAnchor, assertFrontmatterIntact, assertHeadingsOutsideSplicesIntact, parseBlockersSidecar } from '../../lib/specify-revise.mjs';
+import { reviseSpec, assertOnlyDecisionsSectionChanged, parseFrontmatter, resolveSectionAnchors, groupBlockersByAnchor, assertFrontmatterIntact, assertHeadingsOutsideSplicesIntact, parseBlockersSidecar } from '../../lib/specify-revise.mjs';
 import { readEvents } from '../../lib/lifecycle-state.mjs';
+import { writeBlockers, writeDecisionAnswers } from '../../lib/blockers-writer.mjs';
 
 function makeBlockedSpec({ revision = 1, status = 'review-blocked' } = {}) {
   const root = mkdtempSync(join(tmpdir(), 'adev-revise-'));
@@ -898,4 +899,451 @@ test('(y) assertHeadingsOutsideSplicesIntact rejects a splice that loses an unto
   const bad = assertHeadingsOutsideSplicesIntact(prior, broken, [range]);
   assert.equal(bad.ok, false);
   assert.match(bad.reason, /2:b/);
+});
+
+test('parseBlockersSidecar reads question/options/answer keys and defaults them for legacy entries', () => {
+  const text = [
+    '## r:t:aaaaaaaa', '', '```yaml', 'blocker_id: r:t:aaaaaaaa', 'section_anchor: x', 'finding_class: decision',
+    'question: "Pick?"', 'options: [{"label":"A","implications":"a"},{"label":"B","implications":"b"}]',
+    'reviewer_count: 1', 'decision_choice: "A"', 'decision_note: "n"', 'decision_recorded: 2026-01-01T00:00:00.000Z', '```', '',
+    '## r:t:bbbbbbbb', '', '```yaml', 'blocker_id: r:t:bbbbbbbb', 'section_anchor: y', 'finding_class: defect', 'reviewer_count: 1', '```', '',
+  ].join('\n');
+  const [a, b] = parseBlockersSidecar(text);
+  assert.equal(a.question, 'Pick?');
+  assert.deepEqual(a.options, [{ label: 'A', implications: 'a' }, { label: 'B', implications: 'b' }]);
+  assert.equal(a.decision_choice, 'A');
+  assert.equal(a.decision_note, 'n');
+  assert.equal(a.decision_recorded, '2026-01-01T00:00:00.000Z');
+  assert.equal(b.question, null);
+  assert.deepEqual(b.options, []);
+  assert.equal(b.decision_choice, null);
+  assert.equal(b.decision_note, null);
+  assert.equal(b.decision_recorded, null);
+});
+
+test('parseBlockersSidecar exposes each entry\'s own first prose block, or null when it has none', () => {
+  const text = [
+    '# Blockers: x', '',
+    '## a:t:00000001', '', '```yaml', 'blocker_id: a:t:00000001', 'section_anchor: s', '```', '',
+    '**Reviewer:** r', '', '```', 'First prose. ', '## a:t:00000002', '```', '',
+    '## a:t:00000002', '', '```yaml', 'blocker_id: a:t:00000002', 'section_anchor: s', '```', '',
+  ].join('\n');
+  const [one, two] = parseBlockersSidecar(text);
+  assert.equal(one.prose, 'First prose. \n## a:t:00000002');
+  assert.equal(two.prose, null);
+});
+
+function writeDecisionSidecar(root, specPath, entries) {
+  const lines = ['# Blockers', ''];
+  for (const e of entries) {
+    lines.push(`## ${e.blocker_id}`, '', '```yaml', `blocker_id: ${e.blocker_id}`, `section_anchor: ${e.section_anchor}`, `finding_class: ${e.finding_class ?? 'defect'}`);
+    if (e.finding_class === 'decision') lines.push('question: "Pick?"', 'options: [{"label":"A","implications":"a"},{"label":"B","implications":"b"}]');
+    if (e.choice !== undefined) lines.push(`decision_choice: ${JSON.stringify(e.choice)}`);
+    if (e.note !== undefined) lines.push(`decision_note: ${JSON.stringify(e.note)}`);
+    lines.push('```', '', '```', 'prose', '```', '');
+  }
+  writeFileSync(join(root, specPath.replace(/\.spec\.md$/, '.blockers.md')), lines.join('\n'));
+}
+
+test('groupBlockersByAnchor groups answered decisions into decisions map, leaves open decisions out', () => {
+  const { grouped, decisions } = groupBlockersByAnchor([
+    { blocker_id: 'd:1:11111111', section_anchor: 'behaviors', finding_class: 'decision', decision_choice: 'A', decision_note: null },
+    { blocker_id: 'd:2:22222222', section_anchor: 'behaviors', finding_class: 'decision', decision_choice: null, decision_note: null },
+    { blocker_id: 'e:1:33333333', section_anchor: 'behaviors', finding_class: 'external' },
+  ]);
+  assert.deepStrictEqual(grouped.get('behaviors'), ['d:1:11111111']);
+  assert.deepStrictEqual(decisions.get('behaviors'), [{ blocker_id: 'd:1:11111111', choice: 'A', note: null }]);
+});
+
+test('groupBlockersByAnchor decisions follow the remap and the parent-fold', () => {
+  const body = '## Behaviors\n\nparent\n\n### Retry\n\nchild\n\n## Notes\n\nn\n';
+  const { grouped, decisions } = groupBlockersByAnchor([
+    { blocker_id: 'a:1:11111111', section_anchor: 'behaviors' },
+    { blocker_id: 'd:1:22222222', section_anchor: 'retry', finding_class: 'decision', decision_choice: 'A', decision_note: 'x' },
+    { blocker_id: 'd:2:33333333', section_anchor: 'notes-1', finding_class: 'decision', decision_choice: 'B', decision_note: null },
+  ], resolveSectionAnchors(body));
+  assert.deepStrictEqual([...grouped.keys()].sort(), ['behaviors', 'notes']);
+  assert.deepStrictEqual(decisions.get('behaviors'), [{ blocker_id: 'd:1:22222222', choice: 'A', note: 'x' }]);
+  assert.deepStrictEqual(decisions.get('notes'), [{ blocker_id: 'd:2:33333333', choice: 'B', note: null }]);
+  assert.equal(decisions.has('retry'), false);
+});
+
+test('authored body containing "<!-- adev:decision" -> SPLICE_VALIDATION_FAILED advisory, anchor prior text kept, blocker unresolved', () => {
+  for (const marker of ['<!-- adev:decision', '<!--adev:decision', '<!--  adev:decision']) {
+    const { root, specPath } = makeBlockedSpecWithHeadings({ revision: 1 });
+    try {
+      writeReviewSidecar(root, specPath);
+      writeDecisionSidecar(root, specPath, [{ blocker_id: 'd:1:11111111', section_anchor: 'preconditions', finding_class: 'decision', choice: 'A' }]);
+      const result = reviseSpec({
+        specPath, projectRoot: root,
+        authoredSections: new Map([['preconditions', `New text.\n${marker} DEC-1 -->\n`]]),
+      });
+      assert.ok(result.advisories.some(a => a.code === 'SPLICE_VALIDATION_FAILED' && a.anchor === 'preconditions' && a.reason === 'decision-marker'), marker);
+      assert.deepStrictEqual(result.unresolved, ['d:1:11111111']);
+      const text = readFileSync(join(root, specPath), 'utf8');
+      assert.ok(text.includes('Original preconditions text.'));
+      assert.ok(!text.includes('New text.'));
+      assert.strictEqual(text.match(/<!--\s*adev:decision/g).length, result.decisions_written.length);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  }
+});
+
+test('an authoredSections key "decisions-of-record" is refused per anchor and never spliced', () => {
+  const { root, specPath } = makeBlockedSpecWithHeadings({
+    revision: 1,
+    extraSection: '## Decisions of Record\n\nrecorded text\n',
+  });
+  try {
+    writeReviewSidecar(root, specPath);
+    writeDecisionSidecar(root, specPath, [{ blocker_id: 'a:1:11111111', section_anchor: 'preconditions' }]);
+    const result = reviseSpec({
+      specPath, projectRoot: root,
+      authoredSections: new Map([
+        ['decisions-of-record', 'tampered\n'],
+        ['preconditions', 'Valid new precondition.'],
+      ]),
+    });
+    assert.ok(result.advisories.some(a => a.code === 'SPLICE_VALIDATION_FAILED' && a.anchor === 'decisions-of-record' && a.reason === 'decisions-of-record-not-authorable'));
+    const text = readFileSync(join(root, specPath), 'utf8');
+    assert.ok(text.includes('recorded text'));
+    assert.ok(!text.includes('tampered'));
+    assert.deepStrictEqual(result.addressed, ['a:1:11111111']);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('answered decision blocker is addressed when its section changes and unresolved when it comes back unchanged', () => {
+  const { root, specPath } = makeBlockedSpecWithHeadings({ revision: 1 });
+  try {
+    writeReviewSidecar(root, specPath);
+    writeDecisionSidecar(root, specPath, [
+      { blocker_id: 'd:1:11111111', section_anchor: 'preconditions', finding_class: 'decision', choice: 'A', note: 'n' },
+      { blocker_id: 'd:2:22222222', section_anchor: 'behaviors', finding_class: 'decision', choice: 'B' },
+    ]);
+    const result = reviseSpec({
+      specPath, projectRoot: root,
+      authoredSections: new Map([
+        ['preconditions', 'Implements A.'],
+        ['behaviors', '1. **When** invoked **then** does X.'],
+      ]),
+    });
+    assert.deepStrictEqual(result.addressed, ['d:1:11111111']);
+    assert.deepStrictEqual(result.unresolved, ['d:2:22222222']);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('answered blocker whose section comes back unchanged is unresolved; with --auto and no change -> NOTHING_TO_REVISE, nothing written, sidecar kept', () => {
+  const { root, specPath } = makeBlockedSpecWithHeadings({ revision: 2 });
+  try {
+    writeReviewSidecar(root, specPath);
+    writeDecisionSidecar(root, specPath, [{ blocker_id: 'd:1:11111111', section_anchor: 'preconditions', finding_class: 'decision', choice: 'A', note: 'n' }]);
+    const specBefore = readFileSync(join(root, specPath), 'utf8');
+    const blockersPath = join(root, specPath.replace(/\.spec\.md$/, '.blockers.md'));
+    const blockersBefore = readFileSync(blockersPath, 'utf8');
+    assert.throws(
+      () => reviseSpec({ specPath, projectRoot: root, autoMode: true, authoredSections: new Map([['preconditions', 'Original preconditions text.']]) }),
+      (err) => err.code === 'NOTHING_TO_REVISE',
+    );
+    assert.strictEqual(readFileSync(join(root, specPath), 'utf8'), specBefore);
+    assert.strictEqual(readFileSync(blockersPath, 'utf8'), blockersBefore);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+// ── Decisions of Record ─────────────────────────────────────────────
+
+const DOR_OPTS = [{ label: 'A', implications: 'Uses A' }, { label: 'B', implications: 'Uses B' }];
+const decFinding = (id, anchor, extra = {}) => ({
+  blocker_id: id, section_anchor: anchor, reviewer: 'r', finding_class: 'decision',
+  prose: 'Pick one. More text.', question: 'Which one?', options: DOR_OPTS, ...extra,
+});
+const answer = (id, choice, note = null) => ({ blocker_id: id, choice, note, recorded: '2026-05-02T00:00:00.000Z' });
+
+function seedDecisions(root, specPath, findings, answers) {
+  writeReviewSidecar(root, specPath);
+  writeBlockers(root, specPath, findings, { revision: 1 });
+  writeDecisionAnswers(root, specPath, answers);
+}
+const blockersFile = (root, specPath) => join(root, specPath.replace(/\.spec\.md$/, '.blockers.md'));
+const sectionOf = (text) => text.slice(text.indexOf('## Decisions of Record'), text.lastIndexOf('## Acceptance Criteria'));
+
+test('answered decision -> one marker+entry in ## Decisions of Record, placed before the real ## Acceptance Criteria (fenced decoy ignored)', () => {
+  const { root, specPath } = makeBlockedSpecWithHeadings({
+    extraSection: '## Notes\n\n```\n## Acceptance Criteria\n```\n',
+  });
+  try {
+    seedDecisions(root, specPath, [decFinding('r:t:aaaaaaaa', 'preconditions')], [answer('r:t:aaaaaaaa', 'A', 'because')]);
+    const result = reviseSpec({ specPath, projectRoot: root });
+    const text = readFileSync(join(root, specPath), 'utf8');
+    const realAc = text.lastIndexOf('## Acceptance Criteria');
+    const decoy = text.indexOf('## Acceptance Criteria');
+    const dor = text.indexOf('## Decisions of Record');
+    assert.ok(decoy < dor && dor < realAc);
+    assert.ok(text.includes(
+      '<!-- adev:decision DEC-1 blockers=r:t:aaaaaaaa -->\n- **DEC-1** — Which one? → **A**. Uses A. because.'));
+    assert.deepStrictEqual(result.decisions_written, [{ dec: 'DEC-1', blocker_ids: ['r:t:aaaaaaaa'] }]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('entries written in the same atomic write as the authored sections, before .blockers.md is cleared', () => {
+  const { root, specPath } = makeBlockedSpecWithHeadings();
+  try {
+    seedDecisions(root, specPath, [decFinding('r:t:aaaaaaaa', 'preconditions')], [answer('r:t:aaaaaaaa', 'B')]);
+    const result = reviseSpec({
+      specPath, projectRoot: root, autoMode: true,
+      authoredSections: new Map([['preconditions', 'Implements B.']]),
+    });
+    const text = readFileSync(join(root, specPath), 'utf8');
+    assert.ok(text.includes('Implements B.'));
+    assert.ok(text.includes('<!-- adev:decision DEC-1 blockers=r:t:aaaaaaaa -->'));
+    assert.strictEqual(result.blockersCleared, true);
+    assert.strictEqual(existsSync(blockersFile(root, specPath)), false);
+    assert.ok(!existsSync(join(root, `${specPath}.tmp`)));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('duplicate_of group with the same choice and note -> one entry naming every blocker_id', () => {
+  const { root, specPath } = makeBlockedSpecWithHeadings();
+  try {
+    seedDecisions(root, specPath, [
+      decFinding('r:t:aaaaaaaa', 'preconditions', { question: 'Which one?' }),
+      decFinding('r:t:bbbbbbbb', 'preconditions', { question: 'which   ONE?' }),
+      decFinding('r:t:cccccccc', 'preconditions', { question: 'Which one?' }),
+    ], [answer('r:t:aaaaaaaa', 'A', 'n'), answer('r:t:bbbbbbbb', 'A', 'n'), answer('r:t:cccccccc', 'A', 'other')]);
+    const result = reviseSpec({ specPath, projectRoot: root });
+    assert.deepStrictEqual(result.decisions_written, [
+      { dec: 'DEC-1', blocker_ids: ['r:t:aaaaaaaa', 'r:t:bbbbbbbb'] },
+      { dec: 'DEC-2', blocker_ids: ['r:t:cccccccc'] },
+    ]);
+    const text = readFileSync(join(root, specPath), 'utf8');
+    assert.ok(text.includes('<!-- adev:decision DEC-1 blockers=r:t:aaaaaaaa,r:t:bbbbbbbb -->'));
+    assert.strictEqual(text.match(/adev:decision DEC-/g).length, 2);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('re-decided blocker keeps its DEC-<n>; other entries byte-identical; new entry = highest + 1', () => {
+  const existing = [
+    '## Decisions of Record',
+    '',
+    '<!-- adev:decision DEC-1 blockers=r:t:aaaaaaaa -->',
+    '- **DEC-1** — Old? → **B**. Uses B.',
+    '<!-- adev:decision DEC-4 blockers=r:t:dddddddd -->',
+    '- **DEC-4** — Kept exactly   as is? → **A**.',
+    '',
+  ].join('\n');
+  const { root, specPath } = makeBlockedSpecWithHeadings({ extraSection: existing });
+  try {
+    seedDecisions(root, specPath, [
+      decFinding('r:t:aaaaaaaa', 'preconditions'),
+      decFinding('r:t:eeeeeeee', 'behaviors', { question: 'Another?' }),
+    ], [answer('r:t:aaaaaaaa', 'A'), answer('r:t:eeeeeeee', 'B')]);
+    const result = reviseSpec({ specPath, projectRoot: root });
+    const text = readFileSync(join(root, specPath), 'utf8');
+    assert.ok(text.includes('<!-- adev:decision DEC-1 blockers=r:t:aaaaaaaa -->\n- **DEC-1** — Which one? → **A**. Uses A.\n'));
+    assert.ok(text.includes('<!-- adev:decision DEC-4 blockers=r:t:dddddddd -->\n- **DEC-4** — Kept exactly   as is? → **A**.\n'));
+    assert.ok(text.includes('<!-- adev:decision DEC-5 blockers=r:t:eeeeeeee -->\n- **DEC-5** — Another? → **B**. Uses B.'));
+    assert.deepStrictEqual(result.decisions_written, [
+      { dec: 'DEC-1', blocker_ids: ['r:t:aaaaaaaa'] },
+      { dec: 'DEC-5', blocker_ids: ['r:t:eeeeeeee'] },
+    ]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('an over-length reviewer question (stored truncated) yields a DEC-<n> entry, not UNSAFE_DECISION_TEXT', () => {
+  const { root, specPath } = makeBlockedSpecWithHeadings();
+  try {
+    const long = `${'q'.repeat(600)}?`;
+    seedDecisions(root, specPath, [decFinding('r:t:aaaaaaaa', 'preconditions', { question: long })], [answer('r:t:aaaaaaaa', 'A')]);
+    const stored = parseBlockersSidecar(readFileSync(blockersFile(root, specPath), 'utf8'))[0].question;
+    assert.strictEqual(stored, `${'q'.repeat(500)}…[truncated]`);
+    const result = reviseSpec({ specPath, projectRoot: root });
+    assert.deepStrictEqual(result.decisions_written, [{ dec: 'DEC-1', blocker_ids: ['r:t:aaaaaaaa'] }]);
+    assert.ok(readFileSync(join(root, specPath), 'utf8').includes(`- **DEC-1** — ${stored} → **A**.`));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('tampered sidecar choice containing ** -> UNSAFE_DECISION_TEXT, exit 1; spec and sidecar unchanged; no entry for any decision', () => {
+  const { root, specPath } = makeBlockedSpecWithHeadings();
+  try {
+    seedDecisions(root, specPath, [
+      decFinding('r:t:aaaaaaaa', 'preconditions'),
+      decFinding('r:t:bbbbbbbb', 'behaviors', { question: 'Second?' }),
+    ], [answer('r:t:aaaaaaaa', 'A'), answer('r:t:bbbbbbbb', 'evil **bold**')]);
+    const specBefore = readFileSync(join(root, specPath), 'utf8');
+    const sidecarBefore = readFileSync(blockersFile(root, specPath), 'utf8');
+    assert.throws(
+      () => reviseSpec({ specPath, projectRoot: root, authoredSections: new Map([['preconditions', 'New text.']]) }),
+      (err) => err.code === 'UNSAFE_DECISION_TEXT' && err.message.includes('choice') && !err.message.includes('evil'),
+    );
+    assert.strictEqual(readFileSync(join(root, specPath), 'utf8'), specBefore);
+    assert.strictEqual(readFileSync(blockersFile(root, specPath), 'utf8'), sidecarBefore);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('byte outside the section and the authored anchors differs after compose -> SPLICE_VALIDATION_FAILED thrown, exit 1, nothing written', () => {
+  const { root, specPath } = makeBlockedSpecWithHeadings();
+  try {
+    seedDecisions(root, specPath, [decFinding('r:t:aaaaaaaa', 'preconditions')], [answer('r:t:aaaaaaaa', 'A')]);
+    const specBefore = readFileSync(join(root, specPath), 'utf8');
+    const sidecarBefore = readFileSync(blockersFile(root, specPath), 'utf8');
+    const faulty = (body) => ({ body: `${body.replace('does X.', 'does Y.')}\n## Decisions of Record\n\nx\n`, written: [], advisories: [] });
+    assert.throws(
+      () => reviseSpec({ specPath, projectRoot: root, _composeDecisions: faulty }),
+      (err) => err.code === 'SPLICE_VALIDATION_FAILED',
+    );
+    assert.strictEqual(readFileSync(join(root, specPath), 'utf8'), specBefore);
+    assert.strictEqual(readFileSync(blockersFile(root, specPath), 'utf8'), sidecarBefore);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('revise with no answered blockers leaves an existing ## Decisions of Record byte-identical', () => {
+  const existing = '## Decisions of Record\n\n<!-- adev:decision DEC-2 blockers=r:t:dddddddd -->\n- **DEC-2** — Q? → **A**.\n';
+  const { root, specPath } = makeBlockedSpecWithHeadings({ extraSection: existing });
+  try {
+    writeReviewSidecar(root, specPath);
+    writeDecisionSidecar(root, specPath, [{ blocker_id: 'a:1:11111111', section_anchor: 'preconditions' }]);
+    const before = sectionOf(readFileSync(join(root, specPath), 'utf8'));
+    const result = reviseSpec({ specPath, projectRoot: root, authoredSections: new Map([['preconditions', 'Changed.']]) });
+    assert.strictEqual(sectionOf(readFileSync(join(root, specPath), 'utf8')), before);
+    assert.deepStrictEqual(result.decisions_written, []);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('spec outside .context-index/specs/ with answered decisions -> INVALID_SPEC_PATH before any write', () => {
+  const { root } = makeBlockedSpecWithHeadings();
+  try {
+    const specPath = 'docs/outside.spec.md';
+    mkdirSync(join(root, 'docs'), { recursive: true });
+    const source = readFileSync(join(root, '.context-index/specs/cross-cutting/sample.spec.md'), 'utf8');
+    writeFileSync(join(root, specPath), source);
+    seedDecisions(root, specPath, [decFinding('r:t:aaaaaaaa', 'preconditions')], [answer('r:t:aaaaaaaa', 'A')]);
+    assert.throws(
+      () => reviseSpec({ specPath, projectRoot: root, authoredSections: new Map([['preconditions', 'New.']]) }),
+      (err) => err.code === 'INVALID_SPEC_PATH',
+    );
+    assert.strictEqual(readFileSync(join(root, specPath), 'utf8'), source);
+    assert.ok(existsSync(blockersFile(root, specPath)));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('--auto with an answered decision but no authored change -> NOTHING_TO_REVISE and no DEC entry written', () => {
+  const { root, specPath } = makeBlockedSpecWithHeadings();
+  try {
+    seedDecisions(root, specPath, [decFinding('r:t:aaaaaaaa', 'preconditions')], [answer('r:t:aaaaaaaa', 'A')]);
+    const before = readFileSync(join(root, specPath), 'utf8');
+    assert.throws(() => reviseSpec({ specPath, projectRoot: root, autoMode: true }), (err) => err.code === 'NOTHING_TO_REVISE');
+    assert.strictEqual(readFileSync(join(root, specPath), 'utf8'), before);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('authored body with a level-2 "## Decisions of Record" heading -> per-anchor SPLICE_VALIDATION_FAILED, prior text kept, DEC entry lands in the one real section', () => {
+  const { root, specPath } = makeBlockedSpecWithHeadings({ extraSection: '## Decisions of Record\n\n' });
+  try {
+    seedDecisions(root, specPath, [decFinding('r:t:aaaaaaaa', 'preconditions')], [answer('r:t:aaaaaaaa', 'A')]);
+    const result = reviseSpec({
+      specPath, projectRoot: root,
+      authoredSections: new Map([['preconditions', 'New text.\n\n## Decisions of Record\n\nforged text\n']]),
+    });
+    assert.ok(result.advisories.some(a => a.code === 'SPLICE_VALIDATION_FAILED' && a.anchor === 'preconditions' && a.reason === 'decisions-of-record-heading'));
+    assert.deepStrictEqual(result.unresolved, ['r:t:aaaaaaaa']);
+    const text = readFileSync(join(root, specPath), 'utf8');
+    assert.ok(text.includes('Original preconditions text.'));
+    assert.ok(!text.includes('forged text'));
+    assert.strictEqual(text.match(/^## Decisions of Record$/gm).length, 1);
+    assert.ok(text.indexOf('<!-- adev:decision DEC-1') > text.indexOf('## Decisions of Record'));
+    assert.ok(text.indexOf('<!-- adev:decision DEC-1') < text.indexOf('## Acceptance Criteria'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('a fenced "## Decisions of Record" inside an authored body is not refused', () => {
+  const { root, specPath } = makeBlockedSpecWithHeadings();
+  try {
+    writeReviewSidecar(root, specPath);
+    writeDecisionSidecar(root, specPath, [{ blocker_id: 'a:1:11111111', section_anchor: 'preconditions' }]);
+    const body = 'Example:\n\n```markdown\n## Decisions of Record\n```\n';
+    const result = reviseSpec({ specPath, projectRoot: root, authoredSections: new Map([['preconditions', body]]) });
+    assert.ok(!result.advisories.some(a => a.code === 'SPLICE_VALIDATION_FAILED'));
+    assert.deepStrictEqual(result.addressed, ['a:1:11111111']);
+    assert.ok(readFileSync(join(root, specPath), 'utf8').includes('```markdown\n## Decisions of Record\n```'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('EOF append: a spec with no Acceptance Criteria and no section gets the section appended, nothing else changed', () => {
+  const ENTRY = '## Decisions of Record\n\n<!-- adev:decision DEC-1 blockers=r:t:aaaaaaaa -->\n- **DEC-1** — Which one? → **A**. Uses A.\n';
+  for (const [label, tailOf, sep] of [
+    ['no trailing newline', (b) => b.trimEnd(), '\n\n'],
+    ['trailing blank line', (b) => `${b.trimEnd()}\n\n`, ''],
+  ]) {
+    const { root, specPath } = makeBlockedSpecWithHeadings();
+    try {
+      const abs = join(root, specPath);
+      const full = readFileSync(abs, 'utf8');
+      const priorBody = tailOf(parseFrontmatter(full).body.split('## Acceptance Criteria')[0]);
+      writeFileSync(abs, full.replace(parseFrontmatter(full).body, priorBody));
+      seedDecisions(root, specPath, [decFinding('r:t:aaaaaaaa', 'preconditions')], [answer('r:t:aaaaaaaa', 'A')]);
+      const result = reviseSpec({ specPath, projectRoot: root });
+      assert.deepStrictEqual(result.decisions_written, [{ dec: 'DEC-1', blocker_ids: ['r:t:aaaaaaaa'] }], label);
+      assert.strictEqual(parseFrontmatter(readFileSync(abs, 'utf8')).body, `${priorBody}${sep}${ENTRY}`, label);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  }
+});
+
+test('assertOnlyDecisionsSectionChanged: identical bodies pass; a byte outside the section fails; a byte inside passes', () => {
+  const body = '## A\n\ntext\n\n## Decisions of Record\n\nold\n\n## Acceptance Criteria\n\n- x\n';
+  assert.deepStrictEqual(assertOnlyDecisionsSectionChanged(body, body), { ok: true });
+  assert.deepStrictEqual(assertOnlyDecisionsSectionChanged(body, body.replace('text', 'tex7')),
+    { ok: false, reason: 'post-compose byte-identity check failed' });
+  assert.deepStrictEqual(assertOnlyDecisionsSectionChanged(body, body.replace('old', 'new entry')), { ok: true });
+  assert.deepStrictEqual(assertOnlyDecisionsSectionChanged(body, body.replace('- x', '- y')).ok, false);
+});
+
+test('assertOnlyDecisionsSectionChanged: EOF append tolerates whitespace drift only', () => {
+  const prior = '## A\n\ntext';
+  const composed = (tail) => `${tail}## Decisions of Record\n\nentry\n`;
+  assert.deepStrictEqual(assertOnlyDecisionsSectionChanged(prior, composed('## A\n\ntext\n\n')), { ok: true });
+  assert.deepStrictEqual(assertOnlyDecisionsSectionChanged(`${prior}\n\n`, composed('## A\n\ntext\n')), { ok: true });
+  assert.strictEqual(assertOnlyDecisionsSectionChanged(prior, composed('## A\n\ntexT\n\n')).ok, false);
+});
+
+test('groupBlockersByAnchor does not author an answered decision whose recorded text fails the gate and reports it in rejectedAnswers', () => {
+  const { grouped, decisions, rejectedAnswers } = groupBlockersByAnchor([
+    { blocker_id: 'd:1:11111111', section_anchor: 'behaviors', finding_class: 'decision', decision_choice: 'A\nB' },
+    { blocker_id: 'd:2:22222222', section_anchor: 'behaviors', finding_class: 'decision', decision_choice: 'A', decision_note: '<!-- x -->' },
+    { blocker_id: 'd:3:33333333', section_anchor: 'behaviors', finding_class: 'decision', decision_choice: 'A' },
+  ]);
+  assert.deepStrictEqual(grouped.get('behaviors'), ['d:3:33333333']);
+  assert.deepStrictEqual(decisions.get('behaviors'), [{ blocker_id: 'd:3:33333333', choice: 'A', note: null }]);
+  assert.deepStrictEqual(rejectedAnswers.map(r => [r.blocker_id, r.field]), [['d:1:11111111', 'decision_choice'], ['d:2:22222222', 'decision_note']]);
 });

@@ -533,3 +533,239 @@ test('writeBlockers normalizes an unsafe section_anchor to its heading slug, con
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+// ── decision question/options ───────────────────────────────────────────────
+
+import { readSidecarRevision, writeDecisionAnswers } from '../../lib/blockers-writer.mjs';
+
+const DEC_ID = 'consistency-analyzer:decision-needed:dec00001';
+function decisionFinding(extra = {}) {
+  return {
+    blocker_id: DEC_ID,
+    section_anchor: 'behaviors',
+    reviewer: 'consistency-analyzer',
+    finding_class: 'decision',
+    prose: 'Pick a cap for retries. More text follows.',
+    ...extra,
+  };
+}
+const twoOpts = [{ label: 'A', implications: 'a: b, "c"' }, { label: 'B', implications: 'd' }];
+
+function sidecarOf(root, r) {
+  return readFileSync(join(root, r.sidecarPath), 'utf8');
+}
+
+test('decision question/options round-trip JSON-quoted through writeBlockers and parseBlockersSidecar', () => {
+  const { root, specPath } = makeRepo();
+  try {
+    const r = writeBlockers(root, specPath, [decisionFinding({ question: 'Pick a cap?', options: twoOpts })], { revision: 3 });
+    const [e] = parseBlockersSidecar(sidecarOf(root, r));
+    assert.equal(e.question, 'Pick a cap?');
+    assert.deepEqual(e.options.map((o) => o.label), ['A', 'B']);
+    assert.equal(e.options[0].implications, 'a: b, "c"');
+    assert.equal(r.decisionsRequired[0].options.length, 2);
+    assert.equal(r.decisionsRequired[0].blocker_id, DEC_ID);
+    assert.equal(r.decisionsRequired[0].section_anchor, 'behaviors');
+    assert.equal(r.decisionsRequired[0].question, 'Pick a cap?');
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test('an over-length question is stored truncated with the single-line marker', () => {
+  const { root, specPath } = makeRepo();
+  try {
+    const r = writeBlockers(root, specPath, [decisionFinding({ question: 'q'.repeat(600) })], { revision: 1 });
+    const [e] = parseBlockersSidecar(sidecarOf(root, r));
+    assert.equal(e.question, 'q'.repeat(500) + '…[truncated]');
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test('options with 1 or 5 entries, or an empty label -> OPTIONS_REJECTED, question kept', () => {
+  const mk = (n) => Array.from({ length: n }, (_, i) => ({ label: `L${i}`, implications: 'x' }));
+  for (const opts of [mk(1), mk(5), [{ label: '', implications: 'x' }, { label: 'B', implications: 'y' }]]) {
+    const { root, specPath } = makeRepo();
+    try {
+      const r = writeBlockers(root, specPath, [decisionFinding({ question: 'Keep me?', options: opts })], { revision: 1 });
+      assert.ok(r.advisories.some((a) => a.code === 'OPTIONS_REJECTED' && a.blocker_id === DEC_ID));
+      const [e] = parseBlockersSidecar(sidecarOf(root, r));
+      assert.equal(e.question, 'Keep me?');
+      assert.deepEqual(e.options, []);
+    } finally { rmSync(root, { recursive: true, force: true }); }
+  }
+});
+
+test('a label containing ** -> DECISION_TEXT_REJECTED, whole options dropped, entry and prose kept', () => {
+  const { root, specPath } = makeRepo();
+  try {
+    const r = writeBlockers(root, specPath, [decisionFinding({ options: [{ label: 'A**', implications: 'x' }, { label: 'B', implications: 'y' }] })], { revision: 1 });
+    assert.ok(r.advisories.some((a) => a.code === 'DECISION_TEXT_REJECTED' && a.blocker_id === DEC_ID));
+    const text = sidecarOf(root, r);
+    const [e] = parseBlockersSidecar(text);
+    assert.deepEqual(e.options, []);
+    assert.ok(text.includes('Pick a cap for retries.'));
+    assert.equal(r.entries, 1);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test('a refused question -> DECISION_TEXT_REJECTED, question dropped, entry kept', () => {
+  const { root, specPath } = makeRepo();
+  try {
+    const r = writeBlockers(root, specPath, [decisionFinding({ question: 'bad ``` fence?' })], { revision: 1 });
+    assert.ok(r.advisories.some((a) => a.code === 'DECISION_TEXT_REJECTED' && a.blocker_id === DEC_ID));
+    const [e] = parseBlockersSidecar(sidecarOf(root, r));
+    assert.equal(e.question, null);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test('question on a defect entry -> DECISION_FIELDS_IGNORED, not written', () => {
+  const { root, specPath } = makeRepo();
+  try {
+    const r = writeBlockers(root, specPath, [decisionFinding({ finding_class: 'defect', question: 'Q?', options: twoOpts })], { revision: 1 });
+    assert.ok(r.advisories.some((a) => a.code === 'DECISION_FIELDS_IGNORED' && a.blocker_id === DEC_ID));
+    const text = sidecarOf(root, r);
+    assert.ok(!/^question:/m.test(text));
+    assert.ok(!/^options:/m.test(text));
+    assert.deepEqual(r.decisionsRequired, []);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test('reviewer-supplied decision_choice/decision_note/decision_recorded -> DECISION_FIELDS_IGNORED, keys absent from sidecar', () => {
+  const { root, specPath } = makeRepo();
+  try {
+    const r = writeBlockers(root, specPath, [decisionFinding({ decision_choice: 'A', decision_note: 'n', decision_recorded: '2026-01-01T00:00:00Z' })], { revision: 1 });
+    assert.ok(r.advisories.some((a) => a.code === 'DECISION_FIELDS_IGNORED' && a.blocker_id === DEC_ID));
+    const text = sidecarOf(root, r);
+    assert.ok(!/^decision_(choice|note|recorded):/m.test(text));
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test('decisionsRequired falls back to the derived question when none was stored', () => {
+  const { root, specPath } = makeRepo();
+  try {
+    const r = writeBlockers(root, specPath, [decisionFinding()], { revision: 1 });
+    assert.equal(r.decisionsRequired[0].question, 'Pick a cap for retries.');
+    assert.deepEqual(r.decisionsRequired[0].options, []);
+    assert.ok(!/^question:/m.test(sidecarOf(root, r)));
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test('writeBlockers returns decisionsRequiredTable built from decisionsRequired; empty paths return []/""', () => {
+  const { root, specPath } = makeRepo();
+  try {
+    const r = writeBlockers(root, specPath, [decisionFinding({ question: 'A | B?', options: twoOpts })], { revision: 1 });
+    assert.ok(r.decisionsRequiredTable.startsWith('| blocker_id | section | question | options |'));
+    assert.ok(r.decisionsRequiredTable.includes('A \\| B?'));
+    const cleared = writeBlockers(root, specPath, [], {});
+    assert.deepEqual(cleared.decisionsRequired, []);
+    assert.equal(cleared.decisionsRequiredTable, '');
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test('writeDecisionAnswers rewrites only answer-key lines; every other byte unchanged; re-record without note removes decision_note', () => {
+  const { root, specPath } = makeRepo();
+  try {
+    const id2 = 'consistency-analyzer:decision-needed:dec00002';
+    const r = writeBlockers(root, specPath, [
+      decisionFinding({ question: 'Pick a cap?', options: twoOpts }),
+      decisionFinding({ blocker_id: id2, prose: 'Second decision.' }),
+    ], { revision: 3 });
+    const abs = join(root, r.sidecarPath);
+    const before = readFileSync(abs, 'utf8');
+
+    writeDecisionAnswers(root, specPath, [{ blocker_id: DEC_ID, choice: 'A "x"', note: 'because', recorded: '2026-02-03T04:05:06.000Z' }]);
+    const once = readFileSync(abs, 'utf8');
+    assert.ok(once.includes('decision_choice: "A \\"x\\""'));
+    assert.ok(once.includes('decision_note: "because"'));
+    assert.ok(once.includes('decision_recorded: 2026-02-03T04:05:06.000Z'));
+    const stripAnswers = (t) => t.split('\n').filter((l) => !/^decision_(choice|note|recorded):/.test(l)).join('\n');
+    assert.equal(stripAnswers(once), before);
+    const parsed = parseBlockersSidecar(once);
+    assert.equal(parsed[0].blocker_id, DEC_ID);
+    assert.equal(parsed[0].decision_choice, 'A "x"');
+    assert.equal(parsed[0].decision_note, 'because');
+    assert.equal(parsed[0].decision_recorded, '2026-02-03T04:05:06.000Z');
+    assert.equal(parsed[1].decision_choice, null);
+
+    writeDecisionAnswers(root, specPath, [{ blocker_id: DEC_ID, choice: 'B', note: null, recorded: '2026-02-04T00:00:00.000Z' }]);
+    const twice = readFileSync(abs, 'utf8');
+    assert.ok(!twice.includes('decision_note'));
+    assert.equal((twice.match(/^decision_choice:/gm) ?? []).length, 1);
+    assert.equal(stripAnswers(twice), before);
+    assert.ok(!existsSync(`${abs}.tmp`));
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test('readSidecarRevision reads the "> Spec revision: N" header', () => {
+  const { root, specPath } = makeRepo();
+  try {
+    const r = writeBlockers(root, specPath, [decisionFinding()], { revision: 7 });
+    assert.equal(readSidecarRevision(sidecarOf(root, r)), 7);
+    const r2 = writeBlockers(root, specPath, [decisionFinding()], {});
+    assert.equal(readSidecarRevision(sidecarOf(root, r2)), null);
+    assert.equal(readSidecarRevision('no header here'), null);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test('writeDecisionAnswers: unknown id throws DECISION_ENTRY_NOT_FOUND, file bytes unchanged, no .tmp', () => {
+  const { root, specPath } = makeRepo();
+  try {
+    const r = writeBlockers(root, specPath, [decisionFinding()], { revision: 1 });
+    const abs = join(root, r.sidecarPath);
+    const before = readFileSync(abs, 'utf8');
+    assert.throws(
+      () => writeDecisionAnswers(root, specPath, [
+        { blocker_id: DEC_ID, choice: 'A', note: null, recorded: '2026-02-03T04:05:06.000Z' },
+        { blocker_id: 'consistency-analyzer:decision-needed:ffffffff', choice: 'B', note: null, recorded: '2026-02-03T04:05:06.000Z' },
+      ]),
+      { code: 'DECISION_ENTRY_NOT_FOUND' },
+    );
+    assert.equal(readFileSync(abs, 'utf8'), before);
+    assert.ok(!existsSync(`${abs}.tmp`));
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test('writeDecisionAnswers: a two-id batch applies both answers and leaves other lines intact', () => {
+  const { root, specPath } = makeRepo();
+  try {
+    const id2 = 'consistency-analyzer:decision-needed:dec00002';
+    const r = writeBlockers(root, specPath, [
+      decisionFinding({ question: 'First?' }),
+      decisionFinding({ blocker_id: id2, prose: 'Second decision.', question: 'Second?' }),
+    ], { revision: 1 });
+    writeDecisionAnswers(root, specPath, [
+      { blocker_id: DEC_ID, choice: 'one', note: null, recorded: '2026-02-03T00:00:00.000Z' },
+      { blocker_id: id2, choice: 'two', note: 'why', recorded: '2026-02-03T00:00:01.000Z' },
+    ]);
+    const text = sidecarOf(root, r);
+    const [a, b] = parseBlockersSidecar(text);
+    assert.deepEqual([a.decision_choice, a.decision_note], ['one', null]);
+    assert.deepEqual([b.decision_choice, b.decision_note], ['two', 'why']);
+    assert.equal(b.question, 'Second?');
+    assert.ok(text.includes('Second decision.'));
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test('writeDecisionAnswers: an identical blocker_id line inside earlier prose is not matched', () => {
+  const { root, specPath } = makeRepo();
+  try {
+    const id2 = 'consistency-analyzer:decision-needed:dec00002';
+    const prose = `Earlier prose.\nblocker_id: ${id2}\nmore prose`;
+    const r = writeBlockers(root, specPath, [
+      decisionFinding({ prose }),
+      decisionFinding({ blocker_id: id2, prose: 'Second decision.' }),
+    ], { revision: 1 });
+    const abs = join(root, r.sidecarPath);
+    const before = readFileSync(abs, 'utf8');
+    writeDecisionAnswers(root, specPath, [{ blocker_id: id2, choice: 'two', note: null, recorded: '2026-02-03T00:00:00.000Z' }]);
+    const after = readFileSync(abs, 'utf8');
+    assert.ok(after.includes(prose));
+    assert.equal(after.split('\n').filter((l) => l.startsWith('decision_choice:')).length, 1);
+    assert.equal(after.split('\n').filter((l) => !l.startsWith('decision_')).join('\n'), before);
+    const lines = after.split('\n');
+    const answerIdx = lines.findIndex((l) => l.startsWith('decision_choice:'));
+    const owner = lines.slice(0, answerIdx).reverse().find((l) => l.startsWith('blocker_id: '));
+    assert.equal(owner, `blocker_id: ${id2}`);
+    assert.equal(lines[answerIdx - 1], 'reviewer_count: 1');
+    assert.equal(lines[answerIdx + 1], 'decision_recorded: 2026-02-03T00:00:00.000Z');
+    assert.equal(lines[answerIdx + 2], '```');
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});

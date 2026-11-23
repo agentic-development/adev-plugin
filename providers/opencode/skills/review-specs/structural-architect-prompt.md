@@ -41,6 +41,18 @@ For every BLOCK finding (severity = `blocker`), also emit:
   pointer to where the fix belongs (a repo-relative path, a spec path, an ADR id, or an issue id).
   Plain text only: no newlines, quotes, `#`, brackets/braces, or commas, no colon followed by a
   space, and not a bare `true`/`false`/`null`/number.
+- **`question`:** optional, but supply it for every `decision` finding — one sentence the operator
+  answers, ending in `?`.
+- **`options`:** optional, but supply it for every `decision` finding — 2-4 entries, each
+  `{ label, implications }`: `label` (at most 60 characters) names the choice; `implications`
+  (at most 300 characters, including any follow-on decision it opens) states what that answer
+  forces in the spec. Both are optional, but supply them for every `decision` finding. Use plain
+  text in `question`, `label`, and `implications`: no markdown emphasis, HTML comments, code fences,
+  or line breaks, because they are refused at persistence.
+
+A follow-on decision that arises whichever option is chosen is raised now, as its own `decision` finding in the same round, rather than left for the next round.
+
+An entry in the spec's `## Decisions of Record` section is settled. Do not re-raise that choice. Raise a `defect` where the spec text contradicts it. Raise a new `decision` only for a different choice, including one a decided entry opened.
 
 The aggregator in `skills/review-specs/SKILL.md` constructs and validates `blocker_id` from your `finding_type` + `section_anchor`; a malformed `finding_type` produces an `INVALID_BLOCKER_ID` advisory and falls through to the `LEGACY_REVIEWER_OUTPUT` path (no auto-retry).
 

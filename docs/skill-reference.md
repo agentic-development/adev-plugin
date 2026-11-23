@@ -214,6 +214,10 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 - `--charter <module>`: review all specs under a feature charter
 - `--tier <full|quick>`: rigor tier (see [Core Concepts → Graduated Rigor Tiers](concepts.md#graduated-rigor-tiers)). `full` (default) dispatches the three parallel specialists; `quick` dispatches a single synthesized reviewer. `quick` never skips the gate — it still produces the `.review.md` and the review lifecycle event. Overrides any routing or risk-policy signal.
 
+- `--defer-decisions`: skip the interactive decision ask round. Decision-classed blockers are written to the `.blockers.md` sidecar and reported in a Decisions Required table for the caller to answer (used by `/adev:build`).
+
+**Decision ask round:** when a BLOCK includes decision-classed findings and `--defer-decisions` is not set, review-specs asks the operator one bounded round (up to 16 question groups, duplicates collapsed) and records the answers with `adev decisions record`. Overflow decisions are left pending. Answers are written into the spec's `## Decisions of Record` by the next revise, and later reviews honor them.
+
 **Example:**
 ```
 /adev:review-specs
@@ -401,6 +405,10 @@ Batching and `--parallel` operate at different scopes: batching groups cohesive,
 ```
 
 **Expected Output:** Complete lifecycle execution from review through validation, with each step producing its standard artifacts.
+
+**Decision handling:** when the review BLOCKs on decision-classed findings, the build loop runs one batched ask round itself (reviews dispatch with `--defer-decisions`), records the answers, and revises the spec. Under `--auto` it halts with `DECISION_REQUIRED` instead of asking. `--resume` re-seeds `retries_remaining` from `build.max_review_retries` and re-enters the loop at step 4 (`adev specify group-blockers`); it never re-dispatches review. If `adev decisions record` fails with `BLOCKERS_REVISION_MISMATCH`, the sidecar is stale and needs a fresh review.
+
+The loop checks its retry budget first in any mode, so `--auto` with no retries left exits `LOOP_BUDGET_EXHAUSTED`.
 
 **Related Guides:** [Build Phase](build-phase.md)
 
