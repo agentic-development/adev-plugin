@@ -1336,3 +1336,14 @@ test('assertOnlyDecisionsSectionChanged: EOF append tolerates whitespace drift o
   assert.deepStrictEqual(assertOnlyDecisionsSectionChanged(`${prior}\n\n`, composed('## A\n\ntext\n')), { ok: true });
   assert.strictEqual(assertOnlyDecisionsSectionChanged(prior, composed('## A\n\ntexT\n\n')).ok, false);
 });
+
+test('groupBlockersByAnchor does not author an answered decision whose recorded text fails the gate and reports it in rejectedAnswers', () => {
+  const { grouped, decisions, rejectedAnswers } = groupBlockersByAnchor([
+    { blocker_id: 'd:1:11111111', section_anchor: 'behaviors', finding_class: 'decision', decision_choice: 'A\nB' },
+    { blocker_id: 'd:2:22222222', section_anchor: 'behaviors', finding_class: 'decision', decision_choice: 'A', decision_note: '<!-- x -->' },
+    { blocker_id: 'd:3:33333333', section_anchor: 'behaviors', finding_class: 'decision', decision_choice: 'A' },
+  ]);
+  assert.deepStrictEqual(grouped.get('behaviors'), ['d:3:33333333']);
+  assert.deepStrictEqual(decisions.get('behaviors'), [{ blocker_id: 'd:3:33333333', choice: 'A', note: null }]);
+  assert.deepStrictEqual(rejectedAnswers.map(r => [r.blocker_id, r.field]), [['d:1:11111111', 'decision_choice'], ['d:2:22222222', 'decision_note']]);
+});

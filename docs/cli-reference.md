@@ -673,7 +673,7 @@ adev specify revise --spec <p>
 - `SPLICE_VALIDATION_FAILED` has two severities. As a per-anchor advisory (in `advisories`, with `anchor` and `reason`) it means one authored section was rejected and left unchanged while the rest of the revise proceeds. As a fatal error it means the post-compose byte-identity check failed on the whole result: the revise aborts (exit 1) and nothing is written.
 - `UNSAFE_DECISION_TEXT` (exit 1): an answered decision failed the unsafe-text re-check at revise time; nothing is written.
 
-**`group-blockers`:** `specify group-blockers --spec <path>` returns `{ spec_path, anchors, anchors_not_found, anchors_remapped, decision_blocker_ids, external_blockers }`. Each `anchors[a]` carries `blocker_ids`, `current_text` and `decisions` (the answered decisions to author under that anchor). `decision_blocker_ids` lists only unanswered decisions; an answered one appears under its anchor instead.
+**`group-blockers`:** `specify group-blockers --spec <path>` returns `{ spec_path, anchors, anchors_not_found, anchors_remapped, decision_blocker_ids, external_blockers, advisories }`. Each `anchors[a]` carries `blocker_ids`, `current_text` and `decisions` (the answered decisions to author under that anchor). `decision_blocker_ids` lists only unanswered decisions; an answered one appears under its anchor instead. A recorded answer that fails the decision-text gate counts as unanswered and is reported in `advisories` as `DECISION_TEXT_REJECTED` with `blocker_id`, `field` and `reason`.
 
 **Implementation:** `lib/cli/specify.mjs`. **Called by:** `/adev:specify`, `/adev:build` (BLOCK→revise loop).
 

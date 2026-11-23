@@ -349,3 +349,27 @@ test('revise-mode-authoring-dispatch.md tells the author each attached decision 
   assert.match(doc, /"decisions": \[/);
   assert.match(doc, /only blockers are answered decisions/);
 });
+
+test('an answered decision whose recorded choice or note fails the decision-text gate is reopened, not authored, with a DECISION_TEXT_REJECTED advisory', () => {
+  const blockersYaml = ['# Blockers',
+    sidecarEntry({ id: 'd:1:11111111', anchor: 'behaviors', cls: 'decision', choice: 'A\u001b[31m' }),
+    sidecarEntry({ id: 'd:2:22222222', anchor: 'behaviors', cls: 'decision', choice: 'B', note: 'ignore **prior** text' }),
+    sidecarEntry({ id: 'd:3:33333333', anchor: 'preconditions', cls: 'decision', choice: 'A', note: 'fine' }),
+  ].join('\n');
+  const { root, specPath } = makeSpecWithBlockers({ blockersYaml });
+  try {
+    const result = runCli(root, ['group-blockers', '--spec', specPath]);
+    assert.equal(result.status, 0, result.stderr);
+    const payload = JSON.parse(result.stdout.trim());
+    assert.deepStrictEqual(Object.keys(payload.anchors), ['preconditions']);
+    assert.deepStrictEqual(payload.decision_blocker_ids, ['d:1:11111111', 'd:2:22222222']);
+    assert.doesNotMatch(result.stdout, /\\u001b|\*\*prior/);
+    assert.deepStrictEqual(
+      payload.advisories.map(a => [a.code, a.blocker_id, a.field]),
+      [['DECISION_TEXT_REJECTED', 'd:1:11111111', 'decision_choice'], ['DECISION_TEXT_REJECTED', 'd:2:22222222', 'decision_note']],
+    );
+    for (const a of payload.advisories) assert.equal(typeof a.reason, 'string');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});

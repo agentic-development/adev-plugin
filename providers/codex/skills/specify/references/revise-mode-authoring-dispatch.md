@@ -11,10 +11,10 @@ adev specify group-blockers --spec <spec-path>
 The verb wraps `lib/specify-revise.mjs::groupBlockersByAnchor` (documented here only — this SKILL.md never imports or calls it inline) and prints:
 
 ```json
-{ "spec_path": "...", "anchors": { "<anchor>": { "blocker_ids": [...], "decisions": [{ "blocker_id": "...", "choice": "...", "note": "..." | null }], "current_text": "..." } }, "anchors_not_found": [...], "anchors_remapped": [{ "from": "...", "to": "..." }] }
+{ "spec_path": "...", "anchors": { "<anchor>": { "blocker_ids": [...], "decisions": [{ "blocker_id": "...", "choice": "...", "note": "..." | null }], "current_text": "..." } }, "anchors_not_found": [...], "anchors_remapped": [{ "from": "...", "to": "..." }], "advisories": [{ "code": "DECISION_TEXT_REJECTED", "blocker_id": "...", "field": "...", "reason": "..." }] }
 ```
 
-`anchors` holds `defect`-classed blockers and answered `decision` blockers (those whose sidecar entry carries a recorded choice). An answered decision is listed in its anchor's `blocker_ids` and again in its `decisions` (empty `[]` when the anchor has none). An unanswered `decision` blocker is never authored: it halts the build loop before authoring is ever dispatched and stays in `decision_blocker_ids`. `external`-classed blockers are excluded from convergence accounting entirely.
+`anchors` holds `defect`-classed blockers and answered `decision` blockers (those whose sidecar entry carries a recorded choice). An answered decision is listed in its anchor's `blocker_ids` and again in its `decisions` (empty `[]` when the anchor has none). A recorded answer that fails the decision-text gate counts as unanswered and is reported in the output's `advisories` as `DECISION_TEXT_REJECTED`; report each one to the operator. An unanswered `decision` blocker is never authored: it halts the build loop before authoring is ever dispatched and stays in `decision_blocker_ids`. `external`-classed blockers are excluded from convergence accounting entirely.
 
 ## 2. Dispatch one authoring subagent per anchor, in parallel
 
