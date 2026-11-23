@@ -49,6 +49,8 @@ End with a one-line consolidated verdict: `PASS` (no findings or only suggestion
 
 ## Rules
 
+- A `blocker` that cites a context-pack file shown only in part (its section ends with an `…[adev: truncated …]` marker) or named in a `role="truncation-notice"` section MUST first be verified by reading the full file, and MUST quote the conflicting text from it. The `## Truncated Context` section, when present, has the details.
+- Findings in a `## Prior-Round Review` section, when present, come from the previous round: do not re-raise one the current spec resolves, and if you do re-raise one, state why the spec's resolution does not hold.
 - Be precise; reference specific sections. Do not suggest implementation approaches.
 - This is the quick tier: prioritize the few findings that matter over exhaustiveness. If the work is genuinely low-risk and the spec is clear, a fast PASS is the correct outcome.
 - Do not invent problems where the spec is clear.

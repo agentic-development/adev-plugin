@@ -34,7 +34,7 @@ This file is the CLI counterpart to [`skill-reference.md`](skill-reference.md) (
 |------|---------|----------------|
 | `gate` | Evaluate a lifecycle gate; diagnose whether quality gates can run; compare a transition against recorded gate outcomes | `lib/cli/gate.mjs` |
 | `boundaries` | Evaluate the boundary registry against a set of changed files | `lib/cli/boundaries.mjs` |
-| `governance` | Materialize a registry's effective set; audit registry drift | `lib/cli/governance.mjs` |
+| `governance` | Materialize a registry's effective set; audit registry drift; build the reviewer dispatch plan | `lib/cli/governance.mjs` |
 | `report` | Append a lifecycle event to the per-spec event log | `lib/cli/report.mjs` |
 | `diagnose` | Run registered write-time diagnostics over artifacts | `lib/cli/diagnose.mjs` |
 | `capability-map` | Monotonic writer for a charter's Capability Map `Status` column | `lib/cli/capability-map.mjs` |
@@ -301,6 +301,7 @@ governance materialize --registry <review|diagnostics|gates> [--dry-run] [--json
 governance drift [--registry <validate|review|diagnostics|gates>] [--json]
 governance migrate-gates [--dry-run] [--json]
 governance scaffold --registry <review|validate> --entries <json|@path>
+governance dispatch --spec <path> [--tier <full|quick>] [--harness <claude-code|opencode>] [--module <slug>] [--note <text>]... [--json]
 ```
 
 `validate.yaml` and `boundaries.yaml` are **exempt** (DDR-1): both are already explicit single-source registries, so naming either is refused. See [Governance](governance.md#materialized-registries-and-the-materialized_at-marker).
@@ -320,15 +321,26 @@ Materialization is **write-once**: a second run preserves the original stamp ver
 
 `governance drift` is Hygiene Audit Pass 19 — read-only, advisory, always exit 0 on a scan. It reports `hygiene/unadopted-upgrade` (info), `hygiene/project-addition` (info), `hygiene/disabled-bundled-entry` (WARN), `hygiene/non-project-execution-field` (info) and `hygiene/entry-field-drift` (WARN — a `bundled`/`domain:*`-sourced entry's `context_pack`, `profile`, `severity_cap` or `dispatch` no longer matches the source named in its own `source:` field). The execution-field finding prints field **names** only, never values; the field-drift finding prints both values, since they are short enum-like config and the finding is not actionable without them. An unmaterialized marked registry is reported rather than read.
 
+`governance dispatch` emits the Agent-ready reviewer dispatch plan for one spec, so `/adev:review-specs` Step 4 never assembles a reviewer prompt itself. It loads the materialized `review.yaml` (failing closed with `REGISTRY_NOT_MATERIALIZED`), applies `shouldDispatch` and the BEH-8 diff-scope decision (the same one `governance diff-scope` reports), and builds each selected reviewer with `buildReviewerDispatches`. With `--tier quick` it plans only the synthesized reviewer, failing with `QUICK_PROMPT_MISSING` when the bundled prompt is absent. Every prompt carries the provenance preamble, the rendered context pack and the fenced target spec. Some sections are added only when they apply: `--module` heuristics, `--note` orchestrator notes, the `## Truncated Context` verification rule when the pack truncated or omitted a file, and the previous round's `.review.md` as `## Prior-Round Review`. The `--json` envelope has these keys:
+
+- `reviewers`: every selection decision, with its `reason`.
+- `diff_scope` and `prior_review`.
+- `heuristics`: `{module, count}`, or `null`.
+- `dispatches`: one entry per Agent call, with `description`, `prompt`, `model`, `allowed_tools`, `env_keys` and `append_runner_output`. Env values are never printed. A package-mode reviewer yields a `runner` entry and then an `adapter` entry, and the adapter expects the runner's output appended to its prompt.
+- `warnings` and `errors`.
+
+It exits 1 on an argument error, an invalid spec path, a loader refusal or any plan error, and 0 otherwise.
+
 `governance migrate-gates` rewrites legacy shell-string `command:` values in `governance/gates.yaml` to argv lists — the pre-v0.25.0 form that `mergeGates` (SEC-2) silently drops at load (`INVALID_GATE`). `adev upgrade` already runs this repair, but only when a project takes the `adev upgrade` path; a plugin-cache version bump never calls it. This verb is the same repair, reachable on its own. Exit 0 always (no file, nothing to migrate, or migrated); a command containing shell metacharacters is reported as `skipped`, never rewritten.
 
 **Example:**
 ```
 adev governance materialize --registry gates --dry-run
 adev governance migrate-gates --dry-run --json
+adev governance dispatch --spec .context-index/specs/features/billing/invoices.spec.md --module billing --json
 ```
 
-**Implementation:** `lib/cli/governance.mjs`. **Called by:** `/adev:init` (diagnostic mode's Gate Liveness check), `adev upgrade` (`cli/index.mjs::migrateLegacyGateCommands`, its own separate call site), `/adev:hygiene` (Audit Pass 19).
+**Implementation:** `lib/cli/governance.mjs` (`dispatch` → `lib/governance/dispatch-plan.mjs`). **Called by:** `/adev:review-specs` Step 4 (`dispatch`), `/adev:init` (diagnostic mode's Gate Liveness check), `adev upgrade` (`cli/index.mjs::migrateLegacyGateCommands`, its own separate call site), `/adev:hygiene` (Audit Pass 19).
 
 ### `report`
 
