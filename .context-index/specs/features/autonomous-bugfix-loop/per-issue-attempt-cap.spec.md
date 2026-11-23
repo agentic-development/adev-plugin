@@ -5,7 +5,7 @@ status: validated
 kind: behavioral
 risk_level: high
 milestone: 1
-revision: 3
+revision: 4
 charter-revision: 7
 source-manifest:
   sha: "08164c6"
@@ -17,7 +17,7 @@ source-manifest:
     - tests/lib/bugfix-loop-attempts.test.mjs
   computed-at: "2026-08-20T13:15:12.347Z"
 created: 2026-08-19
-updated: 2026-08-20
+updated: 2026-11-15
 drift_detected: true
 ---
 
@@ -48,12 +48,13 @@ drift_detected: true
 - **BEH-5** — **When** no `AttemptRecord` exists for an issue **then** it is treated as zero attempts with an empty `prev_blockers` set — matching `evaluateStopCondition`'s existing `prevSet.size > 0` guard, so a first attempt never triggers `NO_PROGRESS` or `REGRESSED`.
 - **BEH-6** — **When** `attempts >= cap` without a `PASS` verdict having been reached **then** `evaluateStopCondition`'s `retries_remaining <= 0` branch fires, producing `BUDGET_EXHAUSTED` — this is the existing function's behavior, verified against, not reimplemented.
 - **BEH-7** — **When** `/adev:debug --issue <id> --auto` is invoked for an issue **then** `/adev:debug` itself has no awareness of the attempt cap or `AttemptRecord` — enforcement is entirely the eligibility filter's responsibility (BEH-4 above), keeping the cap's bounding logic in one place rather than duplicated across the worker and the selector.
+- **BEH-8 (revision 4 — closes issue-ypa68o / adev-plugin-hg4n)** — **When** `adev bugfix-loop commit-pr` commits, pushes, and opens a PR for a `FIXED` issue **then** `recordPrOpened(projectRoot, issueId, { prUrl })` appends an `AttemptRecord` update carrying `attempts`/`last_verdict`/`curr_blockers`/`parked_reason` forward unchanged and setting `pr_url` and `pr_state: "open"`. **When** a caller with real knowledge of the PR's outcome (a human, the orchestrating session, or a future tracker-sync poller — this spec does not add a GitHub poll of its own) invokes `recordPrResolved(projectRoot, issueId, { status: "merged"|"closed" })` **then** the same carry-forward happens with `pr_state` set to that status, off `"open"`. `pr_state` exists specifically so the sibling `bug-selection-and-eligibility` spec's selection filter (its BEH-12) can tell "fix committed, PR still open — do not reselect" apart from "fix committed, nothing further known" without this spec growing a live GitHub dependency: an `AttemptRecord` with no `pr_state` at all is "no data available," not "resolved," and that spec's filter is written to treat it as not-excluded accordingly (fail-open on absent data, matching this spec's own BEH-5 fail-open-on-absent-record posture).
 
 ### Postconditions
 
 - Every completed `/adev:debug --issue --auto` invocation produces exactly one `AttemptRecord` update (create-if-absent, increment, set `last_verdict`).
 - `AttemptRecord` state persists in `.context-index/lifecycle-state/bugfix-loop-attempts.jsonl` as an append-only event log (per ADR-0015's dual-format convention — this file and its owning module must be added to ADR-0015's Decision-section ownership table as part of implementation), independent of the issue board schema — `task-management`'s `WorkItem` gains no new fields from this spec.
-- `AttemptRecord`'s persisted fields are `issue_id, attempts, last_verdict, curr_blockers, parked_reason, updated_at` — extending the charter's Domain Model with `curr_blockers` (the current attempt's failing check-ID set, or its bounded hash in degraded mode — see Error Cases), persisted specifically so the *next* attempt can read it back as `prev_blockers` for BEH-2's diffing.
+- `AttemptRecord`'s persisted fields are `issue_id, attempts, last_verdict, curr_blockers, parked_reason, updated_at` — extending the charter's Domain Model with `curr_blockers` (the current attempt's failing check-ID set, or its bounded hash in degraded mode — see Error Cases), persisted specifically so the *next* attempt can read it back as `prev_blockers` for BEH-2's diffing. Revision 4 adds two optional fields, written only by BEH-8's `recordPrOpened`/`recordPrResolved` (never by `recordDebugAttempt`'s BEH-1/2/3 paths): `pr_url` (the opened PR's URL) and `pr_state` (`"open"`, `"merged"`, or `"closed"`). `task-management`'s `WorkItem` still gains no new fields from this spec — both additions live entirely in the `AttemptRecord` JSONL, matching this bullet's original "independent of the issue board schema" framing.
 - A `BUDGET_EXHAUSTED`, `NO_PROGRESS`, `REGRESSED`, or `UNREPRODUCIBLE` verdict is durable across loop runs and machine restarts — it is read from disk, not held only in a running loop's memory.
 
 ### Error Cases
@@ -80,6 +81,7 @@ drift_detected: true
 | Add `tasks.bugfix_loop.attempt_cap` manifest config | Defaults to 2 | small |
 | Implement bounded-hash degraded-mode fallback | `crypto.createHash('sha256')` over raw failure output when no stable check-ID shape is available, never persisting raw output (BD-6) | small |
 | Tests | `node:test` coverage for the full verdict matrix (PASS, CONTINUE, NO_PROGRESS, REGRESSED, BUDGET_EXHAUSTED, UNREPRODUCIBLE-as-immediate-terminal, cap-1-first-attempt), corrupted-state fallback, degraded-mode hash fallback | medium |
+| Add `recordPrOpened`/`recordPrResolved` (revision 4, BEH-8) | New exports in `lib/bugfix-loop-attempts.mjs`; wired into `adev bugfix-loop commit-pr` (write) and a new `adev issues pr-resolved` verb (resolve) | small |
 
 ## Acceptance Criteria
 
@@ -94,5 +96,7 @@ drift_detected: true
 - [ ] ADR-0015's Decision-section table includes an entry for this spec's new artifact
 - [ ] `lib/loop-convergence.mjs` itself is unmodified by this work — verified by diff review, not just test pass
 - [ ] Corrupted state file fails open (treated as zero attempts) rather than blocking the loop
+- [ ] `recordPrOpened` sets `pr_state: "open"` and `pr_url` while carrying forward attempts/last_verdict/curr_blockers/parked_reason unchanged (BEH-8)
+- [ ] `recordPrResolved` moves `pr_state` off `"open"` to `"merged"`/`"closed"`, re-enabling the sibling spec's selection filter (BEH-8)
 - [ ] All quality gates pass (`npm test`)
 - [ ] No constitutional violations introduced

@@ -1,8 +1,8 @@
 ---
 status: approved
 kind: feature
-revision: 12
-updated: 2026-08-21
+revision: 13
+updated: 2026-11-15
 ---
 
 # Feature Charter: Autonomous Bugfix Loop
@@ -122,7 +122,7 @@ approval per Architecture Boundaries — approved during brainstorm.
 | Entity | Description | Key Attributes |
 |--------|-------------|----------------|
 | BugfixLoopRun | One invocation of `/adev:bugfix-loop` across N self-re-invoked turns | run_id, started_at, max_bugs, max_turns, bugs_attempted[], status (running/complete/budget_exhausted/blocked — `blocked` added in revision 7 to give the `ADEV-BUGFIXLOOP: BLOCKED` completion-token terminal state defined in `bugfix-loop-skill.spec.md`'s Failure Modes and Output Contract a corresponding persisted value; set once, only on the run's terminal turn, when a structural failure such as an unreachable issue board halts the run before any bug is attempted), degraded_sync_note (string or null — written only by the tracker-provider-bridge's degraded-GitHub-sync escalation, added in revision 7), sync_retry_counts (object, default `{ unreachable_consecutive_turns: 0, oversized_consecutive_turns: {} }` — added in revision 8 to close round-5 review TR-1/TR-2; written and read each turn by the tracker-provider-bridge's inbound sync so its two 5-consecutive-turn caps survive this skill's fresh-context-per-turn self-re-invocation and mid-run process restarts: `unreachable_consecutive_turns` is a single run-scoped counter for the GitHub-unreachable/rate-limited case, `oversized_consecutive_turns` is a map keyed by external GitHub issue number for the oversized-title/body-refusal case — both live in the same run-state file this entity already persists to, so a fresh `run_id` starts both counters at their defaults for free), turns_completed (integer, default 0 — added in revision 9 to close round-6 review RI-1; `bugfix-loop-skill.spec.md`'s own revision 6 introduced this field to fix that revision's WR-1 (`--max-turns` was previously unenforced) but never declared it here, an omission this revision corrects; incremented by exactly 1 at the end of every turn, whether or not that turn attempted a bug, and read back by the per-turn budget check to enforce `--max-turns` — distinct from `bugs_attempted.length`, which only grows on turns that reached an actual `/adev:debug` attempt), stale_link_notices_surfaced (array of external tracker refs, default `[]` — added in revision 10 to close round-7 review TR-4; written and read each turn by the tracker-provider-bridge's inbound sync, in the same run-state file `sync_retry_counts`/`degraded_sync_note` already live in, to bound its stale-tracker-link notice to at most one print per external ref per run: the stale-link condition itself, unlike the two `sync_retry_counts` cases, is re-evaluated true on every turn from data that does not change turn-to-turn, so it needs a "surfaced already this run" record rather than a numeric retry cap — see `tracker-provider-bridge.spec.md`'s Interaction Contract inbound step 5) |
-| AttemptRecord | Per-issue attempt-cap state, independent of the board schema | issue_id, attempts, last_verdict (PASS/CONTINUE/NO_PROGRESS/REGRESSED/BUDGET_EXHAUSTED), curr_blockers (failing check-ID set or bounded hash, for next-attempt diffing), parked_reason, updated_at |
+| AttemptRecord | Per-issue attempt-cap state, independent of the board schema | issue_id, attempts, last_verdict (PASS/CONTINUE/NO_PROGRESS/REGRESSED/BUDGET_EXHAUSTED/UNREPRODUCIBLE), curr_blockers (failing check-ID set or bounded hash, for next-attempt diffing), parked_reason, updated_at, pr_url and pr_state (open/merged/closed — added in revision 13 to close issue-ypa68o / adev-plugin-hg4n: a `FIXED` verdict alone did not exclude an issue from re-selection while its fix sat in an unmerged PR; `pr_state: "open"` is set by `commit-pr` and cleared only by an explicit "resolved" report — no component in this charter polls GitHub for PR merge/close state) |
 | TrackerSyncLink | Mapping between an external tracker issue and a local WorkItem, provider-agnostic | external_ref, local_issue_id, accepted_at (when gate condition first met), last_synced_at, last_comment_id |
 | TrackerProviderAdapter | Interface contract implemented per tracker (GitHub is the only shipped implementation) | provider name, gate-check fn, inbound-fetch fn, outbound-writeback fn — mirrors `IssueManagerInterface`'s adapter shape |
 
@@ -166,6 +166,10 @@ approval per Architecture Boundaries — approved during brainstorm.
 - A WorkItem is claimable by the loop only if unclaimed (or lease-expired), unblocked,
   under its attempt cap, and within the eligibility filter (P2/P3 priority,
   single-module blast radius).
+- A `FIXED` verdict (`AttemptRecord.last_verdict: PASS`) does not by itself make a
+  WorkItem reselectable while its `pr_state` is `"open"` — `commit-pr` and the
+  selection filter jointly own this exclusion (revision 13, issue-ypa68o /
+  adev-plugin-hg4n); `/adev:debug` itself still has no awareness of either signal.
 - The loop never marks an issue closed except through `/adev:debug`'s own Phase 6
   confidence gate — it cannot self-report success.
 - An AttemptRecord's attempt counter increments only on a completed
