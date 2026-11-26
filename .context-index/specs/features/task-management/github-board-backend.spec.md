@@ -2,7 +2,7 @@
 partial_schema: spec@1
 charter: task-management
 kind: behavioral
-status: review-pending
+status: review-blocked
 risk_level: high
 milestone: 6
 revision: 5
