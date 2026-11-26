@@ -6,3 +6,4 @@
 {"event":"reviewer_report","step":"review","reviewer":"wiring-reviewer","severity":"blocker","verdict":"FAIL","notes":"1 blocker (WR-1 last_successful_index write-only state on github path), 3 warnings, 3 suggestions","ts":"2026-11-26T17:12:47.134Z"}
 {"event":"reviewer_report","step":"review","reviewer":"boundary-reviewer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"0 blockers, 3 warnings (BD-1 sentinel without consent, BD-2 legacy_id collision, BD-3 stale sentinel project), 2 suggestions","ts":"2026-11-26T17:12:47.194Z"}
 {"event":"step_completed","step":"review","verdict":"BLOCK","revision":1,"ts":"2026-11-26T17:14:06.523Z"}
+{"event":"spec_revised","from_revision":1,"to_revision":2,"addressed_blocker_ids":["referent-integrity:misdescribed-existing-check:dc99bcf0","wiring-reviewer:write-only-state:d325cfe1"],"unresolved_blocker_ids":[],"ts":"2026-11-26T17:45:35.987Z"}
