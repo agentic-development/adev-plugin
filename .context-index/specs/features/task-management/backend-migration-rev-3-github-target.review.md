@@ -1,23 +1,26 @@
 ---
 spec: .context-index/specs/features/task-management/backend-migration-rev-3-github-target.spec.md
 charter: .context-index/specs/features/task-management/charter.md
-verdict: BLOCK
+verdict: PASS_WITH_NOTES
 tier: full
 date: 2026-11-26
-last-reviewed-revision: 1
-file-sha: a0f9d8454fabb03a9f3d984ffcb48c15a5a114a2d5054705c659343e4010a8ab
+last-reviewed-revision: 2
+file-sha: be4eb7fe99f6c6c27b6953db3f0aa555589322445da5527592a65cbd10f90f2e
 ---
 
 # Architecture Review: backend-migration-rev-3-github-target
 
 > **Date:** 2026-11-26
-> **Spec:** .context-index/specs/features/task-management/backend-migration-rev-3-github-target.spec.md (revision 1; amends backend-migration.spec.md, target revision 3)
+> **Spec:** .context-index/specs/features/task-management/backend-migration-rev-3-github-target.spec.md (revision 2; amends backend-migration.spec.md, target revision 3)
 > **Charter:** .context-index/specs/features/task-management/charter.md (revision 10)
-> **Verdict:** BLOCK
+> **Verdict:** PASS_WITH_NOTES
 > **Rigor tier:** full (risk_level: high → `review_mode: full`)
-> **Diff scope:** not scoped (`first-review`), full spec body delivered
-> **Registry warnings:** `BROADEN_TOOL` ×2 and `BROADEN_NETWORK` for profile `browser-review` (no dispatched reviewer uses it)
-> **Dispatch note:** each reviewer's prompt was assembled by `buildReviewerDispatches` (`lib/governance/dispatch-shape.mjs`) and delivered as a file the reviewer read in full, because the four prompts total ~865 KB. Model tiers: consistency-analyzer, wiring-reviewer and boundary-reviewer on `capable` (Sonnet); referent-integrity on `reasoning` (Opus).
+> **Diff scope:** not scoped (`no-content-changed` against the committed revision), so the full spec body was delivered
+> **Prior round:** revision 1 BLOCK (WR-1, RI-1). Both blockers and the listed warnings were addressed in revision 2 (commit 052bf86f). Every reviewer confirms that its prior findings are resolved.
+> **Registry warnings:** `BROADEN_TOOL` ×2 and `BROADEN_NETWORK` for profile `browser-review`. No dispatched reviewer uses that profile.
+> **Dispatch note:** prompts were assembled by `buildDispatchPlan` / `buildReviewerDispatches` (`node cli/index.mjs governance dispatch`), because the installed `adev` predates the `dispatch` verb. Each prompt was delivered as a file that the reviewer read in full. Model tiers:
+> - `capable` (Sonnet): consistency-analyzer, wiring-reviewer, boundary-reviewer.
+> - `reasoning` (Opus): referent-integrity.
 > **Governance:** risk policy `high` sets `require_hitl_approval: true`, so a human must approve before `/adev:plan`.
 
 ## Reviewers Dispatched
@@ -29,7 +32,7 @@ file-sha: a0f9d8454fabb03a9f3d984ffcb48c15a5a114a2d5054705c659343e4010a8ab
 | wiring-reviewer | Wiring Reviewer | subagent | reviewer-capable | plugin:review-specs/wiring-reviewer-prompt.md |
 | boundary-reviewer | Boundary Reviewer | subagent | reviewer-capable | plugin:review-specs/boundary-reviewer-prompt.md |
 
-Not dispatched: `termination-reviewer` (triggered, score 0 < 1: no loop, retry or poll keywords in the spec).
+Not dispatched: `termination-reviewer` (triggered, score 0 < 1).
 
 ## Disabled Reviewers
 
@@ -42,51 +45,65 @@ Not dispatched: `termination-reviewer` (triggered, score 0 < 1: no loop, retry o
 
 **Verdict:** PASS_WITH_NOTES
 
-- **CON-1 (warning, adr-compliance, `abort-envelope` / BEH-6):** BEH-6 redacts token-like material from every stdout/stderr message on the github path and says this does not contradict ADR 0014. But ADR 0014's Decision ("The `adev issues migrate` verb forwards `br` stderr verbatim ... no field-level redaction") is worded at verb level. Only its Context and Alternatives scope it to `br`. A reader of the ADR alone sees an undocumented exception. Recommendation: add a one-line scoped-exception note to ADR 0014 that points at BEH-6, the same pattern ADR 0016 used on 2026-11-26.
-- **CON-2 (suggestion, contract, `behavioral-delta`):** base Behaviors 5 and 6 and 20–27 (claim lease) are not classified for a github target. Add 5 and 6 to the "apply unchanged" list, and add one sentence saying 20–27 are independent of migration.
-- **CON-3 (suggestion, naming, `resume-ownership`):** BEH-4 cites "base Procedure Step 2" for `MIGRATE_RESUME_MISMATCH` and `MIGRATE_RESUME_INVALID`. The base spec names neither code. They exist only in `lib/cli/issues-migrate.mjs`. Reword the citation to point at the implementation.
-- **CON-4 (suggestion, terminology, `behavioral-delta`):** the amendment's BEH-1..10 share an unprefixed ID namespace with the GitHub spec's BEH-1..41 in the same charter. The convention is documented, so this is a readability risk only. Consider an amendment-local prefix.
+Prior round: WR-1, RI-1 and CON-1 (ADR 0014 note) are resolved, and so are RI-2..4, WR-2..4 and BD-1..3. Base Behaviors 1–27 are now classified for a github target, which closes the earlier CON-2.
 
-Confirmed consistent: GitHub spec BEH-29..32, 35 and 41 against amendment BEH-1/3/4/7/8/9. Sentinel paths, five keys, `SENTINEL_PATH_UNSAFE`, temp-rename and the commit rule against agent-reliable-state-artifacts charter rev 9. ADR 0016 external-board exception. Charter rev 10. `target-revision: 3`.
+- **CON-1 (warning, contract, `argument-surface-and-dispatch` / BEH-3):** BEH-3 still requires confirmation on a nothing-left-to-do re-run when the sentinel is absent. GitHub spec BEH-41 says "A re-run that has nothing left to create or link needs no confirmation", with no sentinel qualifier. The narrowing here is sound, but the two specs disagree on the same behavior. Recommendation: add a one-line BEH-41 amendment, or a pointer from the GitHub spec to this one. The fix belongs in the other spec.
+- **CON-2 (warning, contract, `dry-run-and-success-output` / BEH-8):** BEH-8 commits the beads sentinel on `beads-board` but never pushes it. Charter rev 9 says the sentinel is "committed on the `beads-board` branch in the same sync that retires the board, so every clone that syncs the board sees it read-only. Never left local-only". An unpushed commit is still local-only to every other clone. Recommendation: either state that the guarantee is partly met until `beads-board-direct-sync` (`issue-vtj7lp`) lands, with an operator-visible stderr line saying the board is not retired for other clones until pushed, or amend the charter row.
+- **CON-2b (suggestion, terminology, BEH-6):** ADR 0014's new note says `redact()` replaces `Authorization:` credentials, but the code does not do that yet. Reword the note to "will replace", or add a status line.
+- **CON-3 (suggestion, naming):** BEH IDs appear out of document order (…4, 11, 5…8, 12, 9, 10) and share an unprefixed namespace with GitHub spec BEH-1..41. Either renumber them or use an amendment-local prefix. This is readability only.
 
 ## Referent Integrity Reviewer (referent-integrity)
 
-**Verdict:** FAIL
+**Verdict:** PASS_WITH_NOTES
 
-- **RI-1 (blocker, misdescribed-existing-check, `acceptance-criteria`):** the Resume (BEH-4) acceptance criterion expects a state file recording `--include-closed`, re-run without it, to exit 1 with `MIGRATE_RESUME_MISMATCH`. BEH-4 presents this as an existing check that "still runs". In `lib/cli/issues-migrate.mjs`, lines 329–337 throw `MIGRATE_RESUME_MISMATCH` only when source or target differ. Lines 340–354 handle a `scope_args.includeClosed` mismatch with a `console.error` warning and continue. The base spec's Idempotency section says a scope mismatch is refused, but the code never refused it. As written, the AC cannot pass under BEH-4. Recommendation: either make the refusal an explicit new behavior in this delta (scope_args mismatch → `MIGRATE_RESUME_MISMATCH`, at least for github), or change the AC to use a source/target mismatch or to assert the existing warning.
-- **RI-2 (warning):** the spec calls `lib/issues/github/migrate.mjs` an "existing .mjs module". It does not exist yet: plan Task 18 creates it. The seam grep AC currently exits 2.
-- **RI-3 (warning):** the AC preamble says `cli/index.mjs` dispatches `adev issues migrate` to `run()`. The real dispatcher is `lib/cli/issues.mjs:114-117`, which passes only `projectRoot`, `argv` and `manifest`.
-- **RI-4 (warning):** the plan's Task 18 test sketch passes a sixth `log` seam that the BEH-10 seam table does not list.
-- **RI-5 (suggestion):** the snake_case envelope keys (`reset_at`, `target_id`, `unwritten_fields`) do not match the source field names (`resetAt` in `transport.mjs:78`). State the mapping.
-- **RI-6 (suggestion):** BEH-6's literal-token redaction applies "when set and non-empty". The existing `redact()` in `lib/issues/github/errors.mjs` has an 8-character floor and no Authorization pattern. Name `redact()` and reconcile the two.
+Prior round: RI-1..6, CON-1, WR-1 and BD-3 are resolved. A sample of the referents checked:
+- `SUPPORTED_BACKENDS`
+- `READONLY_BACKENDS`
+- the `GithubAdapter` seams constructor
+- `replayExec`
+- `redact()` and its constants
+- plan Tasks 14, 18 and 19
+- charter rev 9 sentinel table
+- ADR 0016 exception
+- GitHub spec BEH-14, BEH-29–35 and BEH-41
+
+- **RI-1 (warning, BEH-4):** the spec says the resume-argument checks "run at the start of every run". Today `loadResumeState()` runs only on the live path, after both board reads and after the `--dry-run` early return (`lib/cli/issues-migrate.mjs:999-1033`). BEH-5 step 2 and BEH-7 require moving them, but the spec presents that as already true. Recommendation: describe today's placement accurately and add the reorder to the Task 18 notes.
+- **RI-2 (warning, BEH-2):** today `--from github --to github` exits with `MIGRATE_GITHUB_UNAVAILABLE`, because that check comes before the NOOP check (`:917-944`). The spec states the reverse order as fact. Recommendation: mark it as a required reorder.
+- **RI-3 (warning, BEH-5):** the spec calls the envelope "existing", but today's `errors[]` entries are `{ id, index, stderr }`, and stderr gets two lines (`:512`, `:523`, `:549`, `:1075`). The `{ source_id, code, message }` shape and the single stderr line are new for github. Recommendation: say so, and state that json and beads keep the current shape.
+- **RI-4 (warning, BEH-10):** plan Task 18 declares `migrateToGithub({ source, target, scope, log })`. That signature has no `exec`, `sleep` or `now`, and it has `log`. Recommendation: add the signature reconciliation to Notes for Planning.
+- **RI-5 (suggestion):** plan Task 11 names the partial-create properties `e.id` and `e.unwritten`. Name them directly.
+- **RI-6 (suggestion):** `redact()` does not read the environment. State that the verb's sinks call `redact(s, [GH_TOKEN, GITHUB_TOKEN])`.
+- **RI-7 (suggestion):** base Procedure Step 1 also says "reject `file` with `MIGRATE_TARGET_READONLY`". Say that this clause stays.
+- **RI-8 (suggestion):** plan Task 14 defines sentinel paths for json and beads only. Add `file` → `board-read-only.json` to the Task 14 note.
 
 ## Wiring Reviewer (wiring-reviewer)
 
-**Verdict:** FAIL
+**Verdict:** PASS_WITH_NOTES
 
-- **WR-1 (blocker, write-only-state, `resume-ownership`):** on the github path, `.migrate-state.json` gets `last_successful_index` written after each successful item (BEH-4, atomic temp-rename). Nothing consumes it. BEH-4 says it "never decides which items are skipped" and is "for progress reporting only", but names no reporter. The resume-argument checks read the file's other keys (source, target, scope_args). They do not read the index. The resume AC proves the file can be ignored, not that anything reads the index. Recommendation: either name the progress-reporting consumer (a verb or an output line) and test it, or state that the github path does not write `last_successful_index`.
-- **WR-2 (warning, `test-seams`):** the spec does not say how `exec`, `sleep` and `now` reach the adapter that `getIssueManager(manifest)` builds, or `lib/issues/github/migrate.mjs`. Name the receiving module for each seam, and add one wiring test in which an injected `exec` observes the preflight request.
-- **WR-3 (warning, `dry-run-and-success-output`):** no module is named as owner of the sentinel writer. No criterion here checks that the sentinel blocks a later json or beads write (that check exists only in the GitHub spec). Name the owner, and add a cross-reference or an end-to-end "migrate, then a write throws" check.
-- **WR-4 (warning, `abort-envelope`):** errors[] and the `github` output objects have no named consumer. If the operator is the intended consumer, say so. Also say whether a re-run's `legacy_id` lookup, rather than the operator, consumes `target_id`.
-- **WR-5 (suggestion):** state whether `MIGRATE_CONFIRMATION_REQUIRED` and the changed `MIGRATE_UNKNOWN_BACKEND` text go into `docs/troubleshooting.md` and `docs/cli-reference.md`.
-- **WR-6 (suggestion):** name the single output chokepoint for BEH-6 redaction.
-- **WR-7 (suggestion):** cite `tests/issues/github/replay-transport.mjs` (GitHub plan task 12) as a prerequisite in Notes for Planning.
+Prior round: WR-1 (the reader of `last_successful_index` and its acceptance criteria), WR-2..5 and WR-7 are resolved. WR-6 is mostly resolved.
+
+- **WR-8 (warning, `abort-envelope` / BEH-6 vs BEH-10):** BEH-6 names a "stderr writer" as a redaction sink, but no such function is named, and BEH-10 says stderr lines "still go through `console.error`". With no single stderr chokepoint, one raw `console.error` can bypass `redact()`. Recommendation: name the one function every github-path stderr line passes through. Add a criterion that sends a token-shaped string through a non-error stderr line, such as the progress warning or the write set.
+- **WR-9 (suggestion, BEH-4):** state how `last_successful_index` advances for items skipped by `legacy_id`, and for failures in the replay phase.
+- **WR-10 (suggestion):** the `--yes` chain is complete. No action needed.
+- **WR-11 (suggestion):** optionally drive the beads "sentinel blocks writes" case through a real `BeadsAdapter` write, not only `assertWritable`.
+- **WR-12 (suggestion):** every new code has a producer, a trigger, a test and a docs home. No action needed.
 
 ## Boundary Reviewer (boundary-reviewer)
 
 **Verdict:** PASS_WITH_NOTES
 
-- **BD-1 (warning, privilege-escalation, BEH-3):** on a non-interactive run without `--yes`, "Nothing left to do" skips confirmation, and BEH-8 then writes the read-only sentinel. That retires the local board with no consent from this run, and consent is never persisted. Recommendation: require `--yes` or an interactive confirmation whenever the sentinel is about to be created.
-- **BD-2 (warning, input-trust, BEH-4):** "already present" relies on a `legacy_id` match alone. Two boards with colliding flat IDs migrated into one project would produce a false match, an `id_map` entry pointing at the wrong issue, and a retired source board. Require an unambiguous single match, or record board identity in the Legacy ID value or the sentinel.
-- **BD-3 (warning, artifact-leakage, BEH-8):** BEH-8 leaves an existing sentinel byte-identical but does not say what happens when its recorded project differs from the current target. It also does not resolve the sentinel root under a linked `.beads/` worktree or a `resolveStorageRoot()` redirect. Refuse on a project mismatch, and say the sentinel root is the `resolveStorageRoot()`-resolved board root.
-- **BD-4 (suggestion, BEH-7):** source titles and notes go to GitHub verbatim, possibly to a public repo. The disclosure could count the items whose notes will be published, and optionally scan for token patterns before publishing.
-- **BD-5 (suggestion, BEH-6):** apply literal-token redaction only above a minimum length, and neutralize control or ANSI characters in echoed source IDs and messages.
+Prior round: BD-1 and BD-3 are resolved. BD-2 is partly resolved and its residual is carried below as BD-6. The redaction half of prior BD-5 is resolved.
 
-Checklist: path containment, subprocess interpolation and destructive ops are consistent, apart from the gaps noted above.
+- **BD-1 (warning, privilege posture, BEH-3 / BEH-8):** for a beads source with nothing left to do and the sentinel already present, the verb commits the sentinel without confirmation. The spec treats the file's presence as proof of earlier consent, but the file can come from another checkout or be written by hand. Recommendation: require `--yes` or a prompt for the commit-only path, or state explicitly that the file is the accepted consent proxy and why.
+- **BD-2 (warning, destructive ops, BEH-8 step 2):** `git status --porcelain -- adev-read-only.json` is also empty for a gitignored, untracked file. In that case the verb would skip the commit and report the sentinel as committed. Recommendation: check tracking directly, for example `git ls-files --error-unmatch`, check that the file is unmodified, and add a criterion for the ignored-file case.
+- **BD-3 (suggestion, path containment, BEH-8 / BEH-12):** suppose `.beads/` is a plain directory. Then `git rev-parse --abbrev-ref HEAD` reports the main checkout's branch. Recommendation: also require `git rev-parse --show-toplevel` to be realpath-equal to `<root>/.beads`, and state that containment of a not-yet-existing sentinel is checked on the realpath of its parent directory.
+- **BD-4 (suggestion, BEH-8):** the beads commit runs repository commit hooks. Say in the write set that `--yes` also covers that commit.
+- **BD-5 (warning, input trust, BEH-4 / BEH-6 / BEH-11):** `MIGRATE_TARGET_FOREIGN_LEGACY_ID` echoes raw `legacy_id` values read from GitHub. Other output also echoes GitHub-supplied and source-supplied text with no control-character handling. Recommendation: validate target `legacy_id` values with `parseId` before echoing, and cap and escape echoed strings at the output chokepoint.
+- **BD-6 (warning, privilege posture, BEH-11 / BEH-3):** this is the residual of prior BD-2. A board with colliding flat IDs, migrated into the same project, passes the provenance check. Only confirmation limits the damage, and `--yes` bypasses it. Recommendation: when items are already present but there is neither a sentinel nor a state file, either require interactive confirmation even with `--yes` or print a prominent warning. Alternatively, record board identity in the sentinel.
 
-## Heuristics: related prior lessons (signature-ranked)
+## Heuristics
 
-The following heuristics are lessons learned from past work in this module, ranked with any exact matches for this blocker first. They are not necessarily prior occurrences of this blocker. Use them as guidance, not as hard rules.
+The following heuristics are lessons learned from past work in this module, ranked by confidence. Use them as guidance, not as hard rules.
 
 - A universal coverage claim must ship with the predicate that checks it (confidence: medium)
 - Use session JSONL for token measurement, not file-size estimates (confidence: medium)
@@ -96,9 +113,9 @@ The following heuristics are lessons learned from past work in this module, rank
 
 ## Summary
 
-**Total findings:** 22 (2 blockers, 10 warnings, 10 suggestions)
-**Blockers (see `backend-migration-rev-3-github-target.blockers.md`):**
-- `wiring-reviewer:write-only-state:d325cfe1`: WR-1, `last_successful_index` is written per item on the github path but nothing reads it.
-- `referent-integrity:misdescribed-existing-check:dc99bcf0`: RI-1, the resume AC expects `MIGRATE_RESUME_MISMATCH` on a scope mismatch, but the existing check only warns.
-
-**Action required:** run `/adev:specify --revise` on this amendment to resolve WR-1 and RI-1, then re-run `/adev:review-specs`. Address the boundary warnings BD-1 to BD-3 and CON-1 (ADR 0014 scoped-exception note) in the same revision where practical.
+**Total findings:** 23 (0 blockers, 11 warnings, 12 suggestions)
+**Action required:** none blocks planning. Before `/adev:plan`:
+- **Human approval:** the high risk policy requires it.
+- **Cheap to fold into the github plan's Task 18/19 reconciliation:** RI-1 to RI-4 (current-code placement and shape statements) and WR-8 (one named stderr chokepoint).
+- **Worth a decision before implementation:** CON-2 (an unpushed beads sentinel versus charter rev 9's "never local-only") and BD-1, BD-2, BD-5 and BD-6 (sentinel commit consent and tracking, echoing untrusted text, the colliding-ID residual).
+- **Belongs in the GitHub spec:** CON-1, a BEH-41 sentinel qualifier.

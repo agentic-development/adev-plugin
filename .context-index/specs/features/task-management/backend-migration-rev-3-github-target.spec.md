@@ -1,7 +1,7 @@
 ---
 charter: task-management
 kind: action
-status: review-pending
+status: review-passed
 risk_level: high
 revision: 2
 charter-revision: 10
