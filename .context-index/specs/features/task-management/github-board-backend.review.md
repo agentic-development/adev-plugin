@@ -1,29 +1,28 @@
 ---
 spec: .context-index/specs/features/task-management/github-board-backend.spec.md
 charter: .context-index/specs/features/task-management/charter.md
-verdict: BLOCK
+verdict: PASS_WITH_NOTES
 tier: full
 date: 2026-11-26
-last-reviewed-revision: 5
-file-sha: 41d9745b83f782fb89b6679815fccee842ca08b18b60fcac6b92af960ee02f0a
+last-reviewed-revision: 6
+file-sha: ed7c4e39f36316254a472dc3e00f0bd575df60a1e59ad0a90016e33201a767a3
 ---
 
 # Architecture Review: github-board-backend
 
 > **Date:** 2026-11-26
-> **Spec:** .context-index/specs/features/task-management/github-board-backend.spec.md (revision 5)
+> **Spec:** .context-index/specs/features/task-management/github-board-backend.spec.md (revision 6)
 > **Charter:** .context-index/specs/features/task-management/charter.md (github capabilities introduced in charter revision 10)
-> **Verdict:** BLOCK
+> **Verdict:** PASS_WITH_NOTES
 > **Rigor tier:** full (risk_level: high → `review_mode: full`)
-> **Diff scope:** scoped (`diff-scoped`) against the committed revision 4.
-> **Prior round:** revision 4 BLOCK on RI-1 (BEH-14) and BD-1 (BEH-39). Both are resolved; their own reviewers confirmed it.
-> **New blocker:** TR-1 escalates the prior-round termination warning about continuation pages. Revision 5 left that text unchanged.
+> **Diff scope:** scoped (`diff-scoped`) against the committed revision 5.
+> **Prior round:** revision 5 BLOCK on TR-1 (continuation-page bound). TR-1 is resolved: BEH-10 now bounds each sub-issue and blocked-by continuation on its own. The termination and referent-integrity reviewers both confirm it. The rev 6 Error Cases rows resolve CON-3 for the spec's own codes.
 > **Registry warnings:** `BROADEN_TOOL` ×2 and `BROADEN_NETWORK` for profile `browser-review`. No dispatched reviewer uses that profile.
 > **Dispatch note:** prompts were assembled by `node cli/index.mjs governance dispatch` (worktree CLI). Each prompt was delivered as a file that the reviewer read in full. Model tiers:
 > - `capable` (Sonnet): consistency-analyzer, wiring-reviewer, boundary-reviewer.
 > - `reasoning` (Opus): referent-integrity.
 > - `fast` (Haiku): termination-reviewer.
-> **Governance:** risk policy `high` sets `require_hitl_approval: true`.
+> **Governance:** risk policy `high` sets `require_hitl_approval: true`. Maintainer decisions for revisions 5 and 6 were taken in conversation on 2026-11-26.
 
 ## Reviewers Dispatched
 
@@ -46,65 +45,63 @@ file-sha: 41d9745b83f782fb89b6679815fccee842ca08b18b60fcac6b92af960ee02f0a
 
 **Verdict:** PASS_WITH_NOTES
 
-- **CON-1 (warning, BEH-5):** pin the shape `parseId()` returns for gh IDs (`legacy: false, github: true`, at `lib/issues/id-utils.mjs:159`). State that tiered inference, `tier_prefix`, `MAX_DEPTH_EXCEEDED` and `e<N>` epic IDs do not apply on github.
-- **CON-2 (warning, BEH-3/BEH-40):** list the closed set of local probe argv and the git commit argv. Narrow BEH-40's "exactly" to requests sent to GitHub. Repeats prior CON-2.
-- **CON-3 (warning, Error Cases):** the table has no rows for `BOARD_READ_ONLY_MIGRATED`, `SENTINEL_PATH_UNSAFE` or `MIGRATE_SENTINEL_COMMIT_FAILED`. The amendment's new codes are also missing, so BEH-38's docs test, which reads this table, never sees them.
-- **CON-4 (warning, BEH-30):** two follow-ups for the new `.migrate-unanchored.json`.
-  - The amendment's BEH-5 pre-write order does not list it. That is an `external` fix in the amendment.
-  - `lib/gitignore-paths.mjs` registers `.migrate-state.json` but not this file.
-- **CON-5 (warning, BEH-39/BEH-8):** `next_action` and `type` are narrower on github than in `next-action-and-type-fields.spec.md`. That spec normalizes newlines and accepts any free-text type. Either declare a github difference or normalize the same way.
-- **CON-6 (warning, BEH-21–23):** state the CLI exit code for each `GITHUB_*` claim error, so `lifecycle-integration.spec.md`'s exit-2 halt is not turned into a warning.
-- **CON-7 (suggestion):** `/adev:specify` Step 5.6-3 finds the parent epic by a `"Charter:"` prefix in `notes`, which is untrusted on github.
+- **CON-1 (warning, BEH-30):** `.migrate-unanchored.json` and `MIGRATE_UNANCHORED_ITEM` are not in the amendment's BEH-5 pre-write order. Add them between steps 6 and 7. The fix belongs in the amendment (`external`, remedy: `backend-migration-rev-3-github-target.spec.md`). Also register the file in `lib/gitignore-paths.mjs`.
+- **CON-2 (warning, BEH-38):** the amendment's codes are not in this spec's Error Cases table, so the docs test does not see them. The codes are `MIGRATE_RESUME_*`, `MIGRATE_TARGET_FOREIGN_LEGACY_ID`, `MIGRATE_SENTINEL_PROJECT_MISMATCH`, `MIGRATE_GITHUB_UNAVAILABLE` and `MIGRATE_PARTIAL_FAILURE`.
+- **CON-3 (warning, BEH-21–23):** no CLI exit codes are stated for claim errors. Per `backend-migration.spec.md` and `lifecycle-integration.spec.md`, `ISSUE_ALREADY_CLAIMED` exits 2.
+- **CON-4 (warning, BEH-22):** the charter says "rolls back" where the spec says "abstains". Reconcile the wording, and say what happens to the loser's `claimed_at`.
+- **CON-5 (warning, BEH-39):** the `next_action` and `type` refusal is narrower than `next-action-and-type-fields.spec.md`. Declare it a github difference.
+- **CON-6 (warning, BEH-5):** pin the `parseId()` return shape for gh IDs.
+- **CON-7 (suggestion):** reconcile `planRef` with the charter's and `reality-check`'s `plan_ref`.
+- **CON-8 (suggestion):** on github, parent-epic lookup must not rely on a `notes` prefix.
 
 ## Referent Integrity Reviewer (referent-integrity)
 
 **Verdict:** PASS_WITH_NOTES
 
-Prior RI-1 is resolved: the in-process `create()` paths in specify and plan are now described as they are. Prior BD-1 is resolved as a referent: `assertContained` exists at `lib/extensions/exec-payload.mjs:158` and resolves symlinks with `realpathSync`.
+Verified referents include the `interface.mjs` lease helpers, `CONFIG_KEYS`, the transport's fixed argv, the ID helpers and validators, `assertContained`, the specify and plan skill steps, the board worktree, and the companion commits.
 
-- **RI-1 (warning, BEH-39/AC):** `lib/reality-check.mjs:432-433,467-468` resolves `plan_ref` (snake case) and `spec_ref` with no containment. Name `plan_ref`, and assign the fix to a task.
-- **RI-2 (warning, BEH-10):** the shipped `transport.mjs:231` `paginate()` and `board-read.mjs:47` both recompute the bound on every page. The fixed-from-page-1 rule needs a code change.
-- **RI-3 (warning, BEH-20):** no `fenceBlock` nonce source is named. Repeats prior RI-2.
-- **RI-4 (suggestion):** cross-reference `MIGRATE_UNANCHORED_ITEM` in the amendment's BEH-5 order.
+- **RI-1 (warning, BEH-10):** the shipped `transport.mjs` `paginate()` and `board-read.mjs` `continueConnection()` recompute the bound on every page. The plan must state the code change.
+- **RI-2 (warning, BEH-39/AC):** `lib/reality-check.mjs:433` reads `plan_ref` (snake case). Name it next to `planRef`, and assign the containment fix to a task.
+- **RI-3 (warning, Error Cases):** the shipped `GITHUB_REQUEST_FAILED` and `GITHUB_TRANSPORT_INTERNAL` have no rows.
+- **RI-4 (suggestion, BEH-32):** the restated sentinel rules are stricter than charter rev 9 (the check on read and on the parent directory), yet BEH-32 says the charter governs.
 
 ## Wiring Reviewer (wiring-reviewer)
 
 **Verdict:** PASS_WITH_NOTES
 
-- **WR-1 (warning):** `/adev:sync` and session capture have no github case. Repeats the prior finding.
-- **WR-2 (warning):** no end-to-end test that a reserved `module:` label leads to fail-closed eligibility.
-- **WR-3 (warning):** no criterion asserts the `resuming: N of M` line. Add one, or cite the amendment's criterion.
-- **WR-4 (warning):** no criterion covers the dry-run read of `.migrate-unanchored.json`.
-- **WR-5 (warning):** no criterion per `setup --check` drift category, and none for the exit-code split.
-- **WR-6 (suggestion):** name the write methods that run the sentinel guard.
+- **WR-1 (warning):** `/adev:sync` and constitution-sync have no github consumer.
+- **WR-2 (warning):** `.migrate-unanchored.json` is not in the gitignore registry or the amendment's check order.
+- **WR-3 (warning):** no test traces a reserved `module:` label through to a fail-closed eligibility result.
+- **WR-4 (warning):** no criterion covers the progress line or the dry-run read of `.migrate-unanchored.json`.
+- **WR-5 (warning):** no criteria per `setup --check` drift category, for the exit-code split, or for a continuation tripping its own bound.
+- **WR-6 (suggestion):** name the write methods the sentinel guard covers.
+- **WR-7 (suggestion):** state how the fixture recorder is invoked.
 
 ## Boundary Reviewer (boundary-reviewer)
 
 **Verdict:** PASS_WITH_NOTES
 
-Prior BD-1 is resolved. BEH-39, BEH-32 and BEH-37 now require realpath containment and refuse a symlinked sentinel.
+Prior BD-1 (realpath containment) stays resolved.
 
-- **BD-1 (warning, BEH-39/BEH-8):** no refusal predicates for `type` and `milestone`, and no `assertSafeScalar`-class check on values that reach YAML.
-- **BD-2 (warning, BEH-30):** `.migrate-unanchored.json` lacks the sentinel's realpath and symlink rules. Validate `source_id`/`target_id` on read.
-- **BD-3 (warning, BEH-3/BEH-32/BEH-39):** list the local probe and git argv arrays, and refuse shell metacharacters in `branch`.
-- **BD-4 (warning):** a manifest-named project receives steady-state writes without consent. Record that as an accepted risk, or add a first-use disclosure.
-- **BD-5 (suggestion):** require recorder-authored fixture content, and clear `GH_HOST`/`GH_ENTERPRISE_TOKEN` in the transport's child environment.
+- **BD-1 (warning, BEH-39):** no refusal predicates for `type` and `milestone`; `next_action` lets through YAML-significant sequences.
+- **BD-2 (warning, BEH-30):** `.migrate-unanchored.json` needs the sentinel's containment and symlink rules, and its IDs need validating on read.
+- **BD-3 (warning):** list the local probe and git argv; refuse shell metacharacters in `branch`.
+- **BD-4 (warning):** steady-state writes to a project named in the manifest have no consent step. Accept the risk, or add a first-use disclosure.
+- **BD-5 (suggestion):** require recorder-authored fixtures, and clear `GH_HOST`/`GH_ENTERPRISE_TOKEN` in the transport's child environment.
 
 ## Termination Reviewer (termination-reviewer)
 
-**Verdict:** FAIL
+**Verdict:** PASS_WITH_NOTES
 
-- **TR-1 (blocker, BEH-10, `missing-iteration-cap`, defect):** continuation pages for sub-issue and blocked-by connections have no stated bound.
-  - BEH-10's `ceil(totalCount / 100) + 1` uses the project item count. If continuation pages are excluded from it, they are unbounded. If they are included, a legitimate item with many sub-issues trips the bound falsely.
-  - Recommendation: give each continuation connection its own bound and say it does not count toward the item-page bound. Name `GITHUB_PAGINATION_INVALID` as the outcome for both.
-  - **Orchestrator note:** the shipped `continueConnection()` in `lib/issues/github/board-read.mjs:33-52` already does this. Each connection has its own `ceil(totalCount / 100) + 1` bound, the embedded first page counts as page 1, and a repeated cursor throws `GITHUB_PAGINATION_INVALID`. The fix is to state that rule in BEH-10 and to fix the bound from the connection's first page.
-- **TR-2 (warning, BEH-10):** the bound taken from the first page is finite but has no ceiling of its own. State a maximum accepted `totalCount` or page count.
-- **TR-3 (warning, BEH-35):** say whether the rate-limited request is re-issued after a wait, and whether each re-issue counts as one of the 5 waits.
-- **Fully bounded:** `walkTree`, the migration copy and re-run, `MIGRATE_UNANCHORED_ITEM`, pacing, claim settle, and confirmation.
+Prior TR-1 is resolved.
 
-## Heuristics — related prior lessons (signature-ranked)
+- **TR-2 (warning, BEH-10):** no absolute ceiling on the page bound, and nothing says what happens to a missing or non-integer `totalCount`.
+- **TR-3 (suggestion, BEH-35):** say that each rate-limit response consumes one wait and that the same request is re-issued after it.
+- **Fully bounded:** `walkTree`, item and connection pagination (apart from TR-2), the migration copy and re-run, pacing, claim settle, preflight, and confirmation.
 
-The following heuristics are lessons learned from past work in this module, ranked with any exact matches for this blocker first. They are not necessarily prior occurrences of this blocker. Use them as guidance, not as hard rules.
+## Heuristics
+
+The following heuristics are lessons learned from past work in this module, ranked by confidence. Use them as guidance, not as hard rules.
 
 - A universal coverage claim must ship with the predicate that checks it (confidence: medium)
 - Use session JSONL for token measurement, not file-size estimates (confidence: medium)
@@ -114,6 +111,8 @@ The following heuristics are lessons learned from past work in this module, rank
 
 ## Summary
 
-**Total findings:** 25 (1 blocker, 20 warnings, 4 suggestions)
-**Blocker:** `termination-reviewer:missing-iteration-cap:b3601130` (TR-1, `behaviors-10`). Sidecar: `github-board-backend.blockers.md`.
-**Action required:** revise BEH-10 to state the per-connection continuation bound, which the shipped `continueConnection()` already enforces. Then re-review.
+**Total findings:** 26 (0 blockers, 19 warnings, 7 suggestions)
+**Action required:** none blocks planning. The high risk policy requires human approval before `/adev:plan`. Fold these into the plan reconciliation:
+- RI-1, RI-2, TR-2: the code deltas for the page bound and `reality-check.mjs`.
+- CON-1, WR-2, BD-2: registration and hardening of `.migrate-unanchored.json`.
+- CON-2, RI-3: the extra codes in the docs-coverage test.

@@ -66,3 +66,9 @@
 {"event":"step_completed","step":"review","verdict":"BLOCK","revision":5,"ts":"2026-11-26T19:50:26.286Z"}
 {"event":"spec_revised","from_revision":5,"to_revision":6,"addressed_blocker_ids":["termination-reviewer:missing-iteration-cap:b3601130"],"unresolved_blocker_ids":[],"ts":"2026-11-26T19:52:13.099Z"}
 {"event":"lifecycle_step","step":"review","status":"started","revision":6,"ts":"2026-11-26T19:52:27.335Z"}
+{"event":"reviewer_report","step":"review","reviewer":"consistency-analyzer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"0 blockers, 6 warnings, 2 suggestions; CON-3 (codes) and TR-1 resolved","ts":"2026-11-26T19:57:27.153Z"}
+{"event":"reviewer_report","step":"review","reviewer":"referent-integrity","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"0 blockers, 3 warnings, 1 suggestion; TR-1 resolved as referent","ts":"2026-11-26T19:57:27.220Z"}
+{"event":"reviewer_report","step":"review","reviewer":"wiring-reviewer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"0 blockers, 5 warnings, 2 suggestions","ts":"2026-11-26T19:57:27.282Z"}
+{"event":"reviewer_report","step":"review","reviewer":"boundary-reviewer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"0 blockers, 4 warnings, 1 suggestion","ts":"2026-11-26T19:57:27.355Z"}
+{"event":"reviewer_report","step":"review","reviewer":"termination-reviewer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"0 blockers, 1 warning (TR-2 no absolute ceiling / non-integer totalCount), 1 suggestion; TR-1 resolved","ts":"2026-11-26T19:57:27.416Z"}
+{"event":"step_completed","step":"review","verdict":"PASS_WITH_NOTES","revision":6,"ts":"2026-11-26T19:58:05.929Z"}
