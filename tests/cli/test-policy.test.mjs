@@ -12,7 +12,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join, dirname, resolve as resolvePath } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { run, boundaryCrossingFor, loadConfiguredSensitivePaths } from "../../lib/cli/test-policy.mjs";
+import { run, boundaryCrossingFor, boundaryMatcherFor, loadConfiguredSensitivePaths } from "../../lib/cli/test-policy.mjs";
 import { createTempDir, cleanupTempDir, writeFixture } from "../helpers.mjs";
 import { writeRoutingSidecar } from "../../lib/plan-routing-sidecar.mjs";
 import { readEvents } from "../../lib/lifecycle-state.mjs";
@@ -523,6 +523,25 @@ test("boundaryCrossingFor with { text } ignores the on-disk boundaries.yaml", as
     assert.equal(boundaryCrossingFor(dir, ["src/ui/view.ts"]), true);
     assert.equal(boundaryCrossingFor(dir, ["src/ui/view.ts"], { text: BOUNDARIES_DB }), false);
     assert.equal(boundaryCrossingFor(dir, ["src/db/query.ts"], { text: BOUNDARIES_DB }), true);
+  } finally {
+    await cleanupTempDir(dir);
+  }
+});
+
+test("boundaryMatcherFor reads boundaries.yaml once, at bind time, and answers as boundaryCrossingFor does", async () => {
+  const dir = await createTempDir();
+  try {
+    await writeFixture(dir, ".context-index/governance/boundaries.yaml", BOUNDARIES_DB);
+    const matcher = boundaryMatcherFor(dir);
+    await writeFixture(dir, ".context-index/governance/boundaries.yaml", BOUNDARIES_UI);
+    assert.equal(matcher(["src/db/query.ts"]), true, "the rules bound before the edit still apply");
+    assert.equal(matcher(["src/ui/view.ts"]), false);
+    for (const { text, expected } of BOUNDARY_CASES) {
+      const bound = boundaryMatcherFor(dir, { text });
+      assert.equal(bound(["src/db/query.ts", "src/ui/view.ts"]), expected, JSON.stringify(text));
+      assert.equal(bound(["src/db/query.ts"]), expected, "a second call answers the same");
+    }
+    assert.equal(boundaryMatcherFor(dir, { text: null })(["src/ui/view.ts"]), false);
   } finally {
     await cleanupTempDir(dir);
   }

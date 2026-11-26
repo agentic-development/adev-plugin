@@ -99,7 +99,38 @@ test("liteGrant: an unauthorized task is silent; an authorized out-of-range scor
   assert.deepEqual(warned.warnings.map((w) => [w.code, w.dimension]), [["ROUTING_SCORE_OUT_OF_RANGE", "blast_radius"]]);
 });
 
+test("liteGrant liteUnavailable: denies with its reason right after (a), before scores, risk, floor and parallel", () => {
+  const blocked = liteGrant({
+    authorized: true, routingEntry: auto, riskLevel: "high", provisionalLegs: ["sensitive-path"], parallel: true,
+    liteUnavailable: "routing-scores",
+  });
+  assert.equal(blocked.granted, false);
+  assert.equal(blocked.lite_denied, "routing-scores");
+  assert.deepEqual(blocked.warnings, []);
+
+  const unscored = liteGrant({
+    authorized: true, routingEntry: { selected_agent: "auto-agent" }, riskLevel: "low", provisionalLegs: [], parallel: false,
+    liteUnavailable: "routing-scores",
+  });
+  assert.deepEqual(unscored.warnings, [], "an entry the grant cannot use is not score-checked");
+
+  const unauthorized = liteGrant({ authorized: false, routingEntry: auto, riskLevel: "low", liteUnavailable: "routing-scores" });
+  assert.equal(unauthorized.lite_denied, "not-authorized");
+});
+
 // ── resolver: lite path ─────────────────────────────────────────────────────
+
+test("resolver liteUnavailable: a high-risk spec with --lite reports routing-scores and resolves quick", () => {
+  const r = resolveImplementReviewDepth({
+    ...base, spec: { ...base.spec, risk_level: "high" }, liteFlag: true, liteUnavailable: "routing-scores",
+  });
+  assert.equal(r.depth, "quick");
+  assert.equal(r.source, "default-quick");
+  assert.equal(r.lite_denied, "routing-scores");
+  assert.equal(r.lite_source, "flag");
+  const unauthorized = resolveImplementReviewDepth({ ...base, liteUnavailable: "routing-scores" });
+  assert.equal(unauthorized.lite_denied, "not-authorized");
+});
 
 test("lite_source: flag, policy, or null; explicit --tier quick outranks policy lite", () => {
   assert.equal(resolveImplementReviewDepth(withPolicyLite({ liteFlag: true })).lite_source, "flag");
