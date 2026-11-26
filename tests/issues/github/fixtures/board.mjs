@@ -162,7 +162,7 @@ function pullRequestItem(number) {
  *   still split into pages of 100 and a page past the last item is empty.
  *   `typedRepos` lists the `owner/name` repos that report issue types.
  */
-function buildBoard(specs, { pages, totalCount, preflight = preflightFixture.ok, typedRepos = ["acme/board", "acme/api"] } = {}) {
+export function buildBoard(specs, { pages, totalCount, preflight = preflightFixture.ok, typedRepos = ["acme/board", "acme/api"] } = {}) {
   const typed = new Set(typedRepos);
   const entries = [];
   const children = new Map();
