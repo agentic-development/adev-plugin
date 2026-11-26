@@ -1,9 +1,10 @@
 // tests/lib/implement/lite-eligible-parity.test.mjs
 //
-// EV-4 parity: liteEligible must agree with route's documented "easy" rule
-// (skills/route/SKILL.md, Rigor Tier Signal): routed auto-agent and no
-// dimension below 3 on route's 1–5 scale. The sidecar stores each dimension
-// as d/5, so 3/5 is exactly the 0.6 threshold.
+// EV-4 parity: liteEligible must agree with the gloss that skills/route/SKILL.md
+// (Rigor Tier Signal) gives beside its liteEligible citation: routed auto-agent
+// and no dimension below 3 on route's 1–5 scale. Route scores in those units,
+// and the sidecar stores each dimension as d/5, so 3/5 is exactly the 0.6
+// threshold.
 
 import { test } from "node:test";
 import assert from "node:assert/strict";

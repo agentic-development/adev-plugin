@@ -239,3 +239,53 @@ test("adev route render-sidecar errors when sidecar is missing", () => {
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+function entryWith(taskId, agent, score) {
+  return {
+    task_id: taskId,
+    selected_agent: agent,
+    scores: {
+      spec_completeness: score,
+      pattern_coverage: score,
+      blast_radius: score,
+      novelty: score,
+    },
+    rationale: "seeded",
+  };
+}
+
+function emit(t, entries) {
+  const { dir, planPath } = makePlan("lite-eligible");
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const res = spawnSync(
+    "node",
+    [CLI, "route", "emit-sidecar", "--plan", planPath],
+    { input: JSON.stringify(entries), encoding: "utf8" },
+  );
+  assert.equal(res.status, 0, `stderr: ${res.stderr}`);
+  return res;
+}
+
+let seq = 0;
+const auto = (score) => entryWith(`t${++seq}`, "auto-agent", score);
+const assisted = (score) => entryWith(`t${++seq}`, "assisted-agent", score);
+
+test("emit-sidecar output carries lite_eligible computed by liteEligible", (t) => {
+  const out = JSON.parse(emit(t, [auto(0.8), auto(0.6), auto(0.4), assisted(0.9)]).stdout);
+  assert.deepEqual(out.lite_eligible, { count: 2, total: 4 });
+});
+
+test("emit-sidecar lite_eligible needs every dimension at or above 0.6 on an auto-agent entry", (t) => {
+  const oneLow = auto(1.0);
+  oneLow.scores.novelty = 0.4;
+  const humanOnly = entryWith("h1", "human-only", 1.0);
+  const out = JSON.parse(emit(t, [oneLow, auto(1.0), humanOnly]).stdout);
+  assert.deepEqual(out.lite_eligible, { count: 1, total: 3 });
+});
+
+test("emit-sidecar does not write lite_eligible into the sidecar", (t) => {
+  const out = JSON.parse(emit(t, [auto(0.8)]).stdout);
+  const doc = JSON.parse(readFileSync(out.sidecar, "utf8"));
+  assert.equal(Object.hasOwn(doc, "lite_eligible"), false);
+  assert.deepEqual(Object.keys(doc.entries[0]).sort(), ["rationale", "scores", "selected_agent", "task_id"]);
+});
