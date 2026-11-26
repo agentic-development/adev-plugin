@@ -39,3 +39,10 @@
 {"event":"plan_task","plan":".context-index/specs/features/task-management/github-board-backend.plan.md","task_id":"task-21","status":"pending","notes":null,"ts":"2026-11-26T04:33:19.730Z"}
 {"event":"plan_task","plan":".context-index/specs/features/task-management/github-board-backend.plan.md","task_id":"task-22","status":"pending","notes":null,"ts":"2026-11-26T04:33:19.779Z"}
 {"event":"step_completed","step":"plan","verdict":"PASS","ts":"2026-11-26T04:33:19.888Z"}
+{"event":"lifecycle_step","step":"review","status":"started","revision":3,"ts":"2026-11-26T19:19:38.879Z"}
+{"event":"reviewer_report","step":"review","reviewer":"consistency-analyzer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"0 blockers, 5 warnings (CON-1..5), 2 suggestions; rev-3 sentinel and BEH-41 changes consistent with amendment","ts":"2026-11-26T19:26:35.748Z"}
+{"event":"reviewer_report","step":"review","reviewer":"referent-integrity","severity":"blocker","verdict":"FAIL","notes":"1 blocker (RI-1: /adev:plan has no non-blocking adapter-error path, BEH-14), 3 warnings, 1 suggestion","ts":"2026-11-26T19:26:35.903Z"}
+{"event":"reviewer_report","step":"review","reviewer":"wiring-reviewer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"0 blockers, 3 warnings (WR-1..3 carry-overs), 2 suggestions","ts":"2026-11-26T19:26:36.011Z"}
+{"event":"reviewer_report","step":"review","reviewer":"boundary-reviewer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"0 blockers, 3 warnings (BD-1, BD-3, BD-4), 4 suggestions","ts":"2026-11-26T19:26:36.132Z"}
+{"event":"reviewer_report","step":"review","reviewer":"termination-reviewer","severity":"blocker","verdict":"FAIL","notes":"1 blocker (TR-1: walkTree cycle outcome/bound unstated, BEH-11), 2 warnings, 1 suggestion","ts":"2026-11-26T19:26:36.246Z"}
+{"event":"step_completed","step":"review","verdict":"BLOCK","revision":3,"ts":"2026-11-26T19:28:15.902Z"}
