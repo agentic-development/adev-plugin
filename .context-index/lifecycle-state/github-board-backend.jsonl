@@ -50,3 +50,9 @@
 {"event":"spec_revised","from_revision":3,"to_revision":4,"addressed_blocker_ids":["referent-integrity:nonexistent-skill-error-path:6784c637","termination-reviewer:missing-iteration-cap:78cdd45d"],"unresolved_blocker_ids":[],"ts":"2026-11-26T19:31:47.952Z"}
 {"event":"step_completed","step":"specify","revision":4,"ts":"2026-11-26T19:31:58.189Z"}
 {"event":"lifecycle_step","step":"review","status":"started","revision":4,"ts":"2026-11-26T19:32:12.390Z"}
+{"event":"reviewer_report","step":"review","reviewer":"consistency-analyzer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"0 blockers, 3 warnings, 5 suggestions; prior RI-1/TR-1 resolved in its view","ts":"2026-11-26T19:36:43.148Z"}
+{"event":"reviewer_report","step":"review","reviewer":"referent-integrity","severity":"blocker","verdict":"FAIL","notes":"1 blocker (RI-1: /adev:specify and /adev:plan call create() in-process, not via verbs, BEH-14), 1 warning, 1 suggestion","ts":"2026-11-26T19:36:43.234Z"}
+{"event":"reviewer_report","step":"review","reviewer":"wiring-reviewer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"0 blockers, 5 warnings, 3 suggestions","ts":"2026-11-26T19:36:43.315Z"}
+{"event":"reviewer_report","step":"review","reviewer":"boundary-reviewer","severity":"blocker","verdict":"FAIL","notes":"1 blocker (BD-1: resolveContained is lexical-only; spec_ref/planRef/recorder/sentinel need realpath containment, BEH-39), 3 warnings, 1 suggestion","ts":"2026-11-26T19:36:43.393Z"}
+{"event":"reviewer_report","step":"review","reviewer":"termination-reviewer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"0 blockers, 3 warnings (continuation bound, per-page totalCount bound has no fixed ceiling, BEH-35 wait layer), 1 suggestion","ts":"2026-11-26T19:36:43.475Z"}
+{"event":"step_completed","step":"review","verdict":"BLOCK","revision":4,"ts":"2026-11-26T19:37:40.758Z"}
