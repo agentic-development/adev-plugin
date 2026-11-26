@@ -1,0 +1,2 @@
+{"event":"lifecycle_step","step":"specify","status":"started","ts":"2026-11-26T16:57:07.576Z"}
+{"event":"step_completed","step":"specify","verdict":"PASS","ts":"2026-11-26T16:57:07.582Z"}
