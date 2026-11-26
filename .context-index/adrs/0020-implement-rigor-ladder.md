@@ -35,7 +35,7 @@ Replace the two-level implement review depth with a three-level ladder, resolved
    - a Critical finding
 2. **`quick`**: one synthesized reviewer. It becomes the **default**: what you get unless a floor leg holds. This now includes `assisted-agent` tasks (which keep their human checkpoint) and high-risk tasks routed `auto-agent`. The additive-only grant condition, the `batched-task` leg and the `scope-mismatch` floor are removed.
 3. **`lite`**: no per-task reviewer. The task runs inline in the orchestrator's context under the `agent-default` mandate, keeping lifecycle events and per-task commits. It is granted only when all of these hold:
-   - **the operator authorized it** (`--lite`, or `implement_mode: lite` for medium or low risk, chosen during `/adev:init` for any preset)
+   - **the operator authorized it** (`--lite`, or `implement_mode: lite` for medium or low risk, chosen during `/adev:init` for any preset by a typed choice or `--mode lite`; a non-interactive init never writes `lite` and never overwrites an existing value)
    - **route's existing "easy" signal holds** (auto-agent, no dimension below 3 of 5)
    - the spec is not high-risk, and no floor leg holds
 
@@ -44,6 +44,15 @@ Replace the two-level implement review depth with a three-level ladder, resolved
 These thresholds were calibrated against this repository's corpus (576 routed tasks, 405 historical task commits) to a target of about 50% `lite` and at most 20% `full` for a project that opts into `lite`. The calibrated rules give about 49% `lite`, 35% `quick` and 16% `full`. The first draft (scores ≥ 0.8, `assisted-agent` and all high-risk tasks forced to `full`) gave 27% / 27% / 46%.
 
 Agents never choose `lite`. Route output is eligibility, not authorization.
+
+**Provenance and contracts.**
+
+- **No `Review-round:` trailer on `lite` commits.** The trailer builder and its grammar (`buildReviewRoundTrailer`, stage enum, `cycles >= 1`) are left untouched. `review-provenance`'s every-commit-carries-a-trailer rule gains an exemption for tasks whose final-pass `review_depth_resolved` is `lite`, and that event pair becomes their provenance. Widening the trailer grammar to `lite=0` was rejected because it would loosen a validated injection-hardened producer for the one path with no reviewer.
+- **Batched tasks are reviewed at their own resolved depth.** `batched-task-dispatch` C.3 is amended accordingly, with no reinterpretation by silence.
+- **A single first-action verb (`adev implement check-flags`) owns the up-front errors.** It raises the flag conflicts and policy-value validation before any lifecycle event is written. A malformed policy value is now an error everywhere instead of a silent fallback.
+- **Unattended runs stop at the review-cycle cap.** When `/adev:implement` runs as a `/adev:build` or `/adev:work` step, a loop that reaches the cap blocks the task and stops the run, rather than waiting for an operator who is not there.
+
+All four base specs (`review-provenance`, `batched-task-dispatch`, `graduated-review-depth`, `graduated-rigor-tiers`) are changed through co-located amendments, not edited in place.
 
 ## Consequences
 
