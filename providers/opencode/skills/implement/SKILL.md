@@ -5,7 +5,7 @@ description: "Execute implementation plans using specialist-routed subagents, th
 
 # Implement Plan
 
-Execute an implementation plan by dispatching a fresh subagent per task, routing to domain specialists when applicable, applying the test discipline of the project's `implementation_mode` (TDD by default), and running a depth-graded review after each task (one synthesized reviewer by default, full two-stage review — spec compliance then code quality — when a floor leg applies or under `--tier full`).
+Execute an implementation plan by dispatching a fresh subagent per task (a task that resolves `lite` runs inline in your own context instead), routing to domain specialists when applicable, applying the test discipline of the project's `implementation_mode` (TDD by default), and running a depth-graded review after each task (one synthesized reviewer by default, full two-stage review — spec compliance then code quality — when a floor leg applies or under `--tier full`).
 
 ### Dispatch Turn Discipline
 
@@ -131,6 +131,10 @@ Harness-specific progress reporting during a long implement run.
 The core loop: for each routed task, resolve its test depth (except under `agent-default`), dispatch the implementer under the test discipline of the resolved `implementation_mode`, then run the review the task's resolved depth requires (`full`: Stage 1 then Stage 2; `quick`: one synthesized reviewer).
 
 > **Conditional loading:** Read `<ADEV_ROOT>/skills/implement/references/steps/step-2-per-task-loop.md` for the full instructions. Do not act on this section from the summary above.
+
+A task that resolves `lite` runs inline in your own context instead, with no `Agent` dispatch and no per-task reviewer, and the post-task tripwire can escalate it to `quick` or `full`.
+
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/implement/references/lite-mode.md` for inline `lite` execution. Load it when any task resolves `lite`; it is not needed otherwise.
 
 ### Step 2.5: Parallel Group Execution
 

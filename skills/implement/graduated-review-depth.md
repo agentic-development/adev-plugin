@@ -8,12 +8,14 @@ Read this file before running either branch.
 
 ```bash
 adev implement resolve-depth --spec <spec-path> --plan <plan-path> --task-id <task-id> \
-  [--tier <t>] [--review-cycles <n>] [--in-batch] --pass provisional
+  --run-base <run_base> [--tier <t>] [--lite] [--parallel] [--review-cycles <n>] --pass provisional
 ```
 
-Pass `--in-batch` when this task is part of a batch resolved earlier in Step 2
-(`adev implement batches`) — batch membership is a static, plan-level fact known
-before the implementer is dispatched, so it is available on the provisional pass too.
+`--run-base` is required on both passes. Pass the `run_base` that
+`adev implement check-flags` printed at the start of the run: the verb reads the
+risk policies, boundaries, sensitive paths and routing sidecar from that commit.
+Pass `--lite`, `--tier` and `--parallel` exactly as the operator passed them.
+Batch membership no longer affects a task's depth, so pass no batch flag.
 
 The printed `depth` briefs the implementer (whether elevated scrutiny should be
 expected) and decides nothing about which reviewer(s) dispatch yet — that
@@ -43,8 +45,8 @@ every file that was untracked before the task counts as a task addition.
 
 ```bash
 adev implement resolve-depth --spec <spec-path> --plan <plan-path> --task-id <task-id> \
-  [--tier <t>] [--review-cycles <n>] [--in-batch] [--had-critical-finding] \
-  --base-sha <captured-base> --pass final
+  --run-base <run_base> [--tier <t>] [--lite] [--parallel] [--review-cycles <n>] \
+  [--had-critical-finding] --base-sha <captured-base> --pass final
 ```
 
 Pass `--had-critical-finding` whenever any prior cycle on this task's own review

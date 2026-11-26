@@ -76,6 +76,21 @@ test("graduated-review-depth.md documents both resolve-depth passes with their l
   assert.match(md, /--review-cycles/);
 });
 
+// resolve-depth exits 1 without --run-base, and --in-batch fed the removed
+// batched-task floor leg, so a caller passing it is following a dead contract.
+test("graduated-review-depth.md passes --run-base on both passes and no longer passes --in-batch", () => {
+  const md = readFileSync(COMPANION_PATH, "utf8");
+  assert.doesNotMatch(md, /--in-batch/);
+  assert.match(md, /--run-base <run_base>[\s\S]{0,200}--pass provisional/);
+  assert.match(md, /--run-base <run_base>[\s\S]{0,200}--pass final/);
+});
+
+test("/adev:implement skill surface no longer passes --in-batch and passes --run-base", () => {
+  const md = readSkillSurface("implement");
+  assert.doesNotMatch(md, /--in-batch/);
+  assert.match(md, /--run-base <run_base>/);
+});
+
 test("graduated-review-depth.md documents --had-critical-finding as a persisting floor leg", () => {
   const md = readFileSync(COMPANION_PATH, "utf8");
   assert.match(md, /--had-critical-finding/);

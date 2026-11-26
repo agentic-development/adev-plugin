@@ -18,6 +18,7 @@ Abort paths in this skill that MUST emit it:
 | Step 2e | Playwright MCP browser tools are unavailable on a UI task — the documented "STOP the entire implementation" path. |
 | Step 2.5 | `adev parallel assert-clean` returns `ORCHESTRATOR_POLLUTED` — the whole run aborts before any merge. |
 | Step 2.5 | Any group failure that ends the run non-zero (`RERUN_COLLISION` without `--fresh`, `COMMITS_NOT_VERIFIED`, `MERGE_CONFLICT`), after the successful groups have been merged and the failed groups' worktrees retained. |
+| Step 2-post | The whole-run quality-gate pass that follows a run with any `lite` task fails. Name `QUALITY_GATES_FAILED` in the operator-facing output, since the event cannot carry the code (see "Known gap" below). |
 
 **Already covered — do not double-emit.** Per-task escalations route through the Step 2d blocker path (`plan_task` `blocked` event plus execution state with `status: "blocked"`), which is the terminal the framework already records for them. That path covers the subagent blocker-flag protocol, `MISSING_DEPTH_ASSIGNMENT` from `adev test-policy assert-assigned`, and the Stage-2 convergence terminals `LOOP_BUDGET_EXHAUSTED` / `LOOP_NO_PROGRESS` / `LOOP_REGRESSED`. Emit the step-level `--status failed` event only when the *whole skill* stops, not once per blocked task.
 
