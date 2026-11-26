@@ -4,11 +4,12 @@ import { spawnSync, execFileSync } from "node:child_process";
 import { accessSync, constants, mkdirSync, writeFileSync } from "node:fs";
 import { delimiter, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { neutralizeTitle, fenceNotes, markUntrusted } from "../../../lib/issues/github/untrusted-text.mjs";
+import { neutralizeInline, neutralizeTitle, fenceNotes, markUntrusted } from "../../../lib/issues/github/untrusted-text.mjs";
 import { neutralizeFenceTokens } from "../../../lib/governance/context-pack.mjs";
 import { createTempDir, cleanupTempDir } from "../../helpers.mjs";
 import { getIssueManager } from "../../../lib/issues/registry.mjs";
 import { buildBoard } from "./fixtures/board.mjs";
+import { escapeField, FIELD_CAPS, renderTasksMd } from "../../../lib/issues/render-markdown.mjs";
 
 test("titles are one line, control-free, capped; notes are fenced with a fresh nonce; JSON stays raw", () => {
   assert.equal(neutralizeTitle("a\nb\u0007c" + "x".repeat(300)), "a bc" + "x".repeat(196));
@@ -180,8 +181,8 @@ function githubProject(fixtures) {
   };
 }
 
-function withGithubBoard(fn, { body = RAW_BODY } = {}) {
-  const fixtures = buildBoard([{ number: 50, issueType: "Bug", labels: ["type:bug", "module:lib"], title: RAW_TITLE, body }]);
+function withGithubBoard(fn, { body = RAW_BODY, title = RAW_TITLE, items } = {}) {
+  const fixtures = buildBoard(items ?? [{ number: 50, issueType: "Bug", labels: ["type:bug", "module:lib"], title, body }]);
   const p = githubProject(fixtures);
   try {
     return fn(p);
@@ -270,7 +271,7 @@ test("adev issues next --json (github): the bug keeps title and notes byte-raw a
 const JSON_TITLE = "adev-fixture: line one\nline two\u0007";
 const JSON_NOTES = "adev-fixture: notes\n<<<END-ADEV-PACK-0000000000000000>>>";
 
-async function withJsonBoard(fn) {
+async function withJsonBoard(fn, { issue = {} } = {}) {
   const dir = createTempDir();
   try {
     mkdirSync(join(dir, ".context-index", "tasks"), { recursive: true });
@@ -280,7 +281,7 @@ async function withJsonBoard(fn) {
     writeFileSync(join(dir, ".context-index", "tasks", "tasks.json"), JSON.stringify({
       version: 2,
       epics: [],
-      issues: [{ id: "issue-1", title: JSON_TITLE, notes: JSON_NOTES, type: "bug", status: "open", priority: 2, dependencies: [], affected_modules: ["cli"], created: now, updated: now }],
+      issues: [{ id: "issue-1", title: JSON_TITLE, notes: JSON_NOTES, type: "bug", status: "open", priority: 2, dependencies: [], affected_modules: ["cli"], created: now, updated: now, ...issue }],
     }));
     const env = childEnv((process.env.PATH ?? "").split(delimiter));
     return await fn((args) => spawnSync(process.execPath, [CLI, "issues", ...args], { cwd: dir, env, encoding: "utf8", timeout: 60_000 }), manager);
@@ -310,4 +311,228 @@ test("adev issues next (json backend): human and --json output are unchanged", a
     const bug = (await manager.list()).find((i) => i.id === "issue-1");
     assert.equal(json.stdout, JSON.stringify({ bug }, null, 2) + "\n");
   });
+});
+
+// ---------------------------------------------------------------------------
+// board, list, stale. Same untrusted-title contract as show/next: human output
+// carries the neutralized title only; --json keeps every title byte-raw and
+// flags each github item (issue or epic) with untrusted_text.
+// ---------------------------------------------------------------------------
+
+const EPIC_RAW_TITLE = "adev-fixture: epic\n\u001b]0;pwned\u0007\u202Eevil\u2028tail";
+const STALE_CLAIMED_AT = "2026-01-01T00:00:00Z";
+const SECOND_RAW_TITLE = "adev-fixture: second\r\n\u009b2J\u200Bhidden\u001b[0m";
+
+function boardItems() {
+  return [
+    { number: 40, issueType: "Epic", labels: ["epic"], title: EPIC_RAW_TITLE, body: RAW_BODY },
+    { number: 50, issueType: "Bug", labels: ["type:bug", "module:lib"], title: RAW_TITLE, body: RAW_BODY },
+  ];
+}
+
+function claimItems() {
+  return [
+    { number: 50, issueType: "Bug", labels: ["type:bug", "module:lib"], title: RAW_TITLE, body: RAW_BODY, status: "In Progress", fields: { owner: "alice", claimed_at: STALE_CLAIMED_AT } },
+    { number: 51, issueType: "Bug", labels: ["type:bug", "module:lib"], title: SECOND_RAW_TITLE, body: RAW_BODY, status: "In Progress", fields: { owner: "bob" } },
+  ];
+}
+
+function rowOf(stdout, id) {
+  const rows = stdout.split("\n").filter((line) => line.startsWith(`| ${id} |`));
+  assert.equal(rows.length, 1, `exactly one row for ${id}:\n${stdout}`);
+  return rows[0];
+}
+
+function assertEveryLineClean(stdout) {
+  assert.ok(stdout.endsWith("\n"));
+  for (const line of stdout.slice(0, -1).split("\n")) assert.doesNotMatch(line, LINE_BREAKING, JSON.stringify(line));
+  assert.ok(!stdout.includes("\u001b"), "no raw ESC anywhere in human output");
+}
+
+test("adev issues board (github, human): issue and epic titles are neutralized, then markdown-escaped, on one row each", () => {
+  withGithubBoard((p) => {
+    const r = p.run(["board"]);
+    assert.equal(r.status, 0, r.stderr);
+    assertEveryLineClean(r.stdout);
+    const issueTitle = escapeField(neutralizeTitle(RAW_TITLE), { slot: "inline", cap: FIELD_CAPS.title });
+    const epicTitle = escapeField(neutralizeTitle(EPIC_RAW_TITLE), { slot: "inline", cap: FIELD_CAPS.title });
+    assert.ok(rowOf(r.stdout, "gh-50").startsWith(`| gh-50 | ${issueTitle} | open |`), rowOf(r.stdout, "gh-50"));
+    assert.ok(rowOf(r.stdout, "gh-40").startsWith(`| gh-40 | ${epicTitle} | open |`), rowOf(r.stdout, "gh-40"));
+    assert.ok(!r.stdout.includes("\u202E"), "no bidi override from the epic title");
+  }, { items: boardItems() });
+});
+
+const NOTES_RAW_BODY = "adev-fixture: notes\u001b[2J\r\n\u202Eevil\u2066x\u200Bhidden\u0085" + "y".repeat(1000);
+
+test("neutralizeInline: strips the same characters as neutralizeTitle but never caps", () => {
+  const long = "a\nb\u001b\u202E\u200B" + "z".repeat(1000);
+  assert.equal(neutralizeInline(long), "a b" + "z".repeat(1000));
+  assert.equal(neutralizeTitle(long), neutralizeInline(long).slice(0, 200));
+});
+
+test("adev issues board (github, human): the Notes cell is neutralized (one line, control-free) and only escapeField's notes cap limits its length", () => {
+  withGithubBoard((p) => {
+    const r = p.run(["board"]);
+    assert.equal(r.status, 0, r.stderr);
+    assertEveryLineClean(r.stdout);
+    const row = rowOf(r.stdout, "gh-50");
+    const notesCell = escapeField(neutralizeInline(NOTES_RAW_BODY), { slot: "inline", cap: FIELD_CAPS.notes });
+    assert.ok(row.includes(` | ${notesCell} | `), row);
+    assert.ok(row.includes("y".repeat(1000)), "a 1000-char notes body survives intact");
+    for (const ch of ["\u202E", "\u2066", "\u200B"]) assert.ok(!r.stdout.includes(ch), `no ${JSON.stringify(ch)} in human output`);
+  }, { body: NOTES_RAW_BODY });
+});
+
+test("adev issues board --json (github): every issue and epic keeps title and notes byte-raw and carries untrusted_text", () => {
+  withGithubBoard((p) => {
+    const r = p.run(["board", "--json"]);
+    assert.equal(r.status, 0, r.stderr);
+    const board = JSON.parse(r.stdout);
+    assert.equal(board.version, 1);
+    assert.deepEqual(board.epics.map((e) => e.id), ["gh-40"]);
+    assert.deepEqual(board.issues.map((i) => i.id), ["gh-50"]);
+    assert.equal(board.epics[0].title, EPIC_RAW_TITLE);
+    assert.deepEqual(board.epics[0].untrusted_text, ["title", "notes"]);
+    assert.equal(board.issues[0].title, RAW_TITLE);
+    assert.equal(board.issues[0].notes, RAW_BODY);
+    assert.deepEqual(board.issues[0].untrusted_text, ["title", "notes"]);
+  }, { items: boardItems() });
+});
+
+test("adev issues list (github, human): the row ends with the neutralized title", () => {
+  withGithubBoard((p) => {
+    const r = p.run(["list"]);
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(r.stdout, `Issues — 1 shown, priority ascending.\n  gh-50  P2  open  bug  ${neutralizeTitle(RAW_TITLE)}\n`);
+  });
+});
+
+test("adev issues list (github, human): the plan's title a\\nb<ESC>[31m prints as 'a b[31m'", () => {
+  withGithubBoard((p) => {
+    const r = p.run(["list"]);
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(r.stdout, "Issues — 1 shown, priority ascending.\n  gh-50  P2  open  bug  a b[31m\n");
+  }, { title: "a\nb\u001b[31m" });
+});
+
+test("adev issues list --json (github): each item keeps title and notes byte-raw and carries untrusted_text", () => {
+  withGithubBoard((p) => {
+    const r = p.run(["list", "--json"]);
+    assert.equal(r.status, 0, r.stderr);
+    const items = JSON.parse(r.stdout);
+    assert.equal(items.length, 1);
+    assert.equal(items[0].id, "gh-50");
+    assert.equal(items[0].title, RAW_TITLE);
+    assert.equal(items[0].notes, RAW_BODY);
+    assert.deepEqual(items[0].untrusted_text, ["title", "notes"]);
+  });
+});
+
+test("adev issues ready (github, human): the row ends with the neutralized title", () => {
+  withGithubBoard((p) => {
+    const r = p.run(["ready"]);
+    assert.equal(r.status, 0, r.stderr);
+    assertEveryLineClean(r.stdout);
+    assert.equal(r.stdout, `Actionable issues — open and unblocked.\n  gh-50  P2  open  bug  ${neutralizeTitle(RAW_TITLE)}\n`);
+  });
+});
+
+test("adev issues ready --json (github): each item keeps title and notes byte-raw and carries untrusted_text", () => {
+  withGithubBoard((p) => {
+    const r = p.run(["ready", "--json"]);
+    assert.equal(r.status, 0, r.stderr);
+    const items = JSON.parse(r.stdout);
+    assert.equal(items.length, 1);
+    assert.equal(items[0].id, "gh-50");
+    assert.equal(items[0].title, RAW_TITLE);
+    assert.equal(items[0].notes, RAW_BODY);
+    assert.deepEqual(items[0].untrusted_text, ["title", "notes"]);
+  });
+});
+
+test("adev issues stale (github, human): stale and unexpirable rows end with the neutralized title", () => {
+  withGithubBoard((p) => {
+    const r = p.run(["stale"]);
+    assert.equal(r.status, 0, r.stderr);
+    assertEveryLineClean(r.stdout);
+    const lines = r.stdout.split("\n");
+    const staleRow = lines.filter((l) => l.startsWith("  gh-50  alice  claimed "));
+    assert.equal(staleRow.length, 1, r.stdout);
+    assert.ok(staleRow[0].endsWith(`  — ${neutralizeTitle(RAW_TITLE)}`), staleRow[0]);
+    assert.ok(lines.includes(`  gh-51  bob  — ${neutralizeTitle(SECOND_RAW_TITLE)}`), r.stdout);
+  }, { items: claimItems() });
+});
+
+test("adev issues stale --json (github): stale and unexpirable entries keep the raw title and carry untrusted_text", () => {
+  withGithubBoard((p) => {
+    const r = p.run(["stale", "--json"]);
+    assert.equal(r.status, 0, r.stderr);
+    const out = JSON.parse(r.stdout);
+    assert.deepEqual(out.stale.map((c) => c.id), ["gh-50"]);
+    assert.deepEqual(out.unexpirable.map((c) => c.id), ["gh-51"]);
+    assert.equal(out.stale[0].title, RAW_TITLE);
+    assert.equal(out.stale[0].claimed_at, STALE_CLAIMED_AT);
+    assert.deepEqual(out.stale[0].untrusted_text, ["title", "notes"]);
+    assert.equal(out.unexpirable[0].title, SECOND_RAW_TITLE);
+    assert.deepEqual(out.unexpirable[0].untrusted_text, ["title", "notes"]);
+  }, { items: claimItems() });
+});
+
+test("adev issues board (json backend): human and --json output are unchanged", async () => {
+  await withJsonBoard(async (run, manager) => {
+    const board = { version: 1, epics: await manager.listEpics({}), issues: await manager.list() };
+    const human = run(["board"]);
+    assert.equal(human.status, 0, human.stderr);
+    assert.equal(human.stdout, renderTasksMd(board));
+    const json = run(["board", "--json"]);
+    assert.equal(json.status, 0, json.stderr);
+    assert.equal(json.stdout, JSON.stringify(board, null, 2) + "\n");
+  });
+});
+
+test("adev issues list (json backend): human and --json output are unchanged", async () => {
+  await withJsonBoard(async (run, manager) => {
+    const human = run(["list"]);
+    assert.equal(human.status, 0, human.stderr);
+    assert.equal(human.stdout, `Issues — 1 shown, priority ascending.\n  issue-1  P2  open  bug  ${JSON_TITLE}\n`);
+    const json = run(["list", "--json"]);
+    assert.equal(json.status, 0, json.stderr);
+    assert.equal(json.stdout, JSON.stringify(await manager.list(), null, 2) + "\n");
+  });
+});
+
+test("adev issues ready (json backend): human and --json output are unchanged", async () => {
+  await withJsonBoard(async (run, manager) => {
+    const human = run(["ready"]);
+    assert.equal(human.status, 0, human.stderr);
+    assert.equal(human.stdout, `Actionable issues — open and unblocked.\n  issue-1  P2  open  bug  ${JSON_TITLE}\n`);
+    const json = run(["ready", "--json"]);
+    assert.equal(json.status, 0, json.stderr);
+    assert.equal(json.stdout, JSON.stringify(await manager.list({ status: "open" }), null, 2) + "\n");
+  });
+});
+
+test("adev issues stale (json backend): human and --json output are unchanged", async () => {
+  await withJsonBoard(async (run) => {
+    const human = run(["stale"]);
+    assert.equal(human.status, 0, human.stderr);
+    assert.equal(human.stdout, [
+      "Claims that cannot expire — no claimed_at: 1",
+      `  issue-1  alice  — ${JSON_TITLE}`,
+      "  Clear one: adev issues release <id> --owner <holder> [--force]",
+      "Live claims: 0.",
+      "",
+    ].join("\n"));
+    const json = run(["stale", "--json"]);
+    assert.equal(json.status, 0, json.stderr);
+    const { generated_at } = JSON.parse(json.stdout);
+    assert.equal(json.stdout, JSON.stringify({
+      ttl_minutes: 240,
+      expiry_enabled: true,
+      generated_at,
+      stale: [],
+      unexpirable: [{ id: "issue-1", title: JSON_TITLE, status: "in_progress", owner: "alice", claimed_at: null, age_minutes: null, branch: null, pr: null }],
+      live_count: 0,
+    }, null, 2) + "\n");
+  }, { issue: { status: "in_progress", owner: "alice" } });
 });
