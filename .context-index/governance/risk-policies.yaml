@@ -14,7 +14,11 @@
 # implement_mode sets /adev:implement's per-task review depth: full | quick,
 # or lite — which authorizes inline, unreviewed execution only for
 # route-eligible tasks on non-high-risk specs with no floor leg and no
-# --parallel; any other task resolves quick or full. Absent → quick. `quick`
+# --parallel; any other task resolves quick or full. A lite task is re-checked
+# after it runs: an undeclared path outside tests/, docs/, test files and
+# READMEs (never `*.spec.md`, `.context-index/` or symlinks) raises it to
+# quick, and a sensitive or boundary path (gitignored files it wrote
+# included) raises it to full. Absent → quick. `quick`
 # is a baseline, not a guarantee: it runs one synthesized reviewer
 # per task; the floor pass still raises a task to full (two-stage review) when
 # the spec is high-risk and the task is not routed auto-agent, when it touches a

@@ -12,7 +12,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { writeFileSync, mkdirSync, appendFileSync, rmSync, utimesSync } from "node:fs";
+import { writeFileSync, mkdirSync, appendFileSync, rmSync, symlinkSync, utimesSync } from "node:fs";
 import { join } from "node:path";
 import {
   resolveImplementReviewDepth,
@@ -161,6 +161,41 @@ test("a commit base keeps the previous semantics: tracked changes plus every unt
       "A new.mjs",
       "M tracked.txt",
     ]);
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+test("computeTouchedFiles reports git modes; a new symlink has mode 120000", () => {
+  const dir = repo();
+  try {
+    writeFileSync(join(dir, "a.mjs"), "export {};\n");
+    writeFileSync(join(dir, "gone.txt"), "g\n");
+    git(dir, "add", "-A");
+    git(dir, "commit", "-q", "-m", "files");
+    const base = snapshotWorkingTree(dir);
+
+    symlinkSync("a.mjs", join(dir, "link.mjs"));
+    writeFileSync(join(dir, "tracked.txt"), "2\n");
+    rmSync(join(dir, "gone.txt"));
+    const byPath = (records) => [...records].sort((x, y) => x.path.localeCompare(y.path));
+    assert.deepEqual(byPath(computeTouchedFiles(dir, base)), [
+      { path: "gone.txt", status: "D", mode: "000000", src_mode: "100644" },
+      { path: "link.mjs", status: "A", mode: "120000", src_mode: "000000" },
+      { path: "tracked.txt", status: "M", mode: "100644", src_mode: "100644" },
+    ]);
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
+
+test("computeTouchedFiles keeps git's own path bytes: spaces and newlines are never re-split", () => {
+  const dir = repo();
+  try {
+    const base = snapshotWorkingTree(dir);
+    writeFileSync(join(dir, "a b.mjs"), "x\n");
+    writeFileSync(join(dir, "c\nd.mjs"), "x\n");
+    assert.deepEqual(computeTouchedFiles(dir, base).map((r) => r.path).sort(), ["a b.mjs", "c\nd.mjs"]);
   } finally {
     cleanupTempDir(dir);
   }
