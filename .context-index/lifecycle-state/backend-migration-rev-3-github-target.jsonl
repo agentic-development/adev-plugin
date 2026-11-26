@@ -1,2 +1,8 @@
 {"event":"lifecycle_step","step":"specify","status":"started","ts":"2026-11-26T16:57:07.576Z"}
 {"event":"step_completed","step":"specify","verdict":"PASS","ts":"2026-11-26T16:57:07.582Z"}
+{"event":"lifecycle_step","step":"review","status":"started","revision":1,"ts":"2026-11-26T17:07:29.085Z"}
+{"event":"reviewer_report","step":"review","reviewer":"consistency-analyzer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"0 blockers, 1 warning (CON-1 ADR 0014 scoped-exception note), 3 suggestions","ts":"2026-11-26T17:12:47.013Z"}
+{"event":"reviewer_report","step":"review","reviewer":"referent-integrity","severity":"blocker","verdict":"FAIL","notes":"1 blocker (RI-1 resume AC expects MIGRATE_RESUME_MISMATCH on scope mismatch; code only warns), 3 warnings, 2 suggestions","ts":"2026-11-26T17:12:47.073Z"}
+{"event":"reviewer_report","step":"review","reviewer":"wiring-reviewer","severity":"blocker","verdict":"FAIL","notes":"1 blocker (WR-1 last_successful_index write-only state on github path), 3 warnings, 3 suggestions","ts":"2026-11-26T17:12:47.134Z"}
+{"event":"reviewer_report","step":"review","reviewer":"boundary-reviewer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"0 blockers, 3 warnings (BD-1 sentinel without consent, BD-2 legacy_id collision, BD-3 stale sentinel project), 2 suggestions","ts":"2026-11-26T17:12:47.194Z"}
+{"event":"step_completed","step":"review","verdict":"BLOCK","revision":1,"ts":"2026-11-26T17:14:06.523Z"}
