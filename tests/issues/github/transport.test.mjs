@@ -410,3 +410,11 @@ test("a rate limit on a later page fails the whole paginate with GITHUB_RATE_LIM
     { code: "GITHUB_RATE_LIMITED" },
   );
 });
+
+test("an exec error coded UNRECORDED_GITHUB_REQUEST reaches the caller unchanged; other codes are still mapped", () => {
+  const unrecorded = Object.assign(new Error("no recorded response for Viewer"), { code: "UNRECORDED_GITHUB_REQUEST" });
+  const thrown = captureThrow(() => createTransport({ exec: () => { throw unrecorded; } }).request("query Viewer { viewer { login } }", {}));
+  assert.equal(thrown, unrecorded);
+  const other = Object.assign(new Error("boom"), { code: "SOMETHING_ELSE" });
+  assert.throws(() => createTransport({ exec: () => { throw other; } }).request("query Viewer { viewer { login } }", {}), { code: "GITHUB_REQUEST_FAILED" });
+});
