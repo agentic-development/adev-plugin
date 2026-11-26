@@ -15,6 +15,7 @@ import { fileURLToPath } from "node:url";
 import { run } from "../../lib/cli/test-policy.mjs";
 import { createTempDir, cleanupTempDir, writeFixture } from "../helpers.mjs";
 import { writeRoutingSidecar } from "../../lib/plan-routing-sidecar.mjs";
+import { readEvents } from "../../lib/lifecycle-state.mjs";
 
 // Real-subprocess invocation of the CLI, mirroring the pattern established in
 // tests/cli/verify.test.mjs — asserts against actual process stdout/exit code rather than the
@@ -433,3 +434,56 @@ test("set rejects an out-of-enumeration --granularity with INVALID_TEST_GRANULAR
     await cleanupTempDir(dir);
   }
 });
+
+// ── malformed rigor policy values propagate from loadRigorPolicies ──────────────────────────
+
+const MALFORMED_POLICIES = [
+  { label: "an out-of-set implement_mode", body: "policies:\n  medium:\n    implement_mode: bogus\n", code: "INVALID_TIER" },
+  { label: "an unparseable file", body: "policies:\n  medium:\n    review_mode: full\n  : bad\n", code: "INVALID_TIER" },
+  { label: "high.implement_mode: lite", body: "policies:\n  high:\n    implement_mode: lite\n", code: "LITE_NOT_ALLOWED_FOR_HIGH" },
+];
+
+test("test-policy resolve fails with INVALID_TIER on a malformed implement_mode", async () => {
+  const dir = await createTempDir();
+  try {
+    const specRel = ".context-index/specs/features/demo/x.spec.md";
+    await seedPlanWithSpec(dir, {
+      specRel,
+      planBody: "## Task Structure\n\n### Task 1: X [specialist: none]\n**Files:**\n- Create: `src/x.ts`\n",
+    });
+    await writeFixture(dir, ".context-index/governance/risk-policies.yaml", "policies:\n  medium:\n    implement_mode: bogus\n");
+    const r = spawnSync(
+      "node",
+      [CLI, "test-policy", "resolve", "--plan", "plan.plan.md", "--task-id", "t1"],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 1, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    assert.match(r.stderr, /INVALID_TIER/);
+    assert.match(r.stderr, /medium\.implement_mode/);
+    assert.equal(r.stdout.trim(), "", "no assignment may be printed on a policy failure");
+    assert.deepEqual(readEvents(dir, specRel), [], "no test_depth_assigned event may be written");
+  } finally {
+    await cleanupTempDir(dir);
+  }
+});
+
+for (const { label, body, code } of MALFORMED_POLICIES) {
+  test(`resolve rejects ${label} with ${code} before any append`, async () => {
+    const dir = await createTempDir();
+    try {
+      const specRel = ".context-index/specs/features/demo/x.spec.md";
+      await seedPlanWithSpec(dir, {
+        specRel,
+        planBody: "## Task Structure\n\n### Task 1: X [specialist: none]\n**Files:**\n- Create: `src/x.ts`\n",
+      });
+      await writeFixture(dir, ".context-index/governance/risk-policies.yaml", body);
+      await assert.rejects(
+        run({ projectRoot: dir, argv: ["resolve", "--plan", "plan.plan.md", "--task-id", "t1"] }),
+        (err) => err.code === code && /risk-policies\.yaml/.test(err.message),
+      );
+      assert.deepEqual(readEvents(dir, specRel), []);
+    } finally {
+      await cleanupTempDir(dir);
+    }
+  });
+}
