@@ -1,1 +1,9 @@
 {"event":"lifecycle_step","step":"specify","status":"started","ts":"2026-11-26T00:28:47.696Z"}
+{"event":"step_completed","step":"specify","verdict":"PASS","ts":"2026-11-26T00:30:49.243Z"}
+{"event":"lifecycle_step","step":"review","status":"started","revision":1,"ts":"2026-11-26T00:31:06.131Z"}
+{"event":"reviewer_report","step":"review","reviewer":"consistency-analyzer","severity":"blocker","verdict":"FAIL","notes":"1 blocker (CON-1 update close/reopen vs shared contract), 3 warnings, 1 suggestion","ts":"2026-11-26T00:35:16.848Z"}
+{"event":"reviewer_report","step":"review","reviewer":"referent-integrity","severity":"blocker","verdict":"FAIL","notes":"1 blocker (RI-1 migrate verb never writes manifest), 3 warnings, 2 suggestions","ts":"2026-11-26T00:35:16.935Z"}
+{"event":"reviewer_report","step":"review","reviewer":"wiring-reviewer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"0 blockers, 4 warnings, 2 suggestions","ts":"2026-11-26T00:35:17.024Z"}
+{"event":"reviewer_report","step":"review","reviewer":"boundary-reviewer","severity":"blocker","verdict":"FAIL","notes":"1 blocker (BD-1 value channel to gh), 5 warnings, 1 suggestion","ts":"2026-11-26T00:35:17.110Z"}
+{"event":"reviewer_report","step":"review","reviewer":"termination-reviewer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"0 blockers, 3 warnings, 1 suggestion","ts":"2026-11-26T00:35:17.192Z"}
+{"event":"step_completed","step":"review","verdict":"BLOCK","revision":1,"ts":"2026-11-26T00:36:18.258Z"}
