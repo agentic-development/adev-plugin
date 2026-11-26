@@ -144,7 +144,7 @@ A task that resolves `lite` runs inline in your own context instead, with no `Ag
 ### Step 2-post: Integration Gate
 
 > **Conditional loading:** Read `<ADEV_ROOT>/skills/implement/references/integration-gate.md` for the full Integration Gate instructions.
-> Load it after every task of a full plan run has completed (skip under `--task <N>`). It selects the end-of-implement gates itself and skips silently when none apply.
+> Load it after every task of a full plan run has completed (skip under `--task <N>` unless that task stayed `lite` through its tripwire). It selects the end-of-implement gates itself, and runs the whole-run quality gates when any task resolved `lite`.
 
 ### Step 3: Final Review
 

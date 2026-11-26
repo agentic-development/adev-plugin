@@ -326,3 +326,270 @@ test("batched, parallel and Step 2 references no longer promise a fixed 2-stage 
     assert.doesNotMatch(readRef(p), /2-stage review/, p);
   assert.doesNotMatch(loop, /2-stage review/);
 });
+
+const SKILL_DIR = join(PLUGIN_ROOT, "skills", "implement");
+const depthContract = readFileSync(join(SKILL_DIR, "graduated-review-depth.md"), "utf8");
+const batched = readRef("batched-mode.md");
+const integrationGate = readRef("integration-gate.md");
+const finalReview = readRef("steps", "step-3-final-review.md");
+
+test("depth contract describes the ladder", () => {
+  for (const s of ["default-quick", "lite-grant", "lite-tripwire", "lite_denied", "lite_source", "routing"])
+    assert.ok(depthContract.includes(s), s);
+  assert.doesNotMatch(depthContract, /predicate-grant/);
+  assert.match(depthContract, /`batched-task` and `scope-mismatch` are no longer floor legs/);
+});
+
+test("depth contract: quick is the baseline, every floor leg is named, full is no longer the default", () => {
+  assert.match(depthContract, /`quick` is the baseline/);
+  for (const leg of ["risk-level", "routing", "boundary", "sensitive-path", "critical-finding"])
+    assert.match(depthContract, new RegExp(`\\| \`${leg}\` \\|`), `floor-leg table row for ${leg}`);
+  assert.match(depthContract, /`human-only`/);
+  assert.doesNotMatch(depthContract, /`full` \(default/);
+  assert.doesNotMatch(depthContract, /nothing in this file modifies it/);
+  for (const s of ["tier-full-absolute", "policy-baseline"]) assert.ok(depthContract.includes(s), s);
+});
+
+test("depth contract: lite grant conditions, tripwire bound and LITE_TRIPWIRE_ESCALATED echo", () => {
+  assert.match(depthContract, /lite-mode\.md/);
+  assert.match(depthContract, /LITE_TRIPWIRE_ESCALATED/);
+  assert.match(depthContract, /`scope-mismatch`[^\n]*`quick`/);
+  assert.match(depthContract, /`not-authorized`/);
+  assert.match(depthContract, /provisional pass/);
+});
+
+test("depth contract: quick reviewer context carries the implementation mode, agent-default for an escalated lite task", () => {
+  const quick = subsection(depthContract, "### `quick`");
+  assert.ok(quick, "missing `### \\`quick\\`` branch");
+  assert.match(
+    quick,
+    /^- `Implementation mode: <mode>`[^\n]*`agent-default` for a task escalated from `lite`/m,
+  );
+});
+
+test("Step 2's Required reading anchor still resolves to the depth contract", () => {
+  const m = /> \*\*Required reading:\*\* `([^`]+)`/.exec(loop);
+  assert.ok(m, "step-2-per-task-loop.md lost its Required reading anchor");
+  assert.ok(existsSync(join(PLUGIN_ROOT, m[1])), `${m[1]} does not exist`);
+  assert.match(m[1], /graduated-review-depth\.md$/);
+});
+
+test("batched-mode: a batched task is reviewed at its own resolved depth; lite never batches", () => {
+  assert.match(batched, /at the task's resolved review depth/);
+  assert.match(batched, /`lite` tasks are never batched/);
+  assert.doesNotMatch(batched, /at unchanged depth/);
+  assert.doesNotMatch(batched, /both review stages per task/i);
+  assert.doesNotMatch(batched, /both reviews/i);
+});
+
+test("batched-mode: lite members split a group into segments, dispatched interleaved in plan order", () => {
+  assert.match(batched, /`segment`/);
+  assert.match(batched, /more than one batch/);
+  assert.match(batched, /reason `lite`/);
+  assert.match(batched, /reason `lite-assumed`/);
+  assert.match(batched, /LITE_AUTHORIZATION_ASSUMED/);
+  assert.match(batched, /interleaved in plan order/);
+  assert.match(batched, /first member comes up/);
+});
+
+test("task-transitions: done follows the review the resolved depth requires", () => {
+  const t = readRef("task-transitions.md");
+  assert.doesNotMatch(t, /both reviews/i);
+  assert.match(t, /resolved (review )?depth/);
+});
+
+test("integration gate: whole-run quality gates once after any lite task, QUALITY_GATES_FAILED, --verdict FAIL", () => {
+  const g = integrationGate;
+  assert.match(g, /QUALITY_GATES_FAILED/);
+  assert.match(g, /--status failed --verdict FAIL/);
+  assert.match(g, /any task in the run resolved `lite`/);
+});
+
+test("integration gate: the lite pass runs even when no post-implement gate is selected, fail-fast, once", () => {
+  const g = integrationGate;
+  assert.match(g, /even when no `post-implement` gate is selected/);
+  assert.match(g, /fail-fast/i);
+  assert.match(g, /Quality Gates/);
+  // The silent skip must carve out the lite pass, or an all-lite run with no
+  // post-implement gate would end with no gate run at all.
+  assert.match(g, /skip this step silently[^\n]*unless[^\n]*`lite`/);
+  assert.match(g, /failure-path-exit-event\.md/);
+});
+
+test("Step 3 skipped only when every task resolved lite", () => {
+  assert.match(finalReview, /only when every task in the run resolved `lite`/);
+  assert.match(finalReview, /otherwise it runs/i);
+});
+
+test("failure table gains QUALITY_GATES_FAILED; the do-not-double-emit line is unchanged (CON-1)", () => {
+  const f = readRef("failure-path-exit-event.md");
+  assert.match(f, /QUALITY_GATES_FAILED/);
+  assert.ok(f.includes(
+    "**Already covered — do not double-emit.** Per-task escalations route through the Step 2d blocker path (`plan_task` `blocked` event plus execution state with `status: \"blocked\"`), which is the terminal the framework already records for them. That path covers the subagent blocker-flag protocol, `MISSING_DEPTH_ASSIGNMENT` from `adev test-policy assert-assigned`, and the Stage-2 convergence terminals `LOOP_BUDGET_EXHAUSTED` / `LOOP_NO_PROGRESS` / `LOOP_REGRESSED`. Emit the step-level `--status failed` event only when the *whole skill* stops, not once per blocked task.",
+  ));
+});
+
+/** The bold-labelled paragraph starting `**<label>**`, up to the next blank line. */
+function paragraph(text, label) {
+  const start = text.indexOf(`**${label}**`);
+  if (start === -1) return null;
+  const end = text.indexOf("\n\n", start);
+  return end === -1 ? text.slice(start) : text.slice(start, end);
+}
+
+// ROUTING_SCORE_OUT_OF_RANGE comes only from the lite grant, which runs only on
+// the provisional pass; ROUTING_SIDECAR_MISSING comes from the run-base read,
+// which both passes make. An echo rule on the wrong pass never fires.
+test("depth contract: warnings are echoed on the pass that emits them (BEH-5, BEH-7)", () => {
+  const prov = paragraph(depthContract, "Warning visibility, provisional pass.");
+  const fin = paragraph(depthContract, "Warning visibility, final pass.");
+  assert.ok(prov, "missing the provisional-pass warning-visibility paragraph");
+  assert.ok(fin, "missing the final-pass warning-visibility paragraph");
+  for (const code of ["ROUTING_SCORE_OUT_OF_RANGE", "ROUTING_SIDECAR_MISSING", "REVIEW_DEPTH_FLOOR_APPLIED"])
+    assert.match(prov, new RegExp(code), `provisional: ${code}`);
+  for (const code of ["REVIEW_DEPTH_FLOOR_APPLIED", "LITE_TRIPWIRE_ESCALATED", "ROUTING_SIDECAR_MISSING"])
+    assert.match(fin, new RegExp(code), `final: ${code}`);
+  assert.doesNotMatch(fin, /echo[^.]*ROUTING_SCORE_OUT_OF_RANGE/);
+  assert.match(prov, /operator-facing transcript/);
+  assert.match(fin, /operator-facing transcript/);
+});
+
+test("depth contract: an uncommitted sidecar denies the grant with routing-scores (BEH-5)", () => {
+  assert.match(
+    depthContract,
+    /routing sidecar not committed at `run_base` denies with `routing-scores` and a `ROUTING_SIDECAR_MISSING` warning/,
+  );
+});
+
+test("Step 2a's provisional call echoes its warnings to the transcript (BEH-5)", () => {
+  const prov = paragraph(loop, "Provisional review depth.");
+  assert.ok(prov, "missing the **Provisional review depth.** paragraph");
+  for (const code of ["ROUTING_SCORE_OUT_OF_RANGE", "ROUTING_SIDECAR_MISSING", "REVIEW_DEPTH_FLOOR_APPLIED"])
+    assert.match(prov, new RegExp(code), code);
+  assert.match(prov, /operator-facing transcript/);
+});
+
+test("2f-pre echoes the final pass's warnings, not the provisional-only score warning (BEH-7)", () => {
+  const pre = subsection(loop, "#### 2f-pre.");
+  assert.match(pre, /REVIEW_DEPTH_FLOOR_APPLIED/);
+  assert.match(pre, /ROUTING_SIDECAR_MISSING/);
+  assert.doesNotMatch(pre, /ROUTING_SCORE_OUT_OF_RANGE/);
+});
+
+// lite-mode.md loads only after a task resolves lite, which an uncommitted
+// sidecar prevents, so the relay for that case must live in Step 2a.
+test("lite-mode defers the uncommitted-sidecar relay to Step 2a and echoes the tripwire's warnings (BEH-5, BEH-7)", () => {
+  const sidecar = paragraph(lite, "The routing sidecar must be committed at `run_base`.");
+  assert.ok(sidecar, "missing the routing-sidecar paragraph");
+  assert.match(sidecar, /Step 2a/);
+  assert.match(sidecar, /graduated-review-depth\.md/);
+  const trip = subsection(lite, "## 3.");
+  assert.doesNotMatch(trip, /ROUTING_SCORE_OUT_OF_RANGE/);
+  assert.match(trip, /ROUTING_SIDECAR_MISSING/);
+  assert.match(trip, /graduated-review-depth\.md/);
+});
+
+test("a scope-mismatch escalation is echoed as LITE_TRIPWIRE_ESCALATED, never as a floor (BEH-7)", () => {
+  const rule = /[Nn]ever announce a `scope-mismatch` escalation as `REVIEW_DEPTH_FLOOR_APPLIED`/;
+  assert.match(depthContract, rule);
+  assert.match(subsection(lite, "## 3."), rule);
+  assert.doesNotMatch(depthContract, /`floor_applied` is\s+`true`, echo/);
+});
+
+test("depth contract: §2 and §5 summaries match the resolver (BEH-4, BEH-7)", () => {
+  const floor = subsection(depthContract, "## 2.");
+  assert.ok(floor, "missing `## 2.`");
+  assert.match(floor, /declared and touched paths together/);
+  assert.match(floor, /gitignored/);
+  const fin = subsection(depthContract, "## 5.");
+  assert.ok(fin, "missing `## 5.`");
+  assert.match(fin, /`risk-level`, `routing` and `critical-finding`/);
+  assert.match(fin, /gitignored paths\s+written since[^.]*`in_progress`/);
+  assert.match(fin, /anywhere in the tree/);
+  assert.match(fin, /`\*\.spec\.md` is never exempt/);
+});
+
+test("integration gate: a warning-severity failure still runs the whole-run pass before Step 3 (BEH-9)", () => {
+  const warn = paragraph(integrationGate, "If a gate exits non-zero with `severity: warning`:");
+  assert.ok(warn, "missing the severity: warning branch");
+  assert.match(warn, /Run the whole-run quality-gate pass below when it applies, then proceed to Step 3/);
+  const pass = paragraph(integrationGate, "If every executed gate passes:");
+  assert.match(pass, /Run the whole-run quality-gate pass below when it applies, then proceed to Step 3/);
+});
+
+test("Step 2-post body pointer: --task skip unless the task stayed lite through its tripwire (BEH-9)", () => {
+  assert.match(body, /skip under `--task <N>` unless that task stayed `lite` through its tripwire/);
+});
+
+// The run-base read repeats ROUTING_SIDECAR_MISSING on every resolve-depth and
+// batches call, whether or not lite is authorized, so an unqualified "echo it"
+// either spams every task or announces a lite problem on a run that never asked
+// for lite. One relay point per invocation, gated on authorization.
+const SIDECAR_RELAY = [
+  /only when `check-flags` printed `lite_authorized: true`/,
+  /first provisional `resolve-depth` call of this invocation/,
+  /`batches` advisory/,
+  /whichever comes first/,
+];
+
+test("ROUTING_SIDECAR_MISSING has one relay point, gated on lite authorization (BEH-5)", () => {
+  const prov = paragraph(depthContract, "Warning visibility, provisional pass.");
+  const step2a = paragraph(loop, "Provisional review depth.");
+  const sidecar = paragraph(lite, "The routing sidecar must be committed at `run_base`.");
+  for (const [name, text] of [["contract §3", prov], ["Step 2a", step2a], ["lite-mode", sidecar], ["batched-mode", batched]]) {
+    assert.ok(text, `${name}: missing text`);
+    for (const re of SIDECAR_RELAY) assert.match(text, re, `${name}: ${re}`);
+  }
+  assert.match(prov, /do not echo it again/i);
+  assert.match(prov, /batch agent never relays it/i);
+  assert.match(batched, /relay point/);
+  assert.match(batched, /batch agent never relays it/i);
+});
+
+test("the final pass never relays ROUTING_SIDECAR_MISSING (BEH-5)", () => {
+  const fin = paragraph(depthContract, "Warning visibility, final pass.");
+  assert.match(fin, /`ROUTING_SIDECAR_MISSING`[^.]*do not echo it/i);
+  assert.doesNotMatch(fin, /when the provisional pass has not already relayed it/);
+  const pre = subsection(loop, "#### 2f-pre.");
+  assert.match(pre, /`ROUTING_SIDECAR_MISSING`[^.]*do not echo it/i);
+});
+
+test("depth contract: the tripwire section number and the empty-segment exemption rule are right (BEH-7)", () => {
+  assert.doesNotMatch(depthContract, /\(section 4\)/);
+  assert.match(depthContract, /\(section 5\)/);
+  assert.match(subsection(depthContract, "## 5."), /a path with an empty, `\.` or `\.\.` segment/);
+});
+
+test("no implement skill text tells the agent to choose lite (BEH-13)", () => {
+  const files = [];
+  const walk = (dir) => {
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      if (e.isDirectory()) walk(join(dir, e.name));
+      else if (e.name.endsWith(".md")) files.push(join(dir, e.name));
+    }
+  };
+  walk(SKILL_DIR);
+  const flag = /--lite\b|--tier lite\b/;
+  const directive = /\b(add|adds|pass|passes|use|uses|choose|select|forward|repeat|append|include|set)\b/i;
+  let seen = 0;
+  for (const f of files) {
+    let fenced = false;
+    for (const line of readFileSync(f, "utf8").split("\n")) {
+      if (/^\s*```/.test(line)) { fenced = !fenced; continue; }
+      if (!flag.test(line)) continue;
+      seen++;
+      // A fenced invocation synopsis lists the flag as an optional argument; the
+      // prose around it states who supplies it.
+      if (fenced && !flag.test(line.replace(/\[--lite\]/g, ""))) continue;
+      const argumentDefinition = /^- `--(lite|tier <)/.test(line);
+      const operatorRule = /operator/i.test(line);
+      const noSelfSelection = /never add/i.test(line);
+      const nonDirective = !directive.test(line);
+      assert.ok(
+        argumentDefinition || operatorRule || noSelfSelection || nonDirective,
+        `${f}: line does not tie the lite flag to operator input: ${line}`,
+      );
+    }
+  }
+  assert.ok(seen > 0, "the scan must see the lite flags");
+});
