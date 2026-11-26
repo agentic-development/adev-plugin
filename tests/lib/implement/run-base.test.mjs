@@ -15,6 +15,7 @@ import {
   readAtCommit,
   assertRepoRelative,
   loadGovernanceAtRunBase,
+  loadPoliciesAtRunBase,
 } from "../../../lib/implement/run-base.mjs";
 import {
   parseRoutingSidecarText,
@@ -339,6 +340,39 @@ test("loadGovernanceAtRunBase throws INVALID_SIDECAR_JSON for a malformed commit
   assert.throws(
     () => loadGovernanceAtRunBase({ projectRoot: repo, runBase, planPath: PLAN_REL }),
     (e) => e.code === "INVALID_SIDECAR_JSON" && e.message.includes(`run-base:${runBase}`),
+  );
+});
+
+test("loadPoliciesAtRunBase returns the committed policies and text, ignoring the working tree", (t) => {
+  const committed = "policies:\n  medium:\n    implement_mode: lite\n";
+  const repo = initRepoWithCommit(t, { [POLICIES_REL]: committed });
+  const runBase = git(repo, "rev-parse", "HEAD");
+  write(repo, POLICIES_REL, "policies:\n  medium:\n    implement_mode: bogus\n");
+  assert.deepEqual(loadPoliciesAtRunBase({ projectRoot: repo, runBase }), {
+    policies: { medium: { implement_mode: "lite" } },
+    text: committed,
+    path: POLICIES_REL,
+  });
+});
+
+test("loadPoliciesAtRunBase returns null policies and text when the file is absent at run_base", (t) => {
+  const repo = initRepoWithCommit(t);
+  const runBase = git(repo, "rev-parse", "HEAD");
+  write(repo, POLICIES_REL, "policies:\n  medium:\n    implement_mode: lite\n");
+  assert.deepEqual(loadPoliciesAtRunBase({ projectRoot: repo, runBase }), { policies: null, text: null, path: POLICIES_REL });
+});
+
+test("loadPoliciesAtRunBase labels a parse failure run-base:<sha>:<path> and validates runBase", (t) => {
+  const repo = initRepoWithCommit(t, { [POLICIES_REL]: "policies:\n  high:\n    implement_mode: lite\n" });
+  const runBase = git(repo, "rev-parse", "HEAD");
+  assert.throws(
+    () => loadPoliciesAtRunBase({ projectRoot: repo, runBase }),
+    (e) => e.code === "LITE_NOT_ALLOWED_FOR_HIGH" && e.message.includes(`run-base:${runBase}:${POLICIES_REL}`),
+  );
+  const tree = git(repo, "rev-parse", "HEAD^{tree}");
+  assert.throws(
+    () => loadPoliciesAtRunBase({ projectRoot: repo, runBase: tree }),
+    (e) => e.code === "INVALID_COMMIT_ID" && /--run-base/.test(e.message),
   );
 });
 
