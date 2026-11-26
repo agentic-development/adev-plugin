@@ -46,3 +46,7 @@
 {"event":"reviewer_report","step":"review","reviewer":"boundary-reviewer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"0 blockers, 3 warnings (BD-1, BD-3, BD-4), 4 suggestions","ts":"2026-11-26T19:26:36.132Z"}
 {"event":"reviewer_report","step":"review","reviewer":"termination-reviewer","severity":"blocker","verdict":"FAIL","notes":"1 blocker (TR-1: walkTree cycle outcome/bound unstated, BEH-11), 2 warnings, 1 suggestion","ts":"2026-11-26T19:26:36.246Z"}
 {"event":"step_completed","step":"review","verdict":"BLOCK","revision":3,"ts":"2026-11-26T19:28:15.902Z"}
+{"event":"lifecycle_step","step":"specify","status":"started","revision":4,"ts":"2026-11-26T19:31:47.882Z"}
+{"event":"spec_revised","from_revision":3,"to_revision":4,"addressed_blocker_ids":["referent-integrity:nonexistent-skill-error-path:6784c637","termination-reviewer:missing-iteration-cap:78cdd45d"],"unresolved_blocker_ids":[],"ts":"2026-11-26T19:31:47.952Z"}
+{"event":"step_completed","step":"specify","revision":4,"ts":"2026-11-26T19:31:58.189Z"}
+{"event":"lifecycle_step","step":"review","status":"started","revision":4,"ts":"2026-11-26T19:32:12.390Z"}
