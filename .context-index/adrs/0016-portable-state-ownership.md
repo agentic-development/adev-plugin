@@ -30,6 +30,7 @@ There is also a scale mismatch: once state delegation is off the table, the rema
    - Permitted (trigger): registering session capture on Claude Code's `SessionEnd` hook instead of per-tool-call accumulation — the capture still lands in `.context-index/sessions/`.
    - Permitted (mirror): rendering the issue board into a harness's native task list for display, provided the board remains the writable source of truth.
    - Forbidden (store): replacing `.execution-state.json` with native session persistence; replacing `sessions/` capture with native auto-memory; making native checkpoints the resume mechanism for lifecycle state.
+   - **Scoped exception — opt-in external issue board (amended 2026-11-26).** When a project sets `tasks.backend: github`, the issue board's system of record is the configured GitHub Projects v2 board, not `.context-index/`. This passes the test above: GitHub is not a harness, every harness reaches it through the same zero-dependency CLI and `gh`, and no harness sees a different history. The exception covers the issue board only — lifecycle logs, execution state, sessions, milestones, heuristics, and build state stay in `.context-index/`, plan-task state stays in the lifecycle log, and the json/beads boards remain the default. A board retired by migration is marked by a read-only sentinel in its own storage root (`agent-reliable-state-artifacts` charter, rev 9). Source: agentic-development/adev-plugin#441, `task-management` charter rev 10.
 
 3. **Per-harness variance data lives in the provider adapters**, extending the existing translation-table pattern (event tables, tool-name maps, file-convention paths). No new capability-map subsystem, no `capabilities.yaml` layer, no runtime capability query verb.
 
@@ -53,6 +54,8 @@ There is also a scale mismatch: once state delegation is off the table, the rema
 - **Status quo silence:** leave the question undecided per-feature. Rejected: the 2026-08 audit shows the "native absorbs it, delete ours" argument recurs every time a harness ships a feature; without a standing decision, each recurrence relitigates state ownership.
 
 ## References
+
+- `.context-index/specs/features/task-management/github-board-backend.spec.md` — the opt-in external board the 2026-11-26 exception admits
 
 - `.context-index/research/agentic-frameworks-market-update-2026-08.md` — native-capability ledger this ADR constrains
 - `.context-index/research/skill-surface-simplification-audit-2026-08.md` — audit that filed issue-581
