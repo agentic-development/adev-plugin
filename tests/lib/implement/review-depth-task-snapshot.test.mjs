@@ -1,8 +1,8 @@
-// The scope-mismatch leg must judge what the TASK touched, not what happened to
-// be untracked or dirty in the worktree when the task started. Diffing against
-// HEAD and counting every untracked file as an addition floored every task in
-// a consumer project to `full` (14/14), because session logs and other specs'
-// untracked lifecycle logs were always present.
+// The final pass's touched-path legs must judge what the TASK touched, not what
+// happened to be untracked or dirty in the worktree when the task started.
+// Diffing against HEAD and counting every untracked file as an addition floored
+// every task in a consumer project to `full` (14/14), because session logs and
+// other specs' untracked lifecycle logs were always present.
 //
 // snapshotWorkingTree() records the worktree at dispatch as a git tree object
 // (index + every non-ignored file), and computeTouchedFiles() diffs that tree
@@ -38,11 +38,12 @@ function repo() {
 const SPEC = { risk_level: "low", specPath: ".context-index/specs/features/m/own.spec.md" };
 const OWN_LOG = ".context-index/lifecycle-state/own.jsonl";
 
-function finalPass(dir, base, declared) {
+function finalPass(dir, base, declared, { spec = SPEC, sensitivePaths } = {}) {
   return resolveImplementReviewDepth({
-    spec: SPEC,
+    spec,
     task: { id: "t1", declared_files: declared },
     routingEntry: null, tierFlag: null, policies: {},
+    sensitivePaths,
     pass: "final", baseSha: base, projectRoot: dir,
   });
 }
@@ -50,7 +51,7 @@ function finalPass(dir, base, declared) {
 const sorted = (records) =>
   records.map((r) => `${r.status} ${r.path}`).sort();
 
-test("a file untracked before the task and left alone does not fire scope-mismatch", () => {
+test("a file untracked before the task and left alone holds no touched-path leg", () => {
   const dir = repo();
   try {
     mkdirSync(join(dir, ".context-index/lifecycle-state"), { recursive: true });
@@ -60,7 +61,8 @@ test("a file untracked before the task and left alone does not fire scope-mismat
 
     writeFileSync(join(dir, "new.mjs"), "export {};\n");
     assert.deepEqual(sorted(computeTouchedFiles(dir, base)), ["A new.mjs"]);
-    assert.ok(!finalPass(dir, base, ["new.mjs"]).floor_legs.includes("scope-mismatch"));
+    const sensitivePaths = [".context-index/lifecycle-state/**", ".DS_Store"];
+    assert.deepEqual(finalPass(dir, base, ["new.mjs"], { sensitivePaths }).floor_legs, []);
   } finally {
     cleanupTempDir(dir);
   }
@@ -78,7 +80,7 @@ test("a tracked file already dirty before the task and left alone is not counted
   }
 });
 
-test("a pre-existing untracked file the task modifies or deletes still fires the leg", () => {
+test("a pre-existing untracked file the task modifies or deletes is still a touched path the floor sees", () => {
   const dir = repo();
   try {
     writeFileSync(join(dir, "scratch.txt"), "before\n");
@@ -89,13 +91,19 @@ test("a pre-existing untracked file the task modifies or deletes still fires the
     rmSync(join(dir, "gone.txt"));
     writeFileSync(join(dir, "new.mjs"), "export {};\n");
     assert.deepEqual(sorted(computeTouchedFiles(dir, base)), ["A new.mjs", "D gone.txt", "M scratch.txt"]);
-    assert.ok(finalPass(dir, base, ["new.mjs"]).floor_legs.includes("scope-mismatch"));
+    for (const sensitive of ["scratch.txt", "gone.txt"]) {
+      const r = resolveImplementReviewDepth({
+        spec: SPEC, task: { id: "t1", declared_files: ["new.mjs"] }, routingEntry: null, policies: {},
+        sensitivePaths: [sensitive], pass: "final", baseSha: base, projectRoot: dir,
+      });
+      assert.deepEqual(r.floor_legs, ["sensitive-path"], sensitive);
+    }
   } finally {
     cleanupTempDir(dir);
   }
 });
 
-test("the current spec's own log, untracked at dispatch and appended during the task, is the K exclusion (status M)", () => {
+test("the current spec's own log, untracked at dispatch and appended during the task, is excluded from the touched-path legs (status M)", () => {
   const dir = repo();
   try {
     mkdirSync(join(dir, ".context-index/lifecycle-state"), { recursive: true });
@@ -105,7 +113,11 @@ test("the current spec's own log, untracked at dispatch and appended during the 
     appendFileSync(join(dir, OWN_LOG), '{"event":"test_depth_assigned"}\n');
     writeFileSync(join(dir, "new.mjs"), "export {};\n");
     assert.deepEqual(sorted(computeTouchedFiles(dir, base)), [`A new.mjs`, `M ${OWN_LOG}`]);
-    assert.ok(!finalPass(dir, base, ["new.mjs"]).floor_legs.includes("scope-mismatch"));
+    const sensitivePaths = [".context-index/lifecycle-state/**"];
+    assert.deepEqual(finalPass(dir, base, ["new.mjs"], { sensitivePaths }).floor_legs, []);
+    // The same touch is not excluded for a spec that does not own the log.
+    const otherSpec = { ...SPEC, specPath: ".context-index/specs/features/m/not-own.spec.md" };
+    assert.deepEqual(finalPass(dir, base, ["new.mjs"], { spec: otherSpec, sensitivePaths }).floor_legs, ["sensitive-path"]);
   } finally {
     cleanupTempDir(dir);
   }

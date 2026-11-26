@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, writeFileSync, realpathSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, realpathSync, rmSync } from "node:fs";
 import { join, dirname, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
@@ -44,7 +44,8 @@ describe("adev implement resolve-depth", () => {
     const r = run(dir, "--spec", specPath, "--plan", planPath, "--task-id", "t1");
     assert.equal(r.status, 0, r.stderr);
     const printed = JSON.parse(r.stdout);
-    assert.ok(["full", "quick"].includes(printed.depth));
+    assert.equal(printed.depth, "quick");
+    assert.equal(printed.source, "policy-baseline");
   });
 
   it("final pass without --base-sha exits non-zero with MISSING_DIFF_RANGE", () => {
@@ -91,14 +92,39 @@ describe("adev implement resolve-depth", () => {
     assert.deepEqual(viaCli.floor_legs, direct.floor_legs);
   });
 
-  it("a task whose Files: block declares a Modify: entry is NOT additive-only, and resolves full even with perfect scores", () => {
+  it("a task whose Files: block declares a Modify: entry still resolves quick (additive-only is no longer a grant condition)", () => {
     const { dir, specPath, planPath } = makeFixture();
     writeFileSync(planPath,
       "> **Spec:** x.spec.md\n\n### Task 1: Example [specialist: none]\n\n" +
       "**Files:**\n- Modify: `existing.txt`\n\n**Tests:** `new.test.mjs`\n");
     const r = run(dir, "--spec", specPath, "--plan", planPath, "--task-id", "t1");
     assert.equal(r.status, 0, r.stderr);
-    assert.equal(JSON.parse(r.stdout).depth, "full");
+    const printed = JSON.parse(r.stdout);
+    assert.equal(printed.depth, "quick");
+    assert.equal(printed.source, "policy-baseline");
+    assert.deepEqual(printed.floor_legs, []);
+  });
+
+  it("with no risk-policies.yaml and no --tier, resolves quick with source default-quick", () => {
+    const { dir, specPath, planPath } = makeFixture();
+    rmSync(join(dir, ".context-index", "governance", "risk-policies.yaml"));
+    const r = run(dir, "--spec", specPath, "--plan", planPath, "--task-id", "t1");
+    assert.equal(r.status, 0, r.stderr);
+    const printed = JSON.parse(r.stdout);
+    assert.equal(printed.depth, "quick");
+    assert.equal(printed.source, "default-quick");
+    assert.deepEqual(printed.floor_legs, []);
+  });
+
+  it("with a policy that has no implement_mode for the spec's risk level, resolves quick with source default-quick", () => {
+    const { dir, specPath, planPath } = makeFixture();
+    writeFileSync(join(dir, ".context-index", "governance", "risk-policies.yaml"),
+      "policies:\n  high:\n    implement_mode: full\n  low:\n    review_mode: full\n");
+    const r = run(dir, "--spec", specPath, "--plan", planPath, "--task-id", "t1");
+    assert.equal(r.status, 0, r.stderr);
+    const printed = JSON.parse(r.stdout);
+    assert.equal(printed.depth, "quick");
+    assert.equal(printed.source, "default-quick");
   });
 
   it("a bare plan-side --task-id (as `adev implement batches` emits) resolves the same as the sidecar's t<n>", () => {
@@ -113,23 +139,44 @@ describe("adev implement resolve-depth", () => {
     assert.deepEqual(bare.floor_legs, t.floor_legs);
   });
 
-  it("a bare --task-id still sees the task's Modify: entry and resolves full", () => {
+  it("a bare --task-id still sees the task's declared Modify: file as a floor-leg input", () => {
     const { dir, specPath, planPath } = makeFixture();
     writeFileSync(planPath,
       "> **Spec:** x.spec.md\n\n### Task 1: Example [specialist: none]\n\n" +
-      "**Files:**\n- Modify: `existing.txt`\n\n**Tests:** `new.test.mjs`\n");
+      "**Files:**\n- Modify: `src/auth/existing.ts`\n\n**Tests:** `new.test.mjs`\n");
     const r = run(dir, "--spec", specPath, "--plan", planPath, "--task-id", "1");
     assert.equal(r.status, 0, r.stderr);
-    assert.equal(JSON.parse(r.stdout).depth, "full");
+    const printed = JSON.parse(r.stdout);
+    assert.equal(printed.depth, "full");
+    assert.deepEqual(printed.floor_legs, ["sensitive-path"]);
   });
 
-  it("--in-batch forces full via the batched-task floor leg", () => {
+  it("--in-batch no longer forces full: the batched-task floor leg is retired", () => {
     const { dir, specPath, planPath } = makeFixture();
     const r = run(dir, "--spec", specPath, "--plan", planPath, "--task-id", "t1", "--in-batch");
     assert.equal(r.status, 0, r.stderr);
     const printed = JSON.parse(r.stdout);
-    assert.equal(printed.depth, "full");
-    assert.ok(printed.floor_legs.includes("batched-task"));
+    assert.equal(printed.depth, "quick");
+    assert.ok(!printed.floor_legs.includes("batched-task"));
+    assert.deepEqual(printed.floor_legs, []);
+  });
+
+  it("final pass: an undeclared non-sensitive touch resolves quick with no scope-mismatch leg", () => {
+    const { dir, specPath, planPath } = makeFixture();
+    const git = (...a) => spawnSync("git", a, { cwd: dir, encoding: "utf8" });
+    git("init", "-q");
+    git("config", "user.email", "t@t.com");
+    git("config", "user.name", "t");
+    git("add", "-A");
+    git("commit", "-q", "-m", "base");
+    const baseSha = git("rev-parse", "HEAD").stdout.trim();
+    writeFileSync(join(dir, "undeclared.txt"), "x\n");
+    const r = run(dir, "--spec", specPath, "--plan", planPath, "--task-id", "t1", "--pass", "final", "--base-sha", baseSha);
+    assert.equal(r.status, 0, r.stderr);
+    const printed = JSON.parse(r.stdout);
+    assert.equal(printed.depth, "quick");
+    assert.ok(!printed.floor_legs.includes("scope-mismatch"));
+    assert.deepEqual(printed.floor_legs, []);
   });
 
   // ── governance-signal floor legs: the CLI must forward real path signals ──
