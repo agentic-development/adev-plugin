@@ -12,7 +12,7 @@ Abort paths in this skill that MUST emit it:
 
 | Step | Abort |
 |---|---|
-| Prerequisites 4 | The current branch is `main`/`master` — the skill stops and asks the operator for a feature branch. This check runs *after* the `--status started` event, so it strands the step. |
+| Prerequisites 6 | The current branch is `main`/`master` — the skill stops and asks the operator for a feature branch. This check runs *after* the `--status started` event, so it strands the step. |
 | Step 1 | The epic-claim gate in Step 1 exits `2` — the epic is held by a live lease belonging to another owner, or is closed. That path already says **STOP, do not dispatch a single task**; this event is what records the halt. |
 | Step 1.5 | Infrastructure preflight blocks: `report.passed === false`, `lib/infra-preflight.mjs` fails to import, or `runPreflight()` throws `PREFLIGHT_FILE_NOT_FOUND` / `PREFLIGHT_PARSE_ERROR`. |
 | Step 2e | Playwright MCP browser tools are unavailable on a UI task — the documented "STOP the entire implementation" path. |
