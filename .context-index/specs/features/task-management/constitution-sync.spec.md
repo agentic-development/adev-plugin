@@ -30,8 +30,8 @@ drift_detected: true
 
 **Constitution Template:**
 
-1. **When** a new project runs `/adev:init` **then** the scaffolded `constitution.md` includes a "Task Management" section after Quality Gates, documenting both file and beads backends with their respective commands.
-2. **When** the Task Management section is present in the constitution **then** it lists `br` commands for the beads backend and markdown table instructions for the file backend.
+1. **When** a new project runs `/adev:init` **then** the scaffolded `constitution.md` includes a "Task Management" section after Quality Gates, documenting the json (default), beads, github, and file (legacy, read-only) backends with their respective commands.
+2. **When** the Task Management section is present in the constitution **then** it lists the `.context-index/tasks/tasks.json` board for the json backend, `br` commands for the beads backend, `adev issues …` verbs for the github backend, and the read-only legacy `.context-index/tasks/tasks.md` reference for the file backend.
 
 **Sync Integration:**
 
@@ -51,7 +51,7 @@ drift_detected: true
 | Condition | Expected Behavior | Error Code |
 |-----------|-------------------|------------|
 | Constitution has no Task Management section | Sync skips the block (no error) | N/A |
-| Unknown `tasks.backend` value | Sync emits file-backend instructions as default | N/A |
+| Unknown `tasks.backend` value | Sync includes the constitution's Task Management section with no backend-specific additions (no backend rule matches) | N/A |
 
 ## System Constitution Reference
 
@@ -68,7 +68,7 @@ drift_detected: true
 ## Acceptance Criteria
 
 - [ ] `templates/constitution-template.md` includes a Task Management section after Quality Gates
-- [ ] Task Management section documents both file and beads backends
+- [ ] Task Management section documents the json, beads, github, and file (legacy) backends
 - [ ] Task Management section includes `br` command reference for beads backend
 - [ ] `skills/sync/SKILL.md` includes conditional Task Management block generation
 - [ ] Sync block is omitted when `tasks.backend` is not configured
