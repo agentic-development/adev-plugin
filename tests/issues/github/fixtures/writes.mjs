@@ -204,7 +204,7 @@ export const slot = Object.freeze({
   clear: (field) => ["clear", TEXT_FIELD_IDS[field]],
 });
 
-function setFieldsRequest(itemId, slots) {
+export function setFieldsRequest(itemId, slots) {
   const variables = { projectId: PROJECT_ID, itemId };
   slots.forEach(([kind, fieldId, value], i) => {
     variables[`f${i}Field`] = fieldId;
@@ -213,14 +213,14 @@ function setFieldsRequest(itemId, slots) {
   return { query: setFieldsDocument(slots.map(([kind]) => kind)), variables };
 }
 
-const done = (field) => ({ data: { [field]: { clientMutationId: null } } });
+export const done = (field) => ({ data: { [field]: { clientMutationId: null } } });
 
-function rejected(path, message) {
+export function rejected(path, message) {
   return { data: null, errors: [{ type: "UNPROCESSABLE", path: [path], locations: [{ line: 2, column: 3 }], message }] };
 }
 
 /** One item node in the PROJECT_ITEMS_QUERY shape, built exactly as board.mjs builds board items. */
-function itemNode(spec, typedRepos) {
+export function itemNode(spec, typedRepos) {
   const entry = buildBoard([spec], { preflight: [], typedRepos }).find((e) => e.query === PROJECT_ITEMS_QUERY);
   return entry.response.data.node.items.nodes[0];
 }
@@ -289,7 +289,7 @@ function createSteps(w) {
 }
 
 const epic = (number, extra = {}) => ({ number, issueType: "Epic", labels: ["epic"], ...extra });
-const task = (number, extra = {}) => ({ number, issueType: "Task", ...extra });
+export const task = (number, extra = {}) => ({ number, issueType: "Task", ...extra });
 
 // gh-1 is an epic; gh-2 and gh-3 are tasks. Every create fixture carries this board.
 const BOARD = [epic(1, { milestone: "v1" }), task(2), task(3)];
@@ -301,7 +301,7 @@ function fixture({ preflight = preflightFixture.ok, typedRepos, typed = true, bo
 
 const itemIdOf = (n) => `PVTI_fixture_${n}`;
 const contentIdOf = (n) => `I_fixture_${n}`;
-const CLOSED = Object.freeze({ state: "CLOSED", status: "Done" });
+export const CLOSED = Object.freeze({ state: "CLOSED", status: "Done" });
 
 const refKey = (ref) => `${ref.repository.owner.login}/${ref.repository.name}#${ref.number}`;
 

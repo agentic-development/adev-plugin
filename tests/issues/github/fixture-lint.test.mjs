@@ -208,6 +208,35 @@ test("two recordings with the same key but different outcomes are refused when t
   );
 });
 
+test("a recorded sequence serves its outcomes in request order, and a request past its end is unrecorded", () => {
+  const exec = replayExec([
+    {
+      query: VIEWER,
+      variables: {},
+      sequence: [
+        { response: { data: { viewer: { login: "adev-fixture-bot" } } } },
+        { response: { data: { viewer: { login: "adev-fixture-human" } } } },
+      ],
+    },
+  ]);
+  const t = createTransport({ exec });
+  assert.deepEqual(t.request(VIEWER, {}), { viewer: { login: "adev-fixture-bot" } });
+  assert.deepEqual(t.request(VIEWER, {}), { viewer: { login: "adev-fixture-human" } });
+  assert.throws(() => t.request(VIEWER, {}), { code: "UNRECORDED_GITHUB_REQUEST" });
+  assert.equal(exec.calls.length, 3);
+});
+
+test("an empty sequence, or a sequence and a plain recording under one key, is refused when the replay is built", () => {
+  assert.throws(() => replayExec([{ query: VIEWER, variables: {}, sequence: [] }]), { code: "REPLAY_INVALID_FIXTURE" });
+  assert.throws(
+    () => replayExec([
+      { query: VIEWER, variables: {}, sequence: [{ response: { data: { viewer: { login: "adev-fixture-bot" } } } }] },
+      { query: VIEWER, variables: {}, response: { data: { viewer: { login: "adev-fixture-bot" } } } },
+    ]),
+    { code: "REPLAY_AMBIGUOUS_FIXTURE" },
+  );
+});
+
 // Token-shaped strings are assembled at runtime so no token literal sits in the source.
 test("TOKEN_RE catches every token prefix BEH-37 names and ignores short look-alikes", () => {
   const body = "A1b2C3d4E5".repeat(3);

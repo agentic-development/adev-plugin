@@ -5,6 +5,11 @@
  * Each entry is `{ query, variables, response }` or `{ query, variables, error: { code, stderr } }`,
  * keyed by `sha256(query + "\0" + stableStringify(variables))`. A request with no
  * entry throws `UNRECORDED_GITHUB_REQUEST`, which the transport passes through unmapped.
+ *
+ * An entry may instead carry `sequence: [{ response } | { error }, ...]` for a request
+ * that is repeated and must see the board change between repeats (a claim's re-reads):
+ * the n-th identical request is served the n-th outcome, and a request past the end of
+ * the sequence throws `UNRECORDED_GITHUB_REQUEST`, so an extra read fails the test.
  */
 
 import { createHash } from "node:crypto";
@@ -40,11 +45,17 @@ function operationOf(query) {
 }
 
 function outcomeOf(entry) {
+  if ("sequence" in entry) {
+    if (!Array.isArray(entry.sequence) || entry.sequence.length === 0) {
+      throw replayError("REPLAY_INVALID_FIXTURE", `Replay refuses an empty or non-array sequence for ${operationOf(entry.query)}.`);
+    }
+    return { sequence: entry.sequence.map(outcomeOf) };
+  }
   return "error" in entry ? { error: entry.error } : { response: entry.response };
 }
 
 /**
- * @param {Array<{ query: string, variables?: object, response?: object, error?: { code?: string|null, stderr?: string } }>} fixtures
+ * @param {Array<{ query: string, variables?: object, response?: object, error?: { code?: string|null, stderr?: string }, sequence?: Array<object> }>} fixtures
  * @returns {Function & { calls: Array<{ operation: string, query: string, variables: object }> }}
  */
 export function replayExec(fixtures) {
@@ -61,15 +72,25 @@ export function replayExec(fixtures) {
   }
 
   const calls = [];
+  const served = new Map();
   function exec(_cmd, _args, opts) {
     const { query, variables = {} } = JSON.parse(opts.input);
     const match = OPERATION_RE.exec(query);
     const operation = match ? match[2] : null;
     calls.push({ operation, query, variables });
 
-    const outcome = recorded.get(keyOf(query, variables));
+    const key = keyOf(query, variables);
+    let outcome = recorded.get(key);
     if (!outcome) {
       throw replayError("UNRECORDED_GITHUB_REQUEST", `No recorded GitHub response for ${operation ?? "an anonymous document"} with variables ${stableStringify(variables)}.`);
+    }
+    if (outcome.sequence) {
+      const n = served.get(key) ?? 0;
+      served.set(key, n + 1);
+      if (n >= outcome.sequence.length) {
+        throw replayError("UNRECORDED_GITHUB_REQUEST", `No recorded GitHub response for ${operation} request ${n + 1} with variables ${stableStringify(variables)}: its recorded sequence holds ${outcome.sequence.length}.`);
+      }
+      outcome = outcome.sequence[n];
     }
     if (outcome.error) {
       throw Object.assign(new Error(outcome.error.stderr || "gh failed"), {
