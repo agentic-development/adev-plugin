@@ -91,6 +91,7 @@ If the user rejects the proposal or requests a different route, ask what they wo
 
 - **Rigor lane (graduated tiers).** Match review/validation depth to risk via the **quick rigor tier** (`graduated-rigor-tiers.spec.md`) — do **not** skip gates (skipping `review-specs` stalls the strict gate chain):
   - **Low-risk / pattern-following** (small bug fix, formulaic spec, low blast radius): classify the work as "easy" and propagate `--tier quick` to `/adev:review-specs` and `/adev:validate` (or `/adev:build --tier quick`). The gates still run — just as a single synthesized reviewer and a fail-fast + synthesized compliance check.
+  - **Operator-typed `lite`:** forward `--lite` (or `--tier lite`) only when the operator typed it: as typed to `/adev:build`; as `--lite` to `/adev:implement`, together with any explicit `--tier full|quick` they also typed (never drop it; `check-flags` raises `CONFLICTING_TIER_FLAGS`); and, for `--tier lite` alone, unchanged to `/adev:review-specs` and `/adev:validate`. Never add either flag on your own judgment, including for "easy" work; a route summary showing `lite`-eligible tasks is a signal, not an authorization.
   - **High blast-radius or novel** work: keep the full arc (`--tier full`, the default), including the three-specialist review.
   - When the risk is unclear, ask once: *"This looks low-risk — run the quick review/validate tier, or the full lifecycle?"*
 
