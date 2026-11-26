@@ -2,7 +2,7 @@
 partial_schema: spec@1
 charter: implementation
 kind: skill
-status: review-pending
+status: review-blocked
 risk_level: high
 milestone:
 revision: 2
