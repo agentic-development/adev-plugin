@@ -64,3 +64,5 @@
 {"event":"reviewer_report","step":"review","reviewer":"boundary-reviewer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"0 blockers, 4 warnings, 1 suggestion; prior BD-1 resolved","ts":"2026-11-26T19:49:44.171Z"}
 {"event":"reviewer_report","step":"review","reviewer":"termination-reviewer","severity":"blocker","verdict":"FAIL","notes":"1 blocker (TR-1: sub-issue/blocked-by continuation pages have no stated bound, BEH-10), 2 warnings","ts":"2026-11-26T19:49:44.244Z"}
 {"event":"step_completed","step":"review","verdict":"BLOCK","revision":5,"ts":"2026-11-26T19:50:26.286Z"}
+{"event":"spec_revised","from_revision":5,"to_revision":6,"addressed_blocker_ids":["termination-reviewer:missing-iteration-cap:b3601130"],"unresolved_blocker_ids":[],"ts":"2026-11-26T19:52:13.099Z"}
+{"event":"lifecycle_step","step":"review","status":"started","revision":6,"ts":"2026-11-26T19:52:27.335Z"}
