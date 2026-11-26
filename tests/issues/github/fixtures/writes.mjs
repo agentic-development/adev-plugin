@@ -29,12 +29,13 @@
  *   - ADD_TO_PROJECT `{ projectId, contentId }` -> `{ addProjectV2ItemById: { item: { id } } }`
  *   - setFieldsDocument(kinds) `{ projectId, itemId, f<i>Field, f<i>Value }`: one
  *     aliased request; slot i is kinds[i] ("single_select" value = option id,
- *     "text" value = the text, "number" value = the number). Slot order: status
+ *     "text" value = the text, "number" value = the number). Slot order: legacy_id
+ *     first when given (the migration path, BEH-13), then status
  *     (create always writes it, default open -> the status_map write option),
  *     priority (only when given: the `Priority` single-select option, or the
  *     number field `priority_field` names),
  *     then the text fields in config order next_action, spec_ref, planRef,
- *     branch, pr, legacy_id (create never writes owner or claimed_at: only
+ *     branch, pr (create never writes owner or claimed_at: only
  *     claim() does).
  *   - ADD_SUB_ISSUE `{ issueId: <parent content id>, subIssueId }`
  *   - ADD_BLOCKED_BY `{ issueId, blockingIssueId }`, one request per dependency, in order
@@ -579,6 +580,67 @@ export const writes = Object.freeze({
     title: "adev-fixture: plain",
     slots: [slot.status()],
     readBack: { title: "adev-fixture: plain", issueType: null },
+  }),
+
+  // Migration creates (BEH-13): `Legacy ID` is slot 0 of the first SetFields
+  // request, ahead of status; the remaining slots keep their usual order.
+  createLegacyFirst: fixture({}, {
+    number: 340,
+    title: "adev-fixture: migrated",
+    slots: [slot.text("legacy_id", "issue-7k3f9a"), slot.status()],
+    readBack: { title: "adev-fixture: migrated", issueType: null, fields: { legacy_id: "issue-7k3f9a" } },
+  }),
+
+  // legacy_id alongside status, a Priority single-select and every other create text field.
+  createLegacyFull: fixture({ preflight: priorityPreflight }, {
+    number: 341,
+    title: "adev-fixture: migrated full",
+    slots: [
+      slot.text("legacy_id", "issue-7k3f9a"),
+      slot.status("Deferred"),
+      slot.priority(1),
+      slot.text("next_action", "Write the RED tests"),
+      slot.text("spec_ref", "specs/a.spec.md"),
+      slot.text("planRef", "plans/a.md"),
+      slot.text("branch", "feat/a"),
+      slot.text("pr", "#12"),
+    ],
+    readBack: {
+      title: "adev-fixture: migrated full",
+      issueType: null,
+      status: "Deferred",
+      projectFields: { Priority: { option: "P1" } },
+      fields: { legacy_id: "issue-7k3f9a", next_action: "Write the RED tests", spec_ref: "specs/a.spec.md", planRef: "plans/a.md", branch: "feat/a", pr: "#12" },
+    },
+  }),
+
+  // BEH-14 residual window: the legacy-first SetFields request itself is rejected.
+  partialLegacyAtSetFields: fixture({}, {
+    number: 342,
+    title: "adev-fixture: migrated",
+    slots: [slot.text("legacy_id", "issue-7k3f9a"), slot.status(), slot.text("next_action", "Run /adev:plan")],
+    failAt: "SetFields",
+    readBack: {},
+  }),
+
+  // A failure after the `Legacy ID` write landed: the sub-issue link is rejected.
+  partialLegacyAtSubIssue: fixture({}, {
+    number: 343,
+    title: "adev-fixture: migrated",
+    slots: [slot.text("legacy_id", "issue-7k3f9a"), slot.status(), slot.text("spec_ref", "x.spec.md")],
+    parent: 1,
+    labels: ["module:lib"],
+    failAt: "AddSubIssue",
+    readBack: {},
+  }),
+
+  // BEH-14 residual window: AddToProject fails, so no field (Legacy ID included) is written.
+  partialLegacyAtProject: fixture({}, {
+    number: 344,
+    title: "adev-fixture: migrated",
+    slots: [slot.text("legacy_id", "issue-7k3f9a"), slot.status(), slot.text("next_action", "Run /adev:plan")],
+    failAt: "AddToProject",
+    readBack: {},
   }),
 
   // updateEpic on gh-1 (milestone v1): a milestone change and a planRef change.
