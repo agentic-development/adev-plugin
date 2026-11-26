@@ -1,7 +1,7 @@
 ---
 charter: autonomous-bugfix-loop
 kind: integration
-status: review-pending
+status: review-passed
 risk_level: high
 revision: 1
 charter-revision: 12
