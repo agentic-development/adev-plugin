@@ -7,3 +7,4 @@
 {"event":"reviewer_report","step":"review","reviewer":"boundary-reviewer","severity":"blocker","verdict":"FAIL","notes":"1 blocker (BD-1 value channel to gh), 5 warnings, 1 suggestion","ts":"2026-11-26T00:35:17.110Z"}
 {"event":"reviewer_report","step":"review","reviewer":"termination-reviewer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"0 blockers, 3 warnings, 1 suggestion","ts":"2026-11-26T00:35:17.192Z"}
 {"event":"step_completed","step":"review","verdict":"BLOCK","revision":1,"ts":"2026-11-26T00:36:18.258Z"}
+{"event":"spec_revised","from_revision":1,"to_revision":2,"addressed_blocker_ids":["boundary-reviewer:subprocess-interpolation:ddb9cac3"],"unresolved_blocker_ids":[],"ts":"2026-11-26T00:40:13.605Z"}
