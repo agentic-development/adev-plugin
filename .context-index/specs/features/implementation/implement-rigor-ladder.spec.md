@@ -2,10 +2,10 @@
 partial_schema: spec@1
 charter: implementation
 kind: skill
-status: review-blocked
+status: review-passed
 risk_level: high
 milestone:
-revision: 2
+revision: 3
 charter-revision: 1
 created: 2026-11-25
 updated: 2026-11-26
@@ -40,7 +40,7 @@ The `quick` depth defined by `graduated-review-depth.spec.md` is gated twice on 
 
 The only lighter alternative is to skip adev. The prior comparison eval (`tests/evals/comparison/reports/summary.json`) scored plain Claude at a mean of 81 and adev-built at 82. On that evidence the per-task review loop buys little measured quality for its cost on routine work.
 
-This spec replaces the two-level depth (`full | quick`) with a three-level ladder. Today's default becomes `full`, a reachable `quick` becomes the default, and a new `lite` level runs route-eligible tasks inline with no per-task reviewer.
+This spec replaces the two-level depth (`full | quick`) with a three-level ladder. Today's effective default is `full`. `quick` becomes the reachable default, `full` is reached only through a floor leg or an explicit choice, and a new `lite` level runs route-eligible tasks inline with no per-task reviewer.
 
 ### Target distribution
 
@@ -61,7 +61,7 @@ The remaining `full` share comes from sensitive-path tasks (49 outside high-risk
 
 ## Invocation Modes
 
-The ladder is resolved **per task**, so one plan can mix levels. Every review loop below is capped at `implement.max_review_cycles` (default 3, or `--review-cycles`), and BEH-15 states what happens at the cap.
+The ladder is resolved **per task**, so one plan can mix levels. Every review loop below is capped at `implement.max_review_cycles` in `manifest.yaml`, overridable per run with `--review-cycles`. Both must be an integer ≥ 1 with no upper bound, and the default is 3. An illegal manifest value fails with the existing `INVALID_MAX_REVIEW_CYCLES`, and an illegal flag value with the existing `INVALID_REVIEW_CYCLES`. BEH-15 states what happens at the cap.
 
 | Level | Per-task execution | Per-task review | Resolved when |
 |---|---|---|---|
@@ -76,16 +76,26 @@ The ladder is resolved **per task**, so one plan can mix levels. Every review lo
 | Argument | Accepted by | Meaning |
 |---|---|---|
 | `--lite` (new) | `/adev:implement`, `/adev:build`, `/adev:work`; verbs `adev implement check-flags`, `resolve-depth`, `batches` | Operator authorization for `lite`. Equivalent to `--tier lite` on `implement`. `build` and `work` forward it to `implement` only, and only when the operator passed it (BEH-11). Never added by an agent on its own judgment (BEH-13) |
-| `--tier lite` (new value) | `/adev:implement`, `/adev:build`, `/adev:review-specs`, `/adev:validate`; verb `adev governance dispatch` | On `implement`: same as `--lite`. On `review-specs`, `validate` and `governance dispatch`: treated as `quick`, with one printed line saying so (BEH-11) |
-| `--tier quick` (existing) | as today | Baseline `quick`; floors can still raise a task to `full` |
-| `--tier full` (existing) | as today | Absolute: every task `full`, no floor consulted, no `lite` grant |
-| `--run-base <sha>` (new) | verbs `adev implement resolve-depth`, `batches` | The commit captured at the implement step-started event; the policy, boundary, sensitive-path and routing inputs are read from it (BEH-5) |
+| `--tier lite` (new value) | `/adev:implement`, `/adev:build`, `/adev:work`, `/adev:review-specs`, `/adev:validate`; verbs `adev implement check-flags`, `resolve-depth`, `batches`, `adev governance dispatch` | On `implement` and its verbs: same as `--lite`. On `review-specs`, `validate` and `governance dispatch`: treated as `quick`, with one printed line saying so (BEH-11). `build` and `work` forward it as BEH-11 states |
+| `--tier quick` (existing) | `/adev:implement` (now listed in its Arguments section), `/adev:build`, `/adev:work`, `/adev:review-specs`, `/adev:validate`; verb `resolve-depth` | Baseline `quick`; floors can still raise a task to `full` |
+| `--tier full` (existing) | the same as `--tier quick` | Absolute: every task `full`, no floor consulted, no `lite` grant |
+| `--run-base <sha>` (new) | verbs `adev implement resolve-depth` (both passes), `batches` | The **governance input** commit: `risk-policies.yaml`, `boundaries.yaml`, the sensitive-path configuration and the routing sidecar are read from it (BEH-5). It is the `run_base` value that `check-flags` prints at the start of the run (BEH-16), and is the same for every task in the run |
+| `--base-sha <sha>` (existing) | verb `adev implement resolve-depth`, final pass | The **diff range**: the per-task dispatch-time working-tree snapshot that touched files are computed against (BEH-7). It changes per task and is never used to read governance inputs |
 | `--parallel` (new on the verb) | verb `adev implement resolve-depth` | Tells the resolver the run is `--parallel`, which denies `lite` (BEH-5 d) |
+| `--in-batch` (existing) | verb `adev implement resolve-depth` | Accepted and ignored, because the `batched-task` floor leg it fed is removed (BEH-4). Skill text stops passing it |
 | `implement_mode: lite` (new value) | `risk-policies.yaml`, `medium` and `low` levels | Project-level authorization for `lite` at that risk level. Written by `/adev:init` onboarding only on a typed choice or `--mode lite` (BEH-12), or by hand. Rejected for `high` with `LITE_NOT_ALLOWED_FOR_HIGH` (BEH-16) |
 
 Flag conflicts and policy-value errors are raised by `adev implement check-flags`, the skill's first action, before any lifecycle event is written (BEH-16). `--lite` together with `--tier full` or `--tier quick` exits 1 with `CONFLICTING_TIER_FLAGS`.
 
-**Naming.** `implement_mode` (in `risk-policies.yaml`) sets per-task **review depth**: `lite | quick | full`. `implementation_mode` (top-level in `manifest.yaml`) sets **test discipline**: `tdd | test-required | agent-default`. The two are independent, except that a `lite` task always runs under the `agent-default` test mandate (BEH-6). The review-cycle cap is `implement.max_review_cycles` in `manifest.yaml` (default 3), overridable per run with `--review-cycles`.
+**Commit-id arguments.** `--run-base` and `--base-sha` are each validated before use:
+
+- The value must be a full lowercase hex object id (40 or 64 characters) and must not begin with `-`.
+- It must resolve with `git rev-parse --verify --end-of-options`: `--run-base` to a commit, and `--base-sha` to a commit or a tree.
+- It is passed to git only as a separate argv element, never through a shell.
+
+Any other value exits 1 with the new code `INVALID_COMMIT_ID`, naming the flag.
+
+**Naming.** `implement_mode` (in `risk-policies.yaml`) sets per-task **review depth**: `lite | quick | full`. `implementation_mode` (top-level in `manifest.yaml`) sets **test discipline**: `tdd | test-required | agent-default`. The two are independent, except that a `lite` task always runs under the `agent-default` test mandate (BEH-6). The review-cycle cap is `implement.max_review_cycles` in `manifest.yaml`, overridable per run with `--review-cycles` (see Invocation Modes for its range).
 
 ## Behaviors
 
@@ -97,7 +107,7 @@ Flag conflicts and policy-value errors are raised by `adev implement check-flags
   - `adev governance dispatch` (`lib/cli/governance.mjs`) accepts `--tier lite` and dispatches it as `quick`.
   - The `adev implement` usage banners list `full|quick|lite`.
 
-  Every other value fails with `INVALID_TIER`, including a malformed policy value (BEH-16).
+  Every other value fails with `INVALID_TIER`, including a malformed policy value (BEH-16). Every consumer that is not `implement` and receives `lite` treats it as `quick`. `resolveRigorMode` does this mapping for every skill other than `implement`, and the two tier-forwarding paths are `/adev:build` Step 4 (`skills/build/step4-tier-propagation.md`) and `/adev:work`, which follow BEH-11. No consumer rejects `lite` once `check-flags` has accepted it.
 - **BEH-2** — **When** `adev implement resolve-depth` runs with no `--tier` and the spec's risk level has no `implement_mode` in `risk-policies.yaml` (or the file is absent) **then** the baseline is `quick`, not `full`. The `review_mode` and `validate_mode` fallbacks for `/adev:review-specs` and `/adev:validate` stay `full`.
 - **BEH-3** — **When** the baseline is `quick` (policy, fallback or `--tier quick`) **then** the task resolves `quick` unless a floor leg holds. The quick-grant predicate's rows (auto-agent routing, every score ≥ 0.6, additive-only file set, no boundary) are removed as grant conditions. Routing and boundary signals act only through the floor legs in BEH-4.
 - **BEH-4** — **When** the floor pass runs **then** each of these legs forces `full`:
@@ -106,55 +116,82 @@ Flag conflicts and policy-value errors are raised by `adev implement check-flags
   - `critical-finding`: final pass only.
   - `routing`: `selected_agent` is `human-only`. `assisted-agent` no longer forces `full`; its human checkpoint still applies.
 
-  The `batched-task` leg is removed. `batched-task-dispatch.spec.md` Output Contract C.3 is amended to match: a batched task is reviewed at its own resolved depth, and batch membership no longer implies two stages (see Output Contract, cross-spec amendments). `scope-mismatch` no longer forces `full`; it survives only as the `lite` tripwire in BEH-7. A high-risk task routed `auto-agent` resolves `quick` and is never granted `lite` (BEH-5 c). `REVIEW_DEPTH_FLOOR_APPLIED` is still echoed to the transcript, and `--tier full` stays absolute. These relaxations are calibrated to the target distribution in the Problem section, and ADR 0020 records them.
+  The `batched-task` leg is removed. `batched-task-dispatch.spec.md` Output Contract C.3 is amended to match: a batched task is reviewed at its own resolved depth, and batch membership no longer implies two stages (see Output Contract, cross-spec amendments). `scope-mismatch` no longer forces `full`; it survives only as the `lite` tripwire in BEH-7. A high-risk task routed `auto-agent` resolves `quick` and is never granted `lite` (BEH-5 c). `REVIEW_DEPTH_FLOOR_APPLIED` is still echoed to the transcript, and `--tier full` stays absolute.
+
+  **Stacking is accepted deliberately.** `graduated-review-depth.spec.md` warned that stacking batching with a lighter depth compounds the dispatch reduction: 15 dispatches become 6 under batching alone and 2 under both. Removing the `batched-task` leg allows exactly that stacking for `quick` tasks. It is accepted because EV-1 measures its quality cost directly, with seeded defects in batched `quick` tasks, and the release thresholds gate it. `lite` tasks never stack, because they are never batched (BEH-8). These relaxations are calibrated to the target distribution in the Problem section, and ADR 0020 records them.
 - **BEH-5** — **When** `adev implement resolve-depth --pass provisional` runs for a task **then** it resolves `lite` only if all of these hold:
-  - (a) the operator authorized `lite`, through `--lite` or `--tier lite` on the verb or through `implement_mode: lite` for the spec's risk level;
-  - (b) the routing sidecar entry has `selected_agent: auto-agent` and every one of the four scores is ≥ `LITE_GRANT_THRESHOLD` (0.6 on the sidecar's 0–1 scale, meaning no dimension below 3 of 5, the same rule as route's existing "easy" rigor signal);
+  - (a) the operator authorized `lite`, through `--lite` or `--tier lite` on the verb, or through `implement_mode: lite` for the spec's risk level when no `--tier` was passed. An explicit `--tier quick` or `--tier full` outranks the policy, as in `resolveRigorMode`'s precedence, and is the per-run opt-out;
+  - (b) `liteEligible(entry)` is true. The routing sidecar entry must have `selected_agent: auto-agent`, and each of the four scores must be a finite number in `[0, 1]` that is ≥ `LITE_GRANT_THRESHOLD` (0.6 on the sidecar's 0–1 scale, meaning no dimension below 3 of 5). A missing, non-numeric, non-finite or out-of-range score fails (b) and raises the existing `ROUTING_SCORE_OUT_OF_RANGE` warning. `liteEligible` is the single code definition of route's "easy" rigor signal, and `skills/route/SKILL.md` cites it instead of restating the rule;
   - (c) the spec is not `risk_level: high` and no provisional floor leg holds (`boundary`, `sensitive-path`, `routing`);
   - (d) the verb was not passed `--parallel`.
 
-  Otherwise the task goes through the `quick`/`full` resolution of BEH-3 and BEH-4. The verb's JSON output carries `lite_denied`, set to the first failing condition as one of `not-authorized`, `routing-scores`, `high-risk`, `floor:<leg>` or `parallel`, or `null` when `lite` was granted. The orchestrator copies the non-`not-authorized` values into the run summary verbatim; a failed (a) is silent. The verb reads `risk-policies.yaml`, `boundaries.yaml`, the sensitive-path configuration and the routing sidecar from the run-base commit passed as `--run-base <sha>`. The orchestrator captures that sha once, at the step-started event. An inline `lite` task therefore cannot change the inputs to its own resolution or to a later task's resolution.
+  Otherwise the task goes through the `quick`/`full` resolution of BEH-3 and BEH-4. The verb's JSON output carries:
+  - `lite_denied`: the first failing condition, as one of `not-authorized`, `routing-scores`, `high-risk`, `floor:<leg>` or `parallel`, or `null` when `lite` was granted. The orchestrator copies the values other than `not-authorized` into the run summary verbatim; a failed (a) is silent.
+  - `lite_source`: `flag`, `policy` or `null`.
+
+  When `lite` is authorized at all, the orchestrator prints `lite authorized via <flag|policy>` once at the start of the run (from `check-flags`) and repeats it in the run summary. A policy-sourced authorization is therefore always visible, never only on denial.
+
+  The verb reads `risk-policies.yaml`, `boundaries.yaml`, the sensitive-path configuration and the routing sidecar from the commit passed as `--run-base`, validated as in Arguments. That commit is the `run_base` printed by `check-flags` (BEH-16), which is `HEAD` when the run starts. The orchestrator passes the same value to every `resolve-depth` and `batches` call in the run, on both passes. An inline `lite` task therefore cannot change the inputs to its own resolution or to a later task's resolution.
+
+  The event's `source` field takes these values, which replace the retired `predicate-grant`, `predicate-denied` and `score-out-of-range` values:
+  - `tier-full-absolute`
+  - `policy-baseline`
+  - `default-quick` (the BEH-2 fallback)
+  - `lite-grant` (a `lite` resolution on either pass)
+  - `lite-tripwire` (a final-pass escalation from `lite`)
+
+  `lite_denied`, `lite_source` and `escalated_from` appear only in the verb's JSON output. The `review_depth_resolved` event's key set (`REVIEW_DEPTH_RESOLVED_KEYS`) is unchanged.
 - **BEH-6** — **When** a task resolves `lite` **then** the orchestrator implements it in its own context with no `Agent` dispatch, using the `agent-default` mandate (`references/agent-default-mandate.md`) and the always-on `references/test-integrity.md`.
   - **Skipped:** both review stages and the synthesized reviewer. Test-depth resolution is skipped too: as for every task under `agent-default`, it makes no `adev test-policy resolve` call and emits no `test_depth_assigned` event. ADR-0017 makes that verb the sole writer of the assignment event, and nothing writes one here.
   - **Kept:** the dispatch-time working-tree snapshot; one commit per task carrying `Spec:` and `Plan-task:` (plus the hook-injected `Author-type` and `Operator`); and the `plan_task` `in_progress` and `done` events. Both `review_depth_resolved` passes are emitted with `depth: lite`.
   - **No `Review-round:` trailer.** A `lite` commit carries none, and `buildReviewRoundTrailer` is neither called nor changed. The rule in `review-provenance.spec.md` Contract A that every task commit carries one is amended to exempt a task whose final-pass `review_depth_resolved` has `depth: lite`. That event pair is the task's review provenance.
-- **BEH-7** — **When** a `lite` task finishes, before its commit **then** the orchestrator runs `adev implement resolve-depth --pass final --base-sha <dispatch-time snapshot>`. The verb computes the touched files from git as normalized repo-relative paths.
+  - **No new permissions.** Inline execution runs under the orchestrator session's own tool permissions, which the harness and the operator already grant. `lite` adds no tool, profile or permission, and hooks apply to inline edits exactly as to subagent edits.
+- **BEH-7** — **When** a `lite` task finishes, before its commit **then** the orchestrator runs `adev implement resolve-depth --pass final --run-base <run_base> --base-sha <dispatch-time snapshot>`.
+  - **What each input is for.** Governance inputs (policies, boundaries, sensitive paths, routing) come from `--run-base`. `--base-sha` is used only as the diff range.
+  - **Touched files.** They come from `computeTouchedFiles`: tracked changes plus untracked files not excluded by `.gitignore`. The paths are git's own NUL-delimited repo-relative output, never re-derived by joining or resolving strings. Ignored files are outside the tripwire because they cannot enter the task's commit.
   - **`scope-mismatch` → `quick`.** A touched path is outside the declared set and is not exempt. A path is exempt only if all of these hold:
-    - it is under `tests/` or `docs/`, has a basename matching `*.test.<ext>` or `*.spec.<ext>` for a source extension (`js`, `mjs`, `cjs`, `ts`, `tsx`, `jsx`, `py`, `go`, `rb`, `rs`), or is a `README.md`;
-    - it is not under `.context-index/`, and is not a `*.spec.md`;
+    - it is under `tests/` or `docs/`, has a basename matching `*.test.<ext>` or `*.spec.<ext>` for a source extension (`js`, `mjs`, `cjs`, `ts`, `tsx`, `jsx`, `py`, `go`, `rb`, `rs`), or is a `README.md`. These matches are case-sensitive;
+    - it is not under `.context-index/` and is not a `*.spec.md`. These exclusions are matched case-insensitively, so `.Context-Index/` and `X.SPEC.MD` are not exempt either;
     - it is not a symlink (git mode `120000`).
 
     The task is escalated to `quick`: one synthesized reviewer is dispatched against the task diff under the normal `cq-<n>` loop, capped at `implement.max_review_cycles`.
   - **`sensitive-path` or `boundary` → `full`.** These are evaluated on every touched path, exempt or not.
 
-  Escalation only goes upward and moves at most two levels (`lite` → `quick` → `full`). This is the single statement of that bound. The verb returns the new `depth`, `escalated_from: lite` and the holding `floor_legs`, records a final-pass `review_depth_resolved`, and returns a `LITE_TRIPWIRE_ESCALATED` warning naming the task and legs. The orchestrator echoes that warning to the transcript, as it does `REVIEW_DEPTH_FLOOR_APPLIED`. An escalated task's review loop is bounded as stated in BEH-15.
-- **BEH-8** — **When** a plan mixes levels **then** tasks run in plan order. Consecutive `lite` tasks run inline. `quick` and `full` tasks go through the existing Step 2 loop. `adev implement batches --lite --run-base <sha>` evaluates the BEH-5 grant per task and forms batches only from tasks that are not granted `lite`. Under `--parallel`, `lite` is not granted (BEH-5 d), and `adev implement check-flags` prints `LITE_SUPPRESSED_PARALLEL` once (BEH-16).
-- **BEH-9** — **When** a run that contained at least one `lite` task reaches Step 2-post **then** the constitution's quality gates run once over the whole run, fail-fast. A failure emits the implement `step_failed` event with `--verdict FAIL` and names the new operator-facing code `QUALITY_GATES_FAILED`. Step 3's final reviewer is skipped only when every task in the run resolved `lite`; otherwise it runs as today.
+  Escalation only goes upward and moves at most two levels (`lite` → `quick` → `full`). This is the single statement of that bound. The verb returns the new `depth`, `escalated_from: lite` and the holding `floor_legs`, records a final-pass `review_depth_resolved` with `source: lite-tripwire`, and returns a `LITE_TRIPWIRE_ESCALATED` warning naming the task and legs. The orchestrator echoes that warning to the transcript, as it does `REVIEW_DEPTH_FLOOR_APPLIED`. An escalated task's review loop is bounded as stated in BEH-15.
+- **BEH-8** — **When** a plan mixes levels **then** tasks run in plan order. Consecutive `lite` tasks run inline. `quick` and `full` tasks go through the existing Step 2 loop. `adev implement batches --lite --run-base <run_base>` evaluates the BEH-5 grant per task and forms batches only from tasks that are not granted `lite`. Under `--parallel`, `lite` is not granted (BEH-5 d), and `adev implement check-flags` prints `LITE_SUPPRESSED_PARALLEL` once (BEH-16).
+- **BEH-9** — **When** a run that contained at least one `lite` task reaches Step 2-post **then** the constitution's quality gates run once over the whole run, fail-fast. A failure emits the implement `step_failed` event with `--verdict FAIL` and names the new operator-facing code `QUALITY_GATES_FAILED`. The gate run uses the existing Step 2-post mechanism. It stays skill-driven on purpose, because the gate commands come from the constitution and `gates.yaml`, not from a verb. Step 3's final reviewer is a single pass with no loop. It is skipped only when every task in the run resolved `lite`; otherwise it runs as today.
 - **BEH-10** — **When** `/adev:validate` runs **then** it calls `adev implement lite-report --spec <spec-path> --json`. That verb reads the raw `review_depth_resolved` events from the spec's lifecycle log, not the `reviewDepthResolutions` projection, which keeps only the latest event per plan, task and pass across all runs. It takes only events after the most recent implement `lifecycle_step` `started` event, and counts a task as `lite` when its latest final-pass `review_depth_resolved` has `depth: lite`. When the count is non-zero, the validate report lists the count and task ids as an advisory ("implemented without per-task review"), and its spec-compliance check covers the diff of those tasks. `validate` is never skipped and its own tier is unchanged.
 - **BEH-11** — **When** `/adev:review-specs` or `/adev:validate` receives `--tier lite` **then** it runs exactly as `--tier quick` and prints one line saying it did. `/adev:build` and `/adev:work` forward only what the operator typed: `--lite` (or `--tier lite`) to `/adev:implement` as `--lite`, and `--tier lite` to `/adev:review-specs` and `/adev:validate`. They never add either on their own.
 - **BEH-12** — **When** `/adev:init` onboards a project (any `risk_tier` preset: `prototype`, `standard` or `strict`) or is re-run on an existing project **then** it runs `adev init prompt implement-rigor`.
-  - **Interactive choice.** The prompt offers `lite`, `quick` and `full` and requires a typed choice. Only those three literal tokens are accepted, matched exactly and case-sensitively. Blank or any other input is re-prompted interactively. With `--mode`, any other value exits 1 with `INVALID_IMPLEMENT_RIGOR`.
+  - **Interactive choice.** The prompt offers `lite`, `quick` and `full` and requires a typed choice. Only those three literal tokens are accepted, matched exactly and case-sensitively. Blank or any other input is re-prompted, **at most 3 attempts in total**. After the third invalid answer, when input closes (EOF or Ctrl-D), or when scripted answers run out, the verb exits 1 with `INVALID_IMPLEMENT_RIGOR` and writes nothing. Lines are read through the readline async iterator, as `init-prompt-implementation-mode.mjs` does, so piped input cannot hang the prompt. With `--mode`, any other value exits 1 with `INVALID_IMPLEMENT_RIGOR` and no prompt is shown.
   - **What is written.** The verb writes the matched enum constant, never the raw input, to `risk-policies.yaml` as `implement_mode` for the `medium` and `low` levels, and preserves every other key. `high` keeps its preset value: `quick` for `standard` and `prototype`, `full` for `strict`. Choosing `full` also writes `full` for `high`. Choosing `lite` first prints a warning that per-task review is skipped for route-eligible tasks and deferred to `/adev:validate`.
-  - **Non-interactive runs** (no TTY and no `--mode`). The verb never overwrites an existing `implement_mode`. Where none exists it writes the preset's non-`lite` default (`strict` → `full`, `standard` → `quick`, `prototype` → `quick`) and prints that `lite` is available through `--mode lite`. `lite` is therefore written only by a typed choice or an explicit `--mode lite`.
+  - **Non-interactive runs** (no TTY and no `--mode`). No prompt is shown, so no retry loop runs. The verb never overwrites an existing `implement_mode`. Where none exists it writes the preset's non-`lite` default (`strict` → `full`, `standard` → `quick`, `prototype` → `quick`) and prints that `lite` is available through `--mode lite`. `lite` is therefore written only by a typed choice or an explicit `--mode lite`.
 - **BEH-13** — **When** any skill text decides an implement tier **then** `lite` comes only from operator input: a flag the operator typed, or `risk-policies.yaml`. No SKILL.md, reference file or stop message tells an agent to add `--lite` or `--tier lite` on its own judgment. `/adev:route` output is an eligibility signal, never an authorization. `adev route emit-sidecar` adds `lite_eligible: { count, total }` to its JSON output, computed by `liteEligible(entry)`, which `lib/implement/review-depth.mjs` exports (the same predicate as BEH-5 b). The route summary prints it as `lite-eligible: <count> of <total>`.
 - **BEH-14** — **When** a run contains `lite` tasks **then** no hard gate is relaxed: the strict `lifecycle.gate_mode` chain, `adev gate require`, the non-main-branch stop, skill extensions, `test-integrity.md`, quality-gate fail-fast, destructive-action gates and constitution checks apply exactly as in `full`. The `graduated-rigor-tiers.spec.md` invariant is amended to name `lite` beside `quick` and to state that per-task review is a review-breadth setting, not a hard gate.
-- **BEH-15** — **When** a `quick` or `full` review loop, including one reached through the BEH-7 tripwire, uses `implement.max_review_cycles` (or `--review-cycles`) cycles without converging (`LOOP_BUDGET_EXHAUSTED`, `LOOP_NO_PROGRESS` or `LOOP_REGRESSED`) **then** it follows one of two paths:
-  - **Interactive run:** the existing behavior applies and the task escalates to the operator.
-  - **Unattended run** (`/adev:implement` dispatched as a `/adev:build` or `/adev:work` step):
-    - The task is marked `plan_task` `blocked` with the loop code, and no further work proceeds on that task or on any later task in the run.
-    - Commits of tasks that already completed are kept.
-    - Implement emits `step_failed` with `--verdict FAIL`, and its output names the loop code and the unconverged task ids. The step result is `status: BLOCKED`.
+- **BEH-15** — **When** a `quick` or `full` review loop, including one reached through the BEH-7 tripwire, uses `implement.max_review_cycles` (or `--review-cycles`) cycles without converging (`LOOP_BUDGET_EXHAUSTED`, `LOOP_NO_PROGRESS` or `LOOP_REGRESSED`) **then** the existing Step 2g halt applies to **every** run, whoever or whatever invoked it:
+  - The task is not marked complete. It gets `plan_task` `blocked` with the loop code, and execution state is written with `status: "blocked"`.
+  - No later task starts. Commits of tasks that already completed are kept and never rolled back.
+  - The halt message names the loop code, the unconverged task id and the outstanding finding ids. When implement runs as a `/adev:build` step, that message is its `STEP_RESULT` with `status: BLOCKED`.
 
-  `--lite` does not change either path.
+  **No operator is assumed.** The halt never waits for input. It records its terminal state and returns, so it is safe in an interactive session, a headless `claude -p` run, a scheduled job or a build step alike. No detection of who is attending is needed. An operator who is present acts on the halt message afterwards, by re-running `/adev:implement --task <N>` or running `/adev:recover`.
+
+  **No `step_failed` is emitted for this halt.** `plan_task` `blocked` is its recorded terminal, under the existing "do not double-emit" rule in `skills/implement/SKILL.md` and `references/failure-path-exit-event.md`, which this spec leaves unchanged.
+
+  **Batched and parallel runs** use the existing abort rules:
+  - In a batch, the batch stops at the halted task. Later tasks in that batch stay open and are re-dispatched solo on re-run (`references/batched-mode.md`).
+  - Under `--parallel`, groups already in flight run to their own end, each still capped per task. Successful groups are merged, and the halted group's worktree is retained (Step 2.5).
+
+  `lite` tasks are never batched and never run under `--parallel`, so neither rule involves them. `--lite` does not change any of this.
 - **BEH-16** — **When** `/adev:implement` starts **then** its first action, before `adev gate require` and the step-started event, is `adev implement check-flags --spec <spec-path> [--lite] [--tier <t>] [--parallel]`.
   - **Exits 1 with:**
     - `CONFLICTING_TIER_FLAGS` for `--lite` with `--tier full` or `--tier quick`.
-    - `INVALID_TIER` for an unknown `--tier`, or for a `review_mode`, `validate_mode` or `implement_mode` value in `risk-policies.yaml` outside `RIGOR_MODES`. This is new: `loadRigorPolicies` now validates these fields for every caller instead of silently falling back.
+    - `INVALID_TIER` for an unknown `--tier`, for a `review_mode`, `validate_mode` or `implement_mode` value in `risk-policies.yaml` outside `RIGOR_MODES`, or for a `risk-policies.yaml` that exists but does not parse. This is new: `loadRigorPolicies` now validates these fields and the parse, instead of silently returning `null`.
     - `LITE_NOT_ALLOWED_FOR_HIGH` for `high.implement_mode: lite`.
 
     No lifecycle event is written on any of these exits.
-  - **On success** it prints `{ lite_authorized, tier, warnings }`. `warnings` includes `LITE_SUPPRESSED_PARALLEL` when `lite` is authorized and `--parallel` is set.
-
+  - **On success** it prints `{ lite_authorized, lite_source, tier, run_base, warnings }`:
+    - `run_base` is the full sha of `HEAD` at that moment. It is the single run-base capture, which the orchestrator passes as `--run-base` to every later `resolve-depth` and `batches` call (BEH-5, BEH-7, BEH-8).
+    - `warnings` includes `LITE_SUPPRESSED_PARALLEL` when `lite` is authorized and `--parallel` is set.
 ## Output Contract
 
 **Library and CLI changes:**
@@ -162,19 +199,23 @@ Flag conflicts and policy-value errors are raised by `adev implement check-flags
 - **`lib/governance/rigor-mode.mjs`**
   - `RIGOR_MODES = ["full", "quick", "lite"]`.
   - `resolveRigorMode` returns `lite` only for `skill === "implement"`. For any other skill, a resolved `lite` maps to `quick`. The implement fallback becomes `quick` (BEH-2).
-  - `loadRigorPolicies` validates `review_mode`, `validate_mode` and `implement_mode` against `RIGOR_MODES`. It throws `INVALID_TIER` naming the file and level, and throws `LITE_NOT_ALLOWED_FOR_HIGH` for `high.implement_mode: lite` (BEH-16). The old silent fallback for a malformed value is removed for every caller.
+  - `loadRigorPolicies` validates `review_mode`, `validate_mode` and `implement_mode` against `RIGOR_MODES`, as it already validates `test_depth`. It throws `INVALID_TIER` naming the file and level, also throws `INVALID_TIER` for a file that exists but does not parse (today it returns `null`), and throws `LITE_NOT_ALLOWED_FOR_HIGH` for `high.implement_mode: lite` (BEH-16).
+  - **Affected callers.** Its code callers are `adev implement` (`check-flags`, `resolve-depth`, `batches`) and `adev test-policy resolve` (`lib/cli/test-policy.mjs`). Both gain the new failures. `/adev:review-specs` and `/adev:validate` resolve their tier in skill prose, call no verb that loads policies, and are unchanged at runtime. A malformed value reaches them only through an implement run, which fails first.
 - **`lib/implement/review-depth.mjs`**
   - The grant predicate is replaced per BEH-3. The floor legs change per BEH-4: `risk-level` narrowed, `routing` added for `human-only`, `batched-task` removed, `scope-mismatch` moved to the tripwire, and touched-file `boundary`/`sensitive-path` on the final pass.
   - New exports:
-    - `liteEligible(entry)`, the BEH-5 (b) predicate with `LITE_GRANT_THRESHOLD = 0.6`
+    - `liteEligible(entry)`, the BEH-5 (b) predicate with `LITE_GRANT_THRESHOLD = 0.6`, reusing the existing score-range validation that raises `ROUTING_SCORE_OUT_OF_RANGE`
     - `liteGrant()`, all four BEH-5 conditions, returning `lite_denied`
     - `isTripwireExempt(path, mode)`, the BEH-7 exemption
   - The final-pass tripwire reuses `snapshotWorkingTree` and `computeTouchedFiles`.
 - **`lib/cli/implement.mjs`**
-  - `resolve-depth` gains `--lite`, `--tier lite`, `--parallel` and `--run-base <sha>`, and reads its governance inputs from `--run-base`. Its JSON output gains `lite_denied`, `escalated_from` and `LITE_TRIPWIRE_ESCALATED` in `warnings`.
+  - `resolve-depth` gains `--lite`, `--tier lite`, `--parallel` and `--run-base <sha>` (required on both passes), and reads its governance inputs from `--run-base`. `--base-sha` keeps its diff-range role. `--in-batch` is accepted and ignored.
+    - Its JSON output gains `lite_denied`, `lite_source`, `escalated_from`, and `LITE_TRIPWIRE_ESCALATED` in `warnings`.
+    - The `source` values change as BEH-5 lists. `REVIEW_DEPTH_RESOLVED_KEYS` is unchanged.
   - `batches` gains `--lite` and `--run-base` (BEH-8).
+  - Both commit-id flags are validated as in Arguments and fail with `INVALID_COMMIT_ID`. The validation reuses the argv-token guard `assertSafeArgvToken` (`lib/extensions/governance-values.mjs`) plus `git rev-parse --verify`.
   - New subcommands:
-    - `check-flags --spec <p> [--lite] [--tier <t>] [--parallel]` (BEH-16)
+    - `check-flags --spec <p> [--lite] [--tier <t>] [--parallel]`, printing `{ lite_authorized, lite_source, tier, run_base, warnings }` (BEH-16)
     - `lite-report --spec <p> [--json]` (BEH-10)
   - Usage banners list `full|quick|lite`.
 - **`lib/cli/governance.mjs`:** `dispatch` accepts `--tier lite` and dispatches it as `quick`. The usage banner is updated (BEH-1, BEH-11).
@@ -183,17 +224,21 @@ Flag conflicts and policy-value errors are raised by `adev implement check-flags
 - **`lib/cli/init-prompt-implement-rigor.mjs`** (new verb `adev init prompt implement-rigor [--mode lite|quick|full]`), modeled on `init-prompt-implementation-mode.mjs`. It takes a closed, exact, case-sensitive enum, writes the enum constant (never the raw input), uses a splice-preserving write, never overwrites non-interactively, and raises `INVALID_IMPLEMENT_RIGOR` (BEH-12). It gets a dispatch entry beside `init prompt implementation-mode` in `cli/index.mjs`.
 - **`lib/implement/batching.mjs`:** excludes tasks granted `lite` from batch formation (BEH-8).
 
-**New operator-facing codes:** `CONFLICTING_TIER_FLAGS`, `LITE_NOT_ALLOWED_FOR_HIGH`, `LITE_SUPPRESSED_PARALLEL`, `LITE_TRIPWIRE_ESCALATED`, `QUALITY_GATES_FAILED` and `INVALID_IMPLEMENT_RIGOR`. `INVALID_TIER` gains the policy-value case.
+**New operator-facing codes:** `CONFLICTING_TIER_FLAGS`, `LITE_NOT_ALLOWED_FOR_HIGH`, `LITE_SUPPRESSED_PARALLEL`, `LITE_TRIPWIRE_ESCALATED`, `QUALITY_GATES_FAILED`, `INVALID_IMPLEMENT_RIGOR` and `INVALID_COMMIT_ID`. `INVALID_TIER` gains the policy-value and unparseable-file cases.
 
 **Skill and template changes:**
 
 - **`skills/implement/`**
-  - In the body: the `--lite` argument, a first-action `adev implement check-flags` prerequisite, and the no-self-selection rule.
-  - New `references/lite-mode.md` behind a `<ADEV_ROOT>`-anchored conditional-loading pointer from Step 2. It covers inline execution, the run-base capture, the tripwire, end-of-run gates and the BEH-15 unattended stop.
-  - `graduated-review-depth.md` is updated for the ladder. The Red Flags entry "Skip either review stage" is reworded to "Skip a review stage the resolved depth requires".
-- **`skills/route/`:** the `lite-eligible: <count> of <total>` summary line, read from `emit-sidecar` output (BEH-13). The sidecar schema does not change.
+  - In the body:
+    - the `--lite` and `--tier full|quick|lite` arguments (`--tier` is not documented there today);
+    - a first-action `adev implement check-flags` prerequisite, whose `run_base` and `lite_source` the run keeps;
+    - the no-self-selection rule.
+  - New `references/lite-mode.md` behind a `<ADEV_ROOT>`-anchored conditional-loading pointer from Step 2. It covers inline execution, passing `run_base` on, the tripwire, end-of-run gates, and the BEH-15 halt as it applies to an escalated `lite` task.
+  - `graduated-review-depth.md` is updated for the ladder, and `references/steps/step-2-per-task-loop.md` stops passing `--in-batch`. The Red Flags entry "Skip either review stage" is reworded to "Skip a review stage the resolved depth requires".
+  - `SKILL.md` and `references/failure-path-exit-event.md`, where the "do not double-emit" rule for `LOOP_*` halts lives, are **unchanged** (BEH-15).
+- **`skills/route/`:** the `lite-eligible: <count> of <total>` summary line, read from `emit-sidecar` output (BEH-13). The prose "easy" rule at `SKILL.md:118` is replaced with a citation of `liteEligible`. The sidecar schema does not change.
 - **`skills/review-specs/`, `skills/validate/`:** accept `--tier lite` as `quick` (BEH-11). `validate` calls `adev implement lite-report` for the advisory (BEH-10).
-- **`skills/build/`, `skills/work/`:** forward `--lite` to `implement` only and `--tier lite` to `review-specs` and `validate` (BEH-11).
+- **`skills/build/`, `skills/work/`:** forward `--lite` to `implement` only and `--tier lite` to `review-specs` and `validate` (BEH-11). This includes `skills/build/step4-tier-propagation.md` and the `--tier` propagation in `skills/work/SKILL.md`.
 - **`skills/init/references/behavior-by-project-state.md`:** a new implement-rigor step driven by the verb (BEH-12).
 - **Templates**
   - `templates/risk-policies-template.yaml` (`standard`): `high`, `medium` and `low` are set to `quick`. The `risk-level` floor still forces `full` for high-risk tasks not routed `auto-agent`.
@@ -240,7 +285,17 @@ Evals are part of the acceptance bar, not a follow-up. Token and cost figures co
 - `implement-lite-refused-high-risk`: a `risk_level: high` spec run with `--lite` resolves no task to `lite`.
 - `init-offers-implement-rigor`: onboarding presents the `lite / quick / full` prompt and writes the typed choice.
 
-**EV-4 — Headless checks under `node --test`:** a `--dry-run` smoke test for EV-1, resolver unit tests (ladder fallback, floor legs, `liteGrant` truth table, tripwire legs and the test/doc exemption), `init prompt implement-rigor` verb tests, and `rigor-mode` tests for `lite`.
+**EV-4 — Headless checks under `node --test`:**
+
+- a `--dry-run` smoke test for EV-1;
+- resolver unit tests: ladder fallback, floor legs, `liteGrant` truth table, tripwire legs and the test/doc exemption;
+- a parity test: `liteEligible` agrees with route's documented "easy" signal (auto-agent, no dimension below 3 of 5) on a table of sidecar entries, including the 0.6 boundary and non-numeric scores;
+- skill-text tests in the style of `tests/skills/implement*.test.mjs`:
+  - `skills/implement/SKILL.md` names `adev implement check-flags` before `adev gate require`;
+  - `references/lite-mode.md` passes `run_base` to `resolve-depth` on both passes;
+  - `skills/route/SKILL.md` prints the `lite-eligible` line;
+- `init prompt implement-rigor` verb tests;
+- `rigor-mode` tests for `lite`.
 
 **EV-5 — Distribution replay.** `tests/evals/implement-rigor-ladder/replay-distribution.mjs` is deterministic and makes no model calls.
 
@@ -256,18 +311,22 @@ Evals are part of the acceptance bar, not a follow-up. Token and cost figures co
 |---|---|---|
 | `--lite` with `--tier full` or `--tier quick` | `adev implement check-flags` exits 1 with `CONFLICTING_TIER_FLAGS`; no lifecycle event is written (BEH-16) | Drop one flag |
 | `high.implement_mode: lite` in `risk-policies.yaml` | `check-flags` exits 1 with `LITE_NOT_ALLOWED_FOR_HIGH`; no lifecycle event is written (BEH-16) | Set `high` to `full` or `quick` |
-| A `review_mode`, `validate_mode` or `implement_mode` value outside `full \| quick \| lite` | New behavior: `loadRigorPolicies` throws `INVALID_TIER` naming the file and level. `check-flags` exits 1 before any lifecycle event; `review-specs` and `validate` fail at policy load instead of silently falling back (BEH-16) | Fix the value |
+| A `review_mode`, `validate_mode` or `implement_mode` value outside `full \| quick \| lite`, or a `risk-policies.yaml` that does not parse | New behavior: `loadRigorPolicies` throws `INVALID_TIER` naming the file (and level, for a bad value). `check-flags` exits 1 before any lifecycle event, and `adev test-policy resolve` fails the same way. `review-specs` and `validate` load no policies in code and are unchanged (BEH-16, Output Contract) | Fix the value or the YAML |
+| `--run-base` or `--base-sha` is not a full hex object id, begins with `-`, or does not resolve to the required object | `resolve-depth` or `batches` exits 1 with `INVALID_COMMIT_ID` naming the flag; git is never invoked with the raw value (Arguments) | Pass the `run_base` printed by `check-flags`, or the captured snapshot |
 | `--lite` but the routing sidecar is missing | Existing `ROUTING_SIDECAR_MISSING` stop (route is still required) | Run `/adev:route`, then re-run |
+| A routing score is missing, non-numeric, non-finite or outside `[0, 1]` | That task is not granted `lite` (`lite_denied: routing-scores`), and `ROUTING_SCORE_OUT_OF_RANGE` is raised (BEH-5 b) | Re-run `/adev:route` |
 | `--lite` but no task is eligible | Every task resolves `quick` or `full`; the run summary lists each task's `lite_denied` value from `resolve-depth` (BEH-5) | None, or improve the spec or patterns so route scores rise |
+| `lite` authorized by `implement_mode: lite` in the policy file | `lite authorized via policy` is printed at the start of the run and in the run summary (BEH-5) | Pass `--tier quick` or `--tier full`, or change the policy value, to opt out |
 | `--lite` with `--parallel` | `check-flags` prints `LITE_SUPPRESSED_PARALLEL` once; `resolve-depth --parallel` grants no `lite` (BEH-5 d, BEH-8) | Run without `--parallel` to use `lite` |
 | A `lite` task touches an undeclared, non-exempt path | `resolve-depth --pass final` returns `quick` with `LITE_TRIPWIRE_ESCALATED`; one synthesized review runs for that task (BEH-7) | Address findings as in `quick` |
 | A `lite` task touches a sensitive or boundary path (exempt or not) | `resolve-depth --pass final` returns `full` with `LITE_TRIPWIRE_ESCALATED`; the task runs the two-stage review (BEH-7) | Address findings as in `full` |
-| A `lite` task edits a `*.spec.md`, a path under `.context-index/`, or a symlink outside its declared set | Not exempt: `scope-mismatch` escalates to `quick`, or to `full` if the path is sensitive (BEH-7) | Address findings |
-| A review loop reaches `implement.max_review_cycles` unconverged, interactive run | Existing escalation to the operator (BEH-15) | Guide, revise the spec, or skip the task |
-| A review loop reaches `implement.max_review_cycles` unconverged, unattended run | Task `plan_task` `blocked` with the loop code; no later task runs; `step_failed --verdict FAIL`; unconverged task ids named; step result `BLOCKED` (BEH-15) | Resolve the task, then `/adev:build --resume` |
+| A `lite` task edits a `*.spec.md`, a path under `.context-index/` (matched case-insensitively), or a symlink outside its declared set | Not exempt: `scope-mismatch` escalates to `quick`, or to `full` if the path is sensitive (BEH-7) | Address findings |
+| A review loop reaches `implement.max_review_cycles` unconverged, in any run (interactive, headless, scheduled or a build step) | The existing Step 2g halt: the task is `plan_task` `blocked` with the loop code and execution state is `blocked`; no later task starts; completed commits are kept; the halt message names the code, task id and outstanding findings; a build step returns `status: BLOCKED`. Nothing waits for input, and no `step_failed` is emitted (BEH-15) | Fix the findings and re-run `/adev:implement --task <N>`, or run `/adev:recover`; after a build, `/adev:build --resume` |
+| The same halt in a batch or a `--parallel` run | Batch: later tasks in the batch stay open and are re-dispatched solo on re-run. Parallel: groups already in flight finish, successful groups merge, and the halted group's worktree is retained (BEH-15) | As above |
 | End-of-run quality gates fail after `lite` tasks | Implement `step_failed`, `--verdict FAIL`, `QUALITY_GATES_FAILED` named in output (BEH-9) | `/adev:debug`, then re-run `/adev:implement` |
 | `--tier lite` passed to `review-specs`, `validate` or `governance dispatch` | Runs as `quick`, one printed line (BEH-11) | None |
 | `init prompt implement-rigor --mode` with a value other than `lite`, `quick` or `full` (including case variants or embedded newlines) | Exit 1 with `INVALID_IMPLEMENT_RIGOR`; nothing written (BEH-12) | Pass one of the three literal values |
+| Interactive `init prompt implement-rigor` receives three invalid answers, or input closes, or scripted answers run out | Exit 1 with `INVALID_IMPLEMENT_RIGOR`; nothing written; the prompt never loops beyond 3 attempts (BEH-12) | Re-run and type `lite`, `quick` or `full`, or pass `--mode` |
 | Non-interactive init on a project that already has `implement_mode` | Existing value kept; nothing overwritten (BEH-12) | Run the prompt interactively or with `--mode` to change it |
 | A `lite` task's context grows large on a long plan | No special handling; the harness compacts as usual. The task count per `lite` run is measured in EV-1 | Split the plan, or run without `--lite` |
 
@@ -294,56 +353,75 @@ Evals are part of the acceptance bar, not a follow-up. Token and cost figures co
 | Task | Description | Complexity |
 |---|---|---|
 | T0 | Record the EV-1 `full`-arm baseline on `main` (harness `--arm full` only) before behavior changes | medium |
-| T1 | `rigor-mode.mjs`: the `lite` value, implement fallback `quick`, policy-value validation (`INVALID_TIER`, `LITE_NOT_ALLOWED_FOR_HIGH`), non-implement `lite` → `quick`; `REVIEW_DEPTHS` gains `lite` (BEH-1, BEH-2, BEH-16) | small |
-| T2 | `review-depth.mjs`: grant inversion; floor legs (`risk-level` narrowed, `routing` for `human-only`, `batched-task` removed, `scope-mismatch` moved to the tripwire, touched-file `boundary`/`sensitive-path`) (BEH-3, BEH-4) | medium |
-| T3 | `review-depth.mjs`: `liteEligible`, `liteGrant` with `lite_denied`, `isTripwireExempt`, the final-pass tripwire (BEH-5, BEH-7) | medium |
-| T4 | `lib/cli/implement.mjs`: `check-flags`, `lite-report`; new `resolve-depth` and `batches` flags (`--lite`, `--tier lite`, `--parallel`, `--run-base`) and output fields; usage banners; `lib/cli/governance.mjs` `--tier lite` (BEH-1, BEH-5, BEH-7, BEH-8, BEH-10, BEH-16) | medium |
-| T5 | Implement skill: the `--lite` argument, the first-action `check-flags`, `references/lite-mode.md` (inline execution, run-base capture, tripwire, end-of-run gates, unattended stop), mixed-plan ordering, Red Flags rewording (BEH-6, BEH-8, BEH-9, BEH-15) | large |
-| T6 | `adev init prompt implement-rigor` verb plus its `cli/index.mjs` dispatch entry, init reference step, and preset template values (BEH-12) | medium |
-| T7 | `route.mjs` `lite_eligible` output and route summary line; build, work, review-specs and validate tier forwarding; validate advisory through `lite-report` (BEH-10, BEH-11, BEH-13) | small |
+| T1 | `rigor-mode.mjs`: the `lite` value, implement fallback `quick`, policy-value and parse validation (`INVALID_TIER`, `LITE_NOT_ALLOWED_FOR_HIGH`), non-implement `lite` → `quick`; `REVIEW_DEPTHS` gains `lite`; `test-policy resolve` failure tests (BEH-1, BEH-2, BEH-16) | small |
+| T2 | `review-depth.mjs`: grant inversion; floor legs (`risk-level` narrowed, `routing` for `human-only`, `batched-task` removed, `scope-mismatch` moved to the tripwire, touched-file `boundary`/`sensitive-path`); new `source` values (BEH-3, BEH-4, BEH-5) | medium |
+| T3 | `review-depth.mjs`: `liteEligible` (with score validation), `liteGrant` with `lite_denied` and `lite_source`, `isTripwireExempt` (case rules), the final-pass tripwire (BEH-5, BEH-7) | medium |
+| T4 | `lib/cli/implement.mjs`: `check-flags` (with `run_base`), `lite-report`; new `resolve-depth` and `batches` flags (`--lite`, `--tier lite`, `--parallel`, `--run-base`), `INVALID_COMMIT_ID` validation of both commit-id flags, `--in-batch` ignored, output fields; usage banners; `lib/cli/governance.mjs` `--tier lite` (BEH-1, BEH-5, BEH-7, BEH-8, BEH-10, BEH-16) | medium |
+| T5 | Implement skill: the `--lite` and `--tier` arguments, the first-action `check-flags`, `references/lite-mode.md` (inline execution, `run_base` hand-off, tripwire, end-of-run gates, the BEH-15 halt), mixed-plan ordering, `--in-batch` removed from Step 2, Red Flags rewording, skill-text tests (BEH-6, BEH-8, BEH-9, BEH-15) | large |
+| T6 | `adev init prompt implement-rigor` verb (3-attempt cap, EOF handling) plus its `cli/index.mjs` dispatch entry, init reference step, and preset template values (BEH-12) | medium |
+| T7 | `route.mjs` `lite_eligible` output, route summary line and `liteEligible` citation; build (`step4-tier-propagation.md`), work, review-specs and validate tier forwarding; validate advisory through `lite-report` (BEH-10, BEH-11, BEH-13) | small |
 | T8 | Cross-spec amendments with `adev specify amend`: `review-provenance`, `batched-task-dispatch`, `graduated-review-depth`, `graduated-rigor-tiers`. ADR 0020 accepted; docs (BEH-4, BEH-6, BEH-14) | medium |
-| T9 | EV-1 harness, fixture and smoke test; EV-4 unit tests; EV-5 distribution replay | large |
+| T9 | EV-1 harness, fixture and smoke test; EV-4 unit, parity and skill-text tests; EV-5 distribution replay | large |
 | T10 | EV-2 comparison arms and EV-3 plugin eval cases; run all evals and commit results | medium |
 
 ## Acceptance Criteria
 
-- [ ] BEH-1: `node --test tests/governance/rigor-mode.test.mjs` covers `isValidTier('lite')` and `INVALID_TIER` for other values. A `review_depth_resolved` event with `depth: lite` is accepted by `reportReviewDepthResolved` and passes `adev/event-schema-valid`. `adev governance dispatch --tier lite` dispatches the `quick` reviewer set
-- [ ] BEH-2: the resolver returns `quick` for a spec with no policy `implement_mode` and no `--tier`. `resolveRigorMode` for `review-specs` and `validate` still falls back to `full`
+- [ ] BEH-1: `node --test tests/governance/rigor-mode.test.mjs` covers `isValidTier('lite')`, `INVALID_TIER` for other values, and `resolveRigorMode` mapping `lite` to `quick` for `review-specs` and `validate`. A `review_depth_resolved` event with `depth: lite` is accepted by `reportReviewDepthResolved` and passes `adev/event-schema-valid`. `adev governance dispatch --tier lite` dispatches the `quick` reviewer set
+- [ ] BEH-2: the resolver returns `quick` with `source: default-quick` for a spec with no policy `implement_mode` and no `--tier`. `resolveRigorMode` for `review-specs` and `validate` still falls back to `full`
 - [ ] BEH-3, BEH-4: resolver unit tests cover each leg (`risk-level`, `boundary`, `sensitive-path`, `critical-finding`, `routing`).
   - Each of these resolves `quick` when nothing else triggers: editing a declared file, a batched task, an `assisted-agent` task, a high-risk `auto-agent` task, and a `quick` task that touches an undeclared non-sensitive file.
   - A high-risk `assisted-agent` task, a `human-only` task, and a task touching a sensitive path resolve `full`.
   - The `batched-task-dispatch` amendment is committed, and its equivalence eval still passes.
-- [ ] BEH-5: a truth-table test over conditions (a)–(d) shows `lite` is granted only when all four hold, and `lite_denied` names the first failing condition. A CLI-level test runs `adev implement resolve-depth --lite --run-base <sha>` and asserts `depth: lite`. Editing `risk-policies.yaml` in the working tree after the run-base commit does not change the result
+- [ ] BEH-5:
+  - A truth-table test over conditions (a)–(d) shows `lite` is granted only when all four hold, `lite_denied` names the first failing condition, and `lite_source` is `flag`, `policy` or `null`.
+  - `--tier quick` with `implement_mode: lite` grants no `lite`.
+  - A score of `"0.8"`, `NaN`, `1.2` or a missing score yields `lite_denied: routing-scores` and `ROUTING_SCORE_OUT_OF_RANGE`.
+  - A CLI-level test runs `adev implement resolve-depth --lite --run-base <sha>` and asserts `depth: lite` and `source: lite-grant`.
+  - Editing `risk-policies.yaml` in the working tree after the run-base commit does not change the result.
+  - The emitted event carries no key outside `REVIEW_DEPTH_RESOLVED_KEYS`.
 - [ ] BEH-6:
   - A `lite` task makes no `Agent` call and no `adev test-policy resolve` call.
   - It produces exactly one commit with `Spec:` and `Plan-task:` and no `Review-round:` trailer.
   - It emits `plan_task` `in_progress`/`done` plus two `review_depth_resolved` events with `depth: lite`, and no `review_round` or `test_depth_assigned` event.
-  - The `review-provenance` amendment's trailer-presence check accepts that commit.
-- [ ] BEH-7: `resolve-depth --pass final` on a fixture `lite` task does the following:
-  - It escalates to `quick` with `LITE_TRIPWIRE_ESCALATED` and `scope-mismatch` when the task touches an undeclared source file.
+  - The committed `review-provenance` amendment's Contract A text names the `depth: lite` exemption. No executable trailer-presence check exists today, so this criterion is conformance to the amended text, not a check's output.
+- [ ] BEH-7: `resolve-depth --pass final --run-base <sha> --base-sha <snapshot>` on a fixture `lite` task does the following:
+  - It escalates to `quick` with `LITE_TRIPWIRE_ESCALATED`, `scope-mismatch` and `source: lite-tripwire` when the task touches an undeclared source file, tracked or untracked.
   - It stays `lite` for an undeclared `tests/` or `docs/` file.
-  - It escalates for an undeclared `*.spec.md`, a `.context-index/` path, or a symlink.
+  - It escalates for an undeclared `*.spec.md`, `X.SPEC.MD`, a `.context-index/` or `.Context-Index/` path, or a symlink.
   - It escalates to `full` for a sensitive path, including one under `docs/`.
+  - It reads governance inputs from `--run-base`, not from the working tree.
   - `isTripwireExempt` has unit tests for every exemption rule.
 - [ ] BEH-8: `adev implement batches --lite` never places a task granted `lite` in a batch. `check-flags --lite --parallel` prints `LITE_SUPPRESSED_PARALLEL`, and `resolve-depth --parallel` grants no `lite`
 - [ ] BEH-9: an all-`lite` run skips Step 3 and runs quality gates once. A failing gate yields `step_failed` with `verdict: FAIL` and output naming `QUALITY_GATES_FAILED`
 - [ ] BEH-10: `adev implement lite-report` counts only events after the most recent implement `started` event, and a `lite` task from an earlier run is not counted. The validate report shows the advisory with task ids when the count is non-zero, and nothing otherwise
-- [ ] BEH-11: `review-specs --tier lite` and `validate --tier lite` behave as `quick` and print the mapping line. `build` forwards `--lite` to `implement` only and `--tier lite` to `review-specs` and `validate`
+- [ ] BEH-11: `review-specs --tier lite` and `validate --tier lite` behave as `quick` and print the mapping line. `build` (through `step4-tier-propagation.md`) and `work` forward `--lite` to `implement` only and `--tier lite` to `review-specs` and `validate`
 - [ ] BEH-12: `node --test` for `init prompt implement-rigor` covers:
   - typed exact-case choice, with `Lite`, blank, and `lite\nhigh: full` refused
+  - three invalid answers, closed input, and exhausted scripted answers each exiting 1 with `INVALID_IMPLEMENT_RIGOR` and writing nothing, within a test timeout
   - `--mode` refusal with `INVALID_IMPLEMENT_RIGOR`
   - the `lite` warning, the medium/low-only write, and key preservation
   - non-interactive runs: no overwrite of an existing value, and preset defaults `strict` → `full`, `standard` → `quick`, `prototype` → `quick`
 
   A test through `cli/index.mjs` dispatch reaches the verb.
-- [ ] BEH-13: `grep -rnE -- "--lite|--tier lite" skills/ providers/ docs/` returns only argument definitions, forwarding rules and operator-facing examples. No match instructs an agent to choose `lite`. `adev route emit-sidecar` output carries `lite_eligible`. EV-3 `implement-no-self-selected-lite` passes
+- [ ] BEH-13: `grep -rnE -- "--lite|--tier lite" skills/ providers/ docs/` returns only argument definitions, forwarding rules and operator-facing examples. No match instructs an agent to choose `lite`. `adev route emit-sidecar` output carries `lite_eligible`. The EV-4 parity test passes. EV-3 `implement-no-self-selected-lite` passes
 - [ ] BEH-14: the hard-gate list in `references/lite-mode.md` names every gate in the amended `graduated-rigor-tiers.spec.md` invariant, and the invariant text names `lite`
-- [ ] BEH-15: a fixture run dispatched as a build step, whose escalated task never converges, does all of the following: marks that task `plan_task` `blocked` with the loop code, runs no later task, keeps earlier task commits, emits `step_failed --verdict FAIL`, and names the unconverged task id
-- [ ] BEH-16: `check-flags` exits 1 with no lifecycle event written for each of `--lite --tier full`, `--tier bogus`, `medium.implement_mode: bogus` and `high.implement_mode: lite`, each with its stated code. With valid input it exits 0 and prints `{ lite_authorized, tier, warnings }`
+- [ ] BEH-15: a fixture run whose escalated task never converges is run twice, once as a build step and once as a direct non-interactive `/adev:implement`. Both runs do all of the following:
+  - mark that task `plan_task` `blocked` with the loop code, and write execution state `blocked`;
+  - start no later task and keep earlier task commits;
+  - emit no `step_failed` event;
+  - end without waiting for input, naming the loop code and the unconverged task id.
+
+  The build-step run also returns `status: BLOCKED`.
+- [ ] BEH-16:
+  - `check-flags` exits 1, with no lifecycle event written, for each of `--lite --tier full`, `--tier bogus`, `medium.implement_mode: bogus`, an unparseable `risk-policies.yaml`, and `high.implement_mode: lite`, each with its stated code.
+  - With valid input it exits 0 and prints `{ lite_authorized, lite_source, tier, run_base, warnings }`, where `run_base` equals `git rev-parse HEAD`.
+  - `resolve-depth` exits 1 with `INVALID_COMMIT_ID` for `--run-base --output=x`, a short sha, and a sha that does not resolve.
+  - `adev test-policy resolve` fails with `INVALID_TIER` on the same malformed policy.
+  - A skill-text test asserts that `check-flags` precedes `adev gate require` in `skills/implement/SKILL.md`.
 - [ ] EV-1: `results/` holds ≥ 3 runs per arm plus the `main` baseline, and every release threshold in EV-1 is met or a reviewed threshold change is recorded in this spec
 - [ ] EV-2: `reports/summary.json` includes `adev-quick` and `adev-lite` with score and wall-clock
 - [ ] EV-3: the three `claude plugin eval` cases pass
-- [ ] EV-4: the EV-1 `--dry-run` smoke test passes under `npm test`
+- [ ] EV-4: the EV-1 `--dry-run` smoke test, the parity test and the skill-text tests pass under `npm test`
 - [ ] EV-5: `results/distribution.json` shows `lite` ≥ 45% and `full` ≤ 20% of tasks on this repository's corpus at release, computed by the shipped resolver
 - [ ] SKILL.md size caps (`tests/skills/skill-size-cap.test.mjs`) and Load Skill Extensions coverage still pass
 - [ ] All quality gates pass (`npm test`); no constitutional violations

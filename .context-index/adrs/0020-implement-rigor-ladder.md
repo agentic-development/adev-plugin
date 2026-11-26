@@ -50,7 +50,8 @@ Agents never choose `lite`. Route output is eligibility, not authorization.
 - **No `Review-round:` trailer on `lite` commits.** The trailer builder and its grammar (`buildReviewRoundTrailer`, stage enum, `cycles >= 1`) are left untouched. `review-provenance`'s every-commit-carries-a-trailer rule gains an exemption for tasks whose final-pass `review_depth_resolved` is `lite`, and that event pair becomes their provenance. Widening the trailer grammar to `lite=0` was rejected because it would loosen a validated injection-hardened producer for the one path with no reviewer.
 - **Batched tasks are reviewed at their own resolved depth.** `batched-task-dispatch` C.3 is amended accordingly, with no reinterpretation by silence.
 - **A single first-action verb (`adev implement check-flags`) owns the up-front errors.** It raises the flag conflicts and policy-value validation before any lifecycle event is written. A malformed policy value is now an error everywhere instead of a silent fallback.
-- **Unattended runs stop at the review-cycle cap.** When `/adev:implement` runs as a `/adev:build` or `/adev:work` step, a loop that reaches the cap blocks the task and stops the run, rather than waiting for an operator who is not there.
+- **Every run stops at the review-cycle cap, attended or not.** A loop that reaches the cap gets the existing Step 2g halt: the task is blocked, no later task starts, and the halt message names the task and findings. The halt never waits for input, so it needs no detection of whether an operator is present. A rule keyed to "dispatched as a build or work step" was rejected because headless and scheduled direct runs would have fallen through to a wait for an operator who is not there.
+- **Governance inputs come from one commit per run.** `adev implement check-flags` prints the run's `HEAD` as `run_base`, and every depth resolution reads policies, boundaries, sensitive paths and routing from that commit. Commit ids are validated as hex object ids before git sees them.
 
 All four base specs (`review-provenance`, `batched-task-dispatch`, `graduated-review-depth`, `graduated-rigor-tiers`) are changed through co-located amendments, not edited in place.
 
@@ -69,6 +70,14 @@ All four base specs (`review-provenance`, `batched-task-dispatch`, `graduated-re
 - The default changes for every adev project, not only this one. Projects on the `strict` preset keep `full` everywhere.
 - **High-risk specs lose the guaranteed two-stage review.** On the `standard` and `prototype` presets, a high-risk task routed `auto-agent` gets one reviewer instead of two. This is the single largest relaxation: without it, `full` stays at about 24%, above the 20% target. Projects that want every high-risk task at `full` set `high.implement_mode: full` or use the `strict` preset.
 - **`assisted-agent` tasks lose the second review stage.** The human checkpoint they already carry is treated as compensating oversight.
+- **Batching now stacks with `quick`.** `graduated-review-depth` added the `batched-task` floor leg so that batching and a lighter depth would not compound: 15 reviewer dispatches become 6 under batching alone and 2 under both. Removing the leg accepts that stacking for `quick` tasks. EV-1 seeds defects into batched `quick` tasks to measure the cost, and its thresholds gate release. `lite` tasks are never batched.
+- **A committed `implement_mode: lite` is standing authorization.** It applies to every later run on that branch, including unattended ones and runs by other contributors, and a branch can grant itself `lite` by editing `risk-policies.yaml`. This is accepted because the file is operator-authored configuration, like every other governance file. A change to it is visible in review like any other diff. The mitigations are visibility and bounds, not a per-run consent prompt:
+  - every run that uses it prints `lite authorized via policy`;
+  - `/adev:validate` lists the `lite` tasks;
+  - an explicit `--tier quick|full` opts a run out;
+  - `high` can never be set to `lite`.
+
+  Honoring the policy only when it matches the default branch was considered. It was deferred because it would break the common case of onboarding directly on a new project's first branch.
 - The calibration is specific to this corpus. The distribution replay (EV-5) recomputes it with the shipped resolver at release.
 
 ## Alternatives Considered

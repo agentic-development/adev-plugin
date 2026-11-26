@@ -1,9 +1,9 @@
 ---
 spec: .context-index/specs/features/implementation/implement-rigor-ladder.spec.md
-verdict: BLOCK
+verdict: PASS_WITH_NOTES
 rigor-tier: full
-last-reviewed-revision: 2
-file-sha: 55aab08dcb7263bc9f35b1219bb54bb94601ae300c45349ad110de0b56c8cfd6
+last-reviewed-revision: 3
+file-sha: 669e10d5948ad0d4e4e72a3078b638ad7fc445ccc797e7423b1dc62799fc6439
 reviewed: 2026-11-26
 ---
 
@@ -12,11 +12,12 @@ reviewed: 2026-11-26
 > **Date:** 2026-11-26
 > **Spec:** .context-index/specs/features/implementation/implement-rigor-ladder.spec.md
 > **Charter:** .context-index/specs/features/implementation/charter.md
-> **Verdict:** BLOCK
+> **Verdict:** PASS_WITH_NOTES
 > **Rigor tier:** full (spec `risk_level: high` → `policies.high.review_mode: full`)
-> **Diff scope:** not scoped (`no-content-changed`: revision 2 was already committed, so the verb found no difference against the prior committed text and failed open to full-context dispatch)
-> **Prior review:** revision 1, BLOCK. Every reviewer was given that report and asked to confirm its own prior blockers.
-> **Dispatch note:** prompts were assembled by `adev governance dispatch` (worktree CLI) and delivered to each reviewer as a file reference because of their size (82–329 KB). Content is byte-identical to the `buildReviewerDispatches` output.
+> **Diff scope:** diff-scoped against the revision 2 committed text. Nine of the ten top-level anchors had changed, so the scoped content was close to the full spec.
+> **Prior review:** revision 2, BLOCK (2 blockers). Every reviewer was given that report and asked to confirm its own prior findings.
+> **Dispatch note:** prompts were assembled by `adev governance dispatch` (worktree CLI) and delivered to each reviewer as a file reference because of their size (96–345 KB). Content is byte-identical to the `buildReviewerDispatches` output.
+> **Charter note:** the implementation charter has no Capability Map, so no capability row was updated.
 
 ## Reviewers Dispatched
 
@@ -26,7 +27,7 @@ reviewed: 2026-11-26
 | referent-integrity | Referent Integrity Reviewer | subagent | reviewer-reasoning | plugin:review-specs/referent-integrity-prompt.md |
 | wiring-reviewer | Wiring Reviewer | subagent | reviewer-capable | plugin:review-specs/wiring-reviewer-prompt.md |
 | boundary-reviewer | Boundary Reviewer | subagent | reviewer-capable | plugin:review-specs/boundary-reviewer-prompt.md |
-| termination-reviewer | Termination Reviewer | subagent | reviewer-fast (triggered: score 1) | plugin:review-specs/termination-reviewer-prompt.md |
+| termination-reviewer | Termination Reviewer | subagent | reviewer-fast (triggered: score 2) | plugin:review-specs/termination-reviewer-prompt.md |
 
 ## Disabled Reviewers
 
@@ -35,86 +36,69 @@ reviewed: 2026-11-26
 | structural-architect | Disabled as part of the reviewer-domain-fit initiative. OWASP/structural scope retargeted to referent-integrity/wiring-reviewer/consistency-analyzer/boundary-reviewer for the default (Node CLI/plugin) project shape. |
 | security-reviewer | Disabled as part of the reviewer-domain-fit initiative. OWASP-scoped review relocated to the web-service domain extension. |
 
-## Revision 1 blockers
+## Revision 2 findings
 
-All 9 revision 1 blockers (6 distinct problems) were confirmed resolved by the reviewer that raised them: CON-1, CON-2, RI-1, RI-2, WR-1, WR-2, WR-3, BD-1 and TR-1.
+Both revision 2 blockers, TR-1 (uncapped init re-prompt) and TR-2 (unattended stop keyed on dispatch route), were confirmed resolved by the termination reviewer.
+
+Every revision 2 warning was confirmed resolved, partly resolved or superseded by the reviewer that raised it. Partial resolutions:
+- TR-3 is refined as TR-6.
+- BD-7 leaves the BD-12 residual.
+- BD-9 and BD-10 leave the BD-11 gap.
 
 ## Consistency Analyzer (consistency-analyzer)
 
 **Verdict:** PASS_WITH_NOTES
 
-- **CON-1 (warning, contract, `arguments`).** BEH-11 says `/adev:work` forwards `--tier lite` to review-specs and validate, but the Arguments table's `--tier lite` row omits `/adev:work` (which propagates `--tier` today, `skills/work/SKILL.md:93-94`). The spec also does not say what other `isValidTier` consumers, such as the build step-4 tier-propagation handoff, do with `lite`. Add `/adev:work` to the row, and state map-to-`quick` or reject for each other consumer.
-- **CON-2 (warning, contract, `behaviors-7`).** The final pass uses the existing `--base-sha` (diff range; `MISSING_DIFF_RANGE` without it), but the Arguments table lists only `--run-base`, and the spec never says where the final pass reads governance inputs from. Add `--base-sha` to Arguments. State that the final pass takes its diff range from `--base-sha` and its governance inputs from `--run-base`, which is also required there.
-- **CON-3 (warning, pattern, `behaviors-4`).** Removing the `batched-task` leg does not address the stacking hazard named in `graduated-review-depth.spec.md`'s scope note (15 dispatches become 6 under collapse, and 2 under both). Acknowledge the stacking in BEH-4 or ADR 0020, and say it is accepted because EV-1 measures it.
-- **CON-4 (suggestion).** The Problem section's "Today's default becomes `full`, a reachable `quick` becomes the default" should read "Today's effective default is `full`; `quick` becomes the reachable default".
-- **CON-5 (suggestion, module-boundary).** `liteEligible` in `lib/implement/review-depth.mjs` duplicates route's prose "easy" rule (`skills/route/SKILL.md:118`). Add an EV-4 parity test, or name the shared predicate's owning module.
+- **CON-1 (warning, pattern, `output-contract`).** "`SKILL.md` and `references/failure-path-exit-event.md` … are **unchanged**" contradicts the SKILL.md body edits listed in the same block. Scope "unchanged" to the do-not-double-emit rule text (`SKILL.md:73`, `failure-path-exit-event.md:22`).
+- **CON-2 (suggestion, `arguments`).** The `--tier quick|full` rows list only `resolve-depth`, though `check-flags` takes any `--tier`. Give the three values the same verb coverage.
+- **CON-3 (suggestion, `behaviors-5`).** State that `source` records the baseline path, not the floor (`floor_applied` and `floor_legs` carry that), and say which value an explicit `--tier quick` takes.
+- **CON-4 (suggestion, `output-contract`).** `templates/risk-tiers/prototype/risk-policies.yaml` already has `quick` at all three levels. Mark it unchanged so the plan does not create a no-op task.
 
 ## Referent Integrity Reviewer (referent-integrity)
 
 **Verdict:** PASS_WITH_NOTES
 
-Every referent the spec names as existing was confirmed at its cited location. New referents are marked new.
-
-- **RI-1 (warning, `acceptance-criteria`).** No executable trailer-presence check exists for the review-provenance amendment to relax: `review-provenance.spec.md:156` states the rule as prose only. So the BEH-6 criterion "the check accepts that commit" cannot be tested. Name the check that will be added, with its file, or restate the criterion as conformance to the amended Contract A text.
-- **RI-2 (warning, `failure-modes`).** `loadRigorPolicies` has only two code callers, `lib/cli/implement.mjs:478` and `lib/cli/test-policy.mjs:280`, so review-specs and validate have no code path that "fails at policy load". `adev test-policy resolve` gains an unlisted `INVALID_TIER` failure, and a YAML parse error still returns `null` silently (`rigor-mode.mjs:47-50`). List `test-policy resolve` as affected, name the verb through which review-specs and validate would hit validation (or drop the claim), and state the parse-failure behaviour.
-- **RI-3 (warning, `behaviors-15`).** `skills/implement/references/failure-path-exit-event.md:22` and `skills/implement/SKILL.md:73` say per-task `LOOP_*` blocks are "Already covered - do not double-emit". The BEH-15 unattended `step_failed` reverses this, but neither file is in the skill change list. Add both, with the unattended exception stated there.
-- **RI-4 (suggestion, `output-contract`).** Once the batched-task leg is removed, the fate of `resolve-depth --in-batch` is unstated, and so are the `source` values for `lite` events. `escalated_from` and `lite_denied` must stay out of the event, whose key set is closed (`REVIEW_DEPTH_RESOLVED_KEYS`).
-- **RI-5 (suggestion, `arguments`).** "`--tier quick|full` as today" points at an argument the implement SKILL.md Arguments section does not document. Add `--tier` beside `--lite`.
+- **RI-6 (warning, `output-contract`).** `assertSafeArgvToken` permits a leading `-`, accepts `--output=x`, and throws `GOVERNANCE_SCALAR_UNSAFE` (`governance-values.mjs:200-224`). Reusing it adds nothing to the hex and no-leading-dash rule, and it would raise a different code. Drop the reuse claim and rely on the hex regex plus `rev-parse`.
+- **RI-7 (warning, `behaviors-7`).** `computeTouchedFiles` returns only `{path, status}` (`diff-tree --name-status -z`), so the symlink rule (mode `120000`) has no mode source. State that it is extended to return the destination mode (e.g. via `--raw`).
+- **RI-8 (warning, `behaviors-7`).** `excludeOwnLifecycleLogTouch` (`review-depth.mjs:180-207`) excludes the task's own lifecycle-log touch from `scope-mismatch` today. Read literally, BEH-7's "`.context-index/` is never exempt" would trip every `lite` task on that write. State that the exclusion still applies before the exemption check.
+- **RI-9 (warning, `output-contract`).** This is the same "unchanged" wording problem as CON-1.
+- **RI-10 (warning, `arguments`).** `adev implement batches` has no `--tier` flag (`implement.mjs:199-204`), and the Output Contract adds none, yet the `--tier lite` row lists `batches`. Remove it from the row, or add the flag.
 
 ## Wiring Reviewer (wiring-reviewer)
 
 **Verdict:** PASS_WITH_NOTES
 
-- **WR-1 (warning, `behaviors-15`).** The unattended-run signal BEH-15 branches on has no named producer. `skills/build/SKILL.md` dispatches implement with only the plan path. Name how implement learns it is unattended (a flag, or a lifecycle-log field) and who reads it, and add the mechanism to the BEH-15 acceptance fixture. (See the termination TR-2 blocker.)
-- **WR-2 (warning, `behaviors-16`).** The first-action `check-flags` call is skill prose only. Add a skill-text test asserting it precedes `adev gate require`.
-- **WR-3 (warning, `behaviors-5`).** The `--run-base` capture ("once, at the step-started event") names no command, and its role is easy to conflate with `--base-sha`. State the capture command and where `lite-mode.md` records it, and say the two are distinct per-pass inputs.
-- **WR-4 (suggestion).** The route summary line has no skill-text assertion.
-- **WR-5 (suggestion).** The end-of-run gate run and its `step_failed` emission are skill prose rather than a verb. This is acceptable, but say it is intentional.
+- **WR-6 (warning, `behaviors-10`).** No skill-text test asserts that `skills/validate/SKILL.md` calls `adev implement lite-report`.
+- **WR-7 (warning, `behaviors-5`).** The `lite authorized via` line, the `lite_denied` summary and the `LITE_TRIPWIRE_ESCALATED` echo are relayed in prose only, with no skill-text assertion. The BD-7 visibility mitigation therefore has no wiring-level test.
+- **WR-8 (warning, `behaviors-15`).** BEH-15 says the existing Step 2g halt covers every review loop, but `skills/implement/references/steps/step-2-per-task-loop.md:322` says Stage 1 "After the last cycle, escalate to the user". *Orchestrator check:* confirmed. The `quick` synthesized loop does use the Stage 2 `cq-<n>` / `evaluateStopCondition` discipline, but Stage 1 does not. List `step-2-per-task-loop.md` as changed, with Stage 1's cap routed to the 2g halt, and add a Stage 1 non-convergence case to the BEH-15 fixture.
+- **WR-9 (suggestion).** This is the same "unchanged" wording as CON-1. It also suggests an optional test for the ignored `--in-batch` flag.
 
 ## Boundary Reviewer (boundary-reviewer)
 
 **Verdict:** PASS_WITH_NOTES
 
-- **BD-6 (warning, subprocess-interpolation, `behaviors-5`).** `--run-base` and `--base-sha` reach git with no stated validation. Require a strict hex sha, resolve it with rev-parse to a commit, refuse a leading `-` (the `assertSafeArgvToken` class), and use one flag name per role. State that the final pass reads governance inputs from run-base and uses the dispatch-time snapshot only for the touched-file diff.
-- **BD-7 (warning, privilege-escalation, `behaviors-5`).** A committed `implement_mode: lite` is standing authorization for unattended runs and any contributor. A branch that edits `risk-policies.yaml` authorizes itself, because run-base is that branch's own HEAD. Always echo "lite authorized via policy" in the transcript and run summary. Consider accepting policy-sourced `lite` only from the base branch's committed baseline. State that inline execution does not widen tool permissions beyond the implementer subagent's.
-- **BD-8 (warning, input-trust, `behaviors-5`).** Routing scores are agent-generated. Require `typeof === 'number'` and `Number.isFinite` before the `>= 0.6` comparison, and fail closed to non-`lite`.
-- **BD-9 (suggestion, `behaviors-7`).** State that the touched-file computation includes untracked and ignored paths, or that ignored paths count as sensitive.
-- **BD-10 (suggestion, `behaviors-7`).** Specify normalization for `..`, absolute paths and case-insensitive filesystems in the exemption checks.
+- **BD-11 (warning, privilege-escalation, `behaviors-7`).** Excluding gitignored files from the tripwire lets an inline `lite` task write a gitignored sensitive file (`.env`, local credentials or config) without the `sensitive-path` or `boundary` legs seeing it. For those two legs only, also enumerate ignored paths written since the snapshot, and keep the exemption logic as is.
+- **BD-12 (suggestion, `behaviors-5`).** A branch still authorizes itself by committing `implement_mode: lite`. Consider base-branch-only policy authorization, or a typed `--lite` off the default branch. This is the residual already recorded as an accepted risk in ADR 0020.
+- **BD-13 (suggestion, `arguments`).** State that paths read from the run-base commit are validated as repo-relative (no `..`, no leading `-`). State also how a routing sidecar that is not committed at `run_base` is treated. *Orchestrator note:* 73 sidecars are tracked in this repository and route runs usually commit them, but an uncommitted sidecar would silently deny `lite` for the whole run.
 
 ## Termination Reviewer (termination-reviewer)
 
-**Verdict:** FAIL
+**Verdict:** PASS_WITH_NOTES
 
-- **TR-1 (blocker, missing-iteration-cap, `behaviors-12`).** The interactive implement-rigor re-prompt ("Blank or any other input is re-prompted interactively") has no iteration cap, no exhaustion verdict and no stated stdin-EOF behaviour. State a maximum number of re-prompts, the verdict at exhaustion (exit 1, `INVALID_IMPLEMENT_RIGOR`, nothing written), and that EOF ends the loop with the same verdict. *Orchestrator note:* the sibling `lib/cli/init-prompt-implementation-mode.mjs` already reads lines through an async iterator and raises `InputClosedError` on EOF, so the reviewer's "hangs forever" evidence overstates that module. The gap in this spec's text stands.
-- **TR-2 (blocker, unsafe-unattended-default, `behaviors-15`).** The unattended branch is defined by dispatch route (a build or work step) rather than by runtime condition. A headless or scheduled direct `/adev:implement` run falls to the interactive verdict, with no operator present to receive it. Define unattended by runtime condition, state the detection rule, and keep build/work dispatch as one instance.
-- **TR-3 (warning, `invocation-modes`).** The legal range of `implement.max_review_cycles` and `--review-cycles` is not stated. `lib/manifest.mjs` enforces an integer `>= 1` with `INVALID_MAX_REVIEW_CYCLES`.
-- **TR-4 (warning, `behaviors-15`).** Under batching or `--parallel`, what happens to tasks already in flight when one task hits the unattended stop is unstated.
-- **TR-5 (suggestion, `behaviors-9`).** Note that Step 3 is single-pass.
-
-## Heuristics — related prior lessons (signature-ranked)
-
-The following heuristics are lessons learned from past work in this module, ranked with any exact matches for this blocker first. They are not necessarily prior occurrences of this blocker. Use them as guidance, not as hard rules.
-
-- *A universal coverage claim must ship with the predicate that checks it* (medium)
-- *Use session JSONL for token measurement, not file-size estimates* (medium)
-
-None is a signature match for either blocker; both are the module's general entries.
+- **TR-6 (warning, `invocation-modes`).** `implement.max_review_cycles` has no stated maximum. Each value is finite and the halt still fires, so this is not unsafe. State a maximum, or record that an unbounded value is an accepted operator choice.
+- **TR-7 (suggestion, `behaviors-15`).** State that the cap applies per review loop (per stage for `full`), so the per-task bound is 2 × cap for `full` and 1 × cap for `quick`.
 
 ---
 
 ## Summary
 
-**Total findings:** 25 (2 blockers, 14 warnings, 9 suggestions).
+**Total findings:** 18 (0 blockers, 11 warnings, 7 suggestions).
 
-The two blockers are both narrow:
+Two warnings are worth fixing before `/adev:plan`, because each would otherwise reach implementation as a defect:
 
-1. **The init re-prompt loop has no cap or EOF verdict** (TR-1, BEH-12).
-2. **BEH-15's unattended stop has no runtime detection rule**, so headless direct runs get the interactive verdict (TR-2, with WR-1 the same gap seen from the wiring side).
+1. **WR-8:** Stage 1's cap still escalates to the user, so the BEH-15 guarantee does not yet hold for `full` tasks.
+2. **RI-8:** without the existing own-lifecycle-log exclusion, the tripwire would escalate every `lite` task.
 
-The warnings cluster on three themes:
+Close behind are RI-7 (no mode source for the symlink rule) and BD-11 (ignored sensitive files bypass the tripwire). The rest are wording and test-coverage notes.
 
-- **`--run-base` versus `--base-sha`:** validation, naming and per-pass roles (CON-2, WR-3, BD-6).
-- **Policy-sourced `lite` authorization:** standing authorization, and whether it is visible in runs (BD-7).
-- **Unlisted callers and skill files:** affected by `loadRigorPolicies` validation and the `LOOP_*` emit rule (RI-2, RI-3).
-
-**Action required:** run `/adev:specify --revise .context-index/specs/features/implementation/implement-rigor-ladder.spec.md` to address the blockers recorded in `implement-rigor-ladder.blockers.md` (and the warnings in the same revision), then re-run `/adev:review-specs`.
+**Action required:** none for the gate; the spec may proceed to `/adev:plan`. The recommendation is to fold WR-8, RI-8, RI-7 and BD-11 (and the wording fixes) into a revision 4 first, since each is a few sentences.
