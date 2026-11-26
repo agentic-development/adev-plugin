@@ -214,6 +214,7 @@ Display the command output to the user verbatim.
 | Unparseable date | "Invalid date format. Use YYYY-MM-DD." | INVALID_DATE |
 | No backend configured | Warn, still write the entry | NO_BACKEND |
 | Epic creation fails | Write with `epic_id: null`, warn | EPIC_CREATE_FAILED |
+| Epic created on GitHub but some fields were not written (github backend) | Not swallowed: the milestone is written linked to the created item's `id`, then `adev issues milestone create` exits 1 naming the code, that `id` and its `unwritten` fields. Finish that item with `adev issues update` or on GitHub; do not re-run create to retry the epic | GITHUB_PARTIAL_CREATE |
 | Unknown strategy | "Unknown release strategy" | UNKNOWN_STRATEGY |
 
 ### Milestone List

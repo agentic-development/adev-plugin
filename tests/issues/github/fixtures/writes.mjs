@@ -413,6 +413,17 @@ export const writes = Object.freeze({
     readBack: { title: "adev-fixture: e", issueType: "Epic", milestone: "v1" },
   }),
 
+  // A milestone's epic (title and milestone both "v1"), rejected at SetMilestone after it exists.
+  partialEpicAtMilestone: fixture({}, {
+    number: 345,
+    title: "v1",
+    slots: [slot.status()],
+    issueType: "epic",
+    milestone: "v1",
+    failAt: "SetMilestone",
+    readBack: {},
+  }),
+
   // SetFields is rejected after the issue exists and is on the project.
   partial: fixture({}, {
     number: 301,

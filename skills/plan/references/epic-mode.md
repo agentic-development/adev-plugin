@@ -19,6 +19,9 @@ Activated by `--epic <id>` or by keyword detection ("plan epic epic-3" -> `id: "
      next_action: "Run /adev:plan --feature <module> to break into Features"
    })
    ```
+
+   **If any `create()` call throws `GITHUB_PARTIAL_CREATE`, stop.** The item exists on GitHub, but some of its fields were not written. Report the error code, the new item's canonical ID (the error's `id`) and its `unwritten` list, create no further items, and do not retry. Tell the operator to finish that item with `adev issues update` or on GitHub, then re-run Epic Mode.
+
 6. **Report:** "Epic `<epic-id>` now has `<N>` Features (`<M>` newly created)."
 
 ---
