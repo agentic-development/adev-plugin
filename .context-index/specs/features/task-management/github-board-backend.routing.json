@@ -1,0 +1,248 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "17/20 would be auto-agent; forced to assisted-agent by spec risk_level high. BEH-5/6 and GITHUB_INVALID_ID fully specified; single-file change to id-utils with strict URL refusal rules."
+    },
+    {
+      "task_id": "t10",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.6,
+        "novelty": 1
+      },
+      "rationale": "17/20, forced assisted by risk_level high. Small registry branch, but SUPPORTED_BACKENDS change ripples into backend-list assertions across tests (split if more than 8)."
+    },
+    {
+      "task_id": "t11",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.4,
+        "blast_radius": 0.6,
+        "novelty": 0.4
+      },
+      "rationale": "12/20. Projects v2 mutation sequence with aliased field writes, type_source branches, partial-create semantics, plus CLI catch blocks in lib/cli; external API shape drives design."
+    },
+    {
+      "task_id": "t12",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.8,
+        "novelty": 0.6
+      },
+      "rationale": "15/20. Reuses validateStatusTransition and json close guards; new mutations for close/comment/blocked-by with idempotent dependency add."
+    },
+    {
+      "task_id": "t13",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.4
+      },
+      "rationale": "15/20. Write + re-read lease with settle interval and rollback-by-abstention is concurrency-sensitive; five race fixtures (a)-(e) are fully specified."
+    },
+    {
+      "task_id": "t14",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.6,
+        "novelty": 0.6
+      },
+      "rationale": "13/20. Adds a write guard to every json and beads adapter write path; sentinel format awaits agent-reliable-state-artifacts confirmation; symlink refusal via path-safety."
+    },
+    {
+      "task_id": "t15",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.6,
+        "novelty": 0.8
+      },
+      "rationale": "15/20. fenceBlock precedent exists; spans lib/issues/github and two lib/cli verbs; RI-4 resolution fixes JSON-raw plus untrusted_text marker."
+    },
+    {
+      "task_id": "t16",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 1,
+        "blast_radius": 0.8,
+        "novelty": 1
+      },
+      "rationale": "18/20, forced assisted by risk_level high. Direct application of the Task 15 helpers to three CLI renderers."
+    },
+    {
+      "task_id": "t17",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.4,
+        "blast_radius": 0.6,
+        "novelty": 0.4
+      },
+      "rationale": "12/20. Projects v2 field and single-select option creation without clearing item values is external-API-sensitive; drift scan over six categories; new CLI verb plus charter edit."
+    },
+    {
+      "task_id": "t18",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.6,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.6,
+        "novelty": 0.4
+      },
+      "rationale": "11/20. Depends on the unwritten backend-migration amendment; ordered copy, link replay and legacy_id-based resume across json and beads sources inside the existing migrate verb."
+    },
+    {
+      "task_id": "t19",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.6,
+        "novelty": 0.6
+      },
+      "rationale": "13/20. Confirmation, dry-run, pacing and bounded rate-limit waits are well specified but depend on the amendment (--yes) and Task 14's sentinel."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.6,
+        "novelty": 0.8
+      },
+      "rationale": "15/20. BEH-7 precise; touches validators in two modules (lib/retro, lib/session-capture), one validator is module-internal and must be tested via its exported entry point."
+    },
+    {
+      "task_id": "t20",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.4,
+        "blast_radius": 0.6,
+        "novelty": 0.4
+      },
+      "rationale": "11/20. REQUIRES HUMAN STEP: maintainer records fixtures against a throwaway board with a test token; agent writes shared contract cases, recorder, then commit 2 after recording."
+    },
+    {
+      "task_id": "t21",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.6,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.6,
+        "novelty": 0.8
+      },
+      "rationale": "14/20. Driven by review WR-1 rather than a spec behavior; markdown edits in skills and templates plus a tasks.backend reader-allowlist audit test."
+    },
+    {
+      "task_id": "t22",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.6,
+        "novelty": 0.8
+      },
+      "rationale": "16/20, forced assisted by risk_level high. BEH-38 coverage test parses the spec's Error Cases table; docs span three files plus a conditional skills edit."
+    },
+    {
+      "task_id": "t3",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.6,
+        "novelty": 1
+      },
+      "rationale": "17/20, forced assisted by risk_level high. Mechanical whitelist extension (claimed_at idiom) but edits the shared IssueManager contract in interface.mjs used by every adapter."
+    },
+    {
+      "task_id": "t4",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "16/20, forced assisted by risk_level high. Security-critical sole gh spawn site (fixed argv, stdin variables, token redaction); per-connection pagination bounds and error mapping add composition."
+    },
+    {
+      "task_id": "t5",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "15/20. Replay keying, named-operation parsing and fixture content allowlist are new test infrastructure; general-test-helpers sample is only a partial match."
+    },
+    {
+      "task_id": "t6",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "17/20, forced assisted by risk_level high. Pure synchronous validator over a fully enumerated BEH-2 key set with explicit error cases."
+    },
+    {
+      "task_id": "t7",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "16/20, forced assisted by risk_level high. Single PREFLIGHT_QUERY must model Projects v2 field types and options correctly; hand-built fixtures per failure variant."
+    },
+    {
+      "task_id": "t8",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.4,
+        "blast_radius": 1,
+        "novelty": 0.4
+      },
+      "rationale": "14/20. Refuse-don't-repair predicate family for 12 fields (incl. YAML-indicator and slug rules) plus Projects v2 field-value decoding has no codebase precedent; trust-boundary code."
+    },
+    {
+      "task_id": "t9",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.8,
+        "novelty": 0.4
+      },
+      "rationale": "14/20. Large task: paged items query with per-item connection continuations, legacy_id index with ambiguity refusal, cycle-detecting walkTree, programmatic 250-item fixture."
+    }
+  ]
+}
