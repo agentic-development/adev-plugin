@@ -1,7 +1,7 @@
 ---
 kind: feature
 status: approved
-revision: 18
+revision: 26
 updated: 2026-11-26
 tracker-ref: agentic-development/adev-plugin#441
 ---
@@ -186,15 +186,15 @@ On the github backend a WorkItem's `id` is a **GitHub canonical ID** — `gh-<n>
 | **Beads Board Git Topology** | `.beads/` provisioned as a `git worktree` linked to a dedicated orphan `beads-board` branch (unrelated history to `main`); composes with existing `resolveStorageRoot()` worktree-sharing so local worktrees are unaffected. Fresh-clone bootstrap is one command (`git worktree add .beads beads-board`) — validated live in the revision-9 prototype spike, no separate `git fetch` needed. | must-have | 5 | validated |
 | **Beads Board Direct Sync** | `adev issues sync --push` CLI verb: flush local board mutations and push directly to `beads-board`, no PR, no branch-protection exception, since nothing merges into `main`. Explicitly single-writer-safe only for this milestone — safe reconciliation of concurrent pushes from independent clones/CI is a known, tracked gap (`issue-vtj7lp`), not solved here. | must-have | 5 | — |
 | **Beads Board Migration Tool** | One-shot conversion for an existing repo (this one): snapshot current `.beads/issues.jsonl` state from `main` onto the new orphan branch, remove `.beads/` from `main`'s tree, add `main`'s `.gitignore` entry, replace with the linked worktree. Idempotent, dry-runnable — mirrors the existing Backend Migration capability's shape. | must-have | 5 | validated |
-| **GitHub Board Backend** | `GithubAdapter` implements the full `IssueManager` contract against GitHub Issues + Projects v2, registered as `tasks.backend: github`. Maintainer-only field placement: Project fields for Status, Priority, `owner`, `claimed_at`, `next_action`, `spec_ref`, `planRef`, `branch`, `pr`; `module:<slug>` labels for `affected_modules`; native sub-issues, blocked-by, issue types, Epic milestone; title/body as `title`/`notes`, body never parsed for adev fields. | must-have | 6 | review-passed |
-| **GitHub Canonical IDs** | `gh-<n>` (home repo, stable) and `gh-`-prefixed owner/repo/number IDs for other repositories, recognized by `id-utils` and by the session-capture and retro ID validators; `#<n>` display-only. | must-have | 6 | review-passed |
-| **GitHub Claim Lease** | `claim()` as write + re-read + rollback on a lost race; `release()`. Documented race window; TTL takeover on `claimed_at` unchanged. | must-have | 6 | review-passed |
-| **GitHub Fail-Fast Preflight** | Named errors for missing `gh`, missing auth or scopes, unreachable project, missing or misconfigured field, unmapped status option. No JSON fallback. | must-have | 6 | review-passed |
-| **GitHub Project Setup** | Verb that verifies the configured project, or creates the recommended default board (Status options Backlog / Ready / In Progress / In Review / Deferred / Done; Priority, `owner`, `claimed_at`, `next_action`, `spec_ref`, `planRef`, `branch`, `pr`, `legacy_id` fields). Never writes without confirmation. Views are documented, not created. | should-have | 6 | review-passed |
-| **GitHub Batched Reads** | `list()` and `walkTree()` fetch in batched GraphQL pages, not one call per item. | must-have | 6 | review-passed |
-| **Migration to GitHub** | `adev issues migrate --to github`: copies open items (all with `--include-closed`), recreates hierarchy and dependencies, writes the MigrationIdMap, resolves old IDs through it, leaves the source board read-only. `--dry-run`, idempotent re-runs, confirmation (with repository and project visibility) before the first write; never writes the manifest. | must-have | 6 | review-passed |
+| **GitHub Board Backend** | `GithubAdapter` implements the full `IssueManager` contract against GitHub Issues + Projects v2, registered as `tasks.backend: github`. Maintainer-only field placement: Project fields for Status, Priority, `owner`, `claimed_at`, `next_action`, `spec_ref`, `planRef`, `branch`, `pr`; `module:<slug>` labels for `affected_modules`; native sub-issues, blocked-by, issue types, Epic milestone; title/body as `title`/`notes`, body never parsed for adev fields. | must-have | 6 | planned |
+| **GitHub Canonical IDs** | `gh-<n>` (home repo, stable) and `gh-`-prefixed owner/repo/number IDs for other repositories, recognized by `id-utils` and by the session-capture and retro ID validators; `#<n>` display-only. | must-have | 6 | planned |
+| **GitHub Claim Lease** | `claim()` as write + re-read + rollback on a lost race; `release()`. Documented race window; TTL takeover on `claimed_at` unchanged. | must-have | 6 | planned |
+| **GitHub Fail-Fast Preflight** | Named errors for missing `gh`, missing auth or scopes, unreachable project, missing or misconfigured field, unmapped status option. No JSON fallback. | must-have | 6 | planned |
+| **GitHub Project Setup** | Verb that verifies the configured project, or creates the recommended default board (Status options Backlog / Ready / In Progress / In Review / Deferred / Done; Priority, `owner`, `claimed_at`, `next_action`, `spec_ref`, `planRef`, `branch`, `pr`, `legacy_id` fields). Never writes without confirmation. Views are documented, not created. | should-have | 6 | planned |
+| **GitHub Batched Reads** | `list()` and `walkTree()` fetch in batched GraphQL pages, not one call per item. | must-have | 6 | planned |
+| **Migration to GitHub** | `adev issues migrate --to github`: copies open items (all with `--include-closed`), recreates hierarchy and dependencies, writes the MigrationIdMap, resolves old IDs through it, leaves the source board read-only. `--dry-run`, idempotent re-runs, confirmation (with repository and project visibility) before the first write; never writes the manifest. | must-have | 6 | planned |
 | **Bridge Coexistence** | On `backend: github` the bugfix-loop bridge's inbound copy is a no-op, the `bug` + `help wanted` gate becomes an eligibility filter, outbound comments unchanged, and the loop's "never changes GitHub issue state" invariant is relaxed for `IssueManager`-mediated writes. Implemented in `autonomous-bugfix-loop` via a coordinated amendment; this row records the dependency. | must-have | 6 | — |
-| **GitHub Conformance Suite** | Adapter conformance tests against recorded GraphQL fixtures; CI needs no live project or token. | must-have | 6 | review-passed |
+| **GitHub Conformance Suite** | Adapter conformance tests against recorded GraphQL fixtures; CI needs no live project or token. | must-have | 6 | planned |
 
 ## Deferred Capabilities
 
