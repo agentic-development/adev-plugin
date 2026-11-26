@@ -12,7 +12,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join, dirname, resolve as resolvePath } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { run } from "../../lib/cli/test-policy.mjs";
+import { run, boundaryCrossingFor, loadConfiguredSensitivePaths } from "../../lib/cli/test-policy.mjs";
 import { createTempDir, cleanupTempDir, writeFixture } from "../helpers.mjs";
 import { writeRoutingSidecar } from "../../lib/plan-routing-sidecar.mjs";
 import { readEvents } from "../../lib/lifecycle-state.mjs";
@@ -487,3 +487,83 @@ for (const { label, body, code } of MALFORMED_POLICIES) {
     }
   });
 }
+
+// The run-base reader passes text committed at `run_base` through these two
+// functions. A `{ text }` override must parse exactly as the on-disk file would,
+// degrade the same way, and never fall back to reading the working tree.
+const BOUNDARIES_DB = "boundaries:\n  - id: no-db\n    severity: error\n    pattern: 'src/db/'\n    exclude: []\n";
+const BOUNDARIES_UI = "boundaries:\n  - id: no-ui\n    severity: error\n    pattern: 'src/ui/'\n    exclude: []\n";
+const BOUNDARY_CASES = [
+  { label: "a matching rule", text: BOUNDARIES_DB, expected: true },
+  { label: "an invalid regex", text: "boundaries:\n  - id: bad\n    pattern: '('\n", expected: false },
+  { label: "an unparseable document", text: "boundaries:\n  - id: x\n  : bad\n", expected: false },
+  { label: "an empty document", text: "", expected: false },
+];
+
+for (const { label, text, expected } of BOUNDARY_CASES) {
+  test(`boundaryCrossingFor with { text } matches the on-disk result for ${label}`, async () => {
+    const dir = await createTempDir();
+    try {
+      await writeFixture(dir, ".context-index/governance/boundaries.yaml", text);
+      const paths = ["src/db/query.ts", "src/ui/view.ts"];
+      const fromDisk = boundaryCrossingFor(dir, paths);
+      await writeFixture(dir, ".context-index/governance/boundaries.yaml", BOUNDARIES_UI);
+      assert.equal(fromDisk, expected);
+      assert.equal(boundaryCrossingFor(dir, paths, { text }), fromDisk);
+    } finally {
+      await cleanupTempDir(dir);
+    }
+  });
+}
+
+test("boundaryCrossingFor with { text } ignores the on-disk boundaries.yaml", async () => {
+  const dir = await createTempDir();
+  try {
+    await writeFixture(dir, ".context-index/governance/boundaries.yaml", BOUNDARIES_UI);
+    assert.equal(boundaryCrossingFor(dir, ["src/ui/view.ts"]), true);
+    assert.equal(boundaryCrossingFor(dir, ["src/ui/view.ts"], { text: BOUNDARIES_DB }), false);
+    assert.equal(boundaryCrossingFor(dir, ["src/db/query.ts"], { text: BOUNDARIES_DB }), true);
+  } finally {
+    await cleanupTempDir(dir);
+  }
+});
+
+test("boundaryCrossingFor with { text: null } degrades like an absent file, even when one exists on disk", async () => {
+  const dir = await createTempDir();
+  try {
+    await writeFixture(dir, ".context-index/governance/boundaries.yaml", BOUNDARIES_DB);
+    assert.equal(boundaryCrossingFor(dir, ["src/db/query.ts"], { text: null }), false);
+  } finally {
+    await cleanupTempDir(dir);
+  }
+});
+
+const SENSITIVE_CASES = [
+  { label: "a configured list", text: "sensitive_paths:\n  - src/payments/**\n" },
+  { label: "an unparseable document", text: "sensitive_paths:\n  - a\n  : bad\n" },
+  { label: "a document with no sensitive_paths key", text: "other: 1\n" },
+];
+
+for (const { label, text } of SENSITIVE_CASES) {
+  test(`loadConfiguredSensitivePaths with { text } matches the on-disk result for ${label}`, async () => {
+    const dir = await createTempDir();
+    try {
+      await writeFixture(dir, ".context-index/governance/sensitive-paths.yaml", text);
+      const fromDisk = loadConfiguredSensitivePaths(dir);
+      await writeFixture(dir, ".context-index/governance/sensitive-paths.yaml", "sensitive_paths:\n  - src/other/**\n");
+      assert.deepEqual(loadConfiguredSensitivePaths(dir, { text }), fromDisk);
+    } finally {
+      await cleanupTempDir(dir);
+    }
+  });
+}
+
+test("loadConfiguredSensitivePaths with { text: null } degrades like an absent file, even when one exists on disk", async () => {
+  const dir = await createTempDir();
+  try {
+    await writeFixture(dir, ".context-index/governance/sensitive-paths.yaml", "sensitive_paths:\n  - src/payments/**\n");
+    assert.equal(loadConfiguredSensitivePaths(dir, { text: null }), undefined);
+  } finally {
+    await cleanupTempDir(dir);
+  }
+});
