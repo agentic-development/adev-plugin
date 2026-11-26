@@ -4,103 +4,115 @@ charter: .context-index/specs/features/task-management/charter.md
 verdict: PASS_WITH_NOTES
 tier: full
 date: 2026-11-26
-last-reviewed-revision: 2
-prior-round: revision 1, BLOCK (3 blockers) — see git history of this file
-file-sha: d7b346982184541f7f912dd451dde26c2b078cd5051e08d0825f584f4193ec08
+last-reviewed-revision: 6
+file-sha: ed7c4e39f36316254a472dc3e00f0bd575df60a1e59ad0a90016e33201a767a3
 ---
 
 # Architecture Review: github-board-backend
 
 > **Date:** 2026-11-26
-> **Spec:** .context-index/specs/features/task-management/github-board-backend.spec.md (revision 2)
-> **Charter:** .context-index/specs/features/task-management/charter.md (revision 10)
+> **Spec:** .context-index/specs/features/task-management/github-board-backend.spec.md (revision 6)
+> **Charter:** .context-index/specs/features/task-management/charter.md (github capabilities introduced in charter revision 10)
 > **Verdict:** PASS_WITH_NOTES
 > **Rigor tier:** full (risk_level: high → `review_mode: full`)
-> **Diff scope:** not scoped (`no-content-changed`, failed open to full context); prior-round review supplied to every reviewer
-> **Registry warnings:** `BROADEN_TOOL` ×2 and `BROADEN_NETWORK` for profile `browser-review` (not used by any dispatched reviewer)
-> **Dispatch note:** each reviewer received its prompt verbatim from `adev governance dispatch` (`buildDispatchPlan` → `buildReviewerDispatches`), delivered as a file the reviewer read in full, because the five prompts total ~1.06 MB.
-> **Governance:** risk policy `high` sets `require_hitl_approval: true` — a human must approve before `/adev:plan`.
+> **Diff scope:** scoped (`diff-scoped`) against the committed revision 5.
+> **Prior round:** revision 5 BLOCK on TR-1 (continuation-page bound). TR-1 is resolved: BEH-10 now bounds each sub-issue and blocked-by continuation on its own. The termination and referent-integrity reviewers both confirm it. The rev 6 Error Cases rows resolve CON-3 for the spec's own codes.
+> **Registry warnings:** `BROADEN_TOOL` ×2 and `BROADEN_NETWORK` for profile `browser-review`. No dispatched reviewer uses that profile.
+> **Dispatch note:** prompts were assembled by `node cli/index.mjs governance dispatch` (worktree CLI). Each prompt was delivered as a file that the reviewer read in full. Model tiers:
+> - `capable` (Sonnet): consistency-analyzer, wiring-reviewer, boundary-reviewer.
+> - `reasoning` (Opus): referent-integrity.
+> - `fast` (Haiku): termination-reviewer.
+> **Governance:** risk policy `high` sets `require_hitl_approval: true`. Maintainer decisions for revisions 5 and 6 were taken in conversation on 2026-11-26.
 
 ## Reviewers Dispatched
 
 | ID | Name | Mode | Profile | Prompt/Skill |
 |----|------|------|---------|--------------|
-| consistency-analyzer | Consistency Analyzer | subagent | reviewer-capable | registry prompt (via `adev governance dispatch`) |
-| referent-integrity | Referent Integrity Reviewer | subagent | reviewer-reasoning | registry prompt (via `adev governance dispatch`) |
-| wiring-reviewer | Wiring Reviewer | subagent | reviewer-capable | registry prompt (via `adev governance dispatch`) |
-| boundary-reviewer | Boundary Reviewer | subagent | reviewer-capable | registry prompt (via `adev governance dispatch`) |
+| consistency-analyzer | Consistency Analyzer | subagent | reviewer-capable | plugin:review-specs/consistency-analyzer-prompt.md |
+| referent-integrity | Referent Integrity Reviewer | subagent | reviewer-reasoning | plugin:review-specs/referent-integrity-prompt.md |
+| wiring-reviewer | Wiring Reviewer | subagent | reviewer-capable | plugin:review-specs/wiring-reviewer-prompt.md |
+| boundary-reviewer | Boundary Reviewer | subagent | reviewer-capable | plugin:review-specs/boundary-reviewer-prompt.md |
 | termination-reviewer | Termination Reviewer | subagent | reviewer-fast | registry prompt (via `adev governance dispatch`); triggered, score 2 ≥ 1 |
 
 ## Disabled Reviewers
 
 | ID | Reason |
 |----|--------|
-| structural-architect | disabled in `.context-index/governance/review.yaml` (no reason surfaced by the registry envelope) |
-| security-reviewer | disabled in `.context-index/governance/review.yaml` (no reason surfaced by the registry envelope) |
-
-## Prior-Round Resolution
-
-All 3 revision-1 blockers are resolved — BD-1 by BEH-40 (fixed `gh api graphql --input -` argv, values only as GraphQL variables), CON-1 by BEH-16 (shared `validateStatusTransition()` rules), RI-1 by BEH-32 (never writes `manifest.yaml`) — and every reviewer confirmed its own revision-1 warnings and suggestions resolved.
+| structural-architect | Disabled as part of the reviewer-domain-fit initiative. OWASP/structural scope was retargeted to referent-integrity/wiring-reviewer/consistency-analyzer/boundary-reviewer for the default (Node CLI/plugin) project shape. Prompt retained on disk; still resolvable for any project whose materialized review.yaml already names it. |
+| security-reviewer | Disabled as part of the reviewer-domain-fit initiative. OWASP-scoped review relocated to the web-service domain extension (opt-in via adev extension install web-service) where it fits the artifact class. Prompt retained on disk. |
 
 ## Consistency Analyzer (consistency-analyzer)
 
 **Verdict:** PASS_WITH_NOTES
 
-- **CON-1** (warning, contract) — State whether a github-path migration abort also emits `backend-migration.spec.md`'s `MIGRATE_PARTIAL_FAILURE` (with the `GITHUB_*` code in `errors[]`) or replaces it, and how ADR 0014's verbatim stderr passthrough squares with the "token redacted" promise. Belongs in the task-14 amendment.
-- **CON-2** (warning, adr-compliance; external) — ADR 0016 (Proposed) Decision 1/2 makes `.context-index/` the single system of record for the issue board. The github backend keeps board fields only on GitHub. Cite it and amend ADR 0016 with an opt-in external-board carve-out (`remedy_ref: .context-index/adrs/0016-portable-state-ownership.md`).
-- **CON-3** (warning, module-boundary) — `.beads/adev-read-only.json` sits in the `beads-board` linked worktree; unless committed and pushed it guards only the local clone. State which.
-- **CON-4** (warning, terminology) — Say that "rollback-by-abstention" is the charter's "rollback", and whether the loser's `claimed_at` overwriting the winner's is accepted or restored; name `legacy_id` as the MigrationIdMap realization.
-- **CON-5** (suggestion) — Add `walkTree(<legacy id>)` resolving via `legacy_id` to BEH-37's github-only differences (vs. tiered-hierarchy Behavior 7's `[]`).
+- **CON-1 (warning, BEH-30):** `.migrate-unanchored.json` and `MIGRATE_UNANCHORED_ITEM` are not in the amendment's BEH-5 pre-write order. Add them between steps 6 and 7. The fix belongs in the amendment (`external`, remedy: `backend-migration-rev-3-github-target.spec.md`). Also register the file in `lib/gitignore-paths.mjs`.
+- **CON-2 (warning, BEH-38):** the amendment's codes are not in this spec's Error Cases table, so the docs test does not see them. The codes are `MIGRATE_RESUME_*`, `MIGRATE_TARGET_FOREIGN_LEGACY_ID`, `MIGRATE_SENTINEL_PROJECT_MISMATCH`, `MIGRATE_GITHUB_UNAVAILABLE` and `MIGRATE_PARTIAL_FAILURE`.
+- **CON-3 (warning, BEH-21–23):** no CLI exit codes are stated for claim errors. Per `backend-migration.spec.md` and `lifecycle-integration.spec.md`, `ISSUE_ALREADY_CLAIMED` exits 2.
+- **CON-4 (warning, BEH-22):** the charter says "rolls back" where the spec says "abstains". Reconcile the wording, and say what happens to the loser's `claimed_at`.
+- **CON-5 (warning, BEH-39):** the `next_action` and `type` refusal is narrower than `next-action-and-type-fields.spec.md`. Declare it a github difference.
+- **CON-6 (warning, BEH-5):** pin the `parseId()` return shape for gh IDs.
+- **CON-7 (suggestion):** reconcile `planRef` with the charter's and `reality-check`'s `plan_ref`.
+- **CON-8 (suggestion):** on github, parent-epic lookup must not rely on a `notes` prefix.
 
 ## Referent Integrity Reviewer (referent-integrity)
 
 **Verdict:** PASS_WITH_NOTES
 
-- **RI-1** (warning, `behaviors-14`) — `/adev:plan` never calls `create()` (only `adev issues epic` → `createEpic`) and has no non-blocking adapter-error path; drop it from BEH-14's consumer list or add plan-side handling.
-- **RI-2** (warning, `behaviors-33`) — The file adapter already throws `BACKEND_READ_ONLY_DEPRECATED` on every write (`file-adapter.mjs:32-36`); state which code wins when the sentinel is present.
-- **RI-3** (warning, `behaviors-26`) — Charter interface row says `setup --check` exits non-zero on drift and lists no `--yes`; BEH-26 exits 0 on drift. Reconcile.
-- **RI-4** (warning, `behaviors-20`) — The five verbs don't render bodies as text (bodies appear only in `--json`, which `/adev:debug` consumes via `show --json`), and `fenceBlock` needs a nonce source. Say whether `--json` `notes` is fenced or raw, or limit BEH-20 to human-form titles.
-- **RI-5** (suggestion) — `--yes` is a new `issues-migrate.mjs` flag (`parseArgs` rejects unknown flags); add it to task 9 and the task-14 amendment.
+Verified referents include the `interface.mjs` lease helpers, `CONFIG_KEYS`, the transport's fixed argv, the ID helpers and validators, `assertContained`, the specify and plan skill steps, the board worktree, and the companion commits.
+
+- **RI-1 (warning, BEH-10):** the shipped `transport.mjs` `paginate()` and `board-read.mjs` `continueConnection()` recompute the bound on every page. The plan must state the code change.
+- **RI-2 (warning, BEH-39/AC):** `lib/reality-check.mjs:433` reads `plan_ref` (snake case). Name it next to `planRef`, and assign the containment fix to a task.
+- **RI-3 (warning, Error Cases):** the shipped `GITHUB_REQUEST_FAILED` and `GITHUB_TRANSPORT_INTERNAL` have no rows.
+- **RI-4 (suggestion, BEH-32):** the restated sentinel rules are stricter than charter rev 9 (the check on read and on the parent directory), yet BEH-32 says the charter governs.
 
 ## Wiring Reviewer (wiring-reviewer)
 
 **Verdict:** PASS_WITH_NOTES
 
-- **WR-1** (warning) — Other `tasks.backend` readers (`issues-next.mjs:73`, `cli/index.mjs:1199`, `cost-summary.mjs`, `/adev:sync`'s Task Management block) are unaccounted for; `constitution-sync.spec.md` would emit file-backend (`tasks.md`) guidance for an unknown backend. Add a sync task/test and a statement that every reader was checked.
-- **WR-2** (warning) — No acceptance criterion asserts each BEH-26 drift category appears in the `setup --check` report; add a fixture test per category.
-- **WR-3** (warning) — State the producer→consumer contract the bridge amendment must test (e.g. a home-repo `gh-<n>` item with a reserved `module:` label classified fail-closed).
-- **WR-4** (suggestion) — Name the reader of `.migrate-state.json` "progress reporting".
-- **WR-5** (suggestion) — State whether the fixture recorder's containment boundary is tested or manual-only.
+- **WR-1 (warning):** `/adev:sync` and constitution-sync have no github consumer.
+- **WR-2 (warning):** `.migrate-unanchored.json` is not in the gitignore registry or the amendment's check order.
+- **WR-3 (warning):** no test traces a reserved `module:` label through to a fail-closed eligibility result.
+- **WR-4 (warning):** no criterion covers the progress line or the dry-run read of `.migrate-unanchored.json`.
+- **WR-5 (warning):** no criteria per `setup --check` drift category, for the exit-code split, or for a continuation tripping its own bound.
+- **WR-6 (suggestion):** name the write methods the sentinel guard covers.
+- **WR-7 (suggestion):** state how the fixture recorder is invoked.
 
 ## Boundary Reviewer (boundary-reviewer)
 
 **Verdict:** PASS_WITH_NOTES
 
-- **BD-1** (warning) — BEH-40's single fixed argv contradicts BEH-3's preflight (`gh auth status`, scope check). Enumerate the closed set of fixed argv arrays preflight may run, or derive scopes through the GraphQL channel, and reword the assertion to "one of this closed set".
-- **BD-2** (suggestion) — Sentinel write and existence check should both go through `resolveContained()` against a realpath'd storage root; refuse a symlinked sentinel.
-- **BD-3** (warning) — BEH-39 omits predicates for `type`, Epic `milestone`, and `priority`, and `next_action` does not refuse YAML-significant sequences; add refuse-don't-sanitize predicates and state the list is exhaustive over BEH-8's table.
-- **BD-4** (warning) — Labels and issue types are triage-writable and Project text fields need only project write — "maintainer-only" overstates it. State the real trust assumption, how reserved safety tags behave when a triager adds/removes them, and document it.
-- **BD-5** (warning) — State the commit/gitignore status of both sentinel paths (the beads one can be pushed to the public board branch) and that the project URL is its only content; add a fixture-lint check that titles/bodies come only from recorder-authored strings.
-- **BD-6** (suggestion) — Document a sanctioned unlock procedure for `BOARD_READ_ONLY_MIGRATED`, and that a malformed sentinel still blocks writes.
-- **BD-7** (suggestion) — Parse issue URLs with WHATWG `URL`; refuse userinfo, port, query, and fragment rather than stripping them.
+Prior BD-1 (realpath containment) stays resolved.
+
+- **BD-1 (warning, BEH-39):** no refusal predicates for `type` and `milestone`; `next_action` lets through YAML-significant sequences.
+- **BD-2 (warning, BEH-30):** `.migrate-unanchored.json` needs the sentinel's containment and symlink rules, and its IDs need validating on read.
+- **BD-3 (warning):** list the local probe and git argv; refuse shell metacharacters in `branch`.
+- **BD-4 (warning):** steady-state writes to a project named in the manifest have no consent step. Accept the risk, or add a first-use disclosure.
+- **BD-5 (suggestion):** require recorder-authored fixtures, and clear `GH_HOST`/`GH_ENTERPRISE_TOKEN` in the transport's child environment.
 
 ## Termination Reviewer (termination-reviewer)
 
 **Verdict:** PASS_WITH_NOTES
 
-- **TR-1** (warning) — BEH-10's page bound is written for the item read; state that each sub-issue / blocked-by continuation has its own `totalCount` bound and the repeated-cursor rule.
-- **TR-2** (warning) — BEH-11's transitive walk states no visited-set or cycle outcome; track visited IDs and throw a named code on a cycle.
-- **TR-3** (suggestion) — Keep BEH-35's numbers as the single source and reference them from Acceptance Criteria and Error Cases.
+Prior TR-1 is resolved.
+
+- **TR-2 (warning, BEH-10):** no absolute ceiling on the page bound, and nothing says what happens to a missing or non-integer `totalCount`.
+- **TR-3 (suggestion, BEH-35):** say that each rate-limit response consumes one wait and that the same request is re-issued after it.
+- **Fully bounded:** `walkTree`, item and connection pagination (apart from TR-2), the migration copy and re-run, pacing, claim settle, preflight, and confirmation.
 
 ## Heuristics
 
-The following heuristics are lessons learned from past work in this module. Use them as guidance, not as hard rules.
+The following heuristics are lessons learned from past work in this module, ranked by confidence. Use them as guidance, not as hard rules.
 
-- *A universal coverage claim must ship with the predicate that checks it* (medium) — relevant to WR-1's "every `tasks.backend` reader was checked" and BD-3's "exhaustive over BEH-8".
+- A universal coverage claim must ship with the predicate that checks it (confidence: medium)
+- Use session JSONL for token measurement, not file-size estimates (confidence: medium)
+- Cache reads are 71% of session cost: minimize context accumulation (confidence: medium)
 
 ---
 
 ## Summary
 
-**Total findings:** 25 (0 blockers, 17 warnings, 8 suggestions)
-**Action required:** None blocks planning. Because the risk policy requires human approval before `/adev:plan`, a short revision-3 cleanup is recommended first — chiefly BD-1 (preflight argv set), BD-3/BD-4 (field predicates and the real trust model), CON-3/BD-5 (beads sentinel commit status), RI-4 (what BEH-20 actually fences), WR-1 (`/adev:sync` and other `tasks.backend` readers), and TR-2 (cycle-safe `walkTree`). CON-2 needs an ADR 0016 amendment outside this spec. CON-1, RI-5, and WR-3 belong in the task-14 companion amendments.
+**Total findings:** 26 (0 blockers, 19 warnings, 7 suggestions)
+**Action required:** none blocks planning. The high risk policy requires human approval before `/adev:plan`. Fold these into the plan reconciliation:
+- RI-1, RI-2, TR-2: the code deltas for the page bound and `reality-check.mjs`.
+- CON-1, WR-2, BD-2: registration and hardening of `.migrate-unanchored.json`.
+- CON-2, RI-3: the extra codes in the docs-coverage test.

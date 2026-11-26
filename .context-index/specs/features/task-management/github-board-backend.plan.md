@@ -4,8 +4,8 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/task-management/charter.md (revision 10)
-> **Spec:** .context-index/specs/features/task-management/github-board-backend.spec.md (revision 2)
-> **Review:** PASS_WITH_NOTES (2026-11-26) — 0 blockers, 17 warnings, 8 suggestions
+> **Spec:** .context-index/specs/features/task-management/github-board-backend.spec.md (revision 6; tasks 14, 18, 19, 22 and 23–26 reconciled to it and to `backend-migration-rev-3-github-target.spec.md` rev 2 on 2026-11-26)
+> **Review:** PASS_WITH_NOTES (2026-11-26, rev 2) — 0 blockers, 17 warnings, 8 suggestions; rev 6 re-review PASS_WITH_NOTES (2026-11-26) — 0 blockers, 19 warnings, 7 suggestions (commit 5b6cd074)
 > **Platform:** Node.js, JavaScript (pure ESM `.mjs`), `node:test`; optional external CLI `gh`
 > **Implementation mode:** tdd
 > **Risk / approval:** `risk_level: high`; human approval given by the maintainer on 2026-11-26. `require_hitl_approval` has no code consumer (tracked as `adev-plugin-03du`), so the approval is recorded here and in the plan commit.
@@ -18,13 +18,12 @@
 
 These are lifecycle artifacts, not implementation tasks. Tasks that depend on one say so in their **Depends on** line.
 
-| Prerequisite | Why | Blocks |
-|---|---|---|
-| Amendment of `backend-migration.spec.md` (`/adev:specify --amend`) | `--to github` accepted; github resume semantics (BEH-30); confirmation + `--yes` (BEH-41, review RI-5); github aborts still emit `MIGRATE_PARTIAL_FAILURE` with the `GITHUB_*` code in `errors[]`, token redacted (review CON-1) | Tasks 18, 19 |
-| Amendment of `tracker-provider-bridge.spec.md` | Bridge coexistence (charter rev 10); must test that a home-repo `gh-<n>` item with a reserved `module:` label is classified fail-closed (review WR-3) | Bridge work only — no task here |
-| ADR 0016 amendment: opt-in external board carve-out | ADR 0016 (Proposed) makes `.context-index/` the sole system of record for the board (review CON-2) | Merge of this branch |
-| `agent-reliable-state-artifacts` confirmation of the read-only sentinel format (BEH-32) | Spec precondition; owner of board state-file formats (review CON-3) | Task 14 |
-
+| Prerequisite | Why | Blocks | Status |
+|---|---|---|---|
+| Amendment of `backend-migration.spec.md` (`/adev:specify --amend`) | `--to github` accepted; github resume semantics (BEH-30); confirmation + `--yes` (BEH-41, review RI-5); github aborts still emit `MIGRATE_PARTIAL_FAILURE` with the `GITHUB_*` code in `errors[]`, token redacted (review CON-1) | Tasks 18, 19 | **Done**: `.context-index/specs/features/task-management/backend-migration-rev-3-github-target.spec.md` rev 2, review-passed PASS_WITH_NOTES (commit e43a5831). Its BEH-5 check order does not yet list the unanchored-item check this plan adds in Task 18 (GitHub spec rev 5 BEH-30; rev 6 review CON-1). Follow-up for that amendment, not a blocker. |
+| Amendment of `tracker-provider-bridge.spec.md` | Bridge coexistence (charter rev 10); must test that a home-repo `gh-<n>` item with a reserved `module:` label is classified fail-closed (review WR-3) | Bridge work only — no task here | **Done**: `.context-index/specs/features/autonomous-bugfix-loop/tracker-provider-bridge-rev-12-github-board-coexistence.spec.md`, review-passed PASS_WITH_NOTES (commit 40284a89) |
+| ADR 0016 amendment: opt-in external board carve-out | ADR 0016 (Proposed) makes `.context-index/` the sole system of record for the board (review CON-2) | Merge of this branch | **Done**: ADR 0016 external-board exception (commit 983e01ad) |
+| `agent-reliable-state-artifacts` confirmation of the read-only sentinel format (BEH-32) | Spec precondition; owner of board state-file formats (review CON-3) | Task 14 | **Done**: `.context-index/specs/features/agent-reliable-state-artifacts/charter.md` rev 9, "Read-only board sentinel document schema" (commit 983e01ad) |
 ---
 
 ## File Structure
@@ -142,10 +141,10 @@ These are lifecycle artifacts, not implementation tasks. Tasks that depend on on
 - Review notes: CON-4 (see ## Review Notes)
 
 ### Task 14 Context
-- Spec: BEH-32 (sentinel), BEH-33
-- Charter: capability **Migration to GitHub**
-- Source files: `lib/issues/resolve-root.mjs`, `lib/path-safety.mjs`, `lib/issues/file-adapter.mjs:25-40`
-- Review notes: RI-2, CON-3, BD-2 (see ## Review Notes)
+- Spec: BEH-32 (sentinel), BEH-33; `backend-migration-rev-3-github-target.spec.md` BEH-8 (commit), BEH-12 (containment)
+- Charter: capability **Migration to GitHub**; `agent-reliable-state-artifacts/charter.md` rev 9 "Read-only board sentinel document schema"
+- Source files: `lib/issues/resolve-root.mjs`, `lib/path-safety.mjs`, `lib/issues/board-worktree.mjs` (git argv pattern), `lib/extensions/exec-payload.mjs:158` (`assertContained`), `lib/issues/file-adapter.mjs:25-40`
+- Review notes: RI-2, CON-3, BD-2, M-BD-2, M-BD-3 (see ## Review Notes)
 
 ### Task 15 Context
 - Spec: BEH-20
@@ -163,16 +162,16 @@ These are lifecycle artifacts, not implementation tasks. Tasks that depend on on
 - Review notes: WR-2, RI-3 (see ## Review Notes)
 
 ### Task 18 Context
-- Spec: BEH-29, BEH-30
+- Spec: BEH-14, BEH-29, BEH-30; `backend-migration-rev-3-github-target.spec.md` BEH-1, BEH-2, BEH-4, BEH-5, BEH-6, BEH-10, BEH-11, BEH-12 and its Error Cases
 - Charter: capability **Migration to GitHub**
-- Source files: `lib/cli/issues-migrate.mjs` (full), `.context-index/specs/features/task-management/backend-migration.spec.md` (+ its amendment)
-- Review notes: CON-1 (see ## Review Notes)
+- Source files: `lib/cli/issues-migrate.mjs` (full; `loadResumeState` :313, refusals :917-944, dry-run return :999-1033), `lib/issues/github/errors.mjs` (`redact`), `lib/issues/github-adapter.mjs` (constructor seams), `lib/gitignore-paths.mjs`, `.context-index/specs/features/task-management/backend-migration.spec.md`
+- Review notes: CON-1, M-RI-1, M-RI-2, M-RI-3, M-RI-4, M-WR-8, M-BD-5, R6-CON-1, R6-BD-2 (see ## Review Notes)
 
 ### Task 19 Context
-- Spec: BEH-31, BEH-32, BEH-35, BEH-41
+- Spec: BEH-31, BEH-32, BEH-33, BEH-35, BEH-41; `backend-migration-rev-3-github-target.spec.md` BEH-3, BEH-4, BEH-7, BEH-8, BEH-9
 - Charter: capability **Migration to GitHub**
-- Source files: `lib/cli/issues-migrate.mjs:700-830`
-- Review notes: RI-5 (see ## Review Notes)
+- Source files: `lib/cli/issues-migrate.mjs:700-830`, `lib/issues/read-only-sentinel.mjs` (Task 14)
+- Review notes: RI-5, M-BD-1, M-BD-4, M-WR-8 (see ## Review Notes)
 
 ### Task 20 Context
 - Spec: BEH-37
@@ -185,9 +184,29 @@ These are lifecycle artifacts, not implementation tasks. Tasks that depend on on
 - Review notes: WR-1 (see ## Review Notes)
 
 ### Task 22 Context
-- Spec: BEH-38, BEH-22 (claim window), Error Cases table
-- Source files: `docs/configuration.md`, `docs/troubleshooting.md`, `docs/concepts.md`
-- Review notes: CON-2, BD-4 (docs part) (see ## Review Notes)
+- Spec: BEH-38, BEH-22 (claim window), BEH-13/BEH-14 (write order), BEH-30 (unanchored record), Error Cases table; `backend-migration-rev-3-github-target.spec.md` Error Cases and Notes for Planning (Task 22 docs)
+- Source files: `docs/configuration.md`, `docs/troubleshooting.md`, `docs/cli-reference.md`, `docs/concepts.md`, `lib/issues/github/errors.mjs`, `tests/issues/github/replay-transport.mjs`
+- Review notes: CON-2, BD-4 (docs part), R6-CON-2, R6-RI-3 (see ## Review Notes)
+
+### Task 23 Context
+- Spec: BEH-14 (rev 5 maintainer decision: `/adev:plan` stops loudly)
+- Source files: `skills/plan/references/feature-mode.md:35-48`, `epic-mode.md:15`, `release-mode.md:65-69`, `skills/specify/references/modes/standard-mode.md:325-329` (unchanged)
+- Review notes: RI-1 (rev 3/4 blocker history) (see ## Review Notes)
+
+### Task 24 Context
+- Spec: BEH-39, BEH-37, BEH-32 (realpath containment)
+- Source files: `lib/reality-check.mjs:430-470`, `lib/extensions/exec-payload.mjs:158`, `lib/path-safety.mjs`
+- Review notes: R6-RI-2 (see ## Review Notes)
+
+### Task 25 Context
+- Spec: BEH-13, BEH-14 (Legacy ID first, residual window)
+- Source files: `lib/issues/github-adapter.mjs` (`_planCreate`, `_createItem`)
+- Review notes: M-TR (out-of-scope termination note) (see ## Review Notes)
+
+### Task 26 Context
+- Spec: BEH-10 (rev 6 page bounds)
+- Source files: `lib/issues/github/transport.mjs:210-250` (`paginate`), `lib/issues/github/board-read.mjs:28-52` (`continueConnection`)
+- Review notes: R6-RI-1, R6-TR-2 (see ## Review Notes)
 
 ## Heuristics
 
@@ -204,9 +223,10 @@ These are lifecycle artifacts, not implementation tasks. Tasks that depend on on
 - Group B (sequential): Task 4 → Task 5
 - Group C (independent): Task 14
 - Group D (independent): Task 21
+- Group F (independent, deltas on shipped code): Task 23, Task 24, Task 25, Task 26
 - Group E (sequential): Task 7 → Task 9 → Task 10 → Task 11 → Task 12 → Task 13 → Task 15 → Task 16 → Task 17 → Task 18 → Task 19 → Task 20 → Task 22
 
-Groups A, B, C and D can run in parallel. Group E starts only after Groups A and B complete (Task 7 needs Tasks 4 and 6; Task 9 needs Tasks 5 and 8), and Task 19 additionally needs Task 14.
+Groups A, B, C and D can run in parallel. Group E starts only after Groups A and B complete (Task 7 needs Tasks 4 and 6; Task 9 needs Tasks 5 and 8), Task 18 additionally needs Task 14 and Task 25, and Task 19 additionally needs Task 14.
 
 ## Task Summary
 
@@ -225,15 +245,19 @@ Groups A, B, C and D can run in parallel. Group E starts only after Groups A and
 | 11 | Write path: `create`, epics, partial create | large | unit | Task 9 | 1 create, 3 modify |
 | 12 | Write path: `update`, `close`, `addDependency` | medium | unit | Task 11 | 0 create, 2 modify |
 | 13 | Claim lease | medium | unit | Task 12 | 0 create, 1 modify |
-| 14 | Read-only sentinel and adapter guard | small | unit | — | 1 create, 2 modify |
+| 14 | Read-only sentinel, adapter guard, and beads sentinel commit | medium | unit | — | 1 create, 2 modify |
 | 15 | Untrusted text: helper, `show`, `next` | small | unit | Task 10 | 1 create, 2 modify |
 | 16 | Untrusted text: `board`, `list`, `stale` | small | unit | Task 15 | 0 create, 3 modify |
 | 17 | `adev issues github setup` | medium | unit | Task 10 | 2 create, 2 modify |
-| 18 | Migration core: ordered copy, `legacy_id`, replay, resume | large | unit | Task 13, Task 17, backend-migration amendment | 1 create, 1 modify |
-| 19 | Migration: confirmation, dry-run, pacing, sentinel, manifest suggestion | medium | unit | Task 14, Task 18 | 0 create, 2 modify |
+| 18 | Migration core: pre-write checks, ordered copy, `legacy_id`, replay, resume, abort envelope | large | unit | Task 13, Task 14, Task 17, Task 25 | 3 create, 4 modify |
+| 19 | Migration: confirmation, progress line, dry-run, pacing, sentinel write and commit, manifest suggestion | large | unit | Task 14, Task 18 | 1 create, 4 modify |
 | 20 | Conformance suite and fixture recorder | large | unit | Task 13, Task 5 | 4 create, 0 modify |
 | 21 | `/adev:sync` Task Management block for github | small | unit | — | 1 create, 2 modify |
-| 22 | Docs and docs-coverage test | small | unit | Task 19, Task 20 | 1 create, 4 modify |
+| 22 | Docs and docs-coverage test (or follow-up delta if already landed) | small | unit | Task 19, Task 20 | 1 create, 5 modify |
+| 23 | `/adev:plan` stops loudly on `GITHUB_PARTIAL_CREATE` | small | unit | Task 11 | 1 create, 3 modify |
+| 24 | Realpath containment for `spec_ref` / `plan_ref` consumers | small | unit | — | 1 create, 1 modify |
+| 25 | `Legacy ID` first in `_createItem` | small | unit | Task 11 | 1 create, 2 modify |
+| 26 | Page bounds fixed from the first page | small | unit | Task 4, Task 9 | 1 create, 2 modify |
 
 ## Review Notes
 
@@ -241,12 +265,12 @@ Groups A, B, C and D can run in parallel. Group E starts only after Groups A and
 
 | ID | Warning | Cited section | Assigned to |
 |----|---------|---------------|-------------|
-| CON-1 | Github migration aborts vs `MIGRATE_PARTIAL_FAILURE` / ADR 0014 passthrough vs token redaction | — | Task 18 |
-| CON-2 | ADR 0016 makes `.context-index/` the sole board system of record | — | Task 22 (docs) + prerequisite ADR amendment |
-| CON-3 | Beads sentinel lives in the `beads-board` worktree — committed or local-only? | — | Task 14 |
+| CON-1 | Github migration aborts vs `MIGRATE_PARTIAL_FAILURE` / ADR 0014 passthrough vs token redaction | — | Task 18 (resolved in the backend-migration amendment BEH-5/BEH-6; Task 18 implements it) |
+| CON-2 | ADR 0016 makes `.context-index/` the sole board system of record | — | Task 22 (docs); prerequisite ADR amendment done (983e01ad) |
+| CON-3 | Beads sentinel lives in the `beads-board` worktree — committed or local-only? | — | Task 14 (`commitSentinel`, per amendment BEH-8 and charter rev 9) |
 | CON-4 | "Rollback" vs "abstention"; loser's `claimed_at` overwrite | — | Task 13 |
 | RI-1 | `/adev:plan` uses `createEpic`, not `create()`, and has no non-blocking path | behaviors-14 | Task 11 |
-| RI-2 | File adapter already throws `BACKEND_READ_ONLY_DEPRECATED` — precedence with the sentinel | behaviors-33 | Task 14 |
+| RI-2 | File adapter already throws `BACKEND_READ_ONLY_DEPRECATED` — precedence with the sentinel | behaviors-33 | Task 14 (spec rev 3 BEH-33 now states it) |
 | RI-3 | Charter row says `setup --check` exits non-zero on drift and lists no `--yes` | behaviors-26 | Task 17 |
 | RI-4 | The five verbs render bodies only in `--json`; `fenceBlock` needs a nonce | behaviors-20 | Task 15 |
 | WR-1 | Other `tasks.backend` readers, incl. the `/adev:sync` block | — | Task 21 |
@@ -255,7 +279,22 @@ Groups A, B, C and D can run in parallel. Group E starts only after Groups A and
 | BD-1 | Single fixed argv vs preflight's need for `gh auth status` | — | Task 4 |
 | BD-3 | Predicates missing for `type`, `milestone`, `priority`; YAML-significant `next_action` | — | Task 8 |
 | BD-4 | Labels/types are triage-writable — the real trust model | — | Task 8 (code) + Task 22 (docs) |
-| BD-5 | Sentinel commit status; fixture content allowlist | — | Task 5 (fixtures) + Task 14 (sentinel) |
+| BD-5 | Sentinel commit status; fixture content allowlist | — | Task 5 (fixtures) + Task 14 (sentinel commit) |
+| M-RI-1 | Resume-argument checks run only on the live path today, after board reads (migration amendment review) | — | Task 18 (moved before preflight, dry-run included) |
+| M-RI-2 | `--from github --to github` hits `MIGRATE_GITHUB_UNAVAILABLE` before `MIGRATE_NOOP` today | — | Task 18 (NOOP first) |
+| M-RI-3 | Github envelope `{ source_id, code, message }` and one stderr line are new; json/beads keep `{ id, index, stderr }` | — | Task 18 |
+| M-RI-4 | `migrateToGithub({ source, target, scope, log })` lacked `exec`/`now`/`sleep` | — | Task 18 (adapter built inside with seams) |
+| M-WR-8 | No single stderr chokepoint for `redact()` | — | Task 18 (`createGithubOutput`) + Task 19 (non-error-line test) |
+| M-BD-1 | Commit-only path for a pre-existing beads sentinel runs without a prompt | — | Task 19 (accepted per amendment BEH-3: the file is the consent proxy) |
+| M-BD-2 | `git status --porcelain` is empty for a gitignored, untracked sentinel | — | Task 14 (`ls-files --error-unmatch` + `diff --quiet HEAD`) |
+| M-BD-3 | A plain `.beads/` directory reports the main checkout's branch | — | Task 14 (`rev-parse --show-toplevel` realpath check) |
+| M-BD-4 | Write set should say `--yes` covers the beads commit and its hooks | — | Task 19 |
+| M-BD-5 | Echoed `legacy_id` values are untrusted | — | Task 18 (`echoValue`, `parseId` validation) |
+| M-TR | `GITHUB_PARTIAL_CREATE` before the `Legacy ID` write leaves an unfindable item (rev 4 termination note) | — | Task 25 (Legacy ID first) + Task 18 (unanchored record) |
+| R6-CON-1 / R6-WR-2 / R6-BD-2 | `.migrate-unanchored.json` not in the amendment's check order or the gitignore registry; needs sentinel-grade containment | — | Task 18 (registry, containment, ID validation); amendment order is an external follow-up |
+| R6-CON-2 / R6-RI-3 | Amendment codes and `GITHUB_REQUEST_FAILED` / `GITHUB_TRANSPORT_INTERNAL` absent from the Error Cases table | — | Task 22 (`EXTRA_CODES`) |
+| R6-RI-1 / R6-TR-2 | Shipped `paginate()` / `continueConnection()` recompute the bound per page; no integer check on `totalCount` | behaviors-10 | Task 26 |
+| R6-RI-2 | `lib/reality-check.mjs` opens `spec_ref` / `plan_ref` with no containment | behaviors-39 | Task 24 |
 | TR-1 | Connection continuations need their own page bound | — | Task 4 |
 | TR-2 | `walkTree` visited-set and cycle outcome | — | Task 9 |
 
@@ -263,11 +302,13 @@ Resolutions decided here (so the implementer does not re-decide them):
 
 - **BD-1:** preflight adds **no** argv. `gh` missing → `ENOENT` from `execFileSync` → `GITHUB_CLI_MISSING`; unauthenticated → `gh`'s non-zero exit with its auth message → `GITHUB_AUTH_REQUIRED`; missing scopes → GraphQL error `type: "INSUFFICIENT_SCOPES"` → `GITHUB_SCOPE_MISSING` naming the scopes GitHub reports. Every probe is a GraphQL query through the one fixed argv, so BEH-40's "that exact argv" holds literally.
 - **RI-2:** the file adapter is unchanged and keeps `BACKEND_READ_ONLY_DEPRECATED` (it is already read-only); the sentinel guard is added to the json and beads adapters only.
-- **CON-3 / BD-5 (sentinel):** the sentinel is board state like `tasks.json` / `issues.jsonl` and is committed with the board through its normal sync path (json: the git-tracked `.context-index/tasks/`; beads: `adev issues sync --push` to `beads-board`). Its only content is the BEH-32 JSON object. Pending `agent-reliable-state-artifacts` confirmation.
+- **CON-3 / BD-5 (sentinel):** the format is confirmed by `agent-reliable-state-artifacts` charter rev 9 (commit 983e01ad); its only content is the five-key BEH-32 object. json/file: the operator commits it on the branch that carries the board, like `tasks.json`. beads: the migration verb commits that one file on `beads-board` via `commitSentinel` (Task 14, amendment BEH-8) and never pushes; pushing stays part of the operator's board sync.
 - **RI-4:** `--json` output keeps `title`/`notes` byte-raw (consumers such as `/adev:debug` parse it) and adds `"untrusted_text": ["title", "notes"]` for github items; human output neutralizes titles and, in `show`, prints the body inside a `fenceBlock` with a fresh `crypto.randomBytes(8)` hex nonce.
 - **RI-1:** `GITHUB_PARTIAL_CREATE` is raised by `create()` and `createEpic()`; `adev issues create` and `adev issues epic` print the ID and unwritten fields and exit 1; `/adev:plan` surfaces the CLI's exit like any other failed verb.
 - **CON-4:** "rollback" in the charter means rollback-by-abstention; a loser's `claimed_at` overwriting the winner's is accepted (both stamps fall inside the race window) and documented in Task 22.
-- **CON-1:** a github-path abort still emits `MIGRATE_PARTIAL_FAILURE`, with the `GITHUB_*` code and redacted message in `errors[]`; this is written into the backend-migration amendment.
+- **CON-1:** a github-path abort still emits `MIGRATE_PARTIAL_FAILURE`, with `{ source_id, code, message }` entries in `errors[]` and one `MIGRATE_PARTIAL_FAILURE:` stderr line; `redact()` is the single chokepoint for every github-path stdout and stderr string (amendment BEH-5, BEH-6; Task 18).
+- **M-BD-1:** accepted: a re-run that finds the beads sentinel present but uncommitted commits it without a prompt, because amendment BEH-3 treats the file as the consent given by the run that created it.
+- **Unanchored window (spec rev 5 BEH-30):** recorded in `.migrate-unanchored.json`, separate from `.migrate-state.json`, so the amendment's state-file schema and "deleting it changes nothing" rule stay true; the guarantee holds only while that file exists.
 
 ## Test Infrastructure Requirements
 
@@ -1202,69 +1243,174 @@ git add lib/issues/github-adapter.mjs tests/issues/github/claim.test.mjs tests/i
 git commit -m "feat(task-management): claim leases on the GitHub board via write and re-read"
 ```
 
-### Task 14: Read-only sentinel and adapter guard [specialist: none]
+### Task 14: Read-only sentinel, adapter guard, and beads sentinel commit [specialist: none]
 
 **Charter capability:** Migration to GitHub
 **Strategy:** unit (source: detected, confidence: high)
-**Depends on:** `agent-reliable-state-artifacts` sentinel-format confirmation (prerequisite)
+**Depends on:** — (the sentinel format is confirmed by `agent-reliable-state-artifacts` charter revision 9, commit 983e01ad; see the prerequisites table)
 **Files:**
-- Create: `lib/issues/read-only-sentinel.mjs` — `sentinelPath(storageRoot, backend)`, `writeSentinel(storageRoot, backend, { project })`, `readSentinel(storageRoot, backend)` (returns `null`, a parsed object, or `{ malformed: true }`), `assertWritable(storageRoot, backend)`
-- Modify: `lib/issues/json-adapter.mjs`, `lib/issues/beads-adapter.mjs` — every write method calls `assertWritable` before touching storage
+- Create: `lib/issues/read-only-sentinel.mjs`. It exports:
+  - `sentinelPath(storageRoot, backend)`: `json` and `file` → `.context-index/tasks/board-read-only.json`; `beads` → `.beads/adev-read-only.json`.
+  - `writeSentinel(storageRoot, backend, { project })`.
+  - `readSentinel(storageRoot, backend)`: returns `null`, the parsed five-key object, or `{ malformed: true }`.
+  - `assertWritable(storageRoot, backend)`.
+  - `commitSentinel(storageRoot)`: the beads-board commit (migration amendment BEH-8).
+- Modify: `lib/issues/json-adapter.mjs`, `lib/issues/beads-adapter.mjs`. Every write method calls `assertWritable` before touching storage.
+- Not modified: `lib/issues/file-adapter.mjs` (GitHub spec BEH-33, review RI-2).
 - Test: `tests/issues/read-only-sentinel.test.mjs`
 
-**Tests:** `tests/issues/read-only-sentinel.test.mjs` — create (BEH-32 sentinel, BEH-33)
+**Tests:** `tests/issues/read-only-sentinel.test.mjs`, created by this task (BEH-32 sentinel, BEH-33; migration amendment BEH-8 commit, BEH-12 containment)
 
 - [ ] **Write failing test**
 
 ```javascript
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, writeFileSync, symlinkSync, mkdirSync, unlinkSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { readFileSync, writeFileSync, symlinkSync, mkdirSync, unlinkSync, realpathSync } from "node:fs";
 import { join } from "node:path";
 import { createTempDir, cleanupTempDir } from "../helpers.mjs";
-import { writeSentinel, assertWritable, sentinelPath } from "../../lib/issues/read-only-sentinel.mjs";
+import { writeSentinel, readSentinel, assertWritable, sentinelPath, commitSentinel } from "../../lib/issues/read-only-sentinel.mjs";
 import { JsonAdapter } from "../../lib/issues/json-adapter.mjs";
+import { FileAdapter } from "../../lib/issues/file-adapter.mjs";
+
+const PROJECT = "https://github.com/orgs/acme/projects/7";
+const git = (args, cwd) => execFileSync("git", args, { cwd, encoding: "utf8", stdio: "pipe" }).trim();
+
+// A main repo whose .beads/ is a linked worktree of an orphan beads-board branch,
+// the topology lib/issues/board-worktree.mjs provisions.
+function beadsRepo() {
+  const dir = createTempDir();
+  git(["init", "-q", "-b", "main"], dir);
+  git(["-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "--allow-empty", "-m", "root"], dir);
+  git(["worktree", "add", "-q", "--orphan", "-b", "beads-board", ".beads"], dir);
+  const beads = join(dir, ".beads");
+  git(["config", "user.email", "t@t"], beads); git(["config", "user.name", "t"], beads);
+  writeFileSync(join(beads, "issues.jsonl"), "");
+  git(["add", "--", "issues.jsonl"], beads); git(["commit", "-q", "-m", "board"], beads);
+  return dir;
+}
 
 test("json board: sentinel blocks writes, leaves board files byte-identical, reads still work", async () => {
   const dir = createTempDir();
   try {
     const a = new JsonAdapter(dir); await a.init(dir); await a.create({ title: "x" });
     const before = readFileSync(join(dir, ".context-index/tasks/tasks.json"));
-    writeSentinel(dir, "json", { project: "https://github.com/orgs/acme/projects/7" });
+    writeSentinel(dir, "json", { project: PROJECT });
     assert.deepEqual(readFileSync(join(dir, ".context-index/tasks/tasks.json")), before);
+    assert.deepEqual(Object.keys(JSON.parse(readFileSync(sentinelPath(dir, "json"), "utf8"))).sort(), ["migrated_at", "project", "reason", "schema", "target"]);
     await assert.rejects(a.create({ title: "y" }), (e) => e.code === "BOARD_READ_ONLY_MIGRATED" && /projects\/7/.test(e.message));
     assert.equal((await a.list({})).length, 1);
   } finally { cleanupTempDir(dir); }
 });
 
-test("malformed sentinel still blocks; symlinked sentinel is refused", () => {
+test("fail-closed: unparseable or unknown-schema sentinel blocks writes and reads back as malformed", () => {
+  const dir = createTempDir();
+  try {
+    mkdirSync(join(dir, ".context-index/tasks"), { recursive: true });
+    const p = sentinelPath(dir, "json");
+    for (const body of ["{not json", JSON.stringify({ schema: 2, reason: "migrated", target: "github", project: PROJECT, migrated_at: "2026-11-26T00:00:00Z" })]) {
+      writeFileSync(p, body);
+      assert.deepEqual(readSentinel(dir, "json"), { malformed: true });
+      assert.throws(() => assertWritable(dir, "json"), { code: "BOARD_READ_ONLY_MIGRATED" });
+    }
+  } finally { cleanupTempDir(dir); }
+});
+
+test("SENTINEL_PATH_UNSAFE: symlink at the sentinel path, or .beads resolving outside the root", () => {
   const dir = createTempDir();
   const other = createTempDir();
   try {
     mkdirSync(join(dir, ".context-index/tasks"), { recursive: true });
-    const p = sentinelPath(dir, "json");
-    writeFileSync(p, "{not json");
-    assert.throws(() => assertWritable(dir, "json"), { code: "BOARD_READ_ONLY_MIGRATED" });
-    unlinkSync(p);
     writeFileSync(join(other, "x.json"), "{}");
-    symlinkSync(join(other, "x.json"), p);
-    assert.throws(() => writeSentinel(dir, "json", { project: "https://github.com/orgs/acme/projects/7" }), { code: "SENTINEL_PATH_UNSAFE" });
+    symlinkSync(join(other, "x.json"), sentinelPath(dir, "json"));
+    assert.throws(() => writeSentinel(dir, "json", { project: PROJECT }), { code: "SENTINEL_PATH_UNSAFE" });
+    assert.throws(() => readSentinel(dir, "json"), { code: "SENTINEL_PATH_UNSAFE" });
+    symlinkSync(other, join(dir, ".beads"));
+    assert.throws(() => writeSentinel(dir, "beads", { project: PROJECT }), { code: "SENTINEL_PATH_UNSAFE" });
   } finally { cleanupTempDir(dir); cleanupTempDir(other); }
+});
+
+test("file adapter is unchanged: writes keep throwing BACKEND_READ_ONLY_DEPRECATED with a sentinel present", async () => {
+  const dir = createTempDir();
+  try {
+    writeSentinel(dir, "file", { project: PROJECT });
+    await assert.rejects(new FileAdapter(dir).create({ title: "y" }), { code: "BACKEND_READ_ONLY_DEPRECATED" });
+  } finally { cleanupTempDir(dir); }
+});
+
+test("commitSentinel: one pathspec-limited commit on beads-board, pre-staged files untouched, idempotent, never pushed", () => {
+  const dir = beadsRepo();
+  try {
+    const beads = join(dir, ".beads");
+    writeFileSync(join(beads, "staged.txt"), "s"); git(["add", "--", "staged.txt"], beads);
+    const mainHead = git(["rev-parse", "main"], dir);
+    writeSentinel(dir, "beads", { project: PROJECT });
+    assert.equal(commitSentinel(dir).committed, true);
+    assert.equal(git(["log", "-1", "--name-only", "--format="], beads), "adev-read-only.json");
+    assert.match(git(["diff", "--cached", "--name-only"], beads), /staged\.txt/);
+    assert.equal(git(["rev-parse", "main"], dir), mainHead);
+    const head = git(["rev-parse", "HEAD"], beads);
+    assert.deepEqual(commitSentinel(dir), { committed: false, alreadyCommitted: true });
+    assert.equal(git(["rev-parse", "HEAD"], beads), head);
+  } finally { cleanupTempDir(dir); }
+});
+
+test("commitSentinel refuses with MIGRATE_SENTINEL_COMMIT_FAILED: wrong branch, plain tracked .beads/, gitignored sentinel", () => {
+  for (const setup of ["wrong-branch", "plain-dir", "ignored"]) {
+    const dir = setup === "plain-dir" ? createTempDir() : beadsRepo();
+    try {
+      if (setup === "plain-dir") {
+        git(["init", "-q", "-b", "main"], dir);
+        mkdirSync(join(dir, ".beads"));
+      }
+      const beads = join(dir, ".beads");
+      if (setup === "wrong-branch") git(["switch", "-q", "-c", "other"], beads);
+      if (setup === "ignored") { writeFileSync(join(beads, ".gitignore"), "adev-read-only.json\n"); git(["add", "--", ".gitignore"], beads); git(["commit", "-q", "-m", "ignore"], beads); }
+      writeSentinel(dir, "beads", { project: PROJECT });
+      assert.throws(() => commitSentinel(dir), (e) =>
+        e.code === "MIGRATE_SENTINEL_COMMIT_FAILED" &&
+        e.message.includes(join(realpathSync(dir), ".beads", "adev-read-only.json")) &&
+        e.message.includes("beads-board"));
+      if (setup === "plain-dir") assert.throws(() => git(["rev-parse", "HEAD"], dir)); // nothing was committed on main
+    } finally { cleanupTempDir(dir); }
+  }
 });
 ```
 
 - [ ] **Verify test fails**
 
 Run: `node --test tests/issues/read-only-sentinel.test.mjs`
-Expected: FAIL — module not found
+Expected: FAIL (module not found)
 
 - [ ] **Implement**
 
-- Paths: `.context-index/tasks/board-read-only.json` (json) and `.beads/adev-read-only.json` (beads) under `resolveStorageRoot()`. Resolve with `resolveContained()` against `safeRealpath(storageRoot)`; refuse a symlink at the sentinel path with `SENTINEL_PATH_UNSAFE` (review BD-2).
-- Write by temp file + `renameSync` in the same directory; never read-modify-write a board file.
-- A present-but-unparseable sentinel blocks writes (fail-closed, review BD-6).
-- The file adapter is **not** modified: it already throws `BACKEND_READ_ONLY_DEPRECATED` on every write (review RI-2).
-- The sentinel is board state and is committed with the board (review CON-3 / BD-5); its only content is `{ schema, reason, target, project, migrated_at }`.
+- **Format owner:** `agent-reliable-state-artifacts` charter revision 9, section "Read-only board sentinel document schema". The content is exactly `{ schema: 1, reason: "migrated", target: "github", project, migrated_at }`, and nothing else is written (review CON-3 / BD-5).
+- **Paths:**
+  - Resolved under `resolveStorageRoot()` with `resolveContained()` against `safeRealpath(storageRoot)`.
+  - A not-yet-existing sentinel is contained when the realpath of its parent directory is inside the root, so a `.beads` symlink that leaves the root fails.
+  - An `lstat` symlink at the sentinel path throws `SENTINEL_PATH_UNSAFE`. This applies to write and read alike (review BD-2).
+- **Write:**
+  - Temp file plus `renameSync` in the same directory.
+  - No board file is ever read-modify-written.
+  - `writeSentinel` never overwrites an existing sentinel. The migration's BEH-12 check has already decided what to do with it.
+- **Fail-closed read:** `readSentinel` returns `{ malformed: true }` in four cases: unparseable JSON, a `schema` other than `1`, `reason`/`target` outside their closed sets, or any key outside the five. `assertWritable` throws `BOARD_READ_ONLY_MIGRATED` for any present sentinel (review BD-6). A parsed sentinel's message names `project`. A malformed one says "an unreadable read-only sentinel".
+- **`commitSentinel(storageRoot)`:**
+  - **Git invocation:** every call is `execFileSync("git", [...args], { cwd: <root>/.beads, stdio: "pipe" })`, an argv array with `--` before every pathspec, the same mechanism as `lib/issues/board-worktree.mjs`.
+  - **Steps, in order:**
+    1. `git rev-parse --show-toplevel` must be realpath-equal to `<root>/.beads`. This means `.beads/` is its own worktree and not a plain directory of the main checkout (migration review BD-3, GitHub spec BEH-32).
+    2. `git rev-parse --abbrev-ref HEAD` must be `beads-board`.
+    3. **Already committed:** `git ls-files --error-unmatch -- adev-read-only.json` exits 0 **and** `git diff --quiet HEAD -- adev-read-only.json` exits 0. In that case return `{ committed: false, alreadyCommitted: true }`. Tracking is checked directly, never inferred from an empty `git status --porcelain`. That command is also empty for a gitignored, untracked file (migration review BD-2).
+    4. `git add -- adev-read-only.json`. A gitignored path makes this exit non-zero, and the task never passes `-f`.
+    5. `git commit -m "chore(issues): retire beads board, migrated to GitHub" -- adev-read-only.json`. The pathspec keeps anything else staged out of the commit. It never passes `--no-verify` and never pushes.
+  - **Any failure:** a failed check or a non-zero git exit throws `MIGRATE_SENTINEL_COMMIT_FAILED`. The message names:
+    - the absolute sentinel path;
+    - the branch `beads-board`;
+    - the topology found: not a linked worktree (e.g. `.beads/` still tracked on `main`; remedy `adev issues board migrate`), wrong branch, ignored path, or git error;
+    - how to commit that one file by hand.
+  - **Never on main:** it never commits on `main` or any branch other than `beads-board`.
+- **The file adapter is not modified.** It already throws `BACKEND_READ_ONLY_DEPRECATED` on every write (GitHub spec BEH-33, review RI-2).
+- **The json and beads write guard** sits in front of every mutating method, before any storage access.
 
 - [ ] **Verify test passes**
 
@@ -1420,107 +1566,471 @@ git add lib/issues/github/setup.mjs lib/cli/issues-github.mjs lib/cli/issues.mjs
 git commit -m "feat(task-management): add adev issues github setup with the recommended board"
 ```
 
-### Task 18: Migration core — ordered copy, `legacy_id`, replay, resume [specialist: none]
+### Task 18: Migration core: pre-write checks, ordered copy, `legacy_id`, replay, resume, abort envelope [specialist: none]
 
 **Charter capability:** Migration to GitHub
 **Strategy:** unit (source: detected, confidence: high)
-**Depends on:** Task 13, Task 17, backend-migration amendment (prerequisite)
+**Depends on:** Task 13, Task 14 (`readSentinel` for the BEH-12 check), Task 17, Task 25 (its fixtures assume `Legacy ID` is the first aliased mutation). The backend-migration amendment is review-passed (see the prerequisites table).
+**Contract:** `backend-migration-rev-3-github-target.spec.md` ("the amendment") BEH-1, BEH-2, BEH-4 (resume-argument checks), BEH-5 (steps 1–6 and the abort envelope), BEH-6, BEH-10, BEH-11 and BEH-12, plus GitHub spec BEH-29 and BEH-30, including BEH-30's unanchored-item record and `MIGRATE_UNANCHORED_ITEM` (GitHub spec rev 5). Task 19 owns the rest: BEH-5 steps 7–8, BEH-3, BEH-7, BEH-8 and BEH-9.
 **Files:**
-- Create: `lib/issues/github/migrate.mjs` — `migrateToGithub({ source, target, scope, log })`: gate on preflight + `checkProject`, ordered sequential create, replay after all items exist, stop on first per-item failure
-- Modify: `lib/cli/issues-migrate.mjs` — dispatch `--to github` to `migrateToGithub`; keep writing `.migrate-state.json` for progress and resume-argument checks
+- Create: `lib/issues/github/migrate.mjs`
+  - `migrateToGithub({ projectRoot, storageRoot, manifest, source, includeClosed, dryRun, resume, confirm, out, exec, now, sleep })` returns the verb's exit code.
+  - It builds the target adapter itself as `new GithubAdapter(storageRoot, manifest, { exec, now, sleep })`, never through `getIssueManager()` (amendment BEH-10).
+  - This replaces the earlier `migrateToGithub({ source, target, scope, log })` sketch, which had no `exec`/`now`/`sleep` and owned `log` (migration review RI-4). `log` belongs to `run()` and reaches this module only inside `out`.
+  - `createGithubOutput({ log, env })` returns `{ stdout(obj), stderr(line) }`. Both pass every string through `redact(s, [env.GH_TOKEN, env.GITHUB_TOKEN])` from `lib/issues/github/errors.mjs`. `stderr` is the only `console.error` call in the module. It is the single stderr chokepoint for the github path (migration review WR-8, RI-6).
+  - Keep the literal `console.error(` out of comments in this module: the chokepoint test counts its occurrences.
+  - `echoValue(s)` caps an echoed board-supplied value at 80 characters and escapes every C0/C1 control character as `\uXXXX`.
+- Modify: `lib/cli/issues-migrate.mjs`
+  - `run({ projectRoot, argv, manifest, exec, isTTY, readLine, sleep, now, log })`: all six seams are optional with production defaults (amendment BEH-10). The dispatcher `lib/cli/issues.mjs` still passes none of them.
+  - `parseArgs()` and `help()` accept `--yes` ("Confirm a github migration's write set without prompting."), a boolean that takes no value. It is not recorded in `scope_args`.
+  - Dispatch of `--to github`, the reordered checks, and the github-only strict scope check in `loadResumeState()`.
+- Modify: `lib/gitignore-paths.mjs` and `.gitignore`: register `.context-index/tasks/.migrate-unanchored.json` next to `.migrate-state.json`. `tests/lib/gitignore-paths-dogfood.test.mjs` checks that the two stay in parity.
+- Modify: `lib/issues/github/errors.mjs`: `redact()` gains the credential pattern `/(authorization:\s*(?:bearer|token)\s+)\S+/gi` → `$1[REDACTED]` (amendment BEH-6 (c)).
 - Test: `tests/issues/github/migrate.test.mjs`
+- Fixtures: `tests/issues/github/fixtures/migrate.mjs`
+  - `seedJsonBoard(dir)`;
+  - `migrateFx.{fresh, failsAtItem2, resumeFromItem2, partialCreateAtItem2, unanchoredAtItem2, completeUnanchored, unanchoredClosed, foreignLegacyId, duplicateLegacyId, outOfScopeLegacyId, emptyLegacyId, allPresent, secretInError}`. `partialCreateAtItem2` fails at a step after the SetFields request that carries `Legacy ID` (e.g. AddLabels), so its `unwritten` excludes `legacy_id`; `unanchoredAtItem2` fails in AddToProject, so its `unwritten` includes `legacy_id`.
 
-**Tests:** `tests/issues/github/migrate.test.mjs` — create (BEH-29, BEH-30)
-**Why not split:** copy, replay and resume share one idempotency key (`legacy_id`) and one fixture sequence; splitting would test resume without the copy that produces its state.
+**Tests:** `tests/issues/github/migrate.test.mjs`, created by this task (GitHub spec BEH-29, BEH-30; amendment BEH-1, BEH-2, BEH-4, BEH-5, BEH-6, BEH-10, BEH-11, BEH-12)
+**Why not split:** copy, replay and resume share one idempotency key (`legacy_id`) and one fixture sequence, and the ordered pre-write checks gate all three. Splitting would test resume without the copy that produces its state.
 
 - [ ] **Write failing test**
 
 ```javascript
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { rmSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { run } from "../../../lib/cli/issues-migrate.mjs";
+import { redact } from "../../../lib/issues/github/errors.mjs";
+import { echoValue } from "../../../lib/issues/github/migrate.mjs";
+import { writeSentinel, sentinelPath } from "../../../lib/issues/read-only-sentinel.mjs";
 import { createTempDir, cleanupTempDir } from "../../helpers.mjs";
 import { replayExec } from "./replay-transport.mjs";
 import { migrateFx, seedJsonBoard } from "./fixtures/migrate.mjs";
 
-test("json → github through the real verb: parents first, replay after, legacy_id on every item", async () => {
+const PROJECT = "https://github.com/orgs/acme/projects/7";
+const STATE = ".context-index/tasks/.migrate-state.json";
+const MUTATIONS = new Set(["CreateIssue", "AddProjectItem", "SetFields", "AddSubIssue", "AddBlockedBy", "CloseIssue"]);
+const noWait = { sleep: async () => {}, now: () => 0 };
+
+async function migrate(dir, manifest, argv, fx, extra = {}) {
+  const out = [], err = [];
+  const exec = replayExec(fx);
+  const origErr = console.error;
+  console.error = (s) => err.push(String(s));
+  try {
+    const code = await run({ projectRoot: dir, argv, manifest, exec, isTTY: false, log: (s) => out.push(s), ...noWait, ...extra });
+    return { code, exec, stdout: out.join(""), stderr: err };
+  } finally { console.error = origErr; }
+}
+const mutations = (exec) => exec.calls.filter((c) => MUTATIONS.has(c.operation)).map((c) => [c.operation, c.variables]);
+
+test("json → github through the real verb: parents first, replay after, legacy_id on every item, seams reach the adapter", async () => {
   const dir = createTempDir();
   try {
     const manifest = await seedJsonBoard(dir); // epic e1, feature e1.f1 (dep on issue-7k3f9a), issue-7k3f9a
-    const exec = replayExec(migrateFx.fresh);
-    assert.equal(await run({ projectRoot: dir, argv: ["--to", "github", "--yes"], manifest, exec, isTTY: false }), 0);
-    const ops = exec.calls.map((c) => c.operation);
+    const r = await migrate(dir, manifest, ["--to", "github", "--yes"], migrateFx.fresh);
+    assert.equal(r.code, 0);
+    assert.equal(r.exec.calls[0].operation, "Preflight"); // built with the injected exec, not via getIssueManager()
+    const ops = r.exec.calls.map((c) => c.operation);
     assert.ok(ops.lastIndexOf("CreateIssue") < ops.indexOf("AddSubIssue"));
-    assert.equal(exec.calls.filter((c) => c.operation === "SetFields" && "legacy_id" in c.variables.fields).length, 3);
+    assert.equal(r.exec.calls.filter((c) => c.operation === "SetFields" && "legacy_id" in c.variables.fields).length, 3);
+    assert.deepEqual(Object.keys(JSON.parse(r.stdout).github.id_map).sort(), ["e1", "e1.f1", "issue-7k3f9a"]);
   } finally { cleanupTempDir(dir); }
 });
 
-test("re-run after interruption — with or without .migrate-state.json — duplicates nothing", async () => {
+test("re-run after interruption: with or without .migrate-state.json, the identical mutation sequence and no duplicate", async () => {
+  const seqs = [];
   for (const dropState of [false, true]) {
     const dir = createTempDir();
     try {
       const manifest = await seedJsonBoard(dir);
-      await run({ projectRoot: dir, argv: ["--to", "github", "--yes"], manifest, exec: replayExec(migrateFx.failsAtItem2), isTTY: false });
-      if (dropState) rmSync(join(dir, ".context-index/tasks/.migrate-state.json"), { force: true });
-      const exec = replayExec(migrateFx.resumeFromItem2);
-      assert.equal(await run({ projectRoot: dir, argv: ["--to", "github", "--yes"], manifest, exec, isTTY: false }), 0);
-      assert.equal(exec.calls.filter((c) => c.operation === "CreateIssue").length, 2);
+      await migrate(dir, manifest, ["--to", "github", "--yes"], migrateFx.failsAtItem2);
+      if (dropState) rmSync(join(dir, STATE), { force: true });
+      const r = await migrate(dir, manifest, ["--to", "github", "--yes"], migrateFx.resumeFromItem2);
+      assert.equal(r.code, 0);
+      assert.equal(r.exec.calls.filter((c) => c.operation === "CreateIssue").length, 2);
+      seqs.push(mutations(r.exec));
+    } finally { cleanupTempDir(dir); }
+  }
+  assert.deepEqual(seqs[0], seqs[1]);
+});
+
+test("abort envelope: per-item failure → exit 1, Live-Run shape with { source_id, code, message }, one MIGRATE_PARTIAL_FAILURE: stderr line", async () => {
+  const dir = createTempDir();
+  try {
+    const manifest = await seedJsonBoard(dir);
+    const r = await migrate(dir, manifest, ["--to", "github", "--yes"], migrateFx.failsAtItem2);
+    assert.equal(r.code, 1);
+    const report = JSON.parse(r.stdout);
+    assert.equal("code" in report, false);
+    assert.equal(report.manifest_update_suggested, false);
+    assert.equal(report.errors.length, 1);
+    assert.equal(report.errors[0].code, "GITHUB_WRITE_FAILED");
+    assert.equal(report.errors[0].source_id, "e1.f1");
+    assert.equal(typeof report.errors[0].message, "string");
+    assert.equal(r.stderr.filter((l) => l.startsWith("MIGRATE_PARTIAL_FAILURE:")).length, 1);
+    assert.ok(existsSync(join(dir, STATE)));
+  } finally { cleanupTempDir(dir); }
+});
+
+test("partial create after the Legacy ID write: envelope carries target_id and unwritten_fields; a re-run without the state file completes it", async () => {
+  const dir = createTempDir();
+  try {
+    const manifest = await seedJsonBoard(dir);
+    const p = await migrate(dir, manifest, ["--to", "github", "--yes"], migrateFx.partialCreateAtItem2);
+    const e = JSON.parse(p.stdout).errors[0];
+    assert.equal(e.code, "GITHUB_PARTIAL_CREATE");
+    assert.match(e.target_id, /^gh-\d+$/);
+    assert.ok(Array.isArray(e.unwritten_fields) && !e.unwritten_fields.includes("legacy_id"));
+    assert.equal(existsSync(join(dir, ".context-index/tasks/.migrate-unanchored.json")), false);
+    rmSync(join(dir, STATE), { force: true });
+    const r = await migrate(dir, manifest, ["--to", "github", "--yes"], migrateFx.resumeFromItem2);
+    assert.equal(r.code, 0);
+    assert.equal(r.exec.calls.filter((c) => c.operation === "CreateIssue").length, 1); // only the item after e1.f1
+  } finally { cleanupTempDir(dir); }
+});
+
+test("pre-write ordering (BEH-5 steps 1–2): github→github is NOOP, github source refused, resume checks run before preflight", async () => {
+  const dir = createTempDir();
+  try {
+    const manifest = await seedJsonBoard(dir);
+    let r = await migrate(dir, manifest, ["--from", "github", "--to", "github"], migrateFx.fresh);
+    assert.ok(r.code !== 0 && r.stderr.some((l) => l.startsWith("MIGRATE_NOOP")) && r.exec.calls.length === 0);
+    r = await migrate(dir, manifest, ["--from", "github", "--to", "json"], migrateFx.fresh);
+    assert.ok(r.code === 1 && r.stderr.some((l) => l.startsWith("MIGRATE_GITHUB_UNAVAILABLE")) && r.exec.calls.length === 0);
+    mkdirSync(join(dir, ".context-index/tasks"), { recursive: true });
+    const state = JSON.stringify({ source: "json", target: "github", last_successful_index: 0, scope_args: { includeClosed: true } });
+    writeFileSync(join(dir, STATE), state);
+    for (const argv of [["--to", "github", "--yes"], ["--to", "github", "--dry-run"]]) {
+      r = await migrate(dir, manifest, argv, migrateFx.fresh);
+      assert.equal(r.code, 1);
+      assert.ok(r.stderr.some((l) => l.startsWith("MIGRATE_RESUME_MISMATCH") && /true/.test(l) && /false/.test(l)));
+      assert.equal(r.exec.calls.length, 0);
+      assert.equal(readFileSync(join(dir, STATE), "utf8"), state);
+    }
+    writeFileSync(join(dir, STATE), JSON.stringify({ source: "json", target: "github", last_successful_index: 0, scope_args: {} }));
+    r = await migrate(dir, manifest, ["--to", "github", "--yes"], migrateFx.fresh);
+    assert.ok(r.code === 1 && r.stderr.some((l) => l.startsWith("MIGRATE_RESUME_INVALID")));
+  } finally { cleanupTempDir(dir); }
+});
+
+test("legacy_id provenance (BEH-11): foreign and duplicate refused before any write; out-of-scope and empty values pass", async () => {
+  for (const [fx, code] of [[migrateFx.foreignLegacyId, "MIGRATE_TARGET_FOREIGN_LEGACY_ID"], [migrateFx.duplicateLegacyId, "GITHUB_AMBIGUOUS_LEGACY_ID"]]) {
+    for (const extraArg of [[], ["--dry-run"]]) {
+      const dir = createTempDir();
+      try {
+        const manifest = await seedJsonBoard(dir);
+        const r = await migrate(dir, manifest, ["--to", "github", "--yes", ...extraArg], fx);
+        assert.equal(r.code, 1);
+        assert.ok(r.stderr.some((l) => l.startsWith(code)));
+        if (code === "MIGRATE_TARGET_FOREIGN_LEGACY_ID") assert.ok(r.stderr.some((l) => l.includes("issue-zzzz99")));
+        assert.equal(mutations(r.exec).length, 0);
+        assert.equal(existsSync(join(dir, STATE)), false);
+        assert.equal(existsSync(sentinelPath(dir, "json")), false);
+      } finally { cleanupTempDir(dir); }
+    }
+  }
+  for (const fx of [migrateFx.outOfScopeLegacyId, migrateFx.emptyLegacyId]) {
+    const dir = createTempDir();
+    try {
+      const manifest = await seedJsonBoard(dir);
+      assert.equal((await migrate(dir, manifest, ["--to", "github", "--yes"], fx)).code, 0);
+    } finally { cleanupTempDir(dir); }
+  }
+  assert.equal(echoValue("a\u001b[31mb\nc"), "a\\u001b[31mb\\u000ac");
+  assert.equal(echoValue("x".repeat(200)).length <= 81, true);
+});
+
+test("existing sentinel (BEH-12): another project or unreadable → MIGRATE_SENTINEL_PROJECT_MISMATCH, byte-identical, no mutation", async () => {
+  for (const body of [null, "{not json"]) {
+    const dir = createTempDir();
+    try {
+      const manifest = await seedJsonBoard(dir);
+      if (body === null) writeSentinel(dir, "json", { project: "https://github.com/orgs/other/projects/1" });
+      else writeFileSync(sentinelPath(dir, "json"), body);
+      const before = readFileSync(sentinelPath(dir, "json"));
+      const r = await migrate(dir, manifest, ["--to", "github", "--yes"], migrateFx.fresh);
+      assert.equal(r.code, 1);
+      assert.ok(r.stderr.some((l) => l.startsWith("MIGRATE_SENTINEL_PROJECT_MISMATCH") && l.includes(PROJECT)));
+      assert.equal(mutations(r.exec).length, 0);
+      assert.deepEqual(readFileSync(sentinelPath(dir, "json")), before);
     } finally { cleanupTempDir(dir); }
   }
 });
 
-test("per-item failure stops the run with exit 1 and MIGRATE_PARTIAL_FAILURE carrying the GITHUB_* code", async () => {
+test("redaction (BEH-6): no secret reaches stdout or stderr", async () => {
+  const dir = createTempDir();
+  const saved = process.env.GH_TOKEN;
+  process.env.GH_TOKEN = "fixture-token-12345";
+  try {
+    const manifest = await seedJsonBoard(dir);
+    // the fixture's error message embeds GH_TOKEN, a ghp_ token, a github_pat_ token and "Authorization: bearer abc.def"
+    const r = await migrate(dir, manifest, ["--to", "github", "--yes"], migrateFx.secretInError);
+    const all = r.stdout + r.stderr.join("\n");
+    for (const s of ["fixture-token-12345", "ghp_", "github_pat_", "abc.def"]) assert.equal(all.includes(s), false, s);
+    assert.ok(all.includes("[REDACTED]"));
+  } finally {
+    if (saved === undefined) delete process.env.GH_TOKEN; else process.env.GH_TOKEN = saved;
+    cleanupTempDir(dir);
+  }
+  assert.equal(redact("Authorization: token s3cr3t-value"), "Authorization: token [REDACTED]");
+});
+
+test("single stderr chokepoint and no configurable seams (WR-8, BEH-10)", () => {
+  const src = readFileSync("lib/issues/github/migrate.mjs", "utf8");
+  assert.equal(src.match(/console\.error\(/g).length, 1);
+  for (const f of ["lib/cli/issues-migrate.mjs", "lib/issues/github/migrate.mjs"]) {
+    assert.doesNotMatch(readFileSync(f, "utf8"), /process\.env\.[A-Z_]*(EXEC|TTY|SLEEP|READLINE|LOG)/);
+  }
+});
+
+test("unanchored window (GitHub spec BEH-14, BEH-30): recorded, completed exactly, refused when unverifiable", async () => {
+  const UNANCHORED = ".context-index/tasks/.migrate-unanchored.json";
   const dir = createTempDir();
   try {
     const manifest = await seedJsonBoard(dir);
-    const out = [];
-    assert.equal(await run({ projectRoot: dir, argv: ["--to", "github", "--yes", "--json"], manifest, exec: replayExec(migrateFx.failsAtItem2), isTTY: false, log: (s) => out.push(s) }), 1);
-    const report = JSON.parse(out.join(""));
-    assert.equal(report.code, "MIGRATE_PARTIAL_FAILURE");
-    assert.equal(report.errors[0].code, "GITHUB_WRITE_FAILED");
-    assert.doesNotMatch(JSON.stringify(report), /gh[pousr]_[A-Za-z0-9]{20,}/);
+    let r = await migrate(dir, manifest, ["--to", "github", "--yes"], migrateFx.unanchoredAtItem2);
+    assert.equal(r.code, 1);
+    const rec = JSON.parse(readFileSync(join(dir, UNANCHORED), "utf8"));
+    assert.equal(rec.source_id, "e1.f1");
+    assert.match(rec.target_id, /^gh-\d+$/);
+    assert.ok(r.stderr.some((l) => l.includes(rec.target_id) && /do not delete/i.test(l)));
+    r = await migrate(dir, manifest, ["--to", "github", "--yes"], migrateFx.completeUnanchored);
+    assert.equal(r.code, 0);
+    assert.equal(r.exec.calls.filter((c) => c.operation === "CreateIssue").length, 1); // only the item after e1.f1
+    assert.equal(Object.keys(r.exec.calls.find((c) => c.operation === "SetFields").variables.fields)[0], "legacy_id");
+    assert.equal(existsSync(join(dir, UNANCHORED)), false);
   } finally { cleanupTempDir(dir); }
+  const dir2 = createTempDir();
+  try {
+    const manifest = await seedJsonBoard(dir2);
+    await migrate(dir2, manifest, ["--to", "github", "--yes"], migrateFx.unanchoredAtItem2);
+    for (let i = 0; i < 2; i += 1) {
+      const r = await migrate(dir2, manifest, ["--to", "github", "--yes"], migrateFx.unanchoredClosed);
+      assert.equal(r.code, 1);
+      assert.ok(r.stderr.some((l) => l.startsWith("MIGRATE_UNANCHORED_ITEM") && l.includes("e1.f1")));
+      assert.equal(mutations(r.exec).length, 0);
+    }
+  } finally { cleanupTempDir(dir2); }
 });
 ```
 
-- [ ] **Verify test fails** — Run: `node --test tests/issues/github/migrate.test.mjs` — Expected: FAIL (`--to github` not dispatched)
-- [ ] **Implement** — Idempotency reads `legacy_id` from the target board first; title matching is never used for a github target. `.migrate-state.json` keeps its existing resume-argument check (`MIGRATE_RESUME_MISMATCH`) and progress counts; correctness never depends on it. Aborts emit `MIGRATE_PARTIAL_FAILURE` with the `GITHUB_*` code and a `redact()`ed message in `errors[]` (review CON-1). Run `grep -n "MIGRATE_UNKNOWN_BACKEND\|--to" tests/` and update any existing migrate test whose expectation changes — count with the grep first; more than 8 means split.
-- [ ] **Verify test passes** — Run: `node --test tests/issues/github/migrate.test.mjs && npm test -- --test-name-pattern migrate` — Expected: PASS
+
+- [ ] **Verify test fails**
+
+Run: `node --test tests/issues/github/migrate.test.mjs`
+Expected: FAIL (`--to github` still refused with `MIGRATE_GITHUB_UNAVAILABLE`; `--yes` rejected by `parseArgs()`)
+
+- [ ] **Implement**
+
+1. **Steps 1–2 of BEH-5 in `run()`, in this order, before any adapter is built:**
+   - **Source/target refusals.**
+     - `source === opts.to` runs **before** the github refusal, so `--from github --to github` exits with `MIGRATE_NOOP`. Today `MIGRATE_GITHUB_UNAVAILABLE` fires first, at `lib/cli/issues-migrate.mjs:917-944` (migration review RI-2).
+     - `MIGRATE_GITHUB_UNAVAILABLE` then fires only when the source is `github` and the target is not.
+     - The `MIGRATE_TARGET_READONLY` clause for `file` stays (migration review RI-7).
+   - **Resume-argument checks.** For a github target, `loadResumeState({ ..., strictScope: true })` runs immediately after the refusals, on live runs and `--dry-run` alike. Today it runs only on the live path, after both board reads and after the dry-run early return, at `:999-1033` (migration review RI-1). The checks, in order:
+     - an unparseable file → `MIGRATE_RESUME_INVALID`;
+     - a `source`/`target` mismatch → `MIGRATE_RESUME_MISMATCH`;
+     - `scope_args.includeClosed` missing or not a boolean → `MIGRATE_RESUME_INVALID`;
+     - `scope_args.includeClosed !== opts.includeClosed` → `MIGRATE_RESUME_MISMATCH`. The message names both values and both remedies (re-run with the recorded scope, or delete the state file).
+   - **json and beads** keep today's warn-and-continue (`strictScope` false), at today's position.
+2. **Steps 3–6 in `migrateToGithub()`:**
+   - **Step 3:** preflight and the `setup --check` gate through the adapter's transport (`GITHUB_FIELD_MISSING` names `Legacy ID`).
+   - **Step 4:** the source read. Read once with `includeClosed: true`, then filter to scope, so the BEH-11 source ID set covers every status. Then the target-board read.
+   - **Step 4b, unanchored record** (GitHub spec BEH-30). This step is read-only. It runs immediately after the target-board read and before provenance.
+     - Read `<storageRoot>/.context-index/tasks/.migrate-unanchored.json`. Apply the sentinel's realpath and symlink rules (Task 14) to that path.
+     - Validate `source_id` as a non-gh `parseId()` ID and `target_id` as a canonical gh ID before using them.
+     - When the record exists, re-read `target_id`:
+       - **Verified** (an open issue in the home repo whose `Legacy ID` is empty or equals `source_id`): plan to complete that exact issue. Add it to the project when it is missing, write `Legacy ID` first, then the unwritten fields. Never create a new issue for `source_id`.
+       - **Not verified:** exit 1 with `MIGRATE_UNANCHORED_ITEM`, naming both IDs and both remedies (set `Legacy ID` by hand, or close the issue and delete the file).
+     - `--dry-run` reads the record and neither writes nor removes the file. This task passes it on to the dry-run path; the `github` dry-run report that shows it is emitted by Task 19.
+     - This check is not in the amendment's BEH-5 order. Its position is recorded here and flagged as an amendment follow-up (review CON-4 / RI-4).
+   - **Step 5:** `legacy_id` provenance.
+     - Group target items by non-empty `legacy_id`. Values held by more than one item → `GITHUB_AMBIGUOUS_LEGACY_ID` naming the items.
+     - Values not in the source ID set → `MIGRATE_TARGET_FOREIGN_LEGACY_ID`. The message names up to 10 values and the total, and says each source board needs its own project.
+     - Empty values are ignored.
+     - Every echoed value goes through `echoValue()`. A value that does not parse under `parseId()` as a non-gh ID is echoed only in its escaped form (migration review BD-5).
+   - **Step 6:** `storageRoot = resolveStorageRoot(manifest, projectRoot)`, then `readSentinel(storageRoot, source)`:
+     - absent → continue with `sentinelPresent = false`;
+     - `project` byte-equal to `tasks.github.project` → continue with `sentinelPresent = true`;
+     - otherwise, including `{ malformed: true }` → `MIGRATE_SENTINEL_PROJECT_MISMATCH`, naming the recorded project (or "unreadable") and the target project, and saying only removing the sentinel by hand un-retires the board;
+     - `SENTINEL_PATH_UNSAFE` propagates.
+   - **Output:** every step 1–6 failure prints `<CODE>: <message>` through `out.stderr` and exits 1. It emits no envelope, writes no state file and writes no sentinel.
+3. **Confirmation hook:** `confirm(writeSet)` is supplied by `run()`. In this task it returns `opts.yes`, and `false` makes the verb exit 1 with `MIGRATE_CONFIRMATION_REQUIRED`. Task 19 replaces it with the full BEH-3 step (write-set disclosure, `isTTY`/`readLine`, the sentinel qualifier) and adds the progress line (step 7).
+4. **Copy:**
+   - In-scope items in base order, parents before children, sequentially.
+   - An item whose ID is already a target `legacy_id` is skipped, and finished if it is partial (GitHub spec BEH-14, BEH-30). Every other item is created with every BEH-13 field plus `Legacy ID`.
+   - After each item, whether created, finished or skipped, `last_successful_index` advances and `.migrate-state.json` is written with the existing atomic writer (migration review WR-9).
+   - After every item exists, sub-issue parents and dependencies are replayed, skipping links already present.
+   - A replay-phase failure leaves the index at M−1.
+   - Title matching is never used.
+5. **Abort envelope:** the first per-item or write-phase `GITHUB_*` error stops the run.
+   - **stdout:** one base Live-Run report through `out.stdout`, with `manifest_update_suggested: false` and `errors: [{ source_id, code, message }]`.
+     - `GITHUB_PARTIAL_CREATE` adds `target_id` (the error's `id`) and `unwritten_fields` (its `unwritten`), as Task 11 names them (migration review RI-5).
+     - `GITHUB_RATE_LIMITED` adds `reset_at` from `resetAt`. Task 19 exercises that case.
+   - **stderr:** exactly one `MIGRATE_PARTIAL_FAILURE: <code> at <source_id>` line.
+   - **Exit:** 1.
+   - The json and beads paths keep today's `{ id, index, stderr }` entries and their two stderr lines (migration review RI-3).
+   - **Unanchored window** (GitHub spec BEH-14, BEH-30). When the stop is a `GITHUB_PARTIAL_CREATE` whose `unwritten` includes `legacy_id`:
+     - Write `{ source_id, target_id }` to `.migrate-unanchored.json` by atomic temp-rename, before the envelope.
+     - The stderr line also names the issue and says not to delete that file.
+     - The file is removed only once that item completes on a later run.
+     - It is independent of `.migrate-state.json`. The amendment's BEH-4 schema for that file, and its "deleting it changes nothing" rule, are unchanged.
+     - Register the file in `lib/gitignore-paths.mjs` next to `.migrate-state.json` (review CON-4).
+6. **Success:** every item and link is present. In this task, success prints the Live-Run report with `errors: []`, `manifest_update_suggested: true`, and `github: { project, id_map }`, removes the state file, and exits 0. Task 19 inserts the sentinel write and commit before the report, and the stderr summary after it.
+7. **Redaction:** add the `Authorization:` pattern to `redact()`. Route every github-path string through `createGithubOutput()`. Neither module calls `console.log` or `console.error` outside it.
+8. **Existing tests:** run `grep -n "MIGRATE_UNKNOWN_BACKEND\|MIGRATE_GITHUB_UNAVAILABLE\|--to" tests/` and update any existing migrate test whose expectation changes. Count with the grep first; more than 8 means split.
+
+- [ ] **Verify test passes**
+
+Run: `node --test tests/issues/github/migrate.test.mjs && node --test tests/lib/cli-issues-migrate.test.mjs && npm test -- --test-name-pattern migrate`
+Expected: PASS. The existing json → beads and beads → json migrate tests pass unchanged, including the json/beads scope-mismatch `warning:` line.
+
 - [ ] **Commit**
 
 ```bash
-git add lib/issues/github/migrate.mjs lib/cli/issues-migrate.mjs tests/issues/github/migrate.test.mjs tests/issues/github/fixtures/migrate.mjs
+git add lib/issues/github/migrate.mjs lib/issues/github/errors.mjs lib/cli/issues-migrate.mjs lib/gitignore-paths.mjs .gitignore tests/issues/github/migrate.test.mjs tests/issues/github/fixtures/migrate.mjs
 git commit -m "feat(task-management): migrate a json or beads board to GitHub"
 ```
 
-### Task 19: Migration — confirmation, dry-run, pacing, sentinel, manifest suggestion [specialist: none]
+### Task 19: Migration: confirmation, progress line, dry-run, pacing, sentinel write and commit, manifest suggestion [specialist: none]
 
 **Charter capability:** Migration to GitHub
 **Strategy:** unit (source: detected, confidence: high)
-**Depends on:** Task 14, Task 18
+**Depends on:** Task 14, Task 18. It also modifies the write path shipped by Tasks 11–13 in `lib/issues/github-adapter.mjs` (`_mutate`, `_createItem`), so run it on the branch that carries that write path. In this worktree the adapter still has only the read path.
+**Contract:** amendment BEH-3, BEH-4 (progress line), BEH-5 steps 7–8, BEH-7, BEH-8, BEH-9 and BEH-10 (`isTTY`, `readLine`, `sleep`, `now`), plus GitHub spec BEH-31, BEH-32, BEH-35 and BEH-41.
 **Files:**
-- Modify: `lib/issues/github/migrate.mjs` — write-set disclosure + confirmation, dry-run report, pacing and wait bounds, sentinel write on success
-- Modify: `lib/cli/issues-migrate.mjs` — accept `--yes` in `parseArgs()` and `help()` (review RI-5); after success print the summary then `manifestUpdateSuggestion("github")`
+- Modify: `lib/issues/github/migrate.mjs`
+  - Progress line and cross-check.
+  - Write-set disclosure.
+  - Dry-run `github` object.
+  - Pacing and rate-limit waits.
+  - Success path: sentinel write, beads `commitSentinel`, then the stdout report and stderr summary.
+- Modify: `lib/issues/github-adapter.mjs` (shipped in Tasks 9–13). This is where pacing lives.
+  - **Why the adapter:** the transport's `request()` is synchronous (`execFileSync`), so it cannot await the async `sleep` seam. Pacing therefore sits in the adapter's `_mutate()`, which runs inside async methods.
+  - **Constructor:** gains one optional, non-seam option, `pace: { minIntervalMs, maxSingleWaitMs, maxWaits, maxTotalWaitMs }`. It is the fixed BEH-35 policy and is never read from argv, the environment or the manifest.
+    - `migrateToGithub()` builds `new GithubAdapter(storageRoot, manifest, { exec, now, sleep, pace: MIGRATION_PACE })`, with `MIGRATION_PACE = { minIntervalMs: 1000, maxSingleWaitMs: 300000, maxWaits: 5, maxTotalWaitMs: 900000 }`.
+    - The seams are still exactly amendment BEH-10's `exec`, `now` and `sleep`.
+  - **`_mutate()`:** becomes `async`, and `_createItem`, `update`, `close`, `addDependency`, `claim` and `release` `await` it.
+  - **With `pace` set:** `_mutate()` does three things:
+    1. awaits `this._sleep(...)` until `this._now() >= lastMutationAt + minIntervalMs`;
+    2. issues the request;
+    3. on `GITHUB_RATE_LIMITED`, waits when `resetAt - now <= maxSingleWaitMs`, waits < `maxWaits`, and the total wait stays within `maxTotalWaitMs`. It sleeps until `resetAt` and re-issues **the identical request**. Each rate-limit response consumes one wait, and the counters live on the adapter instance (one per run).
+    Beyond the bounds it throws the `GITHUB_RATE_LIMITED`. Inside `create()` after the issue exists, that surfaces as `GITHUB_PARTIAL_CREATE` with `causeCode: "GITHUB_RATE_LIMITED"`, and the envelope entry then also carries `reset_at`.
+  - **With `pace` unset** (every non-migration caller): behavior is unchanged. `_mutate()` makes no wait and no retry, and every read and write still throws `GITHUB_RATE_LIMITED` (GitHub spec BEH-35).
+  - **Scope:** only mutation operations are paced. Reads go through the transport unchanged.
+- Modify: `lib/cli/issues-migrate.mjs`
+  - The full BEH-3 confirmation step built from `isTTY`, `readLine` and `--yes` / `--auto`. It replaces Task 18's `confirm` hook.
+  - The production `readLine` default: one line from `process.stdin`, resolving `null` on EOF.
+- Modify: `tests/issues/github/fixtures/migrate.mjs`
+  - `seedBeadsBoard(dir)`: a temp repo whose `.beads/` is a linked worktree on `beads-board`, as in Task 14's test.
+  - Fixtures `rateLimited(resetInMs)` and `allPresent`.
 - Test: `tests/issues/github/migrate-safety.test.mjs`
 
-**Tests:** `tests/issues/github/migrate-safety.test.mjs` — create (BEH-31, BEH-32, BEH-35, BEH-41)
+**Tests:** `tests/issues/github/migrate-safety.test.mjs`, created by this task (GitHub spec BEH-31, BEH-32, BEH-35, BEH-41; amendment BEH-3, BEH-4, BEH-7, BEH-8, BEH-9)
+**Why not split:** the confirmation decision depends on the sentinel's presence and on the write set the progress line and dry run also compute, and the success path writes and commits that same sentinel. Pacing is the remaining piece, and it shares the fixture board and the injected `now`/`sleep` with every other case here. Splitting would duplicate the fixture sequence across two suites that must agree.
 
-- [ ] **Write failing test** — cases, each through `run()` with an injected `exec`, `isTTY`, `sleep` and `now`:
-  1. `--dry-run` issues zero mutations and prints repo/project visibility and the count of titles and notes to be published.
-  2. Non-interactive without `--yes` exits 1 with `MIGRATE_CONFIRMATION_REQUIRED` before any mutation; `--auto` alone does not count as `--yes`.
-  3. A re-run with nothing left to create or link needs no confirmation.
-  4. Mutations are spaced ≥ 1000 ms apart (assert on the injected `sleep`), never concurrent.
-  5. Rate-limit fixtures: a reset ≤ 5 min is waited; the 6th wait, or cumulative waiting > 15 min, stops with exit 1 and `GITHUB_RATE_LIMITED`; same under `--auto`.
-  6. On success the sentinel exists at `.context-index/tasks/board-read-only.json`, `manifest.yaml` is byte-identical, and stdout ends with the `manifestUpdateSuggestion("github")` text.
-- [ ] **Verify test fails** — Run: `node --test tests/issues/github/migrate-safety.test.mjs` — Expected: FAIL
-- [ ] **Implement** — inject `sleep` and `now` through `run()` options (default `setTimeout`-based / `Date.now`) so tests never wait. `--yes` is argv-only.
-- [ ] **Verify test passes** — Run: `node --test tests/issues/github/migrate-safety.test.mjs && node --test tests/issues/github/` — Expected: PASS
+- [ ] **Write failing test.** Each case runs through `run()` with injected `exec` (`replayExec`), `isTTY`, `readLine`, `sleep`, `now` and `log`. stderr is captured by replacing `console.error`, as in Task 18's `migrate()` helper. "No mutation" means no operation from Task 18's `MUTATIONS` set appears in `exec.calls`.
+  1. **Dry run.** `--dry-run --to github` behaves as follows:
+     - It exits 0 with no mutation, no `.migrate-state.json`, no sentinel and no new git commit.
+     - It asks for no confirmation; `readLine` is never called.
+     - stdout is one JSON report with every base Dry-Run key (`already_migrated` counted by `legacy_id`) plus `github.{project, repository, visibility.{project,repository}, would_create_ids, parent_links_to_replay, would_publish.{titles,notes}, estimated_requests}`.
+     - With a state file present it still prints the `resuming:` line. It neither writes nor removes `.migrate-unanchored.json`.
+  2. **Non-interactive refusal.**
+     - With `isTTY: false` and no `--yes`, the run exits 1 with `MIGRATE_CONFIRMATION_REQUIRED`, and the message names `--yes`.
+     - The same holds for `--auto` without `--yes`.
+     - In both cases there is no mutation, no state file and no sentinel.
+  3. **Interactive confirmation.** With `isTTY: true`:
+     - `readLine` returning `"n"` exits 1 with `MIGRATE_CONFIRMATION_REQUIRED`, with no mutation.
+     - `null` (EOF) does the same.
+     - `" YES "` proceeds.
+     - A resume run with work left and a sentinel for this project already on disk, with `isTTY: true` and `"y"`, prints a sentinel line containing "present" and "unchanged", and leaves the sentinel byte-identical.
+     - The write set appears on stderr exactly once, before the prompt. It names the target project and repository with their visibility, the item and link counts, the titles and notes to publish, and the sentinel path. For a beads source it also says the verb will commit that one file on `beads-board`, and that `--yes` covers that commit and the repository's commit hooks (migration review BD-4).
+  4. **Nothing left to do, sentinel present.**
+     - The `allPresent` fixture with a sentinel for this project on disk, `isTTY: false`, no `--yes`: the run exits 0 without prompting, issues no mutation, and leaves the sentinel byte-identical.
+     - A beads source whose sentinel exists but is uncommitted gets it committed without a prompt. The amendment's BEH-3 accepts the file as the consent proxy given by the run that created it (migration review BD-1).
+  5. **Nothing left to do, sentinel absent.**
+     - The same fixture with no sentinel, `isTTY: false`, no `--yes`: the run exits 1 with `MIGRATE_CONFIRMATION_REQUIRED` and leaves no sentinel. The write set shows zero items and zero links and names the sentinel.
+     - With `--yes` the run exits 0 and writes the sentinel.
+  6. **Progress line** (amendment BEH-4). Both lines come before the write set.
+     - **Agreeing state file:** `failsAtItem2` fails at `e1.f1`, the second item in the order `e1`, `e1.f1`, `issue-7k3f9a`. Only `e1` completes, so `last_successful_index` is 0 and the board holds one `legacy_id`. The re-run with `resumeFromItem2` prints `resuming: 1 of M already migrated` and no `warning:` line.
+     - **Disagreeing state file:** after `partialCreateAtItem2`, the board holds two `legacy_id` matches (`e1` and `e1.f1`). A state file edited to `last_successful_index: 0` against that board prints `resuming: 1 of M already migrated` and then `warning: .migrate-state.json records 1 of M migrated but the target board holds 2; the target board decides what is skipped`. The run still exits 0 with the same mutation sequence.
+     - **No state file:** there is no `resuming:` line.
+  7. **Pacing** (BEH-35).
+     - Consecutive mutation requests are at least 1000 ms apart, measured on the injected `now`, with the waits recorded on the injected `sleep`. No two are in flight at once.
+     - Real time for the test advances by less than one second.
+     - A rate limit on AddToProject in the middle of an item is waited and AddToProject is re-issued. The item completes with no `GITHUB_PARTIAL_CREATE`.
+     - An adapter built without `pace` (as `getIssueManager()` builds it) throws `GITHUB_RATE_LIMITED` on the first limit and never calls `sleep`.
+  8. **Rate-limit bounds** (BEH-35, amendment BEH-9).
+     - A reset at most 5 minutes away is waited on `sleep`.
+     - The 6th wait, or cumulative waiting over 15 minutes, or a reset more than 5 minutes away, stops the run with exit 1 and the BEH-5 envelope.
+     - The envelope's `errors[0]` is `{ source_id, code: "GITHUB_RATE_LIMITED", message, reset_at }`, where `reset_at` equals the error's `resetAt`.
+     - The same bounds apply under `--auto`.
+  9. **Success, json source** (amendment BEH-8).
+     - `.context-index/tasks/board-read-only.json` holds exactly the five charter-rev-9 keys.
+     - Every pre-existing board file is byte-identical.
+     - stdout is one report with `errors: []`, `manifest_update_suggested: true` and `github.{project, sentinel_path, id_map}`. `id_map` covers every in-scope source ID.
+     - stderr has, in order: one `<source id> → <gh id>` line per item; one sentinel line that says to commit the file on the branch that carries the board; and, as the last line, `manifestUpdateSuggestion("github")`.
+     - `.migrate-state.json` is gone.
+     - `manifest.yaml` is byte-identical with and without `--auto`.
+     - `git log` shows no new commit.
+     - Run with `projectRoot` set to a linked worktree of the test repo, the sentinel lands under the main checkout's `.context-index/tasks/` (`resolveStorageRoot()`).
+  10. **Success, beads source** (`seedBeadsBoard`).
+      - `.beads/adev-read-only.json` is written.
+      - `git -C .beads log -1 --name-only` shows one new commit touching only that file.
+      - A file staged in `.beads/` before the run is still staged and not in the commit.
+      - The remote-tracking ref is unchanged, and `main` has no new commit.
+      - The sentinel stderr line says the file was committed on `beads-board` and to push it with the next board sync.
+  11. **Beads commit failure.**
+      - With `.beads/` switched to another branch, the run exits 1 with `MIGRATE_SENTINEL_COMMIT_FAILED`. The message names the absolute sentinel path and `beads-board`. The sentinel exists uncommitted, stdout has no success report, and the state file is kept.
+      - After switching back to `beads-board`, a re-run with `isTTY: false` and no `--yes` commits the file and exits 0.
+  12. **Unsafe sentinel.**
+      - A symlink at the sentinel path stops the run with `SENTINEL_PATH_UNSAFE` before any mutation (Task 18's BEH-12 check).
+      - **Sentinel write failure after the copy.** Wrap the injected `exec` in the test, keeping its `.calls`. After the last replayed mutation returns, the wrapper creates a non-empty directory at the sentinel path, so `renameSync` fails whatever the user, including root. The run exits 1 with no success report and keeps the GitHub items and the state file. Remove the directory, then a re-run needs confirmation before it writes the sentinel.
+  13. **The guard after migration** (GitHub spec BEH-33).
+      - After the json success above, `create()` on a `JsonAdapter` for the same storage root throws `BOARD_READ_ONLY_MIGRATED` naming the project, and `list()` still returns the items.
+      - After the beads success, `assertWritable(storageRoot, "beads")` throws `BOARD_READ_ONLY_MIGRATED`.
+  14. **Redaction on non-error lines** (migration review WR-8).
+      - With `GH_TOKEN` set to an 8+-character fixture value, a fixture whose project title contains that value and a `ghp_` token makes the write set and the success summary print `[REDACTED]`.
+      - Neither secret appears in the captured stdout or stderr.
+- [ ] **Verify test fails** — Run: `node --test tests/issues/github/migrate-safety.test.mjs` — Expected: FAIL (no write set, no `readLine` prompt, no sentinel, no pacing)
+- [ ] **Implement.** Every string goes through Task 18's `createGithubOutput()`.
+  1. **Progress line** (BEH-5 step 7). Print it after the step-6 sentinel check, when a state file exists and passed Task 18's checks:
+     - N = `last_successful_index + 1`; M = the in-scope count.
+     - B = the in-scope source IDs found as target `legacy_id` values.
+     - Print `resuming: N of M already migrated`. When B ≠ N, follow it with the `warning:` line, and continue in both cases.
+     - This also runs on `--dry-run`.
+  2. **Write set** (BEH-5 step 8, amendment BEH-3).
+     - The run has a write to make when any item is to be created or finished, any link replayed, any closed item closed, or the sentinel is absent.
+     - **No write:** skip confirmation.
+     - **Otherwise:** print the write set once.
+       - **Sentinel line in the write set** (amendment BEH-3):
+         - when the sentinel is absent, it gives the path it will create, plus the beads-board commit line for a beads source;
+         - when the sentinel already exists for this project, it says the sentinel is present and will be left unchanged.
+       - `--yes` proceeds.
+       - Interactive (`isTTY === true` and no `--auto`): prompt `Proceed? [y/N] ` on stderr and `await readLine()`. Proceed only on `/^(y|yes)$/i` after trimming. Anything else, or `null`, exits 1 with `MIGRATE_CONFIRMATION_REQUIRED`.
+       - Non-interactive without `--yes`: exit 1 with `MIGRATE_CONFIRMATION_REQUIRED`, naming `--yes`.
+     - No local write happens before this point.
+  3. **Dry run** (amendment BEH-7). Run checks 1–7, print the report with the `github` object, and exit 0. `estimated_requests` = preflight + board-read pages + mutations planned.
+  4. **Pacing** (amendment BEH-9). Implement the adapter's optional `pace` policy exactly as described under Files: async `_mutate()`, a spacing wait on the injected `sleep`/`now`, and a bounded wait-and-re-issue of the identical request on `GITHUB_RATE_LIMITED`.
+     - `migrateToGithub()` passes `pace: MIGRATION_PACE`.
+     - A stop beyond the bounds uses the BEH-5 envelope.
+     - Add a regression test that an adapter built without `pace` still throws `GITHUB_RATE_LIMITED` on the first limit with no `sleep` call.
+  5. **Success** (amendment BEH-8), in this order:
+     1. `writeSentinel(storageRoot, source, { project })` when absent. A present sentinel was checked in Task 18 and is left byte-identical.
+     2. For a beads source, `commitSentinel(storageRoot)`.
+     3. The stdout report.
+     4. The stderr summary, sentinel line, then `manifestUpdateSuggestion("github")` as the last line.
+     5. Remove `.migrate-state.json` and exit 0.
+     - **Failures in step 1 or 2:** a write failure exits 1 with `SENTINEL_PATH_UNSAFE` or the I/O error's code, and a commit failure exits 1 with `MIGRATE_SENTINEL_COMMIT_FAILED`. Either prints no success report and keeps the state file.
+     - The verb never writes `manifest.yaml` and never pushes.
+- [ ] **Verify test passes** — Run: `node --test tests/issues/github/migrate-safety.test.mjs && node --test tests/issues/github/ && node --test tests/issues/read-only-sentinel.test.mjs` — Expected: PASS
 - [ ] **Commit**
 
 ```bash
-git add lib/issues/github/migrate.mjs lib/cli/issues-migrate.mjs tests/issues/github/migrate-safety.test.mjs
+git add lib/issues/github/migrate.mjs lib/issues/github-adapter.mjs lib/cli/issues-migrate.mjs tests/issues/github/migrate-safety.test.mjs tests/issues/github/fixtures/migrate.mjs
 git commit -m "feat(task-management): confirm, pace and seal migrations to GitHub"
 ```
 
@@ -1581,24 +2091,210 @@ git commit -m "docs(task-management): sync the github backend into agent files"
 **Charter capability:** GitHub Board Backend
 **Strategy:** unit (source: detected, confidence: high)
 **Depends on:** Task 19, Task 20
+**Applying this as a follow-up delta:** if an earlier version of Task 22 has already landed (with `EXTRA_CODES = ["GITHUB_SUBISSUE_CYCLE", "SENTINEL_PATH_UNSAFE"]` and only the GitHub spec's Error Cases codes), do not redo it. Apply only the missing parts as one follow-up commit (message below):
+- the widened `EXTRA_CODES` list;
+- the `docs/cli-reference.md` assertions;
+- the troubleshooting entries for every code that is not documented yet;
+- the docs for the unanchored-item record.
+
+Today's spec rev 6 Error Cases table also gained rows for these codes, which the existing test picks up on its own:
+- `GITHUB_SUBISSUE_CYCLE`
+- `MIGRATE_UNANCHORED_ITEM`
+- `SENTINEL_PATH_UNSAFE`
+- `MIGRATE_SENTINEL_COMMIT_FAILED`
+- `BACKEND_READ_ONLY_DEPRECATED`
+
 **Files:**
-- Modify: `docs/configuration.md` — every `tasks.github` key from BEH-2 with its default
-- Modify: `docs/troubleshooting.md` — every error code in the spec's Error Cases table plus `GITHUB_SUBISSUE_CYCLE` and `SENTINEL_PATH_UNSAFE`, each with its remedy; the sanctioned unlock for `BOARD_READ_ONLY_MIGRATED` (delete the sentinel only after confirming the migration is abandoned; a malformed sentinel still blocks — review BD-6)
-- Modify: `docs/concepts.md` — backend comparison; the github differences; the claim window and rollback-by-abstention (review CON-4); the trust model — Project fields need project write, labels and issue types need triage, issue authors control only title and body (review BD-4); the ADR 0016 relationship (review CON-2)
-- Modify: `skills/issues/SKILL.md` — only if `grep -nE "e1\.f|dotted" skills/issues/SKILL.md skills/plan/references/*.md` shows a dotted ID used as the sole example; otherwise leave unchanged and say so in the commit body
+- Modify: `docs/configuration.md`: every `tasks.github` key from BEH-2 with its default.
+- Modify: `docs/troubleshooting.md`: every code in the spec's Error Cases table plus every `EXTRA_CODES` entry, each with its remedy. It also covers:
+  - the sanctioned unlock for `BOARD_READ_ONLY_MIGRATED`: delete the sentinel only after confirming the migration is abandoned, and note that a malformed sentinel still blocks (review BD-6);
+  - for a beads source, committing that deletion on `beads-board`;
+  - the unanchored-item record `.context-index/tasks/.migrate-unanchored.json`: never delete it while the issue it names is unanchored, and the two remedies for `MIGRATE_UNANCHORED_ITEM`.
+- Modify: `docs/cli-reference.md`: under `adev issues migrate`, the `--yes` flag ("Confirm a github migration's write set without prompting."), the `MIGRATE_UNKNOWN_BACKEND` text that now lists `SUPPORTED_BACKENDS` including `github`, and `MIGRATE_PARTIAL_FAILURE`'s github `errors[]` entry shape `{ source_id, code, message }`.
+- Modify: `docs/concepts.md`:
+  - backend comparison and the github differences;
+  - the claim window and rollback-by-abstention (review CON-4);
+  - the trust model: Project fields need project write, labels and issue types need triage, issue authors control only title and body (review BD-4);
+  - the ADR 0016 relationship (review CON-2);
+  - the `Legacy ID`-first write order and its residual window (GitHub spec BEH-13, BEH-14).
+- Modify: `skills/issues/SKILL.md` only if `grep -nE "e1\.f|dotted" skills/issues/SKILL.md skills/plan/references/*.md` shows a dotted ID used as the sole example. Otherwise leave it unchanged and say so in the commit body.
 - Create: `tests/docs/github-backend-docs.test.mjs`
 
-**Tests:** `tests/docs/github-backend-docs.test.mjs` — create (BEH-38)
+**Tests:** `tests/docs/github-backend-docs.test.mjs`, created by this task (BEH-38)
 
-- [ ] **Write failing test** — parse the Error Cases table from `github-board-backend.spec.md` (third column, backticked codes) and the key list from BEH-2; add the declared plan-level extras `const EXTRA_CODES = ["GITHUB_SUBISSUE_CYCLE", "SENTINEL_PATH_UNSAFE"]`; assert each code appears in `docs/troubleshooting.md` and each key in `docs/configuration.md`. The extras are docs-only additions, not a spec amendment.
-- [ ] **Verify test fails** — Run: `node --test tests/docs/github-backend-docs.test.mjs` — Expected: FAIL listing the missing codes/keys
+- [ ] **Write failing test.** Parse the Error Cases table from `github-board-backend.spec.md` (third column, backticked codes) and the key list from BEH-2. Then add the declared plan-level extras. These are codes emitted by the migration amendment, the transport and the replay helper that the GitHub spec's own table does not carry:
+
+```javascript
+const EXTRA_CODES = [
+  // GitHub spec, also in its rev 6 Error Cases table (listed so a stale table cannot drop them)
+  "GITHUB_SUBISSUE_CYCLE", "SENTINEL_PATH_UNSAFE", "MIGRATE_SENTINEL_COMMIT_FAILED", "MIGRATE_UNANCHORED_ITEM",
+  // backend-migration-rev-3-github-target.spec.md (Error Cases delta)
+  "MIGRATE_RESUME_MISMATCH", "MIGRATE_RESUME_INVALID", "MIGRATE_TARGET_FOREIGN_LEGACY_ID",
+  "MIGRATE_SENTINEL_PROJECT_MISMATCH", "MIGRATE_PARTIAL_FAILURE", "MIGRATE_GITHUB_UNAVAILABLE",
+  // transport (Task 4) and replay helper (Task 5)
+  "GITHUB_REQUEST_FAILED", "GITHUB_TRANSPORT_INTERNAL", "REPLAY_ANONYMOUS_DOCUMENT", "REPLAY_AMBIGUOUS_FIXTURE",
+];
+```
+
+  - Assert that each code appears in `docs/troubleshooting.md` and each key in `docs/configuration.md`.
+  - Assert that `docs/cli-reference.md`'s `adev issues migrate` section contains `--yes` and `MIGRATE_UNKNOWN_BACKEND`.
+  - Assert that `docs/troubleshooting.md` names `.migrate-unanchored.json`.
+  - The extras are docs-only additions, not a spec amendment.
+  - Mark the two `REPLAY_*` codes as test-helper codes under a "Test fixtures" heading, so operators do not mistake them for runtime errors.
+- [ ] **Verify test fails** — Run: `node --test tests/docs/github-backend-docs.test.mjs` — Expected: FAIL listing the missing codes, keys and cli-reference entries
 - [ ] **Implement** — write the docs.
 - [ ] **Verify test passes** — Run: `node --test tests/docs/github-backend-docs.test.mjs && npm test` — Expected: PASS
 - [ ] **Commit**
 
 ```bash
-git add docs/configuration.md docs/troubleshooting.md docs/concepts.md tests/docs/github-backend-docs.test.mjs
+git add docs/configuration.md docs/troubleshooting.md docs/cli-reference.md docs/concepts.md tests/docs/github-backend-docs.test.mjs
 git commit -m "docs(task-management): document the github issue backend"
+# follow-up delta variant, when an earlier Task 22 already landed:
+# git commit -m "docs(task-management): document the github migration and transport error codes"
+```
+
+### Task 23: `/adev:plan` stops loudly on `GITHUB_PARTIAL_CREATE` [specialist: none]
+
+**Charter capability:** GitHub Board Backend
+**Strategy:** unit (source: detected, confidence: high)
+**Depends on:** Task 11 (the code exists). It is independent of Tasks 18–22.
+**Contract:** GitHub spec BEH-14 (rev 5, maintainer decision 2026-11-26)
+- `/adev:plan`'s in-process `create()` calls never catch and continue. On `GITHUB_PARTIAL_CREATE` the mode:
+  - stops;
+  - reports the code, the new canonical ID and the unwritten fields;
+  - creates no further items;
+  - tells the operator to finish that item and re-run.
+- There is no retry.
+- `/adev:specify`'s Step 5.6 catch-log-continue is unchanged.
+**Files:**
+- Modify: `skills/plan/references/feature-mode.md` (the `create()` calls at about lines 38–48), `skills/plan/references/epic-mode.md` (about line 15) and `skills/plan/references/release-mode.md` (about lines 65–69). Each gets one prose paragraph after its create step. Markdown only: no inline Node, no fenced JavaScript directive (constitution anti-patterns).
+- Not modified: `skills/plan/references/steps/step-7-execution-handoff.md`. Its `adev issues epic` call already exits 1 with the ID and unwritten fields (`lib/cli/issues-epic.mjs`).
+- Not modified: `skills/specify/references/modes/standard-mode.md`.
+- Test: `tests/skills/plan-partial-create-stop.test.mjs`
+
+**Tests:** `tests/skills/plan-partial-create-stop.test.mjs`, created by this task (GitHub spec BEH-14 acceptance criterion)
+
+- [ ] **Write failing test.** For each of the three mode files:
+  - read the file and anchor on the first occurrence of the literal `create({`, then take the enclosing section (the lines from the nearest preceding heading or numbered step to the next one). In `release-mode.md` the Workspace-mode skip paragraph near line 27 ("Skip epic-board `create()` calls unconditionally") is **not** the target; the anchor `create({` skips it, landing on the calls at about lines 65 and 69;
+  - assert that the section names `GITHUB_PARTIAL_CREATE` and says the mode stops, reports the ID and the unwritten fields, creates no further items, and does not retry. Use one regex per obligation, each matched case-insensitively.
+  Also assert two things are unchanged:
+  - `skills/specify/references/modes/standard-mode.md` still contains "do not block" in Step 5.6;
+  - none of the three files gained a `node -e` or `Run inline Node` directive.
+- [ ] **Verify test fails** — Run: `node --test tests/skills/plan-partial-create-stop.test.mjs` — Expected: FAIL (no mode names the code)
+- [ ] **Implement** — add the paragraph to each file. It names `GITHUB_PARTIAL_CREATE`, the fields to report (the code, the canonical ID `id`, the `unwritten` list), the instruction to stop without creating further items, and the remedy: finish that item with `adev issues update` or on GitHub, then re-run.
+- [ ] **Verify test passes** — Run: `node --test tests/skills/plan-partial-create-stop.test.mjs && node --test tests/skills/` — Expected: PASS, including the SKILL.md size-cap and no-inline-Node tests
+- [ ] **Commit**
+
+```bash
+git add skills/plan/references/feature-mode.md skills/plan/references/epic-mode.md skills/plan/references/release-mode.md tests/skills/plan-partial-create-stop.test.mjs
+git commit -m "docs(task-management): stop /adev:plan loudly on a partial GitHub create"
+```
+
+### Task 24: Realpath containment for `spec_ref` / `plan_ref` consumers [specialist: none]
+
+**Charter capability:** GitHub Board Backend
+**Strategy:** unit (source: detected, confidence: high)
+**Depends on:** — (applies to shipped code)
+**Contract:** GitHub spec BEH-39, BEH-37 and BEH-32 (rev 5): containment is checked on the realpath, equivalent to `assertContained` in `lib/extensions/exec-payload.mjs`. The lexical `resolveContained()` alone is insufficient.
+**Call sites, checked on the implement branch:**
+- `lib/issues/github/` has no `resolveContained` call.
+- The one shipped consumer that opens a board path is `lib/reality-check.mjs`. It calls `resolve(projectRoot, issue.plan_ref)` (about lines 432–433) and `resolve(projectRoot, issue.spec_ref)` (about lines 467–468) with **no** containment at all. Note the snake-case `plan_ref` it reads alongside `planRef` (review RI-1).
+- The fixture recorder (Task 20) and the sentinel (Task 14) use realpath containment from the start. If Task 20 has already landed with `resolveContained()`, this task also converts `scripts/record-github-fixtures.mjs`.
+
+**Files:**
+- Modify: `lib/reality-check.mjs`
+  - Both resolutions go through `assertContained(projectRoot, candidate)` from `lib/extensions/exec-payload.mjs`, or the equivalent `lenientRealpath` + `isContained` from `lib/path-safety.mjs` against `safeRealpath(projectRoot)`.
+  - A refused or unresolvable path returns `{ completed: false, confidence: CONFIDENCE.NONE, reason: "<field> resolves outside the repository" }` and never reads the file.
+- Modify (only if Task 20 has landed): `scripts/record-github-fixtures.mjs`
+- Test: `tests/lib/reality-check-containment.test.mjs`
+
+**Tests:** `tests/lib/reality-check-containment.test.mjs`, created by this task (GitHub spec BEH-39 acceptance criterion)
+
+- [ ] **Write failing test.** In a temp repo:
+  - add a directory symlink `docs/evil -> <outside temp dir>` and an outside file `spec.md` that the verifier would accept;
+  - an issue with `spec_ref: "docs/evil/spec.md"` is reported not completed with the outside-repository reason, and the outside file is never opened (assert with a read counter, or by making the outside file unreadable);
+  - the same holds for `plan_ref`;
+  - a `spec_ref` of `../x.md` and a non-existent path are refused the same way;
+  - a normal in-repo `spec_ref` still verifies.
+  - If Task 20 has landed, add a recorder case: a symlinked `fixtures/` subdirectory pointing outside is refused.
+- [ ] **Verify test fails** — Run: `node --test tests/lib/reality-check-containment.test.mjs` — Expected: FAIL (the symlinked path is followed)
+- [ ] **Implement** — as above. Do not change `resolveContained()` itself: its many CLI-argument callers are lexical by design and out of scope.
+- [ ] **Verify test passes** — Run: `node --test tests/lib/reality-check-containment.test.mjs && npm test -- --test-name-pattern reality` — Expected: PASS
+- [ ] **Commit**
+
+```bash
+git add lib/reality-check.mjs tests/lib/reality-check-containment.test.mjs
+git commit -m "fix(task-management): check spec_ref and plan_ref containment on the realpath"
+```
+
+### Task 25: `Legacy ID` first in `_createItem` [specialist: none]
+
+**Charter capability:** Migration to GitHub
+**Strategy:** unit (source: detected, confidence: high)
+**Depends on:** Task 11 (shipped on the implement branch; `_planCreate` and `_createItem` are not in this worktree's adapter yet). Must land before Task 18.
+**Contract:** GitHub spec BEH-13 and BEH-14 (rev 5).
+- When `legacy_id` is set, it is the first aliased mutation of the first field-write request, immediately after AddToProject.
+- A failure after that write leaves an item the next run finds by `legacy_id`.
+- **Shipped state:** `_createItem` in `lib/issues/github-adapter.mjs` runs CreateIssue → AddToProject → one SetFields request. `_planCreate` builds `slots` starting with the status slot, then priority, then the text fields, so `legacy_id` comes late in that request.
+
+**Files:**
+- Modify: `lib/issues/github-adapter.mjs`
+  - `_planCreate` places the `legacy_id` text slot first in `plan.slots` when it is present. The order of the remaining slots is unchanged.
+  - `GITHUB_PARTIAL_CREATE`'s `unwritten` still lists every field of the failed request, including `legacy_id`. Partial application inside an aliased request is not inferred, which is conservative: Task 18's unanchored check then finds the issue verified by its `Legacy ID`.
+- Modify: `tests/issues/github/fixtures/*.mjs`, the create-path recordings whose SetFields variable order changes.
+- Test: `tests/issues/github/create-legacy-first.test.mjs`
+
+**Tests:** `tests/issues/github/create-legacy-first.test.mjs`, created by this task (GitHub spec BEH-13 acceptance criterion)
+
+- [ ] **Write failing test.** Through `replayExec`:
+  - `create({ ..., legacy_id: "issue-7k3f9a" })` sends CreateIssue, then AddToProject, then a SetFields request whose first aliased mutation sets `Legacy ID`.
+  - Without `legacy_id`, the SetFields order is unchanged from today.
+  - A fixture that fails the SetFields request throws `GITHUB_PARTIAL_CREATE` with `unwritten` containing `legacy_id`.
+  - A fixture that fails a later step (`AddSubIssue`) throws with `unwritten` not containing `legacy_id`.
+- [ ] **Verify test fails** — Run: `node --test tests/issues/github/create-legacy-first.test.mjs` — Expected: FAIL (`legacy_id` is not first)
+- [ ] **Implement** — reorder the slots; re-record or regenerate the affected hand-built fixtures.
+- [ ] **Verify test passes** — Run: `node --test tests/issues/github/` — Expected: PASS
+- [ ] **Commit**
+
+```bash
+git add lib/issues/github-adapter.mjs tests/issues/github/create-legacy-first.test.mjs tests/issues/github/fixtures
+git commit -m "fix(task-management): write Legacy ID first when creating a migrated item"
+```
+
+### Task 26: Page bounds fixed from the first page [specialist: none]
+
+**Charter capability:** GitHub Batched Reads
+**Strategy:** unit (source: detected, confidence: high)
+**Depends on:** Task 4, Task 9 (shipped)
+**Contract:** GitHub spec BEH-10 (rev 6, review RI-2):
+- **Item pages:** the bound is `ceil(totalCount / 100) + 1`, with `totalCount` taken from the first page and fixed for the read.
+- **Continuations:** each sub-issue or blocked-by continuation is bounded on its own, by `totalCount` from that connection's embedded first page (which counts as page 1). Its pages never count toward the item-page bound.
+- **Outcome:** a repeated cursor or an exceeded bound throws `GITHUB_PAGINATION_INVALID` with no partial result.
+- **Shipped state:** `paginate()` in `lib/issues/github/transport.mjs` (about line 231) and `continueConnection()` in `lib/issues/github/board-read.mjs` (about line 47) both recompute `bound` from each page's own `totalCount`. Continuations are already separate from the item-page count and already throw on a repeated cursor.
+
+**Files:**
+- Modify: `lib/issues/github/transport.mjs`
+  - `paginate()` computes `bound` once, from the first response.
+  - A first page whose `totalCount` is not a non-negative safe integer throws `GITHUB_PAGINATION_INVALID` (review TR-2).
+- Modify: `lib/issues/github/board-read.mjs`
+  - `continueConnection()` computes `bound` once, from the embedded connection's `totalCount`, with the same integer check.
+- Test: create `tests/issues/github/page-bound.test.mjs`. Existing `transport.test.mjs` cases that assert today's per-page bound are updated only if they break.
+
+**Tests:** `tests/issues/github/page-bound.test.mjs`, created by this task (GitHub spec BEH-10 acceptance criterion)
+
+- [ ] **Write failing test.**
+  - A recorded item read whose `totalCount` grows by 100 on every response, with fresh cursors, throws `GITHUB_PAGINATION_INVALID` at page `ceil(first totalCount / 100) + 2`.
+  - The same holds for a sub-issue continuation, measured against its embedded first page.
+  - A first page with `totalCount: "250"` or `-1` throws immediately.
+  - A normal 250-item read still issues exactly 3 item-page requests.
+- [ ] **Verify test fails** — Run: `node --test tests/issues/github/page-bound.test.mjs` — Expected: FAIL (the growing `totalCount` never trips)
+- [ ] **Implement** — hoist the bound out of the loop in both functions.
+- [ ] **Verify test passes** — Run: `node --test tests/issues/github/` — Expected: PASS
+- [ ] **Commit**
+
+```bash
+git add lib/issues/github/transport.mjs lib/issues/github/board-read.mjs tests/issues/github/page-bound.test.mjs
+git commit -m "fix(task-management): fix GitHub page bounds from the first page"
 ```
 
 ---

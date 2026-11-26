@@ -175,3 +175,36 @@
 {"event":"review_round","plan":".context-index/specs/features/task-management/github-board-backend.plan.md","task_id":"task-20","stage":"code-quality","cycles":1,"findings":0,"ts":"2026-11-26T20:33:40.379Z"}
 {"event":"plan_task","plan":".context-index/specs/features/task-management/github-board-backend.plan.md","task_id":"task-22","status":"blocked","notes":"Blocked: depends on Task 19 (and 14); docs-coverage test requires documenting BOARD_READ_ONLY_MIGRATED / MIGRATE_CONFIRMATION_REQUIRED / SENTINEL_PATH_UNSAFE behavior not yet implemented","ts":"2026-11-26T20:34:42.754Z"}
 {"event":"step_failed","step":"implement","verdict":"FAIL","ts":"2026-11-26T20:34:42.923Z"}
+{"event":"lifecycle_step","step":"review","status":"started","revision":3,"ts":"2026-11-26T19:19:38.879Z"}
+{"event":"reviewer_report","step":"review","reviewer":"consistency-analyzer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"0 blockers, 5 warnings (CON-1..5), 2 suggestions; rev-3 sentinel and BEH-41 changes consistent with amendment","ts":"2026-11-26T19:26:35.748Z"}
+{"event":"reviewer_report","step":"review","reviewer":"referent-integrity","severity":"blocker","verdict":"FAIL","notes":"1 blocker (RI-1: /adev:plan has no non-blocking adapter-error path, BEH-14), 3 warnings, 1 suggestion","ts":"2026-11-26T19:26:35.903Z"}
+{"event":"reviewer_report","step":"review","reviewer":"wiring-reviewer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"0 blockers, 3 warnings (WR-1..3 carry-overs), 2 suggestions","ts":"2026-11-26T19:26:36.011Z"}
+{"event":"reviewer_report","step":"review","reviewer":"boundary-reviewer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"0 blockers, 3 warnings (BD-1, BD-3, BD-4), 4 suggestions","ts":"2026-11-26T19:26:36.132Z"}
+{"event":"reviewer_report","step":"review","reviewer":"termination-reviewer","severity":"blocker","verdict":"FAIL","notes":"1 blocker (TR-1: walkTree cycle outcome/bound unstated, BEH-11), 2 warnings, 1 suggestion","ts":"2026-11-26T19:26:36.246Z"}
+{"event":"step_completed","step":"review","verdict":"BLOCK","revision":3,"ts":"2026-11-26T19:28:15.902Z"}
+{"event":"lifecycle_step","step":"specify","status":"started","revision":4,"ts":"2026-11-26T19:31:47.882Z"}
+{"event":"spec_revised","from_revision":3,"to_revision":4,"addressed_blocker_ids":["referent-integrity:nonexistent-skill-error-path:6784c637","termination-reviewer:missing-iteration-cap:78cdd45d"],"unresolved_blocker_ids":[],"ts":"2026-11-26T19:31:47.952Z"}
+{"event":"step_completed","step":"specify","revision":4,"ts":"2026-11-26T19:31:58.189Z"}
+{"event":"lifecycle_step","step":"review","status":"started","revision":4,"ts":"2026-11-26T19:32:12.390Z"}
+{"event":"reviewer_report","step":"review","reviewer":"consistency-analyzer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"0 blockers, 3 warnings, 5 suggestions; prior RI-1/TR-1 resolved in its view","ts":"2026-11-26T19:36:43.148Z"}
+{"event":"reviewer_report","step":"review","reviewer":"referent-integrity","severity":"blocker","verdict":"FAIL","notes":"1 blocker (RI-1: /adev:specify and /adev:plan call create() in-process, not via verbs, BEH-14), 1 warning, 1 suggestion","ts":"2026-11-26T19:36:43.234Z"}
+{"event":"reviewer_report","step":"review","reviewer":"wiring-reviewer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"0 blockers, 5 warnings, 3 suggestions","ts":"2026-11-26T19:36:43.315Z"}
+{"event":"reviewer_report","step":"review","reviewer":"boundary-reviewer","severity":"blocker","verdict":"FAIL","notes":"1 blocker (BD-1: resolveContained is lexical-only; spec_ref/planRef/recorder/sentinel need realpath containment, BEH-39), 3 warnings, 1 suggestion","ts":"2026-11-26T19:36:43.393Z"}
+{"event":"reviewer_report","step":"review","reviewer":"termination-reviewer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"0 blockers, 3 warnings (continuation bound, per-page totalCount bound has no fixed ceiling, BEH-35 wait layer), 1 suggestion","ts":"2026-11-26T19:36:43.475Z"}
+{"event":"step_completed","step":"review","verdict":"BLOCK","revision":4,"ts":"2026-11-26T19:37:40.758Z"}
+{"event":"spec_revised","from_revision":4,"to_revision":5,"addressed_blocker_ids":["boundary-reviewer:path-containment:31c90e3e","referent-integrity:nonexistent-skill-error-path:b3ff7d35"],"unresolved_blocker_ids":[],"ts":"2026-11-26T19:43:36.823Z"}
+{"event":"lifecycle_step","step":"review","status":"started","revision":5,"ts":"2026-11-26T19:44:05.836Z"}
+{"event":"reviewer_report","step":"review","reviewer":"consistency-analyzer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"0 blockers, 6 warnings, 1 suggestion; prior RI-1/BD-1 resolved","ts":"2026-11-26T19:49:43.844Z"}
+{"event":"reviewer_report","step":"review","reviewer":"referent-integrity","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"0 blockers, 3 warnings, 1 suggestion; RI-1 and BD-1 referents resolved","ts":"2026-11-26T19:49:43.960Z"}
+{"event":"reviewer_report","step":"review","reviewer":"wiring-reviewer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"0 blockers, 5 warnings, 1 suggestion","ts":"2026-11-26T19:49:44.068Z"}
+{"event":"reviewer_report","step":"review","reviewer":"boundary-reviewer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"0 blockers, 4 warnings, 1 suggestion; prior BD-1 resolved","ts":"2026-11-26T19:49:44.171Z"}
+{"event":"reviewer_report","step":"review","reviewer":"termination-reviewer","severity":"blocker","verdict":"FAIL","notes":"1 blocker (TR-1: sub-issue/blocked-by continuation pages have no stated bound, BEH-10), 2 warnings","ts":"2026-11-26T19:49:44.244Z"}
+{"event":"step_completed","step":"review","verdict":"BLOCK","revision":5,"ts":"2026-11-26T19:50:26.286Z"}
+{"event":"spec_revised","from_revision":5,"to_revision":6,"addressed_blocker_ids":["termination-reviewer:missing-iteration-cap:b3601130"],"unresolved_blocker_ids":[],"ts":"2026-11-26T19:52:13.099Z"}
+{"event":"lifecycle_step","step":"review","status":"started","revision":6,"ts":"2026-11-26T19:52:27.335Z"}
+{"event":"reviewer_report","step":"review","reviewer":"consistency-analyzer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"0 blockers, 6 warnings, 2 suggestions; CON-3 (codes) and TR-1 resolved","ts":"2026-11-26T19:57:27.153Z"}
+{"event":"reviewer_report","step":"review","reviewer":"referent-integrity","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"0 blockers, 3 warnings, 1 suggestion; TR-1 resolved as referent","ts":"2026-11-26T19:57:27.220Z"}
+{"event":"reviewer_report","step":"review","reviewer":"wiring-reviewer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"0 blockers, 5 warnings, 2 suggestions","ts":"2026-11-26T19:57:27.282Z"}
+{"event":"reviewer_report","step":"review","reviewer":"boundary-reviewer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"0 blockers, 4 warnings, 1 suggestion","ts":"2026-11-26T19:57:27.355Z"}
+{"event":"reviewer_report","step":"review","reviewer":"termination-reviewer","severity":"blocker","verdict":"PASS_WITH_NOTES","notes":"0 blockers, 1 warning (TR-2 no absolute ceiling / non-integer totalCount), 1 suggestion; TR-1 resolved","ts":"2026-11-26T19:57:27.416Z"}
+{"event":"step_completed","step":"review","verdict":"PASS_WITH_NOTES","revision":6,"ts":"2026-11-26T19:58:05.929Z"}
