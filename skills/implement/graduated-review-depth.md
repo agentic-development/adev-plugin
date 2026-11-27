@@ -24,18 +24,19 @@ The verb resolves the depth in this order:
    `risk-policies.yaml` (`implement_mode`); a policy `full` makes the baseline
    `full`, and a policy `lite` is a `quick` baseline that also authorizes the
    `lite` grant. With no policy value the baseline is `quick`.
-3. **Floor.** Any holding floor leg (section 2) raises the task to `full`.
-   Floors only escalate.
+3. **Floor.** Any holding floor leg (section 2) raises the task to `full`,
+   except under the lite cap (section 3), where a floor holding only
+   `boundary` or `sensitive-path` raises it to `quick`. Floors only escalate.
 4. **`lite` grant.** Provisional pass only (section 3).
 5. **Tripwire.** Final pass only, for a task whose provisional pass resolved
    `lite` (section 5).
 
-Routing scores and the shape of the task's file set never deny `quick`. They
-decide only the `lite` grant.
+Routing scores and the shape of the task's file set never decide a depth.
 
 ## 2. Floor legs
 
-Each of these legs forces `full`:
+Each of these legs forces `full`. Under the lite cap (section 3), `boundary`
+and `sensitive-path` give `quick` instead, with `floor_cap: "quick"`:
 
 | Leg | Holds when |
 |---|---|
@@ -149,11 +150,12 @@ persist for the remainder of the task once triggered. This call also reports the
 **The `lite` tripwire.** When the task's provisional pass resolved `lite`, the
 final pass runs the tripwire in place of the baseline and grant. A `lite` task
 runs it from `lite-mode.md` §3, before its commit. The tripwire only
-escalates, at most two levels:
+escalates, and always under the lite cap:
 
-- any floor leg gives `full`. `sensitive-path` and `boundary` are evaluated on
-  the declared and touched paths together, exempt or not, plus gitignored paths
-  written since the task's `in_progress` event;
+- a holding floor leg escalates the task. A `sensitive-path` or `boundary` leg gives `quick` with `floor_cap: "quick"`;
+  only a `routing` or `critical-finding` leg gives `full`. `sensitive-path` and
+  `boundary` are evaluated on the declared and touched paths together, exempt
+  or not, plus gitignored paths written since the task's `in_progress` event;
   `risk-level`, `routing` and `critical-finding` are evaluated as on any final pass;
 - otherwise `scope-mismatch` gives `quick`: a touched path is neither
   declared nor exempt. A path is exempt when it is under `tests/` or `docs/`,
@@ -207,16 +209,19 @@ the verb's JSON output, never in the event.
 
 ### `full`
 
-Reached through `--tier full`, a policy `full` baseline, a floor leg, or a
-`lite` tripwire escalation on a sensitive or boundary path. Run Step 2f
+Reached through `--tier full`, a policy `full` baseline, a floor leg the lite
+cap does not lower, or a `lite` tripwire escalation on a `routing` or
+`critical-finding` leg. Run Step 2f
 (Stage 1: Spec Compliance) then Step 2g (Stage 2: Code Quality) exactly as
 written in `SKILL.md`. Behavior on this path is byte-identical to the
 pre-graduated flow.
 
 ### `quick`
 
-The default for a task with no floor leg and no `lite` grant, and the
-destination of a `scope-mismatch` tripwire escalation. Skip the two-stage path
+The default for a task with no floor leg and no `lite` grant, a task whose
+`boundary` or `sensitive-path` floor the lite cap lowered (`floor_cap:
+"quick"`), and the destination of a `scope-mismatch`, `sensitive-path` or
+`boundary` tripwire escalation. Skip the two-stage path
 and dispatch a **single** fresh reviewer subagent carrying the content of
 `synthesized-reviewer-prompt.md` from this skill directory, plus the union of
 both stages' context:

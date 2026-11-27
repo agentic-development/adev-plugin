@@ -201,6 +201,19 @@ test("concepts and the route docs state the revision-4 grant and the lite cap", 
   assert.match(route, /routed `auto-agent` or `assisted-agent`\. Scores are not consulted\./);
 });
 
+test("skill-reference's review-depth summary and configuration's implement_mode table name the lite cap", () => {
+  const sr = read("docs/skill-reference.md");
+  const summary = sr.split("\n").find((line) => line.startsWith("**Review depth per task:**"));
+  assert.ok(summary, "missing the /adev:implement review-depth summary");
+  assert.match(summary, /lite cap/);
+  assert.match(summary, /sensitive path or governance boundary gives `quick`/);
+  const conf = section(read("docs/configuration.md"), "## governance/risk-policies.yaml: implement_mode");
+  const liteRow = conf.split("\n").find((line) => line.startsWith("| `lite` |"));
+  assert.ok(liteRow, "missing the `lite` row");
+  assert.match(liteRow, /lite cap/);
+  assert.match(liteRow, /sensitive path or governance boundary gives `quick`/);
+});
+
 // BEH-13: lines naming the lite flags on live surfaces are definitions,
 // forwarding rules or operator-facing examples. `.context-index/` is out of
 // scope because specs and reviews quote the pattern they forbid.

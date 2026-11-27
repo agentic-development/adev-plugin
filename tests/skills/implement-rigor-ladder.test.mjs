@@ -474,6 +474,32 @@ test("depth contract: the grant reads no scores, and the lite cap gives quick wi
   assert.match(cap, /`--tier full` stays absolute/);
 });
 
+// Every place the depth contract describes what a floor leg gives must carry
+// the lite cap, or a reader of that section alone applies the uncapped rule.
+test("depth contract: the ladder summary, the floor-leg table and the tripwire all state the lite cap (BEH-4, BEH-7)", () => {
+  const step3 = depthContract.split("\n").find((line) => line.startsWith("3. **Floor.**"));
+  assert.ok(step3, "missing the ladder's Floor step");
+  const floorStep = depthContract.slice(depthContract.indexOf(step3), depthContract.indexOf("4. **`lite` grant.**"));
+  assert.match(floorStep, /lite cap/);
+  assert.match(floorStep, /`quick`/);
+
+  const legs = subsection(depthContract, "## 2. Floor legs");
+  assert.ok(legs, "missing section 2");
+  assert.match(legs.split("| Leg |")[0], /lite cap[\s\S]*`boundary`\s+and `sensitive-path` give `quick`/);
+
+  const trip = paragraph(depthContract, "The `lite` tripwire.");
+  assert.ok(trip, "missing the **The `lite` tripwire.** paragraph");
+  const tripSection = depthContract.slice(depthContract.indexOf("**The `lite` tripwire.**"), depthContract.indexOf("## 6."));
+  assert.doesNotMatch(tripSection, /at most two levels/);
+  assert.doesNotMatch(tripSection, /any floor leg gives `full`/);
+  assert.match(tripSection, /`sensitive-path` or `boundary` leg gives `quick` with `floor_cap: "quick"`/);
+  assert.match(tripSection, /only a `routing` or `critical-finding` leg gives `full`/);
+
+  const full = subsection(depthContract, "### `full`");
+  assert.doesNotMatch(full, /tripwire escalation on a sensitive or boundary path/);
+  assert.doesNotMatch(depthContract, /Routing scores and the shape of the task's file set never deny `quick`/);
+});
+
 test("Step 2a's provisional call echoes its warnings to the transcript (BEH-5)", () => {
   const prov = paragraph(loop, "Provisional review depth.");
   assert.ok(prov, "missing the **Provisional review depth.** paragraph");

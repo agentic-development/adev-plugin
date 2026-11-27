@@ -568,7 +568,7 @@ for the full table and mechanism.
 |---|---|
 | `full` | Stage 1 spec compliance, then Stage 2 code quality, for every task |
 | `quick` | One synthesized reviewer; a floor leg (sensitive path, governance boundary, `human-only` routing, a high-risk spec on a task not routed `auto-agent`, a Critical finding) still raises a task to `full` |
-| `lite` | Project-level authorization for `lite`: a route-eligible task with no floor leg runs inline with no per-task reviewer, behind a post-task tripwire. Other tasks resolve at the `quick` baseline |
+| `lite` | Project-level authorization for `lite`: a route-eligible task with no floor leg runs inline with no per-task reviewer, behind a post-task tripwire. Other tasks resolve at the `quick` baseline, and under the lite cap a sensitive path or governance boundary gives `quick` rather than `full` |
 
 The legal set is `full | quick | lite`; any other value, or a `risk-policies.yaml` that does not parse, fails with `INVALID_TIER` when `/adev:implement` starts. When the field (or the file) is absent, the baseline resolves to `quick`. `lite` is never valid for `high` (`LITE_NOT_ALLOWED_FOR_HIGH`). It is set only by an operator: by a typed choice at `/adev:init` Step 8c (`adev init prompt implement-rigor`), or by editing the file by hand. A run authorized by the policy prints `lite authorized via policy`, and `--tier quick` or `--tier full` opts out for one run.
 

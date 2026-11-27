@@ -45,7 +45,7 @@ test("liteEligible: human-only, a missing entry and an unknown selected_agent ar
   }
 });
 
-test("the module no longer exports a score threshold", async () => {
+test("the module exports no lite score threshold", async () => {
   const mod = await import("../../../lib/implement/review-depth.mjs");
   assert.equal("LITE_GRANT_THRESHOLD" in mod, false);
 });

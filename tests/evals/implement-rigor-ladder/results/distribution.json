@@ -1,10 +1,10 @@
 {
   "resolverModule": "lib/implement/review-depth.mjs",
-  "head": "1c711bfb236929b066694c0737639a274a23c17a",
+  "head": "e7995db495ffb8263d589c9a133246f6ba6f7c31",
   "corpus": {
     "plans": 71,
     "tasks": 588,
-    "trailer_commits": 965,
+    "trailer_commits": 980,
     "matched_commits": 571
   },
   "invalid_sidecars": [
@@ -20,23 +20,23 @@
     ".context-index/sessions/**"
   ],
   "trip_rate": {
-    "matched_tasks": 261,
-    "quick": 0.1456,
-    "full": 0.0038
+    "matched_tasks": 343,
+    "quick": 0.1953,
+    "full": 0
   },
   "quick_floor_rate": {
-    "matched_tasks": 123,
-    "full": 0.0244
+    "matched_tasks": 80,
+    "full": 0.025
   },
   "provisional_shares": {
-    "lite": 0.5731,
-    "quick": 0.2704,
-    "full": 0.1565
+    "lite": 0.7738,
+    "quick": 0.1514,
+    "full": 0.0748
   },
   "shares": {
-    "lite": 0.4875,
-    "quick": 0.3473,
-    "full": 0.1653
+    "lite": 0.6227,
+    "quick": 0.2987,
+    "full": 0.0786
   },
   "target": {
     "lite_min": 0.45,
@@ -50,23 +50,25 @@
       "routing": 3
     },
     "tripwire": {
-      "scope-mismatch": 38,
-      "sensitive-path": 1
+      "scope-mismatch": 65,
+      "sensitive-path": 2
     }
   },
   "trip_causes": {
-    "lib": 21,
-    "skills": 8,
-    "context-index-specs": 7,
+    "skills": 14,
+    "lib": 31,
+    "context-index-other-lifecycle-log": 2,
+    "context-index-specs": 13,
     "cli": 3,
-    "context-index-other": 1,
-    "provider-mirror-canonical-out-of-scope": 1,
-    "(root)": 1
+    "context-index-other": 7,
+    "(root)": 4,
+    "scripts": 1,
+    "provider-mirror-canonical-out-of-scope": 2
   },
   "lite_denied": {
-    "routing-scores": 187,
-    "floor:sensitive-path": 18,
-    "high-risk": 46
+    "floor:sensitive-path": 48,
+    "high-risk": 83,
+    "floor:routing": 2
   },
   "per_plan": [
     {
@@ -75,14 +77,14 @@
       "risk_level": "medium",
       "tasks": 18,
       "provisional": {
-        "lite": 2,
-        "quick": 4,
-        "full": 12
+        "lite": 6,
+        "quick": 12,
+        "full": 0
       },
       "final": {
-        "lite": 1,
-        "quick": 5,
-        "full": 12
+        "lite": 2,
+        "quick": 16,
+        "full": 0
       }
     },
     {
@@ -107,14 +109,14 @@
       "risk_level": "medium",
       "tasks": 10,
       "provisional": {
-        "lite": 5,
-        "quick": 4,
-        "full": 1
+        "lite": 9,
+        "quick": 1,
+        "full": 0
       },
       "final": {
-        "lite": 5,
-        "quick": 4,
-        "full": 1
+        "lite": 8,
+        "quick": 2,
+        "full": 0
       }
     },
     {
@@ -123,13 +125,13 @@
       "risk_level": "medium",
       "tasks": 7,
       "provisional": {
-        "lite": 6,
-        "quick": 1,
+        "lite": 7,
+        "quick": 0,
         "full": 0
       },
       "final": {
-        "lite": 6,
-        "quick": 1,
+        "lite": 7,
+        "quick": 0,
         "full": 0
       }
     },
@@ -155,14 +157,14 @@
       "risk_level": "medium",
       "tasks": 12,
       "provisional": {
-        "lite": 5,
-        "quick": 5,
-        "full": 2
+        "lite": 10,
+        "quick": 2,
+        "full": 0
       },
       "final": {
-        "lite": 3,
-        "quick": 7,
-        "full": 2
+        "lite": 6,
+        "quick": 6,
+        "full": 0
       }
     },
     {
@@ -187,14 +189,14 @@
       "risk_level": "medium",
       "tasks": 8,
       "provisional": {
-        "lite": 6,
+        "lite": 7,
         "quick": 1,
-        "full": 1
+        "full": 0
       },
       "final": {
         "lite": 5,
-        "quick": 2,
-        "full": 1
+        "quick": 3,
+        "full": 0
       }
     },
     {
@@ -251,8 +253,8 @@
       "risk_level": "medium",
       "tasks": 8,
       "provisional": {
-        "lite": 7,
-        "quick": 1,
+        "lite": 8,
+        "quick": 0,
         "full": 0
       },
       "final": {
@@ -283,8 +285,8 @@
       "risk_level": "medium",
       "tasks": 5,
       "provisional": {
-        "lite": 4,
-        "quick": 1,
+        "lite": 5,
+        "quick": 0,
         "full": 0
       },
       "final": {
@@ -299,14 +301,14 @@
       "risk_level": "medium",
       "tasks": 16,
       "provisional": {
-        "lite": 12,
-        "quick": 4,
+        "lite": 16,
+        "quick": 0,
         "full": 0
       },
       "final": {
-        "lite": 9.8506,
-        "quick": 6.1456,
-        "full": 0.0038
+        "lite": 12.8047,
+        "quick": 3.1953,
+        "full": 0
       }
     },
     {
@@ -315,13 +317,13 @@
       "risk_level": "medium",
       "tasks": 11,
       "provisional": {
-        "lite": 8,
-        "quick": 3,
+        "lite": 11,
+        "quick": 0,
         "full": 0
       },
       "final": {
-        "lite": 8,
-        "quick": 3,
+        "lite": 10,
+        "quick": 1,
         "full": 0
       }
     },
@@ -331,14 +333,14 @@
       "risk_level": "medium",
       "tasks": 7,
       "provisional": {
-        "lite": 6,
-        "quick": 1,
+        "lite": 7,
+        "quick": 0,
         "full": 0
       },
       "final": {
-        "lite": 5.8506,
-        "quick": 1.1456,
-        "full": 0.0038
+        "lite": 6.8047,
+        "quick": 0.1953,
+        "full": 0
       }
     },
     {
@@ -363,13 +365,13 @@
       "risk_level": "medium",
       "tasks": 13,
       "provisional": {
-        "lite": 8,
-        "quick": 5,
+        "lite": 13,
+        "quick": 0,
         "full": 0
       },
       "final": {
-        "lite": 7,
-        "quick": 6,
+        "lite": 12,
+        "quick": 1,
         "full": 0
       }
     },
@@ -379,13 +381,13 @@
       "risk_level": "low",
       "tasks": 9,
       "provisional": {
-        "lite": 6,
-        "quick": 3,
+        "lite": 9,
+        "quick": 0,
         "full": 0
       },
       "final": {
-        "lite": 5,
-        "quick": 4,
+        "lite": 8,
+        "quick": 1,
         "full": 0
       }
     },
@@ -448,9 +450,9 @@
         "full": 0
       },
       "final": {
-        "lite": 4.8506,
-        "quick": 1.1456,
-        "full": 0.0038
+        "lite": 4.8047,
+        "quick": 1.1953,
+        "full": 0
       }
     },
     {
@@ -480,9 +482,9 @@
         "full": 0
       },
       "final": {
-        "lite": 4.8506,
-        "quick": 1.1456,
-        "full": 0.0038
+        "lite": 4.8047,
+        "quick": 1.1953,
+        "full": 0
       }
     },
     {
@@ -491,14 +493,14 @@
       "risk_level": "medium",
       "tasks": 12,
       "provisional": {
-        "lite": 11,
-        "quick": 1,
+        "lite": 12,
+        "quick": 0,
         "full": 0
       },
       "final": {
-        "lite": 9.3566,
-        "quick": 2.5772,
-        "full": 0.0662
+        "lite": 9.6564,
+        "quick": 2.3436,
+        "full": 0
       }
     },
     {
@@ -523,14 +525,14 @@
       "risk_level": "low",
       "tasks": 12,
       "provisional": {
-        "lite": 0,
-        "quick": 12,
+        "lite": 12,
+        "quick": 0,
         "full": 0
       },
       "final": {
-        "lite": 0,
-        "quick": 11.7804,
-        "full": 0.2196
+        "lite": 9.2423,
+        "quick": 2.7577,
+        "full": 0
       }
     },
     {
@@ -539,14 +541,14 @@
       "risk_level": "low",
       "tasks": 6,
       "provisional": {
-        "lite": 5,
-        "quick": 1,
+        "lite": 6,
+        "quick": 0,
         "full": 0
       },
       "final": {
-        "lite": 4.253,
-        "quick": 1.7036,
-        "full": 0.0434
+        "lite": 4.8282,
+        "quick": 1.1718,
+        "full": 0
       }
     },
     {
@@ -555,14 +557,14 @@
       "risk_level": "medium",
       "tasks": 17,
       "provisional": {
-        "lite": 14,
-        "quick": 2,
-        "full": 1
+        "lite": 16,
+        "quick": 1,
+        "full": 0
       },
       "final": {
-        "lite": 11.9084,
-        "quick": 3.9896,
-        "full": 1.102
+        "lite": 12.8752,
+        "quick": 4.0998,
+        "full": 0.025
       }
     },
     {
@@ -571,14 +573,14 @@
       "risk_level": "medium",
       "tasks": 7,
       "provisional": {
-        "lite": 6,
-        "quick": 1,
+        "lite": 7,
+        "quick": 0,
         "full": 0
       },
       "final": {
-        "lite": 5.1036,
-        "quick": 1.8492,
-        "full": 0.0472
+        "lite": 5.6329,
+        "quick": 1.3671,
+        "full": 0
       }
     },
     {
@@ -587,14 +589,14 @@
       "risk_level": "medium",
       "tasks": 9,
       "provisional": {
-        "lite": 1,
-        "quick": 8,
+        "lite": 9,
+        "quick": 0,
         "full": 0
       },
       "final": {
-        "lite": 1,
-        "quick": 7,
-        "full": 1
+        "lite": 5,
+        "quick": 4,
+        "full": 0
       }
     },
     {
@@ -603,8 +605,8 @@
       "risk_level": "medium",
       "tasks": 9,
       "provisional": {
-        "lite": 8,
-        "quick": 1,
+        "lite": 9,
+        "quick": 0,
         "full": 0
       },
       "final": {
@@ -619,13 +621,13 @@
       "risk_level": "medium",
       "tasks": 6,
       "provisional": {
-        "lite": 4,
-        "quick": 2,
+        "lite": 6,
+        "quick": 0,
         "full": 0
       },
       "final": {
-        "lite": 0,
-        "quick": 6,
+        "lite": 1,
+        "quick": 5,
         "full": 0
       }
     },
@@ -635,14 +637,14 @@
       "risk_level": "low",
       "tasks": 12,
       "provisional": {
-        "lite": 9,
-        "quick": 1,
-        "full": 2
+        "lite": 10,
+        "quick": 2,
+        "full": 0
       },
       "final": {
-        "lite": 7.6554,
-        "quick": 2.286,
-        "full": 2.0586
+        "lite": 8.047,
+        "quick": 3.903,
+        "full": 0.05
       }
     },
     {
@@ -651,14 +653,14 @@
       "risk_level": "low",
       "tasks": 11,
       "provisional": {
-        "lite": 5,
-        "quick": 6,
+        "lite": 11,
+        "quick": 0,
         "full": 0
       },
       "final": {
-        "lite": 4.253,
-        "quick": 6.5816,
-        "full": 0.1654
+        "lite": 8.8517,
+        "quick": 2.1483,
+        "full": 0
       }
     },
     {
@@ -667,14 +669,14 @@
       "risk_level": "low",
       "tasks": 9,
       "provisional": {
-        "lite": 1,
-        "quick": 8,
+        "lite": 9,
+        "quick": 0,
         "full": 0
       },
       "final": {
-        "lite": 1,
-        "quick": 7.9756,
-        "full": 0.0244
+        "lite": 6.8047,
+        "quick": 2.1953,
+        "full": 0
       }
     },
     {
@@ -683,14 +685,14 @@
       "risk_level": "low",
       "tasks": 12,
       "provisional": {
-        "lite": 0,
-        "quick": 12,
+        "lite": 12,
+        "quick": 0,
         "full": 0
       },
       "final": {
-        "lite": 0,
-        "quick": 11.7072,
-        "full": 0.2928
+        "lite": 9.6564,
+        "quick": 2.3436,
+        "full": 0
       }
     },
     {
@@ -704,9 +706,9 @@
         "full": 0
       },
       "final": {
-        "lite": 4.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 4.8047,
+        "quick": 0.1953,
+        "full": 0
       }
     },
     {
@@ -747,13 +749,13 @@
       "risk_level": "medium",
       "tasks": 13,
       "provisional": {
-        "lite": 8,
-        "quick": 5,
+        "lite": 13,
+        "quick": 0,
         "full": 0
       },
       "final": {
-        "lite": 7,
-        "quick": 6,
+        "lite": 10,
+        "quick": 3,
         "full": 0
       }
     },
@@ -795,14 +797,14 @@
       "risk_level": "medium",
       "tasks": 8,
       "provisional": {
-        "lite": 3,
-        "quick": 4,
-        "full": 1
+        "lite": 7,
+        "quick": 1,
+        "full": 0
       },
       "final": {
-        "lite": 2,
-        "quick": 4,
-        "full": 2
+        "lite": 6,
+        "quick": 2,
+        "full": 0
       }
     },
     {
@@ -816,9 +818,9 @@
         "full": 0
       },
       "final": {
-        "lite": 6.8048,
-        "quick": 1.1648,
-        "full": 0.0304
+        "lite": 6.4376,
+        "quick": 1.5624,
+        "full": 0
       }
     },
     {
@@ -832,9 +834,9 @@
         "full": 0
       },
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       }
     },
     {
@@ -843,13 +845,13 @@
       "risk_level": "medium",
       "tasks": 8,
       "provisional": {
-        "lite": 6,
-        "quick": 2,
+        "lite": 8,
+        "quick": 0,
         "full": 0
       },
       "final": {
-        "lite": 5,
-        "quick": 3,
+        "lite": 7,
+        "quick": 1,
         "full": 0
       }
     },
@@ -864,9 +866,9 @@
         "full": 0
       },
       "final": {
-        "lite": 6.8048,
-        "quick": 1.1648,
-        "full": 0.0304
+        "lite": 6.4376,
+        "quick": 1.5624,
+        "full": 0
       }
     },
     {
@@ -896,9 +898,9 @@
         "full": 0
       },
       "final": {
-        "lite": 3.7012,
-        "quick": 0.2912,
-        "full": 0.0076
+        "lite": 3.6094,
+        "quick": 0.3906,
+        "full": 0
       }
     },
     {
@@ -923,14 +925,14 @@
       "risk_level": "medium",
       "tasks": 7,
       "provisional": {
-        "lite": 1,
-        "quick": 1,
-        "full": 5
+        "lite": 2,
+        "quick": 5,
+        "full": 0
       },
       "final": {
-        "lite": 0.8506,
-        "quick": 1.1212,
-        "full": 5.0282
+        "lite": 1.6094,
+        "quick": 5.2656,
+        "full": 0.125
       }
     },
     {
@@ -939,14 +941,14 @@
       "risk_level": "medium",
       "tasks": 14,
       "provisional": {
-        "lite": 3,
-        "quick": 1,
-        "full": 10
+        "lite": 4,
+        "quick": 8,
+        "full": 2
       },
       "final": {
-        "lite": 2,
-        "quick": 1.9756,
-        "full": 10.0244
+        "lite": 2.8047,
+        "quick": 9.1703,
+        "full": 2.025
       }
     },
     {
@@ -971,14 +973,14 @@
       "risk_level": "medium",
       "tasks": 6,
       "provisional": {
-        "lite": 0,
-        "quick": 5,
-        "full": 1
+        "lite": 5,
+        "quick": 1,
+        "full": 0
       },
       "final": {
-        "lite": 0,
-        "quick": 5,
-        "full": 1
+        "lite": 4,
+        "quick": 2,
+        "full": 0
       }
     },
     {
@@ -987,13 +989,13 @@
       "risk_level": "medium",
       "tasks": 5,
       "provisional": {
-        "lite": 4,
-        "quick": 1,
+        "lite": 5,
+        "quick": 0,
         "full": 0
       },
       "final": {
-        "lite": 2,
-        "quick": 3,
+        "lite": 3,
+        "quick": 2,
         "full": 0
       }
     },
@@ -1003,14 +1005,14 @@
       "risk_level": "low",
       "tasks": 7,
       "provisional": {
-        "lite": 4,
-        "quick": 2,
-        "full": 1
+        "lite": 6,
+        "quick": 1,
+        "full": 0
       },
       "final": {
-        "lite": 4,
+        "lite": 5,
         "quick": 2,
-        "full": 1
+        "full": 0
       }
     },
     {
@@ -1024,9 +1026,9 @@
         "full": 0
       },
       "final": {
-        "lite": 5.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 5.8047,
+        "quick": 0.1953,
+        "full": 0
       }
     },
     {
@@ -1099,13 +1101,13 @@
       "risk_level": "medium",
       "tasks": 10,
       "provisional": {
-        "lite": 9,
-        "quick": 1,
+        "lite": 10,
+        "quick": 0,
         "full": 0
       },
       "final": {
-        "lite": 7,
-        "quick": 3,
+        "lite": 8,
+        "quick": 2,
         "full": 0
       }
     },
@@ -1132,13 +1134,13 @@
       "tasks": 2,
       "provisional": {
         "lite": 1,
-        "quick": 0,
-        "full": 1
+        "quick": 1,
+        "full": 0
       },
       "final": {
         "lite": 1,
-        "quick": 0,
-        "full": 1
+        "quick": 1,
+        "full": 0
       }
     },
     {
@@ -1147,14 +1149,14 @@
       "risk_level": "medium",
       "tasks": 19,
       "provisional": {
-        "lite": 7,
-        "quick": 4,
-        "full": 8
+        "lite": 11,
+        "quick": 8,
+        "full": 0
       },
       "final": {
-        "lite": 7,
-        "quick": 4,
-        "full": 8
+        "lite": 9,
+        "quick": 10,
+        "full": 0
       }
     },
     {
@@ -1179,14 +1181,14 @@
       "risk_level": "medium",
       "tasks": 14,
       "provisional": {
-        "lite": 11,
-        "quick": 1,
-        "full": 2
+        "lite": 12,
+        "quick": 2,
+        "full": 0
       },
       "final": {
         "lite": 9,
-        "quick": 3,
-        "full": 2
+        "quick": 5,
+        "full": 0
       }
     },
     {
@@ -1195,14 +1197,14 @@
       "risk_level": "medium",
       "tasks": 11,
       "provisional": {
-        "lite": 6,
-        "quick": 3,
-        "full": 2
+        "lite": 9,
+        "quick": 2,
+        "full": 0
       },
       "final": {
-        "lite": 6,
+        "lite": 8,
         "quick": 3,
-        "full": 2
+        "full": 0
       }
     }
   ],
@@ -1212,15 +1214,42 @@
       "task_id": "t1",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 2,
         "outcome": "lite",
         "legs": [],
+        "offending": []
+      },
+      "final": {
+        "lite": 1,
+        "quick": 0,
+        "full": 0
+      },
+      "final_basis": "history"
+    },
+    {
+      "plan": ".context-index/specs/cross-cutting/explicit-governance-registries.plan.md",
+      "task_id": "t10",
+      "selected_agent": "assisted-agent",
+      "provisional": {
+        "depth": "quick",
+        "source": "policy-baseline",
+        "floor_legs": [
+          "sensitive-path"
+        ],
+        "lite_denied": "floor:sensitive-path"
+      },
+      "history": {
+        "commits": 2,
+        "outcome": "quick",
+        "legs": [
+          "sensitive-path"
+        ],
         "offending": []
       },
       "final": {
@@ -1232,46 +1261,19 @@
     },
     {
       "plan": ".context-index/specs/cross-cutting/explicit-governance-registries.plan.md",
-      "task_id": "t10",
-      "selected_agent": "assisted-agent",
-      "provisional": {
-        "depth": "full",
-        "source": "policy-baseline",
-        "floor_legs": [
-          "sensitive-path"
-        ],
-        "lite_denied": "routing-scores"
-      },
-      "history": {
-        "commits": 2,
-        "outcome": "full",
-        "legs": [
-          "sensitive-path"
-        ],
-        "offending": []
-      },
-      "final": {
-        "lite": 0,
-        "quick": 0,
-        "full": 1
-      },
-      "final_basis": "provisional"
-    },
-    {
-      "plan": ".context-index/specs/cross-cutting/explicit-governance-registries.plan.md",
       "task_id": "t11",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "full",
+        "depth": "quick",
         "source": "policy-baseline",
         "floor_legs": [
           "sensitive-path"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "floor:sensitive-path"
       },
       "history": {
         "commits": 3,
-        "outcome": "full",
+        "outcome": "quick",
         "legs": [
           "sensitive-path"
         ],
@@ -1279,20 +1281,20 @@
       },
       "final": {
         "lite": 0,
-        "quick": 0,
-        "full": 1
+        "quick": 1,
+        "full": 0
       },
-      "final_basis": "provisional"
+      "final_basis": "history"
     },
     {
       "plan": ".context-index/specs/cross-cutting/explicit-governance-registries.plan.md",
       "task_id": "t12",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 2,
@@ -1319,16 +1321,16 @@
       "task_id": "t13",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "full",
+        "depth": "quick",
         "source": "policy-baseline",
         "floor_legs": [
           "sensitive-path"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "floor:sensitive-path"
       },
       "history": {
         "commits": 2,
-        "outcome": "full",
+        "outcome": "quick",
         "legs": [
           "sensitive-path"
         ],
@@ -1336,26 +1338,26 @@
       },
       "final": {
         "lite": 0,
-        "quick": 0,
-        "full": 1
+        "quick": 1,
+        "full": 0
       },
-      "final_basis": "provisional"
+      "final_basis": "history"
     },
     {
       "plan": ".context-index/specs/cross-cutting/explicit-governance-registries.plan.md",
       "task_id": "t14",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "full",
+        "depth": "quick",
         "source": "policy-baseline",
         "floor_legs": [
           "sensitive-path"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "floor:sensitive-path"
       },
       "history": {
         "commits": 2,
-        "outcome": "full",
+        "outcome": "quick",
         "legs": [
           "sensitive-path"
         ],
@@ -1363,17 +1365,17 @@
       },
       "final": {
         "lite": 0,
-        "quick": 0,
-        "full": 1
+        "quick": 1,
+        "full": 0
       },
-      "final_basis": "provisional"
+      "final_basis": "history"
     },
     {
       "plan": ".context-index/specs/cross-cutting/explicit-governance-registries.plan.md",
       "task_id": "t15",
       "selected_agent": "auto-agent",
       "provisional": {
-        "depth": "full",
+        "depth": "quick",
         "source": "policy-baseline",
         "floor_legs": [
           "sensitive-path"
@@ -1382,7 +1384,7 @@
       },
       "history": {
         "commits": 1,
-        "outcome": "full",
+        "outcome": "quick",
         "legs": [
           "sensitive-path"
         ],
@@ -1390,26 +1392,26 @@
       },
       "final": {
         "lite": 0,
-        "quick": 0,
-        "full": 1
+        "quick": 1,
+        "full": 0
       },
-      "final_basis": "provisional"
+      "final_basis": "history"
     },
     {
       "plan": ".context-index/specs/cross-cutting/explicit-governance-registries.plan.md",
       "task_id": "t16",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "full",
+        "depth": "quick",
         "source": "policy-baseline",
         "floor_legs": [
           "sensitive-path"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "floor:sensitive-path"
       },
       "history": {
         "commits": 2,
-        "outcome": "full",
+        "outcome": "quick",
         "legs": [
           "sensitive-path"
         ],
@@ -1417,20 +1419,20 @@
       },
       "final": {
         "lite": 0,
-        "quick": 0,
-        "full": 1
+        "quick": 1,
+        "full": 0
       },
-      "final_basis": "provisional"
+      "final_basis": "history"
     },
     {
       "plan": ".context-index/specs/cross-cutting/explicit-governance-registries.plan.md",
       "task_id": "t17",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 2,
@@ -1461,16 +1463,16 @@
       "task_id": "t18",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "full",
+        "depth": "quick",
         "source": "policy-baseline",
         "floor_legs": [
           "sensitive-path"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "floor:sensitive-path"
       },
       "history": {
         "commits": 4,
-        "outcome": "full",
+        "outcome": "quick",
         "legs": [
           "sensitive-path"
         ],
@@ -1478,26 +1480,26 @@
       },
       "final": {
         "lite": 0,
-        "quick": 0,
-        "full": 1
+        "quick": 1,
+        "full": 0
       },
-      "final_basis": "provisional"
+      "final_basis": "history"
     },
     {
       "plan": ".context-index/specs/cross-cutting/explicit-governance-registries.plan.md",
       "task_id": "t2",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "full",
+        "depth": "quick",
         "source": "policy-baseline",
         "floor_legs": [
           "sensitive-path"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "floor:sensitive-path"
       },
       "history": {
         "commits": 2,
-        "outcome": "full",
+        "outcome": "quick",
         "legs": [
           "sensitive-path"
         ],
@@ -1505,10 +1507,10 @@
       },
       "final": {
         "lite": 0,
-        "quick": 0,
-        "full": 1
+        "quick": 1,
+        "full": 0
       },
-      "final_basis": "provisional"
+      "final_basis": "history"
     },
     {
       "plan": ".context-index/specs/cross-cutting/explicit-governance-registries.plan.md",
@@ -1553,10 +1555,10 @@
       "task_id": "t4",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 2,
@@ -1606,16 +1608,16 @@
       "task_id": "t6",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "full",
+        "depth": "quick",
         "source": "policy-baseline",
         "floor_legs": [
           "sensitive-path"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "floor:sensitive-path"
       },
       "history": {
         "commits": 2,
-        "outcome": "full",
+        "outcome": "quick",
         "legs": [
           "sensitive-path"
         ],
@@ -1623,26 +1625,26 @@
       },
       "final": {
         "lite": 0,
-        "quick": 0,
-        "full": 1
+        "quick": 1,
+        "full": 0
       },
-      "final_basis": "provisional"
+      "final_basis": "history"
     },
     {
       "plan": ".context-index/specs/cross-cutting/explicit-governance-registries.plan.md",
       "task_id": "t7",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "full",
+        "depth": "quick",
         "source": "policy-baseline",
         "floor_legs": [
           "sensitive-path"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "floor:sensitive-path"
       },
       "history": {
         "commits": 2,
-        "outcome": "full",
+        "outcome": "quick",
         "legs": [
           "sensitive-path"
         ],
@@ -1650,26 +1652,26 @@
       },
       "final": {
         "lite": 0,
-        "quick": 0,
-        "full": 1
+        "quick": 1,
+        "full": 0
       },
-      "final_basis": "provisional"
+      "final_basis": "history"
     },
     {
       "plan": ".context-index/specs/cross-cutting/explicit-governance-registries.plan.md",
       "task_id": "t8",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "full",
+        "depth": "quick",
         "source": "policy-baseline",
         "floor_legs": [
           "sensitive-path"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "floor:sensitive-path"
       },
       "history": {
         "commits": 2,
-        "outcome": "full",
+        "outcome": "quick",
         "legs": [
           "sensitive-path"
         ],
@@ -1677,26 +1679,26 @@
       },
       "final": {
         "lite": 0,
-        "quick": 0,
-        "full": 1
+        "quick": 1,
+        "full": 0
       },
-      "final_basis": "provisional"
+      "final_basis": "history"
     },
     {
       "plan": ".context-index/specs/cross-cutting/explicit-governance-registries.plan.md",
       "task_id": "t9",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "full",
+        "depth": "quick",
         "source": "policy-baseline",
         "floor_legs": [
           "sensitive-path"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "floor:sensitive-path"
       },
       "history": {
         "commits": 3,
-        "outcome": "full",
+        "outcome": "quick",
         "legs": [
           "sensitive-path"
         ],
@@ -1704,10 +1706,10 @@
       },
       "final": {
         "lite": 0,
-        "quick": 0,
-        "full": 1
+        "quick": 1,
+        "full": 0
       },
-      "final_basis": "provisional"
+      "final_basis": "history"
     },
     {
       "plan": ".context-index/specs/cross-cutting/extension-governance-merge-hardening.plan.md",
@@ -1719,7 +1721,7 @@
         "floor_legs": [
           "risk-level"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "high-risk"
       },
       "history": {
         "commits": 2,
@@ -1744,7 +1746,7 @@
         "floor_legs": [
           "risk-level"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "high-risk"
       },
       "history": {
         "commits": 3,
@@ -1886,7 +1888,7 @@
         "floor_legs": [
           "risk-level"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "high-risk"
       },
       "history": {
         "commits": 4,
@@ -1911,7 +1913,7 @@
         "floor_legs": [
           "risk-level"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "high-risk"
       },
       "history": {
         "commits": 1,
@@ -1936,7 +1938,7 @@
         "floor_legs": [
           "risk-level"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "high-risk"
       },
       "history": {
         "commits": 3,
@@ -1961,7 +1963,7 @@
         "floor_legs": [
           "risk-level"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "high-risk"
       },
       "history": {
         "commits": 2,
@@ -1986,7 +1988,7 @@
         "floor_legs": [
           "risk-level"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "high-risk"
       },
       "history": {
         "commits": 3,
@@ -2022,7 +2024,7 @@
         "floor_legs": [
           "risk-level"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "high-risk"
       },
       "history": {
         "commits": 1,
@@ -2065,15 +2067,42 @@
       "task_id": "t10",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
         "outcome": "lite",
         "legs": [],
+        "offending": []
+      },
+      "final": {
+        "lite": 1,
+        "quick": 0,
+        "full": 0
+      },
+      "final_basis": "history"
+    },
+    {
+      "plan": ".context-index/specs/cross-cutting/governance-opt-in-dispatch.plan.md",
+      "task_id": "t2",
+      "selected_agent": "auto-agent",
+      "provisional": {
+        "depth": "quick",
+        "source": "policy-baseline",
+        "floor_legs": [
+          "sensitive-path"
+        ],
+        "lite_denied": "floor:sensitive-path"
+      },
+      "history": {
+        "commits": 2,
+        "outcome": "quick",
+        "legs": [
+          "sensitive-path"
+        ],
         "offending": []
       },
       "final": {
@@ -2085,40 +2114,13 @@
     },
     {
       "plan": ".context-index/specs/cross-cutting/governance-opt-in-dispatch.plan.md",
-      "task_id": "t2",
-      "selected_agent": "auto-agent",
-      "provisional": {
-        "depth": "full",
-        "source": "policy-baseline",
-        "floor_legs": [
-          "sensitive-path"
-        ],
-        "lite_denied": "floor:sensitive-path"
-      },
-      "history": {
-        "commits": 2,
-        "outcome": "full",
-        "legs": [
-          "sensitive-path"
-        ],
-        "offending": []
-      },
-      "final": {
-        "lite": 0,
-        "quick": 0,
-        "full": 1
-      },
-      "final_basis": "provisional"
-    },
-    {
-      "plan": ".context-index/specs/cross-cutting/governance-opt-in-dispatch.plan.md",
       "task_id": "t3",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -2149,10 +2151,10 @@
       "task_id": "t4",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -2161,8 +2163,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -2218,10 +2220,10 @@
       "task_id": "t7",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -2230,8 +2232,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -2356,10 +2358,10 @@
       "task_id": "t4",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -2368,8 +2370,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -2479,7 +2481,7 @@
           "risk-level",
           "sensitive-path"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "high-risk"
       },
       "history": {
         "commits": 1,
@@ -2529,7 +2531,7 @@
         "floor_legs": [
           "risk-level"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "high-risk"
       },
       "history": {
         "commits": 1,
@@ -2652,7 +2654,7 @@
         "floor_legs": [
           "risk-level"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "high-risk"
       },
       "history": {
         "commits": 1,
@@ -2729,7 +2731,7 @@
         "floor_legs": [
           "risk-level"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "high-risk"
       },
       "history": {
         "commits": 1,
@@ -2764,16 +2766,16 @@
       "task_id": "t1",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "full",
+        "depth": "quick",
         "source": "policy-baseline",
         "floor_legs": [
           "sensitive-path"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "floor:sensitive-path"
       },
       "history": {
         "commits": 1,
-        "outcome": "full",
+        "outcome": "quick",
         "legs": [
           "sensitive-path"
         ],
@@ -2781,20 +2783,20 @@
       },
       "final": {
         "lite": 0,
-        "quick": 0,
-        "full": 1
+        "quick": 1,
+        "full": 0
       },
-      "final_basis": "provisional"
+      "final_basis": "history"
     },
     {
       "plan": ".context-index/specs/cross-cutting/review-block-auto-retry-rev-3-batched-operator-decisions.plan.md",
       "task_id": "t10",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -2848,10 +2850,10 @@
       "task_id": "t12",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -2860,8 +2862,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -2871,10 +2873,10 @@
       "task_id": "t2",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -2883,8 +2885,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -2970,16 +2972,16 @@
       "task_id": "t6",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "full",
+        "depth": "quick",
         "source": "policy-baseline",
         "floor_legs": [
           "sensitive-path"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "floor:sensitive-path"
       },
       "history": {
         "commits": 1,
-        "outcome": "full",
+        "outcome": "quick",
         "legs": [
           "sensitive-path"
         ],
@@ -2987,20 +2989,20 @@
       },
       "final": {
         "lite": 0,
-        "quick": 0,
-        "full": 1
+        "quick": 1,
+        "full": 0
       },
-      "final_basis": "provisional"
+      "final_basis": "history"
     },
     {
       "plan": ".context-index/specs/cross-cutting/review-block-auto-retry-rev-3-batched-operator-decisions.plan.md",
       "task_id": "t7",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -3009,8 +3011,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -3074,10 +3076,10 @@
       "task_id": "t9",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -3109,7 +3111,7 @@
         "floor_legs": [
           "risk-level"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "high-risk"
       },
       "history": null,
       "final": {
@@ -3129,7 +3131,7 @@
         "floor_legs": [
           "risk-level"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "high-risk"
       },
       "history": null,
       "final": {
@@ -3149,7 +3151,7 @@
         "floor_legs": [
           "risk-level"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "high-risk"
       },
       "history": null,
       "final": {
@@ -3169,7 +3171,7 @@
         "floor_legs": [
           "risk-level"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "high-risk"
       },
       "history": null,
       "final": {
@@ -3189,7 +3191,7 @@
         "floor_legs": [
           "risk-level"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "high-risk"
       },
       "history": null,
       "final": {
@@ -3209,7 +3211,7 @@
         "floor_legs": [
           "risk-level"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "high-risk"
       },
       "history": null,
       "final": {
@@ -3229,7 +3231,7 @@
         "floor_legs": [
           "risk-level"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "high-risk"
       },
       "history": null,
       "final": {
@@ -3249,7 +3251,7 @@
         "floor_legs": [
           "risk-level"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "high-risk"
       },
       "history": null,
       "final": {
@@ -3269,7 +3271,7 @@
         "floor_legs": [
           "risk-level"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "high-risk"
       },
       "history": null,
       "final": {
@@ -3289,7 +3291,7 @@
         "floor_legs": [
           "risk-level"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "high-risk"
       },
       "history": {
         "commits": 1,
@@ -3314,7 +3316,7 @@
         "floor_legs": [
           "risk-level"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "high-risk"
       },
       "history": {
         "commits": 1,
@@ -3339,7 +3341,7 @@
         "floor_legs": [
           "risk-level"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "high-risk"
       },
       "history": {
         "commits": 1,
@@ -3371,7 +3373,7 @@
         "floor_legs": [
           "risk-level"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "high-risk"
       },
       "history": {
         "commits": 2,
@@ -3396,7 +3398,7 @@
         "floor_legs": [
           "risk-level"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "high-risk"
       },
       "history": {
         "commits": 1,
@@ -3421,7 +3423,7 @@
         "floor_legs": [
           "risk-level"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "high-risk"
       },
       "history": {
         "commits": 1,
@@ -3446,7 +3448,7 @@
         "floor_legs": [
           "risk-level"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "high-risk"
       },
       "history": {
         "commits": 1,
@@ -3471,7 +3473,7 @@
         "floor_legs": [
           "risk-level"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "high-risk"
       },
       "history": {
         "commits": 1,
@@ -3496,7 +3498,7 @@
         "floor_legs": [
           "risk-level"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "high-risk"
       },
       "history": {
         "commits": 1,
@@ -3546,16 +3548,16 @@
       "task_id": "t2",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "full",
+        "depth": "quick",
         "source": "policy-baseline",
         "floor_legs": [
           "sensitive-path"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "floor:sensitive-path"
       },
       "history": {
         "commits": 1,
-        "outcome": "full",
+        "outcome": "quick",
         "legs": [
           "sensitive-path"
         ],
@@ -3563,10 +3565,10 @@
       },
       "final": {
         "lite": 0,
-        "quick": 0,
-        "full": 1
+        "quick": 1,
+        "full": 0
       },
-      "final_basis": "provisional"
+      "final_basis": "history"
     },
     {
       "plan": ".context-index/specs/cross-cutting/spec-amendment-artifacts.plan.md",
@@ -3642,10 +3644,10 @@
       "task_id": "t6",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 2,
@@ -4157,10 +4159,10 @@
       "task_id": "t4",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -4496,10 +4498,10 @@
       "task_id": "t5",
       "selected_agent": "auto-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -4622,10 +4624,10 @@
       "task_id": "t13",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -4634,8 +4636,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -4804,9 +4806,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -4815,10 +4817,10 @@
       "task_id": "t6",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -4827,8 +4829,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -4838,10 +4840,10 @@
       "task_id": "t7",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -4850,8 +4852,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -4884,10 +4886,10 @@
       "task_id": "t9",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -4941,10 +4943,10 @@
       "task_id": "t10",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -4953,8 +4955,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -4964,10 +4966,10 @@
       "task_id": "t11",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -5132,10 +5134,10 @@
       "task_id": "t8",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -5144,8 +5146,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -5224,10 +5226,10 @@
       "task_id": "t3",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -5236,8 +5238,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -5323,9 +5325,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -5502,10 +5504,10 @@
       "task_id": "t10",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -5514,8 +5516,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -5555,10 +5557,10 @@
       "task_id": "t12",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -5567,8 +5569,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -5624,10 +5626,10 @@
       "task_id": "t3",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -5636,8 +5638,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -5693,10 +5695,10 @@
       "task_id": "t6",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -5705,8 +5707,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -5716,10 +5718,10 @@
       "task_id": "t7",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -5728,8 +5730,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -5831,10 +5833,10 @@
       "task_id": "t3",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -5843,8 +5845,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -5900,10 +5902,10 @@
       "task_id": "t5",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -5912,8 +5914,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -5946,10 +5948,10 @@
       "task_id": "t7",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -5958,8 +5960,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -6549,9 +6551,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -6735,9 +6737,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -6776,9 +6778,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -6794,9 +6796,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -6812,9 +6814,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -6830,9 +6832,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -6848,9 +6850,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -6859,16 +6861,16 @@
       "task_id": "t3",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": null,
       "final": {
-        "lite": 0,
-        "quick": 0.9756,
-        "full": 0.0244
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -6884,9 +6886,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -6902,9 +6904,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -6920,9 +6922,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -6938,9 +6940,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -6956,9 +6958,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -6974,9 +6976,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -7031,16 +7033,16 @@
       "task_id": "t01",
       "selected_agent": "auto-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": null,
       "final": {
-        "lite": 0,
-        "quick": 0.9756,
-        "full": 0.0244
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -7049,16 +7051,16 @@
       "task_id": "t02",
       "selected_agent": "auto-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": null,
       "final": {
-        "lite": 0,
-        "quick": 0.9756,
-        "full": 0.0244
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -7067,16 +7069,16 @@
       "task_id": "t03",
       "selected_agent": "auto-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": null,
       "final": {
-        "lite": 0,
-        "quick": 0.9756,
-        "full": 0.0244
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -7085,16 +7087,16 @@
       "task_id": "t04",
       "selected_agent": "auto-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": null,
       "final": {
-        "lite": 0,
-        "quick": 0.9756,
-        "full": 0.0244
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -7103,16 +7105,16 @@
       "task_id": "t05",
       "selected_agent": "auto-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": null,
       "final": {
-        "lite": 0,
-        "quick": 0.9756,
-        "full": 0.0244
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -7121,16 +7123,16 @@
       "task_id": "t06",
       "selected_agent": "auto-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": null,
       "final": {
-        "lite": 0,
-        "quick": 0.9756,
-        "full": 0.0244
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -7139,16 +7141,16 @@
       "task_id": "t07",
       "selected_agent": "auto-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": null,
       "final": {
-        "lite": 0,
-        "quick": 0.9756,
-        "full": 0.0244
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -7157,16 +7159,16 @@
       "task_id": "t08",
       "selected_agent": "auto-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": null,
       "final": {
-        "lite": 0,
-        "quick": 0.9756,
-        "full": 0.0244
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -7175,16 +7177,16 @@
       "task_id": "t09",
       "selected_agent": "auto-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": null,
       "final": {
-        "lite": 0,
-        "quick": 0.9756,
-        "full": 0.0244
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -7193,10 +7195,10 @@
       "task_id": "t10",
       "selected_agent": "auto-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -7205,8 +7207,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -7216,10 +7218,10 @@
       "task_id": "t11",
       "selected_agent": "auto-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -7254,10 +7256,10 @@
       "task_id": "t12",
       "selected_agent": "auto-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -7266,8 +7268,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -7284,9 +7286,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -7302,9 +7304,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -7320,9 +7322,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -7338,9 +7340,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -7349,16 +7351,16 @@
       "task_id": "t5",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": null,
       "final": {
-        "lite": 0,
-        "quick": 0.9756,
-        "full": 0.0244
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -7374,9 +7376,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -7392,9 +7394,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -7410,9 +7412,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -7428,9 +7430,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -7446,9 +7448,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -7457,16 +7459,16 @@
       "task_id": "t13",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": null,
       "final": {
-        "lite": 0,
-        "quick": 0.9756,
-        "full": 0.0244
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -7482,9 +7484,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -7500,9 +7502,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -7511,16 +7513,16 @@
       "task_id": "t16",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": null,
       "final": {
-        "lite": 0,
-        "quick": 0.9756,
-        "full": 0.0244
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -7536,9 +7538,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -7554,9 +7556,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -7572,9 +7574,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -7590,9 +7592,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -7608,9 +7610,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -7626,9 +7628,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -7637,20 +7639,20 @@
       "task_id": "t7",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "full",
+        "depth": "quick",
         "source": "policy-baseline",
         "floor_legs": [
           "sensitive-path"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "floor:sensitive-path"
       },
       "history": null,
       "final": {
         "lite": 0,
-        "quick": 0,
-        "full": 1
+        "quick": 0.975,
+        "full": 0.025
       },
-      "final_basis": "provisional"
+      "final_basis": "corpus-rate"
     },
     {
       "plan": ".context-index/specs/features/domain-profiles/domain-aware-skill-integration.plan.md",
@@ -7664,9 +7666,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -7682,9 +7684,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -7700,9 +7702,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -7718,9 +7720,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -7736,9 +7738,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -7754,9 +7756,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -7772,9 +7774,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -7790,9 +7792,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -7801,16 +7803,16 @@
       "task_id": "t7",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": null,
       "final": {
-        "lite": 0,
-        "quick": 0.9756,
-        "full": 0.0244
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -7819,14 +7821,14 @@
       "task_id": "task-1",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
-        "outcome": "full",
+        "outcome": "quick",
         "legs": [
           "sensitive-path"
         ],
@@ -7834,8 +7836,8 @@
       },
       "final": {
         "lite": 0,
-        "quick": 0,
-        "full": 1
+        "quick": 1,
+        "full": 0
       },
       "final_basis": "history"
     },
@@ -7844,10 +7846,10 @@
       "task_id": "task-2",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -7894,10 +7896,10 @@
       "task_id": "task-3",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -7960,10 +7962,10 @@
       "task_id": "task-4",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -8014,10 +8016,10 @@
       "task_id": "task-5",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -8026,8 +8028,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -8060,10 +8062,10 @@
       "task_id": "task-7",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -8072,8 +8074,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -8083,10 +8085,10 @@
       "task_id": "task-8",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -8095,8 +8097,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -8106,10 +8108,10 @@
       "task_id": "task-9",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -8118,8 +8120,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -8175,10 +8177,10 @@
       "task_id": "t3",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -8369,10 +8371,10 @@
       "task_id": "t1",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 2,
@@ -8381,8 +8383,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -8482,10 +8484,10 @@
       "task_id": "t5",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 2,
@@ -8553,9 +8555,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -8571,9 +8573,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -8589,9 +8591,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -8600,16 +8602,16 @@
       "task_id": "t12",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": null,
       "final": {
-        "lite": 0,
-        "quick": 0.9756,
-        "full": 0.0244
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -8625,9 +8627,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -8643,9 +8645,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -8661,9 +8663,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -8679,9 +8681,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -8690,7 +8692,7 @@
       "task_id": "t6",
       "selected_agent": "auto-agent",
       "provisional": {
-        "depth": "full",
+        "depth": "quick",
         "source": "policy-baseline",
         "floor_legs": [
           "sensitive-path"
@@ -8700,10 +8702,10 @@
       "history": null,
       "final": {
         "lite": 0,
-        "quick": 0,
-        "full": 1
+        "quick": 0.975,
+        "full": 0.025
       },
-      "final_basis": "provisional"
+      "final_basis": "corpus-rate"
     },
     {
       "plan": ".context-index/specs/features/eval-projects/api-eval-project.plan.md",
@@ -8717,9 +8719,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -8735,9 +8737,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -8746,7 +8748,7 @@
       "task_id": "t9",
       "selected_agent": "auto-agent",
       "provisional": {
-        "depth": "full",
+        "depth": "quick",
         "source": "policy-baseline",
         "floor_legs": [
           "sensitive-path"
@@ -8756,10 +8758,10 @@
       "history": null,
       "final": {
         "lite": 0,
-        "quick": 0,
-        "full": 1
+        "quick": 0.975,
+        "full": 0.025
       },
-      "final_basis": "provisional"
+      "final_basis": "corpus-rate"
     },
     {
       "plan": ".context-index/specs/features/eval-projects/automation-eval-project.plan.md",
@@ -8773,9 +8775,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -8784,16 +8786,16 @@
       "task_id": "t10",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": null,
       "final": {
-        "lite": 0,
-        "quick": 0.9756,
-        "full": 0.0244
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -8809,9 +8811,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -8827,9 +8829,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -8838,16 +8840,16 @@
       "task_id": "t3",
       "selected_agent": "auto-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": null,
       "final": {
-        "lite": 0,
-        "quick": 0.9756,
-        "full": 0.0244
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -8856,16 +8858,16 @@
       "task_id": "t4",
       "selected_agent": "auto-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": null,
       "final": {
-        "lite": 0,
-        "quick": 0.9756,
-        "full": 0.0244
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -8874,16 +8876,16 @@
       "task_id": "t5",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": null,
       "final": {
-        "lite": 0,
-        "quick": 0.9756,
-        "full": 0.0244
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -8892,16 +8894,16 @@
       "task_id": "t6",
       "selected_agent": "auto-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": null,
       "final": {
-        "lite": 0,
-        "quick": 0.9756,
-        "full": 0.0244
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -8917,9 +8919,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -8928,16 +8930,16 @@
       "task_id": "t8",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": null,
       "final": {
-        "lite": 0,
-        "quick": 0.9756,
-        "full": 0.0244
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -8953,9 +8955,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -8964,10 +8966,10 @@
       "task_id": "t1",
       "selected_agent": "auto-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 3,
@@ -8976,8 +8978,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -8987,10 +8989,10 @@
       "task_id": "t2",
       "selected_agent": "auto-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 3,
@@ -9017,10 +9019,10 @@
       "task_id": "t3",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 3,
@@ -9047,10 +9049,10 @@
       "task_id": "t4",
       "selected_agent": "auto-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 3,
@@ -9059,8 +9061,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -9093,10 +9095,10 @@
       "task_id": "t6",
       "selected_agent": "auto-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 3,
@@ -9105,8 +9107,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -9116,10 +9118,10 @@
       "task_id": "t7",
       "selected_agent": "auto-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 3,
@@ -9128,8 +9130,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -9139,10 +9141,10 @@
       "task_id": "t8",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 3,
@@ -9151,8 +9153,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -9162,16 +9164,16 @@
       "task_id": "t9",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": null,
       "final": {
-        "lite": 0,
-        "quick": 0.9756,
-        "full": 0.0244
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -9180,16 +9182,16 @@
       "task_id": "t1",
       "selected_agent": "auto-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": null,
       "final": {
-        "lite": 0,
-        "quick": 0.9756,
-        "full": 0.0244
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -9198,16 +9200,16 @@
       "task_id": "t10",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": null,
       "final": {
-        "lite": 0,
-        "quick": 0.9756,
-        "full": 0.0244
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -9216,16 +9218,16 @@
       "task_id": "t11",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": null,
       "final": {
-        "lite": 0,
-        "quick": 0.9756,
-        "full": 0.0244
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -9234,16 +9236,16 @@
       "task_id": "t12",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": null,
       "final": {
-        "lite": 0,
-        "quick": 0.9756,
-        "full": 0.0244
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -9252,16 +9254,16 @@
       "task_id": "t2",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": null,
       "final": {
-        "lite": 0,
-        "quick": 0.9756,
-        "full": 0.0244
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -9270,16 +9272,16 @@
       "task_id": "t3",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": null,
       "final": {
-        "lite": 0,
-        "quick": 0.9756,
-        "full": 0.0244
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -9288,16 +9290,16 @@
       "task_id": "t4",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": null,
       "final": {
-        "lite": 0,
-        "quick": 0.9756,
-        "full": 0.0244
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -9306,16 +9308,16 @@
       "task_id": "t5",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": null,
       "final": {
-        "lite": 0,
-        "quick": 0.9756,
-        "full": 0.0244
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -9324,16 +9326,16 @@
       "task_id": "t6",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": null,
       "final": {
-        "lite": 0,
-        "quick": 0.9756,
-        "full": 0.0244
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -9342,16 +9344,16 @@
       "task_id": "t7",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": null,
       "final": {
-        "lite": 0,
-        "quick": 0.9756,
-        "full": 0.0244
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -9360,16 +9362,16 @@
       "task_id": "t8",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": null,
       "final": {
-        "lite": 0,
-        "quick": 0.9756,
-        "full": 0.0244
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -9378,16 +9380,16 @@
       "task_id": "t9",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": null,
       "final": {
-        "lite": 0,
-        "quick": 0.9756,
-        "full": 0.0244
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -9449,9 +9451,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -9580,7 +9582,7 @@
         "floor_legs": [
           "risk-level"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "high-risk"
       },
       "history": {
         "commits": 1,
@@ -9628,7 +9630,7 @@
         "floor_legs": [
           "risk-level"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "high-risk"
       },
       "history": {
         "commits": 3,
@@ -9653,7 +9655,7 @@
         "floor_legs": [
           "risk-level"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "high-risk"
       },
       "history": {
         "commits": 1,
@@ -9678,7 +9680,7 @@
         "floor_legs": [
           "risk-level"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "high-risk"
       },
       "history": {
         "commits": 1,
@@ -9841,7 +9843,7 @@
         "floor_legs": [
           "risk-level"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "high-risk"
       },
       "history": {
         "commits": 1,
@@ -9874,7 +9876,7 @@
           "risk-level",
           "routing"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "high-risk"
       },
       "history": {
         "commits": 1,
@@ -9928,10 +9930,10 @@
       "task_id": "t1",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -9940,8 +9942,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -9951,10 +9953,10 @@
       "task_id": "t10",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -9963,8 +9965,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -10096,10 +10098,10 @@
       "task_id": "t4",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -10108,8 +10110,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -10188,10 +10190,10 @@
       "task_id": "t8",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -10222,10 +10224,10 @@
       "task_id": "t9",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 2,
@@ -10674,7 +10676,7 @@
         "floor_legs": [
           "risk-level"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "high-risk"
       },
       "history": {
         "commits": 1,
@@ -10713,10 +10715,10 @@
       "task_id": "t1",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -10725,8 +10727,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -10736,7 +10738,7 @@
       "task_id": "t2",
       "selected_agent": "auto-agent",
       "provisional": {
-        "depth": "full",
+        "depth": "quick",
         "source": "policy-baseline",
         "floor_legs": [
           "sensitive-path"
@@ -10745,7 +10747,7 @@
       },
       "history": {
         "commits": 1,
-        "outcome": "full",
+        "outcome": "quick",
         "legs": [
           "sensitive-path"
         ],
@@ -10753,10 +10755,10 @@
       },
       "final": {
         "lite": 0,
-        "quick": 0,
-        "full": 1
+        "quick": 1,
+        "full": 0
       },
-      "final_basis": "provisional"
+      "final_basis": "history"
     },
     {
       "plan": ".context-index/specs/features/implementation/review-provenance.plan.md",
@@ -10793,33 +10795,10 @@
       },
       "history": {
         "commits": 1,
-        "outcome": "full",
+        "outcome": "quick",
         "legs": [
           "sensitive-path"
         ],
-        "offending": []
-      },
-      "final": {
-        "lite": 0,
-        "quick": 0,
-        "full": 1
-      },
-      "final_basis": "history"
-    },
-    {
-      "plan": ".context-index/specs/features/implementation/review-provenance.plan.md",
-      "task_id": "t5",
-      "selected_agent": "assisted-agent",
-      "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
-        "floor_legs": [],
-        "lite_denied": "routing-scores"
-      },
-      "history": {
-        "commits": 1,
-        "outcome": "lite",
-        "legs": [],
         "offending": []
       },
       "final": {
@@ -10831,13 +10810,13 @@
     },
     {
       "plan": ".context-index/specs/features/implementation/review-provenance.plan.md",
-      "task_id": "t6",
+      "task_id": "t5",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -10846,8 +10825,31 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
+        "full": 0
+      },
+      "final_basis": "history"
+    },
+    {
+      "plan": ".context-index/specs/features/implementation/review-provenance.plan.md",
+      "task_id": "t6",
+      "selected_agent": "assisted-agent",
+      "provisional": {
+        "depth": "lite",
+        "source": "lite-grant",
+        "floor_legs": [],
+        "lite_denied": null
+      },
+      "history": {
+        "commits": 1,
+        "outcome": "lite",
+        "legs": [],
+        "offending": []
+      },
+      "final": {
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -10880,10 +10882,10 @@
       "task_id": "t8",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -10892,8 +10894,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -10910,9 +10912,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -10928,9 +10930,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -10946,9 +10948,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -10964,9 +10966,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -10982,9 +10984,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -11000,9 +11002,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -11018,9 +11020,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -11036,9 +11038,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -11054,9 +11056,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -11088,10 +11090,10 @@
       "task_id": "t2",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -11100,8 +11102,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -11261,10 +11263,10 @@
       "task_id": "t8",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -11273,8 +11275,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -11291,9 +11293,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -11309,9 +11311,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -11327,9 +11329,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -11345,9 +11347,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -11363,9 +11365,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -11381,9 +11383,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -11399,9 +11401,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -11417,9 +11419,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -11573,9 +11575,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -11591,9 +11593,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -11717,7 +11719,7 @@
       "task_id": "t1",
       "selected_agent": "auto-agent",
       "provisional": {
-        "depth": "full",
+        "depth": "quick",
         "source": "policy-baseline",
         "floor_legs": [
           "sensitive-path"
@@ -11727,17 +11729,17 @@
       "history": null,
       "final": {
         "lite": 0,
-        "quick": 0,
-        "full": 1
+        "quick": 0.975,
+        "full": 0.025
       },
-      "final_basis": "provisional"
+      "final_basis": "corpus-rate"
     },
     {
       "plan": ".context-index/specs/features/review/configurable-reviewers-rev-4-context-pack-population.plan.md",
       "task_id": "t2",
       "selected_agent": "auto-agent",
       "provisional": {
-        "depth": "full",
+        "depth": "quick",
         "source": "policy-baseline",
         "floor_legs": [
           "sensitive-path"
@@ -11747,37 +11749,17 @@
       "history": null,
       "final": {
         "lite": 0,
-        "quick": 0,
-        "full": 1
+        "quick": 0.975,
+        "full": 0.025
       },
-      "final_basis": "provisional"
+      "final_basis": "corpus-rate"
     },
     {
       "plan": ".context-index/specs/features/review/configurable-reviewers-rev-4-context-pack-population.plan.md",
       "task_id": "t3",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "full",
-        "source": "policy-baseline",
-        "floor_legs": [
-          "sensitive-path"
-        ],
-        "lite_denied": "routing-scores"
-      },
-      "history": null,
-      "final": {
-        "lite": 0,
-        "quick": 0,
-        "full": 1
-      },
-      "final_basis": "provisional"
-    },
-    {
-      "plan": ".context-index/specs/features/review/configurable-reviewers-rev-4-context-pack-population.plan.md",
-      "task_id": "t4",
-      "selected_agent": "auto-agent",
-      "provisional": {
-        "depth": "full",
+        "depth": "quick",
         "source": "policy-baseline",
         "floor_legs": [
           "sensitive-path"
@@ -11787,10 +11769,30 @@
       "history": null,
       "final": {
         "lite": 0,
-        "quick": 0,
-        "full": 1
+        "quick": 0.975,
+        "full": 0.025
       },
-      "final_basis": "provisional"
+      "final_basis": "corpus-rate"
+    },
+    {
+      "plan": ".context-index/specs/features/review/configurable-reviewers-rev-4-context-pack-population.plan.md",
+      "task_id": "t4",
+      "selected_agent": "auto-agent",
+      "provisional": {
+        "depth": "quick",
+        "source": "policy-baseline",
+        "floor_legs": [
+          "sensitive-path"
+        ],
+        "lite_denied": "floor:sensitive-path"
+      },
+      "history": null,
+      "final": {
+        "lite": 0,
+        "quick": 0.975,
+        "full": 0.025
+      },
+      "final_basis": "corpus-rate"
     },
     {
       "plan": ".context-index/specs/features/review/configurable-reviewers-rev-4-context-pack-population.plan.md",
@@ -11804,9 +11806,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -11815,36 +11817,36 @@
       "task_id": "t6",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "full",
+        "depth": "quick",
         "source": "policy-baseline",
         "floor_legs": [
           "sensitive-path"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "floor:sensitive-path"
       },
       "history": null,
       "final": {
         "lite": 0,
-        "quick": 0,
-        "full": 1
+        "quick": 0.975,
+        "full": 0.025
       },
-      "final_basis": "provisional"
+      "final_basis": "corpus-rate"
     },
     {
       "plan": ".context-index/specs/features/review/configurable-reviewers-rev-4-context-pack-population.plan.md",
       "task_id": "t7",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": null,
       "final": {
-        "lite": 0,
-        "quick": 0.9756,
-        "full": 0.0244
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -11876,16 +11878,16 @@
       "task_id": "t10",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "full",
+        "depth": "quick",
         "source": "policy-baseline",
         "floor_legs": [
           "sensitive-path"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "floor:sensitive-path"
       },
       "history": {
         "commits": 1,
-        "outcome": "full",
+        "outcome": "quick",
         "legs": [
           "sensitive-path"
         ],
@@ -11893,26 +11895,26 @@
       },
       "final": {
         "lite": 0,
-        "quick": 0,
-        "full": 1
+        "quick": 1,
+        "full": 0
       },
-      "final_basis": "provisional"
+      "final_basis": "history"
     },
     {
       "plan": ".context-index/specs/features/review/configurable-reviewers-rev-5-path-manifest-context-packs.plan.md",
       "task_id": "t11",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "full",
+        "depth": "quick",
         "source": "policy-baseline",
         "floor_legs": [
           "sensitive-path"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "floor:sensitive-path"
       },
       "history": {
         "commits": 1,
-        "outcome": "full",
+        "outcome": "quick",
         "legs": [
           "sensitive-path"
         ],
@@ -11920,10 +11922,10 @@
       },
       "final": {
         "lite": 0,
-        "quick": 0,
-        "full": 1
+        "quick": 1,
+        "full": 0
       },
-      "final_basis": "provisional"
+      "final_basis": "history"
     },
     {
       "plan": ".context-index/specs/features/review/configurable-reviewers-rev-5-path-manifest-context-packs.plan.md",
@@ -11936,7 +11938,7 @@
           "routing",
           "sensitive-path"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "floor:routing"
       },
       "history": null,
       "final": {
@@ -11951,20 +11953,20 @@
       "task_id": "t13",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "full",
+        "depth": "quick",
         "source": "policy-baseline",
         "floor_legs": [
           "sensitive-path"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "floor:sensitive-path"
       },
       "history": null,
       "final": {
         "lite": 0,
-        "quick": 0,
-        "full": 1
+        "quick": 0.975,
+        "full": 0.025
       },
-      "final_basis": "provisional"
+      "final_basis": "corpus-rate"
     },
     {
       "plan": ".context-index/specs/features/review/configurable-reviewers-rev-5-path-manifest-context-packs.plan.md",
@@ -12001,16 +12003,16 @@
       "task_id": "t2",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "full",
+        "depth": "quick",
         "source": "policy-baseline",
         "floor_legs": [
           "sensitive-path"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "floor:sensitive-path"
       },
       "history": {
         "commits": 1,
-        "outcome": "full",
+        "outcome": "quick",
         "legs": [
           "sensitive-path"
         ],
@@ -12018,10 +12020,10 @@
       },
       "final": {
         "lite": 0,
-        "quick": 0,
-        "full": 1
+        "quick": 1,
+        "full": 0
       },
-      "final_basis": "provisional"
+      "final_basis": "history"
     },
     {
       "plan": ".context-index/specs/features/review/configurable-reviewers-rev-5-path-manifest-context-packs.plan.md",
@@ -12051,16 +12053,16 @@
       "task_id": "t4",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "full",
+        "depth": "quick",
         "source": "policy-baseline",
         "floor_legs": [
           "sensitive-path"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "floor:sensitive-path"
       },
       "history": {
         "commits": 1,
-        "outcome": "full",
+        "outcome": "quick",
         "legs": [
           "sensitive-path"
         ],
@@ -12068,26 +12070,26 @@
       },
       "final": {
         "lite": 0,
-        "quick": 0,
-        "full": 1
+        "quick": 1,
+        "full": 0
       },
-      "final_basis": "provisional"
+      "final_basis": "history"
     },
     {
       "plan": ".context-index/specs/features/review/configurable-reviewers-rev-5-path-manifest-context-packs.plan.md",
       "task_id": "t5",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "full",
+        "depth": "quick",
         "source": "policy-baseline",
         "floor_legs": [
           "sensitive-path"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "floor:sensitive-path"
       },
       "history": {
         "commits": 1,
-        "outcome": "full",
+        "outcome": "quick",
         "legs": [
           "sensitive-path"
         ],
@@ -12095,26 +12097,26 @@
       },
       "final": {
         "lite": 0,
-        "quick": 0,
-        "full": 1
+        "quick": 1,
+        "full": 0
       },
-      "final_basis": "provisional"
+      "final_basis": "history"
     },
     {
       "plan": ".context-index/specs/features/review/configurable-reviewers-rev-5-path-manifest-context-packs.plan.md",
       "task_id": "t6",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "full",
+        "depth": "quick",
         "source": "policy-baseline",
         "floor_legs": [
           "sensitive-path"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "floor:sensitive-path"
       },
       "history": {
         "commits": 1,
-        "outcome": "full",
+        "outcome": "quick",
         "legs": [
           "sensitive-path"
         ],
@@ -12122,26 +12124,26 @@
       },
       "final": {
         "lite": 0,
-        "quick": 0,
-        "full": 1
+        "quick": 1,
+        "full": 0
       },
-      "final_basis": "provisional"
+      "final_basis": "history"
     },
     {
       "plan": ".context-index/specs/features/review/configurable-reviewers-rev-5-path-manifest-context-packs.plan.md",
       "task_id": "t7",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "full",
+        "depth": "quick",
         "source": "policy-baseline",
         "floor_legs": [
           "sensitive-path"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "floor:sensitive-path"
       },
       "history": {
         "commits": 1,
-        "outcome": "full",
+        "outcome": "quick",
         "legs": [
           "sensitive-path"
         ],
@@ -12149,10 +12151,10 @@
       },
       "final": {
         "lite": 0,
-        "quick": 0,
-        "full": 1
+        "quick": 1,
+        "full": 0
       },
-      "final_basis": "provisional"
+      "final_basis": "history"
     },
     {
       "plan": ".context-index/specs/features/review/configurable-reviewers-rev-5-path-manifest-context-packs.plan.md",
@@ -12164,7 +12166,7 @@
         "floor_legs": [
           "routing"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "floor:routing"
       },
       "history": null,
       "final": {
@@ -12179,16 +12181,16 @@
       "task_id": "t9",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": null,
       "final": {
-        "lite": 0,
-        "quick": 0.9756,
-        "full": 0.0244
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -12335,10 +12337,10 @@
       "task_id": "t1",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 2,
@@ -12347,8 +12349,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -12358,15 +12360,42 @@
       "task_id": "t2",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
         "outcome": "lite",
         "legs": [],
+        "offending": []
+      },
+      "final": {
+        "lite": 1,
+        "quick": 0,
+        "full": 0
+      },
+      "final_basis": "history"
+    },
+    {
+      "plan": ".context-index/specs/features/reviewer-domain-fit/falsification-gate.plan.md",
+      "task_id": "t3",
+      "selected_agent": "auto-agent",
+      "provisional": {
+        "depth": "quick",
+        "source": "policy-baseline",
+        "floor_legs": [
+          "sensitive-path"
+        ],
+        "lite_denied": "floor:sensitive-path"
+      },
+      "history": {
+        "commits": 1,
+        "outcome": "quick",
+        "legs": [
+          "sensitive-path"
+        ],
         "offending": []
       },
       "final": {
@@ -12378,40 +12407,13 @@
     },
     {
       "plan": ".context-index/specs/features/reviewer-domain-fit/falsification-gate.plan.md",
-      "task_id": "t3",
-      "selected_agent": "auto-agent",
-      "provisional": {
-        "depth": "full",
-        "source": "policy-baseline",
-        "floor_legs": [
-          "sensitive-path"
-        ],
-        "lite_denied": "floor:sensitive-path"
-      },
-      "history": {
-        "commits": 1,
-        "outcome": "full",
-        "legs": [
-          "sensitive-path"
-        ],
-        "offending": []
-      },
-      "final": {
-        "lite": 0,
-        "quick": 0,
-        "full": 1
-      },
-      "final_basis": "provisional"
-    },
-    {
-      "plan": ".context-index/specs/features/reviewer-domain-fit/falsification-gate.plan.md",
       "task_id": "t4",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 4,
@@ -12450,10 +12452,10 @@
       "task_id": "t5",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -12462,8 +12464,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -12473,10 +12475,10 @@
       "task_id": "t6",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -12485,8 +12487,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -12595,10 +12597,10 @@
       "task_id": "t4",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -12607,8 +12609,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -12641,7 +12643,7 @@
       "task_id": "t1",
       "selected_agent": "auto-agent",
       "provisional": {
-        "depth": "full",
+        "depth": "quick",
         "source": "policy-baseline",
         "floor_legs": [
           "sensitive-path"
@@ -12650,7 +12652,7 @@
       },
       "history": {
         "commits": 1,
-        "outcome": "full",
+        "outcome": "quick",
         "legs": [
           "sensitive-path"
         ],
@@ -12658,10 +12660,10 @@
       },
       "final": {
         "lite": 0,
-        "quick": 0,
-        "full": 1
+        "quick": 1,
+        "full": 0
       },
-      "final_basis": "provisional"
+      "final_basis": "history"
     },
     {
       "plan": ".context-index/specs/features/session-awareness/cost-checkpoint-events.plan.md",
@@ -12714,10 +12716,10 @@
       "task_id": "t4",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -12726,8 +12728,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -12783,10 +12785,10 @@
       "task_id": "t7",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 2,
@@ -12939,9 +12941,9 @@
       },
       "history": null,
       "final": {
-        "lite": 0.8506,
-        "quick": 0.1456,
-        "full": 0.0038
+        "lite": 0.8047,
+        "quick": 0.1953,
+        "full": 0
       },
       "final_basis": "corpus-rate"
     },
@@ -13703,10 +13705,10 @@
       "task_id": "t6",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -13715,8 +13717,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -13917,7 +13919,7 @@
       "task_id": "t1",
       "selected_agent": "auto-agent",
       "provisional": {
-        "depth": "full",
+        "depth": "quick",
         "source": "policy-baseline",
         "floor_legs": [
           "sensitive-path"
@@ -13926,7 +13928,7 @@
       },
       "history": {
         "commits": 1,
-        "outcome": "full",
+        "outcome": "quick",
         "legs": [
           "sensitive-path"
         ],
@@ -13934,10 +13936,10 @@
       },
       "final": {
         "lite": 0,
-        "quick": 0,
-        "full": 1
+        "quick": 1,
+        "full": 0
       },
-      "final_basis": "provisional"
+      "final_basis": "history"
     },
     {
       "plan": ".context-index/specs/features/test-strategies/strategy-profile-contract-rev-3-entry-point-boundary-rule.plan.md",
@@ -14082,10 +14084,10 @@
       "task_id": "t14",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 3,
@@ -14190,7 +14192,7 @@
       "task_id": "t17",
       "selected_agent": "auto-agent",
       "provisional": {
-        "depth": "full",
+        "depth": "quick",
         "source": "policy-baseline",
         "floor_legs": [
           "sensitive-path"
@@ -14199,7 +14201,7 @@
       },
       "history": {
         "commits": 2,
-        "outcome": "full",
+        "outcome": "quick",
         "legs": [
           "sensitive-path"
         ],
@@ -14207,20 +14209,20 @@
       },
       "final": {
         "lite": 0,
-        "quick": 0,
-        "full": 1
+        "quick": 1,
+        "full": 0
       },
-      "final_basis": "provisional"
+      "final_basis": "history"
     },
     {
       "plan": ".context-index/specs/features/test-strategies/test-depth-policy.plan.md",
       "task_id": "t18",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 2,
@@ -14251,10 +14253,10 @@
       "task_id": "t19",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -14263,8 +14265,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -14274,177 +14276,19 @@
       "task_id": "t2",
       "selected_agent": "auto-agent",
       "provisional": {
-        "depth": "full",
-        "source": "policy-baseline",
-        "floor_legs": [
-          "sensitive-path"
-        ],
-        "lite_denied": "floor:sensitive-path"
-      },
-      "history": {
-        "commits": 1,
-        "outcome": "full",
-        "legs": [
-          "sensitive-path"
-        ],
-        "offending": []
-      },
-      "final": {
-        "lite": 0,
-        "quick": 0,
-        "full": 1
-      },
-      "final_basis": "provisional"
-    },
-    {
-      "plan": ".context-index/specs/features/test-strategies/test-depth-policy.plan.md",
-      "task_id": "t3",
-      "selected_agent": "auto-agent",
-      "provisional": {
-        "depth": "full",
-        "source": "policy-baseline",
-        "floor_legs": [
-          "sensitive-path"
-        ],
-        "lite_denied": "floor:sensitive-path"
-      },
-      "history": {
-        "commits": 2,
-        "outcome": "full",
-        "legs": [
-          "sensitive-path"
-        ],
-        "offending": []
-      },
-      "final": {
-        "lite": 0,
-        "quick": 0,
-        "full": 1
-      },
-      "final_basis": "provisional"
-    },
-    {
-      "plan": ".context-index/specs/features/test-strategies/test-depth-policy.plan.md",
-      "task_id": "t4",
-      "selected_agent": "assisted-agent",
-      "provisional": {
-        "depth": "full",
-        "source": "policy-baseline",
-        "floor_legs": [
-          "sensitive-path"
-        ],
-        "lite_denied": "routing-scores"
-      },
-      "history": {
-        "commits": 1,
-        "outcome": "full",
-        "legs": [
-          "sensitive-path"
-        ],
-        "offending": []
-      },
-      "final": {
-        "lite": 0,
-        "quick": 0,
-        "full": 1
-      },
-      "final_basis": "provisional"
-    },
-    {
-      "plan": ".context-index/specs/features/test-strategies/test-depth-policy.plan.md",
-      "task_id": "t5",
-      "selected_agent": "assisted-agent",
-      "provisional": {
-        "depth": "full",
-        "source": "policy-baseline",
-        "floor_legs": [
-          "sensitive-path"
-        ],
-        "lite_denied": "routing-scores"
-      },
-      "history": {
-        "commits": 2,
-        "outcome": "full",
-        "legs": [
-          "sensitive-path"
-        ],
-        "offending": []
-      },
-      "final": {
-        "lite": 0,
-        "quick": 0,
-        "full": 1
-      },
-      "final_basis": "provisional"
-    },
-    {
-      "plan": ".context-index/specs/features/test-strategies/test-depth-policy.plan.md",
-      "task_id": "t6",
-      "selected_agent": "auto-agent",
-      "provisional": {
-        "depth": "full",
-        "source": "policy-baseline",
-        "floor_legs": [
-          "sensitive-path"
-        ],
-        "lite_denied": "floor:sensitive-path"
-      },
-      "history": {
-        "commits": 2,
-        "outcome": "full",
-        "legs": [
-          "sensitive-path"
-        ],
-        "offending": []
-      },
-      "final": {
-        "lite": 0,
-        "quick": 0,
-        "full": 1
-      },
-      "final_basis": "provisional"
-    },
-    {
-      "plan": ".context-index/specs/features/test-strategies/test-depth-policy.plan.md",
-      "task_id": "t7",
-      "selected_agent": "assisted-agent",
-      "provisional": {
-        "depth": "full",
-        "source": "policy-baseline",
-        "floor_legs": [
-          "sensitive-path"
-        ],
-        "lite_denied": "routing-scores"
-      },
-      "history": {
-        "commits": 2,
-        "outcome": "full",
-        "legs": [
-          "sensitive-path"
-        ],
-        "offending": []
-      },
-      "final": {
-        "lite": 0,
-        "quick": 0,
-        "full": 1
-      },
-      "final_basis": "provisional"
-    },
-    {
-      "plan": ".context-index/specs/features/test-strategies/test-depth-policy.plan.md",
-      "task_id": "t8",
-      "selected_agent": "assisted-agent",
-      "provisional": {
         "depth": "quick",
         "source": "policy-baseline",
-        "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "floor_legs": [
+          "sensitive-path"
+        ],
+        "lite_denied": "floor:sensitive-path"
       },
       "history": {
-        "commits": 2,
-        "outcome": "lite",
-        "legs": [],
+        "commits": 1,
+        "outcome": "quick",
+        "legs": [
+          "sensitive-path"
+        ],
         "offending": []
       },
       "final": {
@@ -14456,10 +14300,37 @@
     },
     {
       "plan": ".context-index/specs/features/test-strategies/test-depth-policy.plan.md",
-      "task_id": "t9",
+      "task_id": "t3",
       "selected_agent": "auto-agent",
       "provisional": {
-        "depth": "full",
+        "depth": "quick",
+        "source": "policy-baseline",
+        "floor_legs": [
+          "sensitive-path"
+        ],
+        "lite_denied": "floor:sensitive-path"
+      },
+      "history": {
+        "commits": 2,
+        "outcome": "quick",
+        "legs": [
+          "sensitive-path"
+        ],
+        "offending": []
+      },
+      "final": {
+        "lite": 0,
+        "quick": 1,
+        "full": 0
+      },
+      "final_basis": "history"
+    },
+    {
+      "plan": ".context-index/specs/features/test-strategies/test-depth-policy.plan.md",
+      "task_id": "t4",
+      "selected_agent": "assisted-agent",
+      "provisional": {
+        "depth": "quick",
         "source": "policy-baseline",
         "floor_legs": [
           "sensitive-path"
@@ -14468,7 +14339,7 @@
       },
       "history": {
         "commits": 1,
-        "outcome": "full",
+        "outcome": "quick",
         "legs": [
           "sensitive-path"
         ],
@@ -14476,10 +14347,141 @@
       },
       "final": {
         "lite": 0,
-        "quick": 0,
-        "full": 1
+        "quick": 1,
+        "full": 0
       },
-      "final_basis": "provisional"
+      "final_basis": "history"
+    },
+    {
+      "plan": ".context-index/specs/features/test-strategies/test-depth-policy.plan.md",
+      "task_id": "t5",
+      "selected_agent": "assisted-agent",
+      "provisional": {
+        "depth": "quick",
+        "source": "policy-baseline",
+        "floor_legs": [
+          "sensitive-path"
+        ],
+        "lite_denied": "floor:sensitive-path"
+      },
+      "history": {
+        "commits": 2,
+        "outcome": "quick",
+        "legs": [
+          "sensitive-path"
+        ],
+        "offending": []
+      },
+      "final": {
+        "lite": 0,
+        "quick": 1,
+        "full": 0
+      },
+      "final_basis": "history"
+    },
+    {
+      "plan": ".context-index/specs/features/test-strategies/test-depth-policy.plan.md",
+      "task_id": "t6",
+      "selected_agent": "auto-agent",
+      "provisional": {
+        "depth": "quick",
+        "source": "policy-baseline",
+        "floor_legs": [
+          "sensitive-path"
+        ],
+        "lite_denied": "floor:sensitive-path"
+      },
+      "history": {
+        "commits": 2,
+        "outcome": "quick",
+        "legs": [
+          "sensitive-path"
+        ],
+        "offending": []
+      },
+      "final": {
+        "lite": 0,
+        "quick": 1,
+        "full": 0
+      },
+      "final_basis": "history"
+    },
+    {
+      "plan": ".context-index/specs/features/test-strategies/test-depth-policy.plan.md",
+      "task_id": "t7",
+      "selected_agent": "assisted-agent",
+      "provisional": {
+        "depth": "quick",
+        "source": "policy-baseline",
+        "floor_legs": [
+          "sensitive-path"
+        ],
+        "lite_denied": "floor:sensitive-path"
+      },
+      "history": {
+        "commits": 2,
+        "outcome": "quick",
+        "legs": [
+          "sensitive-path"
+        ],
+        "offending": []
+      },
+      "final": {
+        "lite": 0,
+        "quick": 1,
+        "full": 0
+      },
+      "final_basis": "history"
+    },
+    {
+      "plan": ".context-index/specs/features/test-strategies/test-depth-policy.plan.md",
+      "task_id": "t8",
+      "selected_agent": "assisted-agent",
+      "provisional": {
+        "depth": "lite",
+        "source": "lite-grant",
+        "floor_legs": [],
+        "lite_denied": null
+      },
+      "history": {
+        "commits": 2,
+        "outcome": "lite",
+        "legs": [],
+        "offending": []
+      },
+      "final": {
+        "lite": 1,
+        "quick": 0,
+        "full": 0
+      },
+      "final_basis": "history"
+    },
+    {
+      "plan": ".context-index/specs/features/test-strategies/test-depth-policy.plan.md",
+      "task_id": "t9",
+      "selected_agent": "auto-agent",
+      "provisional": {
+        "depth": "quick",
+        "source": "policy-baseline",
+        "floor_legs": [
+          "sensitive-path"
+        ],
+        "lite_denied": "floor:sensitive-path"
+      },
+      "history": {
+        "commits": 1,
+        "outcome": "quick",
+        "legs": [
+          "sensitive-path"
+        ],
+        "offending": []
+      },
+      "final": {
+        "lite": 0,
+        "quick": 1,
+        "full": 0
+      },
+      "final_basis": "history"
     },
     {
       "plan": ".context-index/specs/features/unified-gates/tiered-gates-default.plan.md",
@@ -14716,7 +14718,7 @@
       "task_id": "t12",
       "selected_agent": "auto-agent",
       "provisional": {
-        "depth": "full",
+        "depth": "quick",
         "source": "policy-baseline",
         "floor_legs": [
           "sensitive-path"
@@ -14725,7 +14727,7 @@
       },
       "history": {
         "commits": 1,
-        "outcome": "full",
+        "outcome": "quick",
         "legs": [
           "sensitive-path"
         ],
@@ -14733,10 +14735,10 @@
       },
       "final": {
         "lite": 0,
-        "quick": 0,
-        "full": 1
+        "quick": 1,
+        "full": 0
       },
-      "final_basis": "provisional"
+      "final_basis": "history"
     },
     {
       "plan": ".context-index/specs/features/validation/check-set-restructure.plan.md",
@@ -14766,10 +14768,10 @@
       "task_id": "t14",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -14865,7 +14867,7 @@
       "task_id": "t5",
       "selected_agent": "auto-agent",
       "provisional": {
-        "depth": "full",
+        "depth": "quick",
         "source": "policy-baseline",
         "floor_legs": [
           "sensitive-path"
@@ -14874,7 +14876,7 @@
       },
       "history": {
         "commits": 1,
-        "outcome": "full",
+        "outcome": "quick",
         "legs": [
           "sensitive-path"
         ],
@@ -14882,10 +14884,10 @@
       },
       "final": {
         "lite": 0,
-        "quick": 0,
-        "full": 1
+        "quick": 1,
+        "full": 0
       },
-      "final_basis": "provisional"
+      "final_basis": "history"
     },
     {
       "plan": ".context-index/specs/features/validation/check-set-restructure.plan.md",
@@ -14998,16 +15000,16 @@
       "task_id": "t1",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "full",
+        "depth": "quick",
         "source": "policy-baseline",
         "floor_legs": [
           "sensitive-path"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "floor:sensitive-path"
       },
       "history": {
         "commits": 1,
-        "outcome": "full",
+        "outcome": "quick",
         "legs": [
           "sensitive-path"
         ],
@@ -15015,10 +15017,10 @@
       },
       "final": {
         "lite": 0,
-        "quick": 0,
-        "full": 1
+        "quick": 1,
+        "full": 0
       },
-      "final_basis": "provisional"
+      "final_basis": "history"
     },
     {
       "plan": ".context-index/specs/features/validation/validate-config-single-source.plan.md",
@@ -15048,10 +15050,10 @@
       "task_id": "t11",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -15060,8 +15062,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -15140,16 +15142,16 @@
       "task_id": "t5",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "full",
+        "depth": "quick",
         "source": "policy-baseline",
         "floor_legs": [
           "sensitive-path"
         ],
-        "lite_denied": "routing-scores"
+        "lite_denied": "floor:sensitive-path"
       },
       "history": {
         "commits": 1,
-        "outcome": "full",
+        "outcome": "quick",
         "legs": [
           "sensitive-path"
         ],
@@ -15157,10 +15159,10 @@
       },
       "final": {
         "lite": 0,
-        "quick": 0,
-        "full": 1
+        "quick": 1,
+        "full": 0
       },
-      "final_basis": "provisional"
+      "final_basis": "history"
     },
     {
       "plan": ".context-index/specs/features/validation/validate-config-single-source.plan.md",
@@ -15190,10 +15192,10 @@
       "task_id": "t7",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
@@ -15202,8 +15204,8 @@
         "offending": []
       },
       "final": {
-        "lite": 0,
-        "quick": 1,
+        "lite": 1,
+        "quick": 0,
         "full": 0
       },
       "final_basis": "history"
@@ -15213,10 +15215,10 @@
       "task_id": "t8",
       "selected_agent": "assisted-agent",
       "provisional": {
-        "depth": "quick",
-        "source": "policy-baseline",
+        "depth": "lite",
+        "source": "lite-grant",
         "floor_legs": [],
-        "lite_denied": "routing-scores"
+        "lite_denied": null
       },
       "history": {
         "commits": 1,
