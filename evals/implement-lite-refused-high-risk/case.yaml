@@ -1,0 +1,5 @@
+schema_version: "1.1"
+name: implement-lite-refused-high-risk
+tags: [governance, implement-rigor]
+context:
+  scaffold_script: fixture.sh

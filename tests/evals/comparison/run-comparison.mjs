@@ -3,22 +3,49 @@
 /**
  * Comparison Eval Harness
  *
- * Scores plain-claude vs adev-built branches across four eval projects.
- * Produces per-project JSON reports and an aggregate summary.
+ * Scores each arm's branch against `main` across the four eval projects and
+ * produces per-project JSON reports and an aggregate summary. The branches are
+ * built beforehand, one per arm, from each project's `main`:
+ *
+ *   plain-claude  plain Claude Code, no adev skills
+ *   adev-built    adev at `full` rigor (built before the rigor ladder, when
+ *                 full was /adev:implement's default; rebuild with --tier full)
+ *   adev-quick    adev at the `quick` baseline (no tier flag)
+ *   adev-lite     adev with the operator's `--lite`
+ *
+ * An arm whose branch is absent in a project is skipped there (BRANCH_MISSING)
+ * and left out of that project's means.
  *
  * Usage:
  *   node tests/evals/comparison/run-comparison.mjs               # deterministic only
  *   node tests/evals/comparison/run-comparison.mjs --llm-judge    # add LLM judge layer
+ *   node tests/evals/comparison/run-comparison.mjs --dry-run      # print arms and projects, write nothing
+ *   [--projects-root <dir>] [--reports-dir <dir>]                 # defaults: tests/evals, ./reports
+ *   [--allow-partial]                                             # see below
+ *
+ * Nothing is written until every project has been tried. A run that scores
+ * no project exits 1 (NO_PROJECTS_SCORED). A run that skips any project exits
+ * 1 (PARTIAL_RUN) instead of writing into the committed ./reports, unless
+ * --allow-partial is given; the summary lists the skipped projects.
+ *
+ * The LLM judge compares plain-claude with adev-built only; adev-quick and
+ * adev-lite keep deterministic scores, so compare those arms on a
+ * deterministic run (with --llm-judge the EV-2 target is left undecided).
+ *
+ * Wall-clock is not like-for-like across arms: plain-claude writes no
+ * lifecycle log, so its time is the commit span, which omits the time before
+ * the first commit, while adev arms use their lifecycle event timestamps.
+ * Each figure carries its `source`, and the summary notes a mix.
  */
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from 'node:fs';
+import { writeFileSync, mkdirSync, existsSync, realpathSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { execSync } from 'node:child_process';
+import { execSync, execFileSync, spawnSync } from 'node:child_process';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const EVALS_DIR = resolve(__dirname, '..');
-const REPORTS_DIR = join(__dirname, 'reports');
+const DEFAULT_PROJECTS_ROOT = resolve(__dirname, '..');
+const DEFAULT_REPORTS_DIR = join(__dirname, 'reports');
 
 const PROJECTS = [
   'adev-pipeline-eval',
@@ -27,10 +54,107 @@ const PROJECTS = [
   'adev-automation-eval',
 ];
 
-const BRANCHES = ['plain-claude', 'adev-built'];
-const BRANCH_KEYS = { 'plain-claude': 'plain_claude', 'adev-built': 'adev_built' };
+// `implementArgs` are the review-depth flags the arm's /adev:build run passes
+// to /adev:implement; null for the arm that runs no adev skill.
+export const ARMS = Object.freeze([
+  { id: 'plain-claude', key: 'plain_claude', branch: 'plain-claude', rigor: null, implementArgs: null },
+  { id: 'adev-built', key: 'adev_built', branch: 'adev-built', rigor: 'full', implementArgs: ['--tier', 'full'] },
+  { id: 'adev-quick', key: 'adev_quick', branch: 'adev-quick', rigor: 'quick', implementArgs: [] },
+  { id: 'adev-lite', key: 'adev_lite', branch: 'adev-lite', rigor: 'lite', implementArgs: ['--lite'] },
+]);
 
-const useLlmJudge = process.argv.includes('--llm-judge');
+const METRICS = ['composite', 'dimension_scores', 'wall_clock_seconds'];
+const LIFECYCLE_DIR = '.context-index/lifecycle-state';
+
+function usageError(message) {
+  process.stderr.write(`run-comparison: ${message}\n`);
+  process.exit(1);
+}
+
+export function parseArgs(argv) {
+  const opts = { llmJudge: false, dryRun: false, allowPartial: false, projectsRoot: DEFAULT_PROJECTS_ROOT, reportsDir: DEFAULT_REPORTS_DIR };
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg === '--llm-judge') opts.llmJudge = true;
+    else if (arg === '--dry-run') opts.dryRun = true;
+    else if (arg === '--allow-partial') opts.allowPartial = true;
+    else if (arg === '--projects-root' || arg === '--reports-dir') {
+      const value = argv[++i];
+      if (value === undefined || value.startsWith('--')) usageError(`${arg} needs a value`);
+      opts[arg === '--projects-root' ? 'projectsRoot' : 'reportsDir'] = resolve(value);
+    } else usageError(`unknown argument "${arg}"`);
+  }
+  return opts;
+}
+
+// An uninitialized submodule is an empty directory inside the plugin
+// repository, where git would silently answer for the plugin repository.
+function isGitCheckout(dir) {
+  if (!existsSync(dir)) return false;
+  const r = spawnSync('git', ['rev-parse', '--show-toplevel'], { cwd: dir, encoding: 'utf-8' });
+  return r.status === 0 && realpathSync(r.stdout.trim()) === realpathSync(dir);
+}
+
+function branchExists(projectDir, branch) {
+  const r = spawnSync('git', ['rev-parse', '--verify', '--quiet', `refs/heads/${branch}^{commit}`], { cwd: projectDir });
+  return r.status === 0;
+}
+
+function gitOut(projectDir, args) {
+  return execFileSync('git', args, { cwd: projectDir, encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'] });
+}
+
+function fileAt(projectDir, ref, path) {
+  const r = spawnSync('git', ['show', `${ref}:${path}`], { cwd: projectDir, encoding: 'utf-8', maxBuffer: 64 * 1024 * 1024 });
+  return r.status === 0 ? r.stdout : '';
+}
+
+function eventTimes(lines) {
+  const times = [];
+  for (const line of lines) {
+    try {
+      const t = Date.parse(JSON.parse(line).ts);
+      if (Number.isFinite(t)) times.push(t);
+    } catch { /* not an event line */ }
+  }
+  return times;
+}
+
+const nonEmptyLines = (text) => text.split('\n').filter((l) => l.trim());
+
+/**
+ * Wall-clock of the run that built `branch`, in whole seconds.
+ *
+ * Preferred source: the span of the lifecycle events the branch added (the
+ * lines of `.context-index/lifecycle-state/*.jsonl` beyond those `main`
+ * holds; the log is append-only). Fallback: the committer-time span of the
+ * branch's own commits, which omits the time before the first commit and is
+ * therefore labelled `commit-span`. With neither: `{ seconds: null, source:
+ * 'unavailable' }`.
+ */
+export function wallClockFor(projectDir, branch) {
+  const times = [];
+  let logs = [];
+  try {
+    logs = nonEmptyLines(gitOut(projectDir, ['ls-tree', '-r', '--name-only', branch, '--', LIFECYCLE_DIR]))
+      .filter((f) => f.endsWith('.jsonl'));
+  } catch { /* no lifecycle state on the branch */ }
+  for (const log of logs) {
+    const onMain = nonEmptyLines(fileAt(projectDir, 'main', log)).length;
+    times.push(...eventTimes(nonEmptyLines(fileAt(projectDir, branch, log)).slice(onMain)));
+  }
+  if (times.length >= 2) {
+    return { seconds: Math.round((Math.max(...times) - Math.min(...times)) / 1000), source: 'lifecycle-events' };
+  }
+  let commitTimes = [];
+  try {
+    commitTimes = nonEmptyLines(gitOut(projectDir, ['log', '--format=%ct', `main..${branch}`])).map(Number);
+  } catch { /* unreadable range */ }
+  if (commitTimes.length >= 2) {
+    return { seconds: Math.max(...commitTimes) - Math.min(...commitTimes), source: 'commit-span' };
+  }
+  return { seconds: null, source: 'unavailable' };
+}
 
 // --- Deterministic scoring functions ---
 
@@ -323,23 +447,53 @@ function detectDomain(projectDir) {
 
 // --- Main pipeline ---
 
-async function runComparison() {
-  mkdirSync(REPORTS_DIR, { recursive: true });
+function dryRunPlan(opts) {
+  return {
+    dry_run: true,
+    arms: ARMS.map((a) => ({ ...a, implementArgs: a.implementArgs && [...a.implementArgs] })),
+    projects: PROJECTS.map((project) => ({ project, present: isGitCheckout(join(opts.projectsRoot, project)) })),
+    metrics: METRICS,
+    allow_partial: opts.allowPartial,
+    projects_root: opts.projectsRoot,
+    reports_dir: opts.reportsDir,
+    writes: [],
+  };
+}
 
+async function runComparison(opts) {
   console.log('Comparison Eval Harness');
   console.log('======================\n');
 
-  if (useLlmJudge) {
+  if (opts.llmJudge) {
     console.log('LLM judge layer: ENABLED\n');
   }
 
   const reports = [];
+  const skipped = [];
+  const skip = (project, reason) => {
+    console.log(`[SKIP] ${project} — ${reason}`);
+    skipped.push({ project, reason });
+  };
 
   for (const project of PROJECTS) {
-    const projectDir = join(EVALS_DIR, project);
+    const projectDir = join(opts.projectsRoot, project);
 
     if (!existsSync(projectDir)) {
-      console.log(`[SKIP] ${project} — directory not found`);
+      skip(project, 'directory not found');
+      continue;
+    }
+    if (!isGitCheckout(projectDir)) {
+      skip(project, 'not a git checkout');
+      continue;
+    }
+
+    const arms = ARMS.filter((arm) => {
+      if (branchExists(projectDir, arm.branch)) return true;
+      console.log(`  Branch ${arm.branch} not found in ${project}.`);
+      return false;
+    });
+    if (arms.length === 0) {
+      skip(project, 'no arm branch found');
       continue;
     }
 
@@ -356,12 +510,13 @@ async function runComparison() {
       composite: {},
       diff_summary: {},
       bug_handling: {},
+      wall_clock: {},
+      missing_arms: ARMS.filter((a) => !arms.includes(a)).map((a) => a.id),
       generated_at: new Date().toISOString(),
     };
 
     // Score each branch
-    for (const branch of BRANCHES) {
-      const key = BRANCH_KEYS[branch];
+    for (const { branch, key } of arms) {
       console.log(`  Scoring ${branch}...`);
 
       const stats = getDiffStats(projectDir, branch);
@@ -401,11 +556,11 @@ async function runComparison() {
       }
 
       report.bug_handling[key] = bh.metrics.status;
+      report.wall_clock[key] = wallClockFor(projectDir, branch);
     }
 
     // Compute composite per branch
-    for (const branch of BRANCHES) {
-      const key = BRANCH_KEYS[branch];
+    for (const { key } of arms) {
       const scores = Object.values(report.dimensions)
         .map((d) => d[key]?.score)
         .filter((s) => s !== null && s !== undefined);
@@ -414,11 +569,12 @@ async function runComparison() {
         : 0;
     }
 
-    console.log(`  Composite: plain_claude=${report.composite.plain_claude}, adev_built=${report.composite.adev_built}`);
+    console.log(`  Composite: ${arms.map(({ key }) => `${key}=${report.composite[key]}`).join(', ')}`);
+    console.log(`  Wall-clock: ${arms.map(({ key }) => `${key}=${report.wall_clock[key].seconds ?? 'n/a'}s (${report.wall_clock[key].source})`).join(', ')}`);
 
     // Apply LLM judge if requested
     let finalReport = report;
-    if (useLlmJudge) {
+    if (opts.llmJudge) {
       try {
         const { judgeProject } = await import('./llm-judge.mjs');
         finalReport = await judgeProject(projectDir, report);
@@ -430,79 +586,176 @@ async function runComparison() {
       }
     }
 
-    // Write per-project report
-    const reportPath = join(REPORTS_DIR, `${project}.json`);
-    writeFileSync(reportPath, JSON.stringify(finalReport, null, 2), 'utf-8');
-    console.log(`  Report written to reports/${project}.json\n`);
-
     reports.push(finalReport);
+    console.log('');
+  }
+
+  // Reports are written only once every project has been tried, so a run
+  // that cannot score is refused before it touches the committed reports.
+  if (reports.length === 0) {
+    process.stderr.write('run-comparison: NO_PROJECTS_SCORED: no eval project could be scored; nothing was written.\n');
+    process.exitCode = 1;
+    return;
+  }
+  if (skipped.length > 0 && resolve(opts.reportsDir) === DEFAULT_REPORTS_DIR && !opts.allowPartial) {
+    process.stderr.write(
+      `run-comparison: PARTIAL_RUN: scored ${reports.length} of ${PROJECTS.length} projects ` +
+      `(skipped: ${skipped.map((s) => s.project).join(', ')}); refusing to overwrite the committed reports. ` +
+      'Pass --allow-partial to write them anyway, or --reports-dir <dir>. Nothing was written.\n',
+    );
+    process.exitCode = 1;
+    return;
+  }
+
+  mkdirSync(opts.reportsDir, { recursive: true });
+  for (const report of reports) {
+    const reportPath = join(opts.reportsDir, `${report.project}.json`);
+    writeFileSync(reportPath, JSON.stringify(report, null, 2), 'utf-8');
+    console.log(`Report written to ${reportPath}`);
   }
 
   // --- Aggregate summary ---
-  const summary = buildSummary(reports);
-  const summaryPath = join(REPORTS_DIR, 'summary.json');
+  const summary = buildSummary(reports, { ...opts, skipped });
+  const summaryPath = join(opts.reportsDir, 'summary.json');
   writeFileSync(summaryPath, JSON.stringify(summary, null, 2), 'utf-8');
-  console.log('Summary written to reports/summary.json');
-  console.log(`\nplain-claude avg: ${summary.aggregate_scores.plain_claude.mean}`);
-  console.log(`adev-built avg: ${summary.aggregate_scores.adev_built.mean}`);
+  console.log(`Summary written to ${summaryPath}\n`);
+  for (const arm of ARMS) {
+    const agg = summary.aggregate_scores[arm.key];
+    if (!agg) continue;
+    const wc = summary.wall_clock[arm.key];
+    console.log(`${arm.id} avg: ${agg.mean} (wall-clock mean: ${wc.mean_seconds ?? 'n/a'}s over ${wc.measured_projects} project(s))`);
+  }
 }
 
-function buildSummary(reports) {
-  const plainScores = reports.map((r) => r.composite.plain_claude);
-  const adevScores = reports.map((r) => r.composite.adev_built);
+const exactMean = (arr) => arr.reduce((s, v) => s + v, 0) / arr.length;
+const mean = (arr) => Math.round(exactMean(arr));
 
-  const mean = (arr) => Math.round(arr.reduce((s, v) => s + v, 0) / arr.length);
+/**
+ * The implement-rigor-ladder EV-2 release target: adev-lite's mean composite
+ * is at least plain-claude's. Means are unrounded and taken over the projects
+ * where both arms scored, so a project one arm lacks cannot move either side.
+ * `met` stays null unless all four projects were compared and the scores are
+ * deterministic: the LLM judge blends plain-claude and adev-built only, which
+ * would set a blended score against an unblended one.
+ */
+function ev2TargetFor(reports, opts, wallClock) {
+  const both = reports.filter((r) => r.composite.adev_lite !== undefined && r.composite.plain_claude !== undefined);
+  const target = {
+    met: null,
+    reason: null,
+    projects_compared: both.map((r) => r.project),
+    adev_lite_mean: both.length > 0 ? exactMean(both.map((r) => r.composite.adev_lite)) : null,
+    plain_claude_mean: both.length > 0 ? exactMean(both.map((r) => r.composite.plain_claude)) : null,
+    adev_lite_wall_clock_mean_seconds: wallClock.adev_lite?.mean_seconds ?? null,
+  };
+  if (both.length === 0) target.reason = 'no project scored both adev-lite and plain-claude';
+  else if (opts.llmJudge) target.reason = '--llm-judge blends plain-claude and adev-built only, not adev-lite';
+  else if (both.length < PROJECTS.length) target.reason = `fewer than ${PROJECTS.length} projects compared (${both.length})`;
+  else target.met = target.adev_lite_mean >= target.plain_claude_mean;
+  return target;
+}
+
+export function buildSummary(reports, opts = {}) {
+  const scored = ARMS.filter((arm) => reports.some((r) => r.composite[arm.key] !== undefined));
+
+  const armsMissing = {};
+  for (const arm of ARMS) {
+    const missingIn = reports.filter((r) => (r.missing_arms ?? []).includes(arm.id)).map((r) => r.project);
+    if (missingIn.length > 0) armsMissing[arm.id] = missingIn;
+  }
+
+  const aggregate = {};
+  const wallClock = {};
+  for (const arm of scored) {
+    const scores = reports.map((r) => r.composite[arm.key]).filter((s) => s !== undefined);
+    aggregate[arm.key] = { mean: mean(scores), min: Math.min(...scores), max: Math.max(...scores) };
+    const clocks = reports.map((r) => r.wall_clock?.[arm.key]).filter(Boolean);
+    const measured = clocks.filter((c) => c.seconds !== null).map((c) => c.seconds);
+    wallClock[arm.key] = {
+      mean_seconds: measured.length > 0 ? mean(measured) : null,
+      measured_projects: measured.length,
+      sources: [...new Set(clocks.map((c) => c.source))].sort(),
+    };
+  }
 
   const dimensions = {};
   const allDims = ['code_quality', 'test_coverage', 'bug_handling', 'architectural_coherence', 'commit_hygiene', 'spec_compliance', 'cost'];
 
   for (const dim of allDims) {
-    const plainAvg = reports
-      .map((r) => r.dimensions[dim]?.plain_claude?.score)
-      .filter((s) => s !== null && s !== undefined);
-    const adevAvg = reports
-      .map((r) => r.dimensions[dim]?.adev_built?.score)
-      .filter((s) => s !== null && s !== undefined);
-
-    dimensions[dim] = {
-      plain_claude_avg: plainAvg.length > 0 ? Math.round(mean(plainAvg)) : 0,
-      adev_built_avg: adevAvg.length > 0 ? Math.round(mean(adevAvg)) : 0,
-    };
+    dimensions[dim] = {};
+    for (const arm of scored) {
+      const avg = reports
+        .map((r) => r.dimensions[dim]?.[arm.key]?.score)
+        .filter((s) => s !== null && s !== undefined);
+      dimensions[dim][`${arm.key}_avg`] = avg.length > 0 ? mean(avg) : 0;
+    }
   }
 
-  const plainMean = mean(plainScores);
-  const adevMean = mean(adevScores);
-  const diff = plainMean - adevMean;
-
   const findings = [];
-  if (diff > 0) findings.push(`plain-claude scored ${diff} points higher on average composite score`);
-  else if (diff < 0) findings.push(`adev-built scored ${Math.abs(diff)} points higher on average composite score`);
-  else findings.push('Both approaches scored equally on average');
+  const plain = aggregate.plain_claude;
+  const built = aggregate.adev_built;
+  if (plain && built) {
+    const diff = plain.mean - built.mean;
+    if (diff > 0) findings.push(`plain-claude scored ${diff} points higher on average composite score`);
+    else if (diff < 0) findings.push(`adev-built scored ${Math.abs(diff)} points higher on average composite score`);
+    else findings.push('Both approaches scored equally on average');
+  }
 
   // Bug handling summary
-  const plainBugFixes = reports.filter((r) => r.bug_handling.plain_claude !== 'untouched').length;
-  const adevBugFixes = reports.filter((r) => r.bug_handling.adev_built !== 'untouched').length;
-  findings.push(`plain-claude fixed planted bugs in ${plainBugFixes}/${reports.length} projects`);
-  findings.push(`adev-built fixed planted bugs in ${adevBugFixes}/${reports.length} projects`);
+  for (const arm of scored) {
+    const withArm = reports.filter((r) => r.bug_handling[arm.key] !== undefined);
+    const fixed = withArm.filter((r) => r.bug_handling[arm.key] !== 'untouched').length;
+    findings.push(`${arm.id} fixed planted bugs in ${fixed}/${withArm.length} projects`);
+  }
+
+  const sourceByArm = scored
+    .filter((arm) => wallClock[arm.key].sources.length > 0)
+    .map((arm) => `${arm.id}=${wallClock[arm.key].sources.join('+')}`);
+  if (new Set(scored.map((arm) => wallClock[arm.key].sources.join('+'))).size > 1) {
+    findings.push(
+      `wall-clock sources differ across arms (${sourceByArm.join(', ')}): commit-span omits the time before ` +
+      'the first commit, so it is not like-for-like with lifecycle-events',
+    );
+  }
+
+  const ev2Target = ev2TargetFor(reports, opts, wallClock);
+  if (ev2Target.met !== null) {
+    findings.push(
+      `EV-2 target (adev-lite mean >= plain-claude mean): ${ev2Target.met ? 'met' : 'missed'} ` +
+      `(${ev2Target.adev_lite_mean} vs ${ev2Target.plain_claude_mean})`,
+    );
+  } else {
+    findings.push(`EV-2 target not decided: ${ev2Target.reason}`);
+  }
 
   return {
     projects: reports.map((r) => r.project),
-    aggregate_scores: {
-      plain_claude: { mean: plainMean, min: Math.min(...plainScores), max: Math.max(...plainScores) },
-      adev_built: { mean: adevMean, min: Math.min(...adevScores), max: Math.max(...adevScores) },
-    },
+    skipped_projects: opts.skipped ?? [],
+    arms: ARMS.map(({ id, key, rigor }) => ({ id, key, rigor })),
+    aggregate_scores: aggregate,
+    wall_clock: wallClock,
+    arms_missing: armsMissing,
     dimension_breakdown: dimensions,
+    ev2_target: ev2Target,
     notable_findings: findings,
-    llm_judge_enabled: useLlmJudge,
+    llm_judge_enabled: Boolean(opts.llmJudge),
     generated_at: new Date().toISOString(),
   };
 }
 
 // Only run when invoked directly, not when imported as a module by tests
-const isDirectRun = process.argv[1] && resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url));
+// Compared as real paths: invoked through a symlinked directory (macOS /var
+// is /private/var), argv[1] keeps the link while import.meta.url resolves it.
+const isDirectRun = process.argv[1] && existsSync(process.argv[1])
+  && realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url));
 if (isDirectRun) {
-  runComparison().catch((err) => {
-    console.error(`Fatal: ${err.message}`);
-    process.exit(1);
-  });
+  const opts = parseArgs(process.argv.slice(2));
+  if (opts.dryRun) {
+    console.log(JSON.stringify(dryRunPlan(opts), null, 2));
+  } else {
+    runComparison(opts).catch((err) => {
+      console.error(`Fatal: ${err.message}`);
+      process.exit(1);
+    });
+  }
 }
