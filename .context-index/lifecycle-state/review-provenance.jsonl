@@ -68,3 +68,4 @@
 {"event":"validator_report","step":"validate","validator":"validate.check-9-transition-gates","severity":"warning","verdict":"PASS","notes":"implement-to-validate transition: PASS — required gate 'test' has fresh attested passing outcome.","ts":"2026-08-18T16:19:18.995Z"}
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-08-18T16:21:23.719Z"}
 {"event":"code_drift_detected","drift_source":"skills/implement/SKILL.md","drift_at":"2026-08-18T21:00:40.536Z","ts":"2026-08-18T21:00:40.536Z"}
+{"event":"spec_amended","amendment_slug":"review-provenance-rev-5-lite-exemption","amendment_path":".context-index/specs/features/implementation/review-provenance-rev-5-lite-exemption.spec.md","target_revision":5,"ts":"2026-11-26T21:32:45.260Z"}

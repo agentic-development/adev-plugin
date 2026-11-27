@@ -2,13 +2,15 @@
 
 ## Status
 
-**Proposed**
+**Accepted** (2026-11-26)
 
-> Amends the `graduated-rigor-tiers.spec.md` invariant ("quick never weakens hard gates") to name `lite`, and supersedes the quick-grant predicate and the `batched-task` floor leg in `graduated-review-depth.spec.md`. Spec: `.context-index/specs/features/implementation/implement-rigor-ladder.spec.md`.
+> Proposed on 2026-11-25 and accepted by the operator on 2026-11-26. Amends the `graduated-rigor-tiers.spec.md` invariant ("quick never weakens hard gates") to name `lite`, and supersedes the quick-grant predicate and the `batched-task` floor leg in `graduated-review-depth.spec.md`. Spec: `.context-index/specs/features/implementation/implement-rigor-ladder.spec.md`.
+>
+> Co-located amendments: `review-provenance-rev-5-lite-exemption.spec.md`, `batched-task-dispatch-rev-2-resolved-depth.spec.md` and `graduated-review-depth-rev-13-rigor-ladder.spec.md` (all in `.context-index/specs/features/implementation/`), and `.context-index/specs/cross-cutting/graduated-rigor-tiers-rev-4-lite-tier.spec.md`.
 
 ## Date
 
-2026-11-25
+2026-11-25 (proposed); 2026-11-26 (accepted)
 
 ## Context
 
@@ -79,6 +81,56 @@ All four base specs (`review-provenance`, `batched-task-dispatch`, `graduated-re
 
   Honoring the policy only when it matches the default branch was considered. It was deferred because it would break the common case of onboarding directly on a new project's first branch.
 - The calibration is specific to this corpus. The distribution replay (EV-5) recomputes it with the shipped resolver at release.
+
+### Notes for implement-rigor-ladder revision 4
+
+These are inputs for a later `/adev:specify --revise` of `implement-rigor-ladder.spec.md` (revision 3). They were decided or found while planning and implementing it and are not yet applied to the spec.
+
+#### Decisions to ratify
+
+The code already behaves as each note says. Revision 4 should state it.
+
+- **CON-3: explicit `--tier quick` records `source: policy-baseline`.** The flag acts as the run's baseline.
+- **RI-6: commit-id validation does not reuse `assertSafeArgvToken`.** `--run-base` and `--base-sha` are checked against `^[0-9a-f]{40}$|^[0-9a-f]{64}$`, which also rules out a leading `-`, and then resolved with `git rev-parse --verify --end-of-options`. The Output Contract sentence naming `assertSafeArgvToken` is wrong.
+- **BD-13: uncommitted routing sidecar.** Paths read at `run_base` must be repo-relative (no `..`, no leading `-`, not absolute). A routing sidecar that is not committed at `run_base` fails BEH-5 (b) for every task (`lite_denied: routing-scores`) and adds a `ROUTING_SIDECAR_MISSING` warning naming the run base. Quick/full resolution still reads the working-tree sidecar, so non-lite runs do not regress.
+- **The final pass keys the tripwire off the recorded provisional resolution.** It reads the task's provisional `review_depth_resolved` with `depth: lite` instead of re-evaluating authorization, because BEH-7's final-pass command line does not repeat `--lite`. Only events after the latest implement `started` event count, so a resolution from an earlier run never decides this run's final pass.
+- **BD-11: ignored-path lower bound.** BEH-7 says ignored files are outside the tripwire. The tripwire's sensitive-path and boundary legs, and only those, also see gitignored untracked paths whose mtime is at or after the task's latest `plan_task` `in_progress` event. A gitignored `.env` written by the task therefore escalates it to `full`.
+- **TR-6 / TR-7: review-cycle cap.** `max_review_cycles` has no maximum; that is an accepted operator choice. The cap is per loop, so worst-case reviewer dispatches per task are `2 × cap` under `full` and `1 × cap` under `quick`.
+- **BEH-9 / BEH-14 post-task gates.** `lite` tasks still run the Step 2h `post-task` governance gates, because BEH-14 relaxes no hard gate. BEH-9 adds one whole-run constitution quality-gate run at Step 2-post whenever any task resolved `lite`, even when `gates.yaml` declares no `post-implement` gate.
+- **BEH-9 under `--task <N>`.** The whole-run quality gates also run on a single-task re-run when that task stayed `lite`.
+- **"Resolved `lite`" means the final pass kept `depth: lite`.** A task the tripwire escalated does not count. This applies to BEH-9's gate trigger and Step 3 skip, and to BEH-10's count.
+- **New operator-facing codes.** Add these to the spec's codes list:
+  - `RUN_BASE_UNAVAILABLE`: `check-flags` cannot capture `run_base` (no git repository, or no `HEAD`).
+  - `RUN_BASE_READ_FAILED`: a git read at `run_base` failed for a reason other than the path being absent at that commit.
+  - `POLICY_UNCOMMITTED_CHANGES`: an advisory `check-flags` warning when the working-tree `risk-policies.yaml` differs from `run_base`, whose copy is the one the run reads.
+  - `LITE_AUTHORIZATION_ASSUMED`: a `batches` advisory when the plan's spec cannot be resolved. Eligible tasks go solo with reason `lite-assumed`.
+
+  `INVALID_COMMIT_KINDS`, thrown by `validateCommitId` for a bad `kinds` argument, is a programming error, not an operator-facing code.
+- **`check-flags` `tier`.** It is the operator's explicit tier (`--lite` reads as `lite`), or `null`. It is never the policy baseline.
+- **RI-10 is reversed.** `adev implement batches` accepts `--tier full|quick|lite` as well as `--lite` and `--run-base`, so the BEH-5 (a) per-run opt-out also holds at batch formation. The Arguments `--tier lite` row already lists `batches`, and the `--tier quick` / `--tier full` rows should list it too.
+- **Sequential-group segment split.** `lite`-granted members split a `(sequential)` group into segments, which are contiguous runs of the other members. Each segment is gated and sized on its own and carries a 1-based `segment` number, and batches, solo tasks and inline tasks dispatch in plan order. `batched-task-dispatch-rev-2-resolved-depth.spec.md` states the rule, and BEH-8 should cite it.
+- **`batches` requires `--run-base` when `lite` can be authorized**: `--lite`, `--tier lite`, or, with no `--tier`, a policy `implement_mode: lite` at the spec's risk level (any level when the spec cannot be resolved) in the working tree or at `HEAD`.
+- **BEH-5 (b) cite plus gloss.** BEH-5 (b) says `skills/route/SKILL.md` "cites `liteEligible` instead of restating the rule", while EV-4 tests parity against route's *documented* rule. Route now cites `liteEligible` as the authority and glosses the rule in route's score units. Amend BEH-5 (b) to "cites it as the authority (a gloss in score units is allowed)".
+- **The `liteUnavailable` resolver input.** `liteGrant()` and `resolveImplementReviewDepth()` accept `liteUnavailable`, a `lite_denied` reason the caller already knows holds. One example is `routing-scores` when the sidecar is not committed at `run_base`. It denies an authorized grant right after condition (a), without consulting scores. The Output Contract's `liteGrant()` description should name it. Also state that `lite_denied` and `lite_source` are evaluated on the provisional pass only. On the final pass, `null` means "not evaluated".
+- **Task-id normalization covers only the `adev implement` verbs.** They accept `t1`, `1` and `Task 1` through `taskIdKey`. `adev test-policy` and the lifecycle projection do not normalize. Revision 4 should state that scope, or a follow-up should extend it.
+- **`init prompt implement-rigor` details (BEH-12).**
+  - A missing `risk-policies.yaml` is created with only the `implement_mode` keys.
+  - A bad `--preset` reuses `INVALID_IMPLEMENT_RIGOR`.
+  - The non-interactive no-overwrite rule applies per level.
+  - Typed answers are not trimmed.
+- **Governance line.** The spec's Output Contract still says ADR 0020 is Proposed. It should say Accepted.
+
+#### Open decisions
+
+- **The `lite-report` window across a BEH-15 resume.** BEH-10 opens the window at the most recent implement `started` event. A BEH-15 recovery re-run (`/adev:implement --task <N>`, or `/adev:build --resume`) emits a new `started` event. `lite` tasks committed before the halt then drop out of the validate advisory and out of validate's spec-compliance coverage. One option is to open the window at the earliest implement `started` event after the last implement `step_completed`. Decide in revision 4.
+- **`failure-path-exit-event.md:23` says "Stage-2 convergence terminals".** Stage 1 now halts through the same Step 2g path with the same `LOOP_*` codes (WR-8). CON-1 pins that line unchanged. Revision 4 should decide whether to lift the pin and reword it to "review-loop convergence terminals", or to record the wording as knowingly stale.
+
+#### Code follow-ups
+
+- **Move `lite` task-id normalization and commit selection into `lite-report`.** Today they live in validate prose (`skills/validate/references/checks-orchestration/check-2-spec-compliance.md`). `adev implement lite-report --json` should return normalized task ids and their commit SHAs, so the runtime decision lives in the verb.
+- **`ROUTING_SIDECAR_MISSING` is raised even when `lite` is not authorized.** `loadGovernanceAtRunBase` raises it whenever the sidecar is uncommitted, so quick/full runs get the warning too, harmlessly. Raise it only when `lite` is authorized.
+- **A scope-mismatch escalation reports `floor_applied: true`.** A tripwire escalation for scope mismatch returns `floor_applied: true` and `floor_legs: ['scope-mismatch']`, although `scope-mismatch` is no longer a floor leg. Consider a distinct field, such as `tripwire_legs`.
+- **`verifyPerTaskReviewRounds` is full-only.** `lib/implement/batch-verify.mjs::verifyPerTaskReviewRounds()` requires both stage records. Make it depth-aware, so that a `quick` task expects `synthesized`.
 
 ## Alternatives Considered
 

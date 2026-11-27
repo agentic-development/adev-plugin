@@ -141,3 +141,4 @@
 {"event":"code_drift_detected","drift_source":"docs/cli-reference.md","drift_at":"2026-08-21T17:46:34.840Z","ts":"2026-08-21T17:46:34.840Z"}
 {"event":"code_drift_detected","drift_source":"lib/cli/test-policy.mjs","drift_at":"2026-08-23T20:22:54.674Z","ts":"2026-08-23T20:22:54.675Z"}
 {"event":"code_drift_detected","drift_source":"tests/skills/implement-review-provenance.test.mjs","drift_at":"2026-08-23T12:27:00.579Z","ts":"2026-08-23T12:27:00.579Z"}
+{"event":"spec_amended","amendment_slug":"graduated-review-depth-rev-13-rigor-ladder","amendment_path":".context-index/specs/features/implementation/graduated-review-depth-rev-13-rigor-ladder.spec.md","target_revision":13,"ts":"2026-11-26T21:32:45.365Z"}
