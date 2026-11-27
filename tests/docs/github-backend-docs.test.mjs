@@ -40,7 +40,7 @@ const EXTRA_CODES = [
   // Shared IssueManager refusals the github adapter raises from operator input
   // (`--id` on create, an empty `--title`, a dependency cycle).
   "VALIDATION", "MISSING_REQUIRED_FIELD", "CIRCULAR_DEPENDENCY",
-  // transport (Task 4)
+  // The `gh` transport: a request GitHub refused, and a fault inside the transport itself.
   "GITHUB_REQUEST_FAILED", "GITHUB_TRANSPORT_INTERNAL",
 ];
 

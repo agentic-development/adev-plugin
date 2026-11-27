@@ -642,6 +642,39 @@ test("success, beads source: the sentinel committed alone on beads-board, staged
   });
 });
 
+test("beads source without a runnable br: exit 1 with BEADS_NOT_AVAILABLE before any GitHub call; no state file, no sentinel, no commit on beads-board", async () => {
+  await withBeadsBoard(async (dir, manifest) => {
+    const beads = join(dir, ".beads");
+    const head = git(["rev-parse", "HEAD"], beads);
+    const missing = join(dir, "no-br-bin");
+    const brCalls = join(dir, "missing-br-calls.log");
+    mkdirSync(missing);
+    // Exit 127 is what a shell reports for a command that is not installed.
+    writeFileSync(join(missing, "br"), `#!/bin/sh\necho "$*" >> "${brCalls}"\necho "br: command not found" >&2\nexit 127\n`);
+    chmodSync(join(missing, "br"), 0o755);
+    const path = process.env.PATH;
+    process.env.PATH = `${missing}${delimiter}${path}`;
+    let r;
+    try {
+      r = await migrate(dir, manifest, ["--to", "github", "--yes"], migrateFx.beadsFresh);
+    } finally {
+      process.env.PATH = path;
+    }
+    assert.equal(r.code, 1, r.stderr.join("\n"));
+    const stops = linesWith(r, "BEADS_NOT_AVAILABLE: ");
+    assert.equal(stops.length, 1, r.stderr.join("\n"));
+    assert.match(stops[0], /`br`/);
+    assert.equal(r.exec.calls.length, 0, "no GitHub request before the source is confirmed readable");
+    assert.equal(r.stdout, "");
+    assert.equal(readFileSync(brCalls, "utf8"), "--version\n");
+    const root = resolveStorageRoot(manifest, dir);
+    assert.equal(existsSync(join(dir, STATE)), false);
+    assert.equal(existsSync(sentinelPath(root, "beads")), false);
+    assert.equal(git(["rev-parse", "HEAD"], beads), head);
+    assert.equal(git(["status", "--porcelain"], beads), "");
+  });
+});
+
 test("beads commit failure: MIGRATE_SENTINEL_COMMIT_FAILED naming the absolute path and beads-board, no success report, state kept; a re-run commits without --yes", async () => {
   await withBeadsBoard(async (dir, manifest) => {
     const beads = join(dir, ".beads");
