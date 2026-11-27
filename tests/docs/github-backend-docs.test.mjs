@@ -9,7 +9,7 @@ import { normalizeGithubConfig } from "../../lib/issues/github/config.mjs";
 import { sentinelPath } from "../../lib/issues/read-only-sentinel.mjs";
 import { FileAdapter } from "../../lib/issues/file-adapter.mjs";
 import { GithubAdapter } from "../../lib/issues/github-adapter.mjs";
-import { ALLOWED_LOGINS, FIXTURES_REL } from "../../scripts/record-github-fixtures.mjs";
+import { FIXTURE_LOGINS, FIXTURE_OWNERS, FIXTURES_REL } from "../../scripts/record-github-fixtures.mjs";
 import { FIXTURE_TEXT_PREFIX } from "../issues/conformance/contract-cases.mjs";
 
 const read = (rel) => readFileSync(join(PLUGIN_ROOT, rel), "utf8");
@@ -422,11 +422,13 @@ test("concepts.md documents the github backend differences, claim window and tru
 test("the Test fixtures section documents the recorder's setup, derived from the recorder itself", () => {
   const { fixtures } = troubleshooting();
   assert.notEqual(fixtures, null);
-  for (const login of ALLOWED_LOGINS) assert.ok(fixtures.includes(`\`${login}\``), `allowlisted owner ${login}`);
+  for (const name of new Set([...FIXTURE_OWNERS, ...FIXTURE_LOGINS])) assert.ok(fixtures.includes(`\`${name}\``), `allowlisted name ${name}`);
   assert.match(fixtures, /`GH_TOKEN`/);
-  assert.match(fixtures, /fixture account/i);
+  assert.match(fixtures, /fixture organization/i);
   assert.match(fixtures, /never[^.\n]*own `?gh`? login/i);
-  assert.match(fixtures, /`repo`[^.\n]*`project`[^.\n]*scopes? only|only[^.\n]*`repo`[^.\n]*`project`[^.\n]*scopes?/i);
+  assert.match(fixtures, /fine-grained/i);
+  assert.match(fixtures, /`Issues` set to read and write/);
+  assert.match(fixtures, /`Projects` set to read and write/);
   assert.doesNotMatch(fixtures, /gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}/, "no token value");
   assert.ok(fixtures.includes(`\`${FIXTURE_TEXT_PREFIX}\``), "title prefix");
   assert.ok(fixtures.includes(FIXTURES_REL.split("\\").join("/")), "fixture output directory");

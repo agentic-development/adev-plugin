@@ -190,11 +190,23 @@ This section is for contributors working on the GitHub backend's tests. These co
 
 A maintainer records the fixtures by hand against a throwaway board. CI and agents never do.
 
-1. Use a board and home repo owned by one of the allowlisted fixture accounts, `adev-fixture-bot` or `adev-fixture-human`. The recorder refuses any other owner before it sends a request. The board title and every milestone title must start with `adev-fixture:`, and the board must hold only recorder-created items.
-2. Set `GH_TOKEN` to a dedicated fixture account's token with the `repo` and `project` scopes only. The recorder refuses to run without it, so it never uses your own `gh` login by accident. Never paste the token value into a file or commit.
-3. Prepare the board with `adev issues github setup --yes`, then confirm it with `adev issues github setup --check`.
-4. Record: `GH_TOKEN=<test token> node scripts/record-github-fixtures.mjs --project <url> --repo <owner/repo>`. Every mutation's non-empty `title` or `body` must start with `adev-fixture:`, or it is refused before it reaches GitHub. One fixture per passing case is written to `tests/issues/conformance/fixtures/`. The issues it creates stay on the board.
-5. Run the fixture lint, `node --test tests/issues/github/fixture-lint.test.mjs`, and commit the fixtures only if it passes. It checks for tokens, foreign logins, and titles or bodies without the prefix.
+1. Create the fixture organization `adev-fixtures` (a free plan is enough). The recorder refuses a board or repo owned by anyone else before it sends a request. In it, create a throwaway repository, for example `adev-fixtures/adev-fixture-board`, and a Projects v2 board whose title starts with `adev-fixture:`. The board must hold only recorder-created items, and every milestone title must also start with `adev-fixture:`. No labels, issue types or milestones are needed.
+2. Create a fine-grained personal access token with **Resource owner** set to `adev-fixtures`, **Only select repositories** set to the fixture repository, the repository permission `Issues` set to read and write, and the organization permission `Projects` set to read and write. `Metadata` read-only is added automatically. Fine-grained tokens cannot reach a board owned by a user account, which is why the board belongs to an organization: the token then reaches nothing outside the fixture organization. Never use your own `gh` login or a classic token, and never paste the token value into a file or commit.
+3. Read the token into `GH_TOKEN` without echoing it: `read -s GH_TOKEN && export GH_TOKEN`. The recorder refuses to run without it.
+4. Prepare the board from a scratch directory, so your project's own manifest is untouched. Create `.context-index/manifest.yaml` there containing:
+
+   ```yaml
+   tasks:
+     backend: github
+     github:
+       project: https://github.com/orgs/adev-fixtures/projects/<n>
+       repo: adev-fixtures/adev-fixture-board
+   ```
+
+   Then, in that directory, run `adev issues github setup --yes` and confirm with `adev issues github setup --check`. Until a release ships the GitHub backend, run the checkout's CLI instead of the installed `adev`: `node <checkout>/cli/index.mjs issues github setup --yes`, then `--check`.
+5. Record from the checkout root: `node scripts/record-github-fixtures.mjs --project <url> --repo adev-fixtures/adev-fixture-board`. Every mutation's non-empty `title` or `body` must start with `adev-fixture:`, or it is refused before it reaches GitHub. One fixture per passing case is written to `tests/issues/conformance/fixtures/`. The issues it creates stay on the board.
+6. Run the fixture lint, `node --test tests/issues/github/fixture-lint.test.mjs`, and commit the fixtures only if it passes. It checks for tokens, titles or bodies without the prefix, owners other than `adev-fixtures`, and logins other than `adev-fixtures` and the maintainer login `dpavancini`. Recorded responses name the token's user as the viewer and as the issue author, so that login is committed with the fixtures. A different maintainer adds their login to `FIXTURE_LOGINS` in `scripts/record-github-fixtures.mjs` and the fixture lint before recording.
+7. Delete the token when you are done.
 
 | Code | When | Remedy |
 |---|---|---|
@@ -202,7 +214,7 @@ A maintainer records the fixtures by hand against a throwaway board. CI and agen
 | `REPLAY_ANONYMOUS_DOCUMENT` | A replayed GraphQL document is anonymous; every document must be a named operation | Name the operation in the GraphQL document |
 | `REPLAY_AMBIGUOUS_FIXTURE` | Two fixture entries record different outcomes for the same request | Keep one entry, or use a `sequence` for a request that must see the board change |
 | `REPLAY_INVALID_FIXTURE` | A fixture entry's `sequence` is empty or not an array | Fix or re-record the fixture |
-| `RECORDER_USAGE` | The recorder got bad arguments: `--project` or `--repo` missing or malformed, or owned by an account that is not a fixture account | Pass both, owned by `adev-fixture-bot` or `adev-fixture-human` |
+| `RECORDER_USAGE` | The recorder got bad arguments: `--project` or `--repo` missing or malformed, or owned by someone other than the fixture organization | Pass both, owned by `adev-fixtures` |
 | `RECORDER_INVALID_CASE` | A contract case name yields an empty fixture file name | Rename the case in `tests/issues/conformance/contract-cases.mjs` |
 | `RECORDER_PATH_ESCAPE` | A fixture file would land outside `tests/issues/conformance/fixtures/` (a path separator in the name, or a symlink) | Remove the symlink, or fix the case name |
 | `RECORDER_UNMARKED_TEXT` | A mutation's `title` or `body` does not start with `adev-fixture:`. Nothing was sent | Make the contract case's text start with the prefix |

@@ -90,7 +90,7 @@ export const preflightFixture = Object.freeze({
   ownerFieldWrongType: [preflightEntry(okResponse({
     fields: fieldNodes({
       textNames: DEFAULT_TEXT_FIELDS.filter((n) => n !== "Owner"),
-      extra: [{ id: "PVTSSF_owner", name: "Owner", dataType: "SINGLE_SELECT", options: [{ id: "o1", name: "adev-fixture-bot" }] }],
+      extra: [{ id: "PVTSSF_owner", name: "Owner", dataType: "SINGLE_SELECT", options: [{ id: "o1", name: "adev-fixtures" }] }],
     }),
   }))],
   claimedAtFieldMissing: [preflightEntry(okResponse({ fields: fieldNodes({ textNames: DEFAULT_TEXT_FIELDS.filter((n) => n !== "Claimed At") }) }))],

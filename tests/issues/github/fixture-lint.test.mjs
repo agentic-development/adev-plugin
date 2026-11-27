@@ -10,7 +10,8 @@ const UNIT_FIXTURES = new URL("./fixtures/", import.meta.url).pathname;
 // No `\b` anchors: a token directly after a JSON escape such as `\n`, or touching a
 // word character, has no word boundary at its edge and would slip past them.
 const TOKEN_RE = /(gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,})/;
-const ALLOWED_LOGINS = new Set(["adev-fixture-bot", "adev-fixture-human"]);
+const FIXTURE_OWNERS = new Set(["adev-fixtures"]);
+const FIXTURE_LOGINS = new Set([...FIXTURE_OWNERS, "dpavancini"]);
 const OWNER_VALUE_RE = /"(url|resourcePath|nameWithOwner)"\s*:\s*"([^"]*)"/g;
 
 // The login that owns a GitHub path: `/<owner>/...`, or `/orgs|users/<owner>/...`.
@@ -32,10 +33,10 @@ function ownerOf(key, value) {
 function lintFixture(f, text) {
   assert.doesNotMatch(text, TOKEN_RE, f);
   if (!f.endsWith(".json")) return;
-  for (const [, login] of text.matchAll(/"login"\s*:\s*"([^"]+)"/g)) assert.ok(ALLOWED_LOGINS.has(login), `${f}: ${login}`);
+  for (const [, login] of text.matchAll(/"login"\s*:\s*"([^"]+)"/g)) assert.ok(FIXTURE_LOGINS.has(login), `${f}: ${login}`);
   for (const [, key, value] of text.matchAll(OWNER_VALUE_RE)) {
     const owner = ownerOf(key, value);
-    if (owner !== null) assert.ok(ALLOWED_LOGINS.has(owner), `${f}: ${key} owner ${owner}`);
+    if (owner !== null) assert.ok(FIXTURE_OWNERS.has(owner), `${f}: ${key} owner ${owner}`);
   }
   for (const [, s] of text.matchAll(/"(?:title|body)"\s*:\s*"([^"]*)"/g)) assert.match(s, /^(adev-fixture:|$)/, `${f}: ${s.slice(0, 40)}`);
 }
@@ -64,10 +65,10 @@ function itemsPage(endCursor, hasNextPage, nodes) {
 
 test("a recorded request is served its recorded response through createTransport", () => {
   const exec = replayExec([
-    { query: VIEWER, variables: {}, response: { data: { viewer: { login: "adev-fixture-bot" } } } },
+    { query: VIEWER, variables: {}, response: { data: { viewer: { login: "adev-fixtures" } } } },
   ]);
   const data = createTransport({ exec }).request(VIEWER, {});
-  assert.deepEqual(data, { viewer: { login: "adev-fixture-bot" } });
+  assert.deepEqual(data, { viewer: { login: "adev-fixtures" } });
 });
 
 test("the replay key is insensitive to variable key order at every depth", () => {
@@ -96,7 +97,7 @@ test("array order in variables is significant to the replay key", () => {
 
 test("a request whose document differs from the recording, even by whitespace, is unrecorded", () => {
   const exec = replayExec([
-    { query: VIEWER, variables: {}, response: { data: { viewer: { login: "adev-fixture-bot" } } } },
+    { query: VIEWER, variables: {}, response: { data: { viewer: { login: "adev-fixtures" } } } },
   ]);
   const t = createTransport({ exec });
   assert.throws(() => t.request("query Viewer {  viewer { login } }", {}), { code: "UNRECORDED_GITHUB_REQUEST" });
@@ -104,7 +105,7 @@ test("a request whose document differs from the recording, even by whitespace, i
 
 test("a request with extra variables beyond the recording is unrecorded", () => {
   const exec = replayExec([
-    { query: VIEWER, variables: {}, response: { data: { viewer: { login: "adev-fixture-bot" } } } },
+    { query: VIEWER, variables: {}, response: { data: { viewer: { login: "adev-fixtures" } } } },
   ]);
   const t = createTransport({ exec });
   assert.throws(() => t.request(VIEWER, { extra: 1 }), { code: "UNRECORDED_GITHUB_REQUEST" });
@@ -112,7 +113,7 @@ test("a request with extra variables beyond the recording is unrecorded", () => 
 
 test("exec.calls records operation, query and variables of every request in order", () => {
   const exec = replayExec([
-    { query: VIEWER, variables: {}, response: { data: { viewer: { login: "adev-fixture-bot" } } } },
+    { query: VIEWER, variables: {}, response: { data: { viewer: { login: "adev-fixtures" } } } },
     { query: SET_FIELDS, variables: { input: { itemId: "PVTI_1" } }, response: { data: { ok: true } } },
   ]);
   const t = createTransport({ exec });
@@ -174,19 +175,19 @@ test("a recorded ENOENT failure replays as a missing gh CLI", () => {
 
 test("a fixture recorded with an anonymous document is refused when the replay is built", () => {
   assert.throws(
-    () => replayExec([{ query: "query { viewer { login } }", variables: {}, response: { data: { viewer: { login: "adev-fixture-bot" } } } }]),
+    () => replayExec([{ query: "query { viewer { login } }", variables: {}, response: { data: { viewer: { login: "adev-fixtures" } } } }]),
     /anonymous|named/i,
   );
   assert.throws(
-    () => replayExec([{ query: "{ viewer { login } }", variables: {}, response: { data: { viewer: { login: "adev-fixture-bot" } } } }]),
+    () => replayExec([{ query: "{ viewer { login } }", variables: {}, response: { data: { viewer: { login: "adev-fixtures" } } } }]),
     /anonymous|named/i,
   );
   assert.throws(
-    () => replayExec([{ query: "query { viewer { login } }", variables: {}, response: { data: { viewer: { login: "adev-fixture-bot" } } } }]),
+    () => replayExec([{ query: "query { viewer { login } }", variables: {}, response: { data: { viewer: { login: "adev-fixtures" } } } }]),
     { code: "REPLAY_ANONYMOUS_DOCUMENT" },
   );
   assert.throws(
-    () => replayExec([{ query: "{ viewer { login } }", variables: {}, response: { data: { viewer: { login: "adev-fixture-bot" } } } }]),
+    () => replayExec([{ query: "{ viewer { login } }", variables: {}, response: { data: { viewer: { login: "adev-fixtures" } } } }]),
     { code: "REPLAY_ANONYMOUS_DOCUMENT" },
   );
 });
@@ -201,7 +202,7 @@ test("two recordings with the same key but different outcomes are refused when t
   );
   assert.throws(
     () => replayExec([
-      { query: VIEWER, variables: {}, response: { data: { viewer: { login: "adev-fixture-bot" } } } },
+      { query: VIEWER, variables: {}, response: { data: { viewer: { login: "adev-fixtures" } } } },
       { query: VIEWER, variables: {}, error: { code: "ENOENT", stderr: "" } },
     ]),
     { code: "REPLAY_AMBIGUOUS_FIXTURE" },
@@ -214,14 +215,14 @@ test("a recorded sequence serves its outcomes in request order, and a request pa
       query: VIEWER,
       variables: {},
       sequence: [
-        { response: { data: { viewer: { login: "adev-fixture-bot" } } } },
-        { response: { data: { viewer: { login: "adev-fixture-human" } } } },
+        { response: { data: { viewer: { login: "adev-fixtures" } } } },
+        { response: { data: { viewer: { login: "dpavancini" } } } },
       ],
     },
   ]);
   const t = createTransport({ exec });
-  assert.deepEqual(t.request(VIEWER, {}), { viewer: { login: "adev-fixture-bot" } });
-  assert.deepEqual(t.request(VIEWER, {}), { viewer: { login: "adev-fixture-human" } });
+  assert.deepEqual(t.request(VIEWER, {}), { viewer: { login: "adev-fixtures" } });
+  assert.deepEqual(t.request(VIEWER, {}), { viewer: { login: "dpavancini" } });
   assert.throws(() => t.request(VIEWER, {}), { code: "UNRECORDED_GITHUB_REQUEST" });
   assert.equal(exec.calls.length, 3);
 });
@@ -230,8 +231,8 @@ test("an empty sequence, or a sequence and a plain recording under one key, is r
   assert.throws(() => replayExec([{ query: VIEWER, variables: {}, sequence: [] }]), { code: "REPLAY_INVALID_FIXTURE" });
   assert.throws(
     () => replayExec([
-      { query: VIEWER, variables: {}, sequence: [{ response: { data: { viewer: { login: "adev-fixture-bot" } } } }] },
-      { query: VIEWER, variables: {}, response: { data: { viewer: { login: "adev-fixture-bot" } } } },
+      { query: VIEWER, variables: {}, sequence: [{ response: { data: { viewer: { login: "adev-fixtures" } } } }] },
+      { query: VIEWER, variables: {}, response: { data: { viewer: { login: "adev-fixtures" } } } },
     ]),
     { code: "REPLAY_AMBIGUOUS_FIXTURE" },
   );
@@ -267,24 +268,24 @@ test("lintFixture checks the owner segment of url values against the allowlist",
   assert.throws(() => lintFixture("a.json", `{"url":"https://github.com/octocat/app/issues/3"}`), assert.AssertionError);
   assert.throws(() => lintFixture("a.json", `{"url":"https://github.com/orgs/octo-org/projects/1"}`), assert.AssertionError);
   assert.throws(() => lintFixture("a.json", `{"url":"https://github.com/users/octocat/projects/1"}`), assert.AssertionError);
-  assert.doesNotThrow(() => lintFixture("a.json", `{"url":"https://github.com/adev-fixture-bot/board/issues/3"}`));
-  assert.doesNotThrow(() => lintFixture("a.json", `{"url":"https://github.com/users/adev-fixture-human/projects/1"}`));
+  assert.doesNotThrow(() => lintFixture("a.json", `{"url":"https://github.com/adev-fixtures/board/issues/3"}`));
+  assert.doesNotThrow(() => lintFixture("a.json", `{"url":"https://github.com/orgs/adev-fixtures/projects/1"}`));
 });
 
 test("lintFixture checks the owner segment of resourcePath values against the allowlist", () => {
   assert.throws(() => lintFixture("a.json", `{"resourcePath":"/octocat/app/issues/3"}`), assert.AssertionError);
   assert.throws(() => lintFixture("a.json", `{"resourcePath":"/orgs/octo-org/projects/1"}`), assert.AssertionError);
-  assert.doesNotThrow(() => lintFixture("a.json", `{"resourcePath":"/adev-fixture-bot/board/issues/3"}`));
-  assert.doesNotThrow(() => lintFixture("a.json", `{"resourcePath":"/users/adev-fixture-bot/projects/1"}`));
+  assert.doesNotThrow(() => lintFixture("a.json", `{"resourcePath":"/adev-fixtures/board/issues/3"}`));
+  assert.doesNotThrow(() => lintFixture("a.json", `{"resourcePath":"/users/adev-fixtures/projects/1"}`));
 });
 
 test("lintFixture checks the owner of nameWithOwner values against the allowlist", () => {
   assert.throws(() => lintFixture("a.json", `{"nameWithOwner":"octocat/app"}`), assert.AssertionError);
-  assert.doesNotThrow(() => lintFixture("a.json", `{"nameWithOwner":"adev-fixture-bot/board"}`));
+  assert.doesNotThrow(() => lintFixture("a.json", `{"nameWithOwner":"adev-fixtures/board"}`));
 });
 
 test("lintFixture still enforces the login allowlist and recorder-authored text", () => {
   assert.throws(() => lintFixture("a.json", `{"login":"octocat"}`), assert.AssertionError);
   assert.throws(() => lintFixture("a.json", `{"title":"real issue"}`), assert.AssertionError);
-  assert.doesNotThrow(() => lintFixture("a.json", `{"login":"adev-fixture-bot","title":"adev-fixture: t","body":""}`));
+  assert.doesNotThrow(() => lintFixture("a.json", `{"login":"adev-fixtures","title":"adev-fixture: t","body":""}`));
 });

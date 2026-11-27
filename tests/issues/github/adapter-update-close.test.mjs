@@ -216,7 +216,7 @@ for (const [field, value] of INVALID_UPDATES) {
 
 for (const field of ["owner", "claimed_at"]) {
   test(`update refuses ${field} with VALIDATION before any request: only claim() writes a claim`, async () => {
-    const value = field === "owner" ? "adev-fixture-bot" : "2026-11-26T08:00:00Z";
+    const value = field === "owner" ? "adev-fixtures" : "2026-11-26T08:00:00Z";
     const { a, exec } = make(writes.openItem);
     await assert.rejects(a.update("gh-6", { [field]: value }), { code: "VALIDATION", field });
     assert.equal(exec.calls.length, 0);
@@ -692,7 +692,7 @@ test("updateEpic writes a changed status and title, through the shared transitio
 });
 
 test("updateEpic refuses claim fields and planTask before any request", async () => {
-  for (const [changes, code] of [[{ owner: "adev-fixture-bot" }, "VALIDATION"], [{ claimed_at: "2026-11-26T08:00:00Z" }, "VALIDATION"], [{ planTask: 1 }, "BOARD_GRANULARITY_VIOLATION"]]) {
+  for (const [changes, code] of [[{ owner: "adev-fixtures" }, "VALIDATION"], [{ claimed_at: "2026-11-26T08:00:00Z" }, "VALIDATION"], [{ planTask: 1 }, "BOARD_GRANULARITY_VIOLATION"]]) {
     const { a, exec } = make(writes.epicUpdate);
     await assert.rejects(a.updateEpic("gh-1", changes), { code }, JSON.stringify(changes));
     assert.equal(exec.calls.length, 0);

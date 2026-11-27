@@ -24,8 +24,8 @@ import {
   toReplayEntries,
 } from "../../../scripts/record-github-fixtures.mjs";
 
-const PROJECT = "https://github.com/users/adev-fixture-bot/projects/3";
-const REPO = "adev-fixture-bot/board";
+const PROJECT = "https://github.com/orgs/adev-fixtures/projects/3";
+const REPO = "adev-fixtures/board";
 const VIEWER = "query Viewer { viewer { login } }";
 const CREATE = "mutation CreateIssue($repositoryId: ID!, $title: String!, $body: String!) { createIssue(input: { repositoryId: $repositoryId, title: $title, body: $body }) { issue { id } } }";
 // Token-shaped strings are assembled at runtime so no token literal sits in the source.
@@ -62,6 +62,9 @@ test("the recorder refuses to run without both --project and --repo", () => {
 test("the recorder refuses a project or repo owned by anyone but a fixture account, and unknown flags", () => {
   assert.throws(() => parseRecorderArgs(["--project", "https://github.com/orgs/acme/projects/7", "--repo", REPO]), { code: "RECORDER_USAGE", message: /"acme"/ });
   assert.throws(() => parseRecorderArgs(["--project", PROJECT, "--repo", "acme/board"]), { code: "RECORDER_USAGE", message: /"acme"/ });
+  // The maintainer's login is a fixture login (the recorded viewer and author), never a fixture owner.
+  assert.throws(() => parseRecorderArgs(["--project", PROJECT, "--repo", "dpavancini/board"]), { code: "RECORDER_USAGE", message: /"dpavancini"/ });
+  assert.throws(() => parseRecorderArgs(["--project", "https://github.com/users/dpavancini/projects/1", "--repo", REPO]), { code: "RECORDER_USAGE", message: /"dpavancini"/ });
   assert.throws(() => parseRecorderArgs(["--project", "https://example.com/x", "--repo", REPO]), { code: "RECORDER_USAGE" });
   assert.throws(() => parseRecorderArgs(["--project", PROJECT, "--repo", "no-slash"]), { code: "RECORDER_USAGE" });
   assert.throws(() => parseRecorderArgs(["--project", PROJECT, "--repo", REPO, "--out", "/tmp"]), { code: "RECORDER_USAGE" });
@@ -110,8 +113,8 @@ test("the recording exec never sends a refused mutation and reports the refusal"
 });
 
 test("a recorded session replays through replayExec: repeats with a changed outcome become a sequence", () => {
-  const first = { data: { viewer: { login: "adev-fixture-bot" } } };
-  const second = { data: { viewer: { login: "adev-fixture-human" } } };
+  const first = { data: { viewer: { login: "adev-fixtures" } } };
+  const second = { data: { viewer: { login: "dpavancini" } } };
   const created = { data: { createIssue: { issue: { id: "I_1" } } } };
   const spawn = fakeSpawn([{ response: first }, { response: created }, { response: second }, { response: created }]);
   const log = [];
@@ -154,7 +157,7 @@ const now = "2026-01-15T12:00:00.000Z";
 
 test("buildFixture redacts tokens and literal secrets from responses before they are written", () => {
   const secret = "s3cr3t-literal-value";
-  const log = [{ query: VIEWER, variables: {}, outcome: { response: { data: { viewer: { login: "adev-fixture-bot" }, note: `x ${TOKEN} y ${secret}` } } } }];
+  const log = [{ query: VIEWER, variables: {}, outcome: { response: { data: { viewer: { login: "adev-fixtures" }, note: `x ${TOKEN} y ${secret}` } } } }];
   const { text, problems } = buildFixture({ caseName: "a case", manifest, now, log }, [secret]);
   assert.equal(problems, undefined);
   assert.equal(text.includes(TOKEN), false);
@@ -178,7 +181,7 @@ test("buildFixture refuses a fixture that would fail the fixture lint", () => {
   assert.deepEqual(buildFixture({ caseName: "c", manifest, now, log: unprefixed }).problems, ['a title or body does not start with "adev-fixture:"']);
 
   const foreignUrl = [{ query: VIEWER, variables: {}, outcome: { response: { data: { node: { url: "https://github.com/acme/app/issues/1" } } } } }];
-  assert.deepEqual(buildFixture({ caseName: "c", manifest, now, log: foreignUrl }).problems, ['url is owned by "acme", not a fixture account']);
+  assert.deepEqual(buildFixture({ caseName: "c", manifest, now, log: foreignUrl }).problems, ['url is owned by "acme", not the fixture organization']);
 });
 
 // main() is driven through its seams only: a spawn that fails the test if reached, the
@@ -228,7 +231,7 @@ test("main runs gh with the injected env, not process.env", async (t) => {
   const seen = [];
   const spawn = (_cmd, _args, opts) => {
     seen.push(opts.env);
-    return JSON.stringify({ data: { viewer: { login: "adev-fixture-bot" } } });
+    return JSON.stringify({ data: { viewer: { login: "adev-fixtures" } } });
   };
   const cases = [{ name: "viewer", run: async (manager) => manager._transport.request(VIEWER, {}) }];
   assert.equal(await main(ARGS, FAKE_ENV, { spawn, cases, repoRoot: root }), 0);

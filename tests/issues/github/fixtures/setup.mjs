@@ -97,10 +97,10 @@ const DRIFT_SPECS = [
   task(2, { status: "Done" }),
   task(3, { status: "Icebox" }),
   task(4, { offProjectChildren: [900] }),
-  task(5, { fields: { owner: "adev-fixture-bot" } }),
+  task(5, { fields: { owner: "adev-fixtures" } }),
   task(6, { fields: { branch: "feat/x..y" } }),
   task(7, { labels: ["module:nope"] }),
-  task(8, { fields: { owner: "adev-fixture-bot", claimed_at: "2026-11-20T10:00:00Z" } }),
+  task(8, { fields: { owner: "adev-fixtures", claimed_at: "2026-11-20T10:00:00Z" } }),
   task(9, { state: "CLOSED", status: "Done" }),
   task(10, { labels: ["module:billing"] }),
   task(11, { labels: ["module:review-gate"] }),
@@ -159,7 +159,7 @@ export const setupFx = Object.freeze({
   // Owner exists as a single-select field instead of text.
   ownerWrongType: project({
     text: TEXT_FIELDS.filter((n) => n !== "Owner"),
-    extra: [{ id: "PVTSSF_owner", name: "Owner", dataType: "SINGLE_SELECT", options: [{ id: "o1", name: "adev-fixture-bot" }] }],
+    extra: [{ id: "PVTSSF_owner", name: "Owner", dataType: "SINGLE_SELECT", options: [{ id: "o1", name: "adev-fixtures" }] }],
   }),
 
   // Status lacks "Deferred"; every field present.

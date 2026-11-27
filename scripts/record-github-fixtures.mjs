@@ -7,8 +7,8 @@
  * each request with its outcome, then writes one replay fixture per passing case.
  *
  * Safety contract:
- * - `--project` and `--repo` are required and both must be owned by an
- *   allowlisted fixture account, so a real organisation's board is refused
+ * - `--project` and `--repo` are required and both must be owned by the
+ *   fixture organization, so a real organisation's board is refused
  *   before any request is sent; GH_TOKEN must be set, so the maintainer's own
  *   `gh` login is never used by accident.
  * - Every mutation whose `title` or `body` variable is non-empty must start with
@@ -41,7 +41,12 @@ import { CASES, FIXTURE_TEXT_PREFIX } from "../tests/issues/conformance/contract
 
 export const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 export const FIXTURES_REL = join("tests", "issues", "conformance", "fixtures");
-export const ALLOWED_LOGINS = Object.freeze(["adev-fixture-bot", "adev-fixture-human"]);
+// The board and repo must belong to a fixture-only organization, so a fine-grained
+// token scoped to that organization is the only credential the recorder ever needs.
+// The maintainer's login is accepted only as the authenticated actor (viewer, issue
+// author) that recorded responses carry, never as the owner of what is touched.
+export const FIXTURE_OWNERS = Object.freeze(["adev-fixtures"]);
+export const FIXTURE_LOGINS = Object.freeze([...FIXTURE_OWNERS, "dpavancini"]);
 // Claims stamp claimed_at from the adapter clock, and that stamp travels as a request
 // variable, so the replaying runner must use this same instant; it is written into each fixture.
 export const RECORDING_NOW_ISO = "2026-01-15T12:00:00.000Z";
@@ -51,7 +56,7 @@ const OWNER_VALUE_RE = /"(url|resourcePath|nameWithOwner)"\s*:\s*"([^"]*)"/g;
 const PROJECT_URL = /^https:\/\/github\.com\/(?:orgs|users)\/([^/\s]+)\/projects\/[1-9][0-9]*$/;
 const REPO = /^([^/\s]+)\/[^/\s]+$/;
 
-export const USAGE = `Usage: GH_TOKEN=<test token> node scripts/record-github-fixtures.mjs --project <url> --repo <owner/repo>
+export const USAGE = `Usage: GH_TOKEN=<fixture-org token> node scripts/record-github-fixtures.mjs --project <url> --repo <owner/repo>
 
 Records the shared IssueManager contract cases against a live, throwaway GitHub
 Projects v2 board and writes one replay fixture per passing case beneath
@@ -61,7 +66,7 @@ Required:
   --project <url>      https://github.com/(orgs|users)/<owner>/projects/<n>
   --repo <owner/repo>  the board's home repository
 
-Both must be owned by one of: ${ALLOWED_LOGINS.join(", ")}. The board must
+Both must be owned by the fixture organization (${FIXTURE_OWNERS.join(", ")}). The board must
 already pass \`adev issues github setup --check\`, its title and every milestone
 title must start with "${FIXTURE_TEXT_PREFIX}", and it must hold nothing but
 recorder-created items. Created issues are left on the board.
@@ -76,7 +81,7 @@ function recorderError(code, message) {
 
 /**
  * Parse and check the recorder's argv. Refuses (throws RECORDER_USAGE) unless both
- * `--project` and `--repo` are given and owned by an allowlisted fixture account.
+ * `--project` and `--repo` are given and owned by the fixture organization.
  *
  * @param {string[]} argv
  * @returns {{ help: true } | { help: false, project: string, repo: string }}
@@ -101,8 +106,8 @@ export function parseRecorderArgs(argv) {
   const repoOwner = REPO.exec(repo)?.[1];
   if (!repoOwner) throw recorderError("RECORDER_USAGE", "--repo must be <owner>/<repo>.");
   for (const [flag, owner] of [["--project", projectOwner], ["--repo", repoOwner]]) {
-    if (!ALLOWED_LOGINS.includes(owner)) {
-      throw recorderError("RECORDER_USAGE", `${flag} is owned by "${owner}", which is not a fixture account (${ALLOWED_LOGINS.join(", ")}); refusing to touch it.`);
+    if (!FIXTURE_OWNERS.includes(owner)) {
+      throw recorderError("RECORDER_USAGE", `${flag} is owned by "${owner}", which is not the fixture organization (${FIXTURE_OWNERS.join(", ")}); refusing to touch it.`);
     }
   }
   return { help: false, project, repo };
@@ -278,11 +283,11 @@ export function lintRecording(text) {
   const problems = [];
   if (TOKEN_RE.test(text)) problems.push("a token-shaped string remains after redaction");
   for (const [, login] of text.matchAll(/"login"\s*:\s*"([^"]+)"/g)) {
-    if (!ALLOWED_LOGINS.includes(login)) problems.push(`login "${login}" is not a fixture account`);
+    if (!FIXTURE_LOGINS.includes(login)) problems.push(`login "${login}" is not a fixture account`);
   }
   for (const [, key, value] of text.matchAll(OWNER_VALUE_RE)) {
     const owner = loginOwner(key, value);
-    if (owner !== null && !ALLOWED_LOGINS.includes(owner)) problems.push(`${key} is owned by "${owner}", not a fixture account`);
+    if (owner !== null && !FIXTURE_OWNERS.includes(owner)) problems.push(`${key} is owned by "${owner}", not the fixture organization`);
   }
   for (const [, s] of text.matchAll(/"(?:title|body)"\s*:\s*"([^"]*)"/g)) {
     if (s !== "" && !s.startsWith(FIXTURE_TEXT_PREFIX)) problems.push(`a title or body does not start with "${FIXTURE_TEXT_PREFIX}"`);
@@ -372,7 +377,7 @@ export async function main(argv, env, { spawn = execFileSync, cases = CASES, rep
     return 0;
   }
   if (!env.GH_TOKEN) {
-    console.error(`GH_TOKEN is not set; record with a fixture account's token, never your own gh login.\n\n${USAGE}`);
+    console.error(`GH_TOKEN is not set; record with a fine-grained token scoped to the fixture organization, never your own gh login.\n\n${USAGE}`);
     return 1;
   }
 
