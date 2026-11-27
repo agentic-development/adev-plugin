@@ -1,9 +1,10 @@
 /**
- * `adev issues migrate --to github` must refuse with MIGRATE_GITHUB_UNAVAILABLE
- * before constructing any adapter or writing anything: once github is a
- * supported backend, the generic copy path would otherwise write to a real
- * GitHub project without the confirmation, visibility disclosure, pacing, and
- * resume semantics the github migration path requires.
+ * `adev issues migrate` through the CLI, with a stand-in `gh` first on PATH:
+ * `--to github` dispatches to the github migration path, whose first network
+ * step is the preflight through the single fixed `gh api graphql --input -`
+ * argv, so an unauthenticated `gh` stops the run there with nothing written.
+ * Migration out of a GitHub board stays refused with MIGRATE_GITHUB_UNAVAILABLE
+ * before any adapter is constructed.
  */
 
 import { test } from "node:test";
@@ -49,59 +50,47 @@ function migrate(project, args) {
 }
 
 const refusalLines = (stderr) => stderr.split("\n").filter((l) => l.includes("MIGRATE_GITHUB_UNAVAILABLE"));
+const linesStartingWith = (stderr, code) => stderr.split("\n").filter((l) => l.startsWith(code));
+
+function assertNothingWritten(project) {
+  assert.equal(readFileSync(join(project.dir, ".context-index", "tasks", "tasks.json"), "utf8"), BOARD);
+  assert.equal(readFileSync(join(project.dir, ".context-index", "manifest.yaml"), "utf8"), project.manifest);
+  assert.equal(existsSync(join(project.dir, ".context-index", "tasks", ".migrate-state.json")), false);
+  assert.equal(existsSync(join(project.dir, ".context-index", "tasks", ".migrate-unanchored.json")), false);
+  assert.equal(existsSync(join(project.dir, ".context-index", "tasks", "board-read-only.json")), false);
+}
 
 function assertUntouched(project, result) {
   assert.doesNotMatch(result.stderr, /MIGRATE_UNKNOWN_BACKEND|GITHUB_INVALID_CONFIG|GITHUB_AUTH_REQUIRED/);
   assert.equal(existsSync(project.ghLog), false, "no gh process may be spawned");
-  assert.equal(readFileSync(join(project.dir, ".context-index", "tasks", "tasks.json"), "utf8"), BOARD);
-  assert.equal(readFileSync(join(project.dir, ".context-index", "manifest.yaml"), "utf8"), project.manifest);
-  assert.equal(existsSync(join(project.dir, ".context-index", "tasks", ".migrate-state.json")), false);
+  assertNothingWritten(project);
 }
 
-test("migrate --to github refuses with MIGRATE_GITHUB_UNAVAILABLE, exit 1, and no gh request or write", () => {
-  const project = makeProject();
-  try {
-    const result = migrate(project, ["--to", "github"]);
-    assert.equal(result.exitCode, 1, `stderr: ${result.stderr}`);
-    assert.equal(refusalLines(result.stderr).length, 1, `stderr: ${result.stderr}`);
-    assertUntouched(project, result);
-  } finally {
-    cleanupTempDir(project.dir);
+test("migrate --to github dispatches to the github path: preflight runs through the fixed gh argv, an unauthenticated gh stops it with nothing written", () => {
+  for (const args of [["--to", "github"], ["--to", "github", "--dry-run"], ["--from", "json", "--to", "github", "--include-closed"]]) {
+    const project = makeProject();
+    try {
+      const result = migrate(project, args);
+      assert.equal(result.exitCode, 1, `${args.join(" ")} stderr: ${result.stderr}`);
+      assert.equal(refusalLines(result.stderr).length, 0, `${args.join(" ")} stderr: ${result.stderr}`);
+      assert.equal(linesStartingWith(result.stderr, "GITHUB_AUTH_REQUIRED").length, 1, `${args.join(" ")} stderr: ${result.stderr}`);
+      assert.deepEqual(readFileSync(project.ghLog, "utf8").trim().split("\n"), ["api graphql --input -"]);
+      assert.equal(result.stdout.includes("{"), false, "no envelope or report may be printed");
+      assertNothingWritten(project);
+    } finally {
+      cleanupTempDir(project.dir);
+    }
   }
 });
 
-test("migrate --to github --dry-run is refused the same way: no target read, no report", () => {
-  const project = makeProject();
-  try {
-    const result = migrate(project, ["--to", "github", "--dry-run"]);
-    assert.equal(result.exitCode, 1, `stderr: ${result.stderr}`);
-    assert.equal(refusalLines(result.stderr).length, 1, `stderr: ${result.stderr}`);
-    assert.equal(result.stdout.includes("{"), false, "no dry-run report may be printed");
-    assertUntouched(project, result);
-  } finally {
-    cleanupTempDir(project.dir);
-  }
-});
-
-test("migrate --from json --to github --include-closed is refused the same way", () => {
-  const project = makeProject();
-  try {
-    const result = migrate(project, ["--from", "json", "--to", "github", "--include-closed"]);
-    assert.equal(result.exitCode, 1, `stderr: ${result.stderr}`);
-    assert.equal(refusalLines(result.stderr).length, 1, `stderr: ${result.stderr}`);
-    assertUntouched(project, result);
-  } finally {
-    cleanupTempDir(project.dir);
-  }
-});
-
-test("the refusal precedes adapter construction: a missing tasks.github block still yields MIGRATE_GITHUB_UNAVAILABLE", () => {
+test("migrate --to github with no tasks.github block fails on the config with GITHUB_INVALID_CONFIG before any gh spawn", () => {
   const project = makeProject({ githubBlock: false });
   try {
-    const result = migrate(project, ["--to", "github"]);
+    const result = migrate(project, ["--to", "github", "--yes"]);
     assert.equal(result.exitCode, 1, `stderr: ${result.stderr}`);
-    assert.equal(refusalLines(result.stderr).length, 1, `stderr: ${result.stderr}`);
-    assertUntouched(project, result);
+    assert.equal(linesStartingWith(result.stderr, "GITHUB_INVALID_CONFIG").length, 1, `stderr: ${result.stderr}`);
+    assert.equal(existsSync(project.ghLog), false, "no gh process may be spawned");
+    assertNothingWritten(project);
   } finally {
     cleanupTempDir(project.dir);
   }
