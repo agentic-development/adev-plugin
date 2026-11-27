@@ -4,7 +4,7 @@
 
 > **Methodology:** adev
 > **Charter:** .context-index/specs/features/implementation/charter.md
-> **Spec:** .context-index/specs/features/implementation/implement-rigor-ladder.spec.md (revision 3)
+> **Spec:** .context-index/specs/features/implementation/implement-rigor-ladder.spec.md (revision 4; Tasks 23–25 apply revision 4's changes)
 > **Review:** PASS_WITH_NOTES (2026-11-26) — full tier, 5 reviewers, 0 blockers, 11 warnings, 7 suggestions
 > **Platform:** Node.js (ESM, `.mjs`), zero new dependencies, `node:test`
 > **Implementation mode:** tdd
@@ -232,6 +232,18 @@ Every packet also includes the spec's Invocation Modes, Arguments and Naming par
 - Spec: EV-2, EV-3; AC EV-1–EV-5.
 - Source: `tests/evals/comparison/run-comparison.mjs`, `tests/evals/comparison/reports/summary.json`, `evals/README.md`, `evals/lifecycle-gate-respected/`.
 - Heuristics: "Use session JSONL for token measurement"; "Cache reads are 71% of session cost".
+
+### Task 23 Context
+- Spec: BEH-4 (the lite cap), BEH-5 (b), BEH-7, BEH-13, Revision 4 subsection; ADR 0020 "Amendment: revision 4".
+- Source: `lib/implement/review-depth.mjs` (`liteEligible`, `liteGrant`, `resolveFloor`, `liteTripwire`), `lib/implement/provisional-inputs.mjs`, `tests/evals/implement-rigor-ladder/run-ab-eval.mjs` `classifyTasks`.
+
+### Task 24 Context
+- Spec: BEH-17, BEH-6.
+- Source: `lib/cli/implement.mjs` (`cmdResolveDepth`, `cmdSnapshotBase`), `lib/execution-state.mjs`, `skills/implement/references/lite-mode.md`, `skills/implement/SKILL.md` Step 2.
+
+### Task 25 Context
+- Spec: EV-1, Revision 4 subsection.
+- Source: `tests/evals/implement-rigor-ladder/run-ab-eval.mjs`, `judge-runs.mjs`.
 
 ## Heuristics
 
@@ -1988,6 +2000,119 @@ Expected: PASS; EV results recorded under `tests/evals/implement-rigor-ladder/re
 ```bash
 git add evals tests/evals/comparison tests/evals/implement-rigor-ladder/results tests/lib/evals/plugin-eval-cases-rigor-ladder.test.mjs
 git commit -m "test(implementation): add EV-2/EV-3 rigor-ladder evals and record results" -m "<trailers 22>"
+```
+
+---
+
+### Task 23: Revision 4 resolver — scoreless `liteEligible`, `no-routing-entry`, the lite cap [specialist: none]
+
+**Charter capability:** Key Behaviors — per-task review depth (revision 4, BEH-4, BEH-5, BEH-7, BEH-13)
+**Strategy:** unit (source: detected, confidence: high)
+**Depends on:** Task 21
+**Files:**
+- Modify: `lib/implement/review-depth.mjs` (`liteEligible`, `liteGrant`, `resolveFloor`, `liteTripwire`, `resolveImplementReviewDepth`, module header comment)
+- Modify: `lib/implement/provisional-inputs.mjs` (`liteUnavailable` value `no-routing-entry`)
+- Modify: `skills/implement/references/lite-mode.md`, `skills/implement/graduated-review-depth.md`, `skills/route/SKILL.md` (rule text only: the grant, the cap, `quick`-only tripwire escalation)
+- Modify: `tests/evals/implement-rigor-ladder/run-ab-eval.mjs` (`classifyTasks` expected depths under the new rules), `tests/evals/implement-rigor-ladder/replay-distribution.mjs` (comment on invalid scores), `tests/evals/implement-rigor-ladder/fixture/README.md`
+- Test: `tests/lib/implement/review-depth-lite-grant.test.mjs`, `tests/lib/implement/lite-eligible-parity.test.mjs`, `tests/lib/implement/provisional-inputs-parity.test.mjs`, `tests/lib/implement/review-depth-tripwire.test.mjs`, `tests/cli/implement-resolve-depth.test.mjs`, `tests/cli/route-emit-sidecar.test.mjs`, `tests/skills/route-lite-eligible.test.mjs`, `tests/skills/implement-rigor-ladder.test.mjs`, `tests/docs/*`, `tests/lib/evals/implement-rigor-ladder-*.test.mjs`, `tests/evals/implement-rigor-ladder/replay-distribution.test.mjs` (whatever asserts the revision-3 rule)
+
+**Tests:** update the suites above to the revision-4 rule; add the new cases below.
+
+**Context to load:** Task 23 packet (spec BEH-4 "The lite cap", BEH-5 (b), BEH-7, Revision 4 subsection; ADR 0020 "Amendment: revision 4").
+
+- [ ] **Write failing test**
+  - `liteEligible`: `auto-agent` and `assisted-agent` entries are eligible whatever their scores (`0.4`, `"0.8"`, `NaN`, missing); `human-only`, a missing entry, and an unknown `selected_agent` are not. It raises no `ROUTING_SCORE_OUT_OF_RANGE`.
+  - `liteGrant`: missing entry → `no-routing-entry`; `human-only` → `floor:routing`; `liteUnavailable: 'no-routing-entry'` denies right after (a).
+  - Lite cap, provisional: authorized + medium spec + declared sensitive path → `depth: quick`, `floor_applied: true`, `floor_legs: ['sensitive-path']`, `floor_cap: 'quick'`, `lite_denied: 'floor:sensitive-path'`. Same for `boundary`. Unauthorized → `full`, `floor_cap: null`. Authorized + high-risk spec → `full`. `human-only` under authorization → `full`.
+  - Lite cap, final pass of a non-lite task: touched sensitive path → `quick` under authorization; `had_critical_finding` → `full`.
+  - Tripwire: a `lite` task touching a sensitive path, a boundary path, or an ignored `.env` → `quick`, `source: lite-tripwire`, `escalated_from: lite`, `floor_cap: 'quick'`.
+  - `REVIEW_DEPTH_FLOOR_APPLIED` message names the depth the floor gave (`quick` under the cap).
+- [ ] **Verify test fails**
+  Run: `node --test tests/lib/implement/review-depth-lite-grant.test.mjs tests/lib/implement/review-depth-tripwire.test.mjs`
+  Expected: FAIL on the new cases
+- [ ] **Implement**
+  - `liteEligible(entry)` → `{ eligible: ['auto-agent','assisted-agent'].includes(entry?.selected_agent), warnings: [] }`. Remove `LITE_GRANT_THRESHOLD` and the score validation if nothing else uses them.
+  - `liteGrant`: deny `floor:routing` for `human-only` and `no-routing-entry` for anything else not eligible.
+  - `resolveFloor` gains `liteCap` (lite authorized and spec not high-risk): when every holding leg is `boundary` or `sensitive-path`, the depth is `quick`; any other leg gives `full`. Return `floor_cap: 'quick' | null`.
+  - `liteTripwire` passes `liteCap: true`; with a holding floor leg the depth is `quick`.
+  - `resolveImplementReviewDepth` passes `liteCap` on both passes and returns `floor_cap` on every path (`null` when not lowered).
+  - Update the rule text in the three skill files and the harness's expected depths (task 4 and 5 become `lite`, task 6 `quick` under the `lite` arm).
+- [ ] **Verify test passes**
+  Run: `npm test` and `node tests/evals/implement-rigor-ladder/replay-distribution.mjs` (EV-5, record the new shares in the spec's Target distribution table)
+  Expected: PASS
+- [ ] **Commit**
+
+```bash
+git add <the files above>
+git commit -m "feat(implementation): widen the lite grant and cap floors at quick under lite" -m "<trailers 23>"
+```
+
+---
+
+### Task 24: Revision 4 overhead — `adev implement task-begin` and lean `lite` references [specialist: none]
+
+**Charter capability:** Key Behaviors — per-task execution (revision 4, BEH-17)
+**Strategy:** unit (source: detected, confidence: high)
+**Depends on:** Task 23
+**Files:**
+- Modify: `lib/cli/implement.mjs` (`task-begin` subcommand with `TASK_BEGIN_FAILED`, usage banner, help; `lite-report` gains the `capped` list, BEH-10)
+- Modify: `skills/validate/` advisory text for `capped` tasks
+- Modify: `skills/implement/SKILL.md` (Step 2 pointer: `lite-mode.md` for inline tasks, the Step 2 loop only for `quick`/`full`/escalated tasks), `skills/implement/references/lite-mode.md` (self-contained inline path through `task-begin`; the chained commit → `done` → next `task-begin`), `skills/implement/references/steps/step-2-per-task-loop.md` (2a: `task-begin` when `lite` is authorized; 2f-pre: the final pass repeats the operator's `--lite` and `--tier`, BEH-4)
+- Modify: `docs/cli-reference.md`, provider mirrors (`node scripts/sync-provider-skills.mjs`)
+- Test: `tests/cli/implement-task-begin.test.mjs` (create), `tests/skills/implement-rigor-ladder.test.mjs`
+
+**Tests:** create `tests/cli/implement-task-begin.test.mjs`; extend the skill-text suite.
+
+**Context to load:** Task 24 packet (spec BEH-17, BEH-6, BEH-7; `lib/cli/implement.mjs` `cmdResolveDepth` and `cmdSnapshotBase`; `adev execution-state write`).
+
+- [ ] **Write failing test**
+  - `task-begin` prints the same JSON as `resolve-depth --pass provisional` for the same inputs and emits one `review_depth_resolved` (provisional) event.
+  - For a `lite` result it also emits `plan_task` `in_progress` and prints `snapshot` (a tree id equal to `snapshot-base`'s for an unchanged tree) and `execution_state`.
+  - For a `quick` or `full` result it emits no `plan_task` event and prints neither field.
+  - It rejects the same bad flags with the same codes as `resolve-depth` (`INVALID_COMMIT_ID`, missing `--run-base`).
+  - A failed snapshot after the provisional event exits 1 with `TASK_BEGIN_FAILED`.
+  - `lite-report --json` lists a task whose latest final-pass event is `quick` with a `sensitive-path` or `boundary` leg under `capped`, not under `lite`.
+  - Skill text: `lite-mode.md` starts each inline task with `adev implement task-begin`; the body's Step 2 pointer loads `step-2-per-task-loop.md` only for a `quick` or `full` task; `lite-mode.md` states the `agent-default` mandate inline.
+- [ ] **Verify test fails**
+  Run: `node --test tests/cli/implement-task-begin.test.mjs tests/skills/implement-rigor-ladder.test.mjs`
+  Expected: FAIL — unknown subcommand
+- [ ] **Implement** — `task-begin` reuses `cmdResolveDepth`'s provisional path (no duplicated resolution), then for `lite` calls `reportPlanTask` (`in_progress`), the execution-state writer (conflict and failure reported, never fatal) and `snapshotWorkingTree`. Rewrite `lite-mode.md` around it, keeping every hard-gate and halt rule.
+- [ ] **Verify test passes**
+  Run: `npm test`
+  Expected: PASS, including `skill-size-cap` and the provider-mirror parity tests
+- [ ] **Commit**
+
+```bash
+git add <the files above>
+git commit -m "feat(implementation): fold lite task bookkeeping into adev implement task-begin" -m "<trailers 24>"
+```
+
+---
+
+### Task 25: Revision 4 evidence — EV-1 `lite` re-run and amendment text [specialist: none]
+
+**Charter capability:** Key Behaviors — release-blocking evaluation (revision 4)
+**Strategy:** unit (source: detected, confidence: high)
+**Depends on:** Task 24
+**Files:**
+- Modify: `.context-index/specs/features/implementation/graduated-review-depth-rev-13-rigor-ladder.spec.md`, `.context-index/specs/cross-cutting/graduated-rigor-tiers-rev-4-lite-tier.spec.md` (the grant and cap text)
+- Modify: `tests/evals/implement-rigor-ladder/results/*` (live outputs)
+
+**Tests:** none new; the EV-1 harness's own checks.
+
+**Context to load:** Task 25 packet.
+
+- [ ] **Implement**
+  - Update the two amendment specs' statements of the grant and the floors to revision 4.
+  - Live (operator-approved on 2026-11-27): EV-1 `lite` arm ×3 at the Task 24 commit, then `--compare` against the four-arm runs at `c90fa324e18f` and the blind judge.
+- [ ] **Verify**
+  Run: `node tests/evals/implement-rigor-ladder/run-ab-eval.mjs --evaluate`
+  Expected: every run valid, quality gates pass, the tripwire fires on its target, no `lite` grant on the sensitive-path task
+- [ ] **Commit**
+
+```bash
+git add <the files above>
+git commit -m "test(implementation): record the revision-4 lite runs" -m "<trailers 25>"
 ```
 
 ---

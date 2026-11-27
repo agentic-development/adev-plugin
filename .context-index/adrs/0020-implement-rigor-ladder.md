@@ -30,6 +30,8 @@ Meanwhile the framework comparison eval scored plain Claude at a mean of 81 and 
 
 Replace the two-level implement review depth with a three-level ladder, resolved per task:
 
+> **Revision 4 (2026-11-27).** Items 1 and 3 below state the decision as accepted on 2026-11-26. For runs with `lite` authorized on a spec that is not high-risk, the "Amendment: revision 4" section under Consequences supersedes three parts of them: the "easy" signal is no longer required, the sensitive-path and boundary legs give `quick`, and the diff check escalates only to `quick`. So do that section's notes where they name `routing-scores` or a tripwire escalation to `full`.
+
 1. **`full`**: today's two-stage review. Forced by `--tier full` or a floor leg:
    - a sensitive path or governance boundary, on declared files and then on touched files
    - `human-only` routing
@@ -81,6 +83,18 @@ All four base specs (`review-provenance`, `batched-task-dispatch`, `graduated-re
 
   Honoring the policy only when it matches the default branch was considered. It was deferred because it would break the common case of onboarding directly on a new project's first branch.
 - The calibration is specific to this corpus. The distribution replay (EV-5) recomputes it with the shipped resolver at release.
+
+### Amendment: revision 4 widens the `lite` grant (2026-11-27)
+
+Decided by the operator on 2026-11-27, after EV-1's four-arm runs added a plain Claude Code arm. On the EV-1 fixture plain Claude took 2.0–2.5 min, `full` 25.6 min and revision-3 `lite` 18.9 min, and all arms caught the four seeded defects at implement. `lite`'s inline tasks ran at about 30 s each. Most of its run went to the tasks the grant excluded, and 43% to the one sensitive-path task at `full`.
+
+When the operator authorizes `lite`, on a spec that is not high-risk:
+
+- **The grant no longer reads route scores or rejects `assisted-agent`.** Any task with a routing entry that is not `human-only` and no floor leg is granted `lite`. An `assisted-agent` task keeps its human checkpoint before the commit.
+- **The lite cap.** The `sensitive-path` and `boundary` floor legs give `quick`, not `full`, on both passes and in the tripwire, so a tripwire escalation is always to `quick`. `human-only` routing, a Critical finding and `--tier full` still give `full`.
+- **Less bookkeeping per inline task.** `adev implement task-begin` folds the provisional pass, `plan_task` `in_progress`, execution state and the snapshot into one call, and a `lite` run loads the Step 2 loop reference only for its `quick` and `full` tasks.
+
+Runs without `lite` authorization, and high-risk specs, are unchanged. The cost is that sensitive-path and boundary work gets one synthesized reviewer, not two stages, once the operator opts into `lite`. The operator accepted that trade: `--tier full` and dropping `--lite` remain the per-run way back to two-stage review. EV-1 and EV-5 re-measure the ladder under these rules.
 
 ### Notes for implement-rigor-ladder revision 4
 
