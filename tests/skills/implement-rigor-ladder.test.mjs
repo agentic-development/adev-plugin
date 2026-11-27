@@ -197,6 +197,52 @@ test("lite-mode starts each inline task with adev implement task-begin, never se
   assert.doesNotMatch(lite, /--status in_progress/);
 });
 
+// The batches call is the run's one batch-forming call, so it must forward the
+// same operator overrides Step 2 does, and a later read of the loop must not
+// form the batches a second time.
+test("lite-mode's batches call carries --max-batch and --no-batch as the operator passed them, and runs once", () => {
+  const ordering = subsection(lite, "## 4.");
+  assert.ok(ordering, "lite-mode.md must have a numbered `## 4.` ordering section");
+  assert.match(
+    ordering,
+    /`adev implement batches --plan <plan-path> --run-base <run_base> \[--lite\] \[--tier <t>\] \[--max-batch <n>\] \[--no-batch\]`/,
+  );
+  assert.match(ordering, /`--max-batch` and `--no-batch`[^.]*operator/);
+  assert.match(ordering, /do not run (it|`batches`) again/i);
+  const preamble = loop.slice(0, loop.indexOf("#### 2.pre"));
+  assert.match(preamble, /already ran[^.]*this invocation[^.]*do not run it again/i);
+});
+
+// A task the probe finds already implemented must still reach `done`, or it
+// stays `in_progress` from its task-begin forever.
+test("lite-mode states both implementation-probe outcomes inline (Step 2.pre)", () => {
+  const loopSection = subsection(lite, "## 2.");
+  assert.match(
+    loopSection,
+    /adev report --type plan-task --spec <spec> --plan <plan> --task-id <n> --status done --notes "Already implemented \(detected by implementation probe\)"/,
+  );
+  assert.match(loopSection, /then run the next task's `task-begin`/);
+  assert.match(loopSection, /[Oo]therwise[^.]*implement/);
+});
+
+test("lite-mode says how to recover a failed chain without a second commit", () => {
+  const trip = subsection(lite, "## 3.");
+  assert.match(trip, /hook rejects the commit[^.]*fix[^.]*re-run the whole chain/i);
+  assert.match(trip, /fails after the commit[^.]*only the remaining steps[^.]*never commit again/i);
+});
+
+test("lite-mode loads test-integrity.md exactly when a test is changed or fails unexpectedly", () => {
+  const rules = subsection(lite, "### Test integrity");
+  assert.match(
+    rules,
+    /Read `<ADEV_ROOT>\/skills\/implement\/references\/test-integrity\.md` before changing any test, or when a test fails unexpectedly/,
+  );
+});
+
+test("lite-mode's commit template carries Step 5.5's Session trailer", () => {
+  assert.match(lite, /git commit [^\n]*--trailer "Spec: <spec>" --trailer "Plan-task: <n>" --trailer "Session: <session>"/);
+});
+
 test("lite-mode chains commit, plan_task done and the next task-begin, commit first (BEH-17)", () => {
   const chain = /git commit [^\n]*&& adev report --type plan-task [^\n]*--status done [^\n]*&& adev implement task-begin [^\n]*--task-id <next>/;
   assert.match(lite, chain);

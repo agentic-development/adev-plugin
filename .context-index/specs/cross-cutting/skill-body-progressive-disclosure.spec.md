@@ -933,7 +933,7 @@ Describes the system after the refactor.
 - [x] Load Skill Extensions block present in all 31 bodies (BEH-6), pinned by `tests/skills-extension-coverage.test.mjs`
 - [x] Dispatch-discipline rules present in all 9 dispatching bodies (BEH-6), pinned by `tests/skills-dispatch-turn-discipline.test.mjs`
 - [x] `## Prerequisites` in the body for all 21 skills that carry it (BEH-6), pinned by `tests/skills/whole-invocation-rules-in-body.test.mjs` — an earlier version of that guard pinned only 3 of the 21
-- [x] Every `<ADEV_ROOT>`-anchored companion pointer in `skills/**` resolves; 0 broken (BEH-7). 212 occurrences naming 197 unique targets, swept by `tests/sync/provider-companion-parity.test.mjs`; earlier figures of "208" and "183" named no scope and were not reproducible (RI-6)
+- [x] Every `<ADEV_ROOT>`-anchored companion pointer in `skills/**` resolves; 0 broken (BEH-7). 213 occurrences naming 197 unique targets, swept by `tests/sync/provider-companion-parity.test.mjs`; earlier figures of "208" and "183" named no scope and were not reproducible (RI-6)
 - [x] Mirrors carry the identical companion set — 229 files each in canonical, codex and opencode, counted the way the guard counts (every non-`SKILL.md` file, `agents/` excluded) — and every mirror-body pointer resolves inside its own tree (BEH-8), pinned by `tests/sync/provider-companion-parity.test.mjs` in both set directions
 - [x] `/adev:work` carries the no-re-entry rule with a 3-per-stage cap, a stated cap-trip verdict, an unattended stop-at-first-failure default, and the companion-load carve-out (BEH-9, 9a, 9b, 9c), pinned by `tests/skills/work-no-skill-reentry.test.mjs`
 - [x] Test assertions follow the prose rather than being weakened (BEH-10)

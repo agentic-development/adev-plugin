@@ -191,7 +191,7 @@ describe("adev implement task-begin: flag validation", () => {
 
   it("refuses the final-pass flags, which only resolve-depth takes", (t) => {
     const { dir, head } = makeFixture(t);
-    for (const extra of [["--pass", "final"], ["--base-sha", head], ["--had-critical-finding"]]) {
+    for (const extra of [["--pass", "final"], ["--base-sha", head], ["--had-critical-finding"], ["--in-batch"]]) {
       const r = taskBegin(dir, ...IDS, ...extra);
       assert.equal(r.status, 1, extra.join(" "));
       assert.match(r.stderr, /argument error/, extra.join(" "));

@@ -2,7 +2,7 @@
 
 For each task in plan order, with batches, solo tasks and inline `lite` tasks interleaved as described below:
 
-Before the loop begins, `adev implement batches --plan <plan-path> --run-base <run_base> [--lite] [--tier <t>] [--max-batch <n>] [--no-batch]` resolves which tasks form a batch and which dispatch solo. `<run_base>` is the value `check-flags` printed (Prerequisites 1), the same for every call in the run. Pass `--lite` only when the operator typed it, and `--tier` only as the operator passed it. A policy authorization (`implement_mode: lite`) is read by the verb itself. Tasks the verb grants `lite` come back in `solo` with reason `lite`.
+Before the loop begins, `adev implement batches --plan <plan-path> --run-base <run_base> [--lite] [--tier <t>] [--max-batch <n>] [--no-batch]` resolves which tasks form a batch and which dispatch solo. `<run_base>` is the value `check-flags` printed (Prerequisites 1), the same for every call in the run. If `batches` already ran this invocation, as it does first in a `lite`-authorized run, do not run it again; keep its result. Pass `--lite` only when the operator typed it, and `--tier` only as the operator passed it. A policy authorization (`implement_mode: lite`) is read by the verb itself. Tasks the verb grants `lite` come back in `solo` with reason `lite`.
 
 Batches, solo tasks and inline `lite` tasks run interleaved in plan order. A batch dispatches when its first member comes up, and one `(sequential)` group can yield more than one batch, because the verb splits a group at its `lite` members (each batch carries a `segment`).
 
