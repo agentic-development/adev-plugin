@@ -1,10 +1,13 @@
 // tests/skills/route-lite-eligible.test.mjs
 //
-// /adev:route reports how many tasks meet the lite-eligibility signal and
-// cites liteEligible() as its single definition. The agent cannot run that
-// predicate, so the citation carries a gloss that must match it: routed
-// auto-agent or assisted-agent, with the dimension scores not consulted. The
-// count is an eligibility signal only: route never authorizes lite.
+// /adev:route's Rigor Tier Signal cites two predicates, each with a gloss the
+// agent can follow because it cannot run them:
+//   - quickTierSignal(), its `--tier quick` recommendation to the gate
+//     skills: routed auto-agent and no dimension below 3 of 5 (0.6 = 3/5);
+//   - liteEligible(), the implement lite grant's routing condition and the
+//     emit-sidecar count: routed auto-agent or assisted-agent, scores not
+//     consulted. The count is an eligibility signal only: route never
+//     authorizes lite.
 
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
@@ -26,25 +29,33 @@ test("route SKILL prints lite-eligible line and cites liteEligible as an eligibi
   assert.match(s, /eligibility signal, never an authorization/i);
 });
 
-test("route SKILL anchors the liteEligible citation at review-depth.mjs and names the emit-sidecar count", () => {
+test("route SKILL anchors both citations at review-depth.mjs and names the emit-sidecar count beside liteEligible", () => {
   const section = rigorTierSection(readFileSync(SKILL_PATH, "utf8"));
-  assert.match(section, /liteEligible\(entry\)/);
-  assert.match(section, /`<ADEV_ROOT>\/lib\/implement\/review-depth\.mjs`/);
-  assert.match(section, /`adev route emit-sidecar` reports the count/);
+  assert.match(section, /quickTierSignal\(entry\)` in `<ADEV_ROOT>\/lib\/implement\/review-depth\.mjs`/);
+  const liteLine = section.split("\n").find((line) => line.includes("liteEligible(entry)"));
+  assert.ok(liteLine, "liteEligible must be cited");
+  assert.match(liteLine, /`adev route emit-sidecar` reports the count/);
+  assert.match(liteLine, /routing condition of `\/adev:implement`'s `lite` grant/);
 });
 
-test("the citation's gloss states the rule: auto-agent or assisted-agent, scores not consulted", () => {
+test("the tier-quick gloss states the score rule in route's units: auto-agent and no dimension below 3 of 5", () => {
+  const section = rigorTierSection(readFileSync(SKILL_PATH, "utf8"));
+  const sentence = section.split("\n").find((line) => line.includes("quickTierSignal(entry)"));
+  assert.ok(sentence, "the citation must be on one line with its gloss");
+  assert.match(sentence, /eligible for `tier: quick` — exactly when `quickTierSignal\(entry\)`[^\n]*: it routes `auto-agent` and no dimension scores below 3 of 5 \(each sidecar score ≥ 0\.6\)/);
+  assert.doesNotMatch(sentence, /liteEligible/, "the tier signal is not the lite grant's predicate");
+});
+
+test("the liteEligible gloss states its rule: auto-agent or assisted-agent, scores not consulted", () => {
   const section = rigorTierSection(readFileSync(SKILL_PATH, "utf8"));
   const sentence = section.split("\n").find((line) => line.includes("liteEligible(entry)"));
-  assert.ok(sentence, "the citation must be on one line with its gloss");
   assert.match(sentence, /liteEligible\(entry\)`[^\n]*: it routes `auto-agent` or `assisted-agent`, and the dimension scores are not consulted\./);
 });
 
-test("the Rigor Tier Signal states the rule once, as the gloss, with no score threshold or routing-total rule", () => {
+test("the Rigor Tier Signal states each rule once, as its gloss, with no routing-total rule", () => {
   const section = rigorTierSection(readFileSync(SKILL_PATH, "utf8"));
-  assert.equal([...section.matchAll(/not consulted/g)].length, 1, "the rule must appear only in the gloss");
-  assert.doesNotMatch(section, /below 3/);
-  assert.doesNotMatch(section, /≥ 0\.6/);
+  assert.equal([...section.matchAll(/below 3/g)].length, 1, "the score rule appears only in the quickTierSignal gloss");
+  assert.equal([...section.matchAll(/not consulted/g)].length, 1, "the lite rule appears only in the liteEligible gloss");
   assert.doesNotMatch(section, /total ≥ 16/);
 });
 

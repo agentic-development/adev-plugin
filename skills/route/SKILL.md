@@ -115,9 +115,9 @@ For each task, sum the four dimension scores to get a total (range: 4-20).
 
 ### Rigor Tier Signal (graduated-rigor-tiers)
 
-Alongside the routing mode, emit a **rigor tier** recommendation that the gate skills consume (`graduated-rigor-tiers.spec.md`). A task is "easy" — eligible for `tier: quick` — exactly when `liteEligible(entry)` in `<ADEV_ROOT>/lib/implement/review-depth.mjs` is true: it routes `auto-agent` or `assisted-agent`, and the dimension scores are not consulted. `adev route emit-sidecar` reports the count. Otherwise recommend `tier: full`. `quick` narrows review/validation breadth but never skips a gate; when in doubt, recommend `full`. The consuming skills (`/adev:review-specs`, `/adev:validate`, `/adev:build`) receive this as `--tier quick`; the spec's declarative `risk_level` remains the fallback when routing has not run.
+Alongside the routing mode, emit a **rigor tier** recommendation that the gate skills consume (`graduated-rigor-tiers.spec.md`). A task is "easy" — eligible for `tier: quick` — exactly when `quickTierSignal(entry)` in `<ADEV_ROOT>/lib/implement/review-depth.mjs` is true: it routes `auto-agent` and no dimension scores below 3 of 5 (each sidecar score ≥ 0.6). Otherwise recommend `tier: full`. `quick` narrows review/validation breadth but never skips a gate; when in doubt, recommend `full`. The consuming skills (`/adev:review-specs`, `/adev:validate`, `/adev:build`) receive this as `--tier quick`; the spec's declarative `risk_level` remains the fallback when routing has not run.
 
-`liteEligible` is also the routing condition of `/adev:implement`'s `lite` grant. Route's output is an eligibility signal, never an authorization: `lite` comes only from operator input, so route never passes `--lite` and never recommends it.
+A different predicate, `liteEligible(entry)` in the same module, is the routing condition of `/adev:implement`'s `lite` grant: it routes `auto-agent` or `assisted-agent`, and the dimension scores are not consulted. `adev route emit-sidecar` reports the count. Route's output is an eligibility signal, never an authorization: `lite` comes only from operator input, so route never passes `--lite` and never recommends it.
 
 ## Step 4: Write Routing Sidecar
 
