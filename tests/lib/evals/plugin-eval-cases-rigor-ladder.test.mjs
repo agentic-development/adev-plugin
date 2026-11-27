@@ -212,7 +212,7 @@ test('implement-lite-refused-high-risk: a high-risk spec, an operator --lite, an
   const out = { depth: 'quick', lite_denied: 'high-risk', lite_source: 'flag' };
   assert.ok(dre.test(JSON.stringify(out, null, 2)));
   assert.ok(dre.test(JSON.stringify(JSON.stringify(out))));
-  assert.equal(dre.test(JSON.stringify({ ...out, lite_denied: 'routing-scores' })), false);
+  assert.equal(dre.test(JSON.stringify({ ...out, lite_denied: 'no-routing-entry' })), false);
 });
 
 test('the argument-span graders follow a backslash-newline continuation and still stop at a real newline', () => {

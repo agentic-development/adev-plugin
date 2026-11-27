@@ -289,8 +289,15 @@ function readSeededDefects() {
 
 /**
  * Classifies every task of a fixture plan from the plan, the sidecar, the
- * spec's risk level and the seed's sensitive-path configuration. Route's easy
- * rule is the shipped liteEligible().
+ * spec's risk level and the seed's sensitive-path configuration. Route's
+ * eligibility rule is the shipped liteEligible().
+ *
+ * Each task carries two expectations. `liteArm` is the depth under `--lite`:
+ * on a spec that is not high-risk the lite cap gives a sensitive-path task
+ * `quick`, an eligible task is granted `lite` and the tripwire target ends at
+ * `quick`. `withoutLite` is the depth with no lite authorization, where a
+ * sensitive-path task is floored to `full`. Both treat a `human-only` task,
+ * and on a high-risk spec any task not routed `auto-agent`, as `full`.
  */
 export async function classifyTasks(fixture) {
   const planText = readFileSync(fixture.planPath, 'utf8');
@@ -309,14 +316,16 @@ export async function classifyTasks(fixture) {
 
     let role;
     if (sensitive.length > 0) role = 'sensitive-path';
-    else if (entry.selected_agent !== 'auto-agent') role = entry.selected_agent;
-    else if (!eligible) role = 'low-score';
+    else if (!eligible) role = entry.selected_agent;
     else if (undeclared.length > 0) role = 'tripwire-target';
     else role = 'lite-eligible';
 
-    const provisional = sensitive.length > 0 || entry.selected_agent === 'human-only'
-      ? 'full'
-      : eligible && !highRisk ? 'lite' : 'quick';
+    const uncapped = entry.selected_agent === 'human-only' || (highRisk && entry.selected_agent !== 'auto-agent');
+    const withoutLiteDepth = uncapped || sensitive.length > 0 ? 'full' : 'quick';
+    let provisional;
+    if (uncapped || highRisk) provisional = withoutLiteDepth;
+    else if (sensitive.length > 0) provisional = 'quick';
+    else provisional = eligible ? 'lite' : 'quick';
     const expectedFinal = provisional === 'lite' && undeclared.length > 0 ? 'quick' : provisional;
 
     tasks.push({
@@ -329,6 +338,7 @@ export async function classifyTasks(fixture) {
       ...(sensitive.length > 0 ? { sensitive } : {}),
       ...(undeclared.length > 0 ? { undeclared } : {}),
       liteArm: { provisional, expectedFinal },
+      withoutLite: { provisional: withoutLiteDepth, expectedFinal: withoutLiteDepth },
     });
   }
   return tasks;
@@ -353,7 +363,7 @@ export async function describeFixture() {
     routeEligible: tasks.filter((t) => t.routeEligible).length,
     counts: {
       liteEligible: 'tasks expected to finish at lite under the lite arm',
-      routeEligible: "tasks passing route's easy rule (liteEligible: auto-agent, every score in [0.6, 1]), before floors and the tripwire",
+      routeEligible: "tasks passing route's eligibility rule (liteEligible: auto-agent or assisted-agent, scores not consulted), before floors and the tripwire",
     },
     sensitivePathTask: sensitiveTask ? { task: sensitiveTask.id, paths: sensitiveTask.sensitive } : null,
     tripwireTargetTask: tripwireTask ? { task: tripwireTask.id, undeclared: tripwireTask.undeclared } : null,

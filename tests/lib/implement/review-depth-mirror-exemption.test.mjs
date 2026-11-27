@@ -99,10 +99,11 @@ function finalPass(dir, baseSha, { declared = [SKILL, REF], ...overrides } = {})
   });
 }
 
-const pick = (r) => ({ depth: r.depth, floor_legs: r.floor_legs, escalated_from: r.escalated_from });
-const LITE = { depth: "lite", floor_legs: [], escalated_from: null };
-const QUICK = { depth: "quick", floor_legs: ["scope-mismatch"], escalated_from: "lite" };
-const full = (legs) => ({ depth: "full", floor_legs: legs, escalated_from: "lite" });
+const pick = (r) => ({ depth: r.depth, floor_legs: r.floor_legs, escalated_from: r.escalated_from, floor_cap: r.floor_cap });
+const LITE = { depth: "lite", floor_legs: [], escalated_from: null, floor_cap: null };
+const QUICK = { depth: "quick", floor_legs: ["scope-mismatch"], escalated_from: "lite", floor_cap: null };
+// A sensitive-path or boundary leg in the tripwire, which always runs under the lite cap.
+const capped = (legs) => ({ depth: "quick", floor_legs: legs, escalated_from: "lite", floor_cap: "quick" });
 
 // ── stays lite ──────────────────────────────────────────────────────────────
 
@@ -393,21 +394,21 @@ test("never-exempt shapes stay never exempt under a mirror: a *.spec.md mirror e
 
 // ── the floor legs still see mirror paths ───────────────────────────────────
 
-test("an exact mirror on a sensitive path still escalates to full", () => {
+test("an exact mirror on a sensitive path still escalates, to quick under the lite cap", () => {
   withRepo((dir) => {
     const base = snapshotWorkingTree(dir);
     regenerate(dir);
     const r = finalPass(dir, base, { sensitivePaths: ["providers/codex/**"] });
-    assert.deepEqual(pick(r), full(["sensitive-path"]));
+    assert.deepEqual(pick(r), capped(["sensitive-path"]));
   });
 });
 
-test("an exact mirror crossing a boundary still escalates to full", () => {
+test("an exact mirror crossing a boundary still escalates, to quick under the lite cap", () => {
   withRepo((dir) => {
     const base = snapshotWorkingTree(dir);
     regenerate(dir);
     const boundaryCheck = (paths) => paths.some((p) => p.startsWith("providers/opencode/"));
-    assert.deepEqual(pick(finalPass(dir, base, { boundaryCheck })), full(["boundary"]));
+    assert.deepEqual(pick(finalPass(dir, base, { boundaryCheck })), capped(["boundary"]));
   });
 });
 

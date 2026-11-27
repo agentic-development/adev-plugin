@@ -233,15 +233,16 @@ describe("adev implement batches --lite --run-base", () => {
   const EASY = { spec_completeness: 0.9, pattern_coverage: 0.8, blast_radius: 0.7, novelty: 0.6 };
   const HARD = { spec_completeness: 0.9, pattern_coverage: 0.8, blast_radius: 0.2, novelty: 0.3 };
 
-  // Task 1: lite-eligible routing, ordinary declared file → granted.
-  // Task 2: lite-eligible routing, declared file on a built-in sensitive path →
-  //         the provisional sensitive-path floor denies the grant, so it batches.
-  // Tasks 3, 4: routing scores below the lite threshold → batchable, never lite.
+  // Task 1: lite-eligible routing, ordinary declared file → granted, though
+  //         its scores are low: the grant does not read them.
+  // Tasks 2, 3, 4: lite-eligible routing, declared file on a built-in sensitive
+  //         path → the provisional sensitive-path floor denies the grant (the
+  //         lite cap resolves them quick), so they batch.
   const SIDECAR = JSON.stringify({
     version: 1,
     _generated_by: "test",
     entries: [
-      { task_id: "t1", selected_agent: "auto-agent", scores: EASY, rationale: "" },
+      { task_id: "t1", selected_agent: "auto-agent", scores: HARD, rationale: "" },
       { task_id: "t2", selected_agent: "auto-agent", scores: EASY, rationale: "" },
       { task_id: "t3", selected_agent: "auto-agent", scores: HARD, rationale: "" },
       { task_id: "t4", selected_agent: "auto-agent", scores: HARD, rationale: "" },
@@ -254,7 +255,7 @@ describe("adev implement batches --lite --run-base", () => {
       (specHeader ? `> **Spec:** \`${SPEC_REL}\` (revision 1)\n\n` : "") +
       "## Parallelization\n\n- Group A (sequential): Task 1 → Task 2 → Task 3 → Task 4\n\n" +
       "## Tasks\n\n" +
-      task(1, "src/a.mjs") + task(2, "src/auth/login.mjs") + task(3, "src/c.mjs") + task(4, "src/d.mjs")
+      task(1, "src/a.mjs") + task(2, "src/auth/login.mjs") + task(3, "src/auth/c.mjs") + task(4, "src/auth/d.mjs")
     );
   }
 

@@ -89,7 +89,7 @@ Both skills also accept `--tier lite` and run it as `quick`, printing one line s
 
 | Level | How the task runs | Per-task review | Reached when |
 |---|---|---|---|
-| `full` | Fresh implementer subagent | Stage 1 spec compliance, then Stage 2 code quality | `--tier full` (absolute), or a floor leg holds |
+| `full` | Fresh implementer subagent | Stage 1 spec compliance, then Stage 2 code quality | `--tier full` (absolute), or a floor leg holds (under the lite cap, a sensitive path or boundary gives `quick` instead) |
 | `quick` (default) | Fresh implementer subagent | One synthesized reviewer | No floor leg holds and the task is not granted `lite` |
 | `lite` | Inline in the orchestrator, no subagent | None; a post-task tripwire can escalate it | Operator authorization plus every grant condition below |
 
@@ -102,12 +102,14 @@ Both skills also accept `--tier lite` and run it as `quick`, printing one line s
 - `routing`: the task is routed `human-only`. An `assisted-agent` task keeps its human checkpoint but no longer forces `full`.
 - `critical-finding`: a reviewer raised a Critical finding.
 
+**The lite cap.** When `lite` is authorized for the run and the spec is not `risk_level: high`, a holding `boundary` or `sensitive-path` leg gives `quick` instead of `full`, on both passes and in the tripwire. Any other holding leg still gives `full`, and `--tier full` stays absolute. `resolve-depth` then reports `floor_cap: quick`.
+
 Batch membership does not change a task's depth: a batched task is reviewed at its own resolved depth.
 
 **The `lite` grant.** A task resolves `lite` only when all of these hold:
 
 1. **The operator authorized it**, by typing `--lite` or `--tier lite`, or through `implement_mode: lite` for the spec's risk level when no `--tier` was passed. An agent never adds the flag on its own judgment, and `--tier quick` or `--tier full` is the per-run opt-out from a policy authorization. A policy-sourced run prints `lite authorized via policy` at the start and in the run summary.
-2. **Route marked it easy.** `liteEligible(entry)` in `lib/implement/review-depth.mjs` holds: routed `auto-agent`, with every score a finite number at or above `0.6` (no dimension below 3 of 5). `/adev:route` prints how many tasks pass as `lite-eligible: <count> of <total>`. That count is a signal, never an authorization.
+2. **Route made it eligible.** `liteEligible(entry)` in `lib/implement/review-depth.mjs` holds: the task has a routing entry routed `auto-agent` or `assisted-agent`. Scores are not consulted. A missing entry is denied `no-routing-entry` and a `human-only` entry `floor:routing`. An `assisted-agent` task granted `lite` keeps its human checkpoint before the commit. `/adev:route` prints how many tasks pass as `lite-eligible: <count> of <total>`. That count is a signal, never an authorization.
 3. **The spec is not high-risk** and no floor leg holds.
 4. **The run is not `--parallel`.**
 
@@ -115,10 +117,10 @@ Governance inputs come from one commit. `adev implement check-flags`, the skill'
 
 **The tripwire.** When a `lite` task finishes, before its commit, the final pass compares every file it touched with its declared files:
 
-- A sensitive or boundary path, including a gitignored file the task wrote, escalates the task to `full`.
+- A sensitive or boundary path, including a gitignored file the task wrote, escalates the task to `quick` under the lite cap.
 - Otherwise an undeclared path that is not exempt escalates it to `quick` (`scope-mismatch`).
 
-Exempt paths are those under `tests/` or `docs/`, `*.test.<ext>` and `*.spec.<ext>` source files, `README.md` files, and exact provider mirror regenerations: a file under `providers/*/skills/` whose bytes are exactly what `scripts/sync-provider-skills.mjs` writes from a canonical skill file the task declared or touched. A `*.spec.md`, anything under `.context-index/` (both matched case-insensitively) and a symlink are never exempt. An escalation reports `LITE_TRIPWIRE_ESCALATED` and runs the escalated level's review loop. Escalation only goes up, at most from `lite` to `full`.
+Exempt paths are those under `tests/` or `docs/`, `*.test.<ext>` and `*.spec.<ext>` source files, `README.md` files, and exact provider mirror regenerations: a file under `providers/*/skills/` whose bytes are exactly what `scripts/sync-provider-skills.mjs` writes from a canonical skill file the task declared or touched. A `*.spec.md`, anything under `.context-index/` (both matched case-insensitively) and a symlink are never exempt. An escalation reports `LITE_TRIPWIRE_ESCALATED` and runs the escalated level's review loop. Escalation only goes up, and a tripwire escalation is to `quick`; only a `routing` or `critical-finding` leg would give `full`.
 
 **After the run.** A run with any `lite` task runs the constitution's quality gates once over the whole run, fail-fast, and a failure stops it with `QUALITY_GATES_FAILED`. The final whole-run review is skipped only when every task resolved `lite`. `/adev:validate` then calls `adev implement lite-report` and lists those tasks as "implemented without per-task review", and its spec-compliance check covers their commits.
 

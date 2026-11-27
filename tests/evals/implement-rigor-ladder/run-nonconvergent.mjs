@@ -81,8 +81,11 @@ function readMaxReviewCycles(seedDir) {
 
 /**
  * The BEH-15 fixture's tasks and cases. Each case's halted task must have the
- * role its loop needs: an escalated-lite (tripwire-target) task for the
- * code-quality case, a task resolving `full` for the Stage 1 case.
+ * role its loop needs under the case's `lite` authorization: an
+ * escalated-lite (tripwire-target) task in a `lite` case for the code-quality
+ * loop, and a task resolving `full` for the Stage 1 loop. Under `--lite` the
+ * lite cap gives a sensitive-path task `quick`, so the Stage 1 case runs
+ * without it.
  */
 export async function describeNonconvergentFixture() {
   const fixture = NONCONVERGENT_FIXTURE;
@@ -91,9 +94,10 @@ export async function describeNonconvergentFixture() {
   const role = (id) => taskRoles.find((t) => t.id === id);
   for (const c of caseDetails) {
     const halted = role(c.halted_task);
+    const expected = c.lite === true ? halted?.liteArm : halted?.withoutLite;
     const ok = c.loop === 'code-quality'
-      ? halted?.role === 'tripwire-target'
-      : c.loop === 'spec-compliance' && halted?.liteArm.expectedFinal === 'full';
+      ? c.lite === true && halted?.role === 'tripwire-target'
+      : c.loop === 'spec-compliance' && expected?.expectedFinal === 'full';
     if (!ok) throw new HarnessError('FIXTURE_INVALID', `case ${c.id}: task ${c.halted_task} cannot run a ${c.loop} loop`);
     for (const id of [...c.later_tasks, ...c.preseed_done]) {
       if (!role(id)) throw new HarnessError('FIXTURE_INVALID', `case ${c.id} names task ${id}, which the plan lacks`);
@@ -119,17 +123,22 @@ export async function describeNonconvergentFixture() {
 // The build step starts at implement through --resume --from implement: the
 // Implement Pipeline would otherwise dispatch /adev:route first, which would
 // rewrite the sidecar committed at run_base.
-export function nonconvergentPrompt(mode) {
+export function nonconvergentPrompt(mode, { lite = true } = {}) {
   const f = NONCONVERGENT_FIXTURE;
-  if (mode === 'build') return `/adev:build --spec ${f.sandboxSpec} --resume --from implement --auto --lite`;
-  return `/adev:implement ${f.sandboxPlan} --lite`;
+  const flag = lite ? ' --lite' : '';
+  if (mode === 'build') return `/adev:build --spec ${f.sandboxSpec} --resume --from implement --auto${flag}`;
+  return `/adev:implement ${f.sandboxPlan}${flag}`;
 }
 
 export async function nonconvergentDryRun({ ref = 'HEAD', mode = null } = {}) {
+  const fixture = await describeNonconvergentFixture();
   return {
-    fixture: await describeNonconvergentFixture(),
+    fixture,
     modes: mode ? [mode] : MODES,
     prompts: Object.fromEntries(MODES.map((m) => [m, nonconvergentPrompt(m)])),
+    case_prompts: Object.fromEntries(
+      fixture.caseDetails.map((c) => [c.id, Object.fromEntries(MODES.map((m) => [m, nonconvergentPrompt(m, { lite: c.lite === true })]))]),
+    ),
     expect: NONCONVERGENT_EXPECT,
     expectAlso: {
       loop_code: `one of ${LOOP_CODES.join('|')}, in the halted task's plan_task notes or the halt message`,
@@ -272,7 +281,7 @@ export async function runNonconvergent(opts) {
       console.log(`[beh15] ${opts.mode} ${c.id} at ${refSha.slice(0, 12)}`);
       const sandbox = prepareNonconvergentSandbox({ pluginRoot: worktree, bin: shim.bin, caseId: c.id, mode: opts.mode });
       try {
-        const run = runClaude(sandbox, worktree, nonconvergentPrompt(opts.mode));
+        const run = runClaude(sandbox, worktree, nonconvergentPrompt(opts.mode, { lite: c.lite === true }));
         const transcripts = awaitTranscripts(run.sessionId, sandbox.root);
         let executionState = null;
         try {

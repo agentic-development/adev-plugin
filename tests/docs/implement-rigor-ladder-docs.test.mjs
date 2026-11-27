@@ -188,7 +188,17 @@ test("getting-started names every way lite is authorized", () => {
 });
 
 test("resolve-depth's ROUTING_SIDECAR_MISSING denial is scoped to an authorized lite", () => {
-  assert.match(cli, /`ROUTING_SIDECAR_MISSING` when the routing sidecar is not committed at `run_base` \(when `lite` is authorized, every task is then denied with `lite_denied: routing-scores`\)/);
+  assert.match(cli, /`ROUTING_SIDECAR_MISSING` when the routing sidecar is not committed at `run_base` \(when `lite` is authorized, every task is then denied with `lite_denied: no-routing-entry`\)/);
+});
+
+test("concepts and the route docs state the revision-4 grant and the lite cap", () => {
+  const s = section(read("docs/concepts.md"), "## Graduated Rigor Tiers");
+  assert.match(s, /\*\*The lite cap\.\*\*/);
+  assert.match(s, /routed `auto-agent` or `assisted-agent`\. Scores are not consulted\./);
+  assert.match(s, /escalates the task to `quick` under the lite cap/);
+  assert.doesNotMatch(s, /at or above `0\.6`/);
+  const route = section(cli, "### `route`");
+  assert.match(route, /routed `auto-agent` or `assisted-agent`\. Scores are not consulted\./);
 });
 
 // BEH-13: lines naming the lite flags on live surfaces are definitions,

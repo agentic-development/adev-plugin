@@ -43,14 +43,15 @@ function task(n, files) {
   ].join('\n');
 }
 
-// Seven tasks with known outcomes:
+// Seven tasks with known outcomes, all replayed with `lite` authorized on a
+// medium-risk spec, so the lite cap holds:
 //   1 lite; history touches only declared, exempt and bookkeeping paths -> lite
 //   2 lite; history touches an undeclared source file -> quick (scope-mismatch)
-//   3 lite; history touches a sensitive path -> full (sensitive-path)
+//   3 lite; history touches a sensitive path -> quick (sensitive-path, capped)
 //   4 lite; no history -> the corpus trip rate
-//   5 assisted-agent -> quick; history touches only declared files
-//   6 declares a sensitive path -> full at the provisional pass; its history
-//     touches that path, which must not count as a trip from lite
+//   5 assisted-agent -> lite; history touches only declared files -> lite
+//   6 declares a sensitive path -> quick at the provisional pass (capped); its
+//     history touches that path, which must not count as a trip from lite
 //   7 lite; history adds an undeclared symlink under tests/ -> quick
 function seedDemoRepo() {
   const root = createTempGitRepo();
@@ -233,10 +234,10 @@ test('trip computation applies the BEH-7 exemption to trailer-matched commits', 
       {
         1: ['lite', 'lite', 'history'],
         2: ['lite', 'quick', 'history'],
-        3: ['lite', 'full', 'history'],
+        3: ['lite', 'quick', 'history'],
         4: ['lite', null, 'corpus-rate'],
-        5: ['quick', 'lite', 'history'],
-        6: ['full', 'full', 'provisional'],
+        5: ['lite', 'lite', 'history'],
+        6: ['quick', 'quick', 'history'],
         7: ['lite', 'quick', 'history'],
       },
     );
@@ -244,14 +245,18 @@ test('trip computation applies the BEH-7 exemption to trailer-matched commits', 
     assert.deepEqual(t[3].history.legs, ['sensitive-path']);
     assert.deepEqual(t[7].history.legs, ['scope-mismatch']);
     assert.equal(t[1].history.commits, 1);
-    // Only provisionally-lite tasks (1, 2, 3, 7) define the trip rate; task 6's
-    // sensitive history and task 5's history are not escalations from lite.
-    assert.deepEqual(result.trip_rate, { matched_tasks: 4, quick: 0.5, full: 0.25 });
-    assert.deepEqual(t[4].final, { lite: 0.25, quick: 0.5, full: 0.25 });
-    assert.deepEqual(t[5].final, { lite: 0, quick: 1, full: 0 });
-    assert.deepEqual(t[6].final, { lite: 0, quick: 0, full: 1 });
+    assert.deepEqual(t[6].history.legs, ['sensitive-path']);
+    // Only provisionally-lite tasks (1, 2, 3, 5, 7) define the trip rate; task
+    // 6's sensitive history is not an escalation from lite. Under the cap no
+    // trip reaches full.
+    assert.deepEqual(result.trip_rate, { matched_tasks: 5, quick: 0.6, full: 0 });
+    assert.deepEqual(t[4].final, { lite: 0.4, quick: 0.6, full: 0 });
+    assert.deepEqual(t[5].final, { lite: 1, quick: 0, full: 0 });
+    assert.deepEqual(t[6].final, { lite: 0, quick: 1, full: 0 });
+    assert.equal(t[6].provisional.depth, 'quick');
+    assert.deepEqual(t[6].provisional.floor_legs, ['sensitive-path']);
     assert.equal(t[6].provisional.lite_denied, 'floor:sensitive-path');
-    assert.equal(t[5].provisional.lite_denied, 'routing-scores');
+    assert.equal(t[5].provisional.lite_denied, null);
   } finally {
     cleanupTempDir(root);
   }
@@ -263,7 +268,7 @@ test('distribution.json has per-task, per-plan tables and floor-leg tally; a mis
     const out = join(root, 'out', 'distribution.json');
     const r = spawnSync('node', [REPLAY, '--project-root', root, '--out', out], { encoding: 'utf8' });
     assert.equal(r.status, 1);
-    assert.match(r.stdout, /lite 17\.9% \| quick 50\.0% \| full 32\.1%/);
+    assert.match(r.stdout, /lite 34\.3% \| quick 65\.7% \| full 0\.0%/);
     assert.match(r.stderr, /EV5_TARGET_MISSED/);
     const d = JSON.parse(readFileSync(out, 'utf8'));
     assert.equal(d.per_task.length, 7);
@@ -273,14 +278,14 @@ test('distribution.json has per-task, per-plan tables and floor-leg tally; a mis
         spec: SPEC,
         risk_level: 'medium',
         tasks: 7,
-        provisional: { lite: 5, quick: 1, full: 1 },
-        final: { lite: 1.25, quick: 3.5, full: 2.25 },
+        provisional: { lite: 6, quick: 1, full: 0 },
+        final: { lite: 2.4, quick: 4.6, full: 0 },
       },
     ]);
-    assert.deepEqual(d.provisional_shares, { lite: 0.7143, quick: 0.1429, full: 0.1429 });
-    assert.deepEqual(d.shares, { lite: 0.1786, quick: 0.5, full: 0.3214 });
+    assert.deepEqual(d.provisional_shares, { lite: 0.8571, quick: 0.1429, full: 0 });
+    assert.deepEqual(d.shares, { lite: 0.3429, quick: 0.6571, full: 0 });
     assert.deepEqual(d.floor_legs, { provisional: { 'sensitive-path': 1 }, tripwire: { 'scope-mismatch': 2, 'sensitive-path': 1 } });
-    assert.deepEqual(d.lite_denied, { 'floor:sensitive-path': 1, 'routing-scores': 1 });
+    assert.deepEqual(d.lite_denied, { 'floor:sensitive-path': 1 });
     assert.deepEqual(d.target, { lite_min: 0.45, full_max: 0.2, met: false });
     assert.deepEqual(d.trip_causes, { src: 1, symlink: 1 });
   } finally {

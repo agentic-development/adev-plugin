@@ -148,14 +148,14 @@ function runResult({ arm, wall, escaped = 0, gates = true, valid = true, verdict
 
 const LITE_DEPTHS = {
   1: { provisional: { depth: 'lite', source: 'lite-grant' }, final: { depth: 'lite', source: 'lite-grant' } },
-  4: { provisional: { depth: 'quick', source: 'default-quick' }, final: { depth: 'quick', source: 'default-quick' } },
-  6: { provisional: { depth: 'full', source: 'default-quick' }, final: { depth: 'full', source: 'default-quick' } },
+  4: { provisional: { depth: 'lite', source: 'lite-grant' }, final: { depth: 'lite', source: 'lite-grant' } },
+  6: { provisional: { depth: 'quick', source: 'default-quick' }, final: { depth: 'quick', source: 'default-quick' } },
   7: { provisional: { depth: 'lite', source: 'lite-grant' }, final: { depth: 'quick', source: 'lite-tripwire' } },
 };
 const FIXTURE_ROLES = {
   taskRoles: [
     { id: '1', role: 'lite-eligible' },
-    { id: '4', role: 'assisted-agent' },
+    { id: '4', role: 'lite-eligible' },
     { id: '6', role: 'sensitive-path' },
     { id: '7', role: 'tripwire-target' },
   ],
@@ -212,9 +212,11 @@ test('no_lite_grant_on_ineligible needs a provisional event per ineligible task 
       fixture: FIXTURE_ROLES,
     }).checks.find((c) => c.id === 'no_lite_grant_on_ineligible');
   assert.equal(check(LITE_DEPTHS).pass, true);
-  const { 4: _dropped, ...missing4 } = LITE_DEPTHS;
-  assert.equal(check(missing4).pass, false);
-  assert.deepEqual(check(missing4).missing_provisional, ['4']);
+  const { 6: _dropped, ...missing6 } = LITE_DEPTHS;
+  assert.equal(check(missing6).pass, false);
+  assert.deepEqual(check(missing6).missing_provisional, ['6']);
+  const { 4: _lite, ...missing4 } = LITE_DEPTHS;
+  assert.equal(check(missing4).pass, true, "a lite-eligible task is not an ineligible one");
   const finalLite = { ...LITE_DEPTHS, 6: { ...LITE_DEPTHS[6], final: { depth: 'lite', source: 'lite-grant' } } };
   assert.equal(check(finalLite).pass, false);
 });
@@ -558,21 +560,22 @@ test('the EV-1 sandbox commits the routing sidecar at run_base, so the lite arm 
         'implement', 'resolve-depth', '--spec', EV1_FIXTURE.sandboxSpec, '--plan', EV1_FIXTURE.sandboxPlan,
         '--task-id', task, '--run-base', head, '--lite', '--pass', 'provisional',
       ]));
+    assert.deepEqual(depths.map((d) => d.floor_cap), [null, null, null, null, null, 'quick', null]);
     assert.deepEqual(
       depths.map((d) => [d.depth, d.lite_denied]),
       [
         ['lite', null], ['lite', null], ['lite', null],
-        ['quick', 'routing-scores'], ['quick', 'routing-scores'], ['full', 'floor:sensitive-path'],
+        ['lite', null], ['lite', null], ['quick', 'floor:sensitive-path'],
         ['lite', null],
       ],
     );
     const batches = sandboxAdev(sandbox, ['implement', 'batches', '--plan', EV1_FIXTURE.sandboxPlan, '--lite', '--run-base', head]);
-    // Group A (3 → 5 → 7) is split by its lite tasks 3 and 7, leaving 5 alone
-    // ("size"); the single-task groups B–E never batch.
+    // Every task of Group A (3 → 5 → 7) is granted lite, so none is batched;
+    // the single-task groups B–E never batch.
     assert.deepEqual(batches.batches, []);
     assert.deepEqual(batches.solo, [
       { taskId: '3', reason: 'lite' },
-      { taskId: '5', reason: 'size' },
+      { taskId: '5', reason: 'lite' },
       { taskId: '7', reason: 'lite' },
       { taskId: '1', reason: null },
       { taskId: '2', reason: null },
@@ -605,8 +608,18 @@ test('nonconvergent sandboxes resolve as designed with the shipped verbs, per ca
             '--task-id', task, '--run-base', head, '--lite', '--pass', 'provisional',
           ]);
         const [d1, d2, d3] = ['1', '2', '3'].map(depth);
-        assert.deepEqual([d1.depth, d2.depth, d3.depth], ['lite', 'full', 'lite']);
-        assert.equal(d2.review_cycles, 1);
+        assert.deepEqual([d1.depth, d2.depth, d3.depth], ['lite', 'quick', 'lite']);
+        assert.equal(d2.floor_cap, 'quick');
+        // The Stage 1 case runs without --lite, where the sensitive-path task floors to full.
+        const unauthorized = sandboxAdev(sandbox, [
+          'implement', 'resolve-depth',
+          '--spec', NONCONVERGENT_FIXTURE.sandboxSpec,
+          '--plan', NONCONVERGENT_FIXTURE.sandboxPlan,
+          '--task-id', '2', '--run-base', head, '--pass', 'provisional',
+        ]);
+        assert.equal(unauthorized.depth, 'full');
+        assert.equal(unauthorized.floor_cap, null);
+        assert.equal(unauthorized.review_cycles, 1);
 
         const reviewAtHead = () => sandboxGit(sandbox.root, ['cat-file', '-e', `${head}:${specDir}/inventory.review.md`]);
         if (mode === 'build') reviewAtHead();

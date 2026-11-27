@@ -343,6 +343,25 @@ describe("adev implement resolve-depth: the rigor ladder", () => {
     });
   });
 
+  it("the lite cap prints floor_cap quick for a declared sensitive path and leaves the event's keys unchanged", (t) => {
+    const { dir } = makeFixture(t, { declared: "src/auth/session.ts" });
+    const capped = okJson(run(dir, ...IDS, "--lite"));
+    assert.equal(capped.depth, "quick");
+    assert.deepEqual(capped.floor_legs, ["sensitive-path"]);
+    assert.equal(capped.floor_cap, "quick");
+    assert.equal(capped.lite_denied, "floor:sensitive-path");
+    const floor = capped.warnings.find((w) => w.code === "REVIEW_DEPTH_FLOOR_APPLIED");
+    assert.equal(floor.message, "review depth floored to quick (sensitive-path)");
+    const unauthorized = okJson(run(dir, ...IDS));
+    assert.equal(unauthorized.depth, "full");
+    assert.equal(unauthorized.floor_cap, null);
+
+    const events = readLog(dir).filter((e) => e.event === "review_depth_resolved");
+    assert.equal(events.length, 2);
+    for (const { ts, event, ...rest } of events) assert.deepEqual(Object.keys(rest).sort(), CONTRACT_KEYS);
+    assert.deepEqual(events.map((e) => e.depth), ["quick", "full"]);
+  });
+
   it("--run-base is required on both passes", (t) => {
     const { dir, head } = makeFixture(t);
     for (const extra of [[], ["--pass", "final", "--base-sha", head]]) {
@@ -395,7 +414,7 @@ describe("adev implement resolve-depth: the rigor ladder", () => {
     assert.equal(out.lite_source, "flag");
   });
 
-  it("a routing sidecar not committed at run_base denies lite with routing-scores and warns, but still resolves quick", (t) => {
+  it("a routing sidecar not committed at run_base denies lite with no-routing-entry and warns, but still resolves quick", (t) => {
     const { dir } = makeFixture(t, { declared: "lib/a.mjs" });
     rmSync(join(dir, "p.routing.json"));
     const head = commitAll(dir);
@@ -403,8 +422,9 @@ describe("adev implement resolve-depth: the rigor ladder", () => {
     const out = okJson(run(dir, ...IDS, "--lite", "--run-base", head));
     assert.equal(out.depth, "quick");
     assert.equal(out.source, "policy-baseline");
-    assert.equal(out.lite_denied, "routing-scores");
+    assert.equal(out.lite_denied, "no-routing-entry");
     assert.equal(out.lite_source, "flag");
+    assert.equal(out.floor_cap, null);
     const missing = out.warnings.filter((w) => w.code === "ROUTING_SIDECAR_MISSING");
     assert.equal(missing.length, 1, JSON.stringify(out.warnings));
     assert.equal(missing[0].run_base, head);
@@ -413,15 +433,16 @@ describe("adev implement resolve-depth: the rigor ladder", () => {
     assert.equal(unauthorized.lite_denied, "not-authorized");
   });
 
-  it("a sidecar missing at run_base reports routing-scores ahead of a high-risk spec or a floor leg", (t) => {
+  it("a sidecar missing at run_base reports no-routing-entry ahead of a high-risk spec or a floor leg", (t) => {
     const { dir } = makeFixture(t, { declared: "src/auth/session.ts" });
     rmSync(join(dir, "p.routing.json"));
     const floorHead = commitAll(dir);
     write(dir, "p.routing.json", sidecar());
     const floor = okJson(run(dir, ...IDS, "--lite", "--run-base", floorHead));
-    assert.equal(floor.depth, "full");
+    assert.equal(floor.depth, "quick", "authorized lite on a medium spec caps the sensitive-path floor");
     assert.deepEqual(floor.floor_legs, ["sensitive-path"]);
-    assert.equal(floor.lite_denied, "routing-scores");
+    assert.equal(floor.floor_cap, "quick");
+    assert.equal(floor.lite_denied, "no-routing-entry");
 
     write(dir, PLAN,
       "> **Spec:** x.spec.md\n\n### Task 1: Example [specialist: none]\n\n" +
@@ -433,11 +454,11 @@ describe("adev implement resolve-depth: the rigor ladder", () => {
     const high = okJson(run(dir, ...IDS, "--lite", "--run-base", highHead));
     assert.equal(high.depth, "quick");
     assert.deepEqual(high.floor_legs, []);
-    assert.equal(high.lite_denied, "routing-scores");
+    assert.equal(high.lite_denied, "no-routing-entry");
     assert.deepEqual(
       high.warnings.map((w) => w.code),
       ["ROUTING_SIDECAR_MISSING"],
-      "the working-tree entry is not score-checked for a grant it cannot make",
+      "the working-tree entry adds no warning for a grant it cannot make",
     );
   });
 
@@ -471,7 +492,7 @@ describe("adev implement resolve-depth: the rigor ladder", () => {
       assert.equal(out.depth, "lite", `--task-id ${id}: an old ignored .env is outside the window only if in_progress was read`);
     }
     utimesSync(join(dir, ".env"), inProgressAt / 1000 + 5, inProgressAt / 1000 + 5);
-    assert.equal(okJson(run(dir, ...IDS, "--pass", "final", "--run-base", base, "--base-sha", snap)).depth, "full");
+    assert.equal(okJson(run(dir, ...IDS, "--pass", "final", "--run-base", base, "--base-sha", snap)).depth, "quick");
   });
 
   it("final pass: a lite task that touched only its declared file stays lite", (t) => {
@@ -553,8 +574,10 @@ describe("adev implement resolve-depth: the rigor ladder", () => {
 
     utimesSync(join(dir, ".env"), sec(inProgressAt) + 5, sec(inProgressAt) + 5);
     const after = final();
-    assert.equal(after.depth, "full");
+    assert.equal(after.depth, "quick", "a lite task's tripwire runs under the lite cap");
     assert.equal(after.source, "lite-tripwire");
+    assert.equal(after.escalated_from, "lite");
+    assert.equal(after.floor_cap, "quick");
     assert.deepEqual(after.floor_legs, ["sensitive-path"]);
   });
 

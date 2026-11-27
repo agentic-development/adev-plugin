@@ -615,7 +615,7 @@ adev artifact commit --spec <p> --kind validate
 
 **Signature:** `route emit-sidecar --plan <path>` (reads JSON entries from stdin) · `route render-sidecar --plan <path>`
 
-`emit-sidecar` prints `{ ok, sidecar, entries, lite_eligible }`. `lite_eligible: { count, total }` counts the entries that pass `liteEligible(entry)` from `lib/implement/review-depth.mjs`: routed `auto-agent`, with every score a finite number in `[0, 1]` at or above `0.6` (no dimension below 3 of 5). `/adev:route` prints it as `lite-eligible: <count> of <total>`. It is an eligibility signal, never an authorization: `lite` comes only from the operator.
+`emit-sidecar` prints `{ ok, sidecar, entries, lite_eligible }`. `lite_eligible: { count, total }` counts the entries that pass `liteEligible(entry)` from `lib/implement/review-depth.mjs`: routed `auto-agent` or `assisted-agent`. Scores are not consulted. `/adev:route` prints it as `lite-eligible: <count> of <total>`. It is an eligibility signal, never an authorization: `lite` comes only from the operator.
 
 **Example:**
 ```
@@ -721,14 +721,15 @@ The JSON output is the resolver's result plus `review_cycles`:
 - `depth`: `full`, `quick` or `lite`.
 - `source`: `tier-full-absolute` (`--tier full`, no floor consulted), `policy-baseline` (`--tier quick` or the policy's `implement_mode`), `default-quick` (no policy value), `lite-grant` (a `lite` resolution on either pass), or `lite-tripwire` (a final-pass escalation from `lite`).
 - `floor_applied` and `floor_legs`: the holding floor legs (`risk-level`, `routing`, `boundary`, `sensitive-path`, `critical-finding`, and `scope-mismatch` on a tripwire escalation).
-- `lite_denied`: on the provisional pass, the first failing grant condition (`not-authorized`, `routing-scores`, `high-risk`, `floor:<leg>` or `parallel`), or `null` when `lite` was granted. It is always `null` on the final pass.
+- `lite_denied`: on the provisional pass, the first failing grant condition (`not-authorized`, `no-routing-entry`, `high-risk`, `floor:<leg>` or `parallel`), or `null` when `lite` was granted. A missing routing entry is `no-routing-entry`; a `human-only` entry is `floor:routing`. It is always `null` on the final pass.
 - `lite_source`: `flag`, `policy` or `null`.
 - `escalated_from`: `lite` on a tripwire escalation, otherwise `null`.
-- `warnings`: `REVIEW_DEPTH_FLOOR_APPLIED` naming its legs; `ROUTING_SCORE_OUT_OF_RANGE` for a missing, non-numeric, non-finite or out-of-range score (raised only when `lite` is authorized, since only the grant reads the scores); `ROUTING_SIDECAR_MISSING` when the routing sidecar is not committed at `run_base` (when `lite` is authorized, every task is then denied with `lite_denied: routing-scores`); and `LITE_TRIPWIRE_ESCALATED` naming the task and legs when the tripwire escalates a `lite` task.
+- `floor_cap`: `quick` when the lite cap lowered a `full` result to `quick`, otherwise `null`. The cap applies when `lite` is authorized (`lite_source` is not `null`, a `--parallel` run included) and the spec is not `risk_level: high`, and in every tripwire: a floor whose only holding legs are `boundary` and `sensitive-path` gives `quick`. Any other holding leg (`routing`, `critical-finding`) gives `full`, and `--tier full` stays absolute.
+- `warnings`: `REVIEW_DEPTH_FLOOR_APPLIED` naming its legs and the depth the floor gave (`review depth floored to quick (sensitive-path)` under the cap); `ROUTING_SIDECAR_MISSING` when the routing sidecar is not committed at `run_base` (when `lite` is authorized, every task is then denied with `lite_denied: no-routing-entry`); and `LITE_TRIPWIRE_ESCALATED` naming the task and legs when the tripwire escalates a `lite` task.
 
-`lite_denied`, `lite_source` and `escalated_from` are verb output only; the `review_depth_resolved` event's key set is unchanged.
+`lite_denied`, `lite_source`, `escalated_from` and `floor_cap` are verb output only; the `review_depth_resolved` event's key set is unchanged.
 
-A final pass on a task that resolved `lite` provisionally runs the tripwire over every file the task touched against `--base-sha`. A sensitive-path or boundary hit gives `full`. Otherwise an undeclared path that is neither exempt nor an exact provider-mirror regeneration of a canonical skill file in the task's scope gives `quick` (`scope-mismatch`). Otherwise the task stays `lite`. See [Core Concepts → Graduated Rigor Tiers](concepts.md#graduated-rigor-tiers) for the exemptions.
+A final pass on a task that resolved `lite` provisionally runs the tripwire over every file the task touched against `--base-sha`. A sensitive-path or boundary hit gives `quick` under the lite cap (`floor_cap: quick`); a `routing` or `critical-finding` leg gives `full`. Otherwise an undeclared path that is neither exempt nor an exact provider-mirror regeneration of a canonical skill file in the task's scope gives `quick` (`scope-mismatch`). Otherwise the task stays `lite`. See [Core Concepts → Graduated Rigor Tiers](concepts.md#graduated-rigor-tiers) for the exemptions.
 
 **Example:**
 ```

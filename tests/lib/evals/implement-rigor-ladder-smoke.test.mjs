@@ -112,8 +112,25 @@ test('fixture mixes eligible and ineligible tasks and names its traps', () => {
 test('fixture counts are derived from the 7-task plan and sidecar', () => {
   const plan = dryRun();
   assert.equal(plan.fixture.tasks, 7);
-  assert.equal(plan.fixture.liteEligible, 3);
-  assert.equal(plan.fixture.liteIneligible, 4);
+  assert.equal(plan.fixture.liteEligible, 5);
+  assert.equal(plan.fixture.liteIneligible, 2);
+  assert.equal(plan.fixture.routeEligible, 7);
+});
+
+test('EV-1 fixture expectations follow the revision-4 grant and the lite cap under the lite arm only', () => {
+  const plan = dryRun();
+  assert.deepEqual(
+    plan.fixture.taskRoles.map((t) => [t.id, t.role, t.liteArm.provisional, t.liteArm.expectedFinal, t.withoutLite.expectedFinal]),
+    [
+      ['1', 'lite-eligible', 'lite', 'lite', 'quick'],
+      ['2', 'lite-eligible', 'lite', 'lite', 'quick'],
+      ['3', 'lite-eligible', 'lite', 'lite', 'quick'],
+      ['4', 'lite-eligible', 'lite', 'lite', 'quick'],
+      ['5', 'lite-eligible', 'lite', 'lite', 'quick'],
+      ['6', 'sensitive-path', 'quick', 'quick', 'full'],
+      ['7', 'tripwire-target', 'lite', 'quick', 'quick'],
+    ],
+  );
 });
 
 test('metrics declare wall clock, dispatches, token usage keys, gates and per-defect catch point', () => {
@@ -160,10 +177,15 @@ test('nonconvergent fixture roles are derived from its plan, sidecar and sensiti
     plan.fixture.taskRoles.map((t) => [t.id, t.role, t.liteArm.provisional, t.liteArm.expectedFinal]),
     [
       ['1', 'tripwire-target', 'lite', 'quick'],
-      ['2', 'sensitive-path', 'full', 'full'],
+      ['2', 'sensitive-path', 'quick', 'quick'],
       ['3', 'lite-eligible', 'lite', 'lite'],
     ],
   );
+  assert.deepEqual(plan.fixture.taskRoles.map((t) => [t.id, t.withoutLite.expectedFinal]), [['1', 'quick'], ['2', 'full'], ['3', 'quick']]);
+  assert.deepEqual(plan.fixture.caseDetails.map((c) => [c.id, c.lite]), [
+    ['escalated-lite-code-quality-nonconvergent', true],
+    ['stage1-spec-compliance-nonconvergent', false],
+  ]);
   assert.deepEqual(
     plan.fixture.caseDetails.map((c) => [c.id, c.halted_task, c.loop, c.later_tasks, c.preseed_done]),
     [

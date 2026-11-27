@@ -11,7 +11,7 @@ inventory library.
 | `inventory.plan.md` | The 3-task plan |
 | `inventory.routing.json` | The routing sidecar: every task `auto-agent`, every score ≥ 0.6 |
 | `inventory.review.md` | A PASS review, copied in for `--mode build` only: the Implement Pipeline requires one. The build prompt is `--resume --from implement`, so build starts at implement and never runs review or route |
-| `cases.json` | The two cases the harness runs, and what each expects (read by code) |
+| `cases.json` | The two cases the harness runs, whether each runs with `--lite`, and what each expects (read by code) |
 | `seed/` | The project the run starts from. `seed/.context-index/manifest.yaml` sets `implement.max_review_cycles: 1`, so a loop is capped after one review in both modes (`/adev:build` does not forward `--review-cycles`). `seed/.context-index/constitution.md` carries the trigger, Principle 4 |
 | `preseed/task-1/` | Task 1's finished work, committed with `Spec:`/`Plan-task: 1` trailers before the Stage 1 case runs. It follows Principle 4: `normalizeSku` returns the `SKU_INVALID` error value rather than throwing |
 
@@ -23,7 +23,7 @@ inventory library.
 | Task | Role (derived by the harness) | Depth under `--lite` | What the reviewer finds |
 |---|---|---|---|
 | 1 | tripwire-target: it must also edit the undeclared `src/registry.mjs` | `lite`, then `quick` at the final pass | `normalizeSku("   ")` returns `{ error: { code: "SKU_INVALID" } }` where an acceptance criterion requires it to throw. The synthesized reviewer's spec-compliance lens reports it as an Important `cq-<n>` finding |
-| 2 | sensitive-path (`src/auth/audit.mjs`, built-in `**/auth/**`) | `full` | `signAudit({ id: 1 }, "")` returns `{ error: { code: "AUDIT_SECRET_MISSING" } }` where an acceptance criterion requires it to throw, so Stage 1 spec compliance fails (WR-8) |
+| 2 | sensitive-path (`src/auth/audit.mjs`, built-in `**/auth/**`) | `quick` (the lite cap); `full` without `--lite`, which is how the Stage 1 case runs | `signAudit({ id: 1 }, "")` returns `{ error: { code: "AUDIT_SECRET_MISSING" } }` where an acceptance criterion requires it to throw, so Stage 1 spec compliance fails (WR-8) |
 | 3 | lite-eligible | `lite` | None. It has no error path, so Principle 4 never applies. It exists so the run can show that no later task starts |
 
 ## The trigger

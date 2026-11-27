@@ -271,16 +271,18 @@ const auto = (score) => entryWith(`t${++seq}`, "auto-agent", score);
 const assisted = (score) => entryWith(`t${++seq}`, "assisted-agent", score);
 
 test("emit-sidecar output carries lite_eligible computed by liteEligible", (t) => {
-  const out = JSON.parse(emit(t, [auto(0.8), auto(0.6), auto(0.4), assisted(0.9)]).stdout);
-  assert.deepEqual(out.lite_eligible, { count: 2, total: 4 });
+  const humanOnly = entryWith("h0", "human-only", 0.9);
+  const out = JSON.parse(emit(t, [auto(0.8), auto(0.6), auto(0.4), assisted(0.9), humanOnly]).stdout);
+  assert.deepEqual(out.lite_eligible, { count: 4, total: 5 });
 });
 
-test("emit-sidecar lite_eligible needs every dimension at or above 0.6 on an auto-agent entry", (t) => {
+test("emit-sidecar lite_eligible counts auto-agent and assisted-agent entries whatever their scores", (t) => {
   const oneLow = auto(1.0);
-  oneLow.scores.novelty = 0.4;
+  oneLow.scores.novelty = 0.2;
+  const lowAssisted = assisted(0.2);
   const humanOnly = entryWith("h1", "human-only", 1.0);
-  const out = JSON.parse(emit(t, [oneLow, auto(1.0), humanOnly]).stdout);
-  assert.deepEqual(out.lite_eligible, { count: 1, total: 3 });
+  const out = JSON.parse(emit(t, [oneLow, lowAssisted, humanOnly]).stdout);
+  assert.deepEqual(out.lite_eligible, { count: 2, total: 3 });
 });
 
 test("emit-sidecar does not write lite_eligible into the sidecar", (t) => {

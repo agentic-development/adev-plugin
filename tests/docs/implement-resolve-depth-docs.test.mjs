@@ -52,14 +52,17 @@ test("resolve-depth documents every exit code --help lists", () => {
 
 test("resolve-depth documents its output fields, source values and warnings", () => {
   const s = resolveDepthSection(read("docs/cli-reference.md"));
-  for (const field of ["lite_denied", "lite_source", "escalated_from", "review_cycles"])
+  for (const field of ["lite_denied", "lite_source", "escalated_from", "floor_cap", "review_cycles"])
     assert.ok(s.includes(`\`${field}\``), field);
-  for (const v of ["not-authorized", "routing-scores", "high-risk", "floor:<leg>", "parallel"])
+  for (const v of ["not-authorized", "no-routing-entry", "high-risk", "floor:<leg>", "parallel"])
     assert.ok(s.includes(`\`${v}\``), v);
+  assert.doesNotMatch(s, /routing-scores/);
   for (const src of ["tier-full-absolute", "policy-baseline", "default-quick", "lite-grant", "lite-tripwire"])
     assert.ok(s.includes(`\`${src}\``), src);
-  for (const w of ["LITE_TRIPWIRE_ESCALATED", "ROUTING_SIDECAR_MISSING", "ROUTING_SCORE_OUT_OF_RANGE", "REVIEW_DEPTH_FLOOR_APPLIED"])
+  for (const w of ["LITE_TRIPWIRE_ESCALATED", "ROUTING_SIDECAR_MISSING", "REVIEW_DEPTH_FLOOR_APPLIED"])
     assert.ok(s.includes(w), w);
+  assert.doesNotMatch(s, /ROUTING_SCORE_OUT_OF_RANGE/);
+  assert.match(s, /`floor_cap`: `quick` when the lite cap lowered a `full` result to `quick`, otherwise `null`/);
   assert.doesNotMatch(s, /predicate-grant|quick-grant/);
 });
 

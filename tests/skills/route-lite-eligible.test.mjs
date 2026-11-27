@@ -1,10 +1,10 @@
 // tests/skills/route-lite-eligible.test.mjs
 //
-// /adev:route reports how many tasks meet the "easy" rigor signal and cites
-// liteEligible() as its single definition. The agent cannot run that
-// predicate, so the citation carries a gloss in route's own 1–5 units that
-// must match LITE_GRANT_THRESHOLD (0.6 = 3/5). The count is an eligibility
-// signal only: route never authorizes lite.
+// /adev:route reports how many tasks meet the lite-eligibility signal and
+// cites liteEligible() as its single definition. The agent cannot run that
+// predicate, so the citation carries a gloss that must match it: routed
+// auto-agent or assisted-agent, with the dimension scores not consulted. The
+// count is an eligibility signal only: route never authorizes lite.
 
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
@@ -33,16 +33,18 @@ test("route SKILL anchors the liteEligible citation at review-depth.mjs and name
   assert.match(section, /`adev route emit-sidecar` reports the count/);
 });
 
-test("the citation's gloss states the threshold rule in route's units: auto-agent and no dimension below 3 of 5", () => {
+test("the citation's gloss states the rule: auto-agent or assisted-agent, scores not consulted", () => {
   const section = rigorTierSection(readFileSync(SKILL_PATH, "utf8"));
   const sentence = section.split("\n").find((line) => line.includes("liteEligible(entry)"));
   assert.ok(sentence, "the citation must be on one line with its gloss");
-  assert.match(sentence, /liteEligible\(entry\)`[^\n]*: it routes `auto-agent` and no dimension scores below 3 of 5 \(each sidecar score ≥ 0\.6\)/);
+  assert.match(sentence, /liteEligible\(entry\)`[^\n]*: it routes `auto-agent` or `assisted-agent`, and the dimension scores are not consulted\./);
 });
 
-test("the Rigor Tier Signal states the rule once, as the gloss, not as a separate routing-total rule", () => {
+test("the Rigor Tier Signal states the rule once, as the gloss, with no score threshold or routing-total rule", () => {
   const section = rigorTierSection(readFileSync(SKILL_PATH, "utf8"));
-  assert.equal([...section.matchAll(/below 3/g)].length, 1, "the rule must appear only in the gloss");
+  assert.equal([...section.matchAll(/not consulted/g)].length, 1, "the rule must appear only in the gloss");
+  assert.doesNotMatch(section, /below 3/);
+  assert.doesNotMatch(section, /≥ 0\.6/);
   assert.doesNotMatch(section, /total ≥ 16/);
 });
 

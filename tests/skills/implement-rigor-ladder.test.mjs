@@ -207,7 +207,8 @@ test("visibility relays (WR-7)", () => {
 
 test("lite-mode names the routing sidecar that must be committed at run_base", () => {
   assert.match(lite, /ROUTING_SIDECAR_MISSING/);
-  assert.match(lite, /routing-scores/);
+  assert.match(lite, /no-routing-entry/);
+  assert.doesNotMatch(lite, /routing-scores/);
   assert.match(lite, /commit[^\n]*routing\.json|routing\.json[^\n]*commit/i);
   assert.match(lite, /\/adev:route/);
 });
@@ -437,43 +438,65 @@ function paragraph(text, label) {
   return end === -1 ? text.slice(start) : text.slice(start, end);
 }
 
-// ROUTING_SCORE_OUT_OF_RANGE comes only from the lite grant, which runs only on
-// the provisional pass; ROUTING_SIDECAR_MISSING comes from the run-base read,
-// which both passes make. An echo rule on the wrong pass never fires.
+// ROUTING_SIDECAR_MISSING comes from the run-base read, which both passes
+// make. The grant reads no routing scores, so no pass raises a score warning
+// and no echo rule may name one.
 test("depth contract: warnings are echoed on the pass that emits them (BEH-5, BEH-7)", () => {
   const prov = paragraph(depthContract, "Warning visibility, provisional pass.");
   const fin = paragraph(depthContract, "Warning visibility, final pass.");
   assert.ok(prov, "missing the provisional-pass warning-visibility paragraph");
   assert.ok(fin, "missing the final-pass warning-visibility paragraph");
-  for (const code of ["ROUTING_SCORE_OUT_OF_RANGE", "ROUTING_SIDECAR_MISSING", "REVIEW_DEPTH_FLOOR_APPLIED"])
+  for (const code of ["ROUTING_SIDECAR_MISSING", "REVIEW_DEPTH_FLOOR_APPLIED"])
     assert.match(prov, new RegExp(code), `provisional: ${code}`);
   for (const code of ["REVIEW_DEPTH_FLOOR_APPLIED", "LITE_TRIPWIRE_ESCALATED", "ROUTING_SIDECAR_MISSING"])
     assert.match(fin, new RegExp(code), `final: ${code}`);
-  assert.doesNotMatch(fin, /echo[^.]*ROUTING_SCORE_OUT_OF_RANGE/);
+  assert.doesNotMatch(depthContract, /ROUTING_SCORE_OUT_OF_RANGE/);
   assert.match(prov, /operator-facing transcript/);
   assert.match(fin, /operator-facing transcript/);
 });
 
-test("depth contract: an uncommitted sidecar denies the grant with routing-scores (BEH-5)", () => {
+test("depth contract: an uncommitted sidecar denies the grant with no-routing-entry (BEH-5)", () => {
   assert.match(
     depthContract,
-    /routing sidecar not committed at `run_base` denies with `routing-scores` and a `ROUTING_SIDECAR_MISSING` warning/,
+    /routing sidecar not committed at `run_base` denies with `no-routing-entry` and a `ROUTING_SIDECAR_MISSING` warning/,
   );
+  assert.doesNotMatch(depthContract, /routing-scores/);
+});
+
+test("depth contract: the grant reads no scores, and the lite cap gives quick with floor_cap (BEH-4, BEH-5)", () => {
+  assert.match(depthContract, /routed `auto-agent` or\s+`assisted-agent`\. Routing scores are not consulted\./);
+  assert.match(depthContract, /a `human-only` entry with `floor:routing`/);
+  const cap = paragraph(depthContract, "The lite cap.");
+  assert.ok(cap, "missing the **The lite cap.** paragraph");
+  assert.match(cap, /`boundary` or `sensitive-path`[\s\S]*gives `quick`/);
+  assert.match(cap, /floor_cap: "quick"/);
+  assert.match(cap, /`routing`,\s+`critical-finding`\) gives `full`/);
+  assert.match(cap, /`--tier full` stays absolute/);
 });
 
 test("Step 2a's provisional call echoes its warnings to the transcript (BEH-5)", () => {
   const prov = paragraph(loop, "Provisional review depth.");
   assert.ok(prov, "missing the **Provisional review depth.** paragraph");
-  for (const code of ["ROUTING_SCORE_OUT_OF_RANGE", "ROUTING_SIDECAR_MISSING", "REVIEW_DEPTH_FLOOR_APPLIED"])
+  for (const code of ["ROUTING_SIDECAR_MISSING", "REVIEW_DEPTH_FLOOR_APPLIED"])
     assert.match(prov, new RegExp(code), code);
+  assert.doesNotMatch(prov, /ROUTING_SCORE_OUT_OF_RANGE/);
   assert.match(prov, /operator-facing transcript/);
 });
 
-test("2f-pre echoes the final pass's warnings, not the provisional-only score warning (BEH-7)", () => {
+test("2f-pre echoes the final pass's warnings and names no score warning (BEH-7)", () => {
   const pre = subsection(loop, "#### 2f-pre.");
   assert.match(pre, /REVIEW_DEPTH_FLOOR_APPLIED/);
   assert.match(pre, /ROUTING_SIDECAR_MISSING/);
   assert.doesNotMatch(pre, /ROUTING_SCORE_OUT_OF_RANGE/);
+});
+
+test("lite-mode states the revision-4 grant, the lite cap and the quick-only tripwire for sensitive and boundary paths (BEH-4, BEH-5, BEH-7)", () => {
+  assert.match(lite, /routed `auto-agent` or `assisted-agent` \(scores are not consulted\)/);
+  assert.doesNotMatch(lite, /no score below the threshold/);
+  assert.match(lite, /`floor:boundary` or `floor:sensitive-path` resolves `quick` with `floor_cap: "quick"`/);
+  const trip = subsection(lite, "## 3.");
+  assert.match(trip, /a touched `sensitive-path` or `boundary` path escalates the task to `quick`/);
+  assert.match(trip, /assisted-agent`, present the diff/);
 });
 
 // lite-mode.md loads only after a task resolves lite, which an uncommitted

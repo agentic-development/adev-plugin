@@ -27,30 +27,29 @@ In the sandbox the spec, plan and sidecar live at
 The harness derives every count below from the plan and the sidecar at
 `--dry-run` time. Nothing here is read by code except the defect table.
 
-| Task | Routing | Role | Expected depth under `--lite` |
-|---|---|---|---|
-| 1 | auto-agent, all scores ≥ 0.6 | lite-eligible | `lite` |
-| 2 | auto-agent, all scores ≥ 0.6 | lite-eligible | `lite` |
-| 3 | auto-agent, all scores ≥ 0.6 | lite-eligible | `lite` |
-| 4 | assisted-agent | assisted-agent | `quick` |
-| 5 | auto-agent, `pattern_coverage: 0.4` | low-score | `quick` |
-| 6 | auto-agent, all scores ≥ 0.6 | sensitive-path (`src/auth/token.mjs`, matched by the built-in `**/auth/**`) | `full` |
-| 7 | auto-agent, all scores ≥ 0.6 | tripwire-target | `lite`, then `quick` at the final pass |
+| Task | Routing | Role | Expected depth under `--lite` | Without `--lite` |
+|---|---|---|---|---|
+| 1 | auto-agent, all scores ≥ 0.6 | lite-eligible | `lite` | `quick` |
+| 2 | auto-agent, all scores ≥ 0.6 | lite-eligible | `lite` | `quick` |
+| 3 | auto-agent, all scores ≥ 0.6 | lite-eligible | `lite` | `quick` |
+| 4 | assisted-agent | lite-eligible | `lite`, with the assisted-agent checkpoint before its commit | `quick` |
+| 5 | auto-agent, `pattern_coverage: 0.4` | lite-eligible (scores are not consulted) | `lite` | `quick` |
+| 6 | auto-agent, all scores ≥ 0.6 | sensitive-path (`src/auth/token.mjs`, matched by the built-in `**/auth/**`) | `quick` (the lite cap, `floor_cap: quick`) | `full` |
+| 7 | auto-agent, all scores ≥ 0.6 | tripwire-target | `lite`, then `quick` at the final pass | `quick` |
 
 How the harness classifies a task, in this order:
 
 1. A declared file matches the effective sensitive-path set (the built-in defaults, extended by `seed/.context-index/governance/sensitive-paths.yaml` if one is added): **sensitive-path**.
-2. `selected_agent` is not `auto-agent`: the routed agent's name.
-3. A routing score is missing, outside `[0, 1]` or below 0.6: **low-score**.
-4. The task body names a backticked `src/` path that its `**Files:**` block does not declare: **tripwire-target**. Task 7 must register its handler in `src/registry.mjs`, which it does not declare, so a correct `lite` implementation trips the `scope-mismatch` tripwire.
-5. Otherwise: **lite-eligible**.
+2. `liteEligible` rejects the entry (`selected_agent` is neither `auto-agent` nor `assisted-agent`): the routed agent's name.
+3. The task body names a backticked `src/` path that its `**Files:**` block does not declare: **tripwire-target**. Task 7 must register its handler in `src/registry.mjs`, which it does not declare, so a correct `lite` implementation trips the `scope-mismatch` tripwire.
+4. Otherwise: **lite-eligible**.
 
 In the `--dry-run` output, `liteEligible` means "expected to finish at `lite`"
-and counts role 5 only (3 tasks). The tripwire target is granted `lite`
+and counts role 4 only (5 tasks). The tripwire target is granted `lite`
 provisionally but is expected to end at `quick`, so it counts as ineligible
-there. `routeEligible` counts every task that passes route's easy rule
-(`auto-agent`, every score in `[0.6, 1]`) before floors and the tripwire are
-applied (5 tasks: 1, 2, 3, 6 and 7).
+there. `routeEligible` counts every task that passes route's eligibility rule
+(`auto-agent` or `assisted-agent`, scores not consulted) before floors and the
+tripwire are applied (all 7 tasks).
 
 ## Seeded defects
 

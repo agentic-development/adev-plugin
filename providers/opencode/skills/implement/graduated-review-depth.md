@@ -80,19 +80,25 @@ hold, checked in this order:
 1. The operator authorized `lite`: `--lite` or `--tier lite` on the call, or
    `implement_mode: lite` for the spec's risk level when no `--tier` was
    passed. An explicit `--tier quick` or `--tier full` is the per-run opt-out.
-2. The task is route-eligible: routed `auto-agent`, with every routing score a
-   number in `[0, 1]` at or above the threshold (no dimension below 3 of 5).
-   A score that is missing or out of range denies with `routing-scores` and a
-   `ROUTING_SCORE_OUT_OF_RANGE` warning. The scores are read from the sidecar
-   committed at `run_base`, not the working tree:
-   a routing sidecar not committed at `run_base` denies with `routing-scores` and a `ROUTING_SIDECAR_MISSING` warning, for every task.
+2. The task is route-eligible: its routing entry is routed `auto-agent` or
+   `assisted-agent`. Routing scores are not consulted. A missing entry denies
+   with `no-routing-entry`, and a `human-only` entry with `floor:routing`. The
+   entry is read from the sidecar committed at `run_base`, not the working tree:
+   a routing sidecar not committed at `run_base` denies with `no-routing-entry` and a `ROUTING_SIDECAR_MISSING` warning, for every task.
 3. The spec is not high-risk and no provisional floor leg holds.
 4. The run is not `--parallel`.
+
+**The lite cap.** When `lite` is authorized (condition 1) and the spec is not
+high-risk, a holding `boundary` or `sensitive-path` floor leg gives `quick`
+instead of `full`, on both passes and in the `lite` tripwire, and the response
+carries `floor_cap: "quick"`. Any other holding leg (`routing`,
+`critical-finding`) gives `full`, and `--tier full` stays absolute. `floor_cap`
+is `null` whenever the cap did not lower the result.
 
 The JSON response carries two fields for the grant:
 
 - `lite_denied` names the first failing condition: `not-authorized`,
-  `routing-scores`, `high-risk`, `floor:<leg>` or `parallel`, or `null` when
+  `no-routing-entry`, `high-risk`, `floor:<leg>` or `parallel`, or `null` when
   `lite` was granted. Copy every value other than `not-authorized` into the run
   summary with its task id; a `not-authorized` denial is silent. The field is
   meaningful only on the provisional pass and is always `null` on the final
@@ -111,7 +117,7 @@ derives them itself from the plan's `Files:` block.
 
 This call reports the `review_depth_resolved` event for the provisional pass.
 
-**Warning visibility, provisional pass.** Echo each warning in the response's `warnings` to the operator-facing transcript, by code, in addition to the persisted event the verb already writes — a graduated run must be auditable in the visible transcript, not only in the lifecycle log: `REVIEW_DEPTH_FLOOR_APPLIED` naming its legs; `ROUTING_SCORE_OUT_OF_RANGE` naming the task, dimension and offending value (raised only when `lite` is authorized, because only the grant reads the scores); and `ROUTING_SIDECAR_MISSING` naming the run base, telling the operator to commit `<plan>.routing.json` before using `lite` again. `ROUTING_SIDECAR_MISSING` comes from the run-base read, so every `resolve-depth` and `batches` call carries it, whether or not `lite` is authorized. Relay it only when `check-flags` printed `lite_authorized: true`, and only once: on the first provisional `resolve-depth` call of this invocation, or on the `batches` advisory when `batches` runs, whichever comes first. Later calls repeat the same warning for the same `run_base`, so do not echo it again. A batch agent never relays it, and neither does a `--parallel` group agent; the orchestrator already has. This is the only place that case reaches the operator: no task resolves `lite` then, so `lite-mode.md` never loads.
+**Warning visibility, provisional pass.** Echo each warning in the response's `warnings` to the operator-facing transcript, by code, in addition to the persisted event the verb already writes — a graduated run must be auditable in the visible transcript, not only in the lifecycle log: `REVIEW_DEPTH_FLOOR_APPLIED` naming its legs and the depth the floor gave; and `ROUTING_SIDECAR_MISSING` naming the run base, telling the operator to commit `<plan>.routing.json` before using `lite` again. `ROUTING_SIDECAR_MISSING` comes from the run-base read, so every `resolve-depth` and `batches` call carries it, whether or not `lite` is authorized. Relay it only when `check-flags` printed `lite_authorized: true`, and only once: on the first provisional `resolve-depth` call of this invocation, or on the `batches` advisory when `batches` runs, whichever comes first. Later calls repeat the same warning for the same `run_base`, so do not echo it again. A batch agent never relays it, and neither does a `--parallel` group agent; the orchestrator already has. This is the only place that case reaches the operator: no task resolves `lite` then, so `lite-mode.md` never loads.
 
 ## 4. Task base (Step 2d, before the implementer dispatch)
 

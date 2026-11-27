@@ -14,10 +14,12 @@
 // the regenerated-provider-mirror exemption. A trip is an escalation from
 // `lite`, so the corpus trip rate is taken over provisionally-`lite` tasks
 // with history, and given as fractional weights to those without; the result
-// is an expected distribution rather than a sampled one. A provisionally
-// `quick` task can still rise to `full` at the final pass through a touched
-// sensitive or boundary path, which its own history (or the rate of that over
-// `quick` tasks with history) decides.
+// is an expected distribution rather than a sampled one. With `lite`
+// authorized the lite cap holds for every task whose spec is not high-risk
+// and for every tripwire, so a touched sensitive or boundary path gives
+// `quick`. Only a provisionally `quick` task on a high-risk spec can still
+// rise to `full` at the final pass that way, which its own history (or the
+// rate of that over `quick` tasks with history) decides.
 //
 // Exits 1 with EV5_TARGET_MISSED when the release target (lite >= 45%,
 // full <= 20%) is not met, after writing the distribution.
@@ -107,8 +109,9 @@ function specPathForPlan(planText, planRel) {
 }
 
 // A sidecar whose entries fail validation (a score on route's 1–5 scale, say)
-// is still replayed from its raw entries: liteEligible() then denies those
-// tasks `routing-scores`, which is BEH-5 (b)'s verdict on an invalid score.
+// is still replayed from its raw entries. liteEligible() does not read
+// scores, so such a task is resolved from its `selected_agent` like any
+// other, which is BEH-5 (b)'s verdict.
 function sidecarEntries(text, label, planRel, invalid) {
   try {
     return parseRoutingSidecarText(text, label);
@@ -225,12 +228,13 @@ function scopeCause(path, mode) {
 
 /**
  * The tripwire's verdict on a task's historical changes, in liteTripwire()'s
- * leg order: a boundary or sensitive touched path gives `full`; else an
- * undeclared path that neither isTripwireExempt() nor the mirror rule exempts
- * gives `quick`. Each path's status is its newest touch across the task's
- * commits, and mirrors are judged at the task's newest commit, `endSha`.
+ * leg order: a boundary or sensitive touched path gives `quick` under
+ * `liteCap` and `full` otherwise; else an undeclared path that neither
+ * isTripwireExempt() nor the mirror rule exempts gives `quick`. Each path's
+ * status is its newest touch across the task's commits, and mirrors are
+ * judged at the task's newest commit, `endSha`.
  */
-function tripOutcome(records, { declared, isBookkeeping, governance, sensitive, tree, endSha }) {
+function tripOutcome(records, { declared, isBookkeeping, governance, sensitive, tree, endSha, liteCap }) {
   const touched = new Map();
   for (const r of records) if (!isBookkeeping(r.path) && !touched.has(r.path)) touched.set(r.path, r);
   const kept = [...touched.values()];
@@ -238,7 +242,7 @@ function tripOutcome(records, { declared, isBookkeeping, governance, sensitive, 
   const legs = [];
   if (paths.length > 0 && governance.boundaryCheck(paths) === true) legs.push('boundary');
   if (paths.some((p) => sensitive.some((g) => matchGlob(g, p)))) legs.push('sensitive-path');
-  if (legs.length > 0) return { outcome: 'full', legs, offending: [] };
+  if (legs.length > 0) return { outcome: liteCap ? 'quick' : 'full', legs, offending: [] };
 
   const declaredSet = new Set(declared);
   const offending = [];
@@ -367,6 +371,7 @@ export async function runReplay({ projectRoot = REPO_ROOT, ref = 'HEAD' } = {}) 
             sensitive,
             tree,
             endSha: h.endSha,
+            liteCap: t.provisional.depth === 'lite' || t.risk_level !== 'high',
           }),
         }
       : null;

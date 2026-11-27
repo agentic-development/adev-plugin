@@ -114,9 +114,9 @@ const QUICK_POLICY = "policies:\n  medium:\n    implement_mode: quick\n  high:\n
 const LITE_POLICY = "policies:\n  medium:\n    implement_mode: lite\n";
 
 const SCENARIOS = [
-  { name: "--lite on a medium-risk spec", riskLevel: "medium", policies: QUICK_POLICY, flags: ["--lite"], expected: ["1"] },
-  { name: "--tier lite on a medium-risk spec", riskLevel: "medium", policies: QUICK_POLICY, flags: ["--tier", "lite"], expected: ["1"] },
-  { name: "a policy lite with no flag", riskLevel: "medium", policies: LITE_POLICY, flags: [], expected: ["1"] },
+  { name: "--lite on a medium-risk spec", riskLevel: "medium", policies: QUICK_POLICY, flags: ["--lite"], expected: ["1", "3", "4"] },
+  { name: "--tier lite on a medium-risk spec", riskLevel: "medium", policies: QUICK_POLICY, flags: ["--tier", "lite"], expected: ["1", "3", "4"] },
+  { name: "a policy lite with no flag", riskLevel: "medium", policies: LITE_POLICY, flags: [], expected: ["1", "3", "4"] },
   { name: "--lite on a high-risk spec", riskLevel: "high", policies: QUICK_POLICY, flags: ["--lite"], expected: [] },
   { name: "--lite with --parallel", riskLevel: "medium", policies: QUICK_POLICY, flags: ["--lite", "--parallel"], expected: [] },
   { name: "--tier quick over a policy lite", riskLevel: "medium", policies: LITE_POLICY, flags: ["--tier", "quick"], expected: [] },
@@ -141,7 +141,7 @@ describe("batches and resolve-depth agree on the provisional lite grant", { conc
     assert.deepEqual(fromBatches, []);
     assert.deepEqual(
       outputs.map(([id, out]) => [id, out.lite_denied]),
-      TASK_IDS.map((id) => [id, "routing-scores"]),
+      TASK_IDS.map((id) => [id, "no-routing-entry"]),
     );
   });
 });

@@ -91,9 +91,10 @@ test("policy implement_mode full resolves full with source policy-baseline and n
 });
 
 test("policy implement_mode lite maps to the quick baseline with source policy-baseline", () => {
-  const r = resolveImplementReviewDepth({ ...base, policies: { medium: { implement_mode: "lite" } }, routingEntry: assisted, pass: "provisional" });
+  const r = resolveImplementReviewDepth({ ...base, policies: { medium: { implement_mode: "lite" } }, routingEntry: undefined, pass: "provisional" });
   assert.equal(r.depth, "quick");
   assert.equal(r.source, "policy-baseline");
+  assert.equal(r.lite_denied, "no-routing-entry");
 });
 
 test("a policy implement_mode outside the rigor modes throws INVALID_TIER naming the level", () => {
@@ -141,12 +142,12 @@ test("--tier quick keeps the floor: a human-only task under --tier quick resolve
 });
 
 test("--tier lite does not outrank the policy: an ineligible task resolves the policy baseline", () => {
-  const withPolicy = resolveImplementReviewDepth({ ...base, policies: { medium: { implement_mode: "full" } }, routingEntry: assisted, tierFlag: "lite", pass: "provisional" });
+  const withPolicy = resolveImplementReviewDepth({ ...base, policies: { medium: { implement_mode: "full" } }, routingEntry: undefined, tierFlag: "lite", pass: "provisional" });
   assert.equal(withPolicy.depth, "full");
   assert.equal(withPolicy.source, "policy-baseline");
   assert.deepEqual(withPolicy.floor_legs, []);
 
-  const noPolicy = resolveImplementReviewDepth({ ...base, routingEntry: assisted, tierFlag: "lite", pass: "provisional" });
+  const noPolicy = resolveImplementReviewDepth({ ...base, routingEntry: undefined, tierFlag: "lite", pass: "provisional" });
   assert.equal(noPolicy.depth, "quick");
   assert.equal(noPolicy.source, "default-quick");
 });

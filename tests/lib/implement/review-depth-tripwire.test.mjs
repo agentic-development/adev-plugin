@@ -4,7 +4,8 @@
 // pass is re-checked against what it actually touched. An undeclared,
 // non-exempt path escalates it to `quick` (scope-mismatch); a sensitive or
 // boundary path, exempt or not and including gitignored files written since
-// the task started, escalates it to `full`.
+// the task started, also escalates it to `quick`, because a lite task always
+// runs under the lite cap; any other floor leg escalates it to `full`.
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -82,14 +83,17 @@ function outcome(r) {
     escalated_from: r.escalated_from,
     floor_applied: r.floor_applied,
     floor_legs: r.floor_legs,
+    floor_cap: r.floor_cap,
     tripwire: w ? { task_id: w.task_id, legs: w.legs } : null,
   };
 }
 
-const STAYS_LITE = { depth: "lite", source: "lite-grant", escalated_from: null, floor_applied: false, floor_legs: [], tripwire: null };
-const escalated = (depth, legs) => ({
-  depth, source: "lite-tripwire", escalated_from: "lite", floor_applied: true, floor_legs: legs, tripwire: { task_id: "7", legs },
+const STAYS_LITE = { depth: "lite", source: "lite-grant", escalated_from: null, floor_applied: false, floor_legs: [], floor_cap: null, tripwire: null };
+const escalated = (depth, legs, floor_cap = null) => ({
+  depth, source: "lite-tripwire", escalated_from: "lite", floor_applied: true, floor_legs: legs, floor_cap, tripwire: { task_id: "7", legs },
 });
+// A sensitive-path or boundary leg under the lite cap.
+const capped = (legs) => escalated("quick", legs, "quick");
 
 // ── isTripwireExempt ────────────────────────────────────────────────────────
 
@@ -178,33 +182,58 @@ test("deleting a tracked symlink under tests/ escalates: a D record is judged by
   });
 });
 
-// ── sensitive-path / boundary → full ────────────────────────────────────────
+// ── sensitive-path / boundary → quick under the lite cap ────────────────────
 
-test("sensitive path escalates to full even under docs/", () => {
+test("sensitive path escalates to quick under the lite cap, even under docs/", () => {
   withRepo({}, (dir) => {
     const base = snapshotWorkingTree(dir);
     write(dir, "docs/secrets/a.md");
     const r = finalPass(dir, base, { sensitivePaths: ["docs/secrets/**"] });
-    assert.deepEqual(outcome(r), escalated("full", ["sensitive-path"]), "configured docs/secrets/**");
-    assert.equal(r.warnings.some((w) => w.code === "REVIEW_DEPTH_FLOOR_APPLIED"), true);
+    assert.deepEqual(outcome(r), capped(["sensitive-path"]), "configured docs/secrets/**");
+    const floor = r.warnings.find((w) => w.code === "REVIEW_DEPTH_FLOOR_APPLIED");
+    assert.ok(floor, "the floor warning is still raised");
+    assert.equal(floor.message, "review depth floored to quick (sensitive-path)");
   });
   withRepo({}, (dir) => {
     const base = snapshotWorkingTree(dir);
     write(dir, "docs/my-secret.md");
-    assert.deepEqual(outcome(finalPass(dir, base)), escalated("full", ["sensitive-path"]), "built-in **/*secret*");
+    assert.deepEqual(outcome(finalPass(dir, base)), capped(["sensitive-path"]), "built-in **/*secret*");
   });
 });
 
-test("a sensitive and an undeclared source path together escalate to full, not quick", () => {
+test("a sensitive and an undeclared source path together escalate on the floor leg, to quick", () => {
   withRepo({}, (dir) => {
     const base = snapshotWorkingTree(dir);
     write(dir, "lib/y.mjs");
     write(dir, "lib/auth/token.mjs");
-    assert.deepEqual(outcome(finalPass(dir, base)), escalated("full", ["sensitive-path"]));
+    assert.deepEqual(outcome(finalPass(dir, base)), capped(["sensitive-path"]));
   });
 });
 
-test("a touched path crossing a boundary escalates to full, exempt or not", () => {
+test("the cap holds without liteFlag on the final call: the tripwire is keyed on provisionalDepth", () => {
+  withRepo({}, (dir) => {
+    const base = snapshotWorkingTree(dir);
+    write(dir, "lib/auth/token.mjs");
+    assert.deepEqual(outcome(finalPass(dir, base, { liteFlag: false })), capped(["sensitive-path"]));
+  });
+});
+
+test("a holding routing or critical-finding leg escalates a lite task to full, with no cap", () => {
+  withRepo({}, (dir) => {
+    const base = snapshotWorkingTree(dir);
+    write(dir, "lib/auth/token.mjs");
+    const humanOnly = finalPass(dir, base, { routingEntry: { selected_agent: "human-only" } });
+    assert.deepEqual(outcome(humanOnly), escalated("full", ["routing", "sensitive-path"]));
+    assert.equal(
+      humanOnly.warnings.find((w) => w.code === "REVIEW_DEPTH_FLOOR_APPLIED").message,
+      "review depth floored to full (routing, sensitive-path)",
+    );
+    const critical = finalPass(dir, base, { task: { id: "7", declared_files: DECLARED, had_critical_finding: true } });
+    assert.deepEqual(outcome(critical), escalated("full", ["sensitive-path", "critical-finding"]));
+  });
+});
+
+test("a touched path crossing a boundary escalates to quick under the lite cap, exempt or not", () => {
   withRepo({}, (dir) => {
     const base = snapshotWorkingTree(dir);
     write(dir, "docs/api/contract.md");
@@ -213,7 +242,7 @@ test("a touched path crossing a boundary escalates to full, exempt or not", () =
       seen.push(...paths);
       return paths.some((p) => /^docs\/api\//.test(p));
     };
-    assert.deepEqual(outcome(finalPass(dir, base, { boundaryCheck })), escalated("full", ["boundary"]));
+    assert.deepEqual(outcome(finalPass(dir, base, { boundaryCheck })), capped(["boundary"]));
     assert.ok(seen.includes("docs/api/contract.md"));
   });
 });
@@ -233,13 +262,13 @@ test("own lifecycle-log M touch is excluded before the exemption check (RI-8)", 
 
 // ── BD-11: gitignored files written since the task started ──────────────────
 
-test("gitignored .env written after the task started escalates to full (BD-11)", () => {
+test("gitignored .env written after the task started escalates to quick (BD-11, lite cap)", () => {
   const inProgressAt = 1_800_000_000_000;
   withRepo({ ".gitignore": ".env\n" }, (dir) => {
     const base = snapshotWorkingTree(dir);
     write(dir, ".env", "TOKEN=1\n");
     utimesSync(join(dir, ".env"), inProgressAt / 1000 + 5, inProgressAt / 1000 + 5);
-    assert.deepEqual(outcome(finalPass(dir, base, { inProgressAt })), escalated("full", ["sensitive-path"]), "ignored .env after start");
+    assert.deepEqual(outcome(finalPass(dir, base, { inProgressAt })), capped(["sensitive-path"]), "ignored .env after start");
   });
   withRepo({ ".gitignore": ".env\n" }, (dir) => {
     write(dir, ".env", "TOKEN=1\n");
@@ -255,7 +284,7 @@ test("an ignored sensitive file whose mtime is 1 s before inProgressAt still esc
     write(dir, ".env", "TOKEN=1\n");
     utimesSync(join(dir, ".env"), inProgressAt / 1000 - 1, inProgressAt / 1000 - 1);
     const base = snapshotWorkingTree(dir);
-    assert.deepEqual(outcome(finalPass(dir, base, { inProgressAt })), escalated("full", ["sensitive-path"]));
+    assert.deepEqual(outcome(finalPass(dir, base, { inProgressAt })), capped(["sensitive-path"]));
   });
 });
 
@@ -264,16 +293,16 @@ test("a null inProgressAt fails closed: every ignored sensitive file counts", ()
     write(dir, ".env", "TOKEN=1\n");
     utimesSync(join(dir, ".env"), 1_000_000, 1_000_000);
     const base = snapshotWorkingTree(dir);
-    assert.deepEqual(outcome(finalPass(dir, base, { inProgressAt: null })), escalated("full", ["sensitive-path"]));
+    assert.deepEqual(outcome(finalPass(dir, base, { inProgressAt: null })), capped(["sensitive-path"]));
   });
 });
 
-test("a gitignored path crossing a boundary escalates to full", () => {
+test("a gitignored path crossing a boundary escalates to quick under the lite cap", () => {
   withRepo({ ".gitignore": "gen/\n" }, (dir) => {
     const base = snapshotWorkingTree(dir);
     write(dir, "gen/api/schema.json", "{}\n");
     const boundaryCheck = (paths) => paths.some((p) => p.startsWith("gen/api/"));
-    assert.deepEqual(outcome(finalPass(dir, base, { boundaryCheck, inProgressAt: null })), escalated("full", ["boundary"]));
+    assert.deepEqual(outcome(finalPass(dir, base, { boundaryCheck, inProgressAt: null })), capped(["boundary"]));
   });
 });
 
