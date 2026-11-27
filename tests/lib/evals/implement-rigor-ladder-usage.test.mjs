@@ -108,12 +108,31 @@ test('classifyRun accepts only a clean, committed, measured implement run', () =
   });
 });
 
-test('implementPrompt passes the plan path positionally', () => {
-  assert.equal(
-    implementPrompt({ implementArgs: ['--tier full'] }),
-    '/adev:implement .context-index/specs/features/example/example.plan.md --tier full',
-  );
-  assert.equal(implementPrompt({ implementArgs: [] }), '/adev:implement .context-index/specs/features/example/example.plan.md');
+test('implementPrompt puts the slash command and the arm flags alone on the first line', () => {
+  const firstLine = (args) => implementPrompt({ implementArgs: args }).split('\n')[0];
+  assert.equal(firstLine(['--tier full']), '/adev:implement .context-index/specs/features/example/example.plan.md --tier full');
+  assert.equal(firstLine([]), '/adev:implement .context-index/specs/features/example/example.plan.md');
+  assert.equal(firstLine(['--lite']), '/adev:implement .context-index/specs/features/example/example.plan.md --lite');
+});
+
+test('implementPrompt appends one operator pre-approval, identical for every arm', () => {
+  const statements = [['--tier full'], [], ['--lite']].map((args) => {
+    const lines = implementPrompt({ implementArgs: args }).split('\n');
+    assert.equal(lines[1], '', 'a blank line separates the command from the operator statement');
+    return lines.slice(2).join('\n');
+  });
+  assert.ok(statements[0].length > 0);
+  assert.equal(statements[1], statements[0]);
+  assert.equal(statements[2], statements[0]);
+  assert.match(statements[0], /unattended evaluation run/);
+  assert.match(statements[0], /assisted-agent checkpoint/);
+  assert.match(statements[0], /REQUIRES HUMAN APPROVAL/);
+  assert.match(statements[0], /Do not wait for input/);
+});
+
+test('the operator statement names no review depth or tier', () => {
+  const statement = implementPrompt({ implementArgs: [] }).split('\n').slice(1).join('\n');
+  assert.doesNotMatch(statement, /--lite|--tier|\blite\b|\btier\b|\bquick\b|\bfull\b|review depth/i);
 });
 
 function runResult({ arm, wall, escaped = 0, gates = true, valid = true, verdict = 'PASS', depths = {} }) {

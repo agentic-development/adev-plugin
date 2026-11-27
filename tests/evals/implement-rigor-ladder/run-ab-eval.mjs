@@ -326,8 +326,22 @@ export async function planDryRun({ ref = 'HEAD', runs = 3 } = {}) {
   };
 }
 
+// A headless `claude -p` run has no operator to answer a checkpoint, so without
+// this every arm stops at the first assisted-agent task. It must stay identical
+// across arms and name no review depth, or it would bias the comparison. The
+// slash command stays alone on the first line so /adev:implement parses its
+// arguments from that line only.
+const OPERATOR_STATEMENT = [
+  'This is an unattended evaluation run.',
+  'The operator pre-approves every assisted-agent checkpoint in this plan (the review of the failing RED tests before any production code is written)',
+  'and every task or gate marked REQUIRES HUMAN APPROVAL, so continue past each one without stopping.',
+  'Implement every plan task; if a task looks already implemented, do not skip it.',
+  'Do not wait for input.',
+].join(' ');
+
 export function implementPrompt(arm) {
-  return ['/adev:implement', EV1_FIXTURE.sandboxPlan, ...arm.implementArgs].join(' ');
+  const command = ['/adev:implement', EV1_FIXTURE.sandboxPlan, ...arm.implementArgs].join(' ');
+  return `${command}\n\n${OPERATOR_STATEMENT}`;
 }
 
 function parseArgs(argv) {
