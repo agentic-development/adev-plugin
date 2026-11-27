@@ -223,6 +223,9 @@ export function collectEntries({ files = [], resultsDir = DEFAULT_RESULTS_DIR, a
     if (typeof result?.arm !== 'string') continue;
     if (arm && result.arm !== arm) continue;
     if (ref && !String(result.ref ?? '').startsWith(ref)) continue;
+    // An invalid run (e.g. cut off by a usage limit) leaves an empty or partial patch; scoring it
+    // would rate the interruption, not the arm.
+    if (result.valid === false) continue;
     const patchPath = resolvePatchPath(file, result);
     entries.push({ file, key: basename(file), result, patchPath });
   }

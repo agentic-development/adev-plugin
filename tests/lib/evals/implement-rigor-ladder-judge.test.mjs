@@ -137,12 +137,14 @@ function resultsDir() {
   write('lite-bbbbbbbbbbbb-2.json', { arm: 'lite', ref: 'b'.repeat(40), patch: { path: null } });
   write('lite-bbbbbbbbbbbb-2.patch', PATCH);
   write('full-cccccccccccc-3.json', { arm: 'full', ref: 'c'.repeat(40) });
+  write('quick-dddddddddddd-4.json', { arm: 'quick', ref: 'd'.repeat(40), valid: false, patch: { path: 'quick-dddddddddddd-4.patch' } });
+  write('quick-dddddddddddd-4.patch', '');
   write('baseline-main-2026-11-27.json', { ref: 'main' });
   write('nonconvergent-direct-x.json', { mode: 'direct' });
   return dir;
 }
 
-test('collectEntries reads arm results only, filters by arm and ref prefix, and finds sibling patches', () => {
+test('collectEntries reads valid arm results only, filters by arm and ref prefix, and finds sibling patches', () => {
   const dir = resultsDir();
   try {
     const all = collectEntries({ resultsDir: dir });
@@ -253,9 +255,11 @@ test('judgeArgv carries the plain arm\'s isolation, no tools, no slash commands 
   assert.ok(!judgeArgv().includes('--model'));
 });
 
-test('judge-runs --dry-run on the committed results says cleanly that nothing has a patch, and writes nothing', () => {
+// Pinned to the quick/lite runs recorded at e25a69b7, before patches were persisted, so the
+// assertion holds as later runs with patches are committed beside them.
+test('judge-runs --dry-run on committed results recorded before patches says cleanly that nothing has a patch, and writes nothing', () => {
   const before = readdirSync(COMMITTED_RESULTS).sort();
-  const r = spawnSync('node', [JUDGE, '--dry-run'], { encoding: 'utf8' });
+  const r = spawnSync('node', [JUDGE, '--dry-run', '--ref', 'e25a69b72eab'], { encoding: 'utf8' });
   assert.equal(r.status, 0, r.stderr);
   const out = JSON.parse(r.stdout);
   assert.equal(out.with_patch, 0);
