@@ -1,0 +1,13 @@
+project:
+  name: rigor-ladder-nonconvergent-fixture
+
+sync:
+  - CLAUDE.md
+
+implementation_mode: tdd
+
+lifecycle:
+  gate_mode: strict
+
+implement:
+  max_review_cycles: 1

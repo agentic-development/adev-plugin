@@ -1,0 +1,16 @@
+[
+  {
+    "id": "escalated-lite-code-quality-nonconvergent",
+    "halted_task": "1",
+    "loop": "code-quality",
+    "later_tasks": ["2", "3"],
+    "preseed_done": []
+  },
+  {
+    "id": "stage1-spec-compliance-nonconvergent",
+    "halted_task": "2",
+    "loop": "spec-compliance",
+    "later_tasks": ["3"],
+    "preseed_done": ["1"]
+  }
+]

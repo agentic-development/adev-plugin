@@ -11,11 +11,13 @@
 
 ## Parallelization
 
-- Group A (sequential): Task 3 → Task 5 → Task 7 (Task 7 also needs Task 1)
+- Group A (sequential): Task 3 → Task 5 → Task 7
 - Group B (independent): Task 1
 - Group C (independent): Task 2
 - Group D (independent): Task 4
 - Group E (independent): Task 6
+
+Group A's last task also builds on Group B's `paginate`, so it runs after Group B.
 
 ## Task Summary
 
