@@ -61,7 +61,7 @@ brainstorm --> specify --> review --> plan --> implement --> validate
 2. **Specify** — Within a charter's scope, write a Live Spec — a behavioral contract defining exactly what the feature does.
 3. **Review** — Specialist reviewers (architecture, security, consistency) evaluate the spec for issues before any code is written.
 4. **Plan** — The reviewed spec is decomposed into ordered implementation tasks with file lists, test expectations, and dependencies.
-5. **Implement** — Each task is executed under the project's test discipline (test-driven development by default; see `implementation_mode`), with two-stage review (spec compliance, then code quality) after each task.
+5. **Implement** — Each task is executed under the project's test discipline (test-driven development by default; see `implementation_mode`), with each task reviewed at the depth the rigor ladder resolves for it (see [Graduated Rigor Tiers](#graduated-rigor-tiers)).
 6. **Validate** — A comprehensive check suite verifies the implementation against the spec, constitution, and quality gates.
 
 The diagram above shows the core path; two optional steps sit alongside it — **route** (after plan: scores each task as auto / assisted / human-only) and **eval** (after validate: graduated 0–100 quality scoring). This lifecycle is not rigid — you can enter at any point, skip phases for simple changes, or iterate within a phase. But for new features, following the full lifecycle produces the most reliable results.
@@ -72,12 +72,59 @@ You do not have to memorize which skill to run at each step. `/adev:work` is the
 
 ## Graduated Rigor Tiers
 
-Not every change deserves the same depth of review. adev's review and validation gates support two **rigor tiers** so low-risk work moves fast without ever *skipping* a gate:
+Not every change deserves the same depth of review. adev's gates support graduated **rigor tiers** so low-risk work moves fast without ever *skipping* a gate.
 
-- **`full`** (default) — the complete treatment. `/adev:review-specs` dispatches its three parallel specialists (structural, security, consistency); `/adev:validate` runs the full check suite.
-- **`quick`** — a narrowed pass for low-blast-radius, high-pattern-coverage work. `/adev:review-specs` dispatches a single synthesized reviewer instead of three; `/adev:validate` runs a trimmed check set. Crucially, `quick` **still produces the gate's artifact and emits its lifecycle event** — it narrows breadth, it does not bypass governance. The gate chain downstream is satisfied exactly as it is under `full`.
+### Review and validation: `full` and `quick`
 
-The tier is resolved by precedence: an explicit `--tier full|quick` flag wins, then a routing signal (`/adev:route`, `/adev:work`, or `/adev:build` may propagate `--tier quick` for work it scored as "easy"), then a per-risk-level policy in `governance/risk-policies.yaml`, defaulting to `full`. This keeps Gate-Based Governance intact — every stage still runs — while letting the framework spend reviewer effort where the risk actually is.
+- **`full`** (default) — the complete treatment. `/adev:review-specs` dispatches the project's registry reviewer set (structural, security, consistency by default); `/adev:validate` runs the full check suite.
+- **`quick`** — a narrowed pass for low-blast-radius, high-pattern-coverage work. `/adev:review-specs` dispatches a single synthesized reviewer; `/adev:validate` runs a trimmed check set. Crucially, `quick` **still produces the gate's artifact and emits its lifecycle event** — it narrows breadth, it does not bypass governance. The gate chain downstream is satisfied exactly as it is under `full`.
+
+The tier is resolved by precedence: an explicit `--tier full|quick` flag wins, then a routing signal (`/adev:route`, `/adev:work`, or `/adev:build` may propagate `--tier quick` for work it scored as "easy"), then a per-risk-level policy (`review_mode`, `validate_mode`) in `governance/risk-policies.yaml`, defaulting to `full`. This keeps Gate-Based Governance intact — every stage still runs — while letting the framework spend reviewer effort where the risk actually is.
+
+Both skills also accept `--tier lite` and run it as `quick`, printing one line saying so.
+
+### Implementation: the `full` / `quick` / `lite` ladder
+
+`/adev:implement` resolves a review depth **per task**, so one plan can mix levels. `adev implement resolve-depth` makes the decision; skill prose never does.
+
+| Level | How the task runs | Per-task review | Reached when |
+|---|---|---|---|
+| `full` | Fresh implementer subagent | Stage 1 spec compliance, then Stage 2 code quality | `--tier full` (absolute), or a floor leg holds |
+| `quick` (default) | Fresh implementer subagent | One synthesized reviewer | No floor leg holds and the task is not granted `lite` |
+| `lite` | Inline in the orchestrator, no subagent | None; a post-task tripwire can escalate it | Operator authorization plus every grant condition below |
+
+**Baseline.** `--tier quick` or `--tier full` sets it for the run; otherwise the spec's risk level's `implement_mode` in `risk-policies.yaml` does; otherwise it is `quick`.
+
+**Floor legs.** Each one forces `full`, whatever the baseline:
+
+- `risk-level`: the spec is `risk_level: high` and the task is not routed `auto-agent` (a high-risk `auto-agent` task resolves `quick` and is never granted `lite`).
+- `boundary` and `sensitive-path`: a declared file (and, after the task, any touched file) crosses a governance boundary or matches a sensitive path.
+- `routing`: the task is routed `human-only`. An `assisted-agent` task keeps its human checkpoint but no longer forces `full`.
+- `critical-finding`: a reviewer raised a Critical finding.
+
+Batch membership does not change a task's depth: a batched task is reviewed at its own resolved depth.
+
+**The `lite` grant.** A task resolves `lite` only when all of these hold:
+
+1. **The operator authorized it**, by typing `--lite` or `--tier lite`, or through `implement_mode: lite` for the spec's risk level when no `--tier` was passed. An agent never adds the flag on its own judgment, and `--tier quick` or `--tier full` is the per-run opt-out from a policy authorization. A policy-sourced run prints `lite authorized via policy` at the start and in the run summary.
+2. **Route marked it easy.** `liteEligible(entry)` in `lib/implement/review-depth.mjs` holds: routed `auto-agent`, with every score a finite number at or above `0.6` (no dimension below 3 of 5). `/adev:route` prints how many tasks pass as `lite-eligible: <count> of <total>`. That count is a signal, never an authorization.
+3. **The spec is not high-risk** and no floor leg holds.
+4. **The run is not `--parallel`.**
+
+Governance inputs come from one commit. `adev implement check-flags`, the skill's first action, captures `run_base` (`HEAD` at the start of the run). Every depth call reads `risk-policies.yaml`, `boundaries.yaml`, the sensitive paths and the routing sidecar from that commit, so an inline task cannot change the inputs to its own resolution. **The routing sidecar must therefore be committed at `run_base`.** If it is not, no task is granted `lite` and the run reports `ROUTING_SIDECAR_MISSING`.
+
+**The tripwire.** When a `lite` task finishes, before its commit, the final pass compares every file it touched with its declared files:
+
+- A sensitive or boundary path, including a gitignored file the task wrote, escalates the task to `full`.
+- Otherwise an undeclared path that is not exempt escalates it to `quick` (`scope-mismatch`).
+
+Exempt paths are those under `tests/` or `docs/`, `*.test.<ext>` and `*.spec.<ext>` source files, `README.md` files, and exact provider mirror regenerations: a file under `providers/*/skills/` whose bytes are exactly what `scripts/sync-provider-skills.mjs` writes from a canonical skill file the task declared or touched. A `*.spec.md`, anything under `.context-index/` (both matched case-insensitively) and a symlink are never exempt. An escalation reports `LITE_TRIPWIRE_ESCALATED` and runs the escalated level's review loop. Escalation only goes up, at most from `lite` to `full`.
+
+**After the run.** A run with any `lite` task runs the constitution's quality gates once over the whole run, fail-fast, and a failure stops it with `QUALITY_GATES_FAILED`. The final whole-run review is skipped only when every task resolved `lite`. `/adev:validate` then calls `adev implement lite-report` and lists those tasks as "implemented without per-task review", and its spec-compliance check covers their commits.
+
+**What `lite` never relaxes.** The strict lifecycle gate chain, `adev gate require`, the non-main-branch stop, skill extensions, test integrity, quality-gate fail-fast, destructive-action gates and constitution checks all apply exactly as under `full`. Per-task review is review breadth, not a hard gate. Every review loop, including one reached through the tripwire, is capped at `implement.max_review_cycles`; a loop that does not converge blocks the task and stops the run without waiting for input.
+
+See [Configuration → implement_mode](configuration.md#governancerisk-policiesyaml-implement_mode) for the policy field and [CLI Reference → implement](cli-reference.md#implement) for the verbs.
 
 ## Output Personas
 

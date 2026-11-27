@@ -151,12 +151,12 @@ Each task is executed by a fresh subagent. Under the default `implementation_mod
 
 `test-required` requires tests that cover the change in any order, and `agent-default` leaves tests to the implementer's judgment. See [Configuration](configuration.md#implementation_mode).
 
-After each task, two review stages run automatically:
+After each task, a review runs automatically at the task's resolved depth:
 
-- **Stage 1: Spec compliance** — A reviewer reads the actual code and verifies it matches the spec
-- **Stage 2: Code quality** — A reviewer checks the git diff against your project's coding standards
+- **`quick`** (the default) — one synthesized reviewer checks spec compliance and code quality together
+- **`full`** — two stages: a spec-compliance reviewer reads the actual code and verifies it matches the spec, then a code-quality reviewer checks the git diff against your project's coding standards. A task gets `full` when you pass `--tier full` or when it touches a sensitive path or governance boundary, is routed `human-only`, belongs to a high-risk spec and is not routed `auto-agent`, or draws a Critical finding
 
-Both reviews must pass before the next task begins. If a reviewer finds issues, the implementer fixes them and the review runs again.
+The review must pass before the next task begins. If a reviewer finds issues, the implementer fixes them and the review runs again, up to `implement.max_review_cycles` times. A third level, `lite`, runs a task with no per-task reviewer. It applies only when the operator passes `--lite` (or `--tier lite`), or through a policy `implement_mode: lite` in `risk-policies.yaml`, and even then only to tasks that meet its grant conditions. See [Core Concepts → Graduated Rigor Tiers](concepts.md#graduated-rigor-tiers).
 
 ## Step 8: Validate
 

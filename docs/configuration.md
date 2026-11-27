@@ -142,6 +142,25 @@ Plans record the mode in their header. When the project's mode differs from the 
 implementation_mode: agent-default
 ```
 
+`implementation_mode` sets **test discipline** only. It is a different setting from [`implement_mode`](#governancerisk-policiesyaml-implement_mode) in `risk-policies.yaml`, which sets per-task **review depth** (`full | quick | lite`). The two are independent, except that a `lite` task always runs under the `agent-default` test mandate.
+
+### implement
+
+How `/adev:implement` batches tasks and bounds its review loops.
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `max_review_cycles` | integer `>= 1` | `3` | Cap on every per-task review loop (`full`'s two stages, `quick`'s synthesized reviewer, and a `lite` task's review after a tripwire escalation). A loop that reaches the cap without converging blocks the task and stops the run without waiting for input. An illegal value fails with `INVALID_MAX_REVIEW_CYCLES`. Overridden per run by `/adev:implement --review-cycles <n>` (an illegal flag value fails with `INVALID_REVIEW_CYCLES`) |
+| `batch_mode` | `on` \| `off` | `on` | Whether cohesive sequential tasks may share one implementer subagent. An illegal value fails with `INVALID_BATCH_MODE`. `--no-batch` turns it off for one run |
+| `max_batch_size` | integer `>= 1` | `4` | Largest batch. An illegal value fails with `INVALID_MAX_BATCH_SIZE`. Overridden per run by `--max-batch <n>` |
+
+```yaml
+implement:
+  max_review_cycles: 3
+  batch_mode: on
+  max_batch_size: 4
+```
+
 ### test_policy (test depth & granularity)
 
 Controls the test depth policy: how test suites map onto units of change (**granularity**,
@@ -538,6 +557,30 @@ per-spec or per-module setting. The tier selects which `risk-policies.yaml` gets
 for `prototype`/`strict`, which `review.yaml`/`validate.yaml` overlay is applied on top of the
 resolved domain's bundle — see [Governance → Project risk tier](governance.md#project-risk-tier--which-risk-policiesyaml-you-start-from)
 for the full table and mechanism.
+
+---
+
+## governance/risk-policies.yaml: implement_mode
+
+`implement_mode` sets the **review depth** `/adev:implement` starts each task from, per spec risk level. It is not [`implementation_mode`](#implementation_mode), the manifest's test discipline (`tdd | test-required | agent-default`): the two settings are independent.
+
+| Value | Per-task review |
+|---|---|
+| `full` | Stage 1 spec compliance, then Stage 2 code quality, for every task |
+| `quick` | One synthesized reviewer; a floor leg (sensitive path, governance boundary, `human-only` routing, a high-risk spec on a task not routed `auto-agent`, a Critical finding) still raises a task to `full` |
+| `lite` | Project-level authorization for `lite`: a route-eligible task with no floor leg runs inline with no per-task reviewer, behind a post-task tripwire. Other tasks resolve at the `quick` baseline |
+
+The legal set is `full | quick | lite`; any other value, or a `risk-policies.yaml` that does not parse, fails with `INVALID_TIER` when `/adev:implement` starts. When the field (or the file) is absent, the baseline resolves to `quick`. `lite` is never valid for `high` (`LITE_NOT_ALLOWED_FOR_HIGH`). It is set only by an operator: by a typed choice at `/adev:init` Step 8c (`adev init prompt implement-rigor`), or by editing the file by hand. A run authorized by the policy prints `lite authorized via policy`, and `--tier quick` or `--tier full` opts out for one run.
+
+```yaml
+# .context-index/governance/risk-policies.yaml (standard preset)
+policies:
+  high:   { implement_mode: quick }
+  medium: { implement_mode: quick }
+  low:    { implement_mode: quick }
+```
+
+The `standard` and `prototype` presets start every level at `quick`; `strict` starts at `full`. The `review_mode` and `validate_mode` fields beside it govern `/adev:review-specs` and `/adev:validate`, still fall back to `full`, and treat a `lite` value as `quick`. See [Core Concepts → Graduated Rigor Tiers](concepts.md#graduated-rigor-tiers) for the ladder and [Governance](governance.md#test-depth-policy-in-risk-policiesyaml) for the file's other fields.
 
 ---
 

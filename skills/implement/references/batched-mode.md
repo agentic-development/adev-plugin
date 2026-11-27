@@ -1,4 +1,4 @@
-<!-- Companion to skills/implement/SKILL.md. Extracted from the SKILL body
+<!-- Companion to skills/implement/SKILL.md. Kept out of the SKILL body
      because implement exceeded the 65,536-byte cap the Copilot provider
      enforces (lib/providers/copilot/skill-validator.mjs). Loaded
      conditionally — see the pointer stub in SKILL.md. -->
