@@ -5,7 +5,7 @@
 
 import { test, after } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, realpathSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { createTempDir, cleanupTempDir } from "../../helpers.mjs";
 import { createTransport } from "../../../lib/issues/github/transport.mjs";
@@ -75,7 +75,7 @@ test("fixture file names are hyphenated slugs of the case name", () => {
 
 test("fixturePath stays beneath the fixtures directory and refuses every escape", () => {
   const root = tempDir();
-  assert.equal(fixturePath(root, "a-case.json"), join(root, FIXTURES_REL, "a-case.json"));
+  assert.equal(fixturePath(root, "a-case.json"), join(realpathSync(root), FIXTURES_REL, "a-case.json"));
   for (const name of ["../a.json", "../../../../a.json", "/etc/a.json", "", "."]) {
     assert.throws(() => fixturePath(root, name), { code: "RECORDER_PATH_ESCAPE" }, name);
   }

@@ -15,8 +15,10 @@
  *   `adev-fixture:`; one that does not is refused before it reaches GitHub. The
  *   text is checked, not rewritten, because a replayed request must carry the
  *   exact variables that were recorded.
- * - Files are written only beneath tests/issues/conformance/fixtures/, resolved
- *   through resolveContained() and refused when any component is a symlink. A
+ * - Files are written only beneath tests/issues/conformance/fixtures/, with
+ *   containment decided on real paths: the fixtures directory must resolve to
+ *   exactly <real repo root>/tests/issues/conformance/fixtures, and each file must
+ *   resolve strictly inside it. A file name with a path separator is refused. A
  *   case that fails deletes its fixture from any earlier run, so the directory
  *   never mixes fixtures recorded in two runs.
  * - Every string written is redacted of token patterns and of the literal
@@ -29,12 +31,12 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, relative, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
 import { GithubAdapter } from "../lib/issues/github-adapter.mjs";
 import { redact } from "../lib/issues/github/errors.mjs";
-import { isContained, lenientRealpath, resolveContained } from "../lib/path-safety.mjs";
+import { isContained, lenientRealpath } from "../lib/path-safety.mjs";
 import { CASES, FIXTURE_TEXT_PREFIX } from "../tests/issues/conformance/contract-cases.mjs";
 
 export const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -114,27 +116,30 @@ export function fixtureFileName(caseName) {
 }
 
 /**
- * The absolute path a case's fixture is written to. Refuses (RECORDER_PATH_ESCAPE)
- * a path that leaves the fixtures directory lexically, or whose real path does
- * not stay beneath the repo's real fixtures directory (a symlinked component).
+ * The real path a case's fixture is written to. Containment is decided on real
+ * paths only: the fixtures directory must resolve to exactly
+ * `<real repo root>/<FIXTURES_REL>` (no symlinked component on the way down), and
+ * the file must resolve strictly inside it. Missing components are resolved
+ * leniently, since neither the directory nor the file need exist yet. The real path
+ * is returned so that what is checked is what is written. Refuses
+ * (RECORDER_PATH_ESCAPE) a name that is empty, `.`, `..`, or carries a `/` or `\`.
  *
  * @param {string} repoRoot
  * @param {string} fileName
  * @returns {string}
  */
 export function fixturePath(repoRoot, fileName) {
-  const fixturesDir = resolveContained(repoRoot, FIXTURES_REL);
-  const file = fixturesDir === null ? null : resolveContained(fixturesDir, fileName);
-  if (file === null || file === fixturesDir) {
+  const name = String(fileName);
+  if (name === "" || name === "." || name === ".." || /[/\\\0]/.test(name)) {
     throw recorderError("RECORDER_PATH_ESCAPE", `Refusing to write ${fileName}: it is not beneath ${FIXTURES_REL}.`);
   }
-  const realFixtures = lenientRealpath(fixturesDir);
   const expected = join(lenientRealpath(repoRoot), FIXTURES_REL);
-  const realFile = lenientRealpath(file);
-  if (realFixtures !== expected || !isContained(realFile, realFixtures) || realFile === realFixtures) {
+  const realFixtures = lenientRealpath(join(resolve(repoRoot), FIXTURES_REL));
+  const realFile = lenientRealpath(join(realFixtures, name));
+  if (realFixtures !== expected || realFile === realFixtures || !isContained(realFile, realFixtures)) {
     throw recorderError("RECORDER_PATH_ESCAPE", `Refusing to write ${fileName}: a symlink takes it outside ${FIXTURES_REL}.`);
   }
-  return file;
+  return realFile;
 }
 
 function* textVariables(value, path = []) {
@@ -390,11 +395,11 @@ export async function main(argv, env, { spawn = execFileSync, cases = CASES, rep
       failed += 1;
       const stale = removeStaleFixture(repoRoot, names[i]);
       console.error(`NOT WRITTEN  ${testCase.name}\n  ${result.problems.join("\n  ")}`);
-      if (stale) console.error(`  removed the earlier ${relative(repoRoot, paths[i])} so fixtures from two runs are never mixed`);
+      if (stale) console.error(`  removed the earlier ${join(FIXTURES_REL, names[i])} so fixtures from two runs are never mixed`);
       continue;
     }
     writeFileSync(fixturePath(repoRoot, names[i]), result.text);
-    console.log(`recorded     ${relative(repoRoot, paths[i])}`);
+    console.log(`recorded     ${join(FIXTURES_REL, names[i])}`);
   }
 
   console.log(`\n${cases.length - failed} of ${cases.length} cases recorded.`);
