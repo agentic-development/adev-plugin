@@ -9,7 +9,7 @@ charter-revision: 1
 amends: .context-index/specs/cross-cutting/graduated-rigor-tiers.spec.md
 target-revision: 4
 created: 2026-11-26
-updated: 2026-11-26
+updated: 2026-11-27
 ---
 
 # Amendment: Skill Spec: Graduated Rigor Tiers (targeting rev 4)
@@ -28,7 +28,7 @@ updated: 2026-11-26
 - **Resolution helper.** `resolveRigorMode` returns `full | quick | lite`, but returns `lite` only for `skill === "implement"`. For every other skill a resolved `lite` maps to `quick`. The implement fallback becomes `quick`; the `review_mode` and `validate_mode` fallbacks stay `full`.
 - **Policy validation.** `loadRigorPolicies` validates `review_mode`, `validate_mode` and `implement_mode` against `RIGOR_MODES`, throws `INVALID_TIER` for a bad value or an unparseable file, and throws `LITE_NOT_ALLOWED_FOR_HIGH` for `high.implement_mode: lite`. The Failure Modes row "`risk-policies.yaml` missing/legacy → `full`" still holds for `review_mode` and `validate_mode`. For `implement_mode`, a missing file or missing key resolves `quick` (BEH-2), as the Resolution helper bullet above states. A malformed value or an unparseable file is now an error for all three keys.
 - **`--tier lite` on the gate skills.** `/adev:review-specs` and `/adev:validate` accept `--tier lite` and run exactly as `--tier quick`, printing one line saying so. `/adev:build` and `/adev:work` forward `--lite` or `--tier lite` only when the operator typed it.
-- **Routing signal.** `/adev:route` output is an eligibility signal, never an authorization for `lite`. Route's "easy" rule for `lite` is `liteEligible(entry)` in `lib/implement/review-depth.mjs`.
+- **Routing signal.** `/adev:route` output is an eligibility signal, never an authorization for `lite`. Route's `lite`-eligibility rule is `liteEligible(entry)` in `lib/implement/review-depth.mjs`: the task is routed `auto-agent` or `assisted-agent`, and no score is read (`implement-rigor-ladder.spec.md` revision 4). Route's rigor-tier recommendation for `/adev:review-specs` and `/adev:validate` is a separate predicate, `quickTierSignal(entry)` in the same module: routed `auto-agent` with every score at or above 0.6.
 
 ### Amended invariant
 
