@@ -733,8 +733,8 @@ adev coordination scan --json --owner "$USER/local"
 | `list [--status <s>] [--epic <id>] [--milestone <name>] [--json]` | List issues as a table, priority ascending (0 first). `--milestone` selects the epics carrying that milestone and their child issues. Read-only |
 | `ready [--json]` | List exactly the issues that are open **and** have every dependency closed, priority ascending. The unblocked filter lives in the verb, not in prose. A dependency id that resolves to nothing is treated as non-blocking and reported on stderr. Read-only, never refused |
 | `milestone <create\|list\|ship\|defer> [args]` | Milestone CRUD over `.context-index/milestones.json` — see the sub-table below |
-| `migrate` | Convert the board to a different backend |
-| `claim <id> --owner <name> [--branch <b>] [--pr <ref>] [--json]` | Take ownership via an atomic check-and-set. Exit `2` = refused (held by a live owner, or closed); exit `1` = usage error or `CLAIM_UNSUPPORTED_BACKEND` |
+| `migrate --to <backend> [--from <backend>] [--include-closed] [--dry-run] [--yes]` | Convert the board to a different backend — see [`issues migrate`](#issues-migrate) |
+| `claim <id> --owner <name> [--branch <b>] [--pr <ref>] [--json]` | Take ownership as a lease: an atomic check-and-set on json and beads, a write-and-re-read lease on github (see the [capability matrix](#backend-capability-matrix)). Exit `2` = refused (held by a live owner, closed, or a lost race); exit `1` = usage error, or `CLAIM_UNSUPPORTED_BACKEND` on the read-only `file` backend |
 | `release <id> --owner <name> [--force] [--json]` | Give up ownership. `branch`/`pr` are kept as the record of where the work went; `--force` releases another owner's claim |
 | `stale [--json]` | Report claims past their TTL, plus `unexpirable` rows (an owner with no `claimed_at`, which can never expire on their own). Read-only |
 | `board migrate [--dry-run]` | One-shot, resumable migration of `.beads/issues.jsonl` off `main`'s git history onto a dedicated `beads-board` orphan branch, checked out as a linked worktree at `.beads/` |
@@ -748,6 +748,28 @@ adev coordination scan --json --owner "$USER/local"
 | `milestone ship <name> [--yes] [--gate-timeout <ms>]` | Evaluate the ship criteria and, if all pass, mark the milestone shipped, close its epic, and perform the release action its strategy names. `--gate-timeout` is a per-gate wall-clock budget (default `300000`) |
 | `milestone defer <name> --reason "<text>"` | Mark a milestone deferred, record why, and defer its linked epic. A shipped milestone cannot be deferred (`ALREADY_SHIPPED`, exit 1) |
 
+#### `issues migrate`
+
+**Signature:** `issues migrate --to <backend> [--from <backend>] [--include-closed] [--dry-run] [--yes]`
+
+Copies every in-scope item of the configured board (or `--from`) into another backend. Resumable: a re-run skips what the target already holds.
+
+| Flag | Meaning |
+|---|---|
+| `--to <backend>` | Target backend. One of `SUPPORTED_BACKENDS`: json, file, beads, github. Required (`MIGRATE_MISSING_TARGET` without it). `file` is refused with `MIGRATE_TARGET_READONLY` |
+| `--from <backend>` | Source backend; defaults to manifest `tasks.backend`. A `github` source is refused with `MIGRATE_GITHUB_UNAVAILABLE`: migrating out of a GitHub board is not supported |
+| `--include-closed` | Include closed items in scope (default excludes them) |
+| `--dry-run` | Print the planned actions as JSON; write nothing, and never ask for confirmation |
+| `--yes` | Confirm a github migration's write set without prompting. Read from argv only, never from the manifest, the environment or the state file, and not implied by `--auto`. No effect on json or beads targets |
+
+An unknown `--to` or `--from` exits 1 with `MIGRATE_UNKNOWN_BACKEND`, whose message lists every supported backend: `Supported: json, file, beads, github`. Source and target the same exits 1 with `MIGRATE_NOOP`.
+
+**`--to github`** runs preflight and `adev issues github setup --check` against the target, checks every `Legacy ID` already on the target, then prints the write set to stderr and asks for confirmation. A run that is not interactive (stdin or stderr not a TTY, or `--auto`) needs `--yes`, else it exits 1 with `MIGRATE_CONFIRMATION_REQUIRED` before any write. It copies items one at a time, paced, writing each item's `Legacy ID` first, then replays parents and dependencies once every item exists, and finally writes the read-only sentinel on the source board (committing it on `beads-board` for a beads source). The target board's `Legacy ID` values decide what a re-run skips; `.context-index/tasks/.migrate-state.json` only feeds the resume-argument checks and the `resuming: N of M` line. `manifest.yaml` is never changed: the run suggests the `tasks.backend: github` edit for you to make.
+
+**Abort envelope:** a failure after the run started writing exits 1 with `MIGRATE_PARTIAL_FAILURE`, one `MIGRATE_PARTIAL_FAILURE:` stderr line, and the JSON report's `errors[]`. On a github target each entry is `{ source_id, code, message }`, with the message redacted of tokens. A `GITHUB_PARTIAL_CREATE` entry adds `target_id` (the issue that was created) and `unwritten_fields`; a rate-limited entry adds `reset_at`. An error with no code of its own is reported as `MIGRATE_WRITE_FAILED`. On json and beads targets the envelope is unchanged.
+
+Every code, with its remedy, is in [Troubleshooting](troubleshooting.md#read-only-boards-and-migration).
+
 #### Exit codes
 
 Uniform across every `issues` subcommand, so callers branch on the code and never on the message:
@@ -755,7 +777,7 @@ Uniform across every `issues` subcommand, so callers branch on the code and neve
 | Code | Meaning |
 |---|---|
 | `0` | Success. Read-only verbs (`board`, `list`, `ready`, `stale`, `milestone list`) exit 0 even when the result is empty — "nothing matched" is an answer, not a failure |
-| `1` | Usage error or adapter failure. Includes an unknown id, `create --milestone`, `update --status closed`, `MILESTONE_NOT_FOUND`, `BROKEN_EPIC`, `UNKNOWN_STRATEGY`, `CLAIM_UNSUPPORTED_BACKEND` |
+| `1` | Usage error or adapter failure. Includes an unknown id, `create --milestone`, `update --status closed`, `MILESTONE_NOT_FOUND`, `BROKEN_EPIC`, `UNKNOWN_STRATEGY`, `CLAIM_UNSUPPORTED_BACKEND` (`claim`/`release` on the `file` backend) |
 | `2` | **Refused by a guard, and nothing was written.** `close` with an open dependency or an unclosed child; `dep` that would close a direct or transitive cycle; `claim` on an issue held by a live owner or already closed; `milestone ship` when an auto-check failed, a quality gate failed or timed out, or a manual confirmation is unanswered |
 
 Exit 2 always names what refused, on stderr: the blocking issue ids, the cycle, the live claim holder, or the pending ship criteria. Without `--yes`, every manual confirmation on `milestone ship` counts as unanswered, so the pending items are listed for you to put to the user; re-run with `--yes` once they have confirmed.
@@ -793,24 +815,24 @@ One trade-off worth knowing: ids no longer imply creation order. Sort by the `cr
 
 #### Backend capability matrix
 
-Set with `tasks.backend` in `manifest.yaml`. Verified against `br` 0.2.22.
+Set with `tasks.backend` in `manifest.yaml`. Verified against `br` 0.2.22. The `github` backend is configured by [`tasks.github`](configuration.md#tasksgithub).
 
-| Capability | `json` (default) | `beads` | `file` |
-|---|---|---|---|
-| create / list / get / update / close | ✅ | ✅ | 🔍 read-only |
-| epics (create, list, update, walk) | ✅ | ✅ native `br` issues of type `epic` | 🔍 read-only |
-| dependencies | ✅ | ✅ | 🔍 read-only |
-| `claim` / `release` | ✅ atomic (CAS) | ✅ atomic, via `br update --claim` | ❌ `CLAIM_UNSUPPORTED_BACKEND` |
-| refusal codes + CLI exit codes | ✅ | ✅ identical — callers never branch on backend | ❌ |
-| lease TTL + `issues stale` | ✅ | ✅ | ❌ |
-| **stale-lease takeover** | ✅ atomic | ⚠️ **not atomic** — two calls | ❌ |
-| `branch` / `pr` / `claimed_at` / `spec_ref` | ✅ native columns | ✅ br `agent_context` (JSON, under the `adev` key) | 🔍 |
-| `affected_modules` (`issues set-modules`) | ✅ native column | ✅ br `agent_context`, same as above | 🔍 |
-| adev ids (`issue-N` / `epic-N`) | ✅ native | ✅ br `external_ref` — br enforces uniqueness | 🔍 |
-| claim holder | ✅ native | ✅ br `assignee`, and nowhere else | ❌ |
-| dependency edges on `list()` | ✅ | ⚠️ always `[]` — `br list` returns counts, not edges | 🔍 |
-| id minting under concurrency | ✅ atomic (CAS) | ⚠️ not atomic, but **fails loudly** — see below | 🔍 |
-| shared across git worktrees | ✅ | ✅ | ✅ |
+| Capability | `json` (default) | `beads` | `github` | `file` |
+|---|---|---|---|---|
+| create / list / get / update / close | ✅ | ✅ | ✅ | 🔍 read-only |
+| epics (create, list, update, walk) | ✅ | ✅ native `br` issues of type `epic` | ✅ issue type `Epic` (or the `epic` label); walk follows sub-issues | 🔍 read-only |
+| dependencies | ✅ | ✅ | ✅ GitHub blocked-by links | 🔍 read-only |
+| `claim` / `release` | ✅ atomic (CAS) | ✅ atomic, via `br update --claim` | ⚠️ not atomic: a write-and-re-read lease. One request writes `claimed_at` then `owner`; the item is re-read, re-read again after `claim_settle_ms`, and only then are `branch` / `pr` written. A re-read showing another owner refuses with `ISSUE_ALREADY_CLAIMED` and writes nothing further (rollback by abstention). See [the claim window](concepts.md#the-claim-window) | ❌ `CLAIM_UNSUPPORTED_BACKEND` |
+| refusal codes + CLI exit codes | ✅ | ✅ identical — callers never branch on backend | ✅ identical, plus `GITHUB_*` codes | ❌ |
+| lease TTL + `issues stale` | ✅ | ✅ | ✅ | ❌ |
+| **stale-lease takeover** | ✅ atomic | ⚠️ **not atomic** — two calls | ⚠️ not atomic — same write-and-re-read as a claim | ❌ |
+| `branch` / `pr` / `claimed_at` / `spec_ref` | ✅ native columns | ✅ br `agent_context` (JSON, under the `adev` key) | ✅ project text fields (`Branch`, `PR`, `Claimed At`, `Spec`) | 🔍 |
+| `affected_modules` (`issues set-modules`) | ✅ native column | ✅ br `agent_context`, same as above | ✅ `module:<slug>` labels | 🔍 |
+| adev ids (`issue-N` / `epic-N`) | ✅ native | ✅ br `external_ref` — br enforces uniqueness | `gh-<n>` (home repo) or `gh-<owner>.<repo>.<n>`; old ids resolve through the `Legacy ID` field | 🔍 |
+| claim holder | ✅ native | ✅ br `assignee`, and nowhere else | ✅ the `Owner` project field (never an assignee) | ❌ |
+| dependency edges on `list()` | ✅ | ⚠️ always `[]` — `br list` returns counts, not edges | ✅ | 🔍 |
+| id minting under concurrency | ✅ atomic (CAS) | ⚠️ not atomic, but **fails loudly** — see below | ✅ GitHub assigns the issue number | 🔍 |
+| shared across git worktrees | ✅ | ✅ | ✅ every clone and CI job, with no git operation | ✅ |
 
 **On beads, beads is the whole board.** There is no `.beads-map.json` sidecar and no local epic store: the adev id is br's `external_ref`, the claim holder is br's `assignee`, epics are `br` issues of type `epic`, and everything else adev tracks lives in br's `agent_context` under an `adev` key. `br list` shows you the real board, and a human running `br update --claim` is seen by adev immediately. A project still carrying the old sidecar is migrated into beads automatically on first use, and the retired files are renamed rather than deleted.
 

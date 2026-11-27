@@ -151,6 +151,47 @@ The token is plain text (never fenced), emitted exactly once, and **persona/verb
 
 This convention is governed by the `completion-tokens` cross-cutting charter (`.context-index/specs/cross-cutting/completion-tokens/`).
 
+## Issue board backends
+
+The issue board is stored by one backend, chosen with `tasks.backend` (see [configuration](configuration.md#tasks)). Every backend sits behind the same `IssueManager` interface and the same `adev issues` verbs, with the same refusal codes and exit codes, so skills never branch on the backend.
+
+| Backend | Where the board lives | Choose it when |
+|---|---|---|
+| `json` (default) | `.context-index/tasks/tasks.json` in the repo | You want zero setup; claims are an atomic check-and-set |
+| `beads` | the `br` CLI, on a `beads-board` branch checked out at `.beads/` | Concurrent branches and worktrees share one board |
+| `github` | a GitHub Projects v2 board, reached through `gh` | The board should live where the team already plans, visible to every clone, worktree and CI job without a git operation |
+| `file` | `.context-index/tasks/tasks.md` | Never for new work: read-only-deprecated, kept only to read an old board before migrating |
+
+The full per-capability comparison is the [backend capability matrix](cli-reference.md#backend-capability-matrix).
+
+### How `github` differs
+
+- **System of record.** [ADR 0016](../.context-index/adrs/0016-portable-state-ownership.md) makes `.context-index/` the system of record for adev state. Its scoped exception covers `tasks.backend: github`: the configured GitHub board becomes the system of record for the issue board only. Lifecycle logs, execution state, sessions, milestones, heuristics and plan-task state stay in `.context-index/`.
+- **IDs.** Issues in the home repo are `gh-<n>`; issues from other repositories on the project are `gh-<owner>.<repo>.<n>`. `#<n>`, `<owner>/<repo>#<n>` and issue URLs are accepted as input. An item migrated from another board keeps its old ID in the `Legacy ID` field, and the old ID still resolves.
+- **No fallback.** Every failure is a named `GITHUB_*` (or shared) error. Nothing is written to a local board or queued, and a rate limit is never retried automatically.
+- **Writes are several requests, not one transaction.** A `create` makes the issue, adds it to the project, then writes its fields. When a write fails after the issue exists, the issue is kept and `GITHUB_PARTIAL_CREATE` names it and the fields left unwritten, so you finish it instead of creating a duplicate.
+- **Claims are a lease confirmed by re-reading,** not an atomic check-and-set. See the claim window below.
+
+### The claim window
+
+On `github`, `claim()` reads the item fresh and checks the lease, writes `claimed_at` then `owner` in one request, and re-reads the item. If `owner` is someone else, it refuses with `ISSUE_ALREADY_CLAIMED`. Otherwise it waits `claim_settle_ms` (default 1500) and re-reads once more. Only after both re-reads show the claimant does it write `branch` / `pr`, whereas the json backend writes them in the same atomic write as `owner`.
+
+A claimant that loses writes nothing further: rollback by abstention. It never tries to restore the winner's state, so a loser's `claimed_at` may have overwritten the winner's. That is accepted, because both stamps fall inside the same race window.
+
+The residual window: two claimants can both be confirmed only if one claimant's precondition read lands before the other's write, and its own write lands after the other's settle re-read. A longer `claim_settle_ms` narrows the window but cannot close it. If you need a strict lock, use one: the `json` and `beads` backends claim with an atomic check-and-set.
+
+### Who can change what on a GitHub board
+
+adev reads each value only from storage with a known write permission, and checks every value it decodes. It refuses a bad value with `GITHUB_INVALID_FIELD_VALUE` rather than repairing it.
+
+- **Project fields** (`Status`, Priority, `Owner`, `Claimed At`, `Next Action`, `Spec`, `Plan`, `Branch`, `PR`, `Legacy ID`) need project write.
+- **Labels and issue types** (type, `priority:` and `module:` labels, Epic membership) need triage on the repository. Triage is a lower bar than project write, so anyone with triage can change an item's type, priority fallback or module tags. Unknown `module:` slugs are ignored, which keeps bugfix-loop eligibility fail-closed.
+- **Issue authors** control only the title and body. adev treats both as untrusted text: human output neutralizes them, and `--json` marks them in `untrusted_text`.
+
+### Migrating to `github`
+
+`adev issues migrate --to github` copies a json, beads or file board onto the project. Each item's `Legacy ID` is written first: in the first field-write request after the issue is added to the project, as that request's first mutation, before every other field. So a failure after that write leaves an item the next run finds by `Legacy ID` and finishes, with no duplicate. The residual window is a failure after the issue is created but before its `Legacy ID` lands. That issue is then recorded in `.context-index/tasks/.migrate-unanchored.json` so the next run completes it (see [Troubleshooting](troubleshooting.md#the-unanchored-item-record)). On success the source board is retired with a read-only sentinel, and you switch `tasks.backend` yourself.
+
 ## Key Terms
 
 | Term | Definition |
