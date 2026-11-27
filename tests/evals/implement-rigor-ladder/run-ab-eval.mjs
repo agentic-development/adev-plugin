@@ -1,11 +1,34 @@
 #!/usr/bin/env node
-// [live] EV-1 three-arm harness for the implement rigor ladder, plus the
-// BEH-15 non-convergence fixture runner.
+// [live] EV-1 harness for the implement rigor ladder, plus the BEH-15
+// non-convergence fixture runner.
 //
-// Each arm is defined only by the flags it passes to /adev:implement:
+// Each adev arm is defined only by the flags it passes to /adev:implement:
 //   full  -> --tier full
 //   quick -> (none)
 //   lite  -> --lite
+// The `plain` arm is Claude Code with no adev at all: the same sandbox, seed,
+// spec and plan, a plain-language prompt to implement the plan, no
+// `--plugin-dir`, no ADEV_ROOT, and an `adev` stub on PATH that exits 127. It
+// is informational: `--evaluate`'s thresholds never read it. A plain run is
+// valid when claude exits 0, at least one commit follows the seed, and a
+// transcript exists; there is no implement verdict, no lifecycle span (its
+// wall clock is process time) and no /adev:validate pass, so a seeded defect
+// it misses is `escaped`.
+//
+// Plugin isolation: every claude spawn, every arm, passes
+// `--settings {"enabledPlugins":{"<id>":false,...}}` for each installed plugin
+// named `adev` (from <config>/plugins/installed_plugins.json and settings.json,
+// plus adev@agentic-development). A `--plugin-dir` plugin is the separate
+// `adev@inline` id, so the adev arms load only the ref's copy and the plain arm
+// loads none. `--check-isolation` prints each arm's argv and env delta;
+// `--check-isolation --probe` spends one short `claude -p` per arm and reads
+// its init message and transcript to confirm.
+//
+// After implement, every arm copies `fixture/edge-probes/` into the sandbox
+// (as with `fixture/probes/`), records `metrics.edge_probes`, and writes the
+// diff runBase..HEAD minus `.context-index/` next to its result as
+// `<result>.patch`. `judge-runs.mjs` scores those patches blind; `--compare`
+// tabulates every arm present, with judge means when a judge file exists.
 //
 // `--dry-run` prints the arm plan, the fixture's derived counts, the release
 // thresholds and the metric definitions as JSON, and writes nothing. That is
@@ -99,15 +122,28 @@ export const EV1_FIXTURE = fixtureDescriptor({
 
 const FIXTURE_NAMES = ['ev1', 'nonconvergent'];
 const PROBES = join(EV1_FIXTURE.dir, 'probes');
+const EDGE_PROBES = join(EV1_FIXTURE.dir, 'edge-probes');
+const SANDBOX_EDGE_PROBES = '.ev1-edge-probes';
 const FIXTURE_README = join(EV1_FIXTURE.dir, 'README.md');
+const PATCH_EXCLUDES = ['.context-index'];
 
 // `live: false` would keep an arm in the dry-run plan while runLive refuses it
-// with ARM_NOT_AVAILABLE.
-const ARMS = [
-  { id: 'full', implementArgs: ['--tier full'], live: true },
-  { id: 'quick', implementArgs: [], live: true },
-  { id: 'lite', implementArgs: ['--lite'], live: true },
+// with ARM_NOT_AVAILABLE. `implementArgs: null` marks the arm that never runs
+// /adev:implement.
+export const ARMS = [
+  { id: 'full', implementArgs: ['--tier full'], adev: true, live: true },
+  { id: 'quick', implementArgs: [], adev: true, live: true },
+  { id: 'lite', implementArgs: ['--lite'], adev: true, live: true },
+  { id: 'plain', implementArgs: null, adev: false, live: true },
 ];
+const ADEV_PLUGIN_NAME = 'adev';
+const DEFAULT_ADEV_PLUGIN_IDS = ['adev@agentic-development'];
+const TOKEN_WEIGHTS = Object.freeze({
+  input_tokens: 1,
+  cache_creation_input_tokens: 1.25,
+  cache_read_input_tokens: 0.1,
+  output_tokens: 5,
+});
 
 export const THRESHOLDS = Object.freeze({
   lite_wall_clock_vs_full: 0.5,
@@ -131,7 +167,10 @@ const METRICS = {
     source: 'lifecycle-event-timestamps',
     from: 'latest implement lifecycle_step started',
     to: 'the implement step_completed or step_failed after it',
+    plain: 'process time of the claude spawn (the plain arm has no lifecycle log)',
+    recorded_as: 'metrics.wall_clock_source: lifecycle-event-timestamps | process | none',
   },
+  process_wall_clock_ms: { source: 'harness clock around the implement claude spawn', arms: 'every arm, the like-for-like column' },
   agent_dispatches: { source: 'session-jsonl', tool_use_names: DISPATCH_TOOLS, includes: 'main session and subagents' },
   tokens: {
     source: 'session-jsonl message.usage',
@@ -139,24 +178,42 @@ const METRICS = {
     includes: 'main session and subagents',
     dedup: 'one usage per message.id per transcript, last row wins (Claude Code writes one row per content block)',
   },
-  quality_gates: { command: QUALITY_GATE.join(' '), cwd: 'sandbox', when: 'after implement' },
+  quality_gates: {
+    command: QUALITY_GATE.join(' '),
+    cwd: 'sandbox',
+    when: 'after implement',
+    tests: 'node:test summary counts (tests, pass, fail) parsed from the gate output, null when absent',
+  },
   defects: {
     caught_at: CAUGHT_AT,
     meaning: {
-      implement: 'probe passes after /adev:implement',
+      implement: 'probe passes after /adev:implement (plain: after the plain claude run)',
       validate: 'probe failed after implement and passes after /adev:validate ran',
-      escaped: 'probe still fails after /adev:validate ran',
+      escaped: 'probe still fails after /adev:validate ran (plain: after the plain run, since it has no validate)',
     },
     probe: `node --test ${SANDBOX_PROBES}/<probe>`,
+  },
+  edge_probes: {
+    source: 'fixture/edge-probes/probes.json',
+    when: 'after implement, before any validate',
+    probe: `node --test --test-reporter=tap ${SANDBOX_EDGE_PROBES}/<file>`,
+    recorded: '{ total, passed, failed: [ids], by_behavior, strict: [ids], passed_excluding_strict, total_excluding_strict }',
+  },
+  patch: {
+    file: '<result-basename>.patch beside the result JSON',
+    diff: 'git diff --binary runBase HEAD, excluding .context-index/, taken after validate when it ran',
   },
   review_depths: {
     source: 'review_depth_resolved events after the latest implement started',
     keyed_by: 'task number, latest event per pass',
+    plain: 'null (n/a)',
   },
   validity: {
     invalid_when: ['implement-exit-nonzero', 'implement-verdict-not-pass', 'no-task-commits', 'no-session-id', 'no-transcripts'],
+    plain_invalid_when: ['implement-exit-nonzero', 'no-task-commits', 'no-session-id', 'no-transcripts'],
     note: 'invalid runs are written with valid: false and excluded from the determinism report and the thresholds',
   },
+  validate: { adev_arms: 'runs when the run is valid and a seeded-defect probe failed after implement', plain: 'never runs' },
 };
 
 const TASK_HEADING = /^#{2,4}\s+Task\s+(\d+)\b:?\s*(.*)$/;
@@ -305,12 +362,22 @@ export async function describeFixture() {
   };
 }
 
-export async function planDryRun({ ref = 'HEAD', runs = 3 } = {}) {
+export function findArm(id) {
+  const arm = ARMS.find((a) => a.id === id);
+  if (!arm) throw new HarnessError('USAGE', `--arm must be one of ${ARMS.map((a) => a.id).join('|')}`);
+  return arm;
+}
+
+export async function planDryRun({ ref = 'HEAD', runs = 3, arm = null, model = null } = {}) {
+  const arms = arm ? [findArm(arm)] : ARMS;
   return {
-    arms: ARMS.map((a) => ({ ...a, prompt: implementPrompt(a) })),
+    arms: arms.map((a) => ({ ...a, prompt: armPrompt(a) })),
     ref,
     runs,
+    model: model ?? 'session default',
+    isolation: { settings: isolationSettings(installedAdevPluginIds()), check: '--check-isolation [--arm <id>] [--probe]' },
     fixture: await describeFixture(),
+    edgeProbes: summarizeEdgeManifest(edgeProbeManifest()),
     metrics: METRICS,
     thresholds: THRESHOLDS,
     minRunsPerArm: MIN_RUNS_PER_ARM,
@@ -322,6 +389,7 @@ export async function planDryRun({ ref = 'HEAD', runs = 3 } = {}) {
     },
     reuses: REUSES,
     liveOutput: 'results/<arm>-<ref-short>-<iso>.json',
+    patchOutput: 'results/<arm>-<ref-short>-<iso>.patch',
     writes: [],
   };
 }
@@ -344,6 +412,28 @@ export function implementPrompt(arm) {
   return `${command}\n\n${OPERATOR_STATEMENT}`;
 }
 
+// The plain arm's counterpart of OPERATOR_STATEMENT: the same unattended
+// pre-approval, without the adev checkpoint vocabulary a plain session has no
+// referent for.
+const PLAIN_OPERATOR_STATEMENT = [
+  'This is an unattended evaluation run.',
+  'The operator pre-approves every task and step in this plan, so continue past each one without stopping.',
+  'Implement every plan task; if a task looks already implemented, do not skip it.',
+  'Do not wait for input.',
+].join(' ');
+
+export function plainPrompt(fixture = EV1_FIXTURE) {
+  return [
+    `Implement every task in the plan at ${fixture.sandboxPlan}, following the spec at ${fixture.sandboxSpec}. Commit each task separately.`,
+    '',
+    PLAIN_OPERATOR_STATEMENT,
+  ].join('\n');
+}
+
+export function armPrompt(arm) {
+  return arm.adev === false ? plainPrompt() : implementPrompt(arm);
+}
+
 function parseArgs(argv) {
   const opts = {
     dryRun: false,
@@ -357,11 +447,21 @@ function parseArgs(argv) {
     mode: null,
     caseId: null,
     resultsDir: DEFAULT_RESULTS_DIR,
+    compare: false,
+    checkIsolation: false,
+    probe: false,
+    json: false,
+    model: null,
   };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--dry-run') opts.dryRun = true;
     else if (a === '--evaluate') opts.evaluate = true;
+    else if (a === '--compare') opts.compare = true;
+    else if (a === '--check-isolation') opts.checkIsolation = true;
+    else if (a === '--probe') opts.probe = true;
+    else if (a === '--json') opts.json = true;
+    else if (a === '--model') opts.model = argv[++i];
     else if (a === '--rebaseline') opts.rebaseline = true;
     else if (a === '--arm') opts.arm = argv[++i];
     else if (a === '--ref') {
@@ -384,6 +484,13 @@ function parseArgs(argv) {
   if (!FIXTURE_NAMES.includes(opts.fixture)) {
     throw new HarnessError('USAGE', `--fixture must be one of ${FIXTURE_NAMES.join('|')}`);
   }
+  if (opts.model !== null && (typeof opts.model !== 'string' || opts.model === '' || opts.model.startsWith('-'))) {
+    throw new HarnessError('USAGE', '--model needs a model name or alias');
+  }
+  if (opts.probe && !opts.checkIsolation) {
+    throw new HarnessError('USAGE', '--probe only applies to --check-isolation');
+  }
+  if (opts.arm !== null) findArm(opts.arm);
   return opts;
 }
 
@@ -448,6 +555,100 @@ function trialEnv({ pluginRoot, bin, cwd }) {
   env.ADEV_ROOT = pluginRoot;
   env.PATH = `${bin}:${process.env.PATH}`;
   return env;
+}
+
+function readJsonFile(path) {
+  try {
+    return JSON.parse(readFileSync(path, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Every plugin id named `adev` that the Claude config dir knows about, from
+ * installed_plugins.json and the user settings' enabledPlugins, plus the
+ * marketplace id the plugin is published under. Disabling an id that is not
+ * installed is a no-op, so the default stays in even when nothing is found.
+ */
+export function installedAdevPluginIds(configDir = defaultConfigDir()) {
+  const ids = new Set(DEFAULT_ADEV_PLUGIN_IDS);
+  const installed = readJsonFile(join(configDir, 'plugins', 'installed_plugins.json'));
+  const enabled = readJsonFile(join(configDir, 'settings.json'))?.enabledPlugins;
+  for (const id of [...Object.keys(installed?.plugins ?? {}), ...Object.keys(enabled ?? {})]) {
+    if (id.split('@')[0] === ADEV_PLUGIN_NAME) ids.add(id);
+  }
+  return [...ids].sort();
+}
+
+// `--settings` is merged over the user, project and local settings, and
+// enabledPlugins merges per key, so `false` here wins over an install at any
+// scope. A `--plugin-dir` plugin is `<name>@inline`, never one of these ids.
+export function isolationSettings(adevPluginIds) {
+  return { enabledPlugins: Object.fromEntries(adevPluginIds.map((id) => [id, false])) };
+}
+
+// A plain run must not reach the operator's own `adev` (e.g. ~/.local/bin), so
+// a stub that behaves like an absent command comes first on PATH.
+export function createPlainBin() {
+  const bin = mkdtempSync(join(tmpdir(), 'adev-ev1-plain-bin-'));
+  writeFileSync(join(bin, 'adev'), '#!/bin/sh\necho "adev: command not found" >&2\nexit 127\n');
+  chmodSync(join(bin, 'adev'), 0o755);
+  return { bin };
+}
+
+const PLAIN_REMOVED_ENV = /^(ADEV_|CLAUDE_PLUGIN_)/;
+
+export function plainTrialEnv({ plainBin, cwd }) {
+  const env = { ...process.env, CLAUDE_CODE_ENTRYPOINT: 'cli' };
+  for (const key of SESSION_IDENTITY_ENV_KEYS) delete env[key];
+  for (const key of Object.keys(env)) if (PLAIN_REMOVED_ENV.test(key)) delete env[key];
+  env.PWD = cwd;
+  env.SHELL = '/bin/bash';
+  env.PATH = plainBin ? `${plainBin}:${process.env.PATH}` : process.env.PATH;
+  return env;
+}
+
+/**
+ * The argv of one claude spawn. Every arm passes the isolation settings; only
+ * an adev arm passes `--plugin-dir`. `stream` selects the stream-json output
+ * the isolation probe reads the init message from.
+ */
+export function claudeArgv({ prompt, pluginRoot = null, adev = true, settings, model = null, stream = false }) {
+  if (adev && !pluginRoot) throw new HarnessError('USAGE', 'an adev spawn needs the plugin root');
+  return [
+    '--print',
+    '--output-format', stream ? 'stream-json' : 'json',
+    ...(stream ? ['--verbose'] : []),
+    '--dangerously-skip-permissions',
+    '--settings', JSON.stringify(settings),
+    ...(model ? ['--model', model] : []),
+    ...(adev ? ['--plugin-dir', pluginRoot] : []),
+    '-p', prompt,
+  ];
+}
+
+/** The exact spawn of one arm: argv, env and the settings it carries. */
+export function armSpawnSpec({ arm, pluginRoot, shimBin, plainBin, cwd, model = null, configDir = defaultConfigDir(), prompt = armPrompt(arm), stream = false }) {
+  const settings = isolationSettings(installedAdevPluginIds(configDir));
+  const env = arm.adev === false ? plainTrialEnv({ plainBin, cwd }) : trialEnv({ pluginRoot, bin: shimBin, cwd });
+  return {
+    command: 'claude',
+    argv: claudeArgv({ prompt, pluginRoot, adev: arm.adev !== false, settings, model, stream }),
+    env,
+    settings,
+  };
+}
+
+// What a spawn's env changes relative to the harness's own, for printing.
+export function envDelta(env, base = process.env) {
+  const set = {};
+  for (const [k, v] of Object.entries(env)) {
+    if (base[k] === v) continue;
+    set[k] = k === 'PATH' && base.PATH && v.endsWith(`:${base.PATH}`) ? `${v.slice(0, -base.PATH.length - 1)}:$PATH` : v;
+  }
+  const removed = Object.keys(base).filter((k) => !(k in env)).sort();
+  return { set, removed };
 }
 
 function assertArmCli({ pluginRoot, bin, shim }) {
@@ -547,14 +748,19 @@ export function prepareSandbox({ pluginRoot, bin, fixture = EV1_FIXTURE, preseed
   }
 }
 
-export function runClaude(sandbox, pluginRoot, prompt) {
+export function runClaude(
+  sandbox,
+  pluginRoot,
+  prompt,
+  { adev = true, env = sandbox.env, model = null, settings = isolationSettings(installedAdevPluginIds()) } = {},
+) {
   const started = Date.now();
   const r = spawnSync(
     'claude',
-    ['--print', '--output-format', 'json', '--dangerously-skip-permissions', '--plugin-dir', pluginRoot, '-p', prompt],
+    claudeArgv({ prompt, pluginRoot, adev, settings, model }),
     {
       cwd: sandbox.root,
-      env: sandbox.env,
+      env,
       encoding: 'utf8',
       timeout: CLAUDE_TIMEOUT_MS,
       killSignal: 'SIGKILL',
@@ -705,12 +911,14 @@ function sessionUsage(sessionId, projectDir) {
 
 /**
  * A run counts only when implement exited cleanly with a PASS verdict, made at
- * least one commit after the seed, and left a transcript to measure.
+ * least one commit after the seed, and left a transcript to measure. The plain
+ * arm has no lifecycle log to carry a verdict, so it passes
+ * `requireVerdict: false` and is judged on the other three.
  */
-export function classifyRun({ exitCode, verdict, taskCommits, sessionId, transcripts }) {
+export function classifyRun({ exitCode, verdict, taskCommits, sessionId, transcripts }, { requireVerdict = true } = {}) {
   const reasons = [];
   if (exitCode !== 0) reasons.push('implement-exit-nonzero');
-  if (verdict !== 'PASS') reasons.push('implement-verdict-not-pass');
+  if (requireVerdict && verdict !== 'PASS') reasons.push('implement-verdict-not-pass');
   if (!(taskCommits > 0)) reasons.push('no-task-commits');
   if (!sessionId) reasons.push('no-session-id');
   else if (!(transcripts > 0)) reasons.push('no-transcripts');
@@ -755,9 +963,132 @@ export function reviewDepthsFromEvents(events) {
   return out;
 }
 
+/**
+ * The node:test summary counts in a test command's output, from the spec
+ * reporter (`ℹ tests 8`) or TAP (`# tests 8`). The last occurrence wins, so a
+ * nested summary printed earlier does not mask the run's own.
+ */
+export function parseTestCounts(output) {
+  const counts = {};
+  for (const m of String(output ?? '').matchAll(/^\s*(?:ℹ|#)\s+(tests|pass|fail)\s+(\d+)\s*$/gm)) counts[m[1]] = Number(m[2]);
+  if (!('tests' in counts)) return null;
+  return { total: counts.tests, pass: counts.pass ?? null, fail: counts.fail ?? null };
+}
+
 function runQualityGates(sandbox) {
-  const r = spawnSync(QUALITY_GATE[0], QUALITY_GATE.slice(1), { cwd: sandbox.root, env: sandbox.env, encoding: 'utf8' });
-  return { command: QUALITY_GATE.join(' '), exit_code: r.status, pass: r.status === 0 };
+  const r = spawnSync(QUALITY_GATE[0], QUALITY_GATE.slice(1), { cwd: sandbox.root, env: sandbox.env, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 });
+  return {
+    command: QUALITY_GATE.join(' '),
+    exit_code: r.status,
+    pass: r.status === 0,
+    tests: parseTestCounts(`${r.stdout ?? ''}\n${r.stderr ?? ''}`),
+  };
+}
+
+export function edgeProbeManifest(dir = EDGE_PROBES) {
+  const manifest = JSON.parse(readFileSync(join(dir, 'probes.json'), 'utf8'));
+  for (const p of manifest.probes) {
+    if (!manifest.files[p.file]) throw new HarnessError('FIXTURE_INVALID', `edge probe ${p.id} names an unlisted file ${p.file}`);
+    p.behavior = manifest.files[p.file];
+  }
+  return manifest;
+}
+
+function summarizeEdgeManifest(manifest) {
+  const byBehavior = {};
+  for (const p of manifest.probes) byBehavior[p.behavior] = (byBehavior[p.behavior] ?? 0) + 1;
+  return {
+    total: manifest.probes.length,
+    by_behavior: byBehavior,
+    strict: manifest.probes.filter((p) => p.strict).map((p) => p.id),
+    when: METRICS.edge_probes.when,
+  };
+}
+
+/**
+ * Top-level `ok`/`not ok` lines of a TAP stream whose test name starts with a
+ * probe id (`P1: ...`). A file that fails to load reports no such line, so
+ * every probe it holds is absent and counts as failed.
+ */
+export function parseTapIds(tap) {
+  const out = {};
+  for (const m of String(tap ?? '').matchAll(/^(not ok|ok) \d+ - ([A-Z]+\d+):/gm)) out[m[2]] = m[1] === 'ok' ? 'pass' : 'fail';
+  return out;
+}
+
+export function summarizeEdgeProbes(manifest, outcomes) {
+  const strict = manifest.probes.filter((p) => p.strict).map((p) => p.id);
+  const failed = manifest.probes.filter((p) => outcomes[p.id] !== 'pass').map((p) => p.id);
+  const byBehavior = {};
+  for (const p of manifest.probes) {
+    const b = (byBehavior[p.behavior] ??= { total: 0, passed: 0, failed: [] });
+    b.total++;
+    if (outcomes[p.id] === 'pass') b.passed++;
+    else b.failed.push(p.id);
+  }
+  const nonStrict = manifest.probes.filter((p) => !p.strict);
+  return {
+    total: manifest.probes.length,
+    passed: manifest.probes.length - failed.length,
+    failed,
+    by_behavior: byBehavior,
+    strict,
+    total_excluding_strict: nonStrict.length,
+    passed_excluding_strict: nonStrict.filter((p) => outcomes[p.id] === 'pass').length,
+  };
+}
+
+/**
+ * Copies the edge-probe battery into `root`, runs each file there with the TAP
+ * reporter, removes it again, and summarizes every probe id. The probes import
+ * `../src/...`, so they run against whatever the implementer left in `src/`.
+ */
+export function edgeProbeResults(root, { dir = EDGE_PROBES, timeoutMs = 60_000 } = {}) {
+  const manifest = edgeProbeManifest(dir);
+  const target = join(root, SANDBOX_EDGE_PROBES);
+  mkdirSync(target, { recursive: true });
+  const outcomes = {};
+  // An inherited NODE_TEST_CONTEXT (set when the caller itself runs under
+  // node --test) switches the child's reporter to the parent's binary channel.
+  const env = { ...process.env };
+  delete env.NODE_TEST_CONTEXT;
+  try {
+    cpSync(dir, target, { recursive: true });
+    for (const file of Object.keys(manifest.files)) {
+      const r = spawnSync('node', ['--test', '--test-reporter=tap', join(SANDBOX_EDGE_PROBES, file)], {
+        cwd: root,
+        env,
+        encoding: 'utf8',
+        timeout: timeoutMs,
+        killSignal: 'SIGKILL',
+      });
+      Object.assign(outcomes, parseTapIds(r.stdout));
+    }
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+  }
+  return summarizeEdgeProbes(manifest, outcomes);
+}
+
+/**
+ * The run's final code as a patch: `git diff --binary <runBase> HEAD` minus
+ * the excluded trees, plus the tracked-or-untracked paths left uncommitted
+ * (which the patch does not carry).
+ */
+export function runPatch(root, runBase, { excludes = PATCH_EXCLUDES } = {}) {
+  const pathspec = ['--', '.', ...excludes.map((p) => `:(exclude)${p}`)];
+  const text = execFileSync('git', ['diff', '--binary', runBase, 'HEAD', ...pathspec], {
+    cwd: root,
+    encoding: 'utf8',
+    maxBuffer: 64 * 1024 * 1024,
+  });
+  const files = git(root, ['diff', '--name-only', runBase, 'HEAD', ...pathspec]).split('\n').filter(Boolean);
+  // Not git(): its trim() would eat the first porcelain line's leading status column.
+  const uncommitted = execFileSync('git', ['status', '--porcelain', '--untracked-files=all', ...pathspec], { cwd: root, encoding: 'utf8' })
+    .split('\n')
+    .filter(Boolean)
+    .map((l) => l.slice(3));
+  return { text, files, uncommitted, head: git(root, ['rev-parse', 'HEAD']) };
 }
 
 function probeResults(sandbox, defects, ids) {
@@ -790,31 +1121,51 @@ function srcSurface(projectDir) {
   return out.sort();
 }
 
-function liveRun({ arm, pluginRoot, bin, refSha, refName, runIndex, fixture }) {
+/**
+ * One run's wall clock: the implement lifecycle span for an adev arm, process
+ * time for the plain arm, which has no lifecycle log. The source is recorded
+ * so a reader never compares one against the other unknowingly.
+ */
+export function runWallClock({ arm, lifecycleMs, processMs }) {
+  if (arm.adev === false) return { wall_clock_ms: processMs, wall_clock_source: 'process' };
+  return { wall_clock_ms: lifecycleMs, wall_clock_source: lifecycleMs === null ? 'none' : 'lifecycle-event-timestamps' };
+}
+
+function liveRun({ arm, pluginRoot, bin, plainBin, model, refSha, refName, runIndex, fixture }) {
   const sandbox = prepareSandbox({ pluginRoot, bin, fixture: EV1_FIXTURE });
   try {
-    const implement = runClaude(sandbox, pluginRoot, implementPrompt(arm));
+    const plain = arm.adev === false;
+    const implement = runClaude(sandbox, pluginRoot, armPrompt(arm), {
+      adev: !plain,
+      env: plain ? plainTrialEnv({ plainBin, cwd: sandbox.root }) : sandbox.env,
+      model,
+    });
     const implUsage = sessionUsage(implement.sessionId, sandbox.root);
     const events = lifecycleEvents(sandbox.root, EV1_FIXTURE);
-    const { wallClockMs, verdict } = implementWallClock(events);
+    const { wallClockMs, verdict } = plain ? { wallClockMs: null, verdict: null } : implementWallClock(events);
     const taskCommits = Number(git(sandbox.root, ['rev-list', '--count', `${sandbox.runBase}..HEAD`]));
-    const validity = classifyRun({
-      exitCode: implement.exitCode,
-      verdict,
-      taskCommits,
-      sessionId: implement.sessionId,
-      transcripts: implUsage.transcripts,
-    });
+    const validity = classifyRun(
+      {
+        exitCode: implement.exitCode,
+        verdict,
+        taskCommits,
+        sessionId: implement.sessionId,
+        transcripts: implUsage.transcripts,
+      },
+      { requireVerdict: !plain },
+    );
     const qualityGates = runQualityGates(sandbox);
     const touched = git(sandbox.root, ['diff', '--name-only', sandbox.runBase, 'HEAD']).split('\n').filter(Boolean);
+    const implementHead = git(sandbox.root, ['rev-parse', 'HEAD']);
 
     const defectIds = fixture.seededDefects.map((d) => d.id);
     const afterImplement = probeResults(sandbox, fixture.seededDefects, defectIds);
+    const edgeProbes = edgeProbeResults(sandbox.root);
     const missed = defectIds.filter((id) => afterImplement[id] !== 'pass');
     let validate = null;
     let afterValidate = {};
-    if (validity.valid && missed.length > 0) {
-      const v = runClaude(sandbox, pluginRoot, `/adev:validate --spec ${EV1_FIXTURE.sandboxSpec}`);
+    if (!plain && validity.valid && missed.length > 0) {
+      const v = runClaude(sandbox, pluginRoot, `/adev:validate --spec ${EV1_FIXTURE.sandboxSpec}`, { model });
       validate = { ...v, ...sessionUsage(v.sessionId, sandbox.root) };
       afterValidate = probeResults(sandbox, fixture.seededDefects, missed);
     }
@@ -822,10 +1173,13 @@ function liveRun({ arm, pluginRoot, bin, refSha, refName, runIndex, fixture }) {
       ...d,
       caught_at: afterImplement[d.id] === 'pass' ? 'implement' : afterValidate[d.id] === 'pass' ? 'validate' : 'escaped',
     }));
+    const patch = runPatch(sandbox.root, sandbox.runBase);
 
-    return {
+    const result = {
       arm: arm.id,
       implementArgs: arm.implementArgs,
+      adev: !plain,
+      model: model ?? null,
       ref: refSha,
       ref_name: refName,
       run: runIndex,
@@ -841,13 +1195,27 @@ function liveRun({ arm, pluginRoot, bin, refSha, refName, runIndex, fixture }) {
         transcripts: implUsage.transcripts,
       },
       metrics: {
-        wall_clock_ms: wallClockMs,
+        ...runWallClock({ arm, lifecycleMs: wallClockMs, processMs: implement.processMs }),
+        process_wall_clock_ms: implement.processMs,
         agent_dispatches: implUsage.agentDispatches,
         tokens: implUsage.tokens,
         quality_gates: qualityGates,
         defects,
+        edge_probes: edgeProbes,
       },
-      review_depths: reviewDepthsFromEvents(eventsSinceImplementStart(events)),
+      review_depths: plain ? null : reviewDepthsFromEvents(eventsSinceImplementStart(events)),
+      ...(plain ? { validate_skipped: 'the plain arm has no /adev:validate' } : {}),
+      patch: {
+        path: null,
+        base: sandbox.runBase,
+        head: patch.head,
+        implement_head: implementHead,
+        includes_validate_commits: patch.head !== implementHead,
+        excluded: PATCH_EXCLUDES.map((p) => `${p}/`),
+        files: patch.files,
+        bytes: Buffer.byteLength(patch.text),
+        uncommitted_paths: patch.uncommitted,
+      },
       validate: validate && {
         exit_code: validate.exitCode,
         session_id: validate.sessionId,
@@ -863,6 +1231,7 @@ function liveRun({ arm, pluginRoot, bin, refSha, refName, runIndex, fixture }) {
       touched_files: touched,
       behavior: { tests: afterImplement, surface: srcSurface(sandbox.root) },
     };
+    return { result, patchText: patch.text };
   } finally {
     rmSync(sandbox.root, { recursive: true, force: true });
   }
@@ -1115,6 +1484,124 @@ async function runEvaluate(opts) {
   return report.pass ? 0 : 1;
 }
 
+/** Tokens weighted by relative price: input 1, cache write 1.25, cache read 0.1, output 5. */
+export function costWeightedTokens(tokens) {
+  if (!tokens) return null;
+  return Object.entries(TOKEN_WEIGHTS).reduce((sum, [field, w]) => sum + (tokens[field] ?? 0) * w, 0);
+}
+
+const processMsOf = (r) => r.metrics?.process_wall_clock_ms ?? r.implement?.process_ms ?? null;
+// Results written before wall_clock_source existed are adev runs, whose
+// wall_clock_ms was always the lifecycle span.
+const lifecycleMsOf = (r) => (r.adev === false || r.metrics?.wall_clock_source === 'process' ? null : r.metrics?.wall_clock_ms ?? null);
+const caughtCount = (r, pred) => (r.metrics?.defects ?? []).filter(pred).length;
+
+/**
+ * One informational row per arm present. Medians are over valid runs; the
+ * quality-gate rate is over every run, as in summarizeArm. The edge-probe
+ * rate pools passed/total over the valid runs that recorded edge probes.
+ */
+export function compareArms(resultsByArm, { judgeByArm = {} } = {}) {
+  const rows = [];
+  for (const arm of ARMS.map((a) => a.id)) {
+    const results = resultsByArm[arm] ?? [];
+    if (results.length === 0) continue;
+    const valid = results.filter((r) => r.valid);
+    const withEdge = valid.filter((r) => r.metrics?.edge_probes?.total > 0);
+    const edgeTotal = withEdge.reduce((s, r) => s + r.metrics.edge_probes.total, 0);
+    const edgePassed = withEdge.reduce((s, r) => s + r.metrics.edge_probes.passed, 0);
+    const withValidate = (r) => {
+      const impl = costWeightedTokens(r.metrics?.tokens) ?? 0;
+      return impl + (r.validate ? costWeightedTokens(r.validate.tokens) ?? 0 : 0);
+    };
+    rows.push({
+      arm,
+      runs: results.length,
+      valid_runs: valid.length,
+      refs: [...new Set(results.map((r) => String(r.ref ?? '').slice(0, 12)))].sort(),
+      median_process_wall_clock_ms: median(valid.map(processMsOf)),
+      median_lifecycle_wall_clock_ms: median(valid.map(lifecycleMsOf)),
+      median_weighted_tokens: median(valid.map((r) => costWeightedTokens(r.metrics?.tokens))),
+      median_weighted_tokens_incl_validate: median(valid.map(withValidate)),
+      median_output_tokens: median(valid.map((r) => r.metrics?.tokens?.output_tokens)),
+      median_dispatches: median(valid.map((r) => r.metrics?.agent_dispatches)),
+      quality_gates_pass_rate: round4(results.filter((r) => r.metrics?.quality_gates?.pass === true).length / results.length),
+      validate_runs: valid.filter((r) => r.validate).length,
+      median_defects_missed_at_implement: median(valid.map((r) => caughtCount(r, (d) => d.caught_at !== 'implement'))),
+      median_defects_escaped: median(valid.map((r) => caughtCount(r, (d) => d.caught_at === 'escaped'))),
+      edge_probe_runs: withEdge.length,
+      edge_probe_pass_rate: edgeTotal > 0 ? round4(edgePassed / edgeTotal) : null,
+      median_tests: median(valid.map((r) => r.metrics?.quality_gates?.tests?.total)),
+      judge_overall_mean: judgeByArm[arm]?.overall ?? null,
+      judge_patches: judgeByArm[arm]?.patches ?? 0,
+    });
+  }
+  return rows;
+}
+
+const fmtMin = (ms) => (ms === null ? 'n/a' : `${(ms / 60000).toFixed(1)}m`);
+const fmtNum = (n) => {
+  if (n === null || n === undefined) return 'n/a';
+  if (n >= 1e6) return `${(n / 1e6).toFixed(2)}M`;
+  if (n >= 1e3) return `${(n / 1e3).toFixed(1)}k`;
+  return String(Math.round(n * 10) / 10);
+};
+const fmtPct = (x) => (x === null ? 'n/a' : `${Math.round(x * 1000) / 10}%`);
+
+export function renderCompareTable(rows) {
+  const header = [
+    'arm', 'runs/valid', 'process wall', 'lifecycle wall', 'weighted tok', 'weighted tok +validate', 'output tok',
+    'dispatches', 'gates pass', 'D missed@impl', 'D escaped', 'edge probes', 'tests', 'judge overall',
+  ];
+  const lines = [`| ${header.join(' | ')} |`, `|${header.map(() => '---').join('|')}|`];
+  for (const r of rows) {
+    lines.push(`| ${[
+      r.arm,
+      `${r.runs}/${r.valid_runs}`,
+      fmtMin(r.median_process_wall_clock_ms),
+      fmtMin(r.median_lifecycle_wall_clock_ms),
+      fmtNum(r.median_weighted_tokens),
+      fmtNum(r.median_weighted_tokens_incl_validate),
+      fmtNum(r.median_output_tokens),
+      fmtNum(r.median_dispatches),
+      fmtPct(r.quality_gates_pass_rate),
+      fmtNum(r.median_defects_missed_at_implement),
+      fmtNum(r.median_defects_escaped),
+      r.edge_probe_pass_rate === null ? 'n/a' : `${fmtPct(r.edge_probe_pass_rate)} (${r.edge_probe_runs} runs)`,
+      fmtNum(r.median_tests),
+      r.judge_overall_mean === null ? 'n/a' : `${r.judge_overall_mean.toFixed(2)} (${r.judge_patches} patches)`,
+    ].join(' | ')} |`);
+  }
+  return [
+    ...lines,
+    '',
+    'Medians over valid runs; gates pass over every run. Process wall is the implement claude spawn (every arm);',
+    'lifecycle wall is the implement lifecycle span (adev arms only). Weighted tokens: input 1, cache write 1.25,',
+    'cache read 0.1, output 5, implement session; "+validate" adds the validate session. D escaped is after validate,',
+    'which the plain arm never runs, so compare D missed@impl across all four arms. Informational only: --evaluate',
+    'thresholds are unchanged and never read the plain arm.',
+  ].join('\n');
+}
+
+async function runCompare(opts) {
+  const refSha = opts.refExplicit ? resolveRef(opts.ref) : null;
+  const resultsByArm = {};
+  for (const { id } of ARMS) {
+    resultsByArm[id] = armResults(opts.resultsDir, id).filter((r) => refSha === null || r.ref === refSha);
+  }
+  const judge = await import('./judge-runs.mjs');
+  const judgeFile = judge.latestJudgeFile(opts.resultsDir);
+  const judgeByArm = judgeFile ? judge.judgeOverallByArm(JSON.parse(readFileSync(judgeFile, 'utf8'))) : {};
+  const rows = compareArms(resultsByArm, { judgeByArm });
+  if (opts.json) {
+    console.log(JSON.stringify({ ref: refSha, judge_file: judgeFile && relative(opts.resultsDir, judgeFile), rows }, null, 2));
+  } else {
+    if (judgeFile) console.log(`judge file: ${relative(opts.resultsDir, judgeFile)}`);
+    console.log(rows.length === 0 ? `no arm results in ${opts.resultsDir}` : renderCompareTable(rows));
+  }
+  return 0;
+}
+
 function addRefWorktree(refSha) {
   const parent = realpathSync(mkdtempSync(join(tmpdir(), 'adev-ev1-ref-')));
   const worktree = join(parent, 'plugin');
@@ -1143,11 +1630,13 @@ export async function withRefWorktree(refSha, fn) {
   }
 }
 
+const THRESHOLD_ARMS = ['quick', 'lite'];
+
 async function runLive(opts) {
-  const arm = ARMS.find((a) => a.id === opts.arm);
-  if (!arm) throw new HarnessError('USAGE', `--arm must be one of ${ARMS.map((a) => a.id).join('|')}`);
+  if (opts.arm === null) throw new HarnessError('USAGE', `--arm must be one of ${ARMS.map((a) => a.id).join('|')}`);
+  const arm = findArm(opts.arm);
   if (!arm.live) throw new HarnessError('ARM_NOT_AVAILABLE', `the '${arm.id}' arm is dry-run only`);
-  if (arm.id !== 'full') requireBaseline(opts.resultsDir);
+  if (THRESHOLD_ARMS.includes(arm.id)) requireBaseline(opts.resultsDir);
   const refSha = resolveRef(opts.ref);
   const recordsBaseline = arm.id === 'full' && isBaselineCommit(refSha);
   if (recordsBaseline) assertBaselineWritable(opts.resultsDir, { rebaseline: opts.rebaseline });
@@ -1156,33 +1645,255 @@ async function runLive(opts) {
 
   const results = [];
   const files = [];
-  await withRefWorktree(refSha, async ({ worktree, shim }) => {
-    mkdirSync(opts.resultsDir, { recursive: true });
-    for (let i = 1; i <= opts.runs; i++) {
-      console.log(`[ev1] ${arm.id} run ${i}/${opts.runs} at ${refSha.slice(0, 12)}`);
-      const result = liveRun({ arm, pluginRoot: worktree, bin: shim.bin, refSha, refName: opts.ref, runIndex: i, fixture });
-      const out = join(opts.resultsDir, `${arm.id}-${refSha.slice(0, 12)}-${result.finished_at.replace(/[:.]/g, '-')}.json`);
-      writeFileSync(out, `${JSON.stringify(result, null, 2)}\n`);
-      results.push(result);
-      files.push(relative(opts.resultsDir, out));
-      const status = result.valid ? 'valid' : `INVALID (${result.invalid_reasons.join(', ')})`;
-      console.log(`[ev1] wrote ${relative(REPO_ROOT, out)}: ${status}, quality gates ${result.metrics.quality_gates.pass ? 'pass' : 'FAIL'}`);
-    }
-  });
+  const plainBin = arm.adev === false ? createPlainBin() : null;
+  try {
+    await withRefWorktree(refSha, async ({ worktree, shim }) => {
+      mkdirSync(opts.resultsDir, { recursive: true });
+      for (let i = 1; i <= opts.runs; i++) {
+        console.log(`[ev1] ${arm.id} run ${i}/${opts.runs} at ${refSha.slice(0, 12)}`);
+        const { result, patchText } = liveRun({
+          arm,
+          pluginRoot: worktree,
+          bin: shim.bin,
+          plainBin: plainBin?.bin ?? null,
+          model: opts.model,
+          refSha,
+          refName: opts.ref,
+          runIndex: i,
+          fixture,
+        });
+        const stem = `${arm.id}-${refSha.slice(0, 12)}-${result.finished_at.replace(/[:.]/g, '-')}`;
+        const out = join(opts.resultsDir, `${stem}.json`);
+        writeFileSync(join(opts.resultsDir, `${stem}.patch`), patchText);
+        result.patch.path = `${stem}.patch`;
+        writeFileSync(out, `${JSON.stringify(result, null, 2)}\n`);
+        results.push(result);
+        files.push(relative(opts.resultsDir, out));
+        const status = result.valid ? 'valid' : `INVALID (${result.invalid_reasons.join(', ')})`;
+        console.log(`[ev1] wrote ${relative(REPO_ROOT, out)}: ${status}, quality gates ${result.metrics.quality_gates.pass ? 'pass' : 'FAIL'}`);
+      }
+    });
+  } finally {
+    if (plainBin) rmSync(plainBin.bin, { recursive: true, force: true });
+  }
   const report = determinismReport(results.filter((r) => r.valid));
   if (report) console.log(report.markdown);
 
   if (recordsBaseline) {
     const out = writeBaseline(opts.resultsDir, { refSha, results, files });
     console.log(`[ev1] wrote baseline ${relative(REPO_ROOT, out)}`);
-  } else if (arm.id !== 'full') {
+  } else if (THRESHOLD_ARMS.includes(arm.id)) {
     console.log(JSON.stringify(await thresholdReport(opts.resultsDir, refSha, 'run'), null, 2));
   }
   return results.every((r) => r.valid && r.metrics.quality_gates.pass) ? 0 : 1;
 }
 
+export const ISOLATION_PROBE_PROMPT = [
+  'List every skill and slash command available in this session whose name starts with "adev" (for example adev:implement),',
+  'one per line, exactly as named. If there are none, reply with the single word NONE. Do not use any tools.',
+].join(' ');
+
+const PLACEHOLDERS = { pluginRoot: '<ref-worktree>', shimBin: '<adev-shim-bin>', plainBin: '<plain-bin>', cwd: '<sandbox>' };
+
+function installedAdevScopes(configDir) {
+  const installed = readJsonFile(join(configDir, 'plugins', 'installed_plugins.json'))?.plugins ?? {};
+  const enabled = readJsonFile(join(configDir, 'settings.json'))?.enabledPlugins ?? {};
+  return installedAdevPluginIds(configDir).map((id) => ({
+    id,
+    installs: (installed[id] ?? []).map((i) => ({ scope: i.scope ?? null, projectPath: i.projectPath ?? null })),
+    user_settings_enabled: id in enabled ? enabled[id] : null,
+  }));
+}
+
+/**
+ * Each arm's spawn as `--check-isolation` prints it: the run argv and the
+ * probe argv, with placeholder paths, and the env delta against the
+ * harness's own environment.
+ */
+export function isolationPlan({ arms = ARMS, configDir = defaultConfigDir(), model = null } = {}) {
+  return {
+    config_dir: configDir,
+    installed_adev: installedAdevScopes(configDir),
+    settings: isolationSettings(installedAdevPluginIds(configDir)),
+    arms: arms.map((arm) => {
+      const run = armSpawnSpec({ arm, ...PLACEHOLDERS, model, configDir });
+      const probe = armSpawnSpec({ arm, ...PLACEHOLDERS, model, configDir, prompt: ISOLATION_PROBE_PROMPT, stream: true });
+      return {
+        arm: arm.id,
+        command: run.command,
+        run_argv: run.argv,
+        probe_argv: probe.argv,
+        env: envDelta(run.env),
+        expect: arm.adev === false
+          ? 'no adev plugin, skill, slash command or SessionStart context'
+          : 'exactly one adev plugin, at the ref worktree; adev skills present once each; no installed copy',
+      };
+    }),
+    probe: 'add --probe to spend one short claude -p per arm (in a fresh sandbox) and check the init message and transcript',
+  };
+}
+
+export function parseStreamJson(stdout) {
+  const messages = [];
+  for (const line of String(stdout ?? '').split('\n')) {
+    if (!line.trim()) continue;
+    try {
+      messages.push(JSON.parse(line));
+    } catch {
+      // A partial last line from a killed process carries nothing to read.
+    }
+  }
+  return {
+    init: messages.find((m) => m.type === 'system' && m.subtype === 'init') ?? null,
+    result: messages.findLast((m) => m.type === 'result') ?? null,
+  };
+}
+
+const stripSlash = (s) => String(s).replace(/^\//, '');
+const isAdevName = (s) => /^adev(?::|$)/.test(stripSlash(s));
+const INSTALLED_ADEV_PATH = /plugins\/cache\/[^/"\\]+\/adev\//;
+
+/**
+ * What an arm's session actually loaded, from the stream-json init message
+ * (plugins, slash commands, skills) and the transcript (skill_listing and
+ * SessionStart additional context, and any path into the installed plugin
+ * cache's adev copy).
+ */
+export function isolationEvidence({ init = null, transcriptPaths = [] } = {}) {
+  const dupes = (names) => [...new Set(names.filter((n, i) => names.indexOf(n) !== i))].sort();
+  const listing = [];
+  const listingDupes = [];
+  let usingAdevContexts = 0;
+  let installedCopyReferenced = false;
+  let sawListing = false;
+  for (const file of transcriptPaths) {
+    if (!existsSync(file)) continue;
+    for (const line of readFileSync(file, 'utf8').split('\n')) {
+      if (!line) continue;
+      if (INSTALLED_ADEV_PATH.test(line)) installedCopyReferenced = true;
+      let row;
+      try {
+        row = JSON.parse(line);
+      } catch {
+        continue;
+      }
+      const a = row?.attachment;
+      if (a?.type === 'skill_listing' && typeof a.content === 'string') {
+        sawListing = true;
+        // A session can carry several listings (one per delta), so a name is a
+        // duplicate only when one listing names it twice.
+        const names = [];
+        for (const l of a.content.split('\n')) {
+          const m = /^- ([^:\s]+(?::[^:\s]+)?):/.exec(l);
+          if (m && isAdevName(m[1])) names.push(m[1]);
+        }
+        listing.push(...names);
+        listingDupes.push(...dupes(names));
+      }
+      if (a?.type === 'hook_additional_context' && JSON.stringify(a.content ?? '').includes('name: using-adev')) usingAdevContexts++;
+    }
+  }
+  const initNames = init ? [...(init.slash_commands ?? []), ...(init.skills ?? [])].map(stripSlash).filter(isAdevName) : [];
+  const plugins = Array.isArray(init?.plugins) ? init.plugins : null;
+  return {
+    init_available: init !== null,
+    listing_available: sawListing,
+    adev_plugins: plugins === null ? null : plugins.filter((p) => p?.name === ADEV_PLUGIN_NAME).map((p) => p.path ?? null),
+    adev_commands: [...new Set(initNames)].sort(),
+    adev_listing: [...new Set(listing)].sort(),
+    duplicate_adev_names: [...new Set([...dupes(init?.slash_commands?.map(stripSlash).filter(isAdevName) ?? []), ...listingDupes])].sort(),
+    using_adev_contexts: usingAdevContexts,
+    installed_copy_referenced: installedCopyReferenced,
+  };
+}
+
+function samePath(a, b) {
+  const real = (p) => {
+    try {
+      return realpathSync(p);
+    } catch {
+      return resolve(p);
+    }
+  };
+  return real(a) === real(b);
+}
+
+export function judgeIsolation({ arm, evidence, pluginRoot }) {
+  const failures = [];
+  if (!evidence.init_available && !evidence.listing_available) failures.push('no-evidence: neither an init message nor a skill listing');
+  if (evidence.installed_copy_referenced) failures.push('the installed adev copy (plugins/cache/.../adev/) is referenced');
+  if (arm.adev === false) {
+    if (evidence.adev_plugins?.length) failures.push(`adev plugin loaded: ${evidence.adev_plugins.join(', ')}`);
+    if (evidence.adev_commands.length) failures.push(`adev commands/skills present: ${evidence.adev_commands.join(', ')}`);
+    if (evidence.adev_listing.length) failures.push(`adev skills listed: ${evidence.adev_listing.join(', ')}`);
+    if (evidence.using_adev_contexts > 0) failures.push('the adev SessionStart context was injected');
+  } else {
+    if (evidence.adev_plugins !== null) {
+      if (evidence.adev_plugins.length !== 1) failures.push(`expected one adev plugin, saw ${evidence.adev_plugins.length}`);
+      else if (!evidence.adev_plugins[0] || !samePath(evidence.adev_plugins[0], pluginRoot)) {
+        failures.push(`the adev plugin loaded from ${evidence.adev_plugins[0]}, not ${pluginRoot}`);
+      }
+    }
+    if (evidence.adev_commands.length === 0 && evidence.adev_listing.length === 0) failures.push('no adev skills or commands present');
+    if (evidence.duplicate_adev_names.length) failures.push(`adev names listed twice: ${evidence.duplicate_adev_names.join(', ')}`);
+    if (evidence.using_adev_contexts > 1) failures.push(`the adev SessionStart context was injected ${evidence.using_adev_contexts} times`);
+  }
+  return { arm: arm.id, ok: failures.length === 0, failures };
+}
+
+async function runIsolationProbe(opts) {
+  const arms = opts.arm ? [findArm(opts.arm)] : ARMS;
+  const refSha = resolveRef(opts.ref);
+  requireClaudeCli();
+  const plainBin = createPlainBin();
+  const report = { ref: refSha, model: opts.model ?? 'session default', arms: [] };
+  try {
+    await withRefWorktree(refSha, async ({ worktree, shim }) => {
+      for (const arm of arms) {
+        const sandbox = prepareSandbox({ pluginRoot: worktree, bin: shim.bin, fixture: EV1_FIXTURE });
+        try {
+          const spec = armSpawnSpec({
+            arm, pluginRoot: worktree, shimBin: shim.bin, plainBin: plainBin.bin, cwd: sandbox.root,
+            model: opts.model, prompt: ISOLATION_PROBE_PROMPT, stream: true,
+          });
+          console.error(`[ev1] isolation probe: ${arm.id}`);
+          const r = spawnSync(spec.command, spec.argv, {
+            cwd: sandbox.root, env: spec.env, encoding: 'utf8', timeout: 5 * 60 * 1000, killSignal: 'SIGKILL',
+            stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 16 * 1024 * 1024,
+          });
+          const { init, result } = parseStreamJson(r.stdout);
+          const sessionId = result?.session_id ?? init?.session_id ?? null;
+          const evidence = isolationEvidence({ init, transcriptPaths: awaitTranscripts(sessionId, sandbox.root) });
+          report.arms.push({
+            ...judgeIsolation({ arm, evidence, pluginRoot: worktree }),
+            exit_code: r.status,
+            session_id: sessionId,
+            answer: typeof result?.result === 'string' ? result.result.trim() : null,
+            cost_usd: result?.total_cost_usd ?? null,
+            evidence,
+          });
+        } finally {
+          rmSync(sandbox.root, { recursive: true, force: true });
+        }
+      }
+    });
+  } finally {
+    rmSync(plainBin.bin, { recursive: true, force: true });
+  }
+  report.ok = report.arms.every((a) => a.ok);
+  console.log(JSON.stringify(report, null, 2));
+  return report.ok ? 0 : 1;
+}
+
 async function main(argv) {
   const opts = parseArgs(argv);
+  if (opts.checkIsolation) {
+    if (opts.probe) return runIsolationProbe(opts);
+    const arms = opts.arm ? [findArm(opts.arm)] : ARMS;
+    console.log(JSON.stringify(isolationPlan({ arms, model: opts.model }), null, 2));
+    return 0;
+  }
+  if (opts.compare) return runCompare(opts);
   if (opts.fixture === 'nonconvergent') {
     const nc = await import('./run-nonconvergent.mjs');
     checkNonconvergentArgs(opts, nc.MODES);

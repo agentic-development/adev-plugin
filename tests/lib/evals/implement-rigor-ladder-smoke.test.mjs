@@ -14,16 +14,89 @@ function dryRun(extra = []) {
   return JSON.parse(execFileSync('node', [HARNESS, '--dry-run', ...extra], { encoding: 'utf8' }));
 }
 
-test('EV-1 --dry-run prints all three arms and writes nothing', () => {
+test('EV-1 --dry-run prints the three adev arms and the plain arm, and writes nothing', () => {
   const before = existsSync(RESULTS) ? readdirSync(RESULTS).sort() : [];
   const plan = dryRun();
-  assert.deepEqual(plan.arms.map((a) => a.id), ['full', 'quick', 'lite']);
+  assert.deepEqual(plan.arms.map((a) => a.id), ['full', 'quick', 'lite', 'plain']);
   assert.deepEqual(plan.arms.find((a) => a.id === 'lite').implementArgs, ['--lite']);
   assert.deepEqual(plan.arms.find((a) => a.id === 'full').implementArgs, ['--tier full']);
   assert.deepEqual(plan.arms.find((a) => a.id === 'quick').implementArgs, []);
+  const plain = plan.arms.find((a) => a.id === 'plain');
+  assert.equal(plain.implementArgs, null);
+  assert.equal(plain.adev, false);
+  assert.doesNotMatch(plain.prompt, /adev/i);
   assert.equal(plan.writes.length, 0);
   const after = existsSync(RESULTS) ? readdirSync(RESULTS).sort() : [];
   assert.deepEqual(after, before);
+});
+
+test('EV-1 --dry-run --arm narrows the plan to that arm, and an unknown arm is a usage error', () => {
+  for (const arm of ['full', 'quick', 'lite', 'plain']) {
+    assert.deepEqual(dryRun(['--arm', arm]).arms.map((a) => a.id), [arm]);
+  }
+  const r = spawnSync('node', [HARNESS, '--dry-run', '--arm', 'bogus'], { encoding: 'utf8' });
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /USAGE: --arm must be one of full\|quick\|lite\|plain/);
+});
+
+test('EV-1 --dry-run declares the edge-probe battery, the patch output and the isolation settings', () => {
+  const plan = dryRun();
+  assert.equal(plan.edgeProbes.total, 54);
+  assert.deepEqual(plan.edgeProbes.strict, ['P6', 'T8', 'T9', 'L6']);
+  assert.deepEqual(Object.keys(plan.edgeProbes.by_behavior), ['BEH-1', 'BEH-2', 'BEH-3', 'BEH-4', 'BEH-5', 'BEH-6', 'BEH-7']);
+  assert.equal(plan.patchOutput, 'results/<arm>-<ref-short>-<iso>.patch');
+  assert.equal(plan.isolation.settings.enabledPlugins['adev@agentic-development'], false);
+  assert.ok(Object.values(plan.isolation.settings.enabledPlugins).every((v) => v === false));
+  assert.equal(plan.metrics.process_wall_clock_ms.arms, 'every arm, the like-for-like column');
+});
+
+test('--check-isolation prints each arm\'s spawn without a model call; --probe needs --check-isolation', () => {
+  const out = JSON.parse(execFileSync('node', [HARNESS, '--check-isolation'], { encoding: 'utf8' }));
+  assert.deepEqual(out.arms.map((a) => a.arm), ['full', 'quick', 'lite', 'plain']);
+  for (const a of out.arms) {
+    assert.equal(a.run_argv.includes('--plugin-dir'), a.arm !== 'plain', a.arm);
+    assert.ok(a.run_argv.includes('--settings'), a.arm);
+    assert.ok(a.probe_argv.includes('stream-json'), a.arm);
+  }
+  assert.equal(out.arms.find((a) => a.arm === 'plain').env.set.ADEV_ROOT, undefined);
+  assert.equal(out.arms.find((a) => a.arm === 'full').env.set.ADEV_ROOT, '<ref-worktree>');
+  const one = JSON.parse(execFileSync('node', [HARNESS, '--check-isolation', '--arm', 'plain'], { encoding: 'utf8' }));
+  assert.deepEqual(one.arms.map((a) => a.arm), ['plain']);
+  const r = spawnSync('node', [HARNESS, '--probe'], { encoding: 'utf8' });
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /USAGE: --probe only applies to --check-isolation/);
+});
+
+test('--compare tabulates the arms present and writes nothing', () => {
+  const dir = createTempDir();
+  try {
+    const run = (arm, extra = {}) => ({
+      arm,
+      ref: 'a'.repeat(40),
+      valid: true,
+      implement: { process_ms: 120000 },
+      metrics: {
+        wall_clock_ms: arm === 'plain' ? 120000 : 100000,
+        wall_clock_source: arm === 'plain' ? 'process' : 'lifecycle-event-timestamps',
+        tokens: { input_tokens: 0, output_tokens: 1000, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 },
+        quality_gates: { pass: true },
+        defects: [],
+      },
+      ...extra,
+    });
+    writeJson(dir, 'plain-aaaaaaaaaaaa-1.json', { ...run('plain'), adev: false });
+    writeJson(dir, 'lite-aaaaaaaaaaaa-1.json', run('lite'));
+    const before = readdirSync(dir).sort();
+    const r = spawnSync('node', [HARNESS, '--compare', '--results-dir', dir], { encoding: 'utf8' });
+    assert.equal(r.status, 0, r.stderr);
+    assert.match(r.stdout, /^\| lite \| 1\/1 \| 2\.0m \| 1\.7m \|/m);
+    assert.match(r.stdout, /^\| plain \| 1\/1 \| 2\.0m \| n\/a \|/m);
+    const json = JSON.parse(spawnSync('node', [HARNESS, '--compare', '--json', '--results-dir', dir], { encoding: 'utf8' }).stdout);
+    assert.deepEqual(json.rows.map((x) => x.arm), ['lite', 'plain']);
+    assert.deepEqual(readdirSync(dir).sort(), before);
+  } finally {
+    cleanupTempDir(dir);
+  }
 });
 
 test('fixture mixes eligible and ineligible tasks and names its traps', () => {
