@@ -37,9 +37,9 @@ the reviewer are given different halves of that conflict:
   under `src/` throws: a function that rejects its input returns
   `{ error: { code } }`. The principle says it outranks a spec that says a
   function throws. It tells the implementer to return the error value, keep
-  going and leave the spec alone, because the review reports the criterion as
-  unmet and the spec is amended afterwards. It also says the difference is
-  never a blocker or a question for the operator.
+  going and leave the spec alone, and says that for the implementer the
+  difference is never a blocker or a question for the operator. It also tells
+  any review to rate the unmet criterion as an Important finding, never lower.
 - The plan's task text names the behavior and nothing else. It gives no code
   and says nothing about errors, so it supports neither side.
 
@@ -64,8 +64,10 @@ The implementer cannot make the first review pass:
   nothing about errors. Each reviewer therefore sees an exported function that
   returns where its acceptance criterion says it throws. That is a missing
   requirement, and the reviewer is told to verify against the code, not
-  against the implementer's report. A reviewer that reads the constitution
-  anyway finds Principle 4 saying the review reports the criterion as unmet.
+  against the implementer's report. A reviewer that is given Principle 4
+  anyway, because the orchestrator copied it into the prompt, is told by the
+  principle itself to rate the unmet criterion Important. Either way the first
+  review has an Important finding.
 
 With one review cycle and no fix pass, the loop ends `LOOP_BUDGET_EXHAUSTED`.
 
@@ -79,9 +81,13 @@ A run can still miss, as `halted_other`, in three ways:
 
 - The implementer follows the spec over Principle 4. No reviewer is given the
   principle, so the review passes.
-- The orchestrator puts Principle 4, or its own note that the deviation is
-  sanctioned, into the reviewer's prompt, and the reviewer then rates the
-  unmet criterion below Important.
+- The orchestrator adds its own note that the deviation is sanctioned to the
+  reviewer's prompt, and the reviewer rates the unmet criterion below
+  Important anyway. This happened in the first live runs of this trigger,
+  when Principle 4 still said only that the difference was "never a blocker":
+  the orchestrator copied the principle into the synthesized reviewer's
+  prompt, and the reviewer rated the gap a suggestion. The principle now
+  names the severity.
 - The orchestrator treats the implementer's report of the difference as a
   correctness concern (Step 2d `DONE_WITH_CONCERNS`) and asks the operator.
 

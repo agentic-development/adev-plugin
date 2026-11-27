@@ -137,7 +137,11 @@ test('nonconvergent trigger: Principle 4 reaches the implementer and the throwin
   const constitution = markdownSections(readFileSync(join(NONCONVERGENT_DIR, 'seed/.context-index/constitution.md'), 'utf8'), 2);
   assert.match(constitution['Non-Negotiable Principles'], /\*\*Errors are values\*\*.*no exported function under `src\/` throws/);
   assert.match(constitution['Non-Negotiable Principles'], /outranks any spec or plan text that says a function throws/);
-  assert.match(constitution['Non-Negotiable Principles'], /never a blocker and never a question for the operator/);
+  assert.match(constitution['Non-Negotiable Principles'], /For the implementer the difference is never a blocker and never a question for the operator/);
+  // An orchestrator may copy Principle 4 into the reviewer's prompt; the principle itself must then
+  // keep the reviewer from rating the unmet criterion below Important.
+  assert.match(constitution['Non-Negotiable Principles'], /A review rates the spec's unmet criterion as an \*\*Important\*\* finding, never lower/);
+  assert.doesNotMatch(constitution['Non-Negotiable Principles'], /difference is never a blocker and never a question for the operator\.$/m);
   assert.ok(constitution['Coding Standards'], 'the reviewers need a Coding Standards section to receive');
   assert.doesNotMatch(constitution['Coding Standards'], /throw|error/i);
 
