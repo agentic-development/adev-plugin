@@ -119,6 +119,13 @@ The code already behaves as each note says. Revision 4 should state it.
   - The non-interactive no-overwrite rule applies per level.
   - Typed answers are not trimmed.
 - **Governance line.** The spec's Output Contract still says ADR 0020 is Proposed. It should say Accepted.
+- **BEH-7 gains a second exemption: exact provider-mirror regenerations.** This is an operator decision made on 2026-11-26 to close the EV-5 gap. Mirror regeneration caused most `quick` trips in the offline replay and held `lite` below target. A touched `providers/<p>/skills/<rest>` is outside `scope-mismatch` when all of these hold:
+  - `<p>` is a provider `scripts/sync-provider-skills.mjs` handles, and the sync writes that path (never `agents/`, a nested `SKILL.md` or an `adev-*` skill);
+  - `skills/<rest>` is declared or touched;
+  - the mirror is a regular file. Its blob equals the blob of the sync's output for `skills/<rest>` as the diff sees it (`isRegeneratedProviderMirror()` reuses the script's transform from `lib/sync/provider-skills.mjs`);
+  - its git mode equals the canonical file's mode, for added and changed mirrors alike. The sync gives every mirror it writes its canonical file's executable bit, and a mode-only difference is reported as `updated`.
+
+  A deleted mirror is exempt only when `skills/<rest>` was deleted too. The check fails closed: a missing, unreadable, symlinked or since-changed canonical file, a generator error, or a SHA-256 repository means not exempt. Because the comparison uses git's stored blobs, it also fails closed when `core.autocrlf=true` or `input`, or an `eol=crlf` attribute, applies to CRLF canonical files: on such a checkout mirror regenerations always trip to `quick`. It covers `scope-mismatch` only, never `sensitive-path` or `boundary`, which still see the mirror path. `*.spec.md`, `.context-index/`, symlinks and `.`/`..`/empty segments stay never exempt. Revision 4 must amend three places: BEH-7's exemption list, the acceptance criterion that `isTripwireExempt` has unit tests for every exemption rule (extend it to this rule), and the Failure Modes row for an undeclared, non-exempt path. Add a row for a mirror that is not an exact regeneration.
 
 #### Open decisions
 

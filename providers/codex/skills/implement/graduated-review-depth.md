@@ -153,7 +153,23 @@ escalates, at most two levels:
   declared nor exempt. A path is exempt when it is under `tests/` or `docs/`,
   or when its basename, anywhere in the tree, is `README.md` or
   `*.test.<ext>` / `*.spec.<ext>` for a source extension (`js`, `mjs`, `cjs`,
-  `ts`, `tsx`, `jsx`, `py`, `go`, `rb`, `rs`). `*.spec.md` is never exempt,
+  `ts`, `tsx`, `jsx`, `py`, `go`, `rb`, `rs`). A provider mirror
+  `providers/<p>/skills/<rest>` is also exempt when it is an exact
+  regeneration: `<p>` is a provider `scripts/sync-provider-skills.mjs`
+  handles, the sync writes that path (never `agents/`, a nested `SKILL.md` or
+  an `adev-*` skill, so a `lite` task that adds a new skill always trips to
+  `quick`), `skills/<rest>` is declared or touched, the mirror is a regular
+  file whose content equals the sync's output for `skills/<rest>` as the diff
+  sees it, and its mode equals the canonical file's (the sync gives each
+  mirror its canonical file's executable bit). A deleted mirror is exempt only when
+  `skills/<rest>` was deleted too. When the check cannot be computed (a
+  missing, unreadable, symlinked or since-changed canonical file, a generator
+  error, or a SHA-256 repository) the mirror is not exempt. The comparison
+  uses git's stored blobs, so with `core.autocrlf=true` or `input`, or an
+  `eol=crlf` attribute, on CRLF canonical files it also fails closed, and
+  mirror regenerations always trip to `quick` on such a checkout. This exemption
+  covers `scope-mismatch` only: `sensitive-path` and `boundary` still see the
+  mirror path. `*.spec.md` is never exempt,
   and neither is a path under `.context-index/` (both matched
   case-insensitively), a path with an empty, `.` or `..` segment, or a
   symlink;

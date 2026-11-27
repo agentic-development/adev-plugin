@@ -166,7 +166,7 @@ test("a commit base keeps the previous semantics: tracked changes plus every unt
   }
 });
 
-test("computeTouchedFiles reports git modes; a new symlink has mode 120000", () => {
+test("computeTouchedFiles reports git modes and destination blob ids; a new symlink has mode 120000", () => {
   const dir = repo();
   try {
     writeFileSync(join(dir, "a.mjs"), "export {};\n");
@@ -179,10 +179,11 @@ test("computeTouchedFiles reports git modes; a new symlink has mode 120000", () 
     writeFileSync(join(dir, "tracked.txt"), "2\n");
     rmSync(join(dir, "gone.txt"));
     const byPath = (records) => [...records].sort((x, y) => x.path.localeCompare(y.path));
+    const blob = (content) => execFileSync("git", ["hash-object", "--stdin"], { cwd: dir, input: content, encoding: "utf8" }).trim();
     assert.deepEqual(byPath(computeTouchedFiles(dir, base)), [
-      { path: "gone.txt", status: "D", mode: "000000", src_mode: "100644" },
-      { path: "link.mjs", status: "A", mode: "120000", src_mode: "000000" },
-      { path: "tracked.txt", status: "M", mode: "100644", src_mode: "100644" },
+      { path: "gone.txt", status: "D", mode: "000000", src_mode: "100644", dst_sha: "0".repeat(40) },
+      { path: "link.mjs", status: "A", mode: "120000", src_mode: "000000", dst_sha: blob("a.mjs") },
+      { path: "tracked.txt", status: "M", mode: "100644", src_mode: "100644", dst_sha: blob("2\n") },
     ]);
   } finally {
     cleanupTempDir(dir);
