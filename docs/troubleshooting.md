@@ -130,6 +130,10 @@ These are the error codes for `tasks.backend: github` (see [concepts](concepts.m
 | `GITHUB_REQUEST_FAILED` | Any other GitHub or `gh` failure with no more specific code (a non-JSON response, a response without data, an oversized response, a non-zero `gh` exit) | Read the redacted detail in the message and retry; report it if it repeats |
 | `GITHUB_TRANSPORT_INTERNAL` | The transport refused a request whose argv is not the fixed `gh api graphql --input -`. No caller can reach this | This is an adev bug; report it with the command you ran |
 
+**A just-created or just-updated item is missing from `list` or shows old values.** GitHub's project items listing is eventually consistent and can lag a write by a few seconds. `get`, `update`, `close`, `claim`, `release` and `dep` read a `gh-<n>` item directly and are not affected, and `list` in the process that made the write shows it at once; a `list`, `board` or `next` in another command can lag. Re-run it after a few seconds. See [how `github` differs](concepts.md#how-github-differs).
+
+**A Status adev wrote changes back a second later.** A built-in project workflow overwrote it: with "Item added to project" or "Auto-add sub-issues to project" on, `github-project-automation` resets a new item's Status (for example `In Progress` back to `Backlog`). Disable every workflow that sets Status on the project's **Workflows** page, then set the status again with `adev issues update <id> --status <status>`.
+
 ### Writing to the board
 
 | Code | When | Remedy |
@@ -190,7 +194,7 @@ This section is for contributors working on the GitHub backend's tests. These co
 
 A maintainer records the fixtures by hand against a throwaway board. CI and agents never do.
 
-1. Create the fixture organization `adev-fixtures` (a free plan is enough). The recorder refuses a board or repo owned by anyone else before it sends a request. In it, create a throwaway repository, for example `adev-fixtures/adev-fixture-board`, and a Projects v2 board whose title starts with `adev-fixture:`. The board must hold only recorder-created items, and every milestone title must also start with `adev-fixture:`. No labels, issue types or milestones are needed.
+1. Create the fixture organization `adev-fixtures` (a free plan is enough). The recorder refuses a board or repo owned by anyone else before it sends a request. In it, create a throwaway repository, for example `adev-fixtures/adev-fixture-board`, and a Projects v2 board whose title starts with `adev-fixture:`. The board must hold only recorder-created items, and every milestone title must also start with `adev-fixture:`. No labels, issue types or milestones are needed. On the board's **Workflows** page, turn off every built-in workflow, in particular "Item added to project" and "Auto-add sub-issues to project", which are on by default: they rewrite Status seconds after the recorder writes it, so a recording would capture GitHub's automation instead of adev's writes.
 2. Create a fine-grained personal access token with **Resource owner** set to `adev-fixtures`, **Only select repositories** set to the fixture repository, the repository permission `Issues` set to read and write, and the organization permission `Projects` set to read and write. `Metadata` read-only is added automatically. Fine-grained tokens cannot reach a board owned by a user account, which is why the board belongs to an organization: the token then reaches nothing outside the fixture organization. Never use your own `gh` login or a classic token, and never paste the token value into a file or commit.
 3. Read the token into `GH_TOKEN` without echoing it: `read -s GH_TOKEN && export GH_TOKEN`. The recorder refuses to run without it.
 4. Prepare the board from a scratch directory, so your project's own manifest is untouched. Create `.context-index/manifest.yaml` there containing:

@@ -12,6 +12,14 @@
  *     `issueId` being the item's content (Issue) node id and `after` the
  *     embedded connection's endCursor; the response is
  *     `{ node: { blockedBy|subIssues: { totalCount, pageInfo, nodes } } }`.
+ *   - ISSUE_PROJECT_ITEMS_QUERY with `{ owner: "acme", name: "board", number }` for
+ *     every home-repo Issue item: how a gh-<n> ID resolves. The response is
+ *     `{ repository: { issue: { projectItems: { totalCount, pageInfo, nodes } } } }`,
+ *     whose one node is the item exactly as the items page carries it plus
+ *     `project: { id: PROJECT_ID }`. `issueNotFound(n)` and `issueOffProject(n)`
+ *     build the answers for a number with no issue and for an issue that is on
+ *     another project only; buildBoard records the first for each pull request
+ *     and the second for each home-repo `offProjectChildren` number.
  *   - Nothing else: `type_source: auto` must be resolved from these responses,
  *     through each Issue's `repository.issueTypes.totalCount`.
  *
@@ -28,7 +36,7 @@
 
 import { rawItem } from "./items.mjs";
 import { preflightFixture } from "./preflight.mjs";
-import { PROJECT_ITEMS_QUERY, SUB_ISSUES_PAGE_QUERY, BLOCKED_BY_PAGE_QUERY } from "../../../../lib/issues/github/queries.mjs";
+import { PROJECT_ITEMS_QUERY, ISSUE_PROJECT_ITEMS_QUERY, SUB_ISSUES_PAGE_QUERY, BLOCKED_BY_PAGE_QUERY } from "../../../../lib/issues/github/queries.mjs";
 
 export const PROJECT_ID = "PVT_fixture";
 const PAGE_SIZE = 100;
@@ -152,6 +160,50 @@ function pullRequestItem(number) {
   };
 }
 
+const lookupVariables = (number) => ({ owner: HOME.owner, name: HOME.name, number });
+
+function projectItemsPage(nodes) {
+  return { totalCount: nodes.length, pageInfo: { hasNextPage: false, endCursor: null }, nodes };
+}
+
+/**
+ * The direct lookup of home-repo issue `number` answered with `projectItems` nodes
+ * (each an item node carrying `project: { id }`).
+ */
+export function issueLookup(number, nodes) {
+  return {
+    query: ISSUE_PROJECT_ITEMS_QUERY,
+    variables: lookupVariables(number),
+    response: { data: { repository: { issue: { projectItems: projectItemsPage(nodes) } } } },
+  };
+}
+
+/** The direct lookup of a number that names no issue: GitHub's NOT_FOUND error at `repository.issue`. */
+export function issueNotFound(number) {
+  return {
+    query: ISSUE_PROJECT_ITEMS_QUERY,
+    variables: lookupVariables(number),
+    response: {
+      data: { repository: { issue: null } },
+      errors: [{ type: "NOT_FOUND", path: ["repository", "issue"], message: `Could not resolve to an Issue with the number of ${number}.` }],
+    },
+  };
+}
+
+/** The direct lookup of an issue that exists but is an item of another project only. */
+export function issueOffProject(number) {
+  const item = rawItem({ number });
+  item.id = `PVTI_other_${number}`;
+  item.content.repository.issueTypes = { totalCount: 5 };
+  item.content.labels.totalCount = item.content.labels.nodes.length;
+  item.content.blockedBy = { totalCount: 0, pageInfo: { hasNextPage: false, endCursor: null }, nodes: [] };
+  item.content.subIssues = { totalCount: 0, pageInfo: { hasNextPage: false, endCursor: null }, nodes: [] };
+  return issueLookup(number, [{ ...item, project: { id: "PVT_other" } }]);
+}
+
+const isHomeIssue = (node) =>
+  node.content?.__typename === "Issue" && node.content.repository.owner.login === HOME.owner && node.content.repository.name === HOME.name;
+
 /**
  * Build the replay entries for one board.
  *
@@ -205,6 +257,20 @@ export function buildBoard(specs, { pages, totalCount, preflight = preflightFixt
       },
     });
   });
+
+  // Every number the board names resolves as GitHub would answer it: a home item
+  // by its item here, an off-project sub-issue as an item of another project, and
+  // a pull request's number as no issue at all.
+  for (const node of nodes) {
+    if (isHomeIssue(node)) entries.push(issueLookup(node.content.number, [{ ...node, project: { id: PROJECT_ID } }]));
+    else if (node.content?.__typename === "PullRequest") entries.push(issueNotFound(node.content.number));
+  }
+  const onBoard = new Set(nodes.filter(isHomeIssue).map((n) => n.content.number));
+  for (const spec of specs) {
+    for (const number of spec.offProjectChildren ?? []) {
+      if (!onBoard.has(number)) entries.push(issueOffProject(number));
+    }
+  }
 
   return [...preflight, ...entries];
 }

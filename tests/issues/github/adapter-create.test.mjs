@@ -9,6 +9,7 @@ import { GITHUB_ERROR_CODES } from "../../../lib/issues/github/errors.mjs";
 import * as mutations from "../../../lib/issues/github/mutations.mjs";
 import { replayExec } from "./replay-transport.mjs";
 import { writes, LABEL_IDS, ISSUE_TYPE_IDS, STATUS_OPTION_IDS, TEXT_FIELD_IDS, INJECTION, NUMBER_PRIORITY_FIELD_ID, RATE_RESET_AT } from "./fixtures/writes.mjs";
+import { issueNotFound } from "./fixtures/board.mjs";
 import { createTempDir, cleanupTempDir } from "../../helpers.mjs";
 
 // Every adapter's storage root is created here and removed when the file's tests finish.
@@ -49,7 +50,9 @@ test("unresolvable parent or dependency is refused before any issue is created",
   const exec = replayExec(writes.boardWithoutParent);
   const a = new GithubAdapter(tempDir(), manifest, { exec });
   await assert.rejects(a.create({ title: "adev-fixture: t", parent_id: "gh-404" }), { code: "PARENT_NOT_FOUND" });
+  await assert.rejects(a.create({ title: "adev-fixture: t", parent_id: "gh-405" }), { code: "PARENT_NOT_FOUND" });
   await assert.rejects(a.create({ title: "adev-fixture: t", dependencies: ["gh-405"] }), { code: "NOT_FOUND" });
+  await assert.rejects(a.create({ title: "adev-fixture: t", dependencies: ["gh-404"] }), { code: "NOT_FOUND" });
   assert.equal(exec.calls.filter((c) => c.operation === "CreateIssue").length, 0);
 });
 
@@ -347,13 +350,13 @@ test("partial createEpic: a failed milestone write raises GITHUB_PARTIAL_CREATE 
   });
 });
 
-test("create and partial create both invalidate the cached board", async () => {
+test("create writes its read-back through to the cached board; a partial create drops the cached board", async () => {
   const ok = adapter(writes.createPlain);
   await ok.a.list();
-  await ok.a.create({ title: "adev-fixture: plain" });
+  const created = await ok.a.create({ title: "adev-fixture: plain" });
   const afterCreate = countOf(ok.exec, "ProjectItems");
-  await ok.a.list();
-  assert.equal(countOf(ok.exec, "ProjectItems"), afterCreate + 1);
+  assert.ok((await ok.a.list()).some((i) => i.id === created.id));
+  assert.equal(countOf(ok.exec, "ProjectItems"), afterCreate);
 
   const partial = adapter(writes.partial);
   await partial.a.list();
@@ -382,7 +385,7 @@ test("updateEpic writes a changed planRef as one text slot and no status", async
 });
 
 test("updateEpic refuses an item that is not an epic on the project, and an invalid milestone before any request", async () => {
-  const { a, exec } = adapter(writes.updateEpic);
+  const { a, exec } = adapter([...writes.updateEpic, issueNotFound(999)]);
   await assert.rejects(a.updateEpic("gh-2", { milestone: "v2" }), { code: "NOT_FOUND" });
   await assert.rejects(a.updateEpic("gh-999", { milestone: "v2" }), { code: "NOT_FOUND" });
   assert.deepEqual(mutationOps(exec), []);

@@ -80,7 +80,7 @@
  *   `{ addComment: ... }`, UPDATE_ISSUE `{ updateIssue: ... }`, REMOVE_LABELS `{ removeLabelsFromLabelable: ... }`.
  */
 
-import { buildBoard, PROJECT_ID } from "./board.mjs";
+import { buildBoard, PROJECT_ID, issueNotFound, issueOffProject } from "./board.mjs";
 import { preflightEntry, okResponse, fieldNodes, preflightFixture } from "./preflight.mjs";
 import {
   PROJECT_ITEMS_QUERY,
@@ -385,8 +385,8 @@ export const writes = Object.freeze({
     readBack: { title: "adev-fixture: t", body: "@/etc/passwd", issueType: null, fields: { spec_ref: "x.spec.md" }, labels: ["module:lib"], parent: { number: 1 }, createdAt: READ_BACK_AT, updatedAt: READ_BACK_AT },
   }),
 
-  // Neither gh-404 nor gh-405 is on the project.
-  boardWithoutParent: fixture({ board: [task(1), task(2)] }),
+  // Neither gh-404 nor gh-405 is on the project: #404 is an issue on another project only, #405 no issue at all.
+  boardWithoutParent: [...fixture({ board: [task(1), task(2)] }), issueOffProject(404), issueNotFound(405)],
 
   createTypedIssueTypes: fixture({}, {
     number: 310,

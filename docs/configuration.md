@@ -278,6 +278,8 @@ Required when `backend: github`. The board is a GitHub Projects v2 board, reache
 
 **Requirements:** `gh` on `PATH`, authenticated (or `GH_TOKEN` set) with the `repo` and `project` scopes, or a fine-grained / App token with issue read/write on the repo and read/write on the project. Run `adev issues github setup` to create the fields and options the board needs, and `adev issues github setup --check` to verify it. Error codes are listed in [Troubleshooting](troubleshooting.md#github-issue-backend).
 
+**Disable the board's Status workflows.** On the project's **Workflows** page, turn off every built-in workflow that sets Status, notably "Item added to project" and "Auto-add sub-issues to project", which are on by default. Left on, they overwrite the Status adev writes seconds later (an item adev set to `In Progress` is reset to `Backlog` by `github-project-automation`). `setup` does not change workflows. See [how `github` differs](concepts.md#how-github-differs).
+
 **Example:**
 ```yaml
 tasks:

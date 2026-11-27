@@ -3,9 +3,9 @@ import assert from "node:assert/strict";
 import { GithubAdapter } from "../../../lib/issues/github-adapter.mjs";
 import { replayExec } from "./replay-transport.mjs";
 import { createTempDir } from "../../helpers.mjs";
-import { board } from "./fixtures/board.mjs"; // 250 items, 2 epics, nested sub-issues, one cross-repo item, one draft, one PR
+import { board, issueNotFound } from "./fixtures/board.mjs"; // 250 items, 2 epics, nested sub-issues, one cross-repo item, one draft, one PR
 import { GITHUB_ERROR_CODES } from "../../../lib/issues/github/errors.mjs";
-import { PREFLIGHT_QUERY, PROJECT_ITEMS_QUERY, SUB_ISSUES_PAGE_QUERY, BLOCKED_BY_PAGE_QUERY } from "../../../lib/issues/github/queries.mjs";
+import { PREFLIGHT_QUERY, PROJECT_ITEMS_QUERY, ISSUE_PROJECT_ITEMS_QUERY, SUB_ISSUES_PAGE_QUERY, BLOCKED_BY_PAGE_QUERY } from "../../../lib/issues/github/queries.mjs";
 import { DEFAULT_CLAIM_TTL_MINUTES } from "../../../lib/issues/interface.mjs";
 
 const manifest = { tasks: { backend: "github", github: { project: "https://github.com/orgs/acme/projects/7", repo: "acme/board" } } };
@@ -27,7 +27,7 @@ test("walkTree: transitive sub-issues on the project, sorted; a cycle throws", a
 });
 
 test("old IDs resolve through legacy_id; ambiguity refused; unknown → null", async () => {
-  const { a } = adapter(board.migrated);
+  const { a } = adapter([...board.migrated, issueNotFound(99999)]);
   assert.equal((await a.get("issue-7k3f9a")).id, "gh-41");
   await assert.rejects(a.get("epic-2"), { code: "GITHUB_AMBIGUOUS_LEGACY_ID" });
   assert.equal(await a.get("issue-zzzzzz"), null);
@@ -118,7 +118,7 @@ test("list: filters use the json adapter's semantics over decoded items", async 
 });
 
 test("list: epicId returns the epic's direct children, accepting the forms get() accepts", async () => {
-  const { a } = adapter(board.full);
+  const { a } = adapter([...board.full, issueNotFound(99999)]);
   for (const input of ["gh-5", "#5", "5", "acme/board#5", "https://github.com/acme/board/issues/5"]) {
     assert.deepEqual(sortedIds(await a.list({ epicId: input })), ["gh-6", "gh-acme.api.7"], input);
   }
@@ -149,13 +149,15 @@ test("listEpics: Epic membership only, with status and milestone filters", async
   assert.deepEqual(ids(await a.listEpics({ milestone: "v9" })), []);
 });
 
-test("read: one preflight and one paged item read serve every later read on the adapter", async () => {
+test("read: one preflight and one paged item read serve every later board read on the adapter", async () => {
   const { a, exec } = adapter(board.full);
   await a.list({});
   await a.listEpics();
   await a.get("gh-8");
   await a.walkTree("gh-1");
   assert.equal(exec.calls.filter((c) => c.query === PREFLIGHT_QUERY).length, 1);
+  // A gh-<n> ID resolves by its own direct read, never from the cached listing.
+  assert.deepEqual(exec.calls.filter((c) => c.query === ISSUE_PROJECT_ITEMS_QUERY).map((c) => c.variables.number), [8, 1]);
   assert.equal(exec.calls.filter((c) => c.query === PROJECT_ITEMS_QUERY).length, 3);
   assert.deepEqual(exec.calls.filter((c) => c.query === PROJECT_ITEMS_QUERY).map((c) => c.variables), [
     { projectId: "PVT_fixture" },
@@ -193,10 +195,14 @@ test("read: a separate adapter performs its own read", async () => {
 });
 
 test("pagination: a repeated cursor throws GITHUB_PAGINATION_INVALID with no partial result", async () => {
-  for (const call of [(a) => a.list({}), (a) => a.listEpics(), (a) => a.walkTree("gh-1"), (a) => a.get("gh-1")]) {
+  for (const call of [(a) => a.list({}), (a) => a.listEpics(), (a) => a.walkTree("gh-1")]) {
     const { a } = adapter(board.repeatedCursor);
     await assert.rejects(call(a), { code: "GITHUB_PAGINATION_INVALID" });
   }
+  // get() of a gh ID reads that issue directly, so a broken listing does not touch it.
+  const { a, exec } = adapter(board.repeatedCursor);
+  assert.equal((await a.get("gh-1")).id, "gh-1");
+  assert.equal(exec.calls.filter((c) => c.query === PROJECT_ITEMS_QUERY).length, 0);
 });
 
 test("pagination: more pages than ceil(totalCount/100) + 1 throws GITHUB_PAGINATION_INVALID", async () => {
@@ -304,7 +310,7 @@ test("type_source auto: an owner with issue types but no typed items still ignor
   assert.deepEqual(ids(await a.listEpics()), []);
   assert.equal((await a.get("gh-1")).type, "task");
   assert.equal((await a.get("gh-2")).type, "task");
-  const known = new Set([PREFLIGHT_QUERY, PROJECT_ITEMS_QUERY]);
+  const known = new Set([PREFLIGHT_QUERY, PROJECT_ITEMS_QUERY, ISSUE_PROJECT_ITEMS_QUERY]);
   assert.deepEqual(exec.calls.filter((c) => !known.has(c.query)).map((c) => c.operation), []);
 });
 
@@ -330,20 +336,21 @@ test("queries: the items page reads each repository's issue-type availability an
 });
 
 test("labels: more labels than the embedded page throws GITHUB_PAGINATION_INVALID naming the item", async () => {
-  for (const call of [(a) => a.list({}), (a) => a.listEpics(), (a) => a.walkTree("gh-1"), (a) => a.get("gh-1")]) {
+  for (const call of [(a) => a.list({}), (a) => a.listEpics(), (a) => a.walkTree("gh-1"), (a) => a.get("gh-2")]) {
     const { a } = adapter(board.truncatedLabels);
     await assert.rejects(call(a), rejectsNaming("GITHUB_PAGINATION_INVALID", "gh-2"));
   }
 });
 
-for (const [name, fx, query, sent] of [
-  ["blocked-by repeated cursor", "blockedByRepeatedCursor", BLOCKED_BY_PAGE_QUERY, 1],
-  ["blocked-by page bound", "blockedByOverBound", BLOCKED_BY_PAGE_QUERY, 2],
-  ["sub-issue repeated cursor", "subIssuesRepeatedCursor", SUB_ISSUES_PAGE_QUERY, 1],
-  ["sub-issue page bound", "subIssuesOverBound", SUB_ISSUES_PAGE_QUERY, 2],
+// `item` is the one item whose connection is broken; get() reads it directly.
+for (const [name, fx, query, sent, item] of [
+  ["blocked-by repeated cursor", "blockedByRepeatedCursor", BLOCKED_BY_PAGE_QUERY, 1, "gh-8"],
+  ["blocked-by page bound", "blockedByOverBound", BLOCKED_BY_PAGE_QUERY, 2, "gh-8"],
+  ["sub-issue repeated cursor", "subIssuesRepeatedCursor", SUB_ISSUES_PAGE_QUERY, 1, "gh-1"],
+  ["sub-issue page bound", "subIssuesOverBound", SUB_ISSUES_PAGE_QUERY, 2, "gh-1"],
 ]) {
   test(`continuation: a ${name} throws GITHUB_PAGINATION_INVALID with no partial result`, async () => {
-    for (const call of [(a) => a.list({}), (a) => a.listEpics(), (a) => a.walkTree("gh-1"), (a) => a.get("gh-9")]) {
+    for (const call of [(a) => a.list({}), (a) => a.listEpics(), (a) => a.walkTree("gh-1"), (a) => a.get(item)]) {
       const { a, exec } = adapter(board[fx]);
       await assert.rejects(call(a), { code: "GITHUB_PAGINATION_INVALID" });
       assert.equal(exec.calls.filter((c) => c.query === query).length, sent);

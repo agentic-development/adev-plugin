@@ -9,6 +9,7 @@ import { setFieldsDocument } from "../../../lib/issues/github/mutations.mjs";
 import { replayExec } from "./replay-transport.mjs";
 import { claims, NOW_ISO, LIVE_AT, STALE_AT, TTL_EDGE_AT, WINNER_AT, OWNER_REJECTION, CLAIMED_AT_REJECTION, COMPENSATION_REJECTION, LEASE_CLEAR_REJECTION } from "./fixtures/claims.mjs";
 import { TEXT_FIELD_IDS, STATUS_FIELD_ID } from "./fixtures/writes.mjs";
+import { issueNotFound, issueOffProject } from "./fixtures/board.mjs";
 import { createTempDir, cleanupTempDir } from "../../helpers.mjs";
 const manifest = (settle = 0) => ({ tasks: { backend: "github", claim_ttl_minutes: 240, github: { project: "https://github.com/orgs/acme/projects/7", repo: "acme/board", claim_settle_ms: settle } } });
 const NOW = Date.parse("2026-11-26T10:00:00.000Z"); // claims.mjs fixtures are built with this clock
@@ -117,8 +118,11 @@ test("a branch the BEH-39 predicate refuses is rejected before the claim is writ
 });
 
 test("claim of an ID not on the project → NOT_FOUND with no mutation", async () => {
-  const { a, exec } = traced(claims.freeClaim);
+  const { a, exec } = traced([...claims.freeClaim, issueNotFound(404), issueOffProject(405)]);
   await assert.rejects(a.claim("gh-404", "agent-b"), { code: "NOT_FOUND" });
+  await assert.rejects(a.claim("gh-405", "agent-b"), { code: "NOT_FOUND" });
+  await assert.rejects(a.release("gh-404", "agent-b"), { code: "NOT_FOUND" });
+  await assert.rejects(a.release("gh-405", "agent-b"), { code: "NOT_FOUND" });
   assert.deepEqual(mutations(exec), []);
 });
 
@@ -155,9 +159,13 @@ test("claim_settle_ms: 0 waits no time but still takes the settle re-read", asyn
   assert.equal(item.owner, "agent-b");
 });
 
-test("a claim invalidates the cached board: a later get() shows the new owner", async () => {
+test("a claim writes through: a later list() and get() show the new owner", async () => {
   const { a } = traced(claims.freeClaim);
   await a.claim("gh-5", "agent-b");
+  // The first listing still shows gh-5 unowned; this instance's read-back overrides it.
+  const listed = (await a.list()).find((i) => i.id === "gh-5");
+  assert.equal(listed.owner, "agent-b");
+  assert.equal(listed.claimed_at, NOW_ISO);
   const after = await a.get("gh-5");
   assert.equal(after.owner, "agent-b");
   assert.equal(after.claimed_at, NOW_ISO);
@@ -390,9 +398,13 @@ test("release clears owner then claimed_at as two clear slots of one request, ke
   assert.equal(item.pr, "#12");
 });
 
-test("release invalidates the cached board: a later get() shows the item unclaimed", async () => {
+test("release writes through: a later list() and get() show the item unclaimed", async () => {
   const { a } = traced(claims.release);
   await a.release("gh-5", "agent-a");
+  // The first listing still shows agent-a's claim; this instance's read-back overrides it.
+  const listed = (await a.list()).find((i) => i.id === "gh-5");
+  assert.equal(listed.owner, undefined);
+  assert.equal(listed.branch, "feat/a");
   const after = await a.get("gh-5");
   assert.equal(after.owner, undefined);
   assert.equal(after.branch, "feat/a");

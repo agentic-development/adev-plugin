@@ -415,6 +415,19 @@ test("concepts.md documents the github backend differences, claim window and tru
   assert.match(doc, /residual window/i);
 });
 
+test("the docs state that a cross-process list can lag a write, and that Status workflows must be off", () => {
+  const concepts = read("docs/concepts.md");
+  assert.match(concepts, /eventually consistent/i);
+  assert.match(concepts, /separate process can still lag/i);
+  const workflows = /"Item added to project"[^\n]*"Auto-add sub-issues to project"/;
+  assert.match(concepts, workflows);
+  assert.match(read("docs/configuration.md"), workflows);
+  assert.match(read("docs/troubleshooting.md"), /eventually consistent/i);
+  const { fixtures } = troubleshooting();
+  assert.match(fixtures, workflows);
+  assert.ok(fixtures.indexOf("Workflows") < fixtures.indexOf("adev issues github setup --yes"), "workflows are turned off before the board is set up");
+});
+
 // ---------------------------------------------------------------------------
 // Fixture recording (contributors)
 // ---------------------------------------------------------------------------

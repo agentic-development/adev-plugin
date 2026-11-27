@@ -257,3 +257,4 @@
 {"event":"review_round","plan":".context-index/specs/features/task-management/github-board-backend.plan.md","task_id":"t22","stage":"spec-compliance","cycles":2,"ts":"2026-11-27T02:01:12.023Z"}
 {"event":"review_round","plan":".context-index/specs/features/task-management/github-board-backend.plan.md","task_id":"t22","stage":"code-quality","cycles":1,"findings":0,"ts":"2026-11-27T02:01:12.074Z"}
 {"event":"step_failed","step":"implement","verdict":"FAIL","ts":"2026-11-27T02:10:13.589Z"}
+{"event":"debug_intervention","kind":"debug","note":"gh-ID resolution read the eventually consistent ProjectV2 items listing; now a direct IssueProjectItems lookup plus per-instance write-through for list()","ts":"2026-11-27T13:18:38.575Z"}

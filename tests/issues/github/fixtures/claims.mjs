@@ -8,11 +8,12 @@
  * Owner strings (agent-a, agent-b) are Project field values, never GitHub logins.
  *
  * Request contract these entries pin, for gh-5 (item PVTI_fixture_5) on project
- * acme/projects/7 with home repo acme/board, on top of the AdevPreflight and
- * PROJECT_ITEMS_QUERY board read of board.mjs (which resolves the ID to its
- * item; a board recorded as a `sequence` changes between the read before the
- * write and the read after it, so a read after the claim must not be served
- * from the cache):
+ * acme/projects/7 with home repo acme/board, on top of the AdevPreflight,
+ * PROJECT_ITEMS_QUERY board read and ISSUE_PROJECT_ITEMS_QUERY lookup of
+ * board.mjs (the lookup resolves the ID to its item; a board recorded as a
+ * `sequence` changes between the read before the write and the read after it,
+ * and so does gh-5's lookup, so a read after the claim must not be served from
+ * a cache):
  *
  *   claim(id, owner, opts):
  *   1. PROJECT_ITEM_QUERY `{ itemId }`: the fresh precondition read, never the
@@ -49,7 +50,7 @@
 
 import { buildBoard } from "./board.mjs";
 import { setFieldsRequest, itemNode, slot, task, CLOSED, rejected } from "./writes.mjs";
-import { PROJECT_ITEMS_QUERY, PROJECT_ITEM_QUERY } from "../../../../lib/issues/github/queries.mjs";
+import { PROJECT_ITEMS_QUERY, PROJECT_ITEM_QUERY, ISSUE_PROJECT_ITEMS_QUERY } from "../../../../lib/issues/github/queries.mjs";
 
 export const NOW_ISO = "2026-11-26T10:00:00.000Z";
 export const LIVE_AT = "2026-11-26T09:30:00.000Z";
@@ -71,15 +72,22 @@ const held = (owner, claimedAt, fields = {}) => task(N, { fields: { owner, ...(c
 
 const ok = (count) => ({ data: Object.fromEntries(Array.from({ length: count }, (_, i) => [`f${i}`, { clientMutationId: null }])) });
 
-/** The board read, once per state: one state is a plain entry, several a sequence. */
+/**
+ * The board read and gh-5's direct lookup, once per state: one state is a plain
+ * entry, several a sequence of each (the n-th listing and the n-th lookup of gh-5
+ * both see the n-th state).
+ */
 function boards(states, others = []) {
   const built = states.map((spec, i) => buildBoard([spec, ...others], i === 0 ? {} : { preflight: [] }));
   if (built.length === 1) return built[0];
   const itemsOf = (entries) => entries.find((e) => e.query === PROJECT_ITEMS_QUERY);
+  const lookupOf = (entries) => entries.find((e) => e.query === ISSUE_PROJECT_ITEMS_QUERY && e.variables.number === N);
   const head = itemsOf(built[0]);
+  const lookup = lookupOf(built[0]);
   return [
-    ...built[0].filter((e) => e !== head),
+    ...built[0].filter((e) => e !== head && e !== lookup),
     { query: head.query, variables: head.variables, sequence: built.map((entries) => ({ response: itemsOf(entries).response })) },
+    { query: lookup.query, variables: lookup.variables, sequence: built.map((entries) => ({ response: lookupOf(entries).response })) },
   ];
 }
 

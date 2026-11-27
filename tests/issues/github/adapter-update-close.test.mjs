@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import { GithubAdapter } from "../../../lib/issues/github-adapter.mjs";
 import { replayExec } from "./replay-transport.mjs";
 import { writes } from "./fixtures/writes.mjs";
+import { issueNotFound, issueOffProject } from "./fixtures/board.mjs";
 import * as mutations from "../../../lib/issues/github/mutations.mjs";
 import {
   STATUS_FIELD_ID,
@@ -230,8 +231,9 @@ test("update refuses planTask before any request", async () => {
 });
 
 test("update: an ID not on the project throws NOT_FOUND and writes nothing", async () => {
-  const { a, exec } = make(writes.openItem);
+  const { a, exec } = make([...writes.openItem, issueNotFound(999), issueOffProject(404)]);
   await assert.rejects(a.update("gh-999", { next_action: "x" }), { code: "NOT_FOUND" });
+  await assert.rejects(a.update("gh-404", { next_action: "x" }), { code: "NOT_FOUND" });
   assert.deepEqual(mutationOps(exec), []);
 });
 
@@ -360,8 +362,9 @@ test("close: an old ID closes the item whose legacy_id it is", async () => {
 });
 
 test("close: an ID not on the project throws NOT_FOUND and writes nothing", async () => {
-  const { a, exec } = make(writes.closeOk);
+  const { a, exec } = make([...writes.closeOk, issueNotFound(999), issueOffProject(404)]);
   await assert.rejects(a.close("gh-999", "r"), { code: "NOT_FOUND" });
+  await assert.rejects(a.close("gh-404", "r"), { code: "NOT_FOUND" });
   assert.deepEqual(mutationOps(exec), []);
 });
 
@@ -382,9 +385,11 @@ test("addDependency: an existing link named in display form is still a no-op", a
 });
 
 test("addDependency: either ID not on the project throws NOT_FOUND and writes nothing", async () => {
-  const { a, exec } = make(writes.dependencyExists);
+  const { a, exec } = make([...writes.dependencyExists, issueOffProject(404), issueNotFound(999)]);
   await assert.rejects(a.addDependency("gh-404", "gh-10"), { code: "NOT_FOUND" });
   await assert.rejects(a.addDependency("gh-9", "gh-404"), { code: "NOT_FOUND" });
+  await assert.rejects(a.addDependency("gh-999", "gh-10"), { code: "NOT_FOUND" });
+  await assert.rejects(a.addDependency("gh-9", "gh-999"), { code: "NOT_FOUND" });
   assert.deepEqual(mutationOps(exec), []);
 });
 
@@ -395,19 +400,25 @@ test("addDependency: a link GitHub rejects surfaces as GITHUB_WRITE_FAILED with 
 
 // --- every write ------------------------------------------------------------
 
-test("update, close and addDependency each drop the cached board", async () => {
+test("update, close and addDependency write through to the cached board instead of dropping it", async () => {
   const writesOf = [
-    [writes.openItemUpdate, (a) => a.update("gh-6", { next_action: "Run /adev:implement", priority: 1 })],
-    [writes.closeOk, (a) => a.close("gh-8", "done in #12")],
-    [writes.dependencyExists, (a) => a.addDependency("gh-9", "gh-11")],
+    [writes.openItemUpdate, (a) => a.update("gh-6", { next_action: "Run /adev:implement", priority: 1 }), "gh-6",
+      (i) => i.next_action === "Run /adev:implement" && i.priority === 1],
+    [writes.closeOk, (a) => a.close("gh-8", "done in #12"), "gh-8", (i) => i.status === "closed"],
+    [writes.dependencyExists, (a) => a.addDependency("gh-9", "gh-11"), "gh-9", (i) => i.dependencies.includes("gh-11")],
   ];
-  for (const [fx, write] of writesOf) {
+  for (const [fx, write, id, written] of writesOf) {
     const { a, exec } = make(fx);
     await a.list();
     await write(a);
     const before = countOf(exec, "ProjectItems");
-    await a.list();
-    assert.equal(countOf(exec, "ProjectItems"), before + 1);
+    const listed = (await a.list()).find((i) => i.id === id);
+    assert.equal(countOf(exec, "ProjectItems"), before, id);
+    assert.ok(written(listed), id);
+    // A later fresh listing still shows this instance's write over the listing's stale row.
+    a._invalidateBoard();
+    assert.ok(written((await a.list()).find((i) => i.id === id)), id);
+    assert.equal(countOf(exec, "ProjectItems"), before + 1, id);
   }
 });
 
