@@ -262,3 +262,10 @@
 {"event":"step_completed","step":"implement","verdict":"PASS","ts":"2026-11-27T20:52:50.735Z"}
 {"event":"lifecycle_step","step":"validate","status":"started","ts":"2026-11-27T20:52:50.883Z"}
 {"event":"step_failed","step":"validate","verdict":"FAIL","ts":"2026-11-27T20:52:59.078Z"}
+{"event":"lifecycle_step","step":"validate","status":"started","ts":"2026-11-27T20:54:49.981Z"}
+{"event":"validator_report","step":"validate","validator":"validate.check-1-quality-gates","severity":"error","verdict":"FAIL","error":"npm test: 7 fail of 10020 (repomap x24 pre-existing, prototype-server hang, plan-immutability flags 34e1f43c)","gate_outcomes":[{"id":"test","verdict":"fail","tier":"fast","command_sha":"527c484bcc3bb219e92ed61f99ff968f31143f89e53fda93d09b74c0ce3177d4"},{"id":"quality-gate","verdict":"skip","tier":"fast","command_sha":"527c484bcc3bb219e92ed61f99ff968f31143f89e53fda93d09b74c0ce3177d4"},{"id":"integration-test","verdict":"skip","tier":"integration","command_sha":"9e6a54d23534258f784b28304c370e52ef93b8fb94ddd7fb879938a6735e941e"}],"manifest_sha":"41b00bf","ts":"2026-11-27T22:09:00.548Z"}
+{"event":"validator_report","step":"validate","validator":"validate.check-1.5-source-manifest","severity":"warning","verdict":"PASS","notes":"matches sha 41b00bf, 84 files, all committed","ts":"2026-11-27T22:09:00.629Z"}
+{"event":"validator_report","step":"validate","validator":"validate.check-8-boundaries","severity":"error","verdict":"PASS","notes":"no violations in 45 changed files against 3 rules; no-manual-version-bump disabled","ts":"2026-11-27T22:09:00.688Z"}
+{"event":"validator_report","step":"validate","validator":"validate.check-14-gate-executability","severity":"warning","verdict":"PASS_WITH_NOTES","notes":"4 warnings: runner-unknown x3, integration-test not in CI","ts":"2026-11-27T22:09:00.749Z"}
+{"event":"validator_report","step":"validate","validator":"validate.check-9-transition-gates","severity":"warning","verdict":"FAIL","error":"implement-to-validate: gate test recorded-fail","ts":"2026-11-27T22:09:37.206Z"}
+{"event":"step_completed","step":"validate","verdict":"FAIL","ts":"2026-11-27T22:09:37.318Z"}

@@ -2,7 +2,7 @@
 partial_schema: spec@1
 charter: task-management
 kind: behavioral
-status: review-passed
+status: implemented
 risk_level: high
 milestone: 6
 revision: 6
@@ -20,6 +20,94 @@ infra_requirements:
       check_level: presence-only
       notes: "Unit and conformance tests replay recorded GraphQL fixtures and need neither gh nor a token. Only the optional live fixture recorder and smoke test need a throwaway Projects v2 board; token scopes repo + project, nothing broader. GH_TOKEN is optional when gh is already authenticated."
   ci_tag: "integration"
+source-manifest:
+  sha: "41b00bf"
+  files:
+    - .context-index/specs/features/task-management/charter.md
+    - docs/cli-reference.md
+    - docs/concepts.md
+    - docs/configuration.md
+    - docs/troubleshooting.md
+    - lib/cli/issues-board.mjs
+    - lib/cli/issues-create.mjs
+    - lib/cli/issues-github.mjs
+    - lib/cli/issues-migrate.mjs
+    - lib/cli/issues-show.mjs
+    - lib/cli/issues.mjs
+    - lib/gitignore-paths.mjs
+    - lib/issues/github-adapter.mjs
+    - lib/issues/github/board-read.mjs
+    - lib/issues/github/config.mjs
+    - lib/issues/github/decode.mjs
+    - lib/issues/github/errors.mjs
+    - lib/issues/github/migrate.mjs
+    - lib/issues/github/mutations.mjs
+    - lib/issues/github/preflight.mjs
+    - lib/issues/github/queries.mjs
+    - lib/issues/github/setup.mjs
+    - lib/issues/github/transport.mjs
+    - lib/issues/github/untrusted-text.mjs
+    - lib/issues/id-utils.mjs
+    - lib/issues/interface.mjs
+    - lib/issues/json-adapter.mjs
+    - lib/issues/read-only-sentinel.mjs
+    - lib/issues/registry.mjs
+    - lib/reality-check.mjs
+    - lib/retro/issue-id-validation.mjs
+    - lib/session-capture.mjs
+    - scripts/record-github-fixtures.mjs
+    - skills/issues/SKILL.md
+    - skills/plan/references/feature-mode.md
+    - skills/sync/SKILL.md
+    - templates/constitution-template.md
+    - tests/docs/github-backend-docs.test.mjs
+    - tests/issues/conformance/contract-cases.mjs
+    - tests/issues/conformance/fixtures/adddependency-records-the-blocker-on-the-dependent-issue-only-and-repeating-it-is-a-no-op.json
+    - tests/issues/conformance/fixtures/adddependency-refuses-a-dependent-id-that-is-not-on-the-board-with-not-found.json
+    - tests/issues/conformance/fixtures/adddependency-refuses-a-self-dependency-and-a-cycle-with-circular-dependency.json
+    - tests/issues/conformance/fixtures/claim-and-release-refuse-an-id-that-is-not-on-the-board-with-not-found.json
+    - tests/issues/conformance/fixtures/claim-by-another-owner-inside-a-live-lease-is-refused-with-issue-already-claimed-naming-the-holder.json
+    - tests/issues/conformance/fixtures/claim-records-branch-and-pr-and-release-clears-owner-and-claimed-at-but-keeps-them.json
+    - tests/issues/conformance/fixtures/claim-refuses-a-blank-owner-with-missing-owner-and-leaves-the-issue-unclaimed.json
+    - tests/issues/conformance/fixtures/claim-refuses-a-closed-issue-with-issue-closed.json
+    - tests/issues/conformance/fixtures/claim-sets-owner-and-an-iso-claimed-at-and-a-re-claim-by-the-same-owner-keeps-claimed-at.json
+    - tests/issues/conformance/fixtures/close-marks-the-issue-closed-and-a-closed-issue-refuses-update-with-issue-closed.json
+    - tests/issues/conformance/fixtures/close-refuses-an-id-that-is-not-on-the-board-with-not-found.json
+    - tests/issues/conformance/fixtures/close-refuses-an-issue-with-an-open-blocker-with-blocked-by-dependencies-and-succeeds-once-it-is-closed.json
+    - tests/issues/conformance/fixtures/create-refuses-a-missing-or-blank-title-with-missing-required-field-and-writes-nothing.json
+    - tests/issues/conformance/fixtures/create-refuses-plantask-with-board-granularity-violation.json
+    - tests/issues/conformance/fixtures/create-returns-the-issue-with-the-given-fields-and-get-reads-it-back.json
+    - tests/issues/conformance/fixtures/create-stores-a-non-default-status.json
+    - tests/issues/conformance/fixtures/get-returns-null-for-an-id-that-is-not-on-the-board.json
+    - tests/issues/conformance/fixtures/github-a-claim-past-the-lease-ttl-takes-over-and-reports-the-previous-holder.json
+    - tests/issues/conformance/fixtures/github-a-claim-taken-over-during-its-settle-wait-reports-the-winner-and-writes-no-branch-or-pr.json
+    - tests/issues/conformance/fixtures/github-a-migration-interrupted-after-its-first-item-and-re-run-without-its-state-file-creates-no-duplicates.json
+    - tests/issues/conformance/fixtures/github-an-epic-is-created-listed-apart-from-issues-updated-and-walks-to-its-sub-issues.json
+    - tests/issues/conformance/fixtures/github-closing-a-parent-with-an-open-sub-issue-is-refused-with-cascade-blocked-and-succeeds-once-it-is-closed.json
+    - tests/issues/conformance/fixtures/github-migrate-from-json-recreates-the-epic-sub-issues-and-dependency-and-old-ids-resolve-at-once.json
+    - tests/issues/conformance/fixtures/github-setup-yes-on-a-project-github-has-just-created-adds-every-adev-field-and-leaves-the-missing-status-options-to-the-operator.json
+    - tests/issues/conformance/fixtures/github-walktree-returns-a-three-level-sub-issue-tree-and-another-agent-reads-the-parent-links-at-once.json
+    - tests/issues/conformance/fixtures/list-orders-issues-by-priority-and-filters-by-status.json
+    - tests/issues/conformance/fixtures/release-by-a-non-holder-is-refused-with-claim-owner-mismatch-unless-forced.json
+    - tests/issues/conformance/fixtures/release-of-an-unclaimed-issue-is-a-no-op.json
+    - tests/issues/conformance/fixtures/update-folds-a-description-alias-into-notes.json
+    - tests/issues/conformance/fixtures/update-refuses-an-id-that-is-not-on-the-board-with-not-found.json
+    - tests/issues/conformance/fixtures/update-refuses-status-closed-with-use-close-method-and-leaves-the-issue-open.json
+    - tests/issues/conformance/fixtures/update-writes-the-changed-fields-and-get-reads-them-back.json
+    - tests/issues/conformance/fixtures/walktree-returns-an-empty-array-for-an-issue-with-no-children-and-for-an-id-not-on-the-board.json
+    - tests/issues/conformance/github-live-cases.mjs
+    - tests/issues/conformance/json.conformance.test.mjs
+    - tests/issues/github/eventual-consistency.test.mjs
+    - tests/issues/github/fixtures/board.mjs
+    - tests/issues/github/fixtures/claims.mjs
+    - tests/issues/github/fixtures/items.mjs
+    - tests/issues/github/fixtures/migrate.mjs
+    - tests/issues/github/fixtures/preflight.mjs
+    - tests/issues/github/fixtures/setup.mjs
+    - tests/issues/github/fixtures/writes.mjs
+    - tests/issues/github/replay-transport.mjs
+    - tests/sync/github-backend-block.test.mjs
+  computed-at: "2026-11-27T21:06:08.117Z"
 ---
 
 # Live Spec: GitHub Board Backend
