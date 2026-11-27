@@ -40,8 +40,16 @@
  *     `{ repository: { issue: { id, number, state } | null } }` verifies it; then
  *     ADD_TO_PROJECT, the same single SetFields request (Legacy ID first),
  *     ADD_LABELS and the read-back, exactly as a create minus CREATE_ISSUE.
+ *   - Rate limits (rateLimited, rateLimitedCreate): the limited request is a
+ *     `sequence` of RATE_LIMITED answers, each resetting `CLOCK_BASE + ms`, then
+ *     (when it recovers) the recorded success; the identical request is re-issued.
+ *
+ * Beads source (seedBeadsBoard): a temp repo whose `.beads/` is a linked
+ * worktree on an orphan `beads-board` branch. The board itself is served by a
+ * `br` stub that prints BEADS_LIST for `br list`: one task, issue-7k3f9a -> gh-103.
  */
 
+import { execFileSync } from "node:child_process";
 import { writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { buildBoard, PROJECT_ID } from "./board.mjs";
@@ -211,7 +219,96 @@ export const UNSAFE_FOREIGN = `\u001b[31m${"z".repeat(150)}`;
 
 const FRESH = [...target([], ALL()), ...create(CREATES.e1), ...create(CREATES.f1), ...create(CREATES.t), PARENT_LINK, DEP_LINK];
 
+/** The injected clock's start; every fixture reset time is an offset from it. */
+export const CLOCK_BASE = Date.parse("2026-11-26T08:00:00.000Z");
+export const resetIso = (ms) => new Date(CLOCK_BASE + ms).toISOString();
+
+function rateLimitedOutcome(resetInMs) {
+  const error = { type: "RATE_LIMITED", message: "API rate limit exceeded for user." };
+  if (resetInMs !== null) error.extensions = { resetAt: resetIso(resetInMs) };
+  return { response: { data: null, errors: [error] } };
+}
+
+const isCreateOf = (title) => (e) => e.query === CREATE_ISSUE && e.variables?.title === title;
+const isAddToProjectOf = (n) => (e) => e.query === ADD_TO_PROJECT && e.variables?.contentId === contentId(n);
+
+function limitedEntry(entries, match, resetsInMs, recovers) {
+  return entries.map((e) => {
+    if (!match(e)) return e;
+    const outcomes = resetsInMs.map(rateLimitedOutcome);
+    return { query: e.query, variables: e.variables, sequence: recovers ? [...outcomes, { response: e.response }] : outcomes };
+  });
+}
+
+/** FRESH, with e1's AddToProject (after its issue exists) rate limited once, resetting `resetInMs` after CLOCK_BASE. */
+export function rateLimited(resetInMs) {
+  return limitedEntry(FRESH, isAddToProjectOf(101), [resetInMs], true);
+}
+
+/**
+ * FRESH, with e1's CreateIssue (the run's first mutation) answered by one
+ * RATE_LIMITED per entry of `resetsInMs` (null: no reset time), then the recorded
+ * success when `recovers`.
+ */
+export function rateLimitedCreate(resetsInMs, { recovers = false } = {}) {
+  return limitedEntry(FRESH, isCreateOf(TITLES.e1), resetsInMs, recovers);
+}
+
+function withPreflight(entries, response) {
+  return entries.map((e) => (e.query === PREFLIGHT[0].query ? { ...e, response } : e));
+}
+
+/** FRESH against a public home repository and a private project. */
+const PUBLIC_REPO = okResponse({ fields: fieldNodes({ extra: [PRIORITY] }), repoVisibility: "PUBLIC" });
+
+/** FRESH against a project whose title is `title`. */
+export function projectTitled(title) {
+  const response = okResponse({ fields: fieldNodes({ extra: [PRIORITY] }) });
+  response.data.organization.projectV2.title = title;
+  return withPreflight(FRESH, response);
+}
+
+/** `br list -s all --json` for the beads source board. */
+export const BEADS_LIST = JSON.stringify({
+  issues: [{ id: "bd-1", external_ref: "issue-7k3f9a", title: TITLES.t, status: "open", priority: 2, issue_type: "task", description: "", dependency_count: 0 }],
+});
+
+const git = (args, cwd) => execFileSync("git", ["-c", "commit.gpgsign=false", ...args], { cwd, encoding: "utf8", stdio: "pipe" }).trim();
+
+/**
+ * A git repo on `main` holding a beads manifest, whose `.beads/` is a linked
+ * worktree on an orphan `beads-board` branch with one commit; return the parsed
+ * manifest that `run()` is given.
+ * @param {string} dir
+ */
+export function seedBeadsBoard(dir) {
+  git(["init", "-q", "-b", "main"], dir);
+  git(["config", "user.email", "fixture@example.invalid"], dir);
+  git(["config", "user.name", "adev-fixture"], dir);
+  mkdirSync(join(dir, ".context-index"), { recursive: true });
+  writeFileSync(
+    join(dir, ".context-index", "manifest.yaml"),
+    `project:\n  name: adev-fixture\ntasks:\n  backend: beads\n  github:\n    project: ${PROJECT}\n    repo: acme/board\n    type_source: labels\n`,
+  );
+  git(["add", "--", ".context-index/manifest.yaml"], dir);
+  git(["commit", "-q", "-m", "root"], dir);
+  git(["worktree", "add", "-q", "--orphan", "-b", "beads-board", ".beads"], dir);
+  const beads = join(dir, ".beads");
+  writeFileSync(join(beads, "issues.jsonl"), "");
+  git(["add", "--", "issues.jsonl"], beads);
+  git(["commit", "-q", "-m", "board"], beads);
+  return {
+    project: { name: "adev-fixture" },
+    tasks: { backend: "beads", github: { project: PROJECT, repo: "acme/board", type_source: "labels" } },
+  };
+}
+
 export const migrateFx = Object.freeze({
+  freshPublicRepo: withPreflight(FRESH, PUBLIC_REPO),
+
+  beadsFresh: [...target([], [onBoard.t()]), ...create(CREATES.t)],
+  beadsAllPresent: [...target([onBoard.t()])],
+
   fresh: FRESH,
 
   failsAtItem2: [...target([], [onBoard.e1()]), ...create(CREATES.e1), ...create(CREATES.f1, { failAt: "CreateIssue" })],

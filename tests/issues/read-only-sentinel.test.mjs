@@ -217,6 +217,18 @@ describe("SENTINEL_PATH_UNSAFE (BEH-32, migration BEH-12)", () => {
     } finally { cleanupTempDir(dir); cleanupTempDir(other); }
   });
 
+  test("a directory at the sentinel path is refused on write (fail-closed), never taken for a present sentinel", () => {
+    const dir = jsonProject();
+    try {
+      const p = sentinelPath(dir, "json");
+      mkdirSync(join(p, "occupied"), { recursive: true });
+      writeFileSync(join(p, "occupied", "x"), "x");
+      assert.throws(() => writeSentinel(dir, "json", { project: PROJECT }), { code: "SENTINEL_PATH_UNSAFE" });
+      assert.equal(lstatSync(p).isDirectory(), true);
+      assert.deepEqual(readdirSync(join(p, "occupied")), ["x"]);
+    } finally { cleanupTempDir(dir); }
+  });
+
   test(".beads resolving outside the root is refused on write and read, with nothing written outside", () => {
     const dir = createTempDir();
     const other = createTempDir();
