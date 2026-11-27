@@ -8,8 +8,8 @@ test('normalizeSku trims and uppercases', () => {
   assert.equal(normalizeSku('  ab-12 '), 'AB-12');
 });
 
-test('normalizeSku rejects an empty sku', () => {
-  assert.throws(() => normalizeSku('   '), { code: 'SKU_INVALID' });
+test('normalizeSku returns the SKU_INVALID error value for an empty sku', () => {
+  assert.deepEqual(normalizeSku('   '), { error: { code: 'SKU_INVALID' } });
 });
 
 test('dispatch reaches normalizeSku under sku', () => {

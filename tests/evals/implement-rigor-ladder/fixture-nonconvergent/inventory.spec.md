@@ -16,13 +16,13 @@ version constant. Pure ESM, Node.js built-ins only, tests with `node:test`.
 
 ## Behaviors
 
-- **BEH-1 (SKU normalization)** — `normalizeSku(raw)` in `src/sku.mjs` trims `raw` and uppercases it. An empty result throws an `Error` whose `code` is `SKU_INVALID`. It is registered under `sku` in the registry module, so `dispatch("sku", raw)` reaches it.
-- **BEH-2 (audit signing)** — `signAudit(record, secret)` in `src/auth/audit.mjs` returns exactly `{ record, signature: { alg: "HS256", value } }`, where `value` is the base64url HMAC-SHA256 of `JSON.stringify(record)` under `secret`.
+- **BEH-1 (SKU normalization)** — `normalizeSku(raw)` in `src/sku.mjs` trims `raw`, uppercases it and returns the resulting string. When that string is empty, it throws an `Error` whose `code` is `SKU_INVALID`. It is registered under `sku` in the registry module, so `dispatch("sku", raw)` reaches it.
+- **BEH-2 (audit signing)** — `signAudit(record, secret)` in `src/auth/audit.mjs` returns exactly `{ record, signature: { alg: "HS256", value } }`, where `value` is the base64url HMAC-SHA256 of `JSON.stringify(record)` under `secret`. When `secret` is empty or not a string, it throws an `Error` whose `code` is `AUDIT_SECRET_MISSING`, before computing any signature.
 - **BEH-3 (version)** — `src/version.mjs` exports `VERSION`, equal to `"1.0.0"`.
 
 ## Acceptance Criteria
 
 - [ ] Every behavior above has a passing `node:test` test under `tests/`.
-- [ ] Every exported function in `src/sku.mjs` carries a JSDoc block whose `@throws` line names `SKU_INVALID`.
-- [ ] `signAudit` throws an `Error` whose `code` is `AUDIT_SECRET_MISSING` when `secret` is empty or not a string, before computing any signature.
+- [ ] `normalizeSku("   ")` throws an `Error` whose `code` is `SKU_INVALID`.
+- [ ] `signAudit({ id: 1 }, "")` throws an `Error` whose `code` is `AUDIT_SECRET_MISSING`.
 - [ ] `npm test` passes.

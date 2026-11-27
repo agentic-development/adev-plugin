@@ -1,13 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, readdirSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { createTempDir, cleanupTempDir } from '../../helpers.mjs';
 
 const HARNESS = join(import.meta.dirname, '../../evals/implement-rigor-ladder/run-ab-eval.mjs');
 const RESULTS = join(import.meta.dirname, '../../evals/implement-rigor-ladder/results');
+const NONCONVERGENT_DIR = join(import.meta.dirname, '../../evals/implement-rigor-ladder/fixture-nonconvergent');
 
 function dryRun(extra = []) {
   return JSON.parse(execFileSync('node', [HARNESS, '--dry-run', ...extra], { encoding: 'utf8' }));
@@ -109,6 +110,60 @@ test('nonconvergent prompts run implement directly or as a build step, with --li
     '/adev:build --spec .context-index/specs/features/inventory/inventory.spec.md --resume --from implement --auto --lite',
   );
   assert.deepEqual(dryRun(['--fixture', 'nonconvergent', '--mode', 'direct']).modes, ['direct']);
+});
+
+// Body text of every heading at `level`, keyed by heading text. A heading at
+// `level` or above ends the current section.
+function markdownSections(text, level) {
+  const sections = {};
+  let current = null;
+  for (const line of text.split('\n')) {
+    const m = /^(#{1,6}) (.+)$/.exec(line);
+    if (m && m[1].length <= level) {
+      current = m[1].length === level ? m[2].trim() : null;
+      if (current !== null) sections[current] = '';
+    } else if (current !== null) {
+      sections[current] += `${line}\n`;
+    }
+  }
+  return sections;
+}
+
+// The implementer receives the constitution's Non-Negotiable Principles; the
+// Stage 1 and synthesized reviewers receive the acceptance criteria and, at
+// most, the Coding Standards section. The review can fail on every
+// implementation only while the throw-vs-return conflict is split that way.
+test('nonconvergent trigger: Principle 4 reaches the implementer and the throwing criteria reach the reviewer', () => {
+  const constitution = markdownSections(readFileSync(join(NONCONVERGENT_DIR, 'seed/.context-index/constitution.md'), 'utf8'), 2);
+  assert.match(constitution['Non-Negotiable Principles'], /\*\*Errors are values\*\*.*no exported function under `src\/` throws/);
+  assert.match(constitution['Non-Negotiable Principles'], /outranks any spec or plan text that says a function throws/);
+  assert.match(constitution['Non-Negotiable Principles'], /never a blocker and never a question for the operator/);
+  assert.ok(constitution['Coding Standards'], 'the reviewers need a Coding Standards section to receive');
+  assert.doesNotMatch(constitution['Coding Standards'], /throw|error/i);
+
+  const criteria = markdownSections(readFileSync(join(NONCONVERGENT_DIR, 'inventory.spec.md'), 'utf8'), 2)['Acceptance Criteria'];
+  assert.match(criteria, /`normalizeSku\("   "\)` throws an `Error` whose `code` is `SKU_INVALID`/);
+  assert.match(criteria, /`signAudit\(\{ id: 1 \}, ""\)` throws an `Error` whose `code` is `AUDIT_SECRET_MISSING`/);
+
+  const tasks = markdownSections(readFileSync(join(NONCONVERGENT_DIR, 'inventory.plan.md'), 'utf8'), 3);
+  for (const title of ['Task 1: SKU normalization [specialist: none]', 'Task 2: Audit signing [specialist: none]']) {
+    assert.ok(tasks[title], title);
+    assert.doesNotMatch(tasks[title], /```|throw|error/i, `${title} must not take either side of the conflict`);
+  }
+});
+
+test('nonconvergent preseeded Task 1 follows Principle 4 and its tests pass on the seed', () => {
+  const preseed = join(NONCONVERGENT_DIR, 'preseed/task-1');
+  assert.doesNotMatch(readFileSync(join(preseed, 'src/sku.mjs'), 'utf8'), /\bthrow\b/);
+  const dir = createTempDir();
+  try {
+    cpSync(join(NONCONVERGENT_DIR, 'seed'), dir, { recursive: true });
+    cpSync(preseed, dir, { recursive: true });
+    const r = spawnSync('node', ['--test', 'tests/registry.test.mjs', 'tests/sku.test.mjs'], { cwd: dir, encoding: 'utf8' });
+    assert.equal(r.status, 0, r.stdout + r.stderr);
+  } finally {
+    cleanupTempDir(dir);
+  }
 });
 
 test('a live nonconvergent run without --mode is a usage error', () => {
