@@ -1,0 +1,181 @@
+{
+  "arm": "lite",
+  "implementArgs": [
+    "--lite"
+  ],
+  "ref": "e25a69b72eaba1d75c826a9e292c271c106213c3",
+  "ref_name": "HEAD",
+  "run": 3,
+  "finished_at": "2026-11-27T16:50:27.239Z",
+  "valid": true,
+  "invalid_reasons": [],
+  "implement": {
+    "exit_code": 0,
+    "session_id": "bafeded0-2aea-4a0b-b21a-19925e228ef4",
+    "verdict": "PASS",
+    "process_ms": 1217519,
+    "task_commits": 8,
+    "transcripts": 12
+  },
+  "metrics": {
+    "wall_clock_ms": 1182164,
+    "agent_dispatches": 11,
+    "tokens": {
+      "input_tokens": 268,
+      "output_tokens": 98177,
+      "cache_creation_input_tokens": 418758,
+      "cache_read_input_tokens": 8742023
+    },
+    "quality_gates": {
+      "command": "npm test",
+      "exit_code": 0,
+      "pass": true
+    },
+    "defects": [
+      {
+        "id": "D1",
+        "task": "1",
+        "kind": "off-by-one boundary",
+        "probe": "off-by-one-boundary.probe.mjs",
+        "caught_at": "implement"
+      },
+      {
+        "id": "D2",
+        "task": "2",
+        "kind": "missed error case",
+        "probe": "missed-error-case.probe.mjs",
+        "caught_at": "implement"
+      },
+      {
+        "id": "D3",
+        "task": "4",
+        "kind": "untested branch",
+        "probe": "untested-branch.probe.mjs",
+        "caught_at": "implement"
+      },
+      {
+        "id": "D4",
+        "task": "5",
+        "kind": "spec-noncompliant output shape",
+        "probe": "noncompliant-output-shape.probe.mjs",
+        "caught_at": "implement"
+      }
+    ]
+  },
+  "review_depths": {
+    "1": {
+      "provisional": {
+        "depth": "lite",
+        "source": "lite-grant"
+      },
+      "final": {
+        "depth": "lite",
+        "source": "lite-grant"
+      }
+    },
+    "2": {
+      "provisional": {
+        "depth": "lite",
+        "source": "lite-grant"
+      },
+      "final": {
+        "depth": "lite",
+        "source": "lite-grant"
+      }
+    },
+    "3": {
+      "provisional": {
+        "depth": "lite",
+        "source": "lite-grant"
+      },
+      "final": {
+        "depth": "lite",
+        "source": "lite-grant"
+      }
+    },
+    "4": {
+      "provisional": {
+        "depth": "quick",
+        "source": "default-quick"
+      },
+      "final": {
+        "depth": "quick",
+        "source": "default-quick"
+      }
+    },
+    "5": {
+      "provisional": {
+        "depth": "quick",
+        "source": "default-quick"
+      },
+      "final": {
+        "depth": "quick",
+        "source": "default-quick"
+      }
+    },
+    "6": {
+      "provisional": {
+        "depth": "full",
+        "source": "default-quick"
+      },
+      "final": {
+        "depth": "full",
+        "source": "default-quick"
+      }
+    },
+    "7": {
+      "provisional": {
+        "depth": "lite",
+        "source": "lite-grant"
+      },
+      "final": {
+        "depth": "quick",
+        "source": "lite-tripwire"
+      }
+    }
+  },
+  "validate": null,
+  "tripwire_target": {
+    "task": "7",
+    "undeclared_touched": [
+      "src/registry.mjs"
+    ]
+  },
+  "touched_files": [
+    ".context-index/lifecycle-state/example.jsonl",
+    ".context-index/specs/features/example/example.spec.md",
+    "src/auth/token.mjs",
+    "src/config.mjs",
+    "src/discount.mjs",
+    "src/format.mjs",
+    "src/handlers/list.mjs",
+    "src/pagination.mjs",
+    "src/registry.mjs",
+    "src/slug.mjs",
+    "tests/auth/token.test.mjs",
+    "tests/config.test.mjs",
+    "tests/discount.test.mjs",
+    "tests/format.test.mjs",
+    "tests/handlers/list.test.mjs",
+    "tests/pagination.test.mjs",
+    "tests/slug.test.mjs"
+  ],
+  "behavior": {
+    "tests": {
+      "D1": "pass",
+      "D2": "pass",
+      "D3": "pass",
+      "D4": "pass"
+    },
+    "surface": [
+      "src/auth/token.mjs",
+      "src/config.mjs",
+      "src/discount.mjs",
+      "src/format.mjs",
+      "src/handlers/list.mjs",
+      "src/pagination.mjs",
+      "src/registry.mjs",
+      "src/slug.mjs"
+    ]
+  }
+}

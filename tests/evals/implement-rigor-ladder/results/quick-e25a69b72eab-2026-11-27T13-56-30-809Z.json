@@ -1,0 +1,179 @@
+{
+  "arm": "quick",
+  "implementArgs": [],
+  "ref": "e25a69b72eaba1d75c826a9e292c271c106213c3",
+  "ref_name": "HEAD",
+  "run": 3,
+  "finished_at": "2026-11-27T13:56:30.809Z",
+  "valid": true,
+  "invalid_reasons": [],
+  "implement": {
+    "exit_code": 0,
+    "session_id": "63f3adc4-ddc8-4763-b27a-658963137557",
+    "verdict": "PASS",
+    "process_ms": 1510510,
+    "task_commits": 8,
+    "transcripts": 15
+  },
+  "metrics": {
+    "wall_clock_ms": 1477855,
+    "agent_dispatches": 14,
+    "tokens": {
+      "input_tokens": 344,
+      "output_tokens": 121548,
+      "cache_creation_input_tokens": 528642,
+      "cache_read_input_tokens": 9310220
+    },
+    "quality_gates": {
+      "command": "npm test",
+      "exit_code": 0,
+      "pass": true
+    },
+    "defects": [
+      {
+        "id": "D1",
+        "task": "1",
+        "kind": "off-by-one boundary",
+        "probe": "off-by-one-boundary.probe.mjs",
+        "caught_at": "implement"
+      },
+      {
+        "id": "D2",
+        "task": "2",
+        "kind": "missed error case",
+        "probe": "missed-error-case.probe.mjs",
+        "caught_at": "implement"
+      },
+      {
+        "id": "D3",
+        "task": "4",
+        "kind": "untested branch",
+        "probe": "untested-branch.probe.mjs",
+        "caught_at": "implement"
+      },
+      {
+        "id": "D4",
+        "task": "5",
+        "kind": "spec-noncompliant output shape",
+        "probe": "noncompliant-output-shape.probe.mjs",
+        "caught_at": "implement"
+      }
+    ]
+  },
+  "review_depths": {
+    "1": {
+      "provisional": {
+        "depth": "quick",
+        "source": "default-quick"
+      },
+      "final": {
+        "depth": "quick",
+        "source": "default-quick"
+      }
+    },
+    "2": {
+      "provisional": {
+        "depth": "quick",
+        "source": "default-quick"
+      },
+      "final": {
+        "depth": "quick",
+        "source": "default-quick"
+      }
+    },
+    "3": {
+      "provisional": {
+        "depth": "quick",
+        "source": "default-quick"
+      },
+      "final": {
+        "depth": "quick",
+        "source": "default-quick"
+      }
+    },
+    "4": {
+      "provisional": {
+        "depth": "quick",
+        "source": "default-quick"
+      },
+      "final": {
+        "depth": "quick",
+        "source": "default-quick"
+      }
+    },
+    "5": {
+      "provisional": {
+        "depth": "quick",
+        "source": "default-quick"
+      },
+      "final": {
+        "depth": "quick",
+        "source": "default-quick"
+      }
+    },
+    "6": {
+      "provisional": {
+        "depth": "full",
+        "source": "default-quick"
+      },
+      "final": {
+        "depth": "full",
+        "source": "default-quick"
+      }
+    },
+    "7": {
+      "provisional": {
+        "depth": "quick",
+        "source": "default-quick"
+      },
+      "final": {
+        "depth": "quick",
+        "source": "default-quick"
+      }
+    }
+  },
+  "validate": null,
+  "tripwire_target": {
+    "task": "7",
+    "undeclared_touched": [
+      "src/registry.mjs"
+    ]
+  },
+  "touched_files": [
+    ".context-index/lifecycle-state/example.jsonl",
+    ".context-index/specs/features/example/example.spec.md",
+    "src/auth/token.mjs",
+    "src/config.mjs",
+    "src/discount.mjs",
+    "src/format.mjs",
+    "src/handlers/list.mjs",
+    "src/pagination.mjs",
+    "src/registry.mjs",
+    "src/slug.mjs",
+    "tests/auth/token.test.mjs",
+    "tests/config.test.mjs",
+    "tests/discount.test.mjs",
+    "tests/format.test.mjs",
+    "tests/handlers/list.test.mjs",
+    "tests/pagination.test.mjs",
+    "tests/slug.test.mjs"
+  ],
+  "behavior": {
+    "tests": {
+      "D1": "pass",
+      "D2": "pass",
+      "D3": "pass",
+      "D4": "pass"
+    },
+    "surface": [
+      "src/auth/token.mjs",
+      "src/config.mjs",
+      "src/discount.mjs",
+      "src/format.mjs",
+      "src/handlers/list.mjs",
+      "src/pagination.mjs",
+      "src/registry.mjs",
+      "src/slug.mjs"
+    ]
+  }
+}
