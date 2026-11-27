@@ -128,13 +128,11 @@ Harness-specific progress reporting during a long implement run.
 
 ### Step 2: Per-Task Execution Loop
 
-The core loop: for each routed task, resolve its test depth (except under `agent-default`), dispatch the implementer under the test discipline of the resolved `implementation_mode`, then run the review the task's resolved depth requires (`full`: Stage 1 then Stage 2; `quick`: one synthesized reviewer).
+The core loop: for each routed task, resolve its test depth (except under `agent-default`), dispatch the implementer under the test discipline of the resolved `implementation_mode`, then run the review the task's resolved depth requires (`full`: Stage 1 then Stage 2; `quick`: one synthesized reviewer). A task that resolves `lite` runs inline in your own context instead, with no `Agent` dispatch and no per-task reviewer, and the post-task tripwire can escalate it to `quick` or `full`.
 
-> **Conditional loading:** Read `<ADEV_ROOT>/skills/implement/references/steps/step-2-per-task-loop.md` for the full instructions. Do not act on this section from the summary above.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/implement/references/steps/step-2-per-task-loop.md` for the full instructions. Do not act on this section from the summary above. When `lite` is not authorized it governs every task; when it is, read it only when a task first resolves `quick` or `full` or escalates.
 
-A task that resolves `lite` runs inline in your own context instead, with no `Agent` dispatch and no per-task reviewer, and the post-task tripwire can escalate it to `quick` or `full`.
-
-> **Conditional loading:** Read `<ADEV_ROOT>/skills/implement/references/lite-mode.md` for inline `lite` execution. Load it when any task resolves `lite`; it is not needed otherwise.
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/implement/references/lite-mode.md` first when `check-flags` printed `lite_authorized: true`, and start every task with `adev implement task-begin` as it states. It is not needed otherwise.
 
 ### Step 2.5: Parallel Group Execution
 

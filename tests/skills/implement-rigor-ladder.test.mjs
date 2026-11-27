@@ -108,7 +108,23 @@ test("Step 2 summary points at lite-mode.md with an <ADEV_ROOT> anchor", () => {
     step2,
     /> \*\*Conditional loading:\*\* Read `<ADEV_ROOT>\/skills\/implement\/references\/lite-mode\.md`/,
   );
-  assert.match(step2, /when any task resolves `lite`/i);
+  assert.match(step2, /when `check-flags` printed `lite_authorized: true`/);
+});
+
+// BEH-17: a lite-authorized run reads lite-mode.md first and pays for the
+// 40 KB per-task loop only when a task actually needs a reviewer.
+test("Step 2 loads step-2-per-task-loop.md only for a quick or full task when lite is authorized (BEH-17)", () => {
+  const step2 = section(body, "### Step 2: Per-Task Execution Loop");
+  const liteIdx = step2.indexOf("references/lite-mode.md");
+  const loopIdx = step2.indexOf("references/steps/step-2-per-task-loop.md");
+  assert.ok(liteIdx > 0 && loopIdx > 0, "both pointers stay in Step 2");
+  assert.match(step2, /Read `<ADEV_ROOT>\/skills\/implement\/references\/lite-mode\.md` first when `check-flags` printed `lite_authorized: true`/);
+  assert.match(step2, /`adev implement task-begin`/);
+  assert.match(
+    step2,
+    /`<ADEV_ROOT>\/skills\/implement\/references\/steps\/step-2-per-task-loop\.md`[^\n]*only when a task first resolves `quick` or `full` or escalates/,
+  );
+  assert.match(step2, /not authorized[^\n]*every task/i);
 });
 
 test("the body intro no longer claims every task gets a fresh subagent", () => {
@@ -121,16 +137,16 @@ test("lite-mode.md exists", () => {
   assert.ok(existsSync(LITE_MODE_PATH), "skills/implement/references/lite-mode.md is missing");
 });
 
-test("lite-mode passes run_base to resolve-depth on both passes", () => {
-  assert.match(lite, /resolve-depth[^\n]*--run-base <run_base>[^\n]*--pass provisional|--pass provisional[^\n]*--run-base <run_base>/);
+test("lite-mode passes run_base to task-begin and to the final pass", () => {
+  assert.match(lite, /adev implement task-begin[^\n]*--run-base <run_base>/);
   assert.match(lite, /--pass final --run-base <run_base> --base-sha/);
 });
 
 test("lite-mode: no Agent dispatch, agent-default mandate, test-integrity, one commit, no Review-round trailer", () => {
   for (const re of [
     /no `Agent` dispatch/i,
-    /<ADEV_ROOT>\/skills\/implement\/references\/agent-default-mandate\.md/,
-    /<ADEV_ROOT>\/skills\/implement\/references\/test-integrity\.md/,
+    /`agent-default`/,
+    /`test-integrity\.md`/,
     /Spec:/,
     /Plan-task:/,
     /no `Review-round:` trailer/i,
@@ -139,12 +155,57 @@ test("lite-mode: no Agent dispatch, agent-default mandate, test-integrity, one c
   ]) assert.match(lite, re);
 });
 
-test("lite-mode order: in_progress event, then snapshot-base, then implement", () => {
-  const a = lite.indexOf("in_progress");
-  const b = lite.indexOf("adev implement snapshot-base");
-  const c = lite.indexOf("agent-default-mandate.md");
-  assert.ok(a > 0 && a < b, "the `plan_task` `in_progress` event must precede `adev implement snapshot-base`");
-  assert.ok(b < c, "the snapshot must be taken before the task is implemented");
+// BEH-17: lite-mode.md is self-contained for an inline task, so the mandate and
+// the test-integrity rules it needs are stated in it, not behind more reads.
+test("lite-mode states the agent-default mandate inline (BEH-6, BEH-17)", () => {
+  const mandate = subsection(lite, "### The `agent-default` mandate");
+  assert.ok(mandate, "lite-mode.md must carry a `### The `agent-default` mandate` subsection");
+  assert.match(mandate, /no test requirement and no test order/);
+  assert.match(mandate, /whatever `implementation_mode` the project sets/);
+  assert.match(mandate, /[Rr]un the tests relevant to what you changed/);
+  assert.match(mandate, /which tests you added or changed, or why you added none/);
+  assert.doesNotMatch(lite, /Read `<ADEV_ROOT>\/skills\/implement\/references\/agent-default-mandate\.md`/);
+});
+
+test("lite-mode states the test-integrity rules inline (BEH-6, BEH-14, BEH-17)", () => {
+  const rules = subsection(lite, "### Test integrity");
+  assert.ok(rules, "lite-mode.md must carry a `### Test integrity` subsection");
+  for (const re of [
+    /[Ii]nvestigate first/,
+    /acceptance criteria/,
+    /[Nn]ever loosen a matcher/,
+    /[Nn]o conditional skips/,
+    /cannot fail is not a test/,
+    /[Ff]ix the app, not the test/,
+    /[Ss]eed before you assert/,
+  ]) assert.match(rules, re);
+});
+
+test("lite-mode starts each inline task with adev implement task-begin, never separate bookkeeping calls (BEH-17)", () => {
+  const loopSection = subsection(lite, "## 2.");
+  assert.ok(loopSection, "lite-mode.md must have a numbered `## 2.` inline-loop section");
+  assert.ok(loopSection.includes("adev implement task-begin"), "the inline loop starts with `adev implement task-begin`");
+  const begin = lite.indexOf("adev implement task-begin");
+  assert.ok(begin < lite.indexOf("### The `agent-default` mandate"), "task-begin precedes the implementation");
+  assert.ok(begin < lite.indexOf("--pass final"), "task-begin precedes the tripwire");
+  assert.match(loopSection, /`plan_task` `in_progress`/);
+  assert.match(loopSection, /`snapshot`/);
+  assert.match(loopSection, /`execution_state`/);
+  assert.match(loopSection, /TASK_BEGIN_FAILED/);
+  assert.doesNotMatch(lite, /adev implement snapshot-base/);
+  assert.doesNotMatch(lite, /adev execution-state write/);
+  assert.doesNotMatch(lite, /--status in_progress/);
+});
+
+test("lite-mode chains commit, plan_task done and the next task-begin, commit first (BEH-17)", () => {
+  const chain = /git commit [^\n]*&& adev report --type plan-task [^\n]*--status done [^\n]*&& adev implement task-begin [^\n]*--task-id <next>/;
+  assert.match(lite, chain);
+  const trip = subsection(lite, "## 3.");
+  const gates = trip.indexOf("2h");
+  const checkpoint = trip.indexOf("assisted-agent");
+  const chained = trip.search(/git commit [^\n]*&& adev report/);
+  assert.ok(gates > 0 && checkpoint > 0 && chained > Math.max(gates, checkpoint), "the gates and the checkpoint come before the chain");
+  assert.match(trip, /never inside the chain/i);
 });
 
 test("the tripwire always runs for a lite task, whatever flags the final call carries", () => {
@@ -285,6 +346,20 @@ test("2f-pre passes --run-base on the final pass and echoes LITE_TRIPWIRE_ESCALA
   assert.match(pre, /LITE_TRIPWIRE_ESCALATED/);
 });
 
+// BEH-4: authorization is evaluated on each pass from the same inputs, so a
+// final pass without the operator's flag would drop the lite cap.
+test("2f-pre's final pass repeats the operator's --lite and --tier (BEH-4)", () => {
+  const pre = subsection(loop, "#### 2f-pre.");
+  assert.match(pre, /--pass final[^\n]*\[--tier <t>\] \[--lite\]|\[--tier <t>\] \[--lite\][^\n]*--pass final/);
+  assert.match(pre, /`--lite` and `--tier` exactly as the operator passed them/);
+});
+
+test("2a: with lite authorized the provisional call is task-begin, and 2b does not repeat it (BEH-17)", () => {
+  const prov = paragraph(loop, "Provisional review depth.");
+  assert.match(prov, /`lite_authorized: true`[^.]*`adev implement task-begin`/);
+  assert.match(prov, /do not (repeat|run) the provisional `resolve-depth` call/i);
+});
+
 test("batches call passes --run-base and forwards only operator-typed --lite", () => {
   assert.match(loop, /adev implement batches --plan <plan-path> --run-base <run_base> \[--lite\]/);
   assert.match(loop, /Pass `--lite` only when the operator typed it/);
@@ -308,7 +383,7 @@ test("no resolve-depth or batches invocation under skills/implement passes --in-
     const text = readFileSync(f, "utf8");
     assert.doesNotMatch(text, /--in-batch/, `${f} still passes --in-batch`);
     // An invocation (with any `\`-continued lines) must carry --run-base.
-    const calls = text.match(/adev implement (?:resolve-depth|batches) --(?:\\\n|[^`\n])*/g) ?? [];
+    const calls = text.match(/adev implement (?:resolve-depth|batches|task-begin) --(?:\\\n|[^`\n])*/g) ?? [];
     for (const c of calls) assert.match(c, /--run-base/, `${f}: invocation without --run-base: ${c}`);
   }
 });
@@ -516,10 +591,14 @@ test("2f-pre echoes the final pass's warnings and names no score warning (BEH-7)
   assert.doesNotMatch(pre, /ROUTING_SCORE_OUT_OF_RANGE/);
 });
 
-test("lite-mode states the revision-4 grant, the lite cap and the quick-only tripwire for sensitive and boundary paths (BEH-4, BEH-5, BEH-7)", () => {
-  assert.match(lite, /routed `auto-agent` or `assisted-agent` \(scores are not consulted\)/);
+// BEH-17: lite-mode.md cites the verb for the grant and floor rules instead of
+// restating them, so the resolver stays their single statement.
+test("lite-mode cites resolve-depth for the grant and the lite cap, and keeps the quick-only tripwire for sensitive and boundary paths (BEH-4, BEH-7, BEH-17)", () => {
+  assert.match(lite, /grant and floor rules[^.]*`adev implement resolve-depth`/);
+  assert.match(lite, /<ADEV_ROOT>\/skills\/implement\/graduated-review-depth\.md/);
   assert.doesNotMatch(lite, /no score below the threshold/);
-  assert.match(lite, /`floor:boundary` or `floor:sensitive-path` resolves `quick` with `floor_cap: "quick"`/);
+  assert.doesNotMatch(lite, /\(scores are not consulted\)/);
+  assert.match(lite, /`floor_cap: "quick"`/);
   const trip = subsection(lite, "## 3.");
   assert.match(trip, /a touched `sensitive-path` or `boundary` path escalates the task to `quick`/);
   assert.match(trip, /assisted-agent`, present the diff/);

@@ -51,9 +51,23 @@ test("cli-reference documents lite-report: synopsis, output and exit codes", () 
   const help = implementHelp();
   const s = section(cli, "#### `implement lite-report`");
   for (const flag of helpSynopsisFlags(help, "lite-report")) assert.ok(s.includes(flag), `lite-report flag ${flag}`);
-  assert.match(s, /\{ ?count, task_ids, since ?\}/);
+  assert.match(s, /\{ ?count, task_ids, since, capped ?\}/);
   assert.ok(s.includes("implemented without per-task review"), "advisory line");
+  assert.ok(s.includes("one reviewer under the lite cap"), "capped advisory line");
   for (const code of helpExitCodes(help, "lite-report")) assert.ok(s.includes(code), `lite-report exit code ${code}`);
+});
+
+test("cli-reference documents task-begin: synopsis, lite-only output keys and exit codes (BEH-17)", () => {
+  const help = implementHelp();
+  const s = section(cli, "#### `implement task-begin`");
+  for (const flag of helpSynopsisFlags(help, "task-begin")) assert.ok(s.includes(flag), `task-begin flag ${flag}`);
+  for (const code of helpExitCodes(help, "task-begin")) assert.ok(s.includes(code), `task-begin exit code ${code}`);
+  for (const key of ["snapshot", "execution_state"]) assert.ok(s.includes(`\`${key}\``), `task-begin output key ${key}`);
+  for (const v of ['"written"', '"conflict"', '"failed"']) assert.ok(s.includes(v), `execution_state ${v}`);
+  assert.match(s, /resolve-depth --pass provisional/);
+  assert.ok(implementSection.includes("`implement task-begin`"), "Purpose names task-begin");
+  const row = cli.split("\n").find((l) => l.startsWith("| `implement` |"));
+  assert.ok(row.includes("task-begin"), "summary row task-begin");
 });
 
 test("cli-reference documents the batches rigor flags, segment, lite solo reasons and advisories", () => {

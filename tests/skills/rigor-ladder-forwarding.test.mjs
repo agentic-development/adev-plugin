@@ -137,6 +137,17 @@ test("validate emits the advisory row only when the lite count is non-zero", () 
   assert.match(template, /[Oo]mit[^\n]*when `count` is 0/);
 });
 
+// BEH-10 / BEH-4: a capped task had one reviewer where the uncapped floor
+// would have run two stages; the advisory says so by name.
+test("validate names lite-report's capped tasks as one reviewer under the lite cap (BEH-10)", () => {
+  const step = section(read(VALIDATE_SKILL), "### Step 0b: Lite-task report", "## Workspace-Aware Validation Mode");
+  assert.match(step, /\{count, task_ids, since, capped\}/);
+  assert.match(step, /one reviewer under the lite cap: <n> \(<capped>\)/);
+  const template = read(VALIDATE_REPORT_FORMAT);
+  assert.match(template, /> \*\*Advisory:\*\* one reviewer under the lite cap: <n> \(<capped>\)/);
+  assert.match(template, /[Oo]mit[^\n]*when `capped` is empty/);
+});
+
 test("lite-report runs on every validate run, before Check 1, even when Check 1 fails fast or Check 2 is disabled", () => {
   const md = read(VALIDATE_SKILL);
   const step = section(md, "### Step 0b: Lite-task report", "## Workspace-Aware Validation Mode");

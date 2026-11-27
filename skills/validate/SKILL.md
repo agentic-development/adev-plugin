@@ -88,7 +88,7 @@ Right after Step 0a, on every validate run and under either tier, run:
 adev implement lite-report --spec <spec-path> --json
 ```
 
-- **Exit 0:** it prints `{count, task_ids, since}` for the latest implement run. Keep `count` and `task_ids`. When `count > 0`, the report carries the advisory `implemented without per-task review: <count> (<task_ids>)` and those tasks' commits join the spec-compliance scope (Check 2). When `count` is 0 there is no advisory and the scope is unchanged.
+- **Exit 0:** it prints `{count, task_ids, since, capped}` for the latest implement run. Keep `count`, `task_ids` and `capped`. When `count > 0`, the report carries the advisory `implemented without per-task review: <count> (<task_ids>)` and those tasks' commits join the spec-compliance scope (Check 2). When `count` is 0 there is no advisory and the scope is unchanged. When `capped` is non-empty, the report also carries `one reviewer under the lite cap: <n> (<capped>)`, with `<n>` the number of ids in `capped`: those tasks had one synthesized reviewer where a sensitive-path or boundary floor would otherwise have run both stages. It does not change the scope.
 - **Non-zero exit:** keep its stderr. The advisory reads `implemented without per-task review: unknown (lite-report failed: <stderr>)`, and the spec-compliance scope widens to every commit whose `Spec:` trailer names this spec. This is not an abort, so Step 0a-fail's event is not emitted.
 
 The advisory is emitted whenever `count` is non-zero or the call failed, including when Check 1 fails fast and when Check 2 is disabled. Validation is never skipped for `lite` tasks, and validate's own tier is unchanged by them.

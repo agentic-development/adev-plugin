@@ -1,50 +1,70 @@
 # Lite Mode: Inline Task Execution
 
-A task that resolves `lite` is implemented in your own context, with no implementer subagent and no per-task reviewer. A post-task tripwire can escalate it to `quick`. Everything else about the run is unchanged: `lite` thins per-task review breadth and relaxes no hard gate (section 8).
+Read this file first when `check-flags` printed `lite_authorized: true`. A `lite` task is implemented in your own context, with no `Agent` dispatch and no per-task reviewer; a post-task tripwire can escalate it. `lite` relaxes no hard gate (section 8).
 
-## 1. When it applies
+## 1. Which tasks run inline
 
-Step 2a's provisional call returned `depth: lite` for this task. That call is `adev implement resolve-depth --spec <spec> --plan <plan> --task-id <id> --run-base <run_base> [--tier <t>] [--lite] [--parallel] [--review-cycles <n>] --pass provisional`, with `--lite` and `--tier` exactly as the operator passed them and `run_base` from `check-flags`. Run this file's steps instead of Step 2b-2g for that task. Every other task stays in the Step 2 loop.
+Every task in the run starts with `adev implement task-begin` (section 2), which runs the provisional pass. The grant and floor rules are those of `adev implement resolve-depth`, stated in `<ADEV_ROOT>/skills/implement/graduated-review-depth.md`. You never decide a task's depth yourself, and you never add `--lite` or `--tier lite` on your own judgment.
 
-The verb grants `lite` only when the operator authorized it (a flag the operator typed, or `implement_mode: lite` in `risk-policies.yaml`), the task has a routing entry routed `auto-agent` or `assisted-agent` (scores are not consulted), the spec is not high-risk, no provisional floor leg holds, and the run is not `--parallel`. You never decide it yourself, and you never add `--lite` or `--tier lite` on your own judgment. Under that authorization, on a spec that is not high-risk, a task denied with `floor:boundary` or `floor:sensitive-path` resolves `quick` with `floor_cap: "quick"` (the lite cap) and goes through the Step 2 loop.
+- **`depth: lite`:** run section 2's loop for the task.
+- **`quick` or `full`** (under the lite cap a `boundary` or `sensitive-path` floor gives `quick` with `floor_cap: "quick"`): read `step-2-per-task-loop.md` (the body's Step 2 pointer) and run the task through it, skipping only 2a's provisional call, whose event `task-begin` already wrote. Keep a `lite_denied` value for the run summary (section 5).
 
-**The routing sidecar must be committed at `run_base`.** The verb reads `<plan>.routing.json` from the `run_base` commit, not from the working tree. When `/adev:route` wrote the sidecar but it was never committed, every task is denied with `lite_denied: no-routing-entry` and the response carries a `ROUTING_SIDECAR_MISSING` warning naming the run base. No task then resolves `lite`, so this file never loads for that run. Step 2a relays the warning and tells the operator to commit the sidecar before running with `lite` again (`<ADEV_ROOT>/skills/implement/graduated-review-depth.md` §3): only when `check-flags` printed `lite_authorized: true`, and once, on the first provisional `resolve-depth` call of this invocation or on the `batches` advisory when `batches` runs, whichever comes first. The run itself continues at `quick` or `full`.
+**The routing sidecar must be committed at `run_base`.** The verb reads `<plan>.routing.json` from the `run_base` commit, not the working tree, so a sidecar `/adev:route` wrote but nobody committed denies every task with `lite_denied: no-routing-entry` and adds a `ROUTING_SIDECAR_MISSING` warning naming the run base. The run continues at `quick` or `full`. Relay it with the instruction to commit the sidecar before using `lite` again, as Step 2a and `<ADEV_ROOT>/skills/implement/graduated-review-depth.md` §3 state: only when `check-flags` printed `lite_authorized: true`, and once, on the first provisional `resolve-depth` call of this invocation (here, the first `task-begin`) or on the `batches` advisory when `batches` runs, whichever comes first.
 
-## 2. Inline execution
+## 2. The inline loop
 
-Run these in order:
+1. **Begin.** `adev implement task-begin --spec <spec> --plan <plan> --task-id <n> --run-base <run_base> [--tier <t>] [--lite] [--parallel] [--review-cycles <n>]`, with `--lite`, `--tier` and `--parallel` exactly as the operator passed them to this invocation and `<n>` the bare plan number. For `depth: lite` it also emits `plan_task` `in_progress`, writes execution state, and prints `snapshot` (the dispatch-time tree, for section 3) and `execution_state`. Echo `REVIEW_DEPTH_FLOOR_APPLIED` by code. `"conflict"` means another build owns the live state: surface the owner stderr names, never pass `--force`, and skip Step 4's `adev execution-state clear`. `"failed"` is a warning. Exit 1 with `TASK_BEGIN_FAILED` stops the task through the Step 2d blocker path: `plan_task` `blocked` with the error, then execution state `status: "blocked"`.
+2. **Implement** the plan's task text yourself, under the mandate and test-integrity rules below. If its files already exist and its tests pass, it may already be done: say so and ask before redoing it (Step 2.pre).
+3. **Test.** Run the tests relevant to what you changed (`node --test <files>` or the project's test command).
+4. **Tripwire, gates, checkpoint, commit:** section 3.
 
-1. Emit `plan_task` `in_progress` for the task (`reportPlanTask`, see `<ADEV_ROOT>/skills/implement/references/task-transitions.md`), and write execution state as Step 2c's "Update Execution State" describes.
-2. Capture the task's base with `adev implement snapshot-base` and keep the printed tree id as `<snapshot>`. Section 3 passes it as `--base-sha`. Never substitute `git rev-parse HEAD`.
-3. Read the task text from the plan, then implement it yourself, in your own context, under `<ADEV_ROOT>/skills/implement/references/agent-default-mandate.md` and `<ADEV_ROOT>/skills/implement/references/test-integrity.md`. A `lite` task always uses the `agent-default` mandate, whatever `implementation_mode` the project sets. `test-integrity.md` applies as it does in every mode.
+A `lite` task skips the implementer, reviewer and write-test `Agent` dispatches, makes no `adev test-policy resolve` or `assert-assigned` call, emits no `test_depth_assigned` and no `review_round` event, and carries no `Review-round:` trailer. Inline edits run under the session's own permissions and hooks. Keep narration terse: every line stays in context for every later task.
 
-What a `lite` task skips:
+### The `agent-default` mandate
 
-- There is no `Agent` dispatch for the implementer, the reviewers or a write-test author.
-- There is no `adev test-policy resolve` call, no `assert-assigned` call and no `test_depth_assigned` event, as for every task under `agent-default`.
-- There is no `review_round` event.
+A `lite` task always uses it, whatever `implementation_mode` the project sets. adev imposes no test requirement and no test order on the task.
 
-Inline edits run under the session's own tool permissions, and hooks apply to them exactly as to a subagent's edits. Keep your narration terse while you work. Every line you write stays in the context of every later task in the run.
+- Add or change tests where they protect behavior that matters; skip them where they would only restate the implementation.
+- Run the tests relevant to what you changed before you commit, so you never commit a red suite.
+- Say in the task's summary which tests you added or changed, or why you added none.
 
-## 3. Tripwire
+### Test integrity
 
-When the task is done and before anything is committed, run the final pass:
+The always-on `test-integrity.md` rules, as an inline task needs them:
+
+1. **Investigate first.** Before changing an assertion that fails unexpectedly, look at the actual behavior, then check the spec's acceptance criteria and `.context-index/adrs/`. If the test asserts the specified behavior, fix the code; if the spec is wrong, stop and escalate.
+2. **Never loosen a matcher** to make a test pass (`toEqual` to `toContain`, an exact string to a case-insensitive regex). Fix the code that produces the wrong value.
+3. **No conditional skips:** no `if visible … else skip`, no swallowed assertion errors, no `length >= 0`. A test that cannot fail is not a test.
+4. **Fix the app, not the test.** Change a test only when the requirement changed, and update the spec with it.
+5. **Seed before you assert.** Each test sets up its own deterministic data and asserts exact seeded values.
+
+## 3. Tripwire, gates and commit
+
+When the task is done and before anything is committed, run the final pass, with `--tier` and `--lite` exactly as the operator passed them on `task-begin`:
 
 ```bash
-adev implement resolve-depth --spec <spec> --plan <plan> --task-id <id> \
-  --pass final --run-base <run_base> --base-sha <snapshot> [--review-cycles <n>]
+adev implement resolve-depth --spec <spec> --plan <plan> --task-id <n> \
+  --pass final --run-base <run_base> --base-sha <snapshot> [--review-cycles <n>] \
+  [--tier <t>] [--lite]
 ```
 
-Repeat the operator's `--tier` and `--lite` flags from the provisional call. The verb's tripwire is keyed on the task's provisional `lite` resolution, which it reads from the lifecycle log, so it always runs for a `lite` task, whatever flags the final call carries. It compares every touched file against the declared set, and reads governance from `run_base`. It always applies the lite cap: a touched `sensitive-path` or `boundary` path escalates the task to `quick` (`floor_cap: "quick"`), as `scope-mismatch` does. Only a `routing` or `critical-finding` leg gives `full`.
+The tripwire is keyed on the task's provisional `lite` resolution in the lifecycle log, so it always runs for a `lite` task, whatever flags the final call carries. It checks every touched file and always applies the lite cap: a touched `sensitive-path` or `boundary` path escalates the task to `quick` (`floor_cap: "quick"`), as `scope-mismatch` does, and only a `routing` or `critical-finding` leg gives `full`.
 
-Echo the response's warnings to the operator-facing transcript by code, as the depth contract's final pass states (`graduated-review-depth.md` §5): `REVIEW_DEPTH_FLOOR_APPLIED` and `LITE_TRIPWIRE_ESCALATED`. A `ROUTING_SIDECAR_MISSING` warning here repeats one already handled at Step 2a; do not echo it. When `warnings` carries `LITE_TRIPWIRE_ESCALATED`, echo it with the task id, `escalated_from` and the holding `floor_legs`. Echo by code, never from `floor_applied`: a `scope-mismatch` escalation sets `floor_applied: true` with `floor_legs: ["scope-mismatch"]`, and its only warning is `LITE_TRIPWIRE_ESCALATED`. Never announce a `scope-mismatch` escalation as `REVIEW_DEPTH_FLOOR_APPLIED`. Then branch on the returned `depth`:
+Echo the warnings by code (`graduated-review-depth.md` §5): `REVIEW_DEPTH_FLOOR_APPLIED`, and `LITE_TRIPWIRE_ESCALATED` with the task id, `escalated_from` and the holding `floor_legs`. Never announce a `scope-mismatch` escalation as `REVIEW_DEPTH_FLOOR_APPLIED`, even though it sets `floor_applied: true`. A `ROUTING_SIDECAR_MISSING` here repeats one already relayed; do not echo it. Then branch on the returned `depth`:
 
-- **Still `lite`.** For a task routed `assisted-agent`, present the diff and any tests you added and wait for approval before going on, as Step 2a states for `agent-default`. Run the Step 2h `post-task` governance gates. A required gate that fails fails the task, as in Step 2h. Then make one commit for the task, carrying `Spec:` and `Plan-task: <n>` (Step 5.5 of the body), with no `Review-round:` trailer. The final-pass `review_depth_resolved` event with `depth: lite` is the task's review provenance. After the commit, emit `plan_task` `done`.
-- **Escalated.** Continue at Step 2f-pre's branch for the returned depth: `quick` dispatches one synthesized reviewer, and `full` runs both stages (Stage 1, then Stage 2). Do not run the final pass again, because the tripwire call was this task's final pass. You are this task's implementer, so you write the status report the reviewers receive (Step 2c's Report Format), and you apply each fix pass inline. Every reviewer dispatch for this task carries `Implementation mode: agent-default`, the mandate the task was implemented under, not the project's `implementation_mode`. A reviewer told `tdd` would demand test-first evidence that cannot exist. Each fix pass stays under the `agent-default` mandate too. The review loop is capped and halts as in Step 2g (section 7). Once the review passes, Step 2h runs as for any reviewed task, `Review-round:` trailer included.
+- **Still `lite`.** Run the Step 2h `post-task` gates: when `governance/gates.yaml` declares gates whose `triggers` include `post-task`, read `step-2-per-task-loop.md` 2h for how to select and run them; a required gate that fails fails the task, and with no such gates there is nothing to run. For a task routed `assisted-agent`, present the diff and any tests you added and wait for approval. The gates and the checkpoint come first, never inside the chain. Then make one commit for the task with Step 5.5's `Spec:` and `Plan-task: <n>` trailers and no `Review-round:` trailer (the final-pass `review_depth_resolved` with `depth: lite` is its review provenance), emit `plan_task` `done`, and start the next task, as one chained command so each step runs only when the previous one succeeded and `done` never precedes the commit:
+
+  ```bash
+  git add <task files> && git commit -m "<subject>" --trailer "Spec: <spec>" --trailer "Plan-task: <n>" && adev report --type plan-task --spec <spec> --plan <plan> --task-id <n> --status done && adev implement task-begin --spec <spec> --plan <plan> --task-id <next> --run-base <run_base> \
+    [--tier <t>] [--lite] [--parallel] [--review-cycles <n>]
+  ```
+
+  Drop the `task-begin` tail after the last task, or when the next task belongs to a batch (section 4). The tail's output is the next task's section 2 step 1.
+- **Escalated.** Read `step-2-per-task-loop.md` and continue at 2f-pre's branch for the returned depth: `quick` dispatches one synthesized reviewer, and `full` runs both stages (Stage 1, then Stage 2). Do not run the final pass again; the tripwire call was this task's final pass. You are the task's implementer, so you write the status report the reviewers receive (Step 2c's Report Format) and apply each fix pass inline. Every reviewer dispatch for the task carries `Implementation mode: agent-default`, not the project's `implementation_mode`, because a reviewer told `tdd` would demand test-first evidence that cannot exist, and each fix pass stays under the `agent-default` mandate. The loop is capped and halts as in section 7. Once the review passes, Step 2h runs as for any reviewed task, `Review-round:` trailer included.
 
 ## 4. Ordering
 
-Tasks run in plan order. Consecutive `lite` tasks run inline, one after another, and `quick` and `full` tasks go through the Step 2 loop between them. `adev implement batches` reports each granted task as `solo` with reason `lite`, and never places one in a batch. A batch dispatches when its first member comes up in plan order. A task the verb reports as `lite-assumed` (with a `LITE_AUTHORIZATION_ASSUMED` advisory) still waits for its own provisional call to say whether it runs inline.
+Tasks run in plan order. Consecutive `lite` tasks run inline, one after another, and `quick` and `full` tasks go through the Step 2 loop between them. Before the first task, run `adev implement batches --plan <plan-path> --run-base <run_base> [--lite] [--tier <t>]` once, passing `--lite` and `--tier` only as the operator passed them. It reports each granted task as `solo` with reason `lite` and never places one in a batch. When a batch forms, its first member's turn dispatches the whole batch (`<ADEV_ROOT>/skills/implement/references/batched-mode.md`), and its members are not started with `task-begin`: the batch agent makes their provisional calls. A task reported as `lite-assumed` (with a `LITE_AUTHORIZATION_ASSUMED` advisory) still waits for its own `task-begin` to say whether it runs inline.
 
 ## 5. Run summary
 

@@ -49,7 +49,7 @@ This file is the CLI counterpart to [`skill-reference.md`](skill-reference.md) (
 | `partial` | Detect/inspect/discard partial-write artifacts | `lib/cli/partial.mjs` |
 | `artifact` | Atomically commit lifecycle artifacts into place | `lib/cli/artifact.mjs` |
 | `route` | Emit/render the plan routing sidecar | `lib/cli/route.mjs` |
-| `implement` | `/adev:implement` helpers: validate tier flags and capture the run base (`check-flags`), read a task's routing entry (`read-routing`), form batches (`batches`), resolve review depth (`resolve-depth`), snapshot the worktree (`snapshot-base`), list tasks run without per-task review (`lite-report`) | `lib/cli/implement.mjs` |
+| `implement` | `/adev:implement` helpers: validate tier flags and capture the run base (`check-flags`), read a task's routing entry (`read-routing`), form batches (`batches`), resolve review depth (`resolve-depth`), start a task in a `lite`-authorized run (`task-begin`), snapshot the worktree (`snapshot-base`), list tasks run without per-task review or under the lite cap (`lite-report`) | `lib/cli/implement.mjs` |
 | `specify` | Revise a BLOCKED spec (revision N → N+1) | `lib/cli/specify.mjs` |
 | `decisions` | List open operator decisions on a spec's blockers sidecar and record the answers | `lib/cli/decisions.mjs` |
 | `prototype` | Prototype helpers (charter discovery, preview server) | `lib/cli/prototype.mjs` |
@@ -626,7 +626,7 @@ adev route render-sidecar --plan .context-index/specs/features/auth/login.plan.m
 
 ### `implement`
 
-**Purpose:** The verbs `/adev:implement` runs so that no runtime decision lives in skill prose: `implement check-flags` validates tier flags and captures the run base, `implement read-routing` reads one task's routing entry, `implement batches` forms batches, `implement resolve-depth` resolves each task's review depth (`full`, `quick` or `lite`), `implement snapshot-base` records the pre-task worktree, and `implement lite-report` lists the tasks a run implemented without per-task review. See [Core Concepts → Graduated Rigor Tiers](concepts.md#graduated-rigor-tiers) for the ladder these verbs implement.
+**Purpose:** The verbs `/adev:implement` runs so that no runtime decision lives in skill prose: `implement check-flags` validates tier flags and captures the run base, `implement read-routing` reads one task's routing entry, `implement batches` forms batches, `implement resolve-depth` resolves each task's review depth (`full`, `quick` or `lite`), `implement task-begin` folds a `lite` task's start into one call, `implement snapshot-base` records the pre-task worktree, and `implement lite-report` lists the tasks a run implemented without per-task review or held to one reviewer under the lite cap. See [Core Concepts → Graduated Rigor Tiers](concepts.md#graduated-rigor-tiers) for the ladder these verbs implement.
 
 **Signature:** `implement read-routing --plan <path> --task-id <id> [--agents-allowlist <csv>]`
 
@@ -740,6 +740,31 @@ Exit codes: `0` success; `1` argument error (including a missing `--run-base` or
 
 **Implementation:** `lib/cli/implement.mjs` → `lib/implement/review-depth.mjs`, `lib/implement/run-base.mjs`. **Called by:** `/adev:implement` only.
 
+#### `implement task-begin`
+
+**Purpose:** Start a task in a run where `lite` is authorized, in place of Step 2a's provisional `resolve-depth` call. An inline `lite` task's bookkeeping is then one call instead of four.
+
+**Signature:**
+```
+implement task-begin --spec <path> --plan <path> --task-id <id> --run-base <sha> [--lite] [--tier full|quick|lite] [--parallel] [--review-cycles <n>]
+```
+
+It runs the same code path as `resolve-depth --pass provisional`: the same flag validation (`--run-base` required, `INVALID_COMMIT_ID`, `--parallel` denies `lite`, `--review-cycles` echoed as `review_cycles`), the same `review_depth_resolved` event and the same JSON. The final-pass flags (`--pass`, `--base-sha`, `--had-critical-finding`, `--in-batch`) are argument errors.
+
+- **`lite` result:** it also emits `plan_task` `in_progress`, writes execution state (`status: active`, the task as `currentTask`, its plan title as `nextAction`, the plan's tasks as `progress`), and captures the dispatch-time snapshot. The JSON gains `snapshot` (the tree id `snapshot-base` would print, to pass as the final pass's `--base-sha`) and `execution_state`: `"written"`, `"conflict"` (another build owns the live state, which is left untouched; stderr names the owner) or `"failed"`. Neither execution-state outcome is fatal.
+- **`quick` or `full` result:** it prints exactly what `resolve-depth --pass provisional` prints, with no `snapshot` or `execution_state`, and emits no `plan_task` event. The Step 2 loop continues the task without repeating the provisional call.
+
+If the `plan_task` emit or the snapshot fails after the provisional event was written, it exits 1 with `TASK_BEGIN_FAILED` naming the failed step on stderr and prints no JSON; the task stops through the Step 2d blocker path.
+
+**Example:**
+```
+adev implement task-begin --spec <s> --plan <p> --task-id 3 --run-base <run_base> --lite
+```
+
+Exit codes: `0` success; `1` argument error (including a missing `--run-base`) / `INVALID_COMMIT_ID` / `INVALID_REVIEW_CYCLES` / `INVALID_SPEC_PATH` / `INVALID_PLAN_PATH` / `INVALID_TIER` / `LITE_NOT_ALLOWED_FOR_HIGH` / `RUN_BASE_READ_FAILED` / `INVALID_SIDECAR_JSON` / `TASK_BEGIN_FAILED`; `3` `ROUTING_SIDECAR_MISSING` / `ROUTING_ENTRY_MISSING`.
+
+**Implementation:** `lib/cli/implement.mjs` → `lib/implement/review-depth.mjs`, `lib/lifecycle-state.mjs::reportPlanTask()`, `lib/execution-state.mjs`. **Called by:** `/adev:implement` (`references/lite-mode.md`) only.
+
 #### `implement snapshot-base`
 
 **Purpose:** Record the worktree as it stands (index plus every non-ignored file, untracked included) as a git tree object, without touching the index or working tree. `/adev:implement` captures it at task dispatch and passes it as `resolve-depth --base-sha`, so the final pass's touched-file legs and the `lite` tripwire count only what the task changed: files that were untracked or modified before the task are part of the base.
@@ -758,14 +783,16 @@ Exit codes: `0` success — tree id on stdout; `1` `SNAPSHOT_FAILED` (not a git 
 
 #### `implement lite-report`
 
-**Purpose:** List the tasks of the latest implement run that were implemented without per-task review. `/adev:validate` calls it on every run and shows the advisory when the count is non-zero; its spec-compliance check then covers those tasks' commits.
+**Purpose:** List the tasks of the latest implement run that were implemented without per-task review, and the tasks the lite cap held to one reviewer. `/adev:validate` calls it on every run and shows the advisory when either list is non-empty; its spec-compliance check then covers the `lite` tasks' commits.
 
 **Signature:** `implement lite-report --spec <spec-path> [--json]`
 
 It reads the raw `review_depth_resolved` events in the spec's lifecycle log, not the `reviewDepthResolutions` projection (which keeps the latest event per plan, task and pass across every run). Only events after the most recent implement `lifecycle_step` `started` event count, and a task counts when its latest final-pass `review_depth_resolved` has `depth: lite`. A `lite` task from an earlier run is therefore not counted.
 
-- `--json` prints `{ count, task_ids, since }`, where `since` is the timestamp of that `started` event, or `null` when there is none.
-- Text mode prints `implemented without per-task review: <n> task(s) (<ids>)`, or nothing when the count is 0.
+A task is **capped** when its latest final-pass event in the same window is `depth: quick` with `sensitive-path` or `boundary` in `floor_legs`: without the lite cap those legs give `full`, so the event is the cap's durable record. A capped task is not counted as `lite`.
+
+- `--json` prints `{ count, task_ids, since, capped }`, where `since` is the timestamp of that `started` event, or `null` when there is none, and `capped` lists the capped task ids.
+- Text mode prints `implemented without per-task review: <n> task(s) (<ids>)` when the count is non-zero and `one reviewer under the lite cap: <n> task(s) (<ids>)` when `capped` is non-empty, or nothing.
 
 **Example:**
 ```

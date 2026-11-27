@@ -40,7 +40,7 @@ function fixtureRepo(t, events) {
 
 const started = (ts, step = "implement") => ({ ts, event: "lifecycle_step", step, status: "started" });
 
-function depthEvent(ts, taskId, depth, { pass = "final", plan = PLAN, source = "lite-grant" } = {}) {
+function depthEvent(ts, taskId, depth, { pass = "final", plan = PLAN, source = "lite-grant", floorLegs = [] } = {}) {
   return {
     ts,
     event: "review_depth_resolved",
@@ -49,8 +49,8 @@ function depthEvent(ts, taskId, depth, { pass = "final", plan = PLAN, source = "
     pass,
     depth,
     source,
-    floor_applied: false,
-    floor_legs: [],
+    floor_applied: floorLegs.length > 0,
+    floor_legs: floorLegs,
   };
 }
 
@@ -75,7 +75,7 @@ const TWO_RUNS = [
 test("counts only tasks whose latest final-pass event after the latest implement start has depth lite", (t) => {
   const repo = fixtureRepo(t, TWO_RUNS);
   const out = okJson(liteReport(repo, "--spec", SPEC, "--json"));
-  assert.deepEqual(out, { count: 1, task_ids: ["2"], since: RUN2_TS });
+  assert.deepEqual(out, { count: 1, task_ids: ["2"], since: RUN2_TS, capped: [] });
 });
 
 test("reads raw events, not the reviewDepthResolutions projection", (t) => {
@@ -87,7 +87,7 @@ test("reads raw events, not the reviewDepthResolutions projection", (t) => {
     depthEvent("2026-11-02T10:01:00.000Z", "2", "quick", { source: "default-quick" }),
   ]);
   const out = okJson(liteReport(repo, "--spec", SPEC, "--json"));
-  assert.deepEqual(out, { count: 0, task_ids: [], since: RUN2_TS });
+  assert.deepEqual(out, { count: 0, task_ids: [], since: RUN2_TS, capped: [] });
 });
 
 test("no implement start event → count 0", (t) => {
@@ -96,13 +96,13 @@ test("no implement start event → count 0", (t) => {
     depthEvent("2026-11-01T10:01:00.000Z", "1", "lite"),
   ]);
   const out = okJson(liteReport(repo, "--spec", SPEC, "--json"));
-  assert.deepEqual(out, { count: 0, task_ids: [], since: null });
+  assert.deepEqual(out, { count: 0, task_ids: [], since: null, capped: [] });
 });
 
 test("a missing lifecycle log → count 0", (t) => {
   const repo = fixtureRepo(t);
   const out = okJson(liteReport(repo, "--spec", SPEC, "--json"));
-  assert.deepEqual(out, { count: 0, task_ids: [], since: null });
+  assert.deepEqual(out, { count: 0, task_ids: [], since: null, capped: [] });
 });
 
 test("only the final pass counts: a provisional-only lite task is not counted", (t) => {
@@ -113,7 +113,7 @@ test("only the final pass counts: a provisional-only lite task is not counted", 
     depthEvent("2026-11-01T10:03:00.000Z", "2", "lite"),
   ]);
   const out = okJson(liteReport(repo, "--spec", SPEC, "--json"));
-  assert.deepEqual(out, { count: 1, task_ids: ["2"], since: RUN1_TS });
+  assert.deepEqual(out, { count: 1, task_ids: ["2"], since: RUN1_TS, capped: [] });
 });
 
 test("an implement step_completed or step_failed event does not open a new window", (t) => {
@@ -124,7 +124,7 @@ test("an implement step_completed or step_failed event does not open a new windo
     { ts: "2026-11-01T12:00:00.000Z", event: "step_failed", step: "implement" },
   ]);
   const out = okJson(liteReport(repo, "--spec", SPEC, "--json"));
-  assert.deepEqual(out, { count: 1, task_ids: ["1"], since: RUN1_TS });
+  assert.deepEqual(out, { count: 1, task_ids: ["1"], since: RUN1_TS, capped: [] });
 });
 
 test("tasks are folded per (plan, task_id)", (t) => {
@@ -135,7 +135,7 @@ test("tasks are folded per (plan, task_id)", (t) => {
     depthEvent("2026-11-01T10:03:00.000Z", "1", "full", { plan: OTHER_PLAN, source: "lite-tripwire" }),
   ]);
   const out = okJson(liteReport(repo, "--spec", SPEC, "--json"));
-  assert.deepEqual(out, { count: 1, task_ids: ["1"], since: RUN1_TS });
+  assert.deepEqual(out, { count: 1, task_ids: ["1"], since: RUN1_TS, capped: [] });
 });
 
 test("an id shared by two plans in one window is listed once and counted per (plan, task_id)", (t) => {
@@ -146,7 +146,7 @@ test("an id shared by two plans in one window is listed once and counted per (pl
     depthEvent("2026-11-01T10:03:00.000Z", "2", "lite", { plan: PLAN }),
   ]);
   const out = okJson(liteReport(repo, "--spec", SPEC, "--json"));
-  assert.deepEqual(out, { count: 3, task_ids: ["1", "2"], since: RUN1_TS });
+  assert.deepEqual(out, { count: 3, task_ids: ["1", "2"], since: RUN1_TS, capped: [] });
 });
 
 test("events whose plan or task_id is not a string are skipped", (t) => {
@@ -158,7 +158,7 @@ test("events whose plan or task_id is not a string are skipped", (t) => {
     depthEvent("2026-11-01T10:04:00.000Z", "3", "lite"),
   ]);
   const out = okJson(liteReport(repo, "--spec", SPEC, "--json"));
-  assert.deepEqual(out, { count: 1, task_ids: ["3"], since: RUN1_TS });
+  assert.deepEqual(out, { count: 1, task_ids: ["3"], since: RUN1_TS, capped: [] });
 });
 
 test("matches the event shapes written by reportStep and reportReviewDepthResolved", (t) => {
@@ -177,7 +177,7 @@ test("matches the event shapes written by reportStep and reportReviewDepthResolv
   }
   const startTs = JSON.parse(readFileSync(join(repo, LOG), "utf8").split("\n")[0]).ts;
   const out = okJson(liteReport(repo, "--spec", SPEC, "--json"));
-  assert.deepEqual(out, { count: 1, task_ids: ["4"], since: startTs });
+  assert.deepEqual(out, { count: 1, task_ids: ["4"], since: startTs, capped: [] });
 });
 
 test("text mode prints the advisory line only when count > 0", (t) => {
@@ -194,6 +194,56 @@ test("text mode prints the advisory line only when count > 0", (t) => {
   const empty = liteReport(without, "--spec", SPEC);
   assert.equal(empty.status, 0, empty.stderr);
   assert.equal(empty.stdout, "");
+});
+
+// A final-pass `quick` with a `sensitive-path` or `boundary` leg can only come
+// from the lite cap, since without it those legs give `full` (BEH-4).
+test("a final-pass quick with a sensitive-path or boundary leg is listed as capped, not as lite", (t) => {
+  const repo = fixtureRepo(t, [
+    started(RUN1_TS),
+    depthEvent("2026-11-01T10:01:00.000Z", "1", "lite"),
+    depthEvent("2026-11-01T10:02:00.000Z", "2", "quick", { source: "default-quick", floorLegs: ["sensitive-path"] }),
+    depthEvent("2026-11-01T10:03:00.000Z", "3", "lite"),
+    depthEvent("2026-11-01T10:04:00.000Z", "3", "quick", { source: "lite-tripwire", floorLegs: ["boundary"] }),
+    depthEvent("2026-11-01T10:05:00.000Z", "4", "quick", { source: "lite-tripwire", floorLegs: ["scope-mismatch"] }),
+    depthEvent("2026-11-01T10:06:00.000Z", "5", "full", { source: "default-quick", floorLegs: ["sensitive-path", "routing"] }),
+    depthEvent("2026-11-01T10:07:00.000Z", "6", "quick", { source: "default-quick" }),
+  ]);
+  const out = okJson(liteReport(repo, "--spec", SPEC, "--json"));
+  assert.deepEqual(out, { count: 1, task_ids: ["1"], since: RUN1_TS, capped: ["2", "3"] });
+});
+
+test("capped follows the same window and latest-final-event rules as lite", (t) => {
+  const repo = fixtureRepo(t, [
+    started(RUN1_TS),
+    depthEvent("2026-11-01T10:01:00.000Z", "1", "quick", { source: "default-quick", floorLegs: ["sensitive-path"] }),
+    started(RUN2_TS),
+    depthEvent("2026-11-02T10:01:00.000Z", "2", "quick", { pass: "provisional", source: "default-quick", floorLegs: ["boundary"] }),
+    depthEvent("2026-11-02T10:02:00.000Z", "3", "quick", { source: "default-quick", floorLegs: ["boundary"] }),
+    depthEvent("2026-11-02T10:03:00.000Z", "3", "full", { source: "default-quick", floorLegs: ["boundary", "critical-finding"] }),
+  ]);
+  const out = okJson(liteReport(repo, "--spec", SPEC, "--json"));
+  assert.deepEqual(out, { count: 0, task_ids: [], since: RUN2_TS, capped: [] });
+});
+
+test("text mode names capped tasks as one reviewer under the lite cap", (t) => {
+  const repo = fixtureRepo(t, [
+    started(RUN1_TS),
+    depthEvent("2026-11-01T10:01:00.000Z", "2", "lite"),
+    depthEvent("2026-11-01T10:02:00.000Z", "4", "quick", { source: "default-quick", floorLegs: ["sensitive-path"] }),
+  ]);
+  const r = liteReport(repo, "--spec", SPEC);
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(
+    r.stdout,
+    "implemented without per-task review: 1 task(s) (2)\none reviewer under the lite cap: 1 task(s) (4)\n",
+  );
+
+  const cappedOnly = fixtureRepo(t, [
+    started(RUN1_TS),
+    depthEvent("2026-11-01T10:02:00.000Z", "4", "quick", { source: "default-quick", floorLegs: ["boundary"] }),
+  ]);
+  assert.equal(liteReport(cappedOnly, "--spec", SPEC).stdout, "one reviewer under the lite cap: 1 task(s) (4)\n");
 });
 
 test("missing --spec exits 1 with usage", (t) => {

@@ -118,7 +118,7 @@ derives them itself from the plan's `Files:` block.
 
 This call reports the `review_depth_resolved` event for the provisional pass.
 
-**Warning visibility, provisional pass.** Echo each warning in the response's `warnings` to the operator-facing transcript, by code, in addition to the persisted event the verb already writes — a graduated run must be auditable in the visible transcript, not only in the lifecycle log: `REVIEW_DEPTH_FLOOR_APPLIED` naming its legs and the depth the floor gave; and `ROUTING_SIDECAR_MISSING` naming the run base, telling the operator to commit `<plan>.routing.json` before using `lite` again. `ROUTING_SIDECAR_MISSING` comes from the run-base read, so every `resolve-depth` and `batches` call carries it, whether or not `lite` is authorized. Relay it only when `check-flags` printed `lite_authorized: true`, and only once: on the first provisional `resolve-depth` call of this invocation, or on the `batches` advisory when `batches` runs, whichever comes first. Later calls repeat the same warning for the same `run_base`, so do not echo it again. A batch agent never relays it, and neither does a `--parallel` group agent; the orchestrator already has. This is the only place that case reaches the operator: no task resolves `lite` then, so `lite-mode.md` never loads.
+**Warning visibility, provisional pass.** Echo each warning in the response's `warnings` to the operator-facing transcript, by code, in addition to the persisted event the verb already writes — a graduated run must be auditable in the visible transcript, not only in the lifecycle log: `REVIEW_DEPTH_FLOOR_APPLIED` naming its legs and the depth the floor gave; and `ROUTING_SIDECAR_MISSING` naming the run base, telling the operator to commit `<plan>.routing.json` before using `lite` again. `ROUTING_SIDECAR_MISSING` comes from the run-base read, so every `resolve-depth` and `batches` call carries it, whether or not `lite` is authorized. Relay it only when `check-flags` printed `lite_authorized: true`, and only once: on the first provisional `resolve-depth` call of this invocation, or on the `batches` advisory when `batches` runs, whichever comes first. Later calls repeat the same warning for the same `run_base`, so do not echo it again. A batch agent never relays it, and neither does a `--parallel` group agent; the orchestrator already has. With `lite` authorized the provisional call is `adev implement task-begin`, which carries the same warnings; the first one is this relay point.
 
 ## 4. Task base (Step 2d, before the implementer dispatch)
 
@@ -128,7 +128,7 @@ file, untracked included) without touching the index. Used only for this task's
 final-pass depth resolution; it is not persisted anywhere and does not survive
 past this single dispatch. A bare `git rev-parse HEAD` also works, but then
 every file that was untracked before the task counts as a task addition.
-A `lite` task takes the same snapshot inline (`lite-mode.md` §2).
+A `lite` task gets the same snapshot from `adev implement task-begin` (`lite-mode.md` §2).
 
 ## 5. Final pass (Step 2f-pre, after the implementer reports, against the real diff)
 
