@@ -55,8 +55,13 @@ test("the recorder refuses to run without both --project and --repo", () => {
   assert.throws(() => parseRecorderArgs(["--project", PROJECT]), { code: "RECORDER_USAGE" });
   assert.throws(() => parseRecorderArgs(["--repo", REPO]), { code: "RECORDER_USAGE" });
   assert.throws(() => parseRecorderArgs(["--project", "", "--repo", REPO]), { code: "RECORDER_USAGE" });
-  assert.deepEqual(parseRecorderArgs(["--project", PROJECT, "--repo", REPO]), { help: false, project: PROJECT, repo: REPO });
+  assert.deepEqual(parseRecorderArgs(["--project", PROJECT, "--repo", REPO]), { help: false, project: PROJECT, repo: REPO, only: null });
   assert.deepEqual(parseRecorderArgs(["--help"]), { help: true });
+});
+
+test("--only narrows the recording to the cases whose name contains its text, and refuses an empty value", () => {
+  assert.deepEqual(parseRecorderArgs(["--project", PROJECT, "--repo", REPO, "--only", "github:"]), { help: false, project: PROJECT, repo: REPO, only: "github:" });
+  assert.throws(() => parseRecorderArgs(["--project", PROJECT, "--repo", REPO, "--only", " "]), { code: "RECORDER_USAGE" });
 });
 
 test("the recorder refuses a project or repo owned by anyone but a fixture account, and unknown flags", () => {
@@ -264,4 +269,43 @@ test("removeStaleFixture deletes only a contained fixture and reports whether on
   assert.equal(existsSync(join(root, FIXTURES_REL, "a-case.json")), false);
   assert.equal(removeStaleFixture(root, "a-case.json"), false);
   assert.throws(() => removeStaleFixture(root, "../a.json"), { code: "RECORDER_PATH_ESCAPE" });
+});
+
+test("main with --only runs only the matching cases, and refuses a filter no case matches", async (t) => {
+  const err = t.mock.method(console, "error", () => {});
+  t.mock.method(console, "log", () => {});
+  const root = tempDir();
+  const ran = [];
+  const cases = [
+    { name: "github: picked", run: async () => { ran.push("picked"); } },
+    unreachedCase("left out"),
+  ];
+  assert.equal(await main([...ARGS, "--only", "github:"], FAKE_ENV, { spawn: forbiddenSpawn, cases, repoRoot: root }), 0);
+  assert.deepEqual(ran, ["picked"]);
+  assert.equal(existsSync(join(root, FIXTURES_REL, "left-out.json")), false);
+
+  assert.equal(await main([...ARGS, "--only", "nothing like it"], FAKE_ENV, { spawn: forbiddenSpawn, cases, repoRoot: tempDir() }), 1);
+  assert.ok(err.mock.calls.some((c) => /No case name contains "nothing like it"/.test(c.arguments[0])));
+});
+
+test("a live case runs on a live context sharing the recording spawn, and its fixture records the seed it ran with", async (t) => {
+  t.mock.method(console, "log", () => {});
+  const root = tempDir();
+  const spawn = () => JSON.stringify({ data: { viewer: { login: "adev-fixtures" } } });
+  let seen = null;
+  const cases = [{
+    name: "live viewer",
+    live: true,
+    run: async (ctx) => {
+      seen = ctx.seed;
+      assert.equal(typeof ctx.adapter, "function");
+      ctx.request(VIEWER, {});
+      ctx.adapter()._transport.request(VIEWER, {});
+    },
+  }];
+  assert.equal(await main(ARGS, FAKE_ENV, { spawn, cases, repoRoot: root }), 0);
+  const fixture = JSON.parse(readFileSync(join(root, FIXTURES_REL, "live-viewer.json"), "utf8"));
+  assert.equal(Number.isInteger(seen), true);
+  assert.equal(fixture.recorded_with.seed, seen);
+  assert.equal(fixture.requests.length, 1, "both requests share one replay entry");
 });

@@ -2,9 +2,11 @@
 /**
  * Manual recorder for the GitHub conformance fixtures. A maintainer runs it by
  * hand against a throwaway Projects v2 board; CI and agents never do. It runs
- * every shared contract case (tests/issues/conformance/contract-cases.mjs)
+ * every shared contract case (tests/issues/conformance/contract-cases.mjs) and
+ * every github-only live case (tests/issues/conformance/github-live-cases.mjs)
  * against a live GithubAdapter whose `exec` wraps the real `gh` spawn and logs
  * each request with its outcome, then writes one replay fixture per passing case.
+ * A live case's seed (the source of the old IDs it migrates) is stored in its fixture.
  *
  * Safety contract:
  * - `--project` and `--repo` are required and both must be owned by the
@@ -29,6 +31,7 @@
  */
 
 import { execFileSync } from "node:child_process";
+import { randomInt } from "node:crypto";
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -38,6 +41,13 @@ import { GithubAdapter } from "../lib/issues/github-adapter.mjs";
 import { redact } from "../lib/issues/github/errors.mjs";
 import { isContained, lenientRealpath } from "../lib/path-safety.mjs";
 import { CASES, FIXTURE_TEXT_PREFIX } from "../tests/issues/conformance/contract-cases.mjs";
+import { GITHUB_LIVE_CASES, makeLiveContext } from "../tests/issues/conformance/github-live-cases.mjs";
+
+/** Every recorded case: the shared contract cases, then the github-only live cases. */
+export const ALL_CASES = Object.freeze([
+  ...CASES.map((c) => ({ ...c, live: false })),
+  ...GITHUB_LIVE_CASES.map((c) => ({ ...c, live: true })),
+]);
 
 export const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 export const FIXTURES_REL = join("tests", "issues", "conformance", "fixtures");
@@ -58,18 +68,23 @@ const REPO = /^([^/\s]+)\/[^/\s]+$/;
 
 export const USAGE = `Usage: GH_TOKEN=<fixture-org token> node scripts/record-github-fixtures.mjs --project <url> --repo <owner/repo>
 
-Records the shared IssueManager contract cases against a live, throwaway GitHub
-Projects v2 board and writes one replay fixture per passing case beneath
-${FIXTURES_REL}/.
+Records the shared IssueManager contract cases and the github-only live cases
+against a live, throwaway GitHub Projects v2 board and writes one replay fixture
+per passing case beneath ${FIXTURES_REL}/.
 
 Required:
   --project <url>      https://github.com/(orgs|users)/<owner>/projects/<n>
   --repo <owner/repo>  the board's home repository
 
+Optional:
+  --only <text>        record only the cases whose name contains <text>
+
 Both must be owned by the fixture organization (${FIXTURE_OWNERS.join(", ")}). The board must
 already pass \`adev issues github setup --check\`, its title and every milestone
 title must start with "${FIXTURE_TEXT_PREFIX}", and it must hold nothing but
-recorder-created items. Created issues are left on the board.
+recorder-created items. Created issues are left on the board. The setup case
+creates a scratch project in the fixture organization and deletes it before it
+finishes.
 
 Before committing any fixture, run the fixture lint and commit only if it passes:
   node --test tests/issues/github/fixture-lint.test.mjs
@@ -84,14 +99,14 @@ function recorderError(code, message) {
  * `--project` and `--repo` are given and owned by the fixture organization.
  *
  * @param {string[]} argv
- * @returns {{ help: true } | { help: false, project: string, repo: string }}
+ * @returns {{ help: true } | { help: false, project: string, repo: string, only: string|null }}
  */
 export function parseRecorderArgs(argv) {
   let values;
   try {
     ({ values } = parseArgs({
       args: argv,
-      options: { project: { type: "string" }, repo: { type: "string" }, help: { type: "boolean", short: "h" } },
+      options: { project: { type: "string" }, repo: { type: "string" }, only: { type: "string" }, help: { type: "boolean", short: "h" } },
       strict: true,
       allowPositionals: false,
     }));
@@ -99,7 +114,8 @@ export function parseRecorderArgs(argv) {
     throw recorderError("RECORDER_USAGE", err.message);
   }
   if (values.help) return { help: true };
-  const { project, repo } = values;
+  const { project, repo, only } = values;
+  if (only !== undefined && only.trim() === "") throw recorderError("RECORDER_USAGE", "--only needs a non-empty part of a case name.");
   if (!project || !repo) throw recorderError("RECORDER_USAGE", "Both --project and --repo are required; nothing was recorded.");
   const projectOwner = PROJECT_URL.exec(project)?.[1];
   if (!projectOwner) throw recorderError("RECORDER_USAGE", "--project must be https://github.com/(orgs|users)/<owner>/projects/<n>.");
@@ -110,7 +126,7 @@ export function parseRecorderArgs(argv) {
       throw recorderError("RECORDER_USAGE", `${flag} is owned by "${owner}", which is not the fixture organization (${FIXTURE_OWNERS.join(", ")}); refusing to touch it.`);
     }
   }
-  return { help: false, project, repo };
+  return { help: false, project, repo, only: only ?? null };
 }
 
 /** The fixture file name for a case: its name as a lowercase hyphenated slug. */
@@ -300,12 +316,13 @@ export function lintRecording(text) {
  *
  * @returns {{ text: string } | { problems: string[] }}
  */
-export function buildFixture({ caseName, manifest, now, log }, secrets = []) {
+export function buildFixture({ caseName, manifest, now, seed, log }, secrets = []) {
   const requests = toReplayEntries(log);
   const redacted = redactDeep(requests, secrets);
   const leaked = requests.some((r, i) => stableStringify([r.query, r.variables]) !== stableStringify([redacted[i].query, redacted[i].variables]));
   if (leaked) return { problems: ["a request carried a token-shaped value or a literal secret; its replay could never match"] };
-  const doc = redactDeep({ case: caseName, recorded_with: { manifest, now }, requests: redacted }, secrets);
+  const recordedWith = seed === undefined ? { manifest, now } : { manifest, now, seed };
+  const doc = redactDeep({ case: caseName, recorded_with: recordedWith, requests: redacted }, secrets);
   const text = `${JSON.stringify(doc, null, 2)}\n`;
   const problems = lintRecording(text);
   return problems.length > 0 ? { problems } : { text };
@@ -337,34 +354,38 @@ export function duplicateFixtureName(cases) {
   return names.find((n, i) => names.indexOf(n) !== i) ?? null;
 }
 
-async function recordCase({ name, run }, manifest, secrets, { spawn, env }) {
+const realSleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function recordCase({ name, run, live }, manifest, secrets, { spawn, env }) {
   const log = [];
   const problems = [];
+  const exec = recordingExec(spawn, log, problems);
+  const now = Date.parse(RECORDING_NOW_ISO);
   const storage = mkdtempSync(join(tmpdir(), "adev-fixture-"));
+  const seed = live ? randomInt(100_000, 900_000) : undefined;
+  const context = live ? makeLiveContext({ exec, env, manifest, seed, now, sleep: realSleep }) : null;
   try {
-    const manager = new GithubAdapter(storage, manifest, {
-      exec: recordingExec(spawn, log, problems),
-      env,
-      now: () => Date.parse(RECORDING_NOW_ISO),
-    });
-    await run(manager);
+    if (context) await run(context.ctx);
+    else await run(new GithubAdapter(storage, manifest, { exec, env, now: () => now }));
   } catch (err) {
     return { problems: [...problems, `case failed live: ${redact(err?.code ?? "", secrets)} ${redact(err?.message ?? String(err), secrets)}`.trim()] };
   } finally {
     rmSync(storage, { recursive: true, force: true });
+    context?.cleanup();
   }
   if (problems.length > 0) return { problems };
-  return buildFixture({ caseName: name, manifest, now: RECORDING_NOW_ISO, log }, secrets);
+  return buildFixture({ caseName: name, manifest, now: RECORDING_NOW_ISO, seed, log }, secrets);
 }
 
 /**
  * @param {string[]} argv
  * @param {NodeJS.ProcessEnv} env - the environment `gh` runs with and the secrets redacted
- * @param {{ spawn?: Function, cases?: ReadonlyArray<{ name: string, run: Function }>, repoRoot?: string }} [options]
- *   test seams; the CLI uses the real `execFileSync`, the shared CASES and this repo.
+ * @param {{ spawn?: Function, cases?: ReadonlyArray<{ name: string, run: Function, live?: boolean }>, repoRoot?: string }} [options]
+ *   test seams; the CLI uses the real `execFileSync`, ALL_CASES and this repo. A `live`
+ *   case runs on makeLiveContext(); any other runs on one GithubAdapter.
  * @returns {Promise<number>} the process exit code
  */
-export async function main(argv, env, { spawn = execFileSync, cases = CASES, repoRoot = REPO_ROOT } = {}) {
+export async function main(argv, env, { spawn = execFileSync, cases: allCases = ALL_CASES, repoRoot = REPO_ROOT } = {}) {
   let args;
   try {
     args = parseRecorderArgs(argv);
@@ -381,9 +402,14 @@ export async function main(argv, env, { spawn = execFileSync, cases = CASES, rep
     return 1;
   }
 
-  const duplicate = duplicateFixtureName(cases);
+  const duplicate = duplicateFixtureName(allCases);
   if (duplicate) {
     console.error(`Two contract cases share the fixture file ${duplicate}; rename one. Nothing was recorded.`);
+    return 1;
+  }
+  const cases = args.only === null ? allCases : allCases.filter((c) => c.name.includes(args.only));
+  if (cases.length === 0) {
+    console.error(`No case name contains "${args.only}"; nothing was recorded.`);
     return 1;
   }
 

@@ -1,0 +1,2335 @@
+{
+  "case": "github: migrate from json recreates the epic, sub-issues and dependency, and old IDs resolve at once",
+  "recorded_with": {
+    "manifest": {
+      "tasks": {
+        "backend": "github",
+        "claim_ttl_minutes": 240,
+        "github": {
+          "project": "https://github.com/orgs/adev-fixtures/projects/1",
+          "repo": "adev-fixtures/adev-fixture-board"
+        }
+      }
+    },
+    "now": "2026-01-15T12:00:00.000Z",
+    "seed": 731206
+  },
+  "requests": [
+    {
+      "query": "query FixtureOwner($login: String!) {\n  organization(login: $login) { id }\n}\n",
+      "variables": {
+        "login": "adev-fixtures"
+      },
+      "response": {
+        "data": {
+          "organization": {
+            "id": "O_kgDOFZLJsQ"
+          }
+        }
+      }
+    },
+    {
+      "query": "mutation FixtureCreateProject($ownerId: ID!, $title: String!) {\n  createProjectV2(input: { ownerId: $ownerId, title: $title }) {\n    projectV2 { id number url }\n  }\n}\n",
+      "variables": {
+        "ownerId": "O_kgDOFZLJsQ",
+        "title": "adev-fixture: migration target"
+      },
+      "response": {
+        "data": {
+          "createProjectV2": {
+            "projectV2": {
+              "id": "PVT_kwDOFZLJsc4Bthbs",
+              "number": 5,
+              "url": "https://github.com/orgs/adev-fixtures/projects/5"
+            }
+          }
+        }
+      }
+    },
+    {
+      "query": "query AdevPreflight($projectOwner: String!, $projectNumber: Int!, $isOrg: Boolean!, $repoOwner: String!, $repoName: String!) {\n  organization(login: $projectOwner) @include(if: $isOrg) {\n    projectV2(number: $projectNumber) { ...AdevPreflightProject }\n  }\n  user(login: $projectOwner) @skip(if: $isOrg) {\n    projectV2(number: $projectNumber) { ...AdevPreflightProject }\n  }\n  repository(owner: $repoOwner, name: $repoName) {\n    id\n    nameWithOwner\n    visibility\n  }\n}\n\nfragment AdevPreflightProject on ProjectV2 {\n  id\n  title\n  public\n  fields(first: 100) {\n    totalCount\n    nodes {\n      ... on ProjectV2FieldCommon { id name dataType }\n      ... on ProjectV2SingleSelectField { options { id name } }\n    }\n  }\n}\n",
+      "variables": {
+        "projectOwner": "adev-fixtures",
+        "projectNumber": 5,
+        "isOrg": true,
+        "repoOwner": "adev-fixtures",
+        "repoName": "adev-fixture-board"
+      },
+      "sequence": [
+        {
+          "response": {
+            "data": {
+              "organization": {
+                "projectV2": {
+                  "id": "PVT_kwDOFZLJsc4Bthbs",
+                  "title": "adev-fixture: migration target",
+                  "public": false,
+                  "fields": {
+                    "totalCount": 13,
+                    "nodes": [
+                      {
+                        "id": "PVTF_lADOFZLJsc4Bthbszhrqhv0",
+                        "name": "Title",
+                        "dataType": "TITLE"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4Bthbszhrqhv4",
+                        "name": "Assignees",
+                        "dataType": "ASSIGNEES"
+                      },
+                      {
+                        "id": "PVTSSF_lADOFZLJsc4Bthbszhrqhv8",
+                        "name": "Status",
+                        "dataType": "SINGLE_SELECT",
+                        "options": [
+                          {
+                            "id": "f75ad846",
+                            "name": "Todo"
+                          },
+                          {
+                            "id": "47fc9ee4",
+                            "name": "In Progress"
+                          },
+                          {
+                            "id": "98236657",
+                            "name": "Done"
+                          }
+                        ]
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4BthbszhrqhwA",
+                        "name": "Labels",
+                        "dataType": "LABELS"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4BthbszhrqhwE",
+                        "name": "Linked pull requests",
+                        "dataType": "LINKED_PULL_REQUESTS"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4BthbszhrqhwI",
+                        "name": "Milestone",
+                        "dataType": "MILESTONE"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4BthbszhrqhwM",
+                        "name": "Repository",
+                        "dataType": "REPOSITORY"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4BthbszhrqhwU",
+                        "name": "Reviewers",
+                        "dataType": "REVIEWERS"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4BthbszhrqhwY",
+                        "name": "Parent issue",
+                        "dataType": "PARENT_ISSUE"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4Bthbszhrqhwc",
+                        "name": "Sub-issues progress",
+                        "dataType": "SUB_ISSUES_PROGRESS"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4Bthbszhrqhwg",
+                        "name": "Created",
+                        "dataType": "CREATED"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4Bthbszhrqhwk",
+                        "name": "Updated",
+                        "dataType": "UPDATED"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4Bthbszhrqhwo",
+                        "name": "Closed",
+                        "dataType": "CLOSED"
+                      }
+                    ]
+                  }
+                }
+              },
+              "repository": {
+                "id": "R_kgDOV-EGhw",
+                "nameWithOwner": "adev-fixtures/adev-fixture-board",
+                "visibility": "PRIVATE"
+              }
+            }
+          }
+        },
+        {
+          "response": {
+            "data": {
+              "organization": {
+                "projectV2": {
+                  "id": "PVT_kwDOFZLJsc4Bthbs",
+                  "title": "adev-fixture: migration target",
+                  "public": false,
+                  "fields": {
+                    "totalCount": 22,
+                    "nodes": [
+                      {
+                        "id": "PVTF_lADOFZLJsc4Bthbszhrqhv0",
+                        "name": "Title",
+                        "dataType": "TITLE"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4Bthbszhrqhv4",
+                        "name": "Assignees",
+                        "dataType": "ASSIGNEES"
+                      },
+                      {
+                        "id": "PVTSSF_lADOFZLJsc4Bthbszhrqhv8",
+                        "name": "Status",
+                        "dataType": "SINGLE_SELECT",
+                        "options": [
+                          {
+                            "id": "e70c69b4",
+                            "name": "Backlog"
+                          },
+                          {
+                            "id": "863838f2",
+                            "name": "Ready"
+                          },
+                          {
+                            "id": "2856d63d",
+                            "name": "In Progress"
+                          },
+                          {
+                            "id": "342a02e5",
+                            "name": "In Review"
+                          },
+                          {
+                            "id": "f4021f5f",
+                            "name": "Deferred"
+                          },
+                          {
+                            "id": "dc86db6b",
+                            "name": "Done"
+                          }
+                        ]
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4BthbszhrqhwA",
+                        "name": "Labels",
+                        "dataType": "LABELS"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4BthbszhrqhwE",
+                        "name": "Linked pull requests",
+                        "dataType": "LINKED_PULL_REQUESTS"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4BthbszhrqhwI",
+                        "name": "Milestone",
+                        "dataType": "MILESTONE"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4BthbszhrqhwM",
+                        "name": "Repository",
+                        "dataType": "REPOSITORY"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4BthbszhrqhwU",
+                        "name": "Reviewers",
+                        "dataType": "REVIEWERS"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4BthbszhrqhwY",
+                        "name": "Parent issue",
+                        "dataType": "PARENT_ISSUE"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4Bthbszhrqhwc",
+                        "name": "Sub-issues progress",
+                        "dataType": "SUB_ISSUES_PROGRESS"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4Bthbszhrqhwg",
+                        "name": "Created",
+                        "dataType": "CREATED"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4Bthbszhrqhwk",
+                        "name": "Updated",
+                        "dataType": "UPDATED"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4Bthbszhrqhwo",
+                        "name": "Closed",
+                        "dataType": "CLOSED"
+                      },
+                      {
+                        "id": "PVTSSF_lADOFZLJsc4BthbszhrqhxE",
+                        "name": "Priority",
+                        "dataType": "SINGLE_SELECT",
+                        "options": [
+                          {
+                            "id": "e66f6163",
+                            "name": "P0"
+                          },
+                          {
+                            "id": "960fd2c1",
+                            "name": "P1"
+                          },
+                          {
+                            "id": "b1c9a391",
+                            "name": "P2"
+                          },
+                          {
+                            "id": "a8a39f38",
+                            "name": "P3"
+                          },
+                          {
+                            "id": "9380f81d",
+                            "name": "P4"
+                          }
+                        ]
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4BthbszhrqhxI",
+                        "name": "Owner",
+                        "dataType": "TEXT"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4BthbszhrqhxM",
+                        "name": "Claimed At",
+                        "dataType": "TEXT"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4BthbszhrqhxQ",
+                        "name": "Next Action",
+                        "dataType": "TEXT"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4Bthbszhrqhxs",
+                        "name": "Spec",
+                        "dataType": "TEXT"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4BthbszhrqhyU",
+                        "name": "Plan",
+                        "dataType": "TEXT"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4BthbszhrqhyY",
+                        "name": "Branch",
+                        "dataType": "TEXT"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4Bthbszhrqhyg",
+                        "name": "PR",
+                        "dataType": "TEXT"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4Bthbszhrqhys",
+                        "name": "Legacy ID",
+                        "dataType": "TEXT"
+                      }
+                    ]
+                  }
+                }
+              },
+              "repository": {
+                "id": "R_kgDOV-EGhw",
+                "nameWithOwner": "adev-fixtures/adev-fixture-board",
+                "visibility": "PRIVATE"
+              }
+            }
+          }
+        },
+        {
+          "response": {
+            "data": {
+              "organization": {
+                "projectV2": {
+                  "id": "PVT_kwDOFZLJsc4Bthbs",
+                  "title": "adev-fixture: migration target",
+                  "public": false,
+                  "fields": {
+                    "totalCount": 22,
+                    "nodes": [
+                      {
+                        "id": "PVTF_lADOFZLJsc4Bthbszhrqhv0",
+                        "name": "Title",
+                        "dataType": "TITLE"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4Bthbszhrqhv4",
+                        "name": "Assignees",
+                        "dataType": "ASSIGNEES"
+                      },
+                      {
+                        "id": "PVTSSF_lADOFZLJsc4Bthbszhrqhv8",
+                        "name": "Status",
+                        "dataType": "SINGLE_SELECT",
+                        "options": [
+                          {
+                            "id": "e70c69b4",
+                            "name": "Backlog"
+                          },
+                          {
+                            "id": "863838f2",
+                            "name": "Ready"
+                          },
+                          {
+                            "id": "2856d63d",
+                            "name": "In Progress"
+                          },
+                          {
+                            "id": "342a02e5",
+                            "name": "In Review"
+                          },
+                          {
+                            "id": "f4021f5f",
+                            "name": "Deferred"
+                          },
+                          {
+                            "id": "dc86db6b",
+                            "name": "Done"
+                          }
+                        ]
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4BthbszhrqhwA",
+                        "name": "Labels",
+                        "dataType": "LABELS"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4BthbszhrqhwE",
+                        "name": "Linked pull requests",
+                        "dataType": "LINKED_PULL_REQUESTS"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4BthbszhrqhwI",
+                        "name": "Milestone",
+                        "dataType": "MILESTONE"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4BthbszhrqhwM",
+                        "name": "Repository",
+                        "dataType": "REPOSITORY"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4BthbszhrqhwU",
+                        "name": "Reviewers",
+                        "dataType": "REVIEWERS"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4BthbszhrqhwY",
+                        "name": "Parent issue",
+                        "dataType": "PARENT_ISSUE"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4Bthbszhrqhwc",
+                        "name": "Sub-issues progress",
+                        "dataType": "SUB_ISSUES_PROGRESS"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4Bthbszhrqhwg",
+                        "name": "Created",
+                        "dataType": "CREATED"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4Bthbszhrqhwk",
+                        "name": "Updated",
+                        "dataType": "UPDATED"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4Bthbszhrqhwo",
+                        "name": "Closed",
+                        "dataType": "CLOSED"
+                      },
+                      {
+                        "id": "PVTSSF_lADOFZLJsc4BthbszhrqhxE",
+                        "name": "Priority",
+                        "dataType": "SINGLE_SELECT",
+                        "options": [
+                          {
+                            "id": "e66f6163",
+                            "name": "P0"
+                          },
+                          {
+                            "id": "960fd2c1",
+                            "name": "P1"
+                          },
+                          {
+                            "id": "b1c9a391",
+                            "name": "P2"
+                          },
+                          {
+                            "id": "a8a39f38",
+                            "name": "P3"
+                          },
+                          {
+                            "id": "9380f81d",
+                            "name": "P4"
+                          }
+                        ]
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4BthbszhrqhxI",
+                        "name": "Owner",
+                        "dataType": "TEXT"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4BthbszhrqhxM",
+                        "name": "Claimed At",
+                        "dataType": "TEXT"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4BthbszhrqhxQ",
+                        "name": "Next Action",
+                        "dataType": "TEXT"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4Bthbszhrqhxs",
+                        "name": "Spec",
+                        "dataType": "TEXT"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4BthbszhrqhyU",
+                        "name": "Plan",
+                        "dataType": "TEXT"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4BthbszhrqhyY",
+                        "name": "Branch",
+                        "dataType": "TEXT"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4Bthbszhrqhyg",
+                        "name": "PR",
+                        "dataType": "TEXT"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4Bthbszhrqhys",
+                        "name": "Legacy ID",
+                        "dataType": "TEXT"
+                      }
+                    ]
+                  }
+                }
+              },
+              "repository": {
+                "id": "R_kgDOV-EGhw",
+                "nameWithOwner": "adev-fixtures/adev-fixture-board",
+                "visibility": "PRIVATE"
+              }
+            }
+          }
+        },
+        {
+          "response": {
+            "data": {
+              "organization": {
+                "projectV2": {
+                  "id": "PVT_kwDOFZLJsc4Bthbs",
+                  "title": "adev-fixture: migration target",
+                  "public": false,
+                  "fields": {
+                    "totalCount": 22,
+                    "nodes": [
+                      {
+                        "id": "PVTF_lADOFZLJsc4Bthbszhrqhv0",
+                        "name": "Title",
+                        "dataType": "TITLE"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4Bthbszhrqhv4",
+                        "name": "Assignees",
+                        "dataType": "ASSIGNEES"
+                      },
+                      {
+                        "id": "PVTSSF_lADOFZLJsc4Bthbszhrqhv8",
+                        "name": "Status",
+                        "dataType": "SINGLE_SELECT",
+                        "options": [
+                          {
+                            "id": "e70c69b4",
+                            "name": "Backlog"
+                          },
+                          {
+                            "id": "863838f2",
+                            "name": "Ready"
+                          },
+                          {
+                            "id": "2856d63d",
+                            "name": "In Progress"
+                          },
+                          {
+                            "id": "342a02e5",
+                            "name": "In Review"
+                          },
+                          {
+                            "id": "f4021f5f",
+                            "name": "Deferred"
+                          },
+                          {
+                            "id": "dc86db6b",
+                            "name": "Done"
+                          }
+                        ]
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4BthbszhrqhwA",
+                        "name": "Labels",
+                        "dataType": "LABELS"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4BthbszhrqhwE",
+                        "name": "Linked pull requests",
+                        "dataType": "LINKED_PULL_REQUESTS"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4BthbszhrqhwI",
+                        "name": "Milestone",
+                        "dataType": "MILESTONE"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4BthbszhrqhwM",
+                        "name": "Repository",
+                        "dataType": "REPOSITORY"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4BthbszhrqhwU",
+                        "name": "Reviewers",
+                        "dataType": "REVIEWERS"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4BthbszhrqhwY",
+                        "name": "Parent issue",
+                        "dataType": "PARENT_ISSUE"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4Bthbszhrqhwc",
+                        "name": "Sub-issues progress",
+                        "dataType": "SUB_ISSUES_PROGRESS"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4Bthbszhrqhwg",
+                        "name": "Created",
+                        "dataType": "CREATED"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4Bthbszhrqhwk",
+                        "name": "Updated",
+                        "dataType": "UPDATED"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4Bthbszhrqhwo",
+                        "name": "Closed",
+                        "dataType": "CLOSED"
+                      },
+                      {
+                        "id": "PVTSSF_lADOFZLJsc4BthbszhrqhxE",
+                        "name": "Priority",
+                        "dataType": "SINGLE_SELECT",
+                        "options": [
+                          {
+                            "id": "e66f6163",
+                            "name": "P0"
+                          },
+                          {
+                            "id": "960fd2c1",
+                            "name": "P1"
+                          },
+                          {
+                            "id": "b1c9a391",
+                            "name": "P2"
+                          },
+                          {
+                            "id": "a8a39f38",
+                            "name": "P3"
+                          },
+                          {
+                            "id": "9380f81d",
+                            "name": "P4"
+                          }
+                        ]
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4BthbszhrqhxI",
+                        "name": "Owner",
+                        "dataType": "TEXT"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4BthbszhrqhxM",
+                        "name": "Claimed At",
+                        "dataType": "TEXT"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4BthbszhrqhxQ",
+                        "name": "Next Action",
+                        "dataType": "TEXT"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4Bthbszhrqhxs",
+                        "name": "Spec",
+                        "dataType": "TEXT"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4BthbszhrqhyU",
+                        "name": "Plan",
+                        "dataType": "TEXT"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4BthbszhrqhyY",
+                        "name": "Branch",
+                        "dataType": "TEXT"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4Bthbszhrqhyg",
+                        "name": "PR",
+                        "dataType": "TEXT"
+                      },
+                      {
+                        "id": "PVTF_lADOFZLJsc4Bthbszhrqhys",
+                        "name": "Legacy ID",
+                        "dataType": "TEXT"
+                      }
+                    ]
+                  }
+                }
+              },
+              "repository": {
+                "id": "R_kgDOV-EGhw",
+                "nameWithOwner": "adev-fixtures/adev-fixture-board",
+                "visibility": "PRIVATE"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "query": "mutation CreateField($projectId: ID!, $name: String!, $dataType: ProjectV2CustomFieldType!, $singleSelectOptions: [ProjectV2SingleSelectFieldOptionInput!]) {\n  createProjectV2Field(input: { projectId: $projectId, name: $name, dataType: $dataType, singleSelectOptions: $singleSelectOptions }) {\n    projectV2Field {\n      ... on ProjectV2FieldCommon { id name dataType }\n      ... on ProjectV2SingleSelectField { options { id name } }\n    }\n  }\n}\n",
+      "variables": {
+        "projectId": "PVT_kwDOFZLJsc4Bthbs",
+        "name": "Priority",
+        "dataType": "SINGLE_SELECT",
+        "singleSelectOptions": [
+          {
+            "name": "P0",
+            "color": "GRAY",
+            "description": ""
+          },
+          {
+            "name": "P1",
+            "color": "GRAY",
+            "description": ""
+          },
+          {
+            "name": "P2",
+            "color": "GRAY",
+            "description": ""
+          },
+          {
+            "name": "P3",
+            "color": "GRAY",
+            "description": ""
+          },
+          {
+            "name": "P4",
+            "color": "GRAY",
+            "description": ""
+          }
+        ]
+      },
+      "response": {
+        "data": {
+          "createProjectV2Field": {
+            "projectV2Field": {
+              "id": "PVTSSF_lADOFZLJsc4BthbszhrqhxE",
+              "name": "Priority",
+              "dataType": "SINGLE_SELECT",
+              "options": [
+                {
+                  "id": "e66f6163",
+                  "name": "P0"
+                },
+                {
+                  "id": "960fd2c1",
+                  "name": "P1"
+                },
+                {
+                  "id": "b1c9a391",
+                  "name": "P2"
+                },
+                {
+                  "id": "a8a39f38",
+                  "name": "P3"
+                },
+                {
+                  "id": "9380f81d",
+                  "name": "P4"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "query": "mutation CreateField($projectId: ID!, $name: String!, $dataType: ProjectV2CustomFieldType!, $singleSelectOptions: [ProjectV2SingleSelectFieldOptionInput!]) {\n  createProjectV2Field(input: { projectId: $projectId, name: $name, dataType: $dataType, singleSelectOptions: $singleSelectOptions }) {\n    projectV2Field {\n      ... on ProjectV2FieldCommon { id name dataType }\n      ... on ProjectV2SingleSelectField { options { id name } }\n    }\n  }\n}\n",
+      "variables": {
+        "projectId": "PVT_kwDOFZLJsc4Bthbs",
+        "name": "Owner",
+        "dataType": "TEXT"
+      },
+      "response": {
+        "data": {
+          "createProjectV2Field": {
+            "projectV2Field": {
+              "id": "PVTF_lADOFZLJsc4BthbszhrqhxI",
+              "name": "Owner",
+              "dataType": "TEXT"
+            }
+          }
+        }
+      }
+    },
+    {
+      "query": "mutation CreateField($projectId: ID!, $name: String!, $dataType: ProjectV2CustomFieldType!, $singleSelectOptions: [ProjectV2SingleSelectFieldOptionInput!]) {\n  createProjectV2Field(input: { projectId: $projectId, name: $name, dataType: $dataType, singleSelectOptions: $singleSelectOptions }) {\n    projectV2Field {\n      ... on ProjectV2FieldCommon { id name dataType }\n      ... on ProjectV2SingleSelectField { options { id name } }\n    }\n  }\n}\n",
+      "variables": {
+        "projectId": "PVT_kwDOFZLJsc4Bthbs",
+        "name": "Claimed At",
+        "dataType": "TEXT"
+      },
+      "response": {
+        "data": {
+          "createProjectV2Field": {
+            "projectV2Field": {
+              "id": "PVTF_lADOFZLJsc4BthbszhrqhxM",
+              "name": "Claimed At",
+              "dataType": "TEXT"
+            }
+          }
+        }
+      }
+    },
+    {
+      "query": "mutation CreateField($projectId: ID!, $name: String!, $dataType: ProjectV2CustomFieldType!, $singleSelectOptions: [ProjectV2SingleSelectFieldOptionInput!]) {\n  createProjectV2Field(input: { projectId: $projectId, name: $name, dataType: $dataType, singleSelectOptions: $singleSelectOptions }) {\n    projectV2Field {\n      ... on ProjectV2FieldCommon { id name dataType }\n      ... on ProjectV2SingleSelectField { options { id name } }\n    }\n  }\n}\n",
+      "variables": {
+        "projectId": "PVT_kwDOFZLJsc4Bthbs",
+        "name": "Next Action",
+        "dataType": "TEXT"
+      },
+      "response": {
+        "data": {
+          "createProjectV2Field": {
+            "projectV2Field": {
+              "id": "PVTF_lADOFZLJsc4BthbszhrqhxQ",
+              "name": "Next Action",
+              "dataType": "TEXT"
+            }
+          }
+        }
+      }
+    },
+    {
+      "query": "mutation CreateField($projectId: ID!, $name: String!, $dataType: ProjectV2CustomFieldType!, $singleSelectOptions: [ProjectV2SingleSelectFieldOptionInput!]) {\n  createProjectV2Field(input: { projectId: $projectId, name: $name, dataType: $dataType, singleSelectOptions: $singleSelectOptions }) {\n    projectV2Field {\n      ... on ProjectV2FieldCommon { id name dataType }\n      ... on ProjectV2SingleSelectField { options { id name } }\n    }\n  }\n}\n",
+      "variables": {
+        "projectId": "PVT_kwDOFZLJsc4Bthbs",
+        "name": "Spec",
+        "dataType": "TEXT"
+      },
+      "response": {
+        "data": {
+          "createProjectV2Field": {
+            "projectV2Field": {
+              "id": "PVTF_lADOFZLJsc4Bthbszhrqhxs",
+              "name": "Spec",
+              "dataType": "TEXT"
+            }
+          }
+        }
+      }
+    },
+    {
+      "query": "mutation CreateField($projectId: ID!, $name: String!, $dataType: ProjectV2CustomFieldType!, $singleSelectOptions: [ProjectV2SingleSelectFieldOptionInput!]) {\n  createProjectV2Field(input: { projectId: $projectId, name: $name, dataType: $dataType, singleSelectOptions: $singleSelectOptions }) {\n    projectV2Field {\n      ... on ProjectV2FieldCommon { id name dataType }\n      ... on ProjectV2SingleSelectField { options { id name } }\n    }\n  }\n}\n",
+      "variables": {
+        "projectId": "PVT_kwDOFZLJsc4Bthbs",
+        "name": "Plan",
+        "dataType": "TEXT"
+      },
+      "response": {
+        "data": {
+          "createProjectV2Field": {
+            "projectV2Field": {
+              "id": "PVTF_lADOFZLJsc4BthbszhrqhyU",
+              "name": "Plan",
+              "dataType": "TEXT"
+            }
+          }
+        }
+      }
+    },
+    {
+      "query": "mutation CreateField($projectId: ID!, $name: String!, $dataType: ProjectV2CustomFieldType!, $singleSelectOptions: [ProjectV2SingleSelectFieldOptionInput!]) {\n  createProjectV2Field(input: { projectId: $projectId, name: $name, dataType: $dataType, singleSelectOptions: $singleSelectOptions }) {\n    projectV2Field {\n      ... on ProjectV2FieldCommon { id name dataType }\n      ... on ProjectV2SingleSelectField { options { id name } }\n    }\n  }\n}\n",
+      "variables": {
+        "projectId": "PVT_kwDOFZLJsc4Bthbs",
+        "name": "Branch",
+        "dataType": "TEXT"
+      },
+      "response": {
+        "data": {
+          "createProjectV2Field": {
+            "projectV2Field": {
+              "id": "PVTF_lADOFZLJsc4BthbszhrqhyY",
+              "name": "Branch",
+              "dataType": "TEXT"
+            }
+          }
+        }
+      }
+    },
+    {
+      "query": "mutation CreateField($projectId: ID!, $name: String!, $dataType: ProjectV2CustomFieldType!, $singleSelectOptions: [ProjectV2SingleSelectFieldOptionInput!]) {\n  createProjectV2Field(input: { projectId: $projectId, name: $name, dataType: $dataType, singleSelectOptions: $singleSelectOptions }) {\n    projectV2Field {\n      ... on ProjectV2FieldCommon { id name dataType }\n      ... on ProjectV2SingleSelectField { options { id name } }\n    }\n  }\n}\n",
+      "variables": {
+        "projectId": "PVT_kwDOFZLJsc4Bthbs",
+        "name": "PR",
+        "dataType": "TEXT"
+      },
+      "response": {
+        "data": {
+          "createProjectV2Field": {
+            "projectV2Field": {
+              "id": "PVTF_lADOFZLJsc4Bthbszhrqhyg",
+              "name": "PR",
+              "dataType": "TEXT"
+            }
+          }
+        }
+      }
+    },
+    {
+      "query": "mutation CreateField($projectId: ID!, $name: String!, $dataType: ProjectV2CustomFieldType!, $singleSelectOptions: [ProjectV2SingleSelectFieldOptionInput!]) {\n  createProjectV2Field(input: { projectId: $projectId, name: $name, dataType: $dataType, singleSelectOptions: $singleSelectOptions }) {\n    projectV2Field {\n      ... on ProjectV2FieldCommon { id name dataType }\n      ... on ProjectV2SingleSelectField { options { id name } }\n    }\n  }\n}\n",
+      "variables": {
+        "projectId": "PVT_kwDOFZLJsc4Bthbs",
+        "name": "Legacy ID",
+        "dataType": "TEXT"
+      },
+      "response": {
+        "data": {
+          "createProjectV2Field": {
+            "projectV2Field": {
+              "id": "PVTF_lADOFZLJsc4Bthbszhrqhys",
+              "name": "Legacy ID",
+              "dataType": "TEXT"
+            }
+          }
+        }
+      }
+    },
+    {
+      "query": "query FixtureStatusField($projectId: ID!) {\n  node(id: $projectId) {\n    ... on ProjectV2 { field(name: \"Status\") { ... on ProjectV2SingleSelectField { id } } }\n  }\n}\n",
+      "variables": {
+        "projectId": "PVT_kwDOFZLJsc4Bthbs"
+      },
+      "response": {
+        "data": {
+          "node": {
+            "field": {
+              "id": "PVTSSF_lADOFZLJsc4Bthbszhrqhv8"
+            }
+          }
+        }
+      }
+    },
+    {
+      "query": "mutation FixtureSetStatusOptions($fieldId: ID!, $options: [ProjectV2SingleSelectFieldOptionInput!]) {\n  updateProjectV2Field(input: { fieldId: $fieldId, singleSelectOptions: $options }) {\n    projectV2Field { ... on ProjectV2SingleSelectField { options { name } } }\n  }\n}\n",
+      "variables": {
+        "fieldId": "PVTSSF_lADOFZLJsc4Bthbszhrqhv8",
+        "options": [
+          {
+            "name": "Backlog",
+            "color": "GRAY",
+            "description": ""
+          },
+          {
+            "name": "Ready",
+            "color": "GRAY",
+            "description": ""
+          },
+          {
+            "name": "In Progress",
+            "color": "GRAY",
+            "description": ""
+          },
+          {
+            "name": "In Review",
+            "color": "GRAY",
+            "description": ""
+          },
+          {
+            "name": "Deferred",
+            "color": "GRAY",
+            "description": ""
+          },
+          {
+            "name": "Done",
+            "color": "GRAY",
+            "description": ""
+          }
+        ]
+      },
+      "response": {
+        "data": {
+          "updateProjectV2Field": {
+            "projectV2Field": {
+              "options": [
+                {
+                  "name": "Backlog"
+                },
+                {
+                  "name": "Ready"
+                },
+                {
+                  "name": "In Progress"
+                },
+                {
+                  "name": "In Review"
+                },
+                {
+                  "name": "Deferred"
+                },
+                {
+                  "name": "Done"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "query": "query ProjectItems($projectId: ID!, $after: String) {\n  node(id: $projectId) {\n    ... on ProjectV2 {\n      items(first: 100, after: $after) {\n        totalCount\n        pageInfo { hasNextPage endCursor }\n        nodes {\n          id\n          type\n          fieldValues(first: 50) {\n            nodes {\n              __typename\n              ... on ProjectV2ItemFieldTextValue { text field { ... on ProjectV2FieldCommon { name } } }\n              ... on ProjectV2ItemFieldSingleSelectValue { name field { ... on ProjectV2FieldCommon { name } } }\n              ... on ProjectV2ItemFieldNumberValue { number field { ... on ProjectV2FieldCommon { name } } }\n            }\n          }\n          content {\n            __typename\n            ... on Issue {\n              id\n              number\n              title\n              body\n              state\n              url\n              createdAt\n              updatedAt\n              repository { name owner { login } issueTypes(first: 1) { totalCount } }\n              issueType { name }\n              labels(first: 100) { totalCount nodes { name } }\n              milestone { title }\n              parent { number state repository { name owner { login } } }\n              blockedBy(first: 100) { totalCount pageInfo { hasNextPage endCursor } nodes { number state repository { name owner { login } } } }\n              subIssues(first: 100) { totalCount pageInfo { hasNextPage endCursor } nodes { number state repository { name owner { login } } } }\n            }\n          }\n        }\n      }\n    }\n  }\n}\n",
+      "variables": {
+        "projectId": "PVT_kwDOFZLJsc4Bthbs"
+      },
+      "sequence": [
+        {
+          "response": {
+            "data": {
+              "node": {
+                "items": {
+                  "totalCount": 0,
+                  "pageInfo": {
+                    "hasNextPage": false,
+                    "endCursor": null
+                  },
+                  "nodes": []
+                }
+              }
+            }
+          }
+        },
+        {
+          "response": {
+            "data": {
+              "node": {
+                "items": {
+                  "totalCount": 0,
+                  "pageInfo": {
+                    "hasNextPage": false,
+                    "endCursor": null
+                  },
+                  "nodes": []
+                }
+              }
+            }
+          }
+        },
+        {
+          "response": {
+            "data": {
+              "node": {
+                "items": {
+                  "totalCount": 3,
+                  "pageInfo": {
+                    "hasNextPage": false,
+                    "endCursor": "Y3Vyc29yOnYyOpK5MDAwMDAwMDAuMzMzMzMzMzMzMzMzMzMzM84TH8eU"
+                  },
+                  "nodes": [
+                    {
+                      "id": "PVTI_lADOFZLJsc4BthbszhMfxio",
+                      "type": "ISSUE",
+                      "fieldValues": {
+                        "nodes": [
+                          {
+                            "__typename": "ProjectV2ItemFieldRepositoryValue"
+                          },
+                          {
+                            "__typename": "ProjectV2ItemFieldTextValue",
+                            "text": "adev-fixture: migrated epic 731206",
+                            "field": {
+                              "name": "Title"
+                            }
+                          },
+                          {
+                            "__typename": "ProjectV2ItemFieldTextValue",
+                            "text": "e731206",
+                            "field": {
+                              "name": "Legacy ID"
+                            }
+                          },
+                          {
+                            "__typename": "ProjectV2ItemFieldSingleSelectValue",
+                            "name": "Backlog",
+                            "field": {
+                              "name": "Status"
+                            }
+                          }
+                        ]
+                      },
+                      "content": {
+                        "__typename": "Issue",
+                        "id": "I_kwDOV-EGh88AAAABjJ7npA",
+                        "number": 85,
+                        "title": "adev-fixture: migrated epic 731206",
+                        "body": "adev-fixture: migrated epic body",
+                        "state": "OPEN",
+                        "url": "https://github.com/adev-fixtures/adev-fixture-board/issues/85",
+                        "createdAt": "2026-11-27T20:44:15Z",
+                        "updatedAt": "2026-11-27T20:44:25Z",
+                        "repository": {
+                          "name": "adev-fixture-board",
+                          "owner": {
+                            "login": "adev-fixtures"
+                          },
+                          "issueTypes": {
+                            "totalCount": 4
+                          }
+                        },
+                        "issueType": {
+                          "name": "Epic"
+                        },
+                        "labels": {
+                          "totalCount": 0,
+                          "nodes": []
+                        },
+                        "milestone": null,
+                        "parent": null,
+                        "blockedBy": {
+                          "totalCount": 0,
+                          "pageInfo": {
+                            "hasNextPage": false,
+                            "endCursor": null
+                          },
+                          "nodes": []
+                        },
+                        "subIssues": {
+                          "totalCount": 0,
+                          "pageInfo": {
+                            "hasNextPage": false,
+                            "endCursor": null
+                          },
+                          "nodes": []
+                        }
+                      }
+                    },
+                    {
+                      "id": "PVTI_lADOFZLJsc4BthbszhMfxuU",
+                      "type": "ISSUE",
+                      "fieldValues": {
+                        "nodes": [
+                          {
+                            "__typename": "ProjectV2ItemFieldRepositoryValue"
+                          },
+                          {
+                            "__typename": "ProjectV2ItemFieldTextValue",
+                            "text": "adev-fixture: migrated feature 731206",
+                            "field": {
+                              "name": "Title"
+                            }
+                          },
+                          {
+                            "__typename": "ProjectV2ItemFieldTextValue",
+                            "text": "e731206.f1",
+                            "field": {
+                              "name": "Legacy ID"
+                            }
+                          },
+                          {
+                            "__typename": "ProjectV2ItemFieldSingleSelectValue",
+                            "name": "Backlog",
+                            "field": {
+                              "name": "Status"
+                            }
+                          },
+                          {
+                            "__typename": "ProjectV2ItemFieldSingleSelectValue",
+                            "name": "P1",
+                            "field": {
+                              "name": "Priority"
+                            }
+                          }
+                        ]
+                      },
+                      "content": {
+                        "__typename": "Issue",
+                        "id": "I_kwDOV-EGh88AAAABjJ71iA",
+                        "number": 86,
+                        "title": "adev-fixture: migrated feature 731206",
+                        "body": "adev-fixture: migrated feature notes",
+                        "state": "OPEN",
+                        "url": "https://github.com/adev-fixtures/adev-fixture-board/issues/86",
+                        "createdAt": "2026-11-27T20:44:30Z",
+                        "updatedAt": "2026-11-27T20:44:42Z",
+                        "repository": {
+                          "name": "adev-fixture-board",
+                          "owner": {
+                            "login": "adev-fixtures"
+                          },
+                          "issueTypes": {
+                            "totalCount": 4
+                          }
+                        },
+                        "issueType": {
+                          "name": "Feature"
+                        },
+                        "labels": {
+                          "totalCount": 0,
+                          "nodes": []
+                        },
+                        "milestone": null,
+                        "parent": null,
+                        "blockedBy": {
+                          "totalCount": 0,
+                          "pageInfo": {
+                            "hasNextPage": false,
+                            "endCursor": null
+                          },
+                          "nodes": []
+                        },
+                        "subIssues": {
+                          "totalCount": 0,
+                          "pageInfo": {
+                            "hasNextPage": false,
+                            "endCursor": null
+                          },
+                          "nodes": []
+                        }
+                      }
+                    },
+                    {
+                      "id": "PVTI_lADOFZLJsc4BthbszhMfx5Q",
+                      "type": "ISSUE",
+                      "fieldValues": {
+                        "nodes": [
+                          {
+                            "__typename": "ProjectV2ItemFieldRepositoryValue"
+                          },
+                          {
+                            "__typename": "ProjectV2ItemFieldTextValue",
+                            "text": "adev-fixture: migrated task 731206",
+                            "field": {
+                              "name": "Title"
+                            }
+                          },
+                          {
+                            "__typename": "ProjectV2ItemFieldTextValue",
+                            "text": "e731206.f2",
+                            "field": {
+                              "name": "Legacy ID"
+                            }
+                          },
+                          {
+                            "__typename": "ProjectV2ItemFieldSingleSelectValue",
+                            "name": "Backlog",
+                            "field": {
+                              "name": "Status"
+                            }
+                          },
+                          {
+                            "__typename": "ProjectV2ItemFieldSingleSelectValue",
+                            "name": "P2",
+                            "field": {
+                              "name": "Priority"
+                            }
+                          }
+                        ]
+                      },
+                      "content": {
+                        "__typename": "Issue",
+                        "id": "I_kwDOV-EGh88AAAABjJ8DYg",
+                        "number": 87,
+                        "title": "adev-fixture: migrated task 731206",
+                        "body": "",
+                        "state": "OPEN",
+                        "url": "https://github.com/adev-fixtures/adev-fixture-board/issues/87",
+                        "createdAt": "2026-11-27T20:44:46Z",
+                        "updatedAt": "2026-11-27T20:44:57Z",
+                        "repository": {
+                          "name": "adev-fixture-board",
+                          "owner": {
+                            "login": "adev-fixtures"
+                          },
+                          "issueTypes": {
+                            "totalCount": 4
+                          }
+                        },
+                        "issueType": {
+                          "name": "Task"
+                        },
+                        "labels": {
+                          "totalCount": 0,
+                          "nodes": []
+                        },
+                        "milestone": null,
+                        "parent": null,
+                        "blockedBy": {
+                          "totalCount": 0,
+                          "pageInfo": {
+                            "hasNextPage": false,
+                            "endCursor": null
+                          },
+                          "nodes": []
+                        },
+                        "subIssues": {
+                          "totalCount": 0,
+                          "pageInfo": {
+                            "hasNextPage": false,
+                            "endCursor": null
+                          },
+                          "nodes": []
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "response": {
+            "data": {
+              "node": {
+                "items": {
+                  "totalCount": 3,
+                  "pageInfo": {
+                    "hasNextPage": false,
+                    "endCursor": "Y3Vyc29yOnYyOpK5MDAwMDAwMDAuMzMzMzMzMzMzMzMzMzMzM84TH8eU"
+                  },
+                  "nodes": [
+                    {
+                      "id": "PVTI_lADOFZLJsc4BthbszhMfxio",
+                      "type": "ISSUE",
+                      "fieldValues": {
+                        "nodes": [
+                          {
+                            "__typename": "ProjectV2ItemFieldRepositoryValue"
+                          },
+                          {
+                            "__typename": "ProjectV2ItemFieldTextValue",
+                            "text": "adev-fixture: migrated epic 731206",
+                            "field": {
+                              "name": "Title"
+                            }
+                          },
+                          {
+                            "__typename": "ProjectV2ItemFieldTextValue",
+                            "text": "e731206",
+                            "field": {
+                              "name": "Legacy ID"
+                            }
+                          },
+                          {
+                            "__typename": "ProjectV2ItemFieldSingleSelectValue",
+                            "name": "Backlog",
+                            "field": {
+                              "name": "Status"
+                            }
+                          }
+                        ]
+                      },
+                      "content": {
+                        "__typename": "Issue",
+                        "id": "I_kwDOV-EGh88AAAABjJ7npA",
+                        "number": 85,
+                        "title": "adev-fixture: migrated epic 731206",
+                        "body": "adev-fixture: migrated epic body",
+                        "state": "OPEN",
+                        "url": "https://github.com/adev-fixtures/adev-fixture-board/issues/85",
+                        "createdAt": "2026-11-27T20:44:15Z",
+                        "updatedAt": "2026-11-27T20:44:25Z",
+                        "repository": {
+                          "name": "adev-fixture-board",
+                          "owner": {
+                            "login": "adev-fixtures"
+                          },
+                          "issueTypes": {
+                            "totalCount": 4
+                          }
+                        },
+                        "issueType": {
+                          "name": "Epic"
+                        },
+                        "labels": {
+                          "totalCount": 0,
+                          "nodes": []
+                        },
+                        "milestone": null,
+                        "parent": null,
+                        "blockedBy": {
+                          "totalCount": 0,
+                          "pageInfo": {
+                            "hasNextPage": false,
+                            "endCursor": null
+                          },
+                          "nodes": []
+                        },
+                        "subIssues": {
+                          "totalCount": 2,
+                          "pageInfo": {
+                            "hasNextPage": false,
+                            "endCursor": "Mg"
+                          },
+                          "nodes": [
+                            {
+                              "number": 86,
+                              "state": "OPEN",
+                              "repository": {
+                                "name": "adev-fixture-board",
+                                "owner": {
+                                  "login": "adev-fixtures"
+                                }
+                              }
+                            },
+                            {
+                              "number": 87,
+                              "state": "OPEN",
+                              "repository": {
+                                "name": "adev-fixture-board",
+                                "owner": {
+                                  "login": "adev-fixtures"
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    {
+                      "id": "PVTI_lADOFZLJsc4BthbszhMfxuU",
+                      "type": "ISSUE",
+                      "fieldValues": {
+                        "nodes": [
+                          {
+                            "__typename": "ProjectV2ItemFieldRepositoryValue"
+                          },
+                          {
+                            "__typename": "ProjectV2ItemFieldTextValue",
+                            "text": "adev-fixture: migrated feature 731206",
+                            "field": {
+                              "name": "Title"
+                            }
+                          },
+                          {
+                            "__typename": "ProjectV2ItemFieldTextValue",
+                            "text": "e731206.f1",
+                            "field": {
+                              "name": "Legacy ID"
+                            }
+                          },
+                          {
+                            "__typename": "ProjectV2ItemFieldSingleSelectValue",
+                            "name": "Backlog",
+                            "field": {
+                              "name": "Status"
+                            }
+                          },
+                          {
+                            "__typename": "ProjectV2ItemFieldSingleSelectValue",
+                            "name": "P1",
+                            "field": {
+                              "name": "Priority"
+                            }
+                          }
+                        ]
+                      },
+                      "content": {
+                        "__typename": "Issue",
+                        "id": "I_kwDOV-EGh88AAAABjJ71iA",
+                        "number": 86,
+                        "title": "adev-fixture: migrated feature 731206",
+                        "body": "adev-fixture: migrated feature notes",
+                        "state": "OPEN",
+                        "url": "https://github.com/adev-fixtures/adev-fixture-board/issues/86",
+                        "createdAt": "2026-11-27T20:44:30Z",
+                        "updatedAt": "2026-11-27T20:44:42Z",
+                        "repository": {
+                          "name": "adev-fixture-board",
+                          "owner": {
+                            "login": "adev-fixtures"
+                          },
+                          "issueTypes": {
+                            "totalCount": 4
+                          }
+                        },
+                        "issueType": {
+                          "name": "Feature"
+                        },
+                        "labels": {
+                          "totalCount": 0,
+                          "nodes": []
+                        },
+                        "milestone": null,
+                        "parent": {
+                          "number": 85,
+                          "state": "OPEN",
+                          "repository": {
+                            "name": "adev-fixture-board",
+                            "owner": {
+                              "login": "adev-fixtures"
+                            }
+                          }
+                        },
+                        "blockedBy": {
+                          "totalCount": 1,
+                          "pageInfo": {
+                            "hasNextPage": false,
+                            "endCursor": "MQ"
+                          },
+                          "nodes": [
+                            {
+                              "number": 87,
+                              "state": "OPEN",
+                              "repository": {
+                                "name": "adev-fixture-board",
+                                "owner": {
+                                  "login": "adev-fixtures"
+                                }
+                              }
+                            }
+                          ]
+                        },
+                        "subIssues": {
+                          "totalCount": 0,
+                          "pageInfo": {
+                            "hasNextPage": false,
+                            "endCursor": null
+                          },
+                          "nodes": []
+                        }
+                      }
+                    },
+                    {
+                      "id": "PVTI_lADOFZLJsc4BthbszhMfx5Q",
+                      "type": "ISSUE",
+                      "fieldValues": {
+                        "nodes": [
+                          {
+                            "__typename": "ProjectV2ItemFieldRepositoryValue"
+                          },
+                          {
+                            "__typename": "ProjectV2ItemFieldTextValue",
+                            "text": "adev-fixture: migrated task 731206",
+                            "field": {
+                              "name": "Title"
+                            }
+                          },
+                          {
+                            "__typename": "ProjectV2ItemFieldTextValue",
+                            "text": "e731206.f2",
+                            "field": {
+                              "name": "Legacy ID"
+                            }
+                          },
+                          {
+                            "__typename": "ProjectV2ItemFieldSingleSelectValue",
+                            "name": "Backlog",
+                            "field": {
+                              "name": "Status"
+                            }
+                          },
+                          {
+                            "__typename": "ProjectV2ItemFieldSingleSelectValue",
+                            "name": "P2",
+                            "field": {
+                              "name": "Priority"
+                            }
+                          }
+                        ]
+                      },
+                      "content": {
+                        "__typename": "Issue",
+                        "id": "I_kwDOV-EGh88AAAABjJ8DYg",
+                        "number": 87,
+                        "title": "adev-fixture: migrated task 731206",
+                        "body": "",
+                        "state": "OPEN",
+                        "url": "https://github.com/adev-fixtures/adev-fixture-board/issues/87",
+                        "createdAt": "2026-11-27T20:44:46Z",
+                        "updatedAt": "2026-11-27T20:44:57Z",
+                        "repository": {
+                          "name": "adev-fixture-board",
+                          "owner": {
+                            "login": "adev-fixtures"
+                          },
+                          "issueTypes": {
+                            "totalCount": 4
+                          }
+                        },
+                        "issueType": {
+                          "name": "Task"
+                        },
+                        "labels": {
+                          "totalCount": 0,
+                          "nodes": []
+                        },
+                        "milestone": null,
+                        "parent": {
+                          "number": 85,
+                          "state": "OPEN",
+                          "repository": {
+                            "name": "adev-fixture-board",
+                            "owner": {
+                              "login": "adev-fixtures"
+                            }
+                          }
+                        },
+                        "blockedBy": {
+                          "totalCount": 0,
+                          "pageInfo": {
+                            "hasNextPage": false,
+                            "endCursor": null
+                          },
+                          "nodes": []
+                        },
+                        "subIssues": {
+                          "totalCount": 0,
+                          "pageInfo": {
+                            "hasNextPage": false,
+                            "endCursor": null
+                          },
+                          "nodes": []
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "query": "query RepoIssueTypes($owner: String!, $name: String!, $after: String) {\n  repository(owner: $owner, name: $name) {\n    issueTypes(first: 100, after: $after) { totalCount pageInfo { hasNextPage endCursor } nodes { id name } }\n  }\n}\n",
+      "variables": {
+        "owner": "adev-fixtures",
+        "name": "adev-fixture-board"
+      },
+      "response": {
+        "data": {
+          "repository": {
+            "issueTypes": {
+              "totalCount": 4,
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": "NA"
+              },
+              "nodes": [
+                {
+                  "id": "IT_kwDOFZLJsc44xvKM",
+                  "name": "Task"
+                },
+                {
+                  "id": "IT_kwDOFZLJsc44xvKN",
+                  "name": "Bug"
+                },
+                {
+                  "id": "IT_kwDOFZLJsc44xvKO",
+                  "name": "Feature"
+                },
+                {
+                  "id": "IT_kwDOFZLJsc44zQIP",
+                  "name": "Epic"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "query": "mutation CreateIssue($repositoryId: ID!, $title: String!, $body: String!) {\n  createIssue(input: { repositoryId: $repositoryId, title: $title, body: $body }) {\n    issue { id number }\n  }\n}\n",
+      "variables": {
+        "repositoryId": "R_kgDOV-EGhw",
+        "title": "adev-fixture: migrated epic 731206",
+        "body": "adev-fixture: migrated epic body"
+      },
+      "response": {
+        "data": {
+          "createIssue": {
+            "issue": {
+              "id": "I_kwDOV-EGh88AAAABjJ7npA",
+              "number": 85
+            }
+          }
+        }
+      }
+    },
+    {
+      "query": "mutation AddToProject($projectId: ID!, $contentId: ID!) {\n  addProjectV2ItemById(input: { projectId: $projectId, contentId: $contentId }) {\n    item { id }\n  }\n}\n",
+      "variables": {
+        "projectId": "PVT_kwDOFZLJsc4Bthbs",
+        "contentId": "I_kwDOV-EGh88AAAABjJ7npA"
+      },
+      "response": {
+        "data": {
+          "addProjectV2ItemById": {
+            "item": {
+              "id": "PVTI_lADOFZLJsc4BthbszhMfxio"
+            }
+          }
+        }
+      }
+    },
+    {
+      "query": "mutation SetFields($projectId: ID!, $itemId: ID!, $f0Field: ID!, $f0Value: String!, $f1Field: ID!, $f1Value: String!) {\n  f0: updateProjectV2ItemFieldValue(input: { projectId: $projectId, itemId: $itemId, fieldId: $f0Field, value: { text: $f0Value } }) { clientMutationId }\n  f1: updateProjectV2ItemFieldValue(input: { projectId: $projectId, itemId: $itemId, fieldId: $f1Field, value: { singleSelectOptionId: $f1Value } }) { clientMutationId }\n}\n",
+      "variables": {
+        "projectId": "PVT_kwDOFZLJsc4Bthbs",
+        "itemId": "PVTI_lADOFZLJsc4BthbszhMfxio",
+        "f0Field": "PVTF_lADOFZLJsc4Bthbszhrqhys",
+        "f0Value": "e731206",
+        "f1Field": "PVTSSF_lADOFZLJsc4Bthbszhrqhv8",
+        "f1Value": "e70c69b4"
+      },
+      "response": {
+        "data": {
+          "f0": {
+            "clientMutationId": null
+          },
+          "f1": {
+            "clientMutationId": null
+          }
+        }
+      }
+    },
+    {
+      "query": "mutation SetIssueType($issueId: ID!, $issueTypeId: ID!) {\n  updateIssueIssueType(input: { issueId: $issueId, issueTypeId: $issueTypeId }) { clientMutationId }\n}\n",
+      "variables": {
+        "issueId": "I_kwDOV-EGh88AAAABjJ7npA",
+        "issueTypeId": "IT_kwDOFZLJsc44zQIP"
+      },
+      "response": {
+        "data": {
+          "updateIssueIssueType": {
+            "clientMutationId": null
+          }
+        }
+      }
+    },
+    {
+      "query": "query ProjectItem($itemId: ID!) {\n  node(id: $itemId) {\n    ... on ProjectV2Item {\n      id\n          type\n          fieldValues(first: 50) {\n            nodes {\n              __typename\n              ... on ProjectV2ItemFieldTextValue { text field { ... on ProjectV2FieldCommon { name } } }\n              ... on ProjectV2ItemFieldSingleSelectValue { name field { ... on ProjectV2FieldCommon { name } } }\n              ... on ProjectV2ItemFieldNumberValue { number field { ... on ProjectV2FieldCommon { name } } }\n            }\n          }\n          content {\n            __typename\n            ... on Issue {\n              id\n              number\n              title\n              body\n              state\n              url\n              createdAt\n              updatedAt\n              repository { name owner { login } issueTypes(first: 1) { totalCount } }\n              issueType { name }\n              labels(first: 100) { totalCount nodes { name } }\n              milestone { title }\n              parent { number state repository { name owner { login } } }\n              blockedBy(first: 100) { totalCount pageInfo { hasNextPage endCursor } nodes { number state repository { name owner { login } } } }\n              subIssues(first: 100) { totalCount pageInfo { hasNextPage endCursor } nodes { number state repository { name owner { login } } } }\n            }\n          }\n    }\n  }\n}\n",
+      "variables": {
+        "itemId": "PVTI_lADOFZLJsc4BthbszhMfxio"
+      },
+      "response": {
+        "data": {
+          "node": {
+            "id": "PVTI_lADOFZLJsc4BthbszhMfxio",
+            "type": "ISSUE",
+            "fieldValues": {
+              "nodes": [
+                {
+                  "__typename": "ProjectV2ItemFieldRepositoryValue"
+                },
+                {
+                  "__typename": "ProjectV2ItemFieldTextValue",
+                  "text": "adev-fixture: migrated epic 731206",
+                  "field": {
+                    "name": "Title"
+                  }
+                },
+                {
+                  "__typename": "ProjectV2ItemFieldTextValue",
+                  "text": "e731206",
+                  "field": {
+                    "name": "Legacy ID"
+                  }
+                },
+                {
+                  "__typename": "ProjectV2ItemFieldSingleSelectValue",
+                  "name": "Backlog",
+                  "field": {
+                    "name": "Status"
+                  }
+                }
+              ]
+            },
+            "content": {
+              "__typename": "Issue",
+              "id": "I_kwDOV-EGh88AAAABjJ7npA",
+              "number": 85,
+              "title": "adev-fixture: migrated epic 731206",
+              "body": "adev-fixture: migrated epic body",
+              "state": "OPEN",
+              "url": "https://github.com/adev-fixtures/adev-fixture-board/issues/85",
+              "createdAt": "2026-11-27T20:44:15Z",
+              "updatedAt": "2026-11-27T20:44:25Z",
+              "repository": {
+                "name": "adev-fixture-board",
+                "owner": {
+                  "login": "adev-fixtures"
+                },
+                "issueTypes": {
+                  "totalCount": 4
+                }
+              },
+              "issueType": {
+                "name": "Epic"
+              },
+              "labels": {
+                "totalCount": 0,
+                "nodes": []
+              },
+              "milestone": null,
+              "parent": null,
+              "blockedBy": {
+                "totalCount": 0,
+                "pageInfo": {
+                  "hasNextPage": false,
+                  "endCursor": null
+                },
+                "nodes": []
+              },
+              "subIssues": {
+                "totalCount": 0,
+                "pageInfo": {
+                  "hasNextPage": false,
+                  "endCursor": null
+                },
+                "nodes": []
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "query": "mutation CreateIssue($repositoryId: ID!, $title: String!, $body: String!) {\n  createIssue(input: { repositoryId: $repositoryId, title: $title, body: $body }) {\n    issue { id number }\n  }\n}\n",
+      "variables": {
+        "repositoryId": "R_kgDOV-EGhw",
+        "title": "adev-fixture: migrated feature 731206",
+        "body": "adev-fixture: migrated feature notes"
+      },
+      "response": {
+        "data": {
+          "createIssue": {
+            "issue": {
+              "id": "I_kwDOV-EGh88AAAABjJ71iA",
+              "number": 86
+            }
+          }
+        }
+      }
+    },
+    {
+      "query": "mutation AddToProject($projectId: ID!, $contentId: ID!) {\n  addProjectV2ItemById(input: { projectId: $projectId, contentId: $contentId }) {\n    item { id }\n  }\n}\n",
+      "variables": {
+        "projectId": "PVT_kwDOFZLJsc4Bthbs",
+        "contentId": "I_kwDOV-EGh88AAAABjJ71iA"
+      },
+      "response": {
+        "data": {
+          "addProjectV2ItemById": {
+            "item": {
+              "id": "PVTI_lADOFZLJsc4BthbszhMfxuU"
+            }
+          }
+        }
+      }
+    },
+    {
+      "query": "mutation SetFields($projectId: ID!, $itemId: ID!, $f0Field: ID!, $f0Value: String!, $f1Field: ID!, $f1Value: String!, $f2Field: ID!, $f2Value: String!) {\n  f0: updateProjectV2ItemFieldValue(input: { projectId: $projectId, itemId: $itemId, fieldId: $f0Field, value: { text: $f0Value } }) { clientMutationId }\n  f1: updateProjectV2ItemFieldValue(input: { projectId: $projectId, itemId: $itemId, fieldId: $f1Field, value: { singleSelectOptionId: $f1Value } }) { clientMutationId }\n  f2: updateProjectV2ItemFieldValue(input: { projectId: $projectId, itemId: $itemId, fieldId: $f2Field, value: { singleSelectOptionId: $f2Value } }) { clientMutationId }\n}\n",
+      "variables": {
+        "projectId": "PVT_kwDOFZLJsc4Bthbs",
+        "itemId": "PVTI_lADOFZLJsc4BthbszhMfxuU",
+        "f0Field": "PVTF_lADOFZLJsc4Bthbszhrqhys",
+        "f0Value": "e731206.f1",
+        "f1Field": "PVTSSF_lADOFZLJsc4Bthbszhrqhv8",
+        "f1Value": "e70c69b4",
+        "f2Field": "PVTSSF_lADOFZLJsc4BthbszhrqhxE",
+        "f2Value": "960fd2c1"
+      },
+      "response": {
+        "data": {
+          "f0": {
+            "clientMutationId": null
+          },
+          "f1": {
+            "clientMutationId": null
+          },
+          "f2": {
+            "clientMutationId": null
+          }
+        }
+      }
+    },
+    {
+      "query": "mutation SetIssueType($issueId: ID!, $issueTypeId: ID!) {\n  updateIssueIssueType(input: { issueId: $issueId, issueTypeId: $issueTypeId }) { clientMutationId }\n}\n",
+      "variables": {
+        "issueId": "I_kwDOV-EGh88AAAABjJ71iA",
+        "issueTypeId": "IT_kwDOFZLJsc44xvKO"
+      },
+      "response": {
+        "data": {
+          "updateIssueIssueType": {
+            "clientMutationId": null
+          }
+        }
+      }
+    },
+    {
+      "query": "query ProjectItem($itemId: ID!) {\n  node(id: $itemId) {\n    ... on ProjectV2Item {\n      id\n          type\n          fieldValues(first: 50) {\n            nodes {\n              __typename\n              ... on ProjectV2ItemFieldTextValue { text field { ... on ProjectV2FieldCommon { name } } }\n              ... on ProjectV2ItemFieldSingleSelectValue { name field { ... on ProjectV2FieldCommon { name } } }\n              ... on ProjectV2ItemFieldNumberValue { number field { ... on ProjectV2FieldCommon { name } } }\n            }\n          }\n          content {\n            __typename\n            ... on Issue {\n              id\n              number\n              title\n              body\n              state\n              url\n              createdAt\n              updatedAt\n              repository { name owner { login } issueTypes(first: 1) { totalCount } }\n              issueType { name }\n              labels(first: 100) { totalCount nodes { name } }\n              milestone { title }\n              parent { number state repository { name owner { login } } }\n              blockedBy(first: 100) { totalCount pageInfo { hasNextPage endCursor } nodes { number state repository { name owner { login } } } }\n              subIssues(first: 100) { totalCount pageInfo { hasNextPage endCursor } nodes { number state repository { name owner { login } } } }\n            }\n          }\n    }\n  }\n}\n",
+      "variables": {
+        "itemId": "PVTI_lADOFZLJsc4BthbszhMfxuU"
+      },
+      "response": {
+        "data": {
+          "node": {
+            "id": "PVTI_lADOFZLJsc4BthbszhMfxuU",
+            "type": "ISSUE",
+            "fieldValues": {
+              "nodes": [
+                {
+                  "__typename": "ProjectV2ItemFieldRepositoryValue"
+                },
+                {
+                  "__typename": "ProjectV2ItemFieldTextValue",
+                  "text": "adev-fixture: migrated feature 731206",
+                  "field": {
+                    "name": "Title"
+                  }
+                },
+                {
+                  "__typename": "ProjectV2ItemFieldTextValue",
+                  "text": "e731206.f1",
+                  "field": {
+                    "name": "Legacy ID"
+                  }
+                },
+                {
+                  "__typename": "ProjectV2ItemFieldSingleSelectValue",
+                  "name": "Backlog",
+                  "field": {
+                    "name": "Status"
+                  }
+                },
+                {
+                  "__typename": "ProjectV2ItemFieldSingleSelectValue",
+                  "name": "P1",
+                  "field": {
+                    "name": "Priority"
+                  }
+                }
+              ]
+            },
+            "content": {
+              "__typename": "Issue",
+              "id": "I_kwDOV-EGh88AAAABjJ71iA",
+              "number": 86,
+              "title": "adev-fixture: migrated feature 731206",
+              "body": "adev-fixture: migrated feature notes",
+              "state": "OPEN",
+              "url": "https://github.com/adev-fixtures/adev-fixture-board/issues/86",
+              "createdAt": "2026-11-27T20:44:30Z",
+              "updatedAt": "2026-11-27T20:44:42Z",
+              "repository": {
+                "name": "adev-fixture-board",
+                "owner": {
+                  "login": "adev-fixtures"
+                },
+                "issueTypes": {
+                  "totalCount": 4
+                }
+              },
+              "issueType": {
+                "name": "Feature"
+              },
+              "labels": {
+                "totalCount": 0,
+                "nodes": []
+              },
+              "milestone": null,
+              "parent": null,
+              "blockedBy": {
+                "totalCount": 0,
+                "pageInfo": {
+                  "hasNextPage": false,
+                  "endCursor": null
+                },
+                "nodes": []
+              },
+              "subIssues": {
+                "totalCount": 0,
+                "pageInfo": {
+                  "hasNextPage": false,
+                  "endCursor": null
+                },
+                "nodes": []
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "query": "mutation CreateIssue($repositoryId: ID!, $title: String!, $body: String!) {\n  createIssue(input: { repositoryId: $repositoryId, title: $title, body: $body }) {\n    issue { id number }\n  }\n}\n",
+      "variables": {
+        "repositoryId": "R_kgDOV-EGhw",
+        "title": "adev-fixture: migrated task 731206",
+        "body": ""
+      },
+      "response": {
+        "data": {
+          "createIssue": {
+            "issue": {
+              "id": "I_kwDOV-EGh88AAAABjJ8DYg",
+              "number": 87
+            }
+          }
+        }
+      }
+    },
+    {
+      "query": "mutation AddToProject($projectId: ID!, $contentId: ID!) {\n  addProjectV2ItemById(input: { projectId: $projectId, contentId: $contentId }) {\n    item { id }\n  }\n}\n",
+      "variables": {
+        "projectId": "PVT_kwDOFZLJsc4Bthbs",
+        "contentId": "I_kwDOV-EGh88AAAABjJ8DYg"
+      },
+      "response": {
+        "data": {
+          "addProjectV2ItemById": {
+            "item": {
+              "id": "PVTI_lADOFZLJsc4BthbszhMfx5Q"
+            }
+          }
+        }
+      }
+    },
+    {
+      "query": "mutation SetFields($projectId: ID!, $itemId: ID!, $f0Field: ID!, $f0Value: String!, $f1Field: ID!, $f1Value: String!, $f2Field: ID!, $f2Value: String!) {\n  f0: updateProjectV2ItemFieldValue(input: { projectId: $projectId, itemId: $itemId, fieldId: $f0Field, value: { text: $f0Value } }) { clientMutationId }\n  f1: updateProjectV2ItemFieldValue(input: { projectId: $projectId, itemId: $itemId, fieldId: $f1Field, value: { singleSelectOptionId: $f1Value } }) { clientMutationId }\n  f2: updateProjectV2ItemFieldValue(input: { projectId: $projectId, itemId: $itemId, fieldId: $f2Field, value: { singleSelectOptionId: $f2Value } }) { clientMutationId }\n}\n",
+      "variables": {
+        "projectId": "PVT_kwDOFZLJsc4Bthbs",
+        "itemId": "PVTI_lADOFZLJsc4BthbszhMfx5Q",
+        "f0Field": "PVTF_lADOFZLJsc4Bthbszhrqhys",
+        "f0Value": "e731206.f2",
+        "f1Field": "PVTSSF_lADOFZLJsc4Bthbszhrqhv8",
+        "f1Value": "e70c69b4",
+        "f2Field": "PVTSSF_lADOFZLJsc4BthbszhrqhxE",
+        "f2Value": "b1c9a391"
+      },
+      "response": {
+        "data": {
+          "f0": {
+            "clientMutationId": null
+          },
+          "f1": {
+            "clientMutationId": null
+          },
+          "f2": {
+            "clientMutationId": null
+          }
+        }
+      }
+    },
+    {
+      "query": "mutation SetIssueType($issueId: ID!, $issueTypeId: ID!) {\n  updateIssueIssueType(input: { issueId: $issueId, issueTypeId: $issueTypeId }) { clientMutationId }\n}\n",
+      "variables": {
+        "issueId": "I_kwDOV-EGh88AAAABjJ8DYg",
+        "issueTypeId": "IT_kwDOFZLJsc44xvKM"
+      },
+      "response": {
+        "data": {
+          "updateIssueIssueType": {
+            "clientMutationId": null
+          }
+        }
+      }
+    },
+    {
+      "query": "query ProjectItem($itemId: ID!) {\n  node(id: $itemId) {\n    ... on ProjectV2Item {\n      id\n          type\n          fieldValues(first: 50) {\n            nodes {\n              __typename\n              ... on ProjectV2ItemFieldTextValue { text field { ... on ProjectV2FieldCommon { name } } }\n              ... on ProjectV2ItemFieldSingleSelectValue { name field { ... on ProjectV2FieldCommon { name } } }\n              ... on ProjectV2ItemFieldNumberValue { number field { ... on ProjectV2FieldCommon { name } } }\n            }\n          }\n          content {\n            __typename\n            ... on Issue {\n              id\n              number\n              title\n              body\n              state\n              url\n              createdAt\n              updatedAt\n              repository { name owner { login } issueTypes(first: 1) { totalCount } }\n              issueType { name }\n              labels(first: 100) { totalCount nodes { name } }\n              milestone { title }\n              parent { number state repository { name owner { login } } }\n              blockedBy(first: 100) { totalCount pageInfo { hasNextPage endCursor } nodes { number state repository { name owner { login } } } }\n              subIssues(first: 100) { totalCount pageInfo { hasNextPage endCursor } nodes { number state repository { name owner { login } } } }\n            }\n          }\n    }\n  }\n}\n",
+      "variables": {
+        "itemId": "PVTI_lADOFZLJsc4BthbszhMfx5Q"
+      },
+      "response": {
+        "data": {
+          "node": {
+            "id": "PVTI_lADOFZLJsc4BthbszhMfx5Q",
+            "type": "ISSUE",
+            "fieldValues": {
+              "nodes": [
+                {
+                  "__typename": "ProjectV2ItemFieldRepositoryValue"
+                },
+                {
+                  "__typename": "ProjectV2ItemFieldTextValue",
+                  "text": "adev-fixture: migrated task 731206",
+                  "field": {
+                    "name": "Title"
+                  }
+                },
+                {
+                  "__typename": "ProjectV2ItemFieldTextValue",
+                  "text": "e731206.f2",
+                  "field": {
+                    "name": "Legacy ID"
+                  }
+                },
+                {
+                  "__typename": "ProjectV2ItemFieldSingleSelectValue",
+                  "name": "Backlog",
+                  "field": {
+                    "name": "Status"
+                  }
+                },
+                {
+                  "__typename": "ProjectV2ItemFieldSingleSelectValue",
+                  "name": "P2",
+                  "field": {
+                    "name": "Priority"
+                  }
+                }
+              ]
+            },
+            "content": {
+              "__typename": "Issue",
+              "id": "I_kwDOV-EGh88AAAABjJ8DYg",
+              "number": 87,
+              "title": "adev-fixture: migrated task 731206",
+              "body": "",
+              "state": "OPEN",
+              "url": "https://github.com/adev-fixtures/adev-fixture-board/issues/87",
+              "createdAt": "2026-11-27T20:44:46Z",
+              "updatedAt": "2026-11-27T20:44:57Z",
+              "repository": {
+                "name": "adev-fixture-board",
+                "owner": {
+                  "login": "adev-fixtures"
+                },
+                "issueTypes": {
+                  "totalCount": 4
+                }
+              },
+              "issueType": {
+                "name": "Task"
+              },
+              "labels": {
+                "totalCount": 0,
+                "nodes": []
+              },
+              "milestone": null,
+              "parent": null,
+              "blockedBy": {
+                "totalCount": 0,
+                "pageInfo": {
+                  "hasNextPage": false,
+                  "endCursor": null
+                },
+                "nodes": []
+              },
+              "subIssues": {
+                "totalCount": 0,
+                "pageInfo": {
+                  "hasNextPage": false,
+                  "endCursor": null
+                },
+                "nodes": []
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "query": "mutation AddSubIssue($issueId: ID!, $subIssueId: ID!) {\n  addSubIssue(input: { issueId: $issueId, subIssueId: $subIssueId }) { clientMutationId }\n}\n",
+      "variables": {
+        "issueId": "I_kwDOV-EGh88AAAABjJ7npA",
+        "subIssueId": "I_kwDOV-EGh88AAAABjJ71iA"
+      },
+      "response": {
+        "data": {
+          "addSubIssue": {
+            "clientMutationId": null
+          }
+        }
+      }
+    },
+    {
+      "query": "mutation AddBlockedBy($issueId: ID!, $blockingIssueId: ID!) {\n  addBlockedBy(input: { issueId: $issueId, blockingIssueId: $blockingIssueId }) { clientMutationId }\n}\n",
+      "variables": {
+        "issueId": "I_kwDOV-EGh88AAAABjJ71iA",
+        "blockingIssueId": "I_kwDOV-EGh88AAAABjJ8DYg"
+      },
+      "response": {
+        "data": {
+          "addBlockedBy": {
+            "clientMutationId": null
+          }
+        }
+      }
+    },
+    {
+      "query": "mutation AddSubIssue($issueId: ID!, $subIssueId: ID!) {\n  addSubIssue(input: { issueId: $issueId, subIssueId: $subIssueId }) { clientMutationId }\n}\n",
+      "variables": {
+        "issueId": "I_kwDOV-EGh88AAAABjJ7npA",
+        "subIssueId": "I_kwDOV-EGh88AAAABjJ8DYg"
+      },
+      "response": {
+        "data": {
+          "addSubIssue": {
+            "clientMutationId": null
+          }
+        }
+      }
+    },
+    {
+      "query": "query IssueProjectItems($owner: String!, $name: String!, $number: Int!, $after: String) {\n  repository(owner: $owner, name: $name) {\n    issue(number: $number) {\n      projectItems(first: 100, after: $after, includeArchived: false) {\n        totalCount\n        pageInfo { hasNextPage endCursor }\n        nodes {\n          project { id }\n          id\n          type\n          fieldValues(first: 50) {\n            nodes {\n              __typename\n              ... on ProjectV2ItemFieldTextValue { text field { ... on ProjectV2FieldCommon { name } } }\n              ... on ProjectV2ItemFieldSingleSelectValue { name field { ... on ProjectV2FieldCommon { name } } }\n              ... on ProjectV2ItemFieldNumberValue { number field { ... on ProjectV2FieldCommon { name } } }\n            }\n          }\n          content {\n            __typename\n            ... on Issue {\n              id\n              number\n              title\n              body\n              state\n              url\n              createdAt\n              updatedAt\n              repository { name owner { login } issueTypes(first: 1) { totalCount } }\n              issueType { name }\n              labels(first: 100) { totalCount nodes { name } }\n              milestone { title }\n              parent { number state repository { name owner { login } } }\n              blockedBy(first: 100) { totalCount pageInfo { hasNextPage endCursor } nodes { number state repository { name owner { login } } } }\n              subIssues(first: 100) { totalCount pageInfo { hasNextPage endCursor } nodes { number state repository { name owner { login } } } }\n            }\n          }\n        }\n      }\n    }\n  }\n}\n",
+      "variables": {
+        "owner": "adev-fixtures",
+        "name": "adev-fixture-board",
+        "number": 85
+      },
+      "response": {
+        "data": {
+          "repository": {
+            "issue": {
+              "projectItems": {
+                "totalCount": 1,
+                "pageInfo": {
+                  "hasNextPage": false,
+                  "endCursor": "MQ"
+                },
+                "nodes": [
+                  {
+                    "project": {
+                      "id": "PVT_kwDOFZLJsc4Bthbs"
+                    },
+                    "id": "PVTI_lADOFZLJsc4BthbszhMfxio",
+                    "type": "ISSUE",
+                    "fieldValues": {
+                      "nodes": [
+                        {
+                          "__typename": "ProjectV2ItemFieldRepositoryValue"
+                        },
+                        {
+                          "__typename": "ProjectV2ItemFieldTextValue",
+                          "text": "adev-fixture: migrated epic 731206",
+                          "field": {
+                            "name": "Title"
+                          }
+                        },
+                        {
+                          "__typename": "ProjectV2ItemFieldTextValue",
+                          "text": "e731206",
+                          "field": {
+                            "name": "Legacy ID"
+                          }
+                        },
+                        {
+                          "__typename": "ProjectV2ItemFieldSingleSelectValue",
+                          "name": "Backlog",
+                          "field": {
+                            "name": "Status"
+                          }
+                        }
+                      ]
+                    },
+                    "content": {
+                      "__typename": "Issue",
+                      "id": "I_kwDOV-EGh88AAAABjJ7npA",
+                      "number": 85,
+                      "title": "adev-fixture: migrated epic 731206",
+                      "body": "adev-fixture: migrated epic body",
+                      "state": "OPEN",
+                      "url": "https://github.com/adev-fixtures/adev-fixture-board/issues/85",
+                      "createdAt": "2026-11-27T20:44:15Z",
+                      "updatedAt": "2026-11-27T20:44:25Z",
+                      "repository": {
+                        "name": "adev-fixture-board",
+                        "owner": {
+                          "login": "adev-fixtures"
+                        },
+                        "issueTypes": {
+                          "totalCount": 4
+                        }
+                      },
+                      "issueType": {
+                        "name": "Epic"
+                      },
+                      "labels": {
+                        "totalCount": 0,
+                        "nodes": []
+                      },
+                      "milestone": null,
+                      "parent": null,
+                      "blockedBy": {
+                        "totalCount": 0,
+                        "pageInfo": {
+                          "hasNextPage": false,
+                          "endCursor": null
+                        },
+                        "nodes": []
+                      },
+                      "subIssues": {
+                        "totalCount": 2,
+                        "pageInfo": {
+                          "hasNextPage": false,
+                          "endCursor": "Mg"
+                        },
+                        "nodes": [
+                          {
+                            "number": 86,
+                            "state": "OPEN",
+                            "repository": {
+                              "name": "adev-fixture-board",
+                              "owner": {
+                                "login": "adev-fixtures"
+                              }
+                            }
+                          },
+                          {
+                            "number": 87,
+                            "state": "OPEN",
+                            "repository": {
+                              "name": "adev-fixture-board",
+                              "owner": {
+                                "login": "adev-fixtures"
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "query": "mutation FixtureDeleteProject($projectId: ID!) {\n  deleteProjectV2(input: { projectId: $projectId }) { projectV2 { id } }\n}\n",
+      "variables": {
+        "projectId": "PVT_kwDOFZLJsc4Bthbs"
+      },
+      "response": {
+        "data": {
+          "deleteProjectV2": {
+            "projectV2": {
+              "id": "PVT_kwDOFZLJsc4Bthbs"
+            }
+          }
+        }
+      }
+    }
+  ]
+}
