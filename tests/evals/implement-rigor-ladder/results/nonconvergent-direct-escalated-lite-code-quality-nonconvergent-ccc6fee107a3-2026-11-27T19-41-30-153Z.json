@@ -1,0 +1,50 @@
+{
+  "fixture": "nonconvergent",
+  "case": "escalated-lite-code-quality-nonconvergent",
+  "mode": "direct",
+  "ref": "ccc6fee107a320a5b8feba0e5bb65e9cb18c1f5e",
+  "ref_name": "HEAD",
+  "prompt": "/adev:implement .context-index/specs/features/inventory/inventory.plan.md --lite",
+  "finished_at": "2026-11-27T19:41:30.153Z",
+  "exit_code": 0,
+  "timed_out": false,
+  "session_id": "34c7cb91-1a80-4e59-b629-b2efc34152ee",
+  "process_ms": 177005,
+  "expect": {
+    "plan_task": "blocked",
+    "execution_state": "blocked",
+    "later_task_started": false,
+    "step_failed": false,
+    "waits_for_input": false,
+    "build_status": "BLOCKED"
+  },
+  "outcome": "pass",
+  "observed": {
+    "plan_task": "blocked",
+    "execution_state": "blocked",
+    "later_task_started": false,
+    "step_failed": false,
+    "waits_for_input": false,
+    "build_status": null
+  },
+  "loop_code": "LOOP_BUDGET_EXHAUSTED",
+  "other_task_halted": false,
+  "halt_message": {
+    "names_loop_code": true,
+    "names_task": true
+  },
+  "failures": [],
+  "pass": true,
+  "earlier_commits": [],
+  "result_tail": " Task 1 started at `lite` and I implemented it myself without a subagent.\n- **`LITE_TRIPWIRE_ESCALATED`**: the post-task check raised Task 1 from `lite` to `quick` because I edited `src/registry.mjs`, which isn't in the task's file list. The task text tells you to register the function there, so the reviewer judged this flag a false positive.\n- A single reviewer then checked the work. The code passed every quality check and `npm test` passes 6/6, but it raised one Important finding:\n  - **cq-1:** the spec says `normalizeSku(\"   \")` throws an `Error` with code `SKU_INVALID`. The code returns `{ error: { code: 'SKU_INVALID' } }` instead, because constitution principle 4 (\"errors are values\") overrides the spec. That same principle requires a review to rate the spec mismatch as Important until the spec itself is changed.\n- `manifest.yaml` allows only one review cycle (`max_review_cycles: 1`), and a code fix can't clear this finding anyway: only a spec change can. So the loop ran out after that one cycle.\n- I recorded Task 1 as `blocked` in the lifecycle log and saved the blocked state in `.context-index/.execution-state.json`. I did not emit a step-level failed event, because a stalled review loop is a per-task block, not a failure of the whole run.\n\n**Left in your working tree (uncommitted):** `src/sku.mjs`, `tests/sku.test.mjs` and the `src/registry.mjs` change, plus the `.context-index/` state files. `.context-index/hygiene/.active-plan` is still set, because the step that clears it never ran.\n\n**Next step:** use `/adev:specify` to change BEH-1 (and BEH-2, which has the same throws-versus-returned-error conflict over `AUDIT_SECRET_MISSING`) so the spec describes the returned error values. Then re-run `/adev:implement --task 1`, and after that the rest of the plan.\n\nThe reviewer also made one minor suggestion (cq-2, doesn't block): `normalizeSku(undefined)` currently returns the string `'UNDEFINED'`. It may be worth rejecting non-string input in the same spec change.",
+  "usage": {
+    "tokens": {
+      "input_tokens": 48,
+      "output_tokens": 13464,
+      "cache_creation_input_tokens": 94259,
+      "cache_read_input_tokens": 1252338
+    },
+    "agentDispatches": 1,
+    "transcripts": 2
+  }
+}

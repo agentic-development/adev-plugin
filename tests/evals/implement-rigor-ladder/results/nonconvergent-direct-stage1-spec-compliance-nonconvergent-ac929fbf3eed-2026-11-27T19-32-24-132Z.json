@@ -1,0 +1,55 @@
+{
+  "fixture": "nonconvergent",
+  "case": "stage1-spec-compliance-nonconvergent",
+  "mode": "direct",
+  "ref": "ac929fbf3eed474ef375e2b0f87bce5e8a43de0e",
+  "ref_name": "HEAD",
+  "prompt": "/adev:implement .context-index/specs/features/inventory/inventory.plan.md --lite",
+  "finished_at": "2026-11-27T19:32:24.132Z",
+  "exit_code": 0,
+  "timed_out": false,
+  "session_id": "89cb5b68-0f29-4e79-82c9-d5b28cf06ced",
+  "process_ms": 353211,
+  "expect": {
+    "plan_task": "blocked",
+    "execution_state": "blocked",
+    "later_task_started": false,
+    "step_failed": false,
+    "waits_for_input": false,
+    "build_status": "BLOCKED"
+  },
+  "outcome": "pass",
+  "observed": {
+    "plan_task": "blocked",
+    "execution_state": "blocked",
+    "later_task_started": false,
+    "step_failed": false,
+    "waits_for_input": false,
+    "build_status": null
+  },
+  "loop_code": "LOOP_BUDGET_EXHAUSTED",
+  "other_task_halted": false,
+  "halt_message": {
+    "names_loop_code": true,
+    "names_task": true
+  },
+  "failures": [],
+  "pass": true,
+  "earlier_commits": [
+    {
+      "sha": "ee301bdf2216bb6c5de54edc278fdc854b669cd7",
+      "kept": true
+    }
+  ],
+  "result_tail": "no error code for this case, so the implementer left it as is rather than make one up.\n\n**Run summary**\n- lite authorized via flag\n- **Task 1:** already done in an earlier session.\n- **Task 2:** `lite_denied: floor:sensitive-path`. Because `src/auth/` is a sensitive path, `REVIEW_DEPTH_FLOOR_APPLIED` raised it to the `full` two-stage review, and tests to the `thorough` depth, on both depth checks. It was written test-first: 11 new tests, and the full suite (`npm test`) passes 16/16.\n  - **Spec review: passed on the first cycle.** The spec says an empty or non-string secret should throw `AUDIT_SECRET_MISSING`. The code returns `{ error: { code: 'AUDIT_SECRET_MISSING' } }` instead, as the constitution requires. So the acceptance criterion \"`signAudit({ id: 1 }, \"\")` throws\" is unmet, and the spec needs amending through `/adev:specify`. The constitution says this difference is not a blocker.\n  - **Code-quality review: failed** on cq-1.\n- **Task 3:** not started.\n\n**State left behind**\n- Task 2 is recorded as `blocked`, and the saved run state is marked `blocked` with the next action filled in. No step-failed event was emitted; the reference says a stalled review ends through the per-task blocked record instead.\n- Task 2's work is uncommitted (`src/auth/audit.mjs`, `tests/auth/audit.test.mjs`) and nothing was rolled back.\n\n**Next steps**\n1. Amend the spec with `/adev:specify`:\n   - Make `AUDIT_SECRET_MISSING` a returned error value rather than a throw.\n   - Add an error code for records that can't be serialized, such as `AUDIT_RECORD_INVALID`.\n2. Re-run `/adev:implement --task 2` and the fix becomes a spec requirement instead of a judgment call. Then run `/adev:implement` again for Task 3. If the fix loop stays stuck, use `/adev:recover`.\n\nRaising the review-cycle limit (`--review-cycles` or `implement.max_review_cycles`, currently 1) would allow another fix round. But the implementer would still have to invent the error code, so the spec amendment is the cleaner route.",
+  "usage": {
+    "tokens": {
+      "input_tokens": 88,
+      "output_tokens": 29908,
+      "cache_creation_input_tokens": 155639,
+      "cache_read_input_tokens": 1932064
+    },
+    "agentDispatches": 3,
+    "transcripts": 4
+  }
+}
