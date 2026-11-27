@@ -13,7 +13,7 @@ tracker-ref: agentic-development/adev-plugin#441
 infra_requirements:
   systems:
     - name: "GitHub GraphQL API (Issues + Projects v2)"
-      env_vars: [GH_TOKEN]
+      env_vars: []
       cli_tools:
         - gh
       probe: "gh auth status"

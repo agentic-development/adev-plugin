@@ -258,3 +258,7 @@
 {"event":"review_round","plan":".context-index/specs/features/task-management/github-board-backend.plan.md","task_id":"t22","stage":"code-quality","cycles":1,"findings":0,"ts":"2026-11-27T02:01:12.074Z"}
 {"event":"step_failed","step":"implement","verdict":"FAIL","ts":"2026-11-27T02:10:13.589Z"}
 {"event":"debug_intervention","kind":"debug","note":"gh-ID resolution read the eventually consistent ProjectV2 items listing; now a direct IssueProjectItems lookup plus per-instance write-through for list()","ts":"2026-11-27T13:18:38.575Z"}
+{"event":"plan_task","plan":".context-index/specs/features/task-management/github-board-backend.plan.md","task_id":"task-20","status":"done","notes":"Fixtures for 25 contract cases + 8 live github-only cases recorded; replay runner github.conformance.test.mjs (688ee647, de7b5f04)","ts":"2026-11-27T20:52:50.654Z"}
+{"event":"step_completed","step":"implement","verdict":"PASS","ts":"2026-11-27T20:52:50.735Z"}
+{"event":"lifecycle_step","step":"validate","status":"started","ts":"2026-11-27T20:52:50.883Z"}
+{"event":"step_failed","step":"validate","verdict":"FAIL","ts":"2026-11-27T20:52:59.078Z"}
