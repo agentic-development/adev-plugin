@@ -237,3 +237,130 @@ describe("BeadsAdapter", () => {
     });
   });
 }
+
+// ─── release() vs br's agent-context anti-shrink guard (adev-plugin-am79) ──
+{
+  /**
+   * A stand-in `br` that implements just enough of the real binary's
+   * `update --agent-context` anti-regression guard (beads_rust >= 0.7.x:
+   * refuses a write under half the current field's length unless `--force`
+   * is passed) to reproduce the exit-code/stderr failure live, not a stub
+   * that only records argv. State persists to a JSON file beside the script
+   * so the `list` a later `claim()`/`release()` call sees reflects what the
+   * previous `update` call wrote — a real `br` process boundary, not a
+   * shared-memory mock.
+   */
+
+  function makeFakeBrWithShrinkGuard() {
+    const dir = createTempDir();
+    const binDir = join(dir, "bin");
+    mkdirSync(binDir, { recursive: true });
+    const statePath = join(binDir, "state.json");
+    writeFileSync(statePath, JSON.stringify({}));
+    const script = join(binDir, "br");
+    writeFileSync(
+      script,
+      [
+        "#!/usr/bin/env node",
+        'const fs = require("fs");',
+        `const STATE = ${JSON.stringify(statePath)};`,
+        "const argv = process.argv.slice(2);",
+        "let i = 0;",
+        'if (argv[i] === "--no-db") i += 1;',
+        'else if (argv[i] === "--db") i += 2;',
+        "let actor;",
+        'if (argv[i] === "--actor") { actor = argv[i + 1]; i += 2; }',
+        "const cmd = argv[i];",
+        "const rest = argv.slice(i + 1);",
+        "function flagValue(name) { const idx = rest.indexOf(name); return idx === -1 ? undefined : rest[idx + 1]; }",
+        "function hasFlag(name) { return rest.includes(name); }",
+        "const state = JSON.parse(fs.readFileSync(STATE, \"utf8\"));",
+        'const id = "fake-1";',
+        'if (cmd === "list") {',
+        '  const rec = state[id] || { id, external_ref: "issue-1", status: "open", assignee: "", agent_context: "" };',
+        "  process.stdout.write(JSON.stringify({ issues: [rec] }));",
+        "  process.exit(0);",
+        "}",
+        'if (cmd === "update") {',
+        "  const targetId = rest[0];",
+        '  const rec = state[targetId] || { id: targetId, external_ref: "issue-1", status: "open", assignee: "", agent_context: "" };',
+        '  const newCtx = flagValue("--agent-context");',
+        "  if (newCtx !== undefined) {",
+        '    const curLen = (rec.agent_context || "").length;',
+        "    const newLen = newCtx.length;",
+        '    if (curLen > 0 && newLen < curLen / 2 && !hasFlag("--force")) {',
+        "      const pct = Math.round((newLen / curLen) * 100);",
+        "      process.stderr.write(",
+        '        "refusing to overwrite non-empty \'agent_context\' (" + curLen + " chars) with different content (" + newLen + " chars, " + pct + "% of the current length) without --force"',
+        "      );",
+        "      process.exit(1);",
+        "    }",
+        "    rec.agent_context = newCtx;",
+        "  }",
+        '  if (hasFlag("--claim")) { rec.assignee = actor; rec.status = "in_progress"; }',
+        '  const assigneeVal = flagValue("--assignee");',
+        "  if (assigneeVal !== undefined) rec.assignee = assigneeVal;",
+        '  const statusVal = flagValue("--status");',
+        "  if (statusVal !== undefined) rec.status = statusVal;",
+        "  state[targetId] = rec;",
+        "  fs.writeFileSync(STATE, JSON.stringify(state));",
+        "  process.stdout.write(JSON.stringify(rec));",
+        "  process.exit(0);",
+        "}",
+        "process.exit(0);",
+        "",
+      ].join("\n"),
+    );
+    chmodSync(script, 0o755);
+    return { dir, binDir };
+  }
+
+  describe("BeadsAdapter — release() against br's real agent-context anti-shrink guard (adev-plugin-am79)", () => {
+    it("claim() then release() does not throw BEADS_COMMAND_FAILED (reproduces the live 43%-of-current-length refusal)", async () => {
+      const { dir, binDir } = makeFakeBrWithShrinkGuard();
+      const originalPath = process.env.PATH;
+      process.env.PATH = `${binDir}:${originalPath}`;
+      try {
+        const adapter = new BeadsAdapter(dir, { checkBr: false });
+        await adapter.claim("issue-1", "agent-a", {});
+        // Before the fix, this throws BEADS_COMMAND_FAILED: claim() writes
+        // ~60+ chars of claimed_at/pre_claim_status into agent_context, and
+        // release() strips both back out, landing well under half that
+        // length — exactly the guard's trigger condition, reproduced via a
+        // real subprocess exit rather than an argv inspection.
+        await assert.doesNotReject(
+          () => adapter.release("issue-1", "agent-a", {}),
+          /BEADS_COMMAND_FAILED|refusing to overwrite/,
+        );
+      } finally {
+        process.env.PATH = originalPath;
+        cleanupTempDir(dir);
+      }
+    });
+
+    it("the release() update call passes --force, which is what defeats the guard above", async () => {
+      const { dir, binDir } = makeFakeBrWithShrinkGuard();
+      const originalPath = process.env.PATH;
+      process.env.PATH = `${binDir}:${originalPath}`;
+      try {
+        const adapter = new BeadsAdapter(dir, { checkBr: false });
+        const calls = [];
+        const realRunBr = adapter._runBr.bind(adapter);
+        adapter._runBr = (args) => {
+          calls.push(args);
+          return realRunBr(args);
+        };
+        await adapter.claim("issue-1", "agent-a", {});
+        await adapter.release("issue-1", "agent-a", {});
+        const updateCalls = calls.filter((call) => call[0] === "update" && !call.includes("--claim"));
+        assert.ok(updateCalls.length > 0, "release must emit a plain br update call");
+        for (const call of updateCalls) {
+          assert.ok(call.includes("--force"), `release()'s update call must pass --force: ${JSON.stringify(call)}`);
+        }
+      } finally {
+        process.env.PATH = originalPath;
+        cleanupTempDir(dir);
+      }
+    });
+  });
+}

@@ -1,0 +1,1396 @@
+{
+  "case": "github: a claim past the lease TTL takes over and reports the previous holder",
+  "recorded_with": {
+    "manifest": {
+      "tasks": {
+        "backend": "github",
+        "claim_ttl_minutes": 240,
+        "github": {
+          "project": "https://github.com/orgs/adev-fixtures/projects/1",
+          "repo": "adev-fixtures/adev-fixture-board"
+        }
+      }
+    },
+    "now": "2026-01-15T12:00:00.000Z",
+    "seed": 170830
+  },
+  "requests": [
+    {
+      "query": "query AdevPreflight($projectOwner: String!, $projectNumber: Int!, $isOrg: Boolean!, $repoOwner: String!, $repoName: String!) {\n  organization(login: $projectOwner) @include(if: $isOrg) {\n    projectV2(number: $projectNumber) { ...AdevPreflightProject }\n  }\n  user(login: $projectOwner) @skip(if: $isOrg) {\n    projectV2(number: $projectNumber) { ...AdevPreflightProject }\n  }\n  repository(owner: $repoOwner, name: $repoName) {\n    id\n    nameWithOwner\n    visibility\n  }\n}\n\nfragment AdevPreflightProject on ProjectV2 {\n  id\n  title\n  public\n  fields(first: 100) {\n    totalCount\n    nodes {\n      ... on ProjectV2FieldCommon { id name dataType }\n      ... on ProjectV2SingleSelectField { options { id name } }\n    }\n  }\n}\n",
+      "variables": {
+        "projectOwner": "adev-fixtures",
+        "projectNumber": 1,
+        "isOrg": true,
+        "repoOwner": "adev-fixtures",
+        "repoName": "adev-fixture-board"
+      },
+      "response": {
+        "data": {
+          "organization": {
+            "projectV2": {
+              "id": "PVT_kwDOFZLJsc4Btdm1",
+              "title": "adev-fixture: conformance",
+              "public": false,
+              "fields": {
+                "totalCount": 22,
+                "nodes": [
+                  {
+                    "id": "PVTF_lADOFZLJsc4Btdm1zhrm-6c",
+                    "name": "Title",
+                    "dataType": "TITLE"
+                  },
+                  {
+                    "id": "PVTF_lADOFZLJsc4Btdm1zhrm-6g",
+                    "name": "Assignees",
+                    "dataType": "ASSIGNEES"
+                  },
+                  {
+                    "id": "PVTSSF_lADOFZLJsc4Btdm1zhrm-6k",
+                    "name": "Status",
+                    "dataType": "SINGLE_SELECT",
+                    "options": [
+                      {
+                        "id": "4707670c",
+                        "name": "Backlog"
+                      },
+                      {
+                        "id": "eda4db4b",
+                        "name": "Ready"
+                      },
+                      {
+                        "id": "3b823655",
+                        "name": "In Progress"
+                      },
+                      {
+                        "id": "e599fc25",
+                        "name": "In Review"
+                      },
+                      {
+                        "id": "ddd4b9d1",
+                        "name": "Deferred"
+                      },
+                      {
+                        "id": "6577315a",
+                        "name": "Done"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "PVTF_lADOFZLJsc4Btdm1zhrm-6o",
+                    "name": "Labels",
+                    "dataType": "LABELS"
+                  },
+                  {
+                    "id": "PVTF_lADOFZLJsc4Btdm1zhrm-6s",
+                    "name": "Linked pull requests",
+                    "dataType": "LINKED_PULL_REQUESTS"
+                  },
+                  {
+                    "id": "PVTF_lADOFZLJsc4Btdm1zhrm-6w",
+                    "name": "Milestone",
+                    "dataType": "MILESTONE"
+                  },
+                  {
+                    "id": "PVTF_lADOFZLJsc4Btdm1zhrm-60",
+                    "name": "Repository",
+                    "dataType": "REPOSITORY"
+                  },
+                  {
+                    "id": "PVTF_lADOFZLJsc4Btdm1zhrm-68",
+                    "name": "Reviewers",
+                    "dataType": "REVIEWERS"
+                  },
+                  {
+                    "id": "PVTF_lADOFZLJsc4Btdm1zhrm-7A",
+                    "name": "Parent issue",
+                    "dataType": "PARENT_ISSUE"
+                  },
+                  {
+                    "id": "PVTF_lADOFZLJsc4Btdm1zhrm-7E",
+                    "name": "Sub-issues progress",
+                    "dataType": "SUB_ISSUES_PROGRESS"
+                  },
+                  {
+                    "id": "PVTF_lADOFZLJsc4Btdm1zhrm-7I",
+                    "name": "Created",
+                    "dataType": "CREATED"
+                  },
+                  {
+                    "id": "PVTF_lADOFZLJsc4Btdm1zhrm-7M",
+                    "name": "Updated",
+                    "dataType": "UPDATED"
+                  },
+                  {
+                    "id": "PVTF_lADOFZLJsc4Btdm1zhrm-7Q",
+                    "name": "Closed",
+                    "dataType": "CLOSED"
+                  },
+                  {
+                    "id": "PVTSSF_lADOFZLJsc4Btdm1zhrm_HE",
+                    "name": "Priority",
+                    "dataType": "SINGLE_SELECT",
+                    "options": [
+                      {
+                        "id": "5df5f65d",
+                        "name": "P0"
+                      },
+                      {
+                        "id": "6cb0988e",
+                        "name": "P1"
+                      },
+                      {
+                        "id": "0e86e8b3",
+                        "name": "P2"
+                      },
+                      {
+                        "id": "d659487d",
+                        "name": "P3"
+                      },
+                      {
+                        "id": "9c086f90",
+                        "name": "P4"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "PVTF_lADOFZLJsc4Btdm1zhrm_HI",
+                    "name": "Owner",
+                    "dataType": "TEXT"
+                  },
+                  {
+                    "id": "PVTF_lADOFZLJsc4Btdm1zhrm_Ho",
+                    "name": "Claimed At",
+                    "dataType": "TEXT"
+                  },
+                  {
+                    "id": "PVTF_lADOFZLJsc4Btdm1zhrm_II",
+                    "name": "Next Action",
+                    "dataType": "TEXT"
+                  },
+                  {
+                    "id": "PVTF_lADOFZLJsc4Btdm1zhrm_IM",
+                    "name": "Spec",
+                    "dataType": "TEXT"
+                  },
+                  {
+                    "id": "PVTF_lADOFZLJsc4Btdm1zhrm_Is",
+                    "name": "Plan",
+                    "dataType": "TEXT"
+                  },
+                  {
+                    "id": "PVTF_lADOFZLJsc4Btdm1zhrm_JQ",
+                    "name": "Branch",
+                    "dataType": "TEXT"
+                  },
+                  {
+                    "id": "PVTF_lADOFZLJsc4Btdm1zhrm_JU",
+                    "name": "PR",
+                    "dataType": "TEXT"
+                  },
+                  {
+                    "id": "PVTF_lADOFZLJsc4Btdm1zhrm_J8",
+                    "name": "Legacy ID",
+                    "dataType": "TEXT"
+                  }
+                ]
+              }
+            }
+          },
+          "repository": {
+            "id": "R_kgDOV-EGhw",
+            "nameWithOwner": "adev-fixtures/adev-fixture-board",
+            "visibility": "PRIVATE"
+          }
+        }
+      }
+    },
+    {
+      "query": "mutation CreateIssue($repositoryId: ID!, $title: String!, $body: String!) {\n  createIssue(input: { repositoryId: $repositoryId, title: $title, body: $body }) {\n    issue { id number }\n  }\n}\n",
+      "variables": {
+        "repositoryId": "R_kgDOV-EGhw",
+        "title": "adev-fixture: expired lease",
+        "body": ""
+      },
+      "response": {
+        "data": {
+          "createIssue": {
+            "issue": {
+              "id": "I_kwDOV-EGh88AAAABjJL5zg",
+              "number": 76
+            }
+          }
+        }
+      }
+    },
+    {
+      "query": "mutation AddToProject($projectId: ID!, $contentId: ID!) {\n  addProjectV2ItemById(input: { projectId: $projectId, contentId: $contentId }) {\n    item { id }\n  }\n}\n",
+      "variables": {
+        "projectId": "PVT_kwDOFZLJsc4Btdm1",
+        "contentId": "I_kwDOV-EGh88AAAABjJL5zg"
+      },
+      "response": {
+        "data": {
+          "addProjectV2ItemById": {
+            "item": {
+              "id": "PVTI_lADOFZLJsc4Btdm1zhMfDW8"
+            }
+          }
+        }
+      }
+    },
+    {
+      "query": "mutation SetFields($projectId: ID!, $itemId: ID!, $f0Field: ID!, $f0Value: String!) {\n  f0: updateProjectV2ItemFieldValue(input: { projectId: $projectId, itemId: $itemId, fieldId: $f0Field, value: { singleSelectOptionId: $f0Value } }) { clientMutationId }\n}\n",
+      "variables": {
+        "projectId": "PVT_kwDOFZLJsc4Btdm1",
+        "itemId": "PVTI_lADOFZLJsc4Btdm1zhMfDW8",
+        "f0Field": "PVTSSF_lADOFZLJsc4Btdm1zhrm-6k",
+        "f0Value": "4707670c"
+      },
+      "response": {
+        "data": {
+          "f0": {
+            "clientMutationId": null
+          }
+        }
+      }
+    },
+    {
+      "query": "query ProjectItem($itemId: ID!) {\n  node(id: $itemId) {\n    ... on ProjectV2Item {\n      id\n          type\n          fieldValues(first: 50) {\n            nodes {\n              __typename\n              ... on ProjectV2ItemFieldTextValue { text field { ... on ProjectV2FieldCommon { name } } }\n              ... on ProjectV2ItemFieldSingleSelectValue { name field { ... on ProjectV2FieldCommon { name } } }\n              ... on ProjectV2ItemFieldNumberValue { number field { ... on ProjectV2FieldCommon { name } } }\n            }\n          }\n          content {\n            __typename\n            ... on Issue {\n              id\n              number\n              title\n              body\n              state\n              url\n              createdAt\n              updatedAt\n              repository { name owner { login } issueTypes(first: 1) { totalCount } }\n              issueType { name }\n              labels(first: 100) { totalCount nodes { name } }\n              milestone { title }\n              parent { number state repository { name owner { login } } }\n              blockedBy(first: 100) { totalCount pageInfo { hasNextPage endCursor } nodes { number state repository { name owner { login } } } }\n              subIssues(first: 100) { totalCount pageInfo { hasNextPage endCursor } nodes { number state repository { name owner { login } } } }\n            }\n          }\n    }\n  }\n}\n",
+      "variables": {
+        "itemId": "PVTI_lADOFZLJsc4Btdm1zhMfDW8"
+      },
+      "sequence": [
+        {
+          "response": {
+            "data": {
+              "node": {
+                "id": "PVTI_lADOFZLJsc4Btdm1zhMfDW8",
+                "type": "ISSUE",
+                "fieldValues": {
+                  "nodes": [
+                    {
+                      "__typename": "ProjectV2ItemFieldRepositoryValue"
+                    },
+                    {
+                      "__typename": "ProjectV2ItemFieldTextValue",
+                      "text": "adev-fixture: expired lease",
+                      "field": {
+                        "name": "Title"
+                      }
+                    },
+                    {
+                      "__typename": "ProjectV2ItemFieldSingleSelectValue",
+                      "name": "Backlog",
+                      "field": {
+                        "name": "Status"
+                      }
+                    }
+                  ]
+                },
+                "content": {
+                  "__typename": "Issue",
+                  "id": "I_kwDOV-EGh88AAAABjJL5zg",
+                  "number": 76,
+                  "title": "adev-fixture: expired lease",
+                  "body": "",
+                  "state": "OPEN",
+                  "url": "https://github.com/adev-fixtures/adev-fixture-board/issues/76",
+                  "createdAt": "2026-11-27T19:42:42Z",
+                  "updatedAt": "2026-11-27T19:42:42Z",
+                  "repository": {
+                    "name": "adev-fixture-board",
+                    "owner": {
+                      "login": "adev-fixtures"
+                    },
+                    "issueTypes": {
+                      "totalCount": 3
+                    }
+                  },
+                  "issueType": null,
+                  "labels": {
+                    "totalCount": 0,
+                    "nodes": []
+                  },
+                  "milestone": null,
+                  "parent": null,
+                  "blockedBy": {
+                    "totalCount": 0,
+                    "pageInfo": {
+                      "hasNextPage": false,
+                      "endCursor": null
+                    },
+                    "nodes": []
+                  },
+                  "subIssues": {
+                    "totalCount": 0,
+                    "pageInfo": {
+                      "hasNextPage": false,
+                      "endCursor": null
+                    },
+                    "nodes": []
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "response": {
+            "data": {
+              "node": {
+                "id": "PVTI_lADOFZLJsc4Btdm1zhMfDW8",
+                "type": "ISSUE",
+                "fieldValues": {
+                  "nodes": [
+                    {
+                      "__typename": "ProjectV2ItemFieldRepositoryValue"
+                    },
+                    {
+                      "__typename": "ProjectV2ItemFieldTextValue",
+                      "text": "adev-fixture: expired lease",
+                      "field": {
+                        "name": "Title"
+                      }
+                    },
+                    {
+                      "__typename": "ProjectV2ItemFieldSingleSelectValue",
+                      "name": "Backlog",
+                      "field": {
+                        "name": "Status"
+                      }
+                    }
+                  ]
+                },
+                "content": {
+                  "__typename": "Issue",
+                  "id": "I_kwDOV-EGh88AAAABjJL5zg",
+                  "number": 76,
+                  "title": "adev-fixture: expired lease",
+                  "body": "",
+                  "state": "OPEN",
+                  "url": "https://github.com/adev-fixtures/adev-fixture-board/issues/76",
+                  "createdAt": "2026-11-27T19:42:42Z",
+                  "updatedAt": "2026-11-27T19:42:42Z",
+                  "repository": {
+                    "name": "adev-fixture-board",
+                    "owner": {
+                      "login": "adev-fixtures"
+                    },
+                    "issueTypes": {
+                      "totalCount": 3
+                    }
+                  },
+                  "issueType": null,
+                  "labels": {
+                    "totalCount": 0,
+                    "nodes": []
+                  },
+                  "milestone": null,
+                  "parent": null,
+                  "blockedBy": {
+                    "totalCount": 0,
+                    "pageInfo": {
+                      "hasNextPage": false,
+                      "endCursor": null
+                    },
+                    "nodes": []
+                  },
+                  "subIssues": {
+                    "totalCount": 0,
+                    "pageInfo": {
+                      "hasNextPage": false,
+                      "endCursor": null
+                    },
+                    "nodes": []
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "response": {
+            "data": {
+              "node": {
+                "id": "PVTI_lADOFZLJsc4Btdm1zhMfDW8",
+                "type": "ISSUE",
+                "fieldValues": {
+                  "nodes": [
+                    {
+                      "__typename": "ProjectV2ItemFieldRepositoryValue"
+                    },
+                    {
+                      "__typename": "ProjectV2ItemFieldTextValue",
+                      "text": "adev-fixture: expired lease",
+                      "field": {
+                        "name": "Title"
+                      }
+                    },
+                    {
+                      "__typename": "ProjectV2ItemFieldSingleSelectValue",
+                      "name": "Backlog",
+                      "field": {
+                        "name": "Status"
+                      }
+                    },
+                    {
+                      "__typename": "ProjectV2ItemFieldTextValue",
+                      "text": "2026-01-15T12:00:00.000Z",
+                      "field": {
+                        "name": "Claimed At"
+                      }
+                    },
+                    {
+                      "__typename": "ProjectV2ItemFieldTextValue",
+                      "text": "adev-fixture-agent-a",
+                      "field": {
+                        "name": "Owner"
+                      }
+                    }
+                  ]
+                },
+                "content": {
+                  "__typename": "Issue",
+                  "id": "I_kwDOV-EGh88AAAABjJL5zg",
+                  "number": 76,
+                  "title": "adev-fixture: expired lease",
+                  "body": "",
+                  "state": "OPEN",
+                  "url": "https://github.com/adev-fixtures/adev-fixture-board/issues/76",
+                  "createdAt": "2026-11-27T19:42:42Z",
+                  "updatedAt": "2026-11-27T19:42:42Z",
+                  "repository": {
+                    "name": "adev-fixture-board",
+                    "owner": {
+                      "login": "adev-fixtures"
+                    },
+                    "issueTypes": {
+                      "totalCount": 3
+                    }
+                  },
+                  "issueType": null,
+                  "labels": {
+                    "totalCount": 0,
+                    "nodes": []
+                  },
+                  "milestone": null,
+                  "parent": null,
+                  "blockedBy": {
+                    "totalCount": 0,
+                    "pageInfo": {
+                      "hasNextPage": false,
+                      "endCursor": null
+                    },
+                    "nodes": []
+                  },
+                  "subIssues": {
+                    "totalCount": 0,
+                    "pageInfo": {
+                      "hasNextPage": false,
+                      "endCursor": null
+                    },
+                    "nodes": []
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "response": {
+            "data": {
+              "node": {
+                "id": "PVTI_lADOFZLJsc4Btdm1zhMfDW8",
+                "type": "ISSUE",
+                "fieldValues": {
+                  "nodes": [
+                    {
+                      "__typename": "ProjectV2ItemFieldRepositoryValue"
+                    },
+                    {
+                      "__typename": "ProjectV2ItemFieldTextValue",
+                      "text": "adev-fixture: expired lease",
+                      "field": {
+                        "name": "Title"
+                      }
+                    },
+                    {
+                      "__typename": "ProjectV2ItemFieldSingleSelectValue",
+                      "name": "Backlog",
+                      "field": {
+                        "name": "Status"
+                      }
+                    },
+                    {
+                      "__typename": "ProjectV2ItemFieldTextValue",
+                      "text": "2026-01-15T12:00:00.000Z",
+                      "field": {
+                        "name": "Claimed At"
+                      }
+                    },
+                    {
+                      "__typename": "ProjectV2ItemFieldTextValue",
+                      "text": "adev-fixture-agent-a",
+                      "field": {
+                        "name": "Owner"
+                      }
+                    }
+                  ]
+                },
+                "content": {
+                  "__typename": "Issue",
+                  "id": "I_kwDOV-EGh88AAAABjJL5zg",
+                  "number": 76,
+                  "title": "adev-fixture: expired lease",
+                  "body": "",
+                  "state": "OPEN",
+                  "url": "https://github.com/adev-fixtures/adev-fixture-board/issues/76",
+                  "createdAt": "2026-11-27T19:42:42Z",
+                  "updatedAt": "2026-11-27T19:42:42Z",
+                  "repository": {
+                    "name": "adev-fixture-board",
+                    "owner": {
+                      "login": "adev-fixtures"
+                    },
+                    "issueTypes": {
+                      "totalCount": 3
+                    }
+                  },
+                  "issueType": null,
+                  "labels": {
+                    "totalCount": 0,
+                    "nodes": []
+                  },
+                  "milestone": null,
+                  "parent": null,
+                  "blockedBy": {
+                    "totalCount": 0,
+                    "pageInfo": {
+                      "hasNextPage": false,
+                      "endCursor": null
+                    },
+                    "nodes": []
+                  },
+                  "subIssues": {
+                    "totalCount": 0,
+                    "pageInfo": {
+                      "hasNextPage": false,
+                      "endCursor": null
+                    },
+                    "nodes": []
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "response": {
+            "data": {
+              "node": {
+                "id": "PVTI_lADOFZLJsc4Btdm1zhMfDW8",
+                "type": "ISSUE",
+                "fieldValues": {
+                  "nodes": [
+                    {
+                      "__typename": "ProjectV2ItemFieldRepositoryValue"
+                    },
+                    {
+                      "__typename": "ProjectV2ItemFieldTextValue",
+                      "text": "adev-fixture: expired lease",
+                      "field": {
+                        "name": "Title"
+                      }
+                    },
+                    {
+                      "__typename": "ProjectV2ItemFieldSingleSelectValue",
+                      "name": "Backlog",
+                      "field": {
+                        "name": "Status"
+                      }
+                    },
+                    {
+                      "__typename": "ProjectV2ItemFieldTextValue",
+                      "text": "2026-01-15T12:00:00.000Z",
+                      "field": {
+                        "name": "Claimed At"
+                      }
+                    },
+                    {
+                      "__typename": "ProjectV2ItemFieldTextValue",
+                      "text": "adev-fixture-agent-a",
+                      "field": {
+                        "name": "Owner"
+                      }
+                    }
+                  ]
+                },
+                "content": {
+                  "__typename": "Issue",
+                  "id": "I_kwDOV-EGh88AAAABjJL5zg",
+                  "number": 76,
+                  "title": "adev-fixture: expired lease",
+                  "body": "",
+                  "state": "OPEN",
+                  "url": "https://github.com/adev-fixtures/adev-fixture-board/issues/76",
+                  "createdAt": "2026-11-27T19:42:42Z",
+                  "updatedAt": "2026-11-27T19:42:42Z",
+                  "repository": {
+                    "name": "adev-fixture-board",
+                    "owner": {
+                      "login": "adev-fixtures"
+                    },
+                    "issueTypes": {
+                      "totalCount": 3
+                    }
+                  },
+                  "issueType": null,
+                  "labels": {
+                    "totalCount": 0,
+                    "nodes": []
+                  },
+                  "milestone": null,
+                  "parent": null,
+                  "blockedBy": {
+                    "totalCount": 0,
+                    "pageInfo": {
+                      "hasNextPage": false,
+                      "endCursor": null
+                    },
+                    "nodes": []
+                  },
+                  "subIssues": {
+                    "totalCount": 0,
+                    "pageInfo": {
+                      "hasNextPage": false,
+                      "endCursor": null
+                    },
+                    "nodes": []
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "response": {
+            "data": {
+              "node": {
+                "id": "PVTI_lADOFZLJsc4Btdm1zhMfDW8",
+                "type": "ISSUE",
+                "fieldValues": {
+                  "nodes": [
+                    {
+                      "__typename": "ProjectV2ItemFieldRepositoryValue"
+                    },
+                    {
+                      "__typename": "ProjectV2ItemFieldTextValue",
+                      "text": "adev-fixture: expired lease",
+                      "field": {
+                        "name": "Title"
+                      }
+                    },
+                    {
+                      "__typename": "ProjectV2ItemFieldSingleSelectValue",
+                      "name": "Backlog",
+                      "field": {
+                        "name": "Status"
+                      }
+                    },
+                    {
+                      "__typename": "ProjectV2ItemFieldTextValue",
+                      "text": "2026-01-15T12:00:00.000Z",
+                      "field": {
+                        "name": "Claimed At"
+                      }
+                    },
+                    {
+                      "__typename": "ProjectV2ItemFieldTextValue",
+                      "text": "adev-fixture-agent-a",
+                      "field": {
+                        "name": "Owner"
+                      }
+                    }
+                  ]
+                },
+                "content": {
+                  "__typename": "Issue",
+                  "id": "I_kwDOV-EGh88AAAABjJL5zg",
+                  "number": 76,
+                  "title": "adev-fixture: expired lease",
+                  "body": "",
+                  "state": "OPEN",
+                  "url": "https://github.com/adev-fixtures/adev-fixture-board/issues/76",
+                  "createdAt": "2026-11-27T19:42:42Z",
+                  "updatedAt": "2026-11-27T19:42:42Z",
+                  "repository": {
+                    "name": "adev-fixture-board",
+                    "owner": {
+                      "login": "adev-fixtures"
+                    },
+                    "issueTypes": {
+                      "totalCount": 3
+                    }
+                  },
+                  "issueType": null,
+                  "labels": {
+                    "totalCount": 0,
+                    "nodes": []
+                  },
+                  "milestone": null,
+                  "parent": null,
+                  "blockedBy": {
+                    "totalCount": 0,
+                    "pageInfo": {
+                      "hasNextPage": false,
+                      "endCursor": null
+                    },
+                    "nodes": []
+                  },
+                  "subIssues": {
+                    "totalCount": 0,
+                    "pageInfo": {
+                      "hasNextPage": false,
+                      "endCursor": null
+                    },
+                    "nodes": []
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "response": {
+            "data": {
+              "node": {
+                "id": "PVTI_lADOFZLJsc4Btdm1zhMfDW8",
+                "type": "ISSUE",
+                "fieldValues": {
+                  "nodes": [
+                    {
+                      "__typename": "ProjectV2ItemFieldRepositoryValue"
+                    },
+                    {
+                      "__typename": "ProjectV2ItemFieldTextValue",
+                      "text": "adev-fixture: expired lease",
+                      "field": {
+                        "name": "Title"
+                      }
+                    },
+                    {
+                      "__typename": "ProjectV2ItemFieldSingleSelectValue",
+                      "name": "Backlog",
+                      "field": {
+                        "name": "Status"
+                      }
+                    },
+                    {
+                      "__typename": "ProjectV2ItemFieldTextValue",
+                      "text": "2026-01-15T16:01:00.000Z",
+                      "field": {
+                        "name": "Claimed At"
+                      }
+                    },
+                    {
+                      "__typename": "ProjectV2ItemFieldTextValue",
+                      "text": "adev-fixture-agent-b",
+                      "field": {
+                        "name": "Owner"
+                      }
+                    }
+                  ]
+                },
+                "content": {
+                  "__typename": "Issue",
+                  "id": "I_kwDOV-EGh88AAAABjJL5zg",
+                  "number": 76,
+                  "title": "adev-fixture: expired lease",
+                  "body": "",
+                  "state": "OPEN",
+                  "url": "https://github.com/adev-fixtures/adev-fixture-board/issues/76",
+                  "createdAt": "2026-11-27T19:42:42Z",
+                  "updatedAt": "2026-11-27T19:42:42Z",
+                  "repository": {
+                    "name": "adev-fixture-board",
+                    "owner": {
+                      "login": "adev-fixtures"
+                    },
+                    "issueTypes": {
+                      "totalCount": 3
+                    }
+                  },
+                  "issueType": null,
+                  "labels": {
+                    "totalCount": 0,
+                    "nodes": []
+                  },
+                  "milestone": null,
+                  "parent": null,
+                  "blockedBy": {
+                    "totalCount": 0,
+                    "pageInfo": {
+                      "hasNextPage": false,
+                      "endCursor": null
+                    },
+                    "nodes": []
+                  },
+                  "subIssues": {
+                    "totalCount": 0,
+                    "pageInfo": {
+                      "hasNextPage": false,
+                      "endCursor": null
+                    },
+                    "nodes": []
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "response": {
+            "data": {
+              "node": {
+                "id": "PVTI_lADOFZLJsc4Btdm1zhMfDW8",
+                "type": "ISSUE",
+                "fieldValues": {
+                  "nodes": [
+                    {
+                      "__typename": "ProjectV2ItemFieldRepositoryValue"
+                    },
+                    {
+                      "__typename": "ProjectV2ItemFieldTextValue",
+                      "text": "adev-fixture: expired lease",
+                      "field": {
+                        "name": "Title"
+                      }
+                    },
+                    {
+                      "__typename": "ProjectV2ItemFieldSingleSelectValue",
+                      "name": "Backlog",
+                      "field": {
+                        "name": "Status"
+                      }
+                    },
+                    {
+                      "__typename": "ProjectV2ItemFieldTextValue",
+                      "text": "2026-01-15T16:01:00.000Z",
+                      "field": {
+                        "name": "Claimed At"
+                      }
+                    },
+                    {
+                      "__typename": "ProjectV2ItemFieldTextValue",
+                      "text": "adev-fixture-agent-b",
+                      "field": {
+                        "name": "Owner"
+                      }
+                    }
+                  ]
+                },
+                "content": {
+                  "__typename": "Issue",
+                  "id": "I_kwDOV-EGh88AAAABjJL5zg",
+                  "number": 76,
+                  "title": "adev-fixture: expired lease",
+                  "body": "",
+                  "state": "OPEN",
+                  "url": "https://github.com/adev-fixtures/adev-fixture-board/issues/76",
+                  "createdAt": "2026-11-27T19:42:42Z",
+                  "updatedAt": "2026-11-27T19:42:42Z",
+                  "repository": {
+                    "name": "adev-fixture-board",
+                    "owner": {
+                      "login": "adev-fixtures"
+                    },
+                    "issueTypes": {
+                      "totalCount": 3
+                    }
+                  },
+                  "issueType": null,
+                  "labels": {
+                    "totalCount": 0,
+                    "nodes": []
+                  },
+                  "milestone": null,
+                  "parent": null,
+                  "blockedBy": {
+                    "totalCount": 0,
+                    "pageInfo": {
+                      "hasNextPage": false,
+                      "endCursor": null
+                    },
+                    "nodes": []
+                  },
+                  "subIssues": {
+                    "totalCount": 0,
+                    "pageInfo": {
+                      "hasNextPage": false,
+                      "endCursor": null
+                    },
+                    "nodes": []
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "query": "query IssueProjectItems($owner: String!, $name: String!, $number: Int!, $after: String) {\n  repository(owner: $owner, name: $name) {\n    issue(number: $number) {\n      projectItems(first: 100, after: $after, includeArchived: false) {\n        totalCount\n        pageInfo { hasNextPage endCursor }\n        nodes {\n          project { id }\n          id\n          type\n          fieldValues(first: 50) {\n            nodes {\n              __typename\n              ... on ProjectV2ItemFieldTextValue { text field { ... on ProjectV2FieldCommon { name } } }\n              ... on ProjectV2ItemFieldSingleSelectValue { name field { ... on ProjectV2FieldCommon { name } } }\n              ... on ProjectV2ItemFieldNumberValue { number field { ... on ProjectV2FieldCommon { name } } }\n            }\n          }\n          content {\n            __typename\n            ... on Issue {\n              id\n              number\n              title\n              body\n              state\n              url\n              createdAt\n              updatedAt\n              repository { name owner { login } issueTypes(first: 1) { totalCount } }\n              issueType { name }\n              labels(first: 100) { totalCount nodes { name } }\n              milestone { title }\n              parent { number state repository { name owner { login } } }\n              blockedBy(first: 100) { totalCount pageInfo { hasNextPage endCursor } nodes { number state repository { name owner { login } } } }\n              subIssues(first: 100) { totalCount pageInfo { hasNextPage endCursor } nodes { number state repository { name owner { login } } } }\n            }\n          }\n        }\n      }\n    }\n  }\n}\n",
+      "variables": {
+        "owner": "adev-fixtures",
+        "name": "adev-fixture-board",
+        "number": 76
+      },
+      "sequence": [
+        {
+          "response": {
+            "data": {
+              "repository": {
+                "issue": {
+                  "projectItems": {
+                    "totalCount": 1,
+                    "pageInfo": {
+                      "hasNextPage": false,
+                      "endCursor": "MQ"
+                    },
+                    "nodes": [
+                      {
+                        "project": {
+                          "id": "PVT_kwDOFZLJsc4Btdm1"
+                        },
+                        "id": "PVTI_lADOFZLJsc4Btdm1zhMfDW8",
+                        "type": "ISSUE",
+                        "fieldValues": {
+                          "nodes": [
+                            {
+                              "__typename": "ProjectV2ItemFieldRepositoryValue"
+                            },
+                            {
+                              "__typename": "ProjectV2ItemFieldTextValue",
+                              "text": "adev-fixture: expired lease",
+                              "field": {
+                                "name": "Title"
+                              }
+                            },
+                            {
+                              "__typename": "ProjectV2ItemFieldSingleSelectValue",
+                              "name": "Backlog",
+                              "field": {
+                                "name": "Status"
+                              }
+                            }
+                          ]
+                        },
+                        "content": {
+                          "__typename": "Issue",
+                          "id": "I_kwDOV-EGh88AAAABjJL5zg",
+                          "number": 76,
+                          "title": "adev-fixture: expired lease",
+                          "body": "",
+                          "state": "OPEN",
+                          "url": "https://github.com/adev-fixtures/adev-fixture-board/issues/76",
+                          "createdAt": "2026-11-27T19:42:42Z",
+                          "updatedAt": "2026-11-27T19:42:42Z",
+                          "repository": {
+                            "name": "adev-fixture-board",
+                            "owner": {
+                              "login": "adev-fixtures"
+                            },
+                            "issueTypes": {
+                              "totalCount": 3
+                            }
+                          },
+                          "issueType": null,
+                          "labels": {
+                            "totalCount": 0,
+                            "nodes": []
+                          },
+                          "milestone": null,
+                          "parent": null,
+                          "blockedBy": {
+                            "totalCount": 0,
+                            "pageInfo": {
+                              "hasNextPage": false,
+                              "endCursor": null
+                            },
+                            "nodes": []
+                          },
+                          "subIssues": {
+                            "totalCount": 0,
+                            "pageInfo": {
+                              "hasNextPage": false,
+                              "endCursor": null
+                            },
+                            "nodes": []
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "response": {
+            "data": {
+              "repository": {
+                "issue": {
+                  "projectItems": {
+                    "totalCount": 1,
+                    "pageInfo": {
+                      "hasNextPage": false,
+                      "endCursor": "MQ"
+                    },
+                    "nodes": [
+                      {
+                        "project": {
+                          "id": "PVT_kwDOFZLJsc4Btdm1"
+                        },
+                        "id": "PVTI_lADOFZLJsc4Btdm1zhMfDW8",
+                        "type": "ISSUE",
+                        "fieldValues": {
+                          "nodes": [
+                            {
+                              "__typename": "ProjectV2ItemFieldRepositoryValue"
+                            },
+                            {
+                              "__typename": "ProjectV2ItemFieldTextValue",
+                              "text": "adev-fixture: expired lease",
+                              "field": {
+                                "name": "Title"
+                              }
+                            },
+                            {
+                              "__typename": "ProjectV2ItemFieldSingleSelectValue",
+                              "name": "Backlog",
+                              "field": {
+                                "name": "Status"
+                              }
+                            },
+                            {
+                              "__typename": "ProjectV2ItemFieldTextValue",
+                              "text": "2026-01-15T12:00:00.000Z",
+                              "field": {
+                                "name": "Claimed At"
+                              }
+                            },
+                            {
+                              "__typename": "ProjectV2ItemFieldTextValue",
+                              "text": "adev-fixture-agent-a",
+                              "field": {
+                                "name": "Owner"
+                              }
+                            }
+                          ]
+                        },
+                        "content": {
+                          "__typename": "Issue",
+                          "id": "I_kwDOV-EGh88AAAABjJL5zg",
+                          "number": 76,
+                          "title": "adev-fixture: expired lease",
+                          "body": "",
+                          "state": "OPEN",
+                          "url": "https://github.com/adev-fixtures/adev-fixture-board/issues/76",
+                          "createdAt": "2026-11-27T19:42:42Z",
+                          "updatedAt": "2026-11-27T19:42:42Z",
+                          "repository": {
+                            "name": "adev-fixture-board",
+                            "owner": {
+                              "login": "adev-fixtures"
+                            },
+                            "issueTypes": {
+                              "totalCount": 3
+                            }
+                          },
+                          "issueType": null,
+                          "labels": {
+                            "totalCount": 0,
+                            "nodes": []
+                          },
+                          "milestone": null,
+                          "parent": null,
+                          "blockedBy": {
+                            "totalCount": 0,
+                            "pageInfo": {
+                              "hasNextPage": false,
+                              "endCursor": null
+                            },
+                            "nodes": []
+                          },
+                          "subIssues": {
+                            "totalCount": 0,
+                            "pageInfo": {
+                              "hasNextPage": false,
+                              "endCursor": null
+                            },
+                            "nodes": []
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "response": {
+            "data": {
+              "repository": {
+                "issue": {
+                  "projectItems": {
+                    "totalCount": 1,
+                    "pageInfo": {
+                      "hasNextPage": false,
+                      "endCursor": "MQ"
+                    },
+                    "nodes": [
+                      {
+                        "project": {
+                          "id": "PVT_kwDOFZLJsc4Btdm1"
+                        },
+                        "id": "PVTI_lADOFZLJsc4Btdm1zhMfDW8",
+                        "type": "ISSUE",
+                        "fieldValues": {
+                          "nodes": [
+                            {
+                              "__typename": "ProjectV2ItemFieldRepositoryValue"
+                            },
+                            {
+                              "__typename": "ProjectV2ItemFieldTextValue",
+                              "text": "adev-fixture: expired lease",
+                              "field": {
+                                "name": "Title"
+                              }
+                            },
+                            {
+                              "__typename": "ProjectV2ItemFieldSingleSelectValue",
+                              "name": "Backlog",
+                              "field": {
+                                "name": "Status"
+                              }
+                            },
+                            {
+                              "__typename": "ProjectV2ItemFieldTextValue",
+                              "text": "2026-01-15T12:00:00.000Z",
+                              "field": {
+                                "name": "Claimed At"
+                              }
+                            },
+                            {
+                              "__typename": "ProjectV2ItemFieldTextValue",
+                              "text": "adev-fixture-agent-a",
+                              "field": {
+                                "name": "Owner"
+                              }
+                            }
+                          ]
+                        },
+                        "content": {
+                          "__typename": "Issue",
+                          "id": "I_kwDOV-EGh88AAAABjJL5zg",
+                          "number": 76,
+                          "title": "adev-fixture: expired lease",
+                          "body": "",
+                          "state": "OPEN",
+                          "url": "https://github.com/adev-fixtures/adev-fixture-board/issues/76",
+                          "createdAt": "2026-11-27T19:42:42Z",
+                          "updatedAt": "2026-11-27T19:42:42Z",
+                          "repository": {
+                            "name": "adev-fixture-board",
+                            "owner": {
+                              "login": "adev-fixtures"
+                            },
+                            "issueTypes": {
+                              "totalCount": 3
+                            }
+                          },
+                          "issueType": null,
+                          "labels": {
+                            "totalCount": 0,
+                            "nodes": []
+                          },
+                          "milestone": null,
+                          "parent": null,
+                          "blockedBy": {
+                            "totalCount": 0,
+                            "pageInfo": {
+                              "hasNextPage": false,
+                              "endCursor": null
+                            },
+                            "nodes": []
+                          },
+                          "subIssues": {
+                            "totalCount": 0,
+                            "pageInfo": {
+                              "hasNextPage": false,
+                              "endCursor": null
+                            },
+                            "nodes": []
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "response": {
+            "data": {
+              "repository": {
+                "issue": {
+                  "projectItems": {
+                    "totalCount": 1,
+                    "pageInfo": {
+                      "hasNextPage": false,
+                      "endCursor": "MQ"
+                    },
+                    "nodes": [
+                      {
+                        "project": {
+                          "id": "PVT_kwDOFZLJsc4Btdm1"
+                        },
+                        "id": "PVTI_lADOFZLJsc4Btdm1zhMfDW8",
+                        "type": "ISSUE",
+                        "fieldValues": {
+                          "nodes": [
+                            {
+                              "__typename": "ProjectV2ItemFieldRepositoryValue"
+                            },
+                            {
+                              "__typename": "ProjectV2ItemFieldTextValue",
+                              "text": "adev-fixture: expired lease",
+                              "field": {
+                                "name": "Title"
+                              }
+                            },
+                            {
+                              "__typename": "ProjectV2ItemFieldSingleSelectValue",
+                              "name": "Backlog",
+                              "field": {
+                                "name": "Status"
+                              }
+                            },
+                            {
+                              "__typename": "ProjectV2ItemFieldTextValue",
+                              "text": "2026-01-15T16:01:00.000Z",
+                              "field": {
+                                "name": "Claimed At"
+                              }
+                            },
+                            {
+                              "__typename": "ProjectV2ItemFieldTextValue",
+                              "text": "adev-fixture-agent-b",
+                              "field": {
+                                "name": "Owner"
+                              }
+                            }
+                          ]
+                        },
+                        "content": {
+                          "__typename": "Issue",
+                          "id": "I_kwDOV-EGh88AAAABjJL5zg",
+                          "number": 76,
+                          "title": "adev-fixture: expired lease",
+                          "body": "",
+                          "state": "OPEN",
+                          "url": "https://github.com/adev-fixtures/adev-fixture-board/issues/76",
+                          "createdAt": "2026-11-27T19:42:42Z",
+                          "updatedAt": "2026-11-27T19:42:42Z",
+                          "repository": {
+                            "name": "adev-fixture-board",
+                            "owner": {
+                              "login": "adev-fixtures"
+                            },
+                            "issueTypes": {
+                              "totalCount": 3
+                            }
+                          },
+                          "issueType": null,
+                          "labels": {
+                            "totalCount": 0,
+                            "nodes": []
+                          },
+                          "milestone": null,
+                          "parent": null,
+                          "blockedBy": {
+                            "totalCount": 0,
+                            "pageInfo": {
+                              "hasNextPage": false,
+                              "endCursor": null
+                            },
+                            "nodes": []
+                          },
+                          "subIssues": {
+                            "totalCount": 0,
+                            "pageInfo": {
+                              "hasNextPage": false,
+                              "endCursor": null
+                            },
+                            "nodes": []
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "query": "mutation SetFields($projectId: ID!, $itemId: ID!, $f0Field: ID!, $f0Value: String!, $f1Field: ID!, $f1Value: String!) {\n  f0: updateProjectV2ItemFieldValue(input: { projectId: $projectId, itemId: $itemId, fieldId: $f0Field, value: { text: $f0Value } }) { clientMutationId }\n  f1: updateProjectV2ItemFieldValue(input: { projectId: $projectId, itemId: $itemId, fieldId: $f1Field, value: { text: $f1Value } }) { clientMutationId }\n}\n",
+      "variables": {
+        "projectId": "PVT_kwDOFZLJsc4Btdm1",
+        "itemId": "PVTI_lADOFZLJsc4Btdm1zhMfDW8",
+        "f0Field": "PVTF_lADOFZLJsc4Btdm1zhrm_Ho",
+        "f0Value": "2026-01-15T12:00:00.000Z",
+        "f1Field": "PVTF_lADOFZLJsc4Btdm1zhrm_HI",
+        "f1Value": "adev-fixture-agent-a"
+      },
+      "response": {
+        "data": {
+          "f0": {
+            "clientMutationId": null
+          },
+          "f1": {
+            "clientMutationId": null
+          }
+        }
+      }
+    },
+    {
+      "query": "mutation SetFields($projectId: ID!, $itemId: ID!, $f0Field: ID!, $f0Value: String!, $f1Field: ID!, $f1Value: String!) {\n  f0: updateProjectV2ItemFieldValue(input: { projectId: $projectId, itemId: $itemId, fieldId: $f0Field, value: { text: $f0Value } }) { clientMutationId }\n  f1: updateProjectV2ItemFieldValue(input: { projectId: $projectId, itemId: $itemId, fieldId: $f1Field, value: { text: $f1Value } }) { clientMutationId }\n}\n",
+      "variables": {
+        "projectId": "PVT_kwDOFZLJsc4Btdm1",
+        "itemId": "PVTI_lADOFZLJsc4Btdm1zhMfDW8",
+        "f0Field": "PVTF_lADOFZLJsc4Btdm1zhrm_Ho",
+        "f0Value": "2026-01-15T16:01:00.000Z",
+        "f1Field": "PVTF_lADOFZLJsc4Btdm1zhrm_HI",
+        "f1Value": "adev-fixture-agent-b"
+      },
+      "response": {
+        "data": {
+          "f0": {
+            "clientMutationId": null
+          },
+          "f1": {
+            "clientMutationId": null
+          }
+        }
+      }
+    }
+  ]
+}

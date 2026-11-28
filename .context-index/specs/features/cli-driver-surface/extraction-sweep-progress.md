@@ -97,7 +97,7 @@ logic matches — naming is canonical and shared.
 | `build-state next`        | `lib/cli/build-state.mjs`     | PR 7          | `build` Dispatch Loop steps 1, 2, 4 (next-step computation) |
 | `heuristics retrieve`     | `lib/cli/heuristics.mjs`      | PR 8-9        | heuristic retrieval in `brainstorm`, `debug` (with `--keyword`), `implement`, `plan`, `prototype`, `recover`, `review-specs`, `specify`, `validate`. Covers all `retrieveHeuristics + renderHeuristic` heredoc forms. |
 | `heuristics write`        | `lib/cli/heuristics.mjs`      | PR 8-9        | `recover` Step 7 lesson capture (`writeHeuristic`). |
-| `report --type reviewer`  | `lib/cli/report.mjs`          | PR 8-9        | (canonical verb; available for review-specs reviewer-report emissions in future refinements) |
+| `report --type reviewer`  | `lib/cli/report.mjs`          | PR 8-9        | `review-specs` Step 6a reviewer-report emissions (migrated off the descriptive-JS `reportReviewer` import/loop per `lib-import-control-flow-extraction.spec.md`'s rule; adopted once `--revision` landed, adev-plugin-qjhn) |
 | `report --type plan-task` | `lib/cli/report.mjs`          | PR 8-9        | (canonical verb; available for `implement` plan-task transitions in future bash dispatch paths) |
 | `report --type intervention` | `lib/cli/report.mjs`       | PR 8-9        | (canonical verb; available for `debug`/`recover` intervention emissions) |
 | `preflight run`           | `lib/cli/preflight.mjs`       | PR 8-9        | `runPreflight + formatPreflightReport` heredocs in `write-test`, `eval`, `debug`, `recover`, `implement`, `validate`. |

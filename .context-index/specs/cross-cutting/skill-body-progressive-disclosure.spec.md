@@ -573,9 +573,9 @@ mapping each pass to its `--check` slug and its companion path.
 
 | Problem | Resolution |
 |---------|------------|
-| 1. 16 bodies over guidance | 0 over. Total 856,056 → 391,417 B (−54.3%); ~209,818 → ~95,936 est. tokens. (30 bodies at the baseline, 31 today — `bugfix-loop` was added afterward and is included in the current figure.) |
-| 2. Four bodies near the hard cap | Smallest headroom across all 31 is now 46,028 B (`eval`) |
-| 3. Multiplied cost | 464,639 fewer bytes enter the prefix per invocation, so the reduction compounds per turn |
+| 1. 16 bodies over guidance | 0 over. Total 856,056 → 392,388 B (−54.2%); ~209,818 → ~96,174 est. tokens. (30 bodies at the baseline, 31 today — `bugfix-loop` was added afterward and is included in the current figure.) |
+| 2. Four bodies near the hard cap | Smallest headroom across all 31 is now 45,640 B (`route`) |
+| 3. Multiplied cost | 463,668 fewer bytes enter the prefix per invocation, so the reduction compounds per turn |
 | 4. Invisible at authoring time | Both limits documented in `constitution.md` / `CLAUDE.md` and `docs/skill-reference.md`; guarded by `tests/skills/skill-size-cap.test.mjs` |
 | 5. Layout divergence | 28 companions moved to `references/` and `scripts/` |
 
@@ -1000,7 +1000,7 @@ Describes the system after the refactor.
 - [ ] **The token saving is estimated, not measured.** Every figure here is bytes, or
       bytes divided by 4.08. The stored module heuristic warns byte proxies overstate
       savings by 2–2.5x, so these must not be quoted as a measured token or cost
-      reduction. What is established: 464,639 fewer bytes enter the context prefix per
+      reduction. What is established: 463,668 fewer bytes enter the context prefix per
       invocation. Settling it needs `adev cost summary --spec <s> --include-checkpoints`
       over one comparable lifecycle before and after — possible now that
       adev-plugin-882a.1 has landed, but not yet run.

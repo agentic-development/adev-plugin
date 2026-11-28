@@ -81,20 +81,50 @@ test("the conforming fixture still loads through the completeness pass", () => {
   assert.equal(rubric.quality_dimensions.length, 2);
 });
 
-test("a scalar where required_elements belongs passes this pass, and never raises a TypeError", () => {
-  // The list keys are guaranteed PRESENT by the required-key pass but not
-  // guaranteed to be lists. Whether the value is a list at all is a later
-  // value-validation concern — rubric-missing-keys.test.mjs already pins a
-  // rubric declaring every required key as a scalar placeholder as loadable —
-  // so this pass must step over it rather than read properties off a string.
+test("a scalar where required_elements or quality_dimensions belongs throws RUBRIC_INVALID_LIST_SHAPE, naming both keys", () => {
+  // The list keys are guaranteed PRESENT by the required-key pass but not, on
+  // their own, guaranteed to be lists — that shape guarantee is what
+  // `assertListKeysAreArrays` (BEH-9, rubric-schema-and-loader rev 2) adds,
+  // running before this completeness pass ever reads an entry off either key.
+  // A scalar here used to load silently as zero entries; it must now fail
+  // loudly instead, naming both offending keys in one error.
+  const err = loadSourceExpectingThrow(
+    `${OTHER_REQUIRED_KEYS}\nrequired_elements: "oops"\nquality_dimensions: "oops"\n`,
+  );
+  assert.equal(err.code, "RUBRIC_INVALID_LIST_SHAPE");
+  assert.match(err.message, /required_elements/);
+  assert.match(err.message, /quality_dimensions/);
+});
+
+test("a non-string scalar (a number) where required_elements belongs throws the same code", () => {
+  const err = loadSourceExpectingThrow(
+    `${OTHER_REQUIRED_KEYS}\nrequired_elements: 4\nquality_dimensions: []\n`,
+  );
+  assert.equal(err.code, "RUBRIC_INVALID_LIST_SHAPE");
+  assert.match(err.message, /required_elements/);
+});
+
+test("a map where required_elements belongs is rejected as nesting, not RUBRIC_INVALID_LIST_SHAPE", () => {
+  // The nesting pass (BEH-2) runs before the list-shape pass (BEH-9), so a map
+  // value for a list-typed key is caught there first — BEH-9's own scope is
+  // only the non-map scalars nesting does not already cover.
+  const err = loadSourceExpectingThrow(
+    `${OTHER_REQUIRED_KEYS}\nrequired_elements:\n  oops: true\nquality_dimensions: []\n`,
+  );
+  assert.equal(err.code, "RUBRIC_NESTED_MAP");
+  assert.match(err.message, /required_elements/);
+});
+
+test("an empty list for both keys is not an offense — BEH-9 tests shape, never length", () => {
   const root = createTempDir();
   try {
     writeFileSync(
       join(root, "rubric.yaml"),
-      `${OTHER_REQUIRED_KEYS}\nrequired_elements: "oops"\nquality_dimensions: "oops"\n`,
+      `${OTHER_REQUIRED_KEYS}\nrequired_elements: []\nquality_dimensions: []\n`,
     );
     const loaded = loadRubric("rubric.yaml", { projectRoot: root });
-    assert.equal(loaded.required_elements, "oops");
+    assert.deepEqual(loaded.required_elements, []);
+    assert.deepEqual(loaded.quality_dimensions, []);
   } finally {
     cleanupTempDir(root);
   }

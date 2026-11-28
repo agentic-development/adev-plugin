@@ -73,4 +73,7 @@ capability deferred. See multi-repo-workspace charter Deferred Capabilities.
        next_action: "Run /adev:plan --feature <module> to break into Features"
      })
      ```
+
+   **If any `create()` call throws `GITHUB_PARTIAL_CREATE`, stop.** The item exists on GitHub, but some of its fields were not written. Report the error code, the new item's canonical ID (the error's `id`) and its `unwritten` list, create no further items, and do not retry. Tell the operator to finish that item with `adev issues update` or on GitHub, then re-run Release Mode.
+
 8. **Report:** "Release plan for `<release-name>` created with `<N>` Epics."

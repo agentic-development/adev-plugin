@@ -32,9 +32,15 @@ test("a key present but empty still counts as declared", () => {
   // The empty value is written as `""` rather than left blank because the YAML
   // reader materialises a valueless key as an empty map, which the earlier
   // nesting pass rejects before the missing-key pass ever sees it.
-  const source = REQUIRED_TOP_LEVEL_KEYS.map((key) =>
-    key === "unknown_policy" ? `${key}: ""` : `${key}: "placeholder"`,
-  ).join("\n");
+  // required_elements and quality_dimensions are written as `[]` rather than
+  // the shared scalar placeholder: both are list-typed (RUBRIC_INVALID_LIST_SHAPE,
+  // BEH-9), and the loader validates shape immediately after this pass runs, so
+  // a scalar there would never reach the assertion this test is checking.
+  const source = REQUIRED_TOP_LEVEL_KEYS.map((key) => {
+    if (key === "unknown_policy") return `${key}: ""`;
+    if (key === "required_elements" || key === "quality_dimensions") return `${key}: []`;
+    return `${key}: "placeholder"`;
+  }).join("\n");
 
   const root = createTempDir();
   try {

@@ -26,9 +26,11 @@ adev report --type step --spec <spec-path> --step specify --status failed --verd
 
 `--verdict FAIL` is required, not decorative. The projection's aggregation pass in `lib/lifecycle-state.mjs` only treats a step terminal as explicit when it carries a string verdict; a `step_failed` emitted without one is overwritten by the verdict synthesized from the actor reports already on the log, so the step projects as `{status: "completed", verdict: "PASS"}` and opens the `review` gate on a spec that was never finished.
 
-**Ordering constraint — read before adding an emission.** `adev report` requires `<spec-path>` to exist on disk and exits `1` with `spec not found` otherwise. Every abort earlier than the atomic-rename commit in Step 5 therefore *cannot* emit a step event, because at that point only `<spec-path>.partial` exists:
+**Ordering constraint — read before adding an emission.** `adev report --type step` requires `<spec-path>` to exist on disk for `--status completed` and `--status failed`, but **not** for `--status started` — the entry event is allowed to precede the spec's own creation (`lib/cli/report.mjs`, fixed for `adev-plugin-eval-harness-xj3k.3` / issue-p1uqr8). The **entry event** above is a `--status started` call, so it succeeds at Step 0 even though the spec is only written in Step 5; nothing in this section qualifies it further.
 
-| Abort | Emit? |
+What the `started` exemption does **not** cover is the **failure-path exit event** (`--status failed`, previous section). Every abort earlier than the atomic-rename commit in Step 5 still cannot emit it, because at that point only `<spec-path>.partial` exists and a non-`started` status still exits `1` with `spec not found`:
+
+| Abort | Emit `--status failed`? |
 |---|---|
 | Step 2.5 `CHARTER_CLOSED` | No — spec file does not exist yet. |
 | Step 3.5 invalid `kind` | No — spec file does not exist yet. |
@@ -37,7 +39,7 @@ adev report --type step --spec <spec-path> --step specify --status failed --verd
 | Step 5.5 failing to read back or rewrite the saved spec's `status:` frontmatter | **Yes** — the atomic rename has committed, so the spec is on disk and a stop here strands the step. |
 | Step 5.6 issue-board adapter throwing | No — this is explicitly non-blocking; the run continues to Step 6 and exits `completed`. |
 
-Be precise about what that single **Yes** row is: Step 5.5 is written as a plain read-modify-write with no documented halt, so this skill currently has **no prose-level abort that both follows the entry event and reaches a spec that exists on disk**. The instruction above is therefore a standing rule for any future edit that introduces one — not a description of a path that fires today. Every abort this skill *does* document is a pre-write abort whose entry event could not land either: the same `spec not found` guard rejects the `--status started` emission at Step 0 in every mode that authors a new spec, so nothing is stranded and there is nothing to close out. Recording pre-write specify aborts requires either a spec-less event channel or relaxing the existence check in `lib/cli/report.mjs`; both are library changes and out of scope here.
+Be precise about what that single **Yes** row is: Step 5.5 is written as a plain read-modify-write with no documented halt, so this skill currently has **no prose-level abort that both follows the entry event and reaches a spec that exists on disk**. The instruction above is therefore a standing rule for any future edit that introduces one — not a description of a path that fires today. Every abort this skill *does* document is a pre-write abort: its entry event already landed under the `started` exemption, and the `--status failed` it cannot emit would only have recorded the same abort the operator-facing error already surfaces, so nothing is stranded. Recording a `--status failed` event for a pre-write abort would still require either a spec-less event channel or extending the existence exemption from `started` to `failed`; both are library changes and out of scope here.
 
 `--revise` mode is unaffected: it emits `spec_revised` rather than step entry/exit events, so its error cases (`NO_REVIEW_SIDECARS`, `SPEC_NOT_BLOCKED`, `INVALID_SPEC_PATH`, `REVISION_NOT_INCREMENTED`, `CONFLICTING_FLAGS`) strand no step and must not emit `--status failed`.
 

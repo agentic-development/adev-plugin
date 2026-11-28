@@ -250,7 +250,7 @@ Configures the task management backend used by `/adev:issues` and the issue boar
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `backend` | string | `"json"` | Backend type: `json`, `file`, or `beads`. Any other value is rejected with `Unknown task backend`. |
+| `backend` | string | `"json"` | Backend type: `json`, `file`, `beads`, or `github`. Any other value is rejected with `Unknown task backend`. |
 | `db_path` | string | — | Override path for the task database (default: auto-resolved from repo root) |
 
 **Backends:**
@@ -260,6 +260,7 @@ Configures the task management backend used by `/adev:issues` and the issue boar
 | `json` | The default. Zero-setup JSON board at `.context-index/tasks/tasks.json`, rendered to a human-readable board on demand. Used when `backend` is unset. |
 | `file` | Legacy markdown board at `.context-index/tasks/tasks.md`. Read-only-deprecated: writes throw `BACKEND_READ_ONLY_DEPRECATED` and selecting it emits a one-time deprecation warning. Only for reading an old board before migrating. |
 | `beads` | The beads_rust `br` CLI, when installed. Choose it when concurrent branches/worktrees share one board. Falls back to `json` (with a warning) if `br` is not on `PATH`. |
+| `github` | A GitHub Projects v2 board, reached through `gh`. Choose it when the board should live where the team already plans, visible to every clone and CI job without a git operation. Opt-in; configured by [`tasks.github`](#tasksgithub). It never falls back to a local board. |
 
 **Minimum `br` version:** the `beads` backend requires `br` >= 0.2.19 and refuses to start below it. 0.2.19 shipped the engine fix for deterministic database corruption caused by merge operations — the exact failure mode this backend exists to survive — so the floor is a safety boundary, not just a compatibility one.
 
@@ -274,6 +275,42 @@ tasks:
 ```
 
 **Beads board git topology:** when `backend: beads`, the board (`.beads/issues.jsonl`) is not tracked inside `main`'s history. It lives on a dedicated `beads-board` orphan branch and `.beads/` is a linked git worktree checked out against that branch — so worktrees and clones share one live board without a PR cycle. No extra config is needed; `adev install`/`adev upgrade` auto-provision `.beads/` as that worktree. A repo that already tracks `.beads/` on `main` needs a one-time `adev issues board migrate` to move it. See [`adev issues board migrate`](cli-reference.md#issues) in the CLI reference for the full command, checkpoint/resume behavior, and error codes.
+
+#### `tasks.github`
+
+Required when `backend: github`. The board is a GitHub Projects v2 board, reached through the `gh` CLI; see [Issue board backends](concepts.md#issue-board-backends) for how it differs from the local backends. The adapter validates this block when it is constructed, with no network call, and throws `GITHUB_INVALID_CONFIG` naming the offending key. An unknown key is refused too, so a misspelled key never silently takes a default. These keys are the complete set:
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `project` | string | required | Projects v2 URL: `https://github.com/orgs/<org>/projects/<n>` or `https://github.com/users/<user>/projects/<n>` |
+| `repo` | string | required | Home repository, `<owner>/<repo>`. New issues are created here and its issues get `gh-<n>` IDs. Changing it on a board that already has adev-managed items is unsupported |
+| `status_field` | string | `"Status"` | Name of the single-select project field that holds the adev status |
+| `status_map` | mapping | the board mapping below | Maps each of the four adev statuses (`open`, `in_progress`, `deferred`, `closed`) to a status option name or a non-empty list of names. All four must be present when it is set, and no option may appear under two statuses. The first entry is the option adev writes; every entry is read as that status |
+| `priority_field` | string | none (optional) | Name of a **number** project field to read and write priority from; a configured field that is missing or not a number field fails with `GITHUB_FIELD_MISSING`, and it is then the only place priority is written. When unset, a field named `Priority` is used (a `P0`–`P4` single-select or a number field), and when the board has no such field priority is written as a `priority:<0-4>` label. On read, an item whose field is empty falls back to its `priority:` label, else `2` |
+| `type_source` | string | `auto` | Where an item's type comes from: `auto` (issue types where the owner has them, else labels), `issue_types`, or `labels` (`type:<x>` labels, `epic` for epics) |
+| `fields` | mapping | the field names below | Overrides the project text-field name for any adev field. Keys must be adev field names; two adev fields may not map to the same project field |
+| `claim_settle_ms` | integer | `1500` | How long `claim()` waits before its second re-read; an integer from 0 to 10000. See [the claim window](concepts.md#the-claim-window) |
+
+**Default `status_map`** (the recommended board mapping): `open: [Backlog, Ready]`, `in_progress: [In Progress, In Review]`, `deferred: [Deferred]`, `closed: [Done]`. A closed GitHub issue always reads as `closed`, whatever its status option.
+
+**Default `fields` names:** `owner` → `Owner`, `claimed_at` → `Claimed At`, `next_action` → `Next Action`, `spec_ref` → `Spec`, `planRef` → `Plan`, `branch` → `Branch`, `pr` → `PR`, `legacy_id` → `Legacy ID`.
+
+**Requirements:** `gh` on `PATH`, authenticated (or `GH_TOKEN` set) with the `repo` and `project` scopes, or a fine-grained / App token with issue read/write on the repo and read/write on the project. Run `adev issues github setup` to create the fields and options the board needs, and `adev issues github setup --check` to verify it. Error codes are listed in [Troubleshooting](troubleshooting.md#github-issue-backend).
+
+**Issue types.** With `type_source: auto`, adev uses issue types whenever the repository's owner has any, and organizations have `Task`, `Bug` and `Feature` by default. Epics are then issues of type `Epic`, which GitHub does not create: add it under the organization's **Settings → Planning → Issue types**. Without it, `createEpic` and every migration that carries an epic fail with `GITHUB_WRITE_FAILED` naming the missing type. `setup --check` does not check issue types. On an owner without issue types, or with `type_source: labels`, epics carry the `epic` label instead.
+
+**A new project needs its Status options added by hand.** GitHub gives every new project a Status field with `Todo`, `In Progress` and `Done`. `setup --yes` adds the adev fields but leaves the missing Status options (`Backlog`, `Ready`, `In Review` and `Deferred` for the default `status_map`) as a manual step, because adding an option replaces the field's whole option list. Add them on the board, delete `Todo` (adev refuses to read an item in an unmapped column) or list it in `status_map`, then run `setup --check`. See [`issues github setup`](cli-reference.md#issues-github-setup).
+
+**Disable the board's Status workflows.** On the project's **Workflows** page, turn off every built-in workflow that sets Status, notably "Item added to project" and "Auto-add sub-issues to project", which are on by default. Left on, they overwrite the Status adev writes seconds later (an item adev set to `In Progress` is reset to `Backlog` by `github-project-automation`). `setup` does not change workflows. See [how `github` differs](concepts.md#how-github-differs).
+
+**Example:**
+```yaml
+tasks:
+  backend: github
+  github:
+    project: https://github.com/orgs/my-org/projects/3
+    repo: my-org/my-repo
+```
 
 ### provenance
 

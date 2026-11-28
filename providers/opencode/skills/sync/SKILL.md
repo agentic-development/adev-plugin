@@ -55,6 +55,14 @@ If the output is not `__NONE__`, incorporate it as additional standing instructi
     - If tasks.backend is "json" (the default), reference the board at
       `.context-index/tasks/tasks.json` (rendered to a readable board on demand).
     - If tasks.backend is "file", include the legacy `.context-index/tasks/tasks.md` reference.
+    - If tasks.backend is "github", state that the board lives on the GitHub
+      Projects v2 project configured under `tasks.github`, and that agents
+      manage it only through `adev issues …` verbs (`adev issues ready`,
+      `adev issues list`, `adev issues create`, `adev issues close`;
+      `adev issues github setup --check` verifies the project) — never raw
+      tracker commands. Issue IDs are `gh-<n>` for the home repo
+      (`gh-<owner>.<repo>.<n>` for other repos on the project). Every board
+      operation needs network access and `gh` CLI authentication (`gh auth login`).
     - If constitution has no Task Management section, generate from
       the default content matching the configured backend.
     If tasks.backend is NOT configured in the manifest, omit this
