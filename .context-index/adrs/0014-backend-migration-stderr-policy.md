@@ -33,6 +33,7 @@ Review note SEC-1 on `backend-migration.spec.md` requested an explicit decision 
 - On `MIGRATE_PARTIAL_FAILURE`, the `errors[]` array in the JSON report carries the underlying adapter error's `.stderr || .message` unchanged.
 - The same content is written to the operator's terminal (stderr) at failure time so they see it without re-parsing the JSON report.
 - No path-scrubbing, no truncation beyond what the underlying error message already carries, no field-level redaction.
+- **Scoped exception: token redaction on the github target (amended 2026-11-26).** When the target is `github`, the verb runs every stdout and stderr message through `redact()` (`lib/issues/github/errors.mjs`) before writing it. That function replaces `GH_TOKEN`/`GITHUB_TOKEN` values, GitHub token patterns and `Authorization:` credentials with `[REDACTED]`. This passes this ADR's own test: the github path adds a network transport that carries credentials, which is the "transport boundary" the Context section says the `br` path lacks. The exception covers token-like material on the github path only. Everything else on that path is still forwarded verbatim, with no path-scrubbing and no truncation, and the json and beads paths are unchanged. Source: `backend-migration-rev-3-github-target.spec.md` BEH-6, `task-management` charter rev 10.
 
 This matches the policy that `BeadsAdapter._runBr()` already exposes via `BEADS_COMMAND_FAILED`. The verb does not introduce a new transport boundary that would call for stricter handling than its dependency.
 
@@ -85,3 +86,4 @@ Parse `br` stderr into a typed object (`{ code, message, cause }`) and forward t
 - Spec: `.context-index/specs/features/task-management/backend-migration.spec.md` (Behavior 17, Live-Run Output Shape, Error Cases — `MIGRATE_PARTIAL_FAILURE`)
 - Review: `.context-index/specs/features/task-management/backend-migration.review.md` (SEC-1)
 - Adapter: `lib/issues/beads-adapter.mjs:62` (`BEADS_COMMAND_FAILED` carries `err.stderr` verbatim)
+- `.context-index/specs/features/task-management/backend-migration-rev-3-github-target.spec.md` (BEH-6): the github-target token-redaction exception, amended 2026-11-26

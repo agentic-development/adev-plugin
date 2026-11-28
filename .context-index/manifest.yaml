@@ -443,6 +443,14 @@ hygiene:
       # exempt_commits rationale above). Rewrite-durable form -- this branch
       # merges to a protected main, so the SHA will not survive.
       - "da2d2cf8f31c82cba4a10c6886e68f78d5130b4d"
+      # task-management/github-board-backend: 34e1f43c reconciled the plan
+      # with spec rev 6 and the migration amendment after the first
+      # plan_task pending event. A documented spec-rev refinement during
+      # /adev:build, the same shape as the copilot-adapter and
+      # eval-harness entries above, not silent drift. Approved by the
+      # maintainer on 2026-11-27. Patch id only: the branch merges to a
+      # protected main, so the SHA will not survive.
+      - "c6cb14833a4002895e14986459e69551c4c39109"
 
 domain: software
 
