@@ -1,8 +1,8 @@
 ---
-partial_schema: spec@1
+partial_schema: implement@1
 charter: implementation
 kind: skill
-status: review-passed
+status: implemented
 risk_level: high
 milestone:
 revision: 4
@@ -15,6 +15,84 @@ relates-to:
   - .context-index/specs/features/implementation/batched-task-dispatch.spec.md
   - .context-index/specs/features/implementation/review-provenance.spec.md
 adr: .context-index/adrs/0020-implement-rigor-ladder.md
+source-manifest:
+  sha: "d5a2ee2"
+  files:
+    - .context-index/adrs/0020-implement-rigor-ladder.md
+    - .context-index/governance/risk-policies.yaml
+    - .context-index/specs/cross-cutting/graduated-rigor-tiers-rev-4-lite-tier.spec.md
+    - .context-index/specs/features/implementation/graduated-review-depth-rev-13-rigor-ladder.spec.md
+    - README.md
+    - cli/index.mjs
+    - docs/cli-reference.md
+    - docs/concepts.md
+    - docs/configuration.md
+    - docs/skill-reference.md
+    - lib/cli/implement.mjs
+    - lib/cli/init-prompt-implement-rigor.mjs
+    - lib/cli/route.mjs
+    - lib/cli/test-policy.mjs
+    - lib/governance/rigor-mode.mjs
+    - lib/implement/batching.mjs
+    - lib/implement/provisional-inputs.mjs
+    - lib/implement/review-depth.mjs
+    - lib/implement/run-base.mjs
+    - lib/lifecycle-events.mjs
+    - lib/plan-routing-sidecar.mjs
+    - skills/build/SKILL.md
+    - skills/build/step4-tier-propagation.md
+    - skills/implement/SKILL.md
+    - skills/implement/graduated-review-depth.md
+    - skills/implement/references/batched-mode.md
+    - skills/implement/references/failure-path-exit-event.md
+    - skills/implement/references/integration-gate.md
+    - skills/implement/references/lite-mode.md
+    - skills/implement/references/steps/step-2-per-task-loop.md
+    - skills/implement/references/steps/step-3-final-review.md
+    - skills/init/references/behavior-by-project-state.md
+    - skills/route/SKILL.md
+    - skills/validate/SKILL.md
+    - skills/work/SKILL.md
+    - tests/cli/governance-dispatch.test.mjs
+    - tests/cli/implement-batches.test.mjs
+    - tests/cli/implement-check-flags.test.mjs
+    - tests/cli/implement-lite-report.test.mjs
+    - tests/cli/implement-resolve-depth.test.mjs
+    - tests/cli/implement-task-begin.test.mjs
+    - tests/cli/init-prompt-implement-rigor.test.mjs
+    - tests/cli/route-emit-sidecar.test.mjs
+    - tests/cli/test-policy.test.mjs
+    - tests/docs/implement-resolve-depth-docs.test.mjs
+    - tests/docs/implement-rigor-ladder-docs.test.mjs
+    - tests/evals/comparison/reports/summary.json
+    - tests/evals/comparison/run-comparison.mjs
+    - tests/evals/implement-rigor-ladder/fixture/README.md
+    - tests/evals/implement-rigor-ladder/replay-distribution.mjs
+    - tests/evals/implement-rigor-ladder/replay-distribution.test.mjs
+    - tests/evals/implement-rigor-ladder/results/.gitkeep
+    - tests/evals/implement-rigor-ladder/run-ab-eval.mjs
+    - tests/governance/rigor-mode.test.mjs
+    - tests/governance/risk-policies-implement-mode.test.mjs
+    - tests/lib/evals/implement-rigor-ladder-smoke.test.mjs
+    - tests/lib/evals/plugin-eval-cases-rigor-ladder.test.mjs
+    - tests/lib/implement/batching.test.mjs
+    - tests/lib/implement/lite-eligible-parity.test.mjs
+    - tests/lib/implement/provisional-inputs-parity.test.mjs
+    - tests/lib/implement/review-depth-lite-grant.test.mjs
+    - tests/lib/implement/review-depth-task-snapshot.test.mjs
+    - tests/lib/implement/review-depth-tripwire.test.mjs
+    - tests/lib/implement/review-depth.test.mjs
+    - tests/lib/implement/run-base.test.mjs
+    - tests/lifecycle/review-depth-resolved-event.test.mjs
+    - tests/risk-tiers/implement-mode-presets.test.mjs
+    - tests/skills/build-tier-propagation.test.mjs
+    - tests/skills/implement-graduated-review-depth.test.mjs
+    - tests/skills/implement-rigor-ladder.test.mjs
+    - tests/skills/init-implement-rigor-step.test.mjs
+    - tests/skills/rigor-ladder-forwarding.test.mjs
+    - tests/skills/route-lite-eligible.test.mjs
+    - tests/specs/implement-rigor-ladder-amendments.test.mjs
+  computed-at: "2026-11-28T12:37:58.891Z"
 ---
 
 # Skill Spec: Implement Rigor Ladder (lite / quick / full)
