@@ -26,6 +26,7 @@ source-manifest:
     - skills/status/SKILL.md
     - tests/skills/terse-form-markers.test.mjs
   computed-at: "2026-08-21T04:34:15.540Z"
+drift_detected: true
 ---
 
 # Live Spec: Skill Output Rules Wiring

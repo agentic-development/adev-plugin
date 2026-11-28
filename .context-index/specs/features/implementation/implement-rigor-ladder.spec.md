@@ -3,7 +3,7 @@ partial_schema: implement@1
 charter: implementation
 kind: skill
 status: implemented
-risk_level: high
+risk_level: medium
 milestone:
 revision: 4
 charter-revision: 1

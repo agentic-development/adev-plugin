@@ -62,6 +62,7 @@ source-manifest:
     - tests/skills/review-specs-decisions-ask-round.test.mjs
     - tests/skills/review-specs-finding-class-prompts.test.mjs
   computed-at: "2026-11-23T11:44:50.732Z"
+drift_detected: true
 ---
 
 # Amendment: Live Spec: Auto-Retry Loop on Review BLOCK — Batched Operator Decisions (targeting rev 3)
