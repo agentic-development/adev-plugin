@@ -1,6 +1,6 @@
 ---
 charter: session-awareness
-kind: behavioral
+kind: behavior
 status: validated
 risk_level: medium
 milestone: 0.28.0

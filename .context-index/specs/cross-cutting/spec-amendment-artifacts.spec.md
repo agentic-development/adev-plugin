@@ -1,7 +1,7 @@
 ---
 partial_schema: spec@1
 mode: cross-cutting
-kind: behavioral
+kind: behavior
 status: validated
 risk_level: medium
 revision: 1

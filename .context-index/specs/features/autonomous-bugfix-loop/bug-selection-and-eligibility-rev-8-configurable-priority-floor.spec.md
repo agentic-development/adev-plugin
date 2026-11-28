@@ -1,7 +1,7 @@
 ---
 partial_schema: implement@1
 charter: autonomous-bugfix-loop
-kind: behavioral
+kind: behavior
 status: implemented
 risk_level: medium
 revision: 1

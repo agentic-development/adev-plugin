@@ -2,7 +2,7 @@
 partial_schema: spec@1
 mode: cross-cutting
 affects: [setup, lib, cli]
-kind: behavioral
+kind: behavior
 status: validated
 risk_level: medium
 revision: 3

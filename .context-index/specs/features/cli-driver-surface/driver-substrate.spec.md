@@ -1,6 +1,6 @@
 ---
 charter: cli-driver-surface
-kind: behavioral
+kind: behavior
 status: validated
 risk_level: medium
 milestone:

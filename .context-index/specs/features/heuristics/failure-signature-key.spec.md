@@ -1,6 +1,6 @@
 ---
 charter: heuristics
-kind: behavioral
+kind: behavior
 status: validated
 risk_level: high
 milestone: 3

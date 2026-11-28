@@ -1,6 +1,6 @@
 ---
 charter: lifecycle-artifacts
-kind: behavioral
+kind: behavior
 status: validated
 risk_level: medium
 milestone:

@@ -1,6 +1,6 @@
 ---
 charter: output-personas
-kind: behavioral
+kind: behavior
 status: validated
 risk_level: medium
 milestone: v2

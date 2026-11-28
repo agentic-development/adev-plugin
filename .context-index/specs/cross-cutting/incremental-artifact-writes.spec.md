@@ -1,6 +1,6 @@
 ---
 affects: [cli-driver-surface, agent-reliable-state-artifacts, lifecycle-artifacts]
-kind: behavioral
+kind: behavior
 status: validated
 risk_level: medium
 mode: cross-cutting

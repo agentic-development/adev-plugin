@@ -7,7 +7,7 @@ affects:
   - review
   - reviewer-domain-fit
   - validation
-kind: behavioral
+kind: behavior
 revision: 3
 created: 2026-09-09
 updated: 2026-09-10

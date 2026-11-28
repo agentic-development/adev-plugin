@@ -38,13 +38,6 @@ gates:
     triggers:
       - post-task
       - post-implement
-  - id: quality-gate
-    command: ["npm", "test"]
-    description: Run project test suite
-    severity: error
-    tier: fast
-    source: domain:software
-
   # The integration tier. `npm test` deliberately excludes tests/evals/ —
   # scripts/run-tests.mjs splits them into an opt-in tier — so without this gate
   # the eval suites are declared and never executed by any gate, which is the

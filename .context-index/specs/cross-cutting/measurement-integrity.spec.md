@@ -1,7 +1,7 @@
 ---
 mode: cross-cutting
 affects: [lifecycle-state, validation, review, hygiene, sessions, gate-cli, ci]
-kind: behavioral
+kind: behavior
 status: superseded
 risk_level: medium
 tracker-ref: epic-101

@@ -1,6 +1,6 @@
 ---
 charter: cli
-kind: behavioral
+kind: behavior
 status: draft
 risk_level: high
 revision: 2

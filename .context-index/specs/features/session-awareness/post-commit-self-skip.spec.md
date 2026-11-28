@@ -1,6 +1,6 @@
 ---
 charter: session-awareness
-kind: behavioral
+kind: behavior
 status: superseded
 superseded-by: .context-index/specs/features/session-awareness/hook-driven-capture.spec.md
 risk_level: low

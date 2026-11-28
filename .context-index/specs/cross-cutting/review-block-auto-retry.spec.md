@@ -1,6 +1,6 @@
 ---
 affects: [agent-reliable-state-artifacts, spec-lifecycle, strategic-planning]
-kind: behavioral
+kind: behavior
 mode: cross-cutting
 status: validated
 risk_level: high

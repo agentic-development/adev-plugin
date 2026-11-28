@@ -1,6 +1,6 @@
 ---
 charter: agent-reliable-state-artifacts
-kind: behavioral
+kind: behavior
 status: validated
 risk_level: high
 milestone: 0.26.0

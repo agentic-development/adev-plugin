@@ -2,7 +2,7 @@
 partial_schema: spec@1
 charter: autonomous-bugfix-loop
 status: validated
-kind: behavioral
+kind: behavior
 risk_level: medium
 milestone: 1
 revision: 3

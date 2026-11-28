@@ -1,7 +1,7 @@
 ---
 partial_schema: spec@1
 charter: eval-harness
-kind: behavioral
+kind: behavior
 status: review-passed
 risk_level: medium
 milestone: v1
