@@ -49,7 +49,7 @@ source-manifest:
 
 6. **When** `walkTree(parentId)` is called with a tiered ID **then** it returns all WorkItems whose ID starts with `<parentId>.` (immediate and transitive children). Items at the parent level itself are not included.
 
-7. **When** `walkTree(parentId)` is called with a legacy flat ID (`epic-N`, `issue-N`, `bd-XXXXXX`) **then** it returns an empty list. Hierarchy queries against legacy items are out of scope by design (see task-management charter rev 3 invariants).
+7. **When** `walkTree(parentId)` is called with any parent id — legacy flat (`epic-N`, `issue-N`, `bd-XXXXXX`), a `parseId()`-unrecognized id (e.g. a `mintFlatId()` hash suffix or a br `--slug` id), or a tiered dotted id — **then** it returns every item whose id starts with `<parentId>.`, with no `parseId()`-based gate on the parent id's own shape. A parent id with no items literally prefixed by `<parentId>.` returns an empty list as a consequence of the prefix match finding nothing, not because the id's shape was rejected upfront (adev-plugin-walktree-parseid-real-ids-sa9i: real boards mint legacy-shaped and slug-shaped parent ids that still carry literal `<parentId>.<n>` children outside `create()`'s tiered path, and the earlier shape-based gate silently hid them).
 
 8. **When** `walkTree("e1")` is called and `e1.f1`, `e1.f1.t1`, `e1.f2` exist **then** it returns `[e1.f1, e1.f1.t1, e1.f2]` in stable order (sorted by ID).
 
@@ -90,7 +90,7 @@ source-manifest:
 |-----------|-------------------|------------|
 | `parseId` on garbage input | Returns `null` | — |
 | `nextChildId` with non-existent parent | Returns `<parent>.<prefix>1` (no validation that parent exists) | — |
-| `walkTree` with invalid ID format | Returns empty list | — |
+| `walkTree` with a parent id (any shape) that has no items prefixed by `<parentId>.` | Returns empty list | — |
 | `close()` with unclosed children | Throws CASCADE_BLOCKED | CASCADE_BLOCKED |
 | `tasks.tier_prefixes` with duplicate or conflicting prefix | Throws at load time | INVALID_TIER_CONFIG |
 | Tiered item with missing parent in tasks.md | Warning logged, item still listed | — |
@@ -118,7 +118,7 @@ source-manifest:
 - [ ] `parseId` flags legacy flat IDs with `legacy: true`
 - [ ] `nextChildId` produces monotonic counters per parent
 - [ ] `walkTree` returns all descendants via prefix match
-- [ ] `walkTree` returns empty list for legacy IDs
+- [ ] `walkTree` returns empty list only when no item is literally prefixed by `<parentId>.` — never because the parent id's own shape (legacy or otherwise) was rejected upfront
 - [ ] `close()` blocks when unclosed children exist (CASCADE_BLOCKED)
 - [ ] `close()` succeeds on legacy IDs without cascade check
 - [ ] `tasks.tier_prefixes` override is read from manifest at adapter init

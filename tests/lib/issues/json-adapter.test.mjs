@@ -801,6 +801,45 @@ describe("JsonAdapter — walkTree", () => {
     const result = await adapter.walkTree("unknown-999");
     assert.deepEqual(result, []);
   });
+
+  it("returns real .N children minted directly under a legacy-shaped (epic-<hash>) parent id, not []", async () => {
+    // Real boards mint epics as `epic-<hash>` (mintFlatId) — LEGACY_RE matches,
+    // so parseId() flags them `legacy: true`. Children are still literal
+    // "<epicId>.<n>" strings (minted outside create()'s tiered path, e.g.
+    // directly on the beads backend). walkTree() must find them by prefix
+    // match regardless of the parent id's shape.
+    writeBoardRaw(dir, JSON.stringify({
+      version: 2,
+      epics: [],
+      issues: [
+        { id: "epic-9zqjfj", title: "Real epic", type: "task", status: "open", created: "2026-01-01T00:00:00.000Z", updated: "2026-01-01T00:00:00.000Z" },
+        { id: "epic-9zqjfj.1", title: "Real child 1", type: "task", status: "open", created: "2026-01-01T00:00:00.000Z", updated: "2026-01-01T00:00:00.000Z" },
+        { id: "epic-9zqjfj.2", title: "Real child 2", type: "task", status: "open", created: "2026-01-01T00:00:00.000Z", updated: "2026-01-01T00:00:00.000Z" },
+      ],
+    }));
+    const result = await adapter.walkTree("epic-9zqjfj");
+    const ids = result.map((i) => i.id).sort();
+    assert.deepEqual(ids, ["epic-9zqjfj.1", "epic-9zqjfj.2"]);
+  });
+
+  it("returns real .N children minted under a slug-style root id that parseId() cannot classify at all", async () => {
+    // Real boards also mint slug ids like "adev-plugin-eval-harness-xj3k"
+    // (br's own --slug id scheme) that match neither LEGACY_RE nor
+    // SEGMENT_RE, so parseId() returns null. walkTree() must still find
+    // literal "<rootId>.<n>" children.
+    writeBoardRaw(dir, JSON.stringify({
+      version: 2,
+      epics: [],
+      issues: [
+        { id: "adev-plugin-eval-harness-xj3k", title: "Real epic", type: "task", status: "open", created: "2026-01-01T00:00:00.000Z", updated: "2026-01-01T00:00:00.000Z" },
+        { id: "adev-plugin-eval-harness-xj3k.1", title: "Real child", type: "task", status: "open", created: "2026-01-01T00:00:00.000Z", updated: "2026-01-01T00:00:00.000Z" },
+        { id: "adev-plugin-eval-harness-xj3k.11", title: "Real child (double-digit)", type: "task", status: "open", created: "2026-01-01T00:00:00.000Z", updated: "2026-01-01T00:00:00.000Z" },
+      ],
+    }));
+    const result = await adapter.walkTree("adev-plugin-eval-harness-xj3k");
+    const ids = result.map((i) => i.id).sort();
+    assert.deepEqual(ids, ["adev-plugin-eval-harness-xj3k.1", "adev-plugin-eval-harness-xj3k.11"]);
+  });
 });
 
 // ---------------------------------------------------------------------------
