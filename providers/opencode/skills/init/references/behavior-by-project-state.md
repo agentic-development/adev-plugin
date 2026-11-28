@@ -749,6 +749,29 @@ Invoke `adev init prompt implementation-mode` to drive this step. The verb owns 
 
 Spec: `.context-index/specs/cross-cutting/mode-resolution-core.spec.md`.
 
+### Step 8c: Implement rigor preference
+
+```
+Step 8c/11: Implement Rigor
+  Implement rigor sets how much per-task review /adev:implement
+  runs (`implement_mode` in governance/risk-policies.yaml).
+
+  Choices:
+  - lite    route-eligible tasks run inline with no per-task
+            reviewer; review is deferred to /adev:validate (a
+            warning is shown before this is written)
+  - quick   one synthesized reviewer per task (default)
+  - full    spec-compliance then code-quality review per task
+
+  → Choose implement rigor (type lite, quick, or full):
+```
+
+Invoke `adev init prompt implement-rigor` to drive this step. Your Bash tool has no TTY, so a bare invocation always takes the verb's non-interactive path and would drop the operator's answer. Show the menu above, take the operator's typed answer, and pass it verbatim as `adev init prompt implement-rigor --mode <answer>`: do not correct its case, trim it or map it to a choice, because the verb's exact-match validation decides. If the verb exits with `INVALID_IMPLEMENT_RIGOR`, show the menu and ask again, up to 3 attempts in total, then stop the step and leave the file unchanged. Run it without `--mode` only when no operator can answer (a headless run). Never supply `lite` on the operator's behalf: it is written only when the operator types it.
+
+The step runs for every `risk_tier` preset (`prototype`, `standard` and `strict`) and on re-runs of `/adev:init` on an existing project. The verb owns all choice, validation and write logic: the exact, case-sensitive match on the three choices, the three-attempt cap, the `lite` warning, which risk levels are written (`medium` and `low`, plus `high` for `full`), the splice-preserving write to `risk-policies.yaml`, and the non-interactive behavior (no prompt, an existing `implement_mode` is never overwritten, and a missing one gets the preset's non-`lite` default; when `risk-policies.yaml` does not exist, a non-interactive `quick` default writes nothing, because the implement `quick` fallback already applies). None of it is reproduced in this skill's prose — the verb is the single source of truth for it.
+
+Spec: `.context-index/specs/features/implementation/implement-rigor-ladder.spec.md`.
+
 ```
 Step 9/11: Sync Targets
   Your constitution will be synced to agent-specific files so

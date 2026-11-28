@@ -33,4 +33,22 @@ Record per criterion:
 
 **Anti-fabrication rule:** Every file:line citation in the report MUST come from a Read tool call in this session. If you cannot read a file (it does not exist, is too large, etc.), say so explicitly rather than guessing its contents. A validation report with fabricated citations is worse than no report at all.
 
+**Lite-task scope (from Step 0b).** Step 0b ran `adev implement lite-report --spec <spec-path> --json` before any check. Build the extra scope from its result before dispatching, and put the selected commit diffs in the Check 2 subagent's prompt as tasks implemented without per-task review. The subagent checks them against the acceptance criteria like any other change.
+
+1. **`count` is 0:** no extra scope.
+2. **`count > 0`:** normalize each id in `task_ids` first. An id of the form `t<n>`, `task-<n>`, `Task <n>` or `<n>` becomes the bare number `<n>`, which is what a `Plan-task: <n>` trailer carries. The `t` or `task` prefix is matched case-insensitive, with an optional `-` or space after `task`. Any other id is used verbatim. Drop duplicates after normalizing. For each `<n>`, run:
+
+   ```bash
+   git log --format=%H --all-match --grep='^Spec: <spec-path>$' --grep='^Plan-task: <n>$'
+   ```
+
+   Then run `git show <sha>` for each sha it prints. `<spec-path>` is the repo-relative path as the trailer writes it. Escape regex metacharacters in `<spec-path>` (at least `.` → `\.`), and never pass `-F`/`--fixed-strings`: it makes `^` and `$` literal, so the grep matches nothing and the scope is empty. The `^…$` anchors are required: `Plan-task: 1` must not match `Plan-task: 10` through `Plan-task: 19`. When an id selects no commit, record a Check 2 PARTIAL with the note "no commit found for lite task <id>", using the id as `lite-report` printed it.
+3. **`lite-report` exited non-zero:** the scope widens to every commit whose `Spec:` trailer names this spec. Run:
+
+   ```bash
+   git log --format=%H --grep='^Spec: <spec-path>$'
+   ```
+
+   Then run `git show <sha>` for each sha it prints. Escape regex metacharacters in `<spec-path>` (at least `.` → `\.`), and never pass `-F`/`--fixed-strings`: it makes `^` and `$` literal, so the grep matches nothing and the scope is empty. No per-id PARTIAL is recorded, because no ids are known.
+
 **Cross-repo interface verification (workspace-aware validation mode only):** When workspace-aware validation mode is active and `crossRepoDeps` is non-empty, Check 2 gains an additional sub-step: for each acceptance criterion that references behaviour defined in a cross-repo dependency spec, verify that the implementation respects the interface contracts (API signatures, data shapes, event payloads) described in the dependency spec. Record findings per criterion as PASS / FAIL / PARTIAL with references to both the local code and the cross-repo dependency spec.

@@ -451,6 +451,10 @@ hygiene:
       # maintainer on 2026-11-27. Patch id only: the branch merges to a
       # protected main, so the SHA will not survive.
       - "c6cb14833a4002895e14986459e69551c4c39109"
+      # implement-rigor-ladder: spec revision 4 (operator-approved 2026-11-27)
+      # appended Tasks 23-25 to the plan mid-run; Tasks 1-22 are unchanged.
+      # NEW EXEMPTION (2026-11-28), operator-approved; no exempt_commits sibling.
+      - "5645cbf220d37eb0c537e2786276be590afaf84c"
 
 domain: software
 

@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "1",
+      "selected_agent": "auto-agent",
+      "scores": { "spec_completeness": 0.8, "pattern_coverage": 0.8, "blast_radius": 0.8, "novelty": 0.8 },
+      "rationale": "Fixture task 1: one small module plus a registry entry."
+    },
+    {
+      "task_id": "2",
+      "selected_agent": "auto-agent",
+      "scores": { "spec_completeness": 0.8, "pattern_coverage": 0.8, "blast_radius": 0.8, "novelty": 0.8 },
+      "rationale": "Fixture task 2: one module under src/auth/."
+    },
+    {
+      "task_id": "3",
+      "selected_agent": "auto-agent",
+      "scores": { "spec_completeness": 0.9, "pattern_coverage": 0.9, "blast_radius": 0.9, "novelty": 0.9 },
+      "rationale": "Fixture task 3: one constant."
+    }
+  ]
+}

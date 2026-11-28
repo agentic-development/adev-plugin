@@ -239,3 +239,55 @@ test("adev route render-sidecar errors when sidecar is missing", () => {
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+function entryWith(taskId, agent, score) {
+  return {
+    task_id: taskId,
+    selected_agent: agent,
+    scores: {
+      spec_completeness: score,
+      pattern_coverage: score,
+      blast_radius: score,
+      novelty: score,
+    },
+    rationale: "seeded",
+  };
+}
+
+function emit(t, entries) {
+  const { dir, planPath } = makePlan("lite-eligible");
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const res = spawnSync(
+    "node",
+    [CLI, "route", "emit-sidecar", "--plan", planPath],
+    { input: JSON.stringify(entries), encoding: "utf8" },
+  );
+  assert.equal(res.status, 0, `stderr: ${res.stderr}`);
+  return res;
+}
+
+let seq = 0;
+const auto = (score) => entryWith(`t${++seq}`, "auto-agent", score);
+const assisted = (score) => entryWith(`t${++seq}`, "assisted-agent", score);
+
+test("emit-sidecar output carries lite_eligible computed by liteEligible", (t) => {
+  const humanOnly = entryWith("h0", "human-only", 0.9);
+  const out = JSON.parse(emit(t, [auto(0.8), auto(0.6), auto(0.4), assisted(0.9), humanOnly]).stdout);
+  assert.deepEqual(out.lite_eligible, { count: 4, total: 5 });
+});
+
+test("emit-sidecar lite_eligible counts auto-agent and assisted-agent entries whatever their scores", (t) => {
+  const oneLow = auto(1.0);
+  oneLow.scores.novelty = 0.2;
+  const lowAssisted = assisted(0.2);
+  const humanOnly = entryWith("h1", "human-only", 1.0);
+  const out = JSON.parse(emit(t, [oneLow, lowAssisted, humanOnly]).stdout);
+  assert.deepEqual(out.lite_eligible, { count: 2, total: 3 });
+});
+
+test("emit-sidecar does not write lite_eligible into the sidecar", (t) => {
+  const out = JSON.parse(emit(t, [auto(0.8)]).stdout);
+  const doc = JSON.parse(readFileSync(out.sidecar, "utf8"));
+  assert.equal(Object.hasOwn(doc, "lite_eligible"), false);
+  assert.deepEqual(Object.keys(doc.entries[0]).sort(), ["rationale", "scores", "selected_agent", "task_id"]);
+});

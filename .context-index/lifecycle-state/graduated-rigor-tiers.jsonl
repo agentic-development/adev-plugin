@@ -1,3 +1,4 @@
 {"event":"lifecycle_step","step":"specify","status":"started","ts":"2026-07-01T23:16:27.912Z"}
 {"event":"step_completed","step":"specify","verdict":"PASS","ts":"2026-07-01T23:16:28.000Z"}
 {"event":"code_drift_detected","drift_source":"skills/work/SKILL.md","drift_at":"2026-08-13T03:10:54.621Z","ts":"2026-08-13T03:10:54.622Z"}
+{"event":"spec_amended","amendment_slug":"graduated-rigor-tiers-rev-4-lite-tier","amendment_path":".context-index/specs/cross-cutting/graduated-rigor-tiers-rev-4-lite-tier.spec.md","target_revision":4,"ts":"2026-11-26T21:32:45.419Z"}

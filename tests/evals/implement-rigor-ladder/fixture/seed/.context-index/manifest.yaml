@@ -1,0 +1,10 @@
+project:
+  name: rigor-ladder-fixture
+
+sync:
+  - CLAUDE.md
+
+implementation_mode: tdd
+
+lifecycle:
+  gate_mode: strict

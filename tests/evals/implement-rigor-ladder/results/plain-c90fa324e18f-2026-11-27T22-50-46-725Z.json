@@ -1,0 +1,199 @@
+{
+  "arm": "plain",
+  "implementArgs": null,
+  "adev": false,
+  "model": null,
+  "ref": "c90fa324e18fb61def9445b24f3e91ca89598e12",
+  "ref_name": "c90fa324e18f",
+  "run": 1,
+  "finished_at": "2026-11-27T22:50:46.725Z",
+  "valid": true,
+  "invalid_reasons": [],
+  "implement": {
+    "exit_code": 0,
+    "session_id": "a1a71a94-e821-4693-98b2-49a1798d9976",
+    "verdict": null,
+    "process_ms": 129595,
+    "task_commits": 7,
+    "transcripts": 1
+  },
+  "metrics": {
+    "wall_clock_ms": 129595,
+    "wall_clock_source": "process",
+    "process_wall_clock_ms": 129595,
+    "agent_dispatches": 0,
+    "tokens": {
+      "input_tokens": 34,
+      "output_tokens": 13154,
+      "cache_creation_input_tokens": 32141,
+      "cache_read_input_tokens": 529251
+    },
+    "quality_gates": {
+      "command": "npm test",
+      "exit_code": 0,
+      "pass": true,
+      "tests": {
+        "total": 53,
+        "pass": 53,
+        "fail": 0
+      }
+    },
+    "defects": [
+      {
+        "id": "D1",
+        "task": "1",
+        "kind": "off-by-one boundary",
+        "probe": "off-by-one-boundary.probe.mjs",
+        "caught_at": "implement"
+      },
+      {
+        "id": "D2",
+        "task": "2",
+        "kind": "missed error case",
+        "probe": "missed-error-case.probe.mjs",
+        "caught_at": "implement"
+      },
+      {
+        "id": "D3",
+        "task": "4",
+        "kind": "untested branch",
+        "probe": "untested-branch.probe.mjs",
+        "caught_at": "implement"
+      },
+      {
+        "id": "D4",
+        "task": "5",
+        "kind": "spec-noncompliant output shape",
+        "probe": "noncompliant-output-shape.probe.mjs",
+        "caught_at": "implement"
+      }
+    ],
+    "edge_probes": {
+      "total": 54,
+      "passed": 53,
+      "failed": [
+        "P6"
+      ],
+      "by_behavior": {
+        "BEH-1": {
+          "total": 7,
+          "passed": 6,
+          "failed": [
+            "P6"
+          ]
+        },
+        "BEH-2": {
+          "total": 8,
+          "passed": 8,
+          "failed": []
+        },
+        "BEH-3": {
+          "total": 5,
+          "passed": 5,
+          "failed": []
+        },
+        "BEH-4": {
+          "total": 10,
+          "passed": 10,
+          "failed": []
+        },
+        "BEH-5": {
+          "total": 5,
+          "passed": 5,
+          "failed": []
+        },
+        "BEH-6": {
+          "total": 9,
+          "passed": 9,
+          "failed": []
+        },
+        "BEH-7": {
+          "total": 10,
+          "passed": 10,
+          "failed": []
+        }
+      },
+      "strict": [
+        "P6",
+        "T8",
+        "T9",
+        "L6"
+      ],
+      "total_excluding_strict": 50,
+      "passed_excluding_strict": 50
+    }
+  },
+  "review_depths": null,
+  "validate_skipped": "the plain arm has no /adev:validate",
+  "patch": {
+    "path": "plain-c90fa324e18f-2026-11-27T22-50-46-725Z.patch",
+    "base": "7c0504749a9d972b18e9fc01742a853f43778498",
+    "head": "93ad52d622421f9cabfb7533054d8ed60b9a5c3a",
+    "implement_head": "93ad52d622421f9cabfb7533054d8ed60b9a5c3a",
+    "includes_validate_commits": false,
+    "excluded": [
+      ".context-index/"
+    ],
+    "files": [
+      "src/auth/token.mjs",
+      "src/config.mjs",
+      "src/discount.mjs",
+      "src/format.mjs",
+      "src/handlers/list.mjs",
+      "src/pagination.mjs",
+      "src/registry.mjs",
+      "src/slug.mjs",
+      "tests/auth/token.test.mjs",
+      "tests/config.test.mjs",
+      "tests/discount.test.mjs",
+      "tests/format.test.mjs",
+      "tests/handlers/list.test.mjs",
+      "tests/pagination.test.mjs",
+      "tests/slug.test.mjs"
+    ],
+    "bytes": 18447,
+    "uncommitted_paths": []
+  },
+  "validate": null,
+  "tripwire_target": {
+    "task": "7",
+    "undeclared_touched": [
+      "src/registry.mjs"
+    ]
+  },
+  "touched_files": [
+    "src/auth/token.mjs",
+    "src/config.mjs",
+    "src/discount.mjs",
+    "src/format.mjs",
+    "src/handlers/list.mjs",
+    "src/pagination.mjs",
+    "src/registry.mjs",
+    "src/slug.mjs",
+    "tests/auth/token.test.mjs",
+    "tests/config.test.mjs",
+    "tests/discount.test.mjs",
+    "tests/format.test.mjs",
+    "tests/handlers/list.test.mjs",
+    "tests/pagination.test.mjs",
+    "tests/slug.test.mjs"
+  ],
+  "behavior": {
+    "tests": {
+      "D1": "pass",
+      "D2": "pass",
+      "D3": "pass",
+      "D4": "pass"
+    },
+    "surface": [
+      "src/auth/token.mjs",
+      "src/config.mjs",
+      "src/discount.mjs",
+      "src/format.mjs",
+      "src/handlers/list.mjs",
+      "src/pagination.mjs",
+      "src/registry.mjs",
+      "src/slug.mjs"
+    ]
+  }
+}

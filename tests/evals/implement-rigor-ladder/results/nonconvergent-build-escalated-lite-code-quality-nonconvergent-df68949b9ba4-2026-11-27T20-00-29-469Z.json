@@ -1,0 +1,50 @@
+{
+  "fixture": "nonconvergent",
+  "case": "escalated-lite-code-quality-nonconvergent",
+  "mode": "build",
+  "ref": "df68949b9ba43302f8da762cf1372b9992cde8a8",
+  "ref_name": "HEAD",
+  "prompt": "/adev:build --spec .context-index/specs/features/inventory/inventory.spec.md --resume --from implement --auto --lite",
+  "finished_at": "2026-11-27T20:00:29.469Z",
+  "exit_code": 0,
+  "timed_out": false,
+  "session_id": "b9ab614c-c994-415a-acdf-8ab759e670ce",
+  "process_ms": 218988,
+  "expect": {
+    "plan_task": "blocked",
+    "execution_state": "blocked",
+    "later_task_started": false,
+    "step_failed": false,
+    "waits_for_input": false,
+    "build_status": "BLOCKED"
+  },
+  "outcome": "pass",
+  "observed": {
+    "plan_task": "blocked",
+    "execution_state": "blocked",
+    "later_task_started": false,
+    "step_failed": false,
+    "waits_for_input": false,
+    "build_status": "BLOCKED"
+  },
+  "loop_code": "LOOP_BUDGET_EXHAUSTED",
+  "other_task_halted": true,
+  "halt_message": {
+    "names_loop_code": true,
+    "names_task": true
+  },
+  "failures": [],
+  "pass": true,
+  "earlier_commits": [],
+  "result_tail": "n      — skipped (--from implement; earlier plan PASS)\n    3. Route     — skipped (--from implement; earlier routing on disk)\n    4. Implement — failed (BLOCKED, LOOP_BUDGET_EXHAUSTED)\n    5. Validate  — not run\n  Retry cycles: 0\n```\n\n**What happened:**\n- **Task 1 got stricter review.** It started at `lite`, which you authorized with `--lite`. It was raised to `quick` because the task registers the handler in `src/registry.mjs`, and that file isn't in the task's Files list.\n- **The code follows the constitution, not the spec.** The spec (BEH-1 and its acceptance criterion) says `normalizeSku(\"   \")` throws an error with code `SKU_INVALID`. Constitution principle 4 says no exported function throws and that this rule outranks spec text. So the implementer made it return `{ error: { code: 'SKU_INVALID' } }`, and `npm test` passed 6/6.\n- **The review can't pass in this setup.** The same principle tells the review to rate the mismatch with the spec as **Important** (finding cq-1). Only a spec change can clear that finding. With `implement.max_review_cycles: 1`, the single review cycle ran out with cq-1 still open.\n- **The task stopped there.** Task 1 is not marked complete and tasks 2 and 3 were not started. I didn't re-run implement or count this against the retry limit, as the halt rule requires.\n\n**Left in the working tree:** `src/sku.mjs` and `tests/sku.test.mjs` are new, `src/registry.mjs` is modified, and the lifecycle and execution state files are updated.\n\n**To unblock:**\n1. Run `/adev:specify` to change BEH-1 and its criterion so they describe the returned error value. Change BEH-2 (`signAudit` / `AUDIT_SECRET_MISSING`) in the same pass, because it has the same conflict and task 2 would hit it next.\n2. Optionally, add `src/registry.mjs` to task 1's Files list in the plan so task 1 isn't moved off `lite` again.\n3. Resume with `/adev:build --resume --spec .context-index/specs/features/inventory/inventory.spec.md --from implement --auto --lite`.\n\nADEV-BUILD: FAILED",
+  "usage": {
+    "tokens": {
+      "input_tokens": 66,
+      "output_tokens": 17190,
+      "cache_creation_input_tokens": 148843,
+      "cache_read_input_tokens": 1657844
+    },
+    "agentDispatches": 2,
+    "transcripts": 3
+  }
+}

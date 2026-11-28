@@ -1,0 +1,273 @@
+{
+  "arm": "lite",
+  "implementArgs": [
+    "--lite"
+  ],
+  "adev": true,
+  "model": null,
+  "ref": "c90fa324e18fb61def9445b24f3e91ca89598e12",
+  "ref_name": "c90fa324e18f",
+  "run": 1,
+  "finished_at": "2026-11-27T21:41:17.324Z",
+  "valid": true,
+  "invalid_reasons": [],
+  "implement": {
+    "exit_code": 0,
+    "session_id": "aca6cffc-676c-428b-b113-a572fd61786f",
+    "verdict": "PASS",
+    "process_ms": 1135747,
+    "task_commits": 8,
+    "transcripts": 11
+  },
+  "metrics": {
+    "wall_clock_ms": 1104233,
+    "wall_clock_source": "lifecycle-event-timestamps",
+    "process_wall_clock_ms": 1135747,
+    "agent_dispatches": 10,
+    "tokens": {
+      "input_tokens": 270,
+      "output_tokens": 104697,
+      "cache_creation_input_tokens": 425105,
+      "cache_read_input_tokens": 7879273
+    },
+    "quality_gates": {
+      "command": "npm test",
+      "exit_code": 0,
+      "pass": true,
+      "tests": {
+        "total": 104,
+        "pass": 104,
+        "fail": 0
+      }
+    },
+    "defects": [
+      {
+        "id": "D1",
+        "task": "1",
+        "kind": "off-by-one boundary",
+        "probe": "off-by-one-boundary.probe.mjs",
+        "caught_at": "implement"
+      },
+      {
+        "id": "D2",
+        "task": "2",
+        "kind": "missed error case",
+        "probe": "missed-error-case.probe.mjs",
+        "caught_at": "implement"
+      },
+      {
+        "id": "D3",
+        "task": "4",
+        "kind": "untested branch",
+        "probe": "untested-branch.probe.mjs",
+        "caught_at": "implement"
+      },
+      {
+        "id": "D4",
+        "task": "5",
+        "kind": "spec-noncompliant output shape",
+        "probe": "noncompliant-output-shape.probe.mjs",
+        "caught_at": "implement"
+      }
+    ],
+    "edge_probes": {
+      "total": 54,
+      "passed": 53,
+      "failed": [
+        "P6"
+      ],
+      "by_behavior": {
+        "BEH-1": {
+          "total": 7,
+          "passed": 6,
+          "failed": [
+            "P6"
+          ]
+        },
+        "BEH-2": {
+          "total": 8,
+          "passed": 8,
+          "failed": []
+        },
+        "BEH-3": {
+          "total": 5,
+          "passed": 5,
+          "failed": []
+        },
+        "BEH-4": {
+          "total": 10,
+          "passed": 10,
+          "failed": []
+        },
+        "BEH-5": {
+          "total": 5,
+          "passed": 5,
+          "failed": []
+        },
+        "BEH-6": {
+          "total": 9,
+          "passed": 9,
+          "failed": []
+        },
+        "BEH-7": {
+          "total": 10,
+          "passed": 10,
+          "failed": []
+        }
+      },
+      "strict": [
+        "P6",
+        "T8",
+        "T9",
+        "L6"
+      ],
+      "total_excluding_strict": 50,
+      "passed_excluding_strict": 50
+    }
+  },
+  "review_depths": {
+    "1": {
+      "provisional": {
+        "depth": "lite",
+        "source": "lite-grant"
+      },
+      "final": {
+        "depth": "lite",
+        "source": "lite-grant"
+      }
+    },
+    "2": {
+      "provisional": {
+        "depth": "lite",
+        "source": "lite-grant"
+      },
+      "final": {
+        "depth": "lite",
+        "source": "lite-grant"
+      }
+    },
+    "3": {
+      "provisional": {
+        "depth": "lite",
+        "source": "lite-grant"
+      },
+      "final": {
+        "depth": "lite",
+        "source": "lite-grant"
+      }
+    },
+    "4": {
+      "provisional": {
+        "depth": "quick",
+        "source": "default-quick"
+      },
+      "final": {
+        "depth": "quick",
+        "source": "default-quick"
+      }
+    },
+    "5": {
+      "provisional": {
+        "depth": "quick",
+        "source": "default-quick"
+      },
+      "final": {
+        "depth": "quick",
+        "source": "default-quick"
+      }
+    },
+    "6": {
+      "provisional": {
+        "depth": "full",
+        "source": "default-quick"
+      },
+      "final": {
+        "depth": "full",
+        "source": "default-quick"
+      }
+    },
+    "7": {
+      "provisional": {
+        "depth": "lite",
+        "source": "lite-grant"
+      },
+      "final": {
+        "depth": "quick",
+        "source": "lite-tripwire"
+      }
+    }
+  },
+  "patch": {
+    "path": "lite-c90fa324e18f-2026-11-27T21-41-17-324Z.patch",
+    "base": "88e43285f9f08da3988981a62f065d554f0a57bb",
+    "head": "09ebbd417e34175e5e1ac89c60d5a1cdf5dacce4",
+    "implement_head": "09ebbd417e34175e5e1ac89c60d5a1cdf5dacce4",
+    "includes_validate_commits": false,
+    "excluded": [
+      ".context-index/"
+    ],
+    "files": [
+      "src/auth/token.mjs",
+      "src/config.mjs",
+      "src/discount.mjs",
+      "src/format.mjs",
+      "src/handlers/list.mjs",
+      "src/pagination.mjs",
+      "src/registry.mjs",
+      "src/slug.mjs",
+      "tests/auth/token.test.mjs",
+      "tests/config.test.mjs",
+      "tests/discount.test.mjs",
+      "tests/format.test.mjs",
+      "tests/handlers/list.test.mjs",
+      "tests/pagination.test.mjs",
+      "tests/slug.test.mjs"
+    ],
+    "bytes": 25012,
+    "uncommitted_paths": []
+  },
+  "validate": null,
+  "tripwire_target": {
+    "task": "7",
+    "undeclared_touched": [
+      "src/registry.mjs"
+    ]
+  },
+  "touched_files": [
+    ".context-index/lifecycle-state/example.jsonl",
+    ".context-index/specs/features/example/example.spec.md",
+    "src/auth/token.mjs",
+    "src/config.mjs",
+    "src/discount.mjs",
+    "src/format.mjs",
+    "src/handlers/list.mjs",
+    "src/pagination.mjs",
+    "src/registry.mjs",
+    "src/slug.mjs",
+    "tests/auth/token.test.mjs",
+    "tests/config.test.mjs",
+    "tests/discount.test.mjs",
+    "tests/format.test.mjs",
+    "tests/handlers/list.test.mjs",
+    "tests/pagination.test.mjs",
+    "tests/slug.test.mjs"
+  ],
+  "behavior": {
+    "tests": {
+      "D1": "pass",
+      "D2": "pass",
+      "D3": "pass",
+      "D4": "pass"
+    },
+    "surface": [
+      "src/auth/token.mjs",
+      "src/config.mjs",
+      "src/discount.mjs",
+      "src/format.mjs",
+      "src/handlers/list.mjs",
+      "src/pagination.mjs",
+      "src/registry.mjs",
+      "src/slug.mjs"
+    ]
+  }
+}

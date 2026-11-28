@@ -9,9 +9,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { reportReviewDepthResolved, currentState } from '../../lib/lifecycle-state.mjs';
+import { reportReviewDepthResolved, currentState, readEvents } from '../../lib/lifecycle-state.mjs';
 import { CANONICAL_EVENTS } from '../../lib/lifecycle-events.mjs';
 import { isKnownEventType, getRequiredFields } from '../../lib/diagnostics/event-schemas.mjs';
+import { run as runEventSchemaValid } from '../../lib/diagnostics/tier1/event-schema-valid.mjs';
 import { createTempDir, cleanupTempDir, writeFixture } from '../helpers.mjs';
 
 const SPEC = '.context-index/specs/features/demo/thing.spec.md';
@@ -154,5 +155,39 @@ test('review_depth_resolved never lands in the deprecated unknownEvents[]', () =
     });
     const state = currentState(root, SPEC);
     assert.deepEqual(state.unknownEvents, []);
+  } finally { cleanupTempDir(root); }
+});
+
+test('depth: lite is accepted and passes the event schema', (t) => {
+  const root = project();
+  t.after(() => cleanupTempDir(root));
+  for (const pass of ['provisional', 'final']) {
+    reportReviewDepthResolved(root, SPEC, {
+      plan: 'p.plan.md', task_id: 't1', pass, depth: 'lite',
+      source: 'lite-grant', floor_applied: false, floor_legs: [],
+    });
+  }
+  const events = readEvents(root, SPEC).filter((e) => e.event === 'review_depth_resolved');
+  assert.equal(events.length, 2);
+  for (const ev of events) {
+    assert.equal(ev.depth, 'lite');
+    assert.equal(ev.source, 'lite-grant');
+    assert.deepEqual(runEventSchemaValid({ event: ev }), { fired: false });
+  }
+  const state = currentState(root, SPEC);
+  assert.equal(state.reviewDepthResolutions['p.plan.md::t1::provisional'].depth, 'lite');
+  assert.equal(state.reviewDepthResolutions['p.plan.md::t1::final'].depth, 'lite');
+});
+
+test('depth values outside full|quick|lite are still refused, including case variants', () => {
+  const root = project();
+  try {
+    for (const depth of ['Lite', 'LITE', 'lite ', 'none']) {
+      assert.throws(() => reportReviewDepthResolved(root, SPEC, {
+        plan: 'p.plan.md', task_id: 't1', pass: 'final', depth,
+        source: 's', floor_applied: false, floor_legs: [],
+      }), (err) => err.code === 'EVENT_SCHEMA_INVALID' && err.message.includes('full|quick|lite'));
+    }
+    assert.deepEqual(readEvents(root, SPEC), []);
   } finally { cleanupTempDir(root); }
 });

@@ -24,6 +24,10 @@ The verb resolves source (`<spec-path>.validate.md.tmp`) and destination (`<spec
 > **Spec:** [path to Live Spec]
 > **Plan:** [path to plan, if provided]
 > **Overall Status:** PASS | FAIL
+> **Advisory:** implemented without per-task review: <count> (<task_ids>)
+> **Advisory:** one reviewer under the lite cap: <n> (<capped>)
+
+[Advisory row: `count` and `task_ids` come from Step 0b's `adev implement lite-report` call. `<task_ids>` is written comma-separated (`1, 2`), matching the verb's text mode. When the call exited non-zero, write `implemented without per-task review: unknown (lite-report failed: <stderr>)` instead. The row appears even when Check 1 failed fast or Check 2 is disabled. Omit the row entirely when `count` is 0. The lite-cap row lists `lite-report`'s `capped` ids the same way, with `<n>` their number; omit it when `capped` is empty or the call failed.]
 
 ---
 

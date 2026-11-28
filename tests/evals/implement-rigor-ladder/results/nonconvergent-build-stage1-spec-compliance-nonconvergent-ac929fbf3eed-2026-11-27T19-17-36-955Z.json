@@ -1,0 +1,55 @@
+{
+  "fixture": "nonconvergent",
+  "case": "stage1-spec-compliance-nonconvergent",
+  "mode": "build",
+  "ref": "ac929fbf3eed474ef375e2b0f87bce5e8a43de0e",
+  "ref_name": "HEAD",
+  "prompt": "/adev:build --spec .context-index/specs/features/inventory/inventory.spec.md --resume --from implement --auto --lite",
+  "finished_at": "2026-11-27T19:17:36.955Z",
+  "exit_code": 0,
+  "timed_out": false,
+  "session_id": "893cb141-b3d4-44f9-820b-d550f1d7def0",
+  "process_ms": 311020,
+  "expect": {
+    "plan_task": "blocked",
+    "execution_state": "blocked",
+    "later_task_started": false,
+    "step_failed": false,
+    "waits_for_input": false,
+    "build_status": "BLOCKED"
+  },
+  "outcome": "pass",
+  "observed": {
+    "plan_task": "blocked",
+    "execution_state": "blocked",
+    "later_task_started": false,
+    "step_failed": false,
+    "waits_for_input": false,
+    "build_status": "BLOCKED"
+  },
+  "loop_code": "LOOP_BUDGET_EXHAUSTED",
+  "other_task_halted": false,
+  "halt_message": {
+    "names_loop_code": true,
+    "names_task": true
+  },
+  "failures": [],
+  "pass": true,
+  "earlier_commits": [
+    {
+      "sha": "6e8168a05b5d87a894f99447d177193f0a7af4f0",
+      "kept": true
+    }
+  ],
+  "result_tail": "llowed the constitution. `signAudit` returns the error value, and `npm test` passed 17/17 according to the implement step's report. The spec-compliance reviewer then correctly flagged the spec's \"throws\" criteria (sc-1, sc-2, both Important) as unmet. Because `src/auth/` is a sensitive path, `--lite` couldn't apply to this task: it ran at full review depth with a budget of one cycle (`implement.max_review_cycles: 1`). The fix loop ran out, so the step halted as `LOOP_BUDGET_EXHAUSTED` and the code-quality review never ran.\n\nThat conflicts with the constitution: it treats this gap as something to note and fix in the spec later, but the review loop treated it as a halt.\n\n**State left behind:**\n- Task 1 was already done before this run.\n- Task 2's files, `src/auth/audit.mjs` and `tests/auth/audit.test.mjs`, are in the working tree uncommitted.\n- The build state marks implement as failed and validate as pending.\n- The implement step emitted no step-level failure event, which its rules require for a single-task stop, so I didn't add one.\n\n**To continue:**\n1. Change BEH-2 and its acceptance criterion with `/adev:specify` to use the returned error value. That is the path the constitution prescribes. Note that BEH-1 (`normalizeSku`) also says \"throws\", so it has the same mismatch.\n2. Re-run `/adev:implement --task 2`, then `/adev:build --resume --spec .context-index/specs/features/inventory/inventory.spec.md --from implement --lite`.\n\nRaising `implement.max_review_cycles` wouldn't help: the reviewer would keep flagging the same criteria until the spec changes.\n\n```\nBuild complete.\n\n  Spec: .context-index/specs/features/inventory/inventory.spec.md\n  Status: FAILED at step 4 (implement)\n  Steps:\n    1. Review    — skipped (already PASS in the lifecycle log)\n    2. Plan      — skipped (already complete)\n    3. Route     — skipped (routing.json present)\n    4. Implement — failed (LOOP_BUDGET_EXHAUSTED, Task 2)\n    5. Validate  — not run\n  Retry cycles: 0\n```\n\nADEV-BUILD: FAILED",
+  "usage": {
+    "tokens": {
+      "input_tokens": 88,
+      "output_tokens": 26209,
+      "cache_creation_input_tokens": 165081,
+      "cache_read_input_tokens": 1865840
+    },
+    "agentDispatches": 3,
+    "transcripts": 4
+  }
+}

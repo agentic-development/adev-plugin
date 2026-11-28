@@ -473,3 +473,156 @@ test("a FAIL boundary verdict keyed t<n> forces the plan's Task <n> solo", () =>
   assert.equal(result.batches.length, 0);
   assert.equal(result.solo.find((s) => s.taskId === "1").reason, "boundary");
 });
+
+// --- Lite exclusion: a task granted `lite` runs inline, so it never batches ---
+//
+// A batch runs its tasks back to back in one subagent, so a lite task in the
+// middle of a sequential group splits the group: each contiguous run of
+// non-lite members is gated and sized on its own, and the plan order of the
+// whole group is preserved across batches, solo tasks and inline tasks.
+
+const PLAN_GROUP_1_2_3 = `## Parallelization
+
+- Group A (sequential): Task 1 → Task 2 → Task 3
+
+## Task Summary
+`;
+
+const PLAN_GROUP_1_TO_5 = `## Parallelization
+
+- Group A (sequential): Task 1 → Task 2 → Task 3 → Task 4 → Task 5
+
+## Task Summary
+`;
+
+const ALL_ELIGIBLE = ["1", "2", "3", "4", "5"].map((id) => autoEntry(id));
+const BATCHING_ON = { implement: { batch_mode: "on", max_batch_size: 4 } };
+
+test("a lite task in the middle of a group splits it: 1 and 3 each go solo with reason size", () => {
+  const r = resolveBatches({
+    planContent: PLAN_GROUP_1_2_3,
+    manifest: BATCHING_ON,
+    routingEntries: ALL_ELIGIBLE,
+    liteGranted: new Set(["2"]),
+  });
+  assert.deepEqual(r.batches, []);
+  assert.deepEqual(r.solo, [
+    { taskId: "1", reason: "size" },
+    { taskId: "2", reason: "lite" },
+    { taskId: "3", reason: "size" },
+  ]);
+  assert.deepEqual(
+    r.advisories.filter((a) => a.type === "BATCH_SOLO_FORCED"),
+    [
+      { type: "BATCH_SOLO_FORCED", taskId: "1", reason: "size" },
+      { type: "BATCH_SOLO_FORCED", taskId: "2", reason: "lite" },
+      { type: "BATCH_SOLO_FORCED", taskId: "3", reason: "size" },
+    ],
+  );
+});
+
+test("a lite task in the middle of a 5-task group yields two batches with distinct segments", () => {
+  const r = resolveBatches({
+    planContent: PLAN_GROUP_1_TO_5,
+    manifest: BATCHING_ON,
+    routingEntries: ALL_ELIGIBLE,
+    liteGranted: new Set(["3"]),
+  });
+  assert.deepEqual(r.batches, [
+    { group: "A", segment: 1, taskIds: ["1", "2"] },
+    { group: "A", segment: 2, taskIds: ["4", "5"] },
+  ]);
+  assert.deepEqual(r.solo, [{ taskId: "3", reason: "lite" }]);
+  assert.deepEqual(
+    r.advisories.filter((a) => a.type === "BATCH_DISPATCHED"),
+    [
+      { type: "BATCH_DISPATCHED", group: "A", segment: 1, taskIds: ["1", "2"], size: 2 },
+      { type: "BATCH_DISPATCHED", group: "A", segment: 2, taskIds: ["4", "5"], size: 2 },
+    ],
+  );
+});
+
+test("a group with no lite member is one segment", () => {
+  const r = resolveBatches({ planContent: PLAN_GROUP_1_2_3, manifest: BATCHING_ON, routingEntries: ALL_ELIGIBLE });
+  assert.deepEqual(r.batches, [{ group: "A", segment: 1, taskIds: ["1", "2", "3"] }]);
+  assert.deepEqual(r.solo, []);
+});
+
+test("a lite-granted member is excluded before the gate: no gate reason is reported for it", () => {
+  const r = resolveBatches({
+    planContent: PLAN_GROUP_1_TO_5,
+    manifest: BATCHING_ON,
+    routingEntries: [autoEntry("1"), autoEntry("2"), autoEntry("4"), autoEntry("5")],
+    liteGranted: new Set(["3"]),
+  });
+  assert.deepEqual(r.solo, [{ taskId: "3", reason: "lite" }]);
+  assert.deepEqual(r.batches.map((b) => b.taskIds), [["1", "2"], ["4", "5"]]);
+});
+
+test("each segment is gated on its own: a gate failure in one segment leaves the other batching", () => {
+  const r = resolveBatches({
+    planContent: PLAN_GROUP_1_TO_5,
+    manifest: BATCHING_ON,
+    routingEntries: [autoEntry("1", { selected_agent: "human-only" }), autoEntry("2"), autoEntry("4"), autoEntry("5")],
+    liteGranted: new Set(["3"]),
+  });
+  assert.deepEqual(r.batches, [{ group: "A", segment: 2, taskIds: ["4", "5"] }]);
+  assert.deepEqual(r.solo, [
+    { taskId: "1", reason: "human-only" },
+    { taskId: "2", reason: "size" },
+    { taskId: "3", reason: "lite" },
+  ]);
+});
+
+test("each segment is sized on its own against the cap", () => {
+  const r = resolveBatches({
+    planContent: PLAN_GROUP_1_TO_5,
+    manifest: { implement: { batch_mode: "on", max_batch_size: 2 } },
+    routingEntries: ALL_ELIGIBLE,
+    liteGranted: new Set(["4"]),
+  });
+  assert.deepEqual(r.batches, []);
+  assert.deepEqual(r.solo, [
+    { taskId: "1", reason: "size" },
+    { taskId: "2", reason: "size" },
+    { taskId: "3", reason: "size" },
+    { taskId: "4", reason: "lite" },
+    { taskId: "5", reason: "size" },
+  ]);
+});
+
+test("a lite task at the edge of a group leaves the rest as one segment", () => {
+  const r = resolveBatches({
+    planContent: PLAN_GROUP_1_2_3,
+    manifest: BATCHING_ON,
+    routingEntries: ALL_ELIGIBLE,
+    liteGranted: new Set(["1"]),
+  });
+  assert.deepEqual(r.batches, [{ group: "A", segment: 1, taskIds: ["2", "3"] }]);
+  assert.deepEqual(r.solo, [{ taskId: "1", reason: "lite" }]);
+});
+
+test("liteAssumed members split the group too and are reported with reason lite-assumed", () => {
+  const r = resolveBatches({
+    planContent: PLAN_GROUP_1_TO_5,
+    manifest: BATCHING_ON,
+    routingEntries: ALL_ELIGIBLE,
+    liteAssumed: new Set(["3"]),
+  });
+  assert.deepEqual(r.batches.map((b) => b.taskIds), [["1", "2"], ["4", "5"]]);
+  assert.deepEqual(r.solo, [{ taskId: "3", reason: "lite-assumed" }]);
+  assert.ok(
+    r.advisories.some((a) => a.type === "BATCH_SOLO_FORCED" && a.taskId === "3" && a.reason === "lite-assumed"),
+  );
+});
+
+test("liteGranted matches across t<n> and Task <n> spellings", () => {
+  const r = resolveBatches({
+    planContent: PLAN_GROUP_1_TO_5,
+    manifest: BATCHING_ON,
+    routingEntries: ALL_ELIGIBLE,
+    liteGranted: new Set(["t3"]),
+  });
+  assert.deepEqual(r.solo, [{ taskId: "3", reason: "lite" }]);
+  assert.deepEqual(r.batches.map((b) => b.taskIds), [["1", "2"], ["4", "5"]]);
+});

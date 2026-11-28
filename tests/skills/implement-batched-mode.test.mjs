@@ -26,8 +26,10 @@ describe("implement batched-mode companion", () => {
     assert.match(skill, /N handoff blocks, not one/i);
   });
 
-  it("states both review stages run per task and no group-level review is dispatched — AC5", () => {
-    assert.match(skill, /[Bb]oth review stages/);
+  // Batch membership no longer forces two stages: each task in a batch gets the
+  // review its own resolved depth requires, and nothing reviews the batch as a whole.
+  it("states each task is reviewed per task at its resolved depth and no group-level review is dispatched — AC5", () => {
+    assert.match(skill, /at the task's resolved review depth/);
     assert.match(skill, /no group-level review/i);
   });
 

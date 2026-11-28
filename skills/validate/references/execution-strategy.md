@@ -2,16 +2,16 @@
 
 ### Resolve Rigor Tier (before running checks)
 
-Resolve the **rigor tier** (`full` | `quick`) per `graduated-rigor-tiers.spec.md`. `quick` never skips the gate — it always runs Check 1 and emits the `validate` lifecycle event. Resolution precedence (this is the `resolveRigorMode({ skill: "validate", ... })` contract in `lib/governance/rigor-mode.mjs`):
+Resolve the **rigor tier** (`full` | `quick`) per `graduated-rigor-tiers.spec.md`; an explicit `--tier lite` resolves to `quick`. `quick` never skips the gate — it always runs Check 1 and emits the `validate` lifecycle event. Resolution precedence (this is the `resolveRigorMode({ skill: "validate", ... })` contract in `lib/governance/rigor-mode.mjs`):
 
-1. **Explicit `--tier <full|quick>`** on invocation (reject other values with `INVALID_TIER`).
+1. **Explicit `--tier <full|quick|lite>`** on invocation; `lite` runs exactly as `quick` (print `--tier lite runs as quick here`). Reject any other value with `INVALID_TIER`.
 2. **Routing signal** — `--tier quick` propagated by `/adev:route`, `/adev:work`, or `/adev:build` for "easy" work.
 3. **Risk policy** — `.context-index/governance/risk-policies.yaml` → the spec's `risk_level` (default `medium`) → `policies.<level>.validate_mode`.
 4. **Default** — `full`.
 
 **Quick tier behavior.** When the resolved tier is `quick`:
 - Run **Check 1 (Quality Gates)** exactly as in full mode, with the same fail-fast semantics (a Check-1 FAIL still fails validation and stops).
-- Then run **one synthesized compliance check** — a single subagent that verifies spec compliance (Check 2) and constitution compliance (Check 4) in one pass against the changed files, emitting a PASS/FAIL with cited evidence.
+- Then run **one synthesized compliance check** — a single subagent that verifies spec compliance (Check 2) and constitution compliance (Check 4) in one pass against the changed files, emitting a PASS/FAIL with cited evidence. Before dispatching it, build the lite-task scope from Step 0b's `lite-report` result exactly as the Lite-task scope paragraph of `<ADEV_ROOT>/skills/validate/references/checks-orchestration/check-2-spec-compliance.md` states (anchored trailer greps, id normalization, the PARTIAL for an unmatched id, the widened scope when `lite-report` failed), and put the selected commit diffs in the synthesized subagent's prompt.
 - **Skip** the remaining checks (1.5, 1.6, 8, 9, and the separate Check 2/Check 4 dispatches). Check 11 (Visual Verification) still triggers independently if the implementation includes UI files.
 - Record skipped checks as `SKIP` with reason `"Skipped — quick rigor tier."` in the report; note the resolved tier in the report header. The `validate` lifecycle event is emitted as usual with the aggregate verdict.
 

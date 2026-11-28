@@ -4,80 +4,120 @@
  *
  * The main skills/ directory is the source of truth. Provider copies get the
  * same content with a provider-specific suffix appended to the YAML description field.
+ * Each mirror gets its canonical file's executable bit. The per-file transform
+ * lives in lib/sync/provider-skills.mjs, which the lite tripwire also uses to
+ * recognise an exact regeneration.
  *
  * Usage:
  *   node scripts/sync-provider-skills.mjs              # sync all skills to all providers
  *   node scripts/sync-provider-skills.mjs --dry-run    # show what would change
  *   node scripts/sync-provider-skills.mjs --provider opencode  # sync only one provider
+ *   node scripts/sync-provider-skills.mjs --root <dir>         # sync another checkout (tests)
  */
 
-import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync } from "fs";
-import { join, dirname } from "path";
+import { chmodSync, readFileSync, writeFileSync, readdirSync, existsSync, lstatSync, mkdirSync, statSync } from "fs";
+import { join, dirname, relative, resolve, sep } from "path";
 import { fileURLToPath } from "url";
+import {
+  PROVIDER_DESCRIPTION_SUFFIX,
+  PROVIDER_EXCLUDES,
+  isMirroredSkillFile,
+  isSyncedSkillName,
+  mirrorFileContent,
+} from "../lib/sync/provider-skills.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const ROOT = join(__dirname, "..");
-
-const PROVIDER_DESCRIPTION_SUFFIX = {
-  opencode: " In OpenCode, invoke with skill({ name: '<SKILL_NAME>' })",
-  codex: " In Codex, invoke with $<SKILL_NAME>",
-};
-
-// Skills that are intentionally excluded from certain providers (e.g., they
-// depend on Claude Code-specific features like hooks or plugin infra).
-const PROVIDER_EXCLUDES = {
-  opencode: [],
-  codex: [],
-};
-
 const args = process.argv.slice(2);
+
+function fail(message) {
+  console.error(`sync-provider-skills: ${message}`);
+  process.exit(1);
+}
+
+function flagValue(flag) {
+  const i = args.indexOf(flag);
+  if (i === -1) return null;
+  const value = args[i + 1];
+  if (value === undefined || value === "" || value.startsWith("--")) fail(`${flag} requires a value`);
+  return value;
+}
+
+const ROOT = resolve(flagValue("--root") ?? join(__dirname, ".."));
 const dryRun = args.includes("--dry-run");
-const providerFlag = args.includes("--provider") ? args[args.indexOf("--provider") + 1] : null;
+const providerFlag = flagValue("--provider");
+if (providerFlag !== null && !Object.hasOwn(PROVIDER_DESCRIPTION_SUFFIX, providerFlag)) {
+  fail(`unknown --provider '${providerFlag}' (expected one of: ${Object.keys(PROVIDER_DESCRIPTION_SUFFIX).join(", ")})`);
+}
+
+// Destinations skipped because a path component from providers/ down is a
+// symlink. Writing through one would land outside the mirror tree.
+const refused = new Set();
+
+// The first symlinked component of `destPath` below ROOT (providers/ itself
+// included), as a ROOT-relative path, or null.
+function symlinkOnPath(destPath) {
+  const parts = relative(ROOT, destPath).split(sep);
+  let current = ROOT;
+  for (const part of parts) {
+    current = join(current, part);
+    let isLink;
+    try {
+      isLink = lstatSync(current).isSymbolicLink();
+    } catch {
+      return null;
+    }
+    if (isLink) return relative(ROOT, current).split(sep).join("/");
+  }
+  return null;
+}
+
+// Whether `destPath` may be written; records the refusal when it may not.
+function writable(destPath) {
+  const link = symlinkOnPath(destPath);
+  if (link === null) return true;
+  refused.add(link);
+  return false;
+}
 
 function getMainSkills() {
   const skillsDir = join(ROOT, "skills");
   return readdirSync(skillsDir, { withFileTypes: true })
-    .filter((d) => d.isDirectory() && !d.name.startsWith("adev-"))
+    .filter((d) => d.isDirectory() && isSyncedSkillName(d.name))
     .map((d) => d.name)
     .filter((name) => existsSync(join(skillsDir, name, "SKILL.md")));
 }
 
-function transformDescription(content, provider, skillName) {
-  const suffix = PROVIDER_DESCRIPTION_SUFFIX[provider];
-  if (!suffix) return content;
+const isExecutable = (mode) => (mode & 0o100) !== 0;
 
-  const qualifiedName = `adev:${skillName}`;
-  const suffixText = suffix.replace("<SKILL_NAME>", qualifiedName);
-
-  // Replace the description line in YAML frontmatter
-  return content.replace(
-    /^(description:\s*")(.*?)(")\s*$/m,
-    (match, prefix, desc, quote) => {
-      // Remove any existing provider suffix before appending new one
-      const cleaned = desc
-        .replace(/\s*In OpenCode, invoke with.*$/, "")
-        .replace(/\s*In Codex, invoke with.*$/, "");
-      return `${prefix}${cleaned}${suffixText}${quote}`;
-    }
-  );
-}
-
-
+/**
+ * Writes `destPath` from `srcPath` and gives it the source's executable bit.
+ *
+ * The bit is the owner-execute bit, the one git records as `100755`. The
+ * mirrors are symlinked straight into user installs, so a script that loses
+ * it does not run, and the lite tripwire exempts a mirror only when its git
+ * mode equals its canonical file's. A mode-only difference is therefore a
+ * change, reported `updated` so `--dry-run` shows it.
+ */
 function syncFile(srcPath, destPath, transform) {
+  if (!writable(destPath)) return "refused";
   const content = readFileSync(srcPath, "utf8");
   const transformed = transform ? transform(content) : content;
+  const executable = isExecutable(statSync(srcPath).mode);
 
-  if (existsSync(destPath)) {
-    const existing = readFileSync(destPath, "utf8");
-    if (existing === transformed) return "up-to-date";
-  }
+  const existed = existsSync(destPath);
+  const sameContent = existed && readFileSync(destPath, "utf8") === transformed;
+  const sameMode = existed && isExecutable(statSync(destPath).mode) === executable;
+  if (sameContent && sameMode) return "up-to-date";
 
   if (!dryRun) {
     mkdirSync(dirname(destPath), { recursive: true });
-    writeFileSync(destPath, transformed);
+    if (!sameContent) writeFileSync(destPath, transformed);
+    const mode = statSync(destPath).mode & 0o777;
+    // +x is granted to whoever may read, as git does on checkout.
+    chmodSync(destPath, executable ? mode | ((mode & 0o444) >> 2) : mode & ~0o111);
   }
 
-  return existsSync(destPath) ? "updated" : "created";
+  return existed ? "updated" : "created";
 }
 
 /**
@@ -93,7 +133,7 @@ function listCompanions(mainDir, rel = "", out = []) {
     if (entry.isDirectory()) {
       if (entry.name === "agents") continue;
       listCompanions(mainDir, childRel, out);
-    } else if (entry.name !== "SKILL.md") {
+    } else if (childRel !== "SKILL.md" && isMirroredSkillFile(childRel)) {
       out.push(childRel);
     }
   }
@@ -109,7 +149,7 @@ function syncSkillToProvider(skillName, provider) {
   const skillStatus = syncFile(
     join(mainDir, "SKILL.md"),
     join(providerDir, "SKILL.md"),
-    (content) => transformDescription(content, provider, skillName)
+    (content) => mirrorFileContent(content, provider, skillName, "SKILL.md")
   );
   fileResults.push({ file: "SKILL.md", status: skillStatus });
 
@@ -130,14 +170,18 @@ function syncSkillToProvider(skillName, provider) {
   // checks the property directly instead: every pointer in a mirror body resolves
   // inside that mirror tree.
   for (const companion of listCompanions(mainDir)) {
-    const status = syncFile(join(mainDir, companion), join(providerDir, companion));
+    const status = syncFile(join(mainDir, companion), join(providerDir, companion), (content) =>
+      mirrorFileContent(content, provider, skillName, companion)
+    );
     fileResults.push({ file: companion, status });
   }
 
   // Codex requires agents/openai.yaml for each skill
   if (provider === "codex") {
     const agentYamlPath = join(providerDir, "agents", "openai.yaml");
-    if (!existsSync(agentYamlPath)) {
+    if (!writable(agentYamlPath)) {
+      fileResults.push({ file: "agents/openai.yaml", status: "refused" });
+    } else if (!existsSync(agentYamlPath)) {
       const displayName = `adev ${skillName.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}`;
       const yaml = [
         "interface:",
@@ -189,4 +233,9 @@ if (updated.length || created.length) {
   for (const r of [...updated, ...created]) {
     console.log(`  ${r.status}: providers/${r.provider}/skills/${r.skillName}/${r.file}`);
   }
+}
+
+if (refused.size > 0) {
+  for (const link of refused) console.error(`sync-provider-skills: refusing to write through a symlink: ${link}`);
+  process.exit(1);
 }

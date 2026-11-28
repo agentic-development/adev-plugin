@@ -2,7 +2,7 @@
 
 # CLI Reference
 
-> Last updated: 2026-11-19
+> Last updated: 2026-11-27
 
 Reference for the `adev` command-line verbs. There are two audiences:
 
@@ -49,7 +49,7 @@ This file is the CLI counterpart to [`skill-reference.md`](skill-reference.md) (
 | `partial` | Detect/inspect/discard partial-write artifacts | `lib/cli/partial.mjs` |
 | `artifact` | Atomically commit lifecycle artifacts into place | `lib/cli/artifact.mjs` |
 | `route` | Emit/render the plan routing sidecar | `lib/cli/route.mjs` |
-| `implement` | Read a task's routing entry from the sidecar | `lib/cli/implement.mjs` |
+| `implement` | `/adev:implement` helpers: validate tier flags and capture the run base (`check-flags`), read a task's routing entry (`read-routing`), form batches (`batches`), resolve review depth (`resolve-depth`), start a task in a `lite`-authorized run (`task-begin`), snapshot the worktree (`snapshot-base`), list tasks run without per-task review or under the lite cap (`lite-report`) | `lib/cli/implement.mjs` |
 | `specify` | Revise a BLOCKED spec (revision N → N+1) | `lib/cli/specify.mjs` |
 | `decisions` | List open operator decisions on a spec's blockers sidecar and record the answers | `lib/cli/decisions.mjs` |
 | `prototype` | Prototype helpers (charter discovery, preview server) | `lib/cli/prototype.mjs` |
@@ -162,6 +162,28 @@ adev init --brownfield
 ```
 
 **Implementation:** `cli/index.mjs` (`init` registry entry). See [`/adev:init`](skill-reference.md).
+
+#### `init prompt implement-rigor`
+
+**Purpose:** Record the project's implement review depth, `implement_mode` in `.context-index/governance/risk-policies.yaml` (see [Configuration → implement_mode](configuration.md#governancerisk-policiesyaml-implement_mode)). `/adev:init` Step 8c runs it.
+
+**Signature:** `init prompt implement-rigor [--mode lite|quick|full] [--preset prototype|standard|strict]`
+
+- **Interactive** (a TTY on stdin and no `--mode`): offers `lite`, `quick` and `full` and requires a typed choice. Only those three exact, case-sensitive tokens are accepted. Anything else is re-prompted, up to 3 attempts in total. Choosing `lite` first prints a warning that per-task review is skipped for route-eligible tasks and deferred to `/adev:validate`.
+- **`--mode <value>`**: no prompt. The value is matched the same way.
+- **What is written:** the matched constant (never the raw input) as `implement_mode` for `medium` and `low`, with every other key preserved. `high` keeps its preset value; only `full` also writes `high: full`, because `lite` is never legal for `high`.
+- **Non-interactive** (no TTY and no `--mode`): no prompt. It never overwrites an existing `implement_mode`. Where none exists it writes the preset's non-`lite` default (`strict` → `full`, `standard` → `quick`, `prototype` → `quick`) and prints that `lite` is available through `--mode lite`. `--preset` defaults to the manifest's `risk_tier`, else `standard`. With no `risk-policies.yaml`, a `quick` default writes nothing, because the implement fallback is already `quick`.
+
+`lite` is therefore written only by an operator's typed choice or an explicit `--mode lite`.
+
+**Example:**
+```
+adev init prompt implement-rigor --mode quick
+```
+
+Exit codes: `0` success; `1` `INVALID_IMPLEMENT_RIGOR` (a bad, unknown or repeated argument, three invalid answers, closed input, exhausted scripted answers, or a `risk-policies.yaml` that does not parse or cannot be edited faithfully). Nothing is written on exit 1.
+
+**Implementation:** `lib/cli/init-prompt-implement-rigor.mjs`. **Called by:** `/adev:init` Step 8c.
 
 ### `status`
 
@@ -303,7 +325,7 @@ governance materialize --registry <review|diagnostics|gates> [--dry-run] [--json
 governance drift [--registry <validate|review|diagnostics|gates>] [--json]
 governance migrate-gates [--dry-run] [--json]
 governance scaffold --registry <review|validate> --entries <json|@path>
-governance dispatch --spec <path> [--tier <full|quick>] [--harness <claude-code|opencode>] [--module <slug>] [--note <text>]... [--json]
+governance dispatch --spec <path> [--tier <full|quick|lite>] [--harness <claude-code|opencode>] [--module <slug>] [--note <text>]... [--json]
 ```
 
 `validate.yaml` and `boundaries.yaml` are **exempt** (DDR-1): both are already explicit single-source registries, so naming either is refused. See [Governance](governance.md#materialized-registries-and-the-materialized_at-marker).
@@ -323,7 +345,7 @@ Materialization is **write-once**: a second run preserves the original stamp ver
 
 `governance drift` is Hygiene Audit Pass 19 — read-only, advisory, always exit 0 on a scan. It reports `hygiene/unadopted-upgrade` (info), `hygiene/project-addition` (info), `hygiene/disabled-bundled-entry` (WARN), `hygiene/non-project-execution-field` (info) and `hygiene/entry-field-drift` (WARN — a `bundled`/`domain:*`-sourced entry's `context_pack`, `profile`, `severity_cap` or `dispatch` no longer matches the source named in its own `source:` field). The execution-field finding prints field **names** only, never values; the field-drift finding prints both values, since they are short enum-like config and the finding is not actionable without them. An unmaterialized marked registry is reported rather than read.
 
-`governance dispatch` emits the Agent-ready reviewer dispatch plan for one spec, so `/adev:review-specs` Step 4 never assembles a reviewer prompt itself. It loads the materialized `review.yaml` (failing closed with `REGISTRY_NOT_MATERIALIZED`), applies `shouldDispatch` and the BEH-8 diff-scope decision (the same one `governance diff-scope` reports), and builds each selected reviewer with `buildReviewerDispatches`. With `--tier quick` it plans only the synthesized reviewer, failing with `QUICK_PROMPT_MISSING` when the bundled prompt is absent. Every prompt carries the provenance preamble, the rendered context pack and the fenced target spec. Some sections are added only when they apply: `--module` heuristics, `--note` orchestrator notes, the `## Truncated Context` verification rule when the pack truncated or omitted a file, and the previous round's `.review.md` as `## Prior-Round Review`. The `--json` envelope has these keys:
+`governance dispatch` emits the Agent-ready reviewer dispatch plan for one spec, so `/adev:review-specs` Step 4 never assembles a reviewer prompt itself. It loads the materialized `review.yaml` (failing closed with `REGISTRY_NOT_MATERIALIZED`), applies `shouldDispatch` and the BEH-8 diff-scope decision (the same one `governance diff-scope` reports), and builds each selected reviewer with `buildReviewerDispatches`. With `--tier quick` it plans only the synthesized reviewer, failing with `QUICK_PROMPT_MISSING` when the bundled prompt is absent. `--tier lite` runs as `quick` and prints one notice line on stderr: `lite` is an implement level, and reviewer dispatch has no lighter set. Every prompt carries the provenance preamble, the rendered context pack and the fenced target spec. Some sections are added only when they apply: `--module` heuristics, `--note` orchestrator notes, the `## Truncated Context` verification rule when the pack truncated or omitted a file, and the previous round's `.review.md` as `## Prior-Round Review`. The `--json` envelope has these keys:
 
 - `reviewers`: every selection decision, with its `reason`.
 - `diff_scope` and `prior_review`.
@@ -593,6 +615,8 @@ adev artifact commit --spec <p> --kind validate
 
 **Signature:** `route emit-sidecar --plan <path>` (reads JSON entries from stdin) · `route render-sidecar --plan <path>`
 
+`emit-sidecar` prints `{ ok, sidecar, entries, lite_eligible }`. `lite_eligible: { count, total }` counts the entries that pass `liteEligible(entry)` from `lib/implement/review-depth.mjs`: routed `auto-agent` or `assisted-agent`. Scores are not consulted. `/adev:route` prints it as `lite-eligible: <count> of <total>`. It is an eligibility signal, never an authorization: `lite` comes only from the operator.
+
 **Example:**
 ```
 adev route render-sidecar --plan .context-index/specs/features/auth/login.plan.md
@@ -602,7 +626,7 @@ adev route render-sidecar --plan .context-index/specs/features/auth/login.plan.m
 
 ### `implement`
 
-**Purpose:** Resolve a single task's routing entry from the sidecar and print it as JSON (used to dispatch each task with the right autonomy/agent).
+**Purpose:** The verbs `/adev:implement` runs so that no runtime decision lives in skill prose: `implement check-flags` validates tier flags and captures the run base, `implement read-routing` reads one task's routing entry, `implement batches` forms batches, `implement resolve-depth` resolves each task's review depth (`full`, `quick` or `lite`), `implement task-begin` folds a `lite` task's start into one call, `implement snapshot-base` records the pre-task worktree, and `implement lite-report` lists the tasks a run implemented without per-task review or held to one reviewer under the lite cap. See [Core Concepts → Graduated Rigor Tiers](concepts.md#graduated-rigor-tiers) for the ladder these verbs implement.
 
 **Signature:** `implement read-routing --plan <path> --task-id <id> [--agents-allowlist <csv>]`
 
@@ -615,58 +639,169 @@ Exit codes: `0` success (entry JSON on stdout), `1` argument error / `INVALID_PL
 
 **Implementation:** `lib/cli/implement.mjs`. **Called by:** `/adev:implement`, `/adev:route`.
 
+#### `implement check-flags`
+
+**Purpose:** `/adev:implement`'s first action, before `adev gate require` and the step-started event. It rejects conflicting tier flags and malformed risk policies before any lifecycle event is written, and captures `run_base`, the commit every later `resolve-depth` and `batches` call reads governance from.
+
+**Signature:**
+```
+implement check-flags --spec <spec-path> [--lite] [--tier full|quick|lite] [--parallel]
+```
+
+The skill passes `--lite`, `--tier` and `--parallel` exactly as the operator passed them, and nothing else.
+
+On success it prints `{ lite_authorized, lite_source, tier, run_base, warnings }` as JSON:
+
+- `lite_authorized`: whether `lite` is authorized for this run, by the flag or by `implement_mode: lite` for the spec's risk level in the risk policies committed at `run_base`. An explicit `--tier quick` or `--tier full` outranks the policy and is the per-run opt-out.
+- `lite_source`: `flag`, `policy`, or `null` when `lite` is not authorized. The skill prints `lite authorized via <source>` once at the start of the run and again in the run summary.
+- `tier`: the operator's explicit tier (`--lite` reads as `lite`), or `null`. It is never the policy baseline.
+- `run_base`: the full sha of `HEAD` at that moment. It is captured once and passed as `--run-base` to every later call in the run.
+- `warnings`: `POLICY_UNCOMMITTED_CHANGES` when the working-tree `risk-policies.yaml` differs from the one committed at `run_base` (the run uses the committed one), and `LITE_SUPPRESSED_PARALLEL` when `lite` is authorized and `--parallel` is set, because a `--parallel` run grants no `lite`.
+
+The working-tree `risk-policies.yaml` is validated too, because `adev test-policy resolve` reads it from disk.
+
+**Example:**
+```
+adev implement check-flags --spec .context-index/specs/features/auth/login.spec.md --lite
+```
+
+Exit codes: `0` success; `1` argument error, `CONFLICTING_TIER_FLAGS` (`--lite` with `--tier full` or `--tier quick`), `INVALID_TIER` (an unknown `--tier`, a `review_mode`, `validate_mode` or `implement_mode` outside `full | quick | lite`, or a `risk-policies.yaml` that does not parse), `LITE_NOT_ALLOWED_FOR_HIGH` (`high.implement_mode: lite`), `INVALID_TEST_DEPTH`, `INVALID_SPEC_PATH`, `RUN_BASE_UNAVAILABLE` (no `HEAD` to capture), `RUN_BASE_READ_FAILED`. No lifecycle event is written on any exit 1.
+
+**Implementation:** `lib/cli/implement.mjs` → `lib/implement/run-base.mjs`, `lib/governance/rigor-mode.mjs`. **Called by:** `/adev:implement` only.
+
 #### `implement batches`
 
 **Purpose:** Resolve which of a plan's tasks are eligible to dispatch together as a batch (from `## Parallelization` sequential groups) versus solo, honoring per-run overrides.
 
-**Signature:** `implement batches --plan <p> [--max-batch <n>] [--no-batch]`
+**Signature:**
+```
+implement batches --plan <p> [--max-batch <n>] [--no-batch] [--parallel] [--lite] [--tier full|quick|lite] [--run-base <sha>]
+```
 
 Prints `{ batches, solo, advisories }` as JSON to stdout. `--no-batch` forces every task solo and is rejected with `CONFLICTING_BATCH_FLAGS` when combined with `--parallel`. `--max-batch <n>` overrides `implement.max_batch_size` for this run; an invalid value is rejected with `INVALID_MAX_BATCH_SIZE`.
+
+With `--run-base` (the `run_base` printed by `check-flags`), each task is checked for the `lite` grant against governance committed at that commit:
+
+- A granted task never joins a batch. It is listed in `solo` with `reason: "lite"`, except where every member of its group goes solo anyway: under `--no-batch` or `implement.batch_mode: off`, in an `independent` group (`reason: null` for both), and in a group with a prior failure (`reason: "prior-failure"`). The reason never decides depth; `task-begin` does. A granted task splits its group: each run of non-`lite` tasks around it is gated and sized on its own, and each batch carries a 1-based `segment`.
+- Authorization is `--lite` (or `--tier lite`), or, with no `--tier`, a policy `implement_mode: lite`. `--tier quick` or `--tier full` opts out. The skill passes `--lite` and `--tier` only as the operator passed them.
+- When the plan's spec cannot be resolved, authorization is assumed: eligible tasks go solo with `reason: "lite-assumed"`, and the advisories carry `LITE_AUTHORIZATION_ASSUMED`. `resolve-depth` still decides their depth.
+- When the routing sidecar is not committed at `run_base`, the advisories carry `ROUTING_SIDECAR_MISSING` naming the run base, and no task is granted `lite`.
+
+`--run-base` is required whenever `lite` may be authorized: `--lite`, `--tier lite`, or, with no `--tier`, a policy `implement_mode: lite` at the spec's risk level (any level when the spec cannot be resolved) in the working tree or committed at `HEAD`. A missing `--run-base` then is an argument error.
 
 Task ids are matched by key, not spelling: the sidecar's `t1` (as `/adev:route` writes it), the plan's `Task 1`, and a bare `1` all name the same task. Output `taskIds` keep the plan's spelling (`"1"`), and `read-routing`, `resolve-depth`, and `test-policy` accept either `t1` or `1` as `--task-id`.
 
 **Example:**
 ```
-adev implement batches --plan <p> --max-batch 4
+adev implement batches --plan <p> --max-batch 4 --run-base <run_base>
 ```
 
-Exit codes: `0` success, `1` argument error / `CONFLICTING_BATCH_FLAGS` / `INVALID_MAX_BATCH_SIZE` / `INVALID_PLAN_PATH`, `2` `ROUTING_SIDECAR_MISSING`.
+Exit codes: `0` success; `1` argument error (including `lite` authorized without `--run-base`) / `CONFLICTING_BATCH_FLAGS` / `CONFLICTING_TIER_FLAGS` / `INVALID_MAX_BATCH_SIZE` / `INVALID_COMMIT_ID` / `INVALID_TIER` / `LITE_NOT_ALLOWED_FOR_HIGH` / `RUN_BASE_READ_FAILED` / `INVALID_PLAN_PATH` / `INVALID_SIDECAR_JSON`; `2` `ROUTING_SIDECAR_MISSING`.
 
-**Implementation:** `lib/cli/implement.mjs`. **Called by:** `/adev:implement` only — `/adev:route` does not call `batches`.
+**Implementation:** `lib/cli/implement.mjs` → `lib/implement/batching.mjs`. **Called by:** `/adev:implement` only — `/adev:route` does not call `batches`.
 
 #### `implement resolve-depth`
 
-**Purpose:** Resolve the effective review depth (`full`|`quick`) for a single plan task, wrapping `lib/implement/review-depth.mjs::resolveImplementReviewDepth()` so `/adev:implement` doesn't inline the precedence chain and floor pass into skill prose.
+**Purpose:** Resolve the effective review depth (`full`, `quick` or `lite`) for a single plan task and record a `review_depth_resolved` lifecycle event. It wraps `lib/implement/review-depth.mjs::resolveImplementReviewDepth()`, so `/adev:implement` doesn't inline the precedence chain, the `lite` grant, the floor pass or the tripwire into skill prose.
 
 **Signature:**
 ```
-implement resolve-depth --spec <path> --plan <path> --task-id <id> [--tier full|quick] [--review-cycles <n>] [--base-sha <commit-or-tree>] [--pass provisional|final] [--in-batch] [--had-critical-finding]
+implement resolve-depth --spec <path> --plan <path> --task-id <id> --run-base <sha> [--lite] [--tier full|quick|lite] [--parallel] [--pass provisional|final] [--base-sha <commit-or-tree>] [--review-cycles <n>] [--had-critical-finding]
 ```
+
+- `--run-base <sha>` is required on both passes. `risk-policies.yaml`, `boundaries.yaml`, the sensitive-path configuration and the routing sidecar are read from that commit, the `run_base` that `check-flags` printed. An inline `lite` task therefore cannot change the inputs to its own resolution or to a later task's.
+- `--base-sha` is the final pass's diff range only, normally the tree `snapshot-base` captured at dispatch. It is never used to read governance inputs.
+- Both commit ids must be full lowercase hex object ids (40 or 64 characters) that resolve with `git rev-parse --verify --end-of-options`: `--run-base` to a commit, `--base-sha` to a commit or a tree. Anything else exits 1 with `INVALID_COMMIT_ID` naming the flag.
+- `--lite` or `--tier lite` authorizes the `lite` grant, as does a policy `implement_mode: lite` when no `--tier` is passed. `--parallel` denies it. The skill passes these only as the operator passed them.
+- `--pass` is `provisional` (the default, before dispatch) or `final` (after the task, before its review). Any other value is an argument error.
+- `--in-batch` is accepted and ignored: the `batched-task` floor leg it fed is gone, and a batched task is reviewed at its own resolved depth.
+
+The JSON output is the resolver's result plus `review_cycles`:
+
+- `depth`: `full`, `quick` or `lite`.
+- `source`: `tier-full-absolute` (`--tier full`, no floor consulted), `policy-baseline` (`--tier quick` or the policy's `implement_mode`), `default-quick` (no policy value), `lite-grant` (a `lite` resolution on either pass), or `lite-tripwire` (a final-pass escalation from `lite`).
+- `floor_applied` and `floor_legs`: the holding floor legs (`risk-level`, `routing`, `boundary`, `sensitive-path`, `critical-finding`, and `scope-mismatch` on a tripwire escalation).
+- `lite_denied`: on the provisional pass, the first failing grant condition (`not-authorized`, `no-routing-entry`, `high-risk`, `floor:<leg>` or `parallel`), or `null` when `lite` was granted. A missing routing entry is `no-routing-entry`; a `human-only` entry is `floor:routing`. It is always `null` on the final pass.
+- `lite_source`: `flag`, `policy` or `null`.
+- `escalated_from`: `lite` on a tripwire escalation, otherwise `null`.
+- `floor_cap`: `quick` when the lite cap lowered a `full` result to `quick`, otherwise `null`. The cap applies when `lite` is authorized (`lite_source` is not `null`, a `--parallel` run included) and the spec is not `risk_level: high`, and in every tripwire: a floor whose only holding legs are `boundary` and `sensitive-path` gives `quick`. Any other holding leg (`routing`, `critical-finding`) gives `full`, and `--tier full` stays absolute.
+- `warnings`: `REVIEW_DEPTH_FLOOR_APPLIED` naming its legs and the depth the floor gave (`review depth floored to quick (sensitive-path)` under the cap); `ROUTING_SIDECAR_MISSING` when the routing sidecar is not committed at `run_base` (when `lite` is authorized, every task is then denied with `lite_denied: no-routing-entry`); and `LITE_TRIPWIRE_ESCALATED` naming the task and legs when the tripwire escalates a `lite` task.
+
+`lite_denied`, `lite_source`, `escalated_from` and `floor_cap` are verb output only; the `review_depth_resolved` event's key set is unchanged.
+
+A final pass on a task that resolved `lite` provisionally runs the tripwire over every file the task touched against `--base-sha`. A sensitive-path or boundary hit gives `quick` under the lite cap (`floor_cap: quick`); a `routing` or `critical-finding` leg gives `full`. Otherwise an undeclared path that is neither exempt nor an exact provider-mirror regeneration of a canonical skill file in the task's scope gives `quick` (`scope-mismatch`). Otherwise the task stays `lite`. See [Core Concepts → Graduated Rigor Tiers](concepts.md#graduated-rigor-tiers) for the exemptions.
 
 **Example:**
 ```
-adev implement resolve-depth --spec <s> --plan <p> --task-id t3 --tier quick --review-cycles 2
+adev implement resolve-depth --spec <s> --plan <p> --task-id t3 --run-base <run_base> --tier quick --review-cycles 2
 ```
 
-Exit codes: `0` success — `resolveImplementReviewDepth()` result plus `review_cycles` printed as JSON on stdout; `1` argument error / `INVALID_REVIEW_CYCLES` / `INVALID_SPEC_PATH` / `INVALID_PLAN_PATH` / `INVALID_TIER`; `2` `MISSING_DIFF_RANGE` (final pass without `--base-sha`); `3` `ROUTING_SIDECAR_MISSING` / `ROUTING_ENTRY_MISSING`.
+Exit codes: `0` success; `1` argument error (including a missing `--run-base` or a bad `--pass`) / `INVALID_COMMIT_ID` / `INVALID_REVIEW_CYCLES` / `INVALID_SPEC_PATH` / `INVALID_PLAN_PATH` / `INVALID_TIER` / `LITE_NOT_ALLOWED_FOR_HIGH` / `RUN_BASE_READ_FAILED` / `INVALID_SIDECAR_JSON`; `2` `MISSING_DIFF_RANGE` (final pass without `--base-sha`); `3` `ROUTING_SIDECAR_MISSING` / `ROUTING_ENTRY_MISSING`.
 
-**Implementation:** `lib/cli/implement.mjs`. **Called by:** `/adev:implement` only.
+**Implementation:** `lib/cli/implement.mjs` → `lib/implement/review-depth.mjs`, `lib/implement/run-base.mjs`. **Called by:** `/adev:implement` only.
+
+#### `implement task-begin`
+
+**Purpose:** Start a task in a run where `lite` is authorized, in place of Step 2a's provisional `resolve-depth` call. An inline `lite` task's bookkeeping is then one call instead of four.
+
+**Signature:**
+```
+implement task-begin --spec <path> --plan <path> --task-id <id> --run-base <sha> [--lite] [--tier full|quick|lite] [--parallel] [--review-cycles <n>]
+```
+
+It runs the same code path as `resolve-depth --pass provisional`: the same flag validation (`--run-base` required, `INVALID_COMMIT_ID`, `--parallel` denies `lite`, `--review-cycles` echoed as `review_cycles`), the same `review_depth_resolved` event and the same JSON. The final-pass flags (`--pass`, `--base-sha`, `--had-critical-finding`, `--in-batch`) are argument errors.
+
+- **`lite` result:** it also emits `plan_task` `in_progress`, writes execution state (`status: active`, the task as `currentTask`, its plan title as `nextAction`, the plan's tasks as `progress`), and captures the dispatch-time snapshot. The JSON gains `snapshot` (the tree id `snapshot-base` would print, to pass as the final pass's `--base-sha`) and `execution_state`: `"written"`, `"conflict"` (another build owns the live state, which is left untouched; stderr names the owner) or `"failed"`. Neither execution-state outcome is fatal.
+- **`quick` or `full` result:** it prints exactly what `resolve-depth --pass provisional` prints, with no `snapshot` or `execution_state`, and emits no `plan_task` event. The Step 2 loop continues the task without repeating the provisional call.
+
+If the `plan_task` emit or the snapshot fails after the provisional event was written, it exits 1 with `TASK_BEGIN_FAILED` naming the failed step on stderr and prints no JSON; the task stops through the Step 2d blocker path.
+
+**Example:**
+```
+adev implement task-begin --spec <s> --plan <p> --task-id 3 --run-base <run_base> --lite
+```
+
+Exit codes: `0` success; `1` argument error (including a missing `--run-base`) / `INVALID_COMMIT_ID` / `INVALID_REVIEW_CYCLES` / `INVALID_SPEC_PATH` / `INVALID_PLAN_PATH` / `INVALID_TIER` / `LITE_NOT_ALLOWED_FOR_HIGH` / `RUN_BASE_READ_FAILED` / `INVALID_SIDECAR_JSON` / `TASK_BEGIN_FAILED`; `3` `ROUTING_SIDECAR_MISSING` / `ROUTING_ENTRY_MISSING`.
+
+**Implementation:** `lib/cli/implement.mjs` → `lib/implement/review-depth.mjs`, `lib/lifecycle-state.mjs::reportPlanTask()`, `lib/execution-state.mjs`. **Called by:** `/adev:implement` (`references/lite-mode.md`) only.
 
 #### `implement snapshot-base`
 
-**Purpose:** Record the worktree as it stands (index plus every non-ignored file, untracked included) as a git tree object, without touching the index or working tree. `/adev:implement` captures it at task dispatch and passes it as `resolve-depth --base-sha`, so the final pass's `scope-mismatch` leg counts only what the task changed: files that were untracked or modified before the task are part of the base.
+**Purpose:** Record the worktree as it stands (index plus every non-ignored file, untracked included) as a git tree object, without touching the index or working tree. `/adev:implement` captures it at task dispatch and passes it as `resolve-depth --base-sha`, so the final pass's touched-file legs and the `lite` tripwire count only what the task changed: files that were untracked or modified before the task are part of the base.
 
 **Signature:** `implement snapshot-base`
 
 **Example:**
 ```
 BASE=$(adev implement snapshot-base)
-adev implement resolve-depth --spec <s> --plan <p> --task-id t3 --base-sha "$BASE" --pass final
+adev implement resolve-depth --spec <s> --plan <p> --task-id t3 --run-base <run_base> --base-sha "$BASE" --pass final
 ```
 
 Exit codes: `0` success — tree id on stdout; `1` `SNAPSHOT_FAILED` (not a git repository, or git failed).
 
 **Implementation:** `lib/cli/implement.mjs` → `lib/implement/review-depth.mjs::snapshotWorkingTree()`. **Called by:** `/adev:implement` only.
+
+#### `implement lite-report`
+
+**Purpose:** List the tasks of the latest implement run that were implemented without per-task review, and the tasks the lite cap held to one reviewer. `/adev:validate` calls it on every run and shows the advisory when either list is non-empty; its spec-compliance check then covers the `lite` tasks' commits.
+
+**Signature:** `implement lite-report --spec <spec-path> [--json]`
+
+It reads the raw `review_depth_resolved` events in the spec's lifecycle log, not the `reviewDepthResolutions` projection (which keeps the latest event per plan, task and pass across every run). Only events after the most recent implement `lifecycle_step` `started` event count, and a task counts when its latest final-pass `review_depth_resolved` has `depth: lite`. A `lite` task from an earlier run is therefore not counted.
+
+A task is **capped** when its latest final-pass event in the same window is `depth: quick` with `sensitive-path` or `boundary` in `floor_legs`: without the lite cap those legs give `full`, so the event is the cap's durable record. A capped task is not counted as `lite`.
+
+- `--json` prints `{ count, task_ids, since, capped }`, where `since` is the timestamp of that `started` event, or `null` when there is none, and `capped` lists the capped task ids.
+- Text mode prints `implemented without per-task review: <n> task(s) (<ids>)` when the count is non-zero and `one reviewer under the lite cap: <n> task(s) (<ids>)` when `capped` is non-empty, or nothing.
+
+**Example:**
+```
+adev implement lite-report --spec .context-index/specs/features/auth/login.spec.md --json
+```
+
+Exit codes: `0` success; `1` argument error, `INVALID_SPEC_PATH`, or an unreadable lifecycle log.
+
+**Implementation:** `lib/cli/implement.mjs`. **Called by:** `/adev:validate`.
 
 ### `specify`
 

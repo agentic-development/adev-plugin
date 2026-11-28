@@ -1,0 +1,273 @@
+{
+  "arm": "full",
+  "implementArgs": [
+    "--tier full"
+  ],
+  "adev": true,
+  "model": null,
+  "ref": "c90fa324e18fb61def9445b24f3e91ca89598e12",
+  "ref_name": "HEAD",
+  "run": 1,
+  "finished_at": "2026-11-27T20:39:21.190Z",
+  "valid": true,
+  "invalid_reasons": [],
+  "implement": {
+    "exit_code": 0,
+    "session_id": "d3f42dbf-2b5a-4ef9-95e7-cac7024177a3",
+    "verdict": "PASS",
+    "process_ms": 1535099,
+    "task_commits": 8,
+    "transcripts": 24
+  },
+  "metrics": {
+    "wall_clock_ms": 1496750,
+    "wall_clock_source": "lifecycle-event-timestamps",
+    "process_wall_clock_ms": 1535099,
+    "agent_dispatches": 23,
+    "tokens": {
+      "input_tokens": 410,
+      "output_tokens": 140607,
+      "cache_creation_input_tokens": 702883,
+      "cache_read_input_tokens": 12345897
+    },
+    "quality_gates": {
+      "command": "npm test",
+      "exit_code": 0,
+      "pass": true,
+      "tests": {
+        "total": 88,
+        "pass": 88,
+        "fail": 0
+      }
+    },
+    "defects": [
+      {
+        "id": "D1",
+        "task": "1",
+        "kind": "off-by-one boundary",
+        "probe": "off-by-one-boundary.probe.mjs",
+        "caught_at": "implement"
+      },
+      {
+        "id": "D2",
+        "task": "2",
+        "kind": "missed error case",
+        "probe": "missed-error-case.probe.mjs",
+        "caught_at": "implement"
+      },
+      {
+        "id": "D3",
+        "task": "4",
+        "kind": "untested branch",
+        "probe": "untested-branch.probe.mjs",
+        "caught_at": "implement"
+      },
+      {
+        "id": "D4",
+        "task": "5",
+        "kind": "spec-noncompliant output shape",
+        "probe": "noncompliant-output-shape.probe.mjs",
+        "caught_at": "implement"
+      }
+    ],
+    "edge_probes": {
+      "total": 54,
+      "passed": 53,
+      "failed": [
+        "P6"
+      ],
+      "by_behavior": {
+        "BEH-1": {
+          "total": 7,
+          "passed": 6,
+          "failed": [
+            "P6"
+          ]
+        },
+        "BEH-2": {
+          "total": 8,
+          "passed": 8,
+          "failed": []
+        },
+        "BEH-3": {
+          "total": 5,
+          "passed": 5,
+          "failed": []
+        },
+        "BEH-4": {
+          "total": 10,
+          "passed": 10,
+          "failed": []
+        },
+        "BEH-5": {
+          "total": 5,
+          "passed": 5,
+          "failed": []
+        },
+        "BEH-6": {
+          "total": 9,
+          "passed": 9,
+          "failed": []
+        },
+        "BEH-7": {
+          "total": 10,
+          "passed": 10,
+          "failed": []
+        }
+      },
+      "strict": [
+        "P6",
+        "T8",
+        "T9",
+        "L6"
+      ],
+      "total_excluding_strict": 50,
+      "passed_excluding_strict": 50
+    }
+  },
+  "review_depths": {
+    "1": {
+      "provisional": {
+        "depth": "full",
+        "source": "tier-full-absolute"
+      },
+      "final": {
+        "depth": "full",
+        "source": "tier-full-absolute"
+      }
+    },
+    "2": {
+      "provisional": {
+        "depth": "full",
+        "source": "tier-full-absolute"
+      },
+      "final": {
+        "depth": "full",
+        "source": "tier-full-absolute"
+      }
+    },
+    "3": {
+      "provisional": {
+        "depth": "full",
+        "source": "tier-full-absolute"
+      },
+      "final": {
+        "depth": "full",
+        "source": "tier-full-absolute"
+      }
+    },
+    "4": {
+      "provisional": {
+        "depth": "full",
+        "source": "tier-full-absolute"
+      },
+      "final": {
+        "depth": "full",
+        "source": "tier-full-absolute"
+      }
+    },
+    "5": {
+      "provisional": {
+        "depth": "full",
+        "source": "tier-full-absolute"
+      },
+      "final": {
+        "depth": "full",
+        "source": "tier-full-absolute"
+      }
+    },
+    "6": {
+      "provisional": {
+        "depth": "full",
+        "source": "tier-full-absolute"
+      },
+      "final": {
+        "depth": "full",
+        "source": "tier-full-absolute"
+      }
+    },
+    "7": {
+      "provisional": {
+        "depth": "full",
+        "source": "tier-full-absolute"
+      },
+      "final": {
+        "depth": "full",
+        "source": "tier-full-absolute"
+      }
+    }
+  },
+  "patch": {
+    "path": "full-c90fa324e18f-2026-11-27T20-39-21-190Z.patch",
+    "base": "6c62b61f74b4e471d6fd170b859cada2331df438",
+    "head": "5b6acc757cb6004ee32bc24ac1fa352a70a8c6c6",
+    "implement_head": "5b6acc757cb6004ee32bc24ac1fa352a70a8c6c6",
+    "includes_validate_commits": false,
+    "excluded": [
+      ".context-index/"
+    ],
+    "files": [
+      "src/auth/token.mjs",
+      "src/config.mjs",
+      "src/discount.mjs",
+      "src/format.mjs",
+      "src/handlers/list.mjs",
+      "src/pagination.mjs",
+      "src/registry.mjs",
+      "src/slug.mjs",
+      "tests/auth/token.test.mjs",
+      "tests/config.test.mjs",
+      "tests/discount.test.mjs",
+      "tests/format.test.mjs",
+      "tests/handlers/list.test.mjs",
+      "tests/pagination.test.mjs",
+      "tests/slug.test.mjs"
+    ],
+    "bytes": 28103,
+    "uncommitted_paths": []
+  },
+  "validate": null,
+  "tripwire_target": {
+    "task": "7",
+    "undeclared_touched": [
+      "src/registry.mjs"
+    ]
+  },
+  "touched_files": [
+    ".context-index/lifecycle-state/example.jsonl",
+    ".context-index/specs/features/example/example.spec.md",
+    "src/auth/token.mjs",
+    "src/config.mjs",
+    "src/discount.mjs",
+    "src/format.mjs",
+    "src/handlers/list.mjs",
+    "src/pagination.mjs",
+    "src/registry.mjs",
+    "src/slug.mjs",
+    "tests/auth/token.test.mjs",
+    "tests/config.test.mjs",
+    "tests/discount.test.mjs",
+    "tests/format.test.mjs",
+    "tests/handlers/list.test.mjs",
+    "tests/pagination.test.mjs",
+    "tests/slug.test.mjs"
+  ],
+  "behavior": {
+    "tests": {
+      "D1": "pass",
+      "D2": "pass",
+      "D3": "pass",
+      "D4": "pass"
+    },
+    "surface": [
+      "src/auth/token.mjs",
+      "src/config.mjs",
+      "src/discount.mjs",
+      "src/format.mjs",
+      "src/handlers/list.mjs",
+      "src/pagination.mjs",
+      "src/registry.mjs",
+      "src/slug.mjs"
+    ]
+  }
+}

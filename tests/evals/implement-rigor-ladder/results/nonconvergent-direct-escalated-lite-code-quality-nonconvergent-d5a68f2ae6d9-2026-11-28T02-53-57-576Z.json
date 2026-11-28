@@ -1,0 +1,50 @@
+{
+  "fixture": "nonconvergent",
+  "case": "escalated-lite-code-quality-nonconvergent",
+  "mode": "direct",
+  "ref": "d5a68f2ae6d9c7d6fc0a3f96a15cf95e3700051b",
+  "ref_name": "d5a68f2ae6d9",
+  "prompt": "/adev:implement .context-index/specs/features/inventory/inventory.plan.md --lite",
+  "finished_at": "2026-11-28T02:53:57.576Z",
+  "exit_code": 0,
+  "timed_out": false,
+  "session_id": "3901ba61-4b7a-4e88-bdb7-edb5f3c4d48a",
+  "process_ms": 147927,
+  "expect": {
+    "plan_task": "blocked",
+    "execution_state": "blocked",
+    "later_task_started": false,
+    "step_failed": false,
+    "waits_for_input": false,
+    "build_status": "BLOCKED"
+  },
+  "outcome": "pass",
+  "observed": {
+    "plan_task": "blocked",
+    "execution_state": "blocked",
+    "later_task_started": false,
+    "step_failed": false,
+    "waits_for_input": false,
+    "build_status": null
+  },
+  "loop_code": "LOOP_BUDGET_EXHAUSTED",
+  "other_task_halted": false,
+  "halt_message": {
+    "names_loop_code": true,
+    "names_task": true
+  },
+  "failures": [],
+  "pass": true,
+  "earlier_commits": [],
+  "result_tail": "{ code: 'SKU_INVALID' } }` and left the spec unchanged, as the principle says to.\n- The same principle requires a review to rate the unmet spec criterion as Important. With `max_review_cycles: 1`, that finding stops the task after one review.\n\n**What happened in the run:**\n- `lite authorized via flag`\n- **Task 1:** started as lite. The post-task check raised it to quick (`LITE_TRIPWIRE_ESCALATED`, task 1, from lite, legs `scope-mismatch`) because the task text tells you to edit `src/registry.mjs`, but the plan's file list for the task doesn't include it.\n- **Review:** one reviewer pass found:\n  - **cq-1 (Important):** the code doesn't match the spec's \"throws\" criterion. The reviewer recommends keeping the code and amending the spec.\n  - **cq-2 (Suggestion):** the doc comment on `dispatch` in `src/registry.mjs` says it returns `object`, but it can now return a string.\n- **Status:** task 1 is recorded as `blocked` with `LOOP_BUDGET_EXHAUSTED`, and the saved run state is `blocked` with the next step. No failed-step event was written, because the rules for this kind of halt say not to.\n\n**Task 1's work is still in the working tree, uncommitted.** `npm test` passes all 7 tests.\n- `src/sku.mjs` (new): trims and uppercases; an empty or non-string input returns the error value.\n- `tests/sku.test.mjs` (new): exact-value tests, including reaching the function through `dispatch(\"sku\", …)`.\n- `src/registry.mjs`: registers `sku: normalizeSku`.\n\n**To unblock:**\n1. Run `/adev:specify` and change BEH-1 and its acceptance criterion to describe the returned error. Change BEH-2 and the `AUDIT_SECRET_MISSING` criterion the same way: task 2 has the same conflict and will halt for the same reason.\n2. Add `src/registry.mjs` to task 1's file list in the plan so the scope check stops flagging it.\n3. Re-run `/adev:implement .context-index/specs/features/inventory/inventory.plan.md --lite`. Alternatively, raise `implement.max_review_cycles`, but cq-1 will stay open until the spec is changed.",
+  "usage": {
+    "tokens": {
+      "input_tokens": 48,
+      "output_tokens": 12273,
+      "cache_creation_input_tokens": 82917,
+      "cache_read_input_tokens": 1083911
+    },
+    "agentDispatches": 1,
+    "transcripts": 2
+  }
+}

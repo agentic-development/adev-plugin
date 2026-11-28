@@ -58,10 +58,12 @@ test("/adev:implement accepts --review-cycles and threads it to the resolve-dept
   assert.match(md, /--review-cycles/);
 });
 
-test("/adev:implement echoes REVIEW_DEPTH_FLOOR_APPLIED and ROUTING_SCORE_OUT_OF_RANGE to the operator-facing transcript, not just to the persisted event", () => {
+// The lite grant no longer reads routing scores, so no verb raises
+// ROUTING_SCORE_OUT_OF_RANGE and no skill text may tell the agent to echo it.
+test("/adev:implement echoes REVIEW_DEPTH_FLOOR_APPLIED to the operator-facing transcript and names no score warning", () => {
   const md = readSkillSurface("implement");
   assert.match(md, /REVIEW_DEPTH_FLOOR_APPLIED/);
-  assert.match(md, /ROUTING_SCORE_OUT_OF_RANGE/);
+  assert.doesNotMatch(md, /ROUTING_SCORE_OUT_OF_RANGE/);
 });
 
 // The substantive contract lives in the companion, not in SKILL.md's summary
@@ -76,6 +78,21 @@ test("graduated-review-depth.md documents both resolve-depth passes with their l
   assert.match(md, /--review-cycles/);
 });
 
+// resolve-depth exits 1 without --run-base, and --in-batch fed the removed
+// batched-task floor leg, so a caller passing it is following a dead contract.
+test("graduated-review-depth.md passes --run-base on both passes and no longer passes --in-batch", () => {
+  const md = readFileSync(COMPANION_PATH, "utf8");
+  assert.doesNotMatch(md, /--in-batch/);
+  assert.match(md, /--run-base <run_base>[\s\S]{0,200}--pass provisional/);
+  assert.match(md, /--run-base <run_base>[\s\S]{0,200}--pass final/);
+});
+
+test("/adev:implement skill surface no longer passes --in-batch and passes --run-base", () => {
+  const md = readSkillSurface("implement");
+  assert.doesNotMatch(md, /--in-batch/);
+  assert.match(md, /--run-base <run_base>/);
+});
+
 test("graduated-review-depth.md documents --had-critical-finding as a persisting floor leg", () => {
   const md = readFileSync(COMPANION_PATH, "utf8");
   assert.match(md, /--had-critical-finding/);
@@ -88,7 +105,8 @@ test("graduated-review-depth.md requires floor and routing warnings echoed to th
   assert.match(md, /floor_applied/);
   assert.match(md, /REVIEW_DEPTH_FLOOR_APPLIED/);
   assert.match(md, /floor_legs/);
-  assert.match(md, /ROUTING_SCORE_OUT_OF_RANGE/);
+  assert.match(md, /ROUTING_SIDECAR_MISSING/);
+  assert.doesNotMatch(md, /ROUTING_SCORE_OUT_OF_RANGE/);
   assert.match(md, /operator-facing transcript/);
 });
 

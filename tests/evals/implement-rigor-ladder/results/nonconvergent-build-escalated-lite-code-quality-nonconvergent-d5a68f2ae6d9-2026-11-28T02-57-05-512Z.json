@@ -1,0 +1,50 @@
+{
+  "fixture": "nonconvergent",
+  "case": "escalated-lite-code-quality-nonconvergent",
+  "mode": "build",
+  "ref": "d5a68f2ae6d9c7d6fc0a3f96a15cf95e3700051b",
+  "ref_name": "d5a68f2ae6d9",
+  "prompt": "/adev:build --spec .context-index/specs/features/inventory/inventory.spec.md --resume --from implement --auto --lite",
+  "finished_at": "2026-11-28T02:57:05.512Z",
+  "exit_code": 0,
+  "timed_out": false,
+  "session_id": "fc039696-cf68-4c63-b7df-5ab838fd5a46",
+  "process_ms": 184423,
+  "expect": {
+    "plan_task": "blocked",
+    "execution_state": "blocked",
+    "later_task_started": false,
+    "step_failed": false,
+    "waits_for_input": false,
+    "build_status": "BLOCKED"
+  },
+  "outcome": "pass",
+  "observed": {
+    "plan_task": "blocked",
+    "execution_state": "blocked",
+    "later_task_started": false,
+    "step_failed": false,
+    "waits_for_input": false,
+    "build_status": "BLOCKED"
+  },
+  "loop_code": "LOOP_BUDGET_EXHAUSTED",
+  "other_task_halted": false,
+  "halt_message": {
+    "names_loop_code": true,
+    "names_task": true
+  },
+  "failures": [],
+  "pass": true,
+  "earlier_commits": [],
+  "result_tail": "- The spec (BEH-1 and its acceptance criterion) says `normalizeSku(\"   \")` throws an `Error` with code `SKU_INVALID`.\n- Constitution principle 4 says no exported function under `src/` may throw, and that this rule overrides the spec. So the implementer correctly returned `{ error: { code: 'SKU_INVALID' } }` instead.\n- The same principle requires the reviewer to rate the spec's unmet criterion as **Important**. With `implement.max_review_cycles: 1` in the manifest, the review loop ran out after one cycle (`LOOP_BUDGET_EXHAUSTED`, finding `cq-1`).\n\nTask 1 started at the `lite` level you authorized, but moved up to a `quick` review because it also changed `src/registry.mjs`, which isn't in the task's file list. `npm test` passed 6/6 before the review. The reviewer's two other findings (`cq-2`, `cq-3`) are only suggestions. Tasks 2 and 3 never started.\n\n**Uncommitted changes in the working tree:** `src/sku.mjs`, `tests/sku.test.mjs`, the `sku` entry added to `src/registry.mjs`, and the build's own state files under `.context-index/`.\n\n**Next steps:**\n1. Change BEH-1 and its acceptance criterion with `/adev:specify` so they describe the returned error value instead of a throw.\n2. Then run `/adev:build --spec .context-index/specs/features/inventory/inventory.spec.md --resume --from implement --auto --lite`. You could also raise `implement.max_review_cycles`, but the Important finding will keep coming back until the spec changes.\n\n```\nBuild complete.\n\n  Spec: .context-index/specs/features/inventory/inventory.spec.md\n  Status: FAILED at step 4 (implement)\n  Steps:\n    1. Review    — skipped (--from implement; review.md PASS on disk)\n    2. Plan      — skipped (--from implement; plan PASS on lifecycle log)\n    3. Route     — skipped (--from implement; routing.json on disk)\n    4. Implement — failed (BLOCKED: LOOP_BUDGET_EXHAUSTED, task 1, cq-1 Important)\n    5. Validate  — not run\n  Retry cycles: 0 (BLOCKED halts do not count toward build.max_retries)\n```\n\nADEV-BUILD: FAILED",
+  "usage": {
+    "tokens": {
+      "input_tokens": 58,
+      "output_tokens": 15224,
+      "cache_creation_input_tokens": 126616,
+      "cache_read_input_tokens": 1225322
+    },
+    "agentDispatches": 2,
+    "transcripts": 3
+  }
+}
