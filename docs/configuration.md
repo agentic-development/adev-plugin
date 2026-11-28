@@ -278,6 +278,10 @@ Required when `backend: github`. The board is a GitHub Projects v2 board, reache
 
 **Requirements:** `gh` on `PATH`, authenticated (or `GH_TOKEN` set) with the `repo` and `project` scopes, or a fine-grained / App token with issue read/write on the repo and read/write on the project. Run `adev issues github setup` to create the fields and options the board needs, and `adev issues github setup --check` to verify it. Error codes are listed in [Troubleshooting](troubleshooting.md#github-issue-backend).
 
+**Issue types.** With `type_source: auto`, adev uses issue types whenever the repository's owner has any, and organizations have `Task`, `Bug` and `Feature` by default. Epics are then issues of type `Epic`, which GitHub does not create: add it under the organization's **Settings → Planning → Issue types**. Without it, `createEpic` and every migration that carries an epic fail with `GITHUB_WRITE_FAILED` naming the missing type. `setup --check` does not check issue types. On an owner without issue types, or with `type_source: labels`, epics carry the `epic` label instead.
+
+**A new project needs its Status options added by hand.** GitHub gives every new project a Status field with `Todo`, `In Progress` and `Done`. `setup --yes` adds the adev fields but leaves the missing Status options (`Backlog`, `Ready`, `In Review` and `Deferred` for the default `status_map`) as a manual step, because adding an option replaces the field's whole option list. Add them on the board, delete `Todo` (adev refuses to read an item in an unmapped column) or list it in `status_map`, then run `setup --check`. See [`issues github setup`](cli-reference.md#issues-github-setup).
+
 **Disable the board's Status workflows.** On the project's **Workflows** page, turn off every built-in workflow that sets Status, notably "Item added to project" and "Auto-add sub-issues to project", which are on by default. Left on, they overwrite the Status adev writes seconds later (an item adev set to `In Progress` is reset to `Backlog` by `github-project-automation`). `setup` does not change workflows. See [how `github` differs](concepts.md#how-github-differs).
 
 **Example:**

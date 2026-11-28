@@ -748,6 +748,21 @@ adev coordination scan --json --owner "$USER/local"
 | `milestone ship <name> [--yes] [--gate-timeout <ms>]` | Evaluate the ship criteria and, if all pass, mark the milestone shipped, close its epic, and perform the release action its strategy names. `--gate-timeout` is a per-gate wall-clock budget (default `300000`) |
 | `milestone defer <name> --reason "<text>"` | Mark a milestone deferred, record why, and defer its linked epic. A shipped milestone cannot be deferred (`ALREADY_SHIPPED`, exit 1) |
 
+#### `issues github setup`
+
+**Signature:** `issues github setup [--check] [--dry-run] [--yes] [--json]`
+
+Checks or prepares the Projects v2 board named by `tasks.github`.
+
+| Flag | Meaning |
+|---|---|
+| `--check` | Read-only. Reports every required field and option as `ok`, `missing` or `wrong type`, plus drift: open items in a `closed`-mapped column, items in unmapped columns, sub-issues off the project, owners without `claimed_at`, values adev refuses, and unknown `module:` labels. Exits 0 when every field and option is present with the right type (drift alone is a warning), 1 otherwise |
+| `--dry-run` | Print the write set and exit 0 without writing |
+| `--yes` | Apply the write set without the interactive prompt. Required when stdin is not a terminal (`SETUP_CONFIRMATION_REQUIRED` otherwise). Read from argv only, never from configuration, and not implied by `--auto` |
+| `--json` | Emit the report, the write set or the apply result as one JSON object on stdout |
+
+Setup creates missing text fields, the Status field and the `P0`–`P4` Priority field, and never deletes, renames or clears a field, an option or an item's value. Adding an option to an existing single-select field means replacing the field's whole option list, which can clear the values items hold, so setup skips that change and prints it as a manual step. In practice this always applies to Status: GitHub creates every new project with a Status field holding `Todo`, `In Progress` and `Done`, so after `setup --yes` you add the remaining options of your `status_map` (for the default map: `Backlog`, `Ready`, `In Review`, `Deferred`) on the board by hand, and `setup --check` passes once you have. Setup does not create issue types or change the board's workflows; see [`tasks.github`](configuration.md#tasksgithub).
+
 #### `issues migrate`
 
 **Signature:** `issues migrate --to <backend> [--from <backend>] [--include-closed] [--dry-run] [--yes]`
