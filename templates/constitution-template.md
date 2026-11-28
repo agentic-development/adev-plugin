@@ -112,9 +112,14 @@
 
 <!-- Task tracking configuration. Controls how implementation issues are tracked.
      The backend is configured in manifest.yaml (tasks.backend).
-     Options: file (markdown table, default), beads (beads_rust CLI). -->
+     Options: json (JSON board, default), beads (beads_rust CLI),
+     github (GitHub Projects v2 board), file (legacy markdown table, read-only). -->
 
 Issues are tracked using the backend configured in `manifest.yaml` (`tasks.backend`).
+
+When `tasks.backend: json` (or unset):
+- The issue board lives at `.context-index/tasks/tasks.json` (rendered to a readable board on demand)
+- Use `/adev:issues` to manage issues interactively
 
 When `tasks.backend: beads`:
 - Use `br ready` to see actionable issues (open, unblocked)
@@ -123,10 +128,16 @@ When `tasks.backend: beads`:
 - Use `br close <id> --reason "text"` to complete issues
 - Issue data lives in `.beads/` (git-committed via `br sync --flush-only`)
 
-When `tasks.backend: file` (or unset):
-- The issue board lives at `.context-index/tasks/tasks.md`
-- Update the markdown table directly to change issue status
-- Use `/adev:issues` to manage issues interactively
+When `tasks.backend: github`:
+- The issue board lives on the GitHub Projects v2 project configured under `tasks.github`
+- Manage it only through `adev issues …` verbs (`adev issues ready`, `adev issues list`, `adev issues create`, `adev issues close`) or `/adev:issues`
+- Run `adev issues github setup --check` to verify the project has the fields adev needs
+- Issue IDs are `gh-<n>` for the home repo (`gh-<owner>.<repo>.<n>` for other repos on the project)
+- Every board operation needs network access and `gh` CLI authentication (`gh auth login`)
+
+When `tasks.backend: file`:
+- The legacy issue board lives at `.context-index/tasks/tasks.md` (read-only; writes fail until you run `adev migrate` or set `tasks.backend: json`)
+- Use `/adev:issues` to view issues
 
 ### next_action Convention
 
