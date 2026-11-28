@@ -46,4 +46,7 @@ Create or approve the charter with /adev:brainstorm --module <module>.
        next_action: "Run /adev:specify --module <module> to author this Feature"
      })
      ```
+
+   **If any `create()` call throws `GITHUB_PARTIAL_CREATE`, stop.** The item exists on GitHub, but some of its fields were not written. Report the error code, the new item's canonical ID (the error's `id`) and its `unwritten` list, create no further items, and do not retry. Tell the operator to finish that item with `adev issues update` or on GitHub, then re-run Feature Mode.
+
 6. **Report:** "Created `<N>` Feature work items under Epic `<epic-id>`."

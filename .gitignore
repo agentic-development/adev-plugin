@@ -134,6 +134,8 @@ viz/dist/
 .context-index/tasks/tasks.json.*.tmp
 # backend-migration resume state
 .context-index/tasks/.migrate-state.json
+# github migration unanchored-issue record
+.context-index/tasks/.migrate-unanchored.json
 # beads board — linked git worktree against beads-board, not main's tree
 .beads/
 # board-migrate resume checkpoint

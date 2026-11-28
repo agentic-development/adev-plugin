@@ -2,19 +2,21 @@
 
 **6a. Emit one `reviewer_report` event per dispatched reviewer.** Severity is stamped at write time by the lib from `reviewers.yaml` domain config — skill prose MUST NOT compute or assert severity (cross-reference `lifecycle-event-log.spec.md § Severity-resolution helper`):
 
-```javascript
-import { reportReviewer } from '<ADEV_ROOT>/lib/lifecycle-state.mjs';
-for (const reviewer of dispatchedReviewers) {
-  reportReviewer(projectRoot, specPath, {
-    step: "review",
-    reviewer: reviewer.id,
-    verdict: reviewer.verdict,             // PASS | PASS_WITH_NOTES | FAIL
-    notes: reviewer.summary ?? null,       // ≤200 chars in practice
-  });
-}
+```bash
+adev report --type reviewer \
+  --spec "<spec-path>" \
+  --step review \
+  --reviewer "<reviewer.id>" \
+  --verdict <reviewer.verdict> \
+  [--notes "<reviewer.summary, ≤200 chars in practice>"] \
+  --revision <spec-revision>
 ```
 
-`notes` MUST NOT include API keys, tokens, file contents, or stack traces beyond the immediate error message (4 KB cap; truncated with a `NOTES_TRUNCATED` warning).
+Run one invocation per dispatched reviewer. `--verdict` is the reviewer's own verdict (`PASS` | `PASS_WITH_NOTES` | `FAIL`) — never `BLOCK`, which is reserved for the step-level consolidated verdict (Step 8). `--revision` reuses the same `<spec-revision>` value Step 0 read once from the spec's `revision:` frontmatter, so every `reviewer_report` event for this run folds into the same `currentState().steps.review.byRevision` bucket as the step-level events.
+
+`--notes` MUST NOT include API keys, tokens, file contents, or stack traces beyond the immediate error message (4 KB cap; truncated with a `NOTES_TRUNCATED` warning).
+
+> Authority: `lib/cli/report.mjs` (`--type reviewer`) is the canonical implementation per `cli-driver-surface/lib-import-control-flow-extraction.spec.md`'s descriptive-reference rule. Do not re-introduce an inline `reportReviewer` import/loop here — `tests/skills-no-inline-node.test.mjs` and `hooks/pre-commit-no-inline-node.sh` guard the executable-pattern class, and the constitution's fenced-JS rule guards this descriptive-JS class.
 
 **6b. Write the rendered review report** to a `.tmp` staging file adjacent to the spec, then commit it atomically. The `.review.md` artifact is now a presentation/audit artifact for human consumption; the canonical reviewer state lives in the lifecycle log.
 

@@ -110,3 +110,4 @@
 {"event":"code_drift_detected","drift_source":"templates/manifest-template.yaml","drift_at":"2026-08-21T18:40:23.365Z","ts":"2026-08-21T18:40:23.365Z"}
 {"event":"code_drift_detected","drift_source":"cli/index.mjs","drift_at":"2026-08-23T20:25:45.177Z","ts":"2026-08-23T20:25:45.177Z"}
 {"event":"code_drift_detected","drift_source":"tests/skills/bugfix-loop-skill.test.mjs","drift_at":"2026-08-23T12:46:00.448Z","ts":"2026-08-23T12:46:00.448Z"}
+{"event":"spec_amended","amendment_slug":"tracker-provider-bridge-rev-12-github-board-coexistence","amendment_path":".context-index/specs/features/autonomous-bugfix-loop/tracker-provider-bridge-rev-12-github-board-coexistence.spec.md","target_revision":12,"ts":"2026-11-26T17:00:17.887Z"}

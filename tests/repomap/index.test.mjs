@@ -6,6 +6,7 @@ import { join, dirname } from 'node:path';
 import { mkdirSync, writeFileSync, rmSync, readFileSync, existsSync, symlinkSync, cpSync } from 'node:fs';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { isTreeSitterAvailable } from '../../lib/repomap/check-deps.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PLUGIN_ROOT = join(__dirname, '..', '..');
@@ -242,6 +243,10 @@ describe('integration - full pipeline', () => {
   let repoMapContent;
 
   before(() => {
+    // web-tree-sitter is a package dependency, so these tests need `npm install`. Without it
+    // the pipeline falls back to regex mode and writes no dependency graph, which would
+    // otherwise surface as an ENOENT far from the cause.
+    assert.ok(isTreeSitterAvailable(), 'web-tree-sitter is not installed: run `npm install` before these tests');
     FIXTURE_ROOT = mkdtempSync(join(tmpdir(), 'repomap-integration-fixture-'));
     cpSync(SOURCE_FIXTURE_ROOT, FIXTURE_ROOT, { recursive: true });
     HYGIENE_DIR = join(FIXTURE_ROOT, '.context-index', 'hygiene');
