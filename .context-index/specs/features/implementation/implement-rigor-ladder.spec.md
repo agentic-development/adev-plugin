@@ -81,6 +81,8 @@ Revision 4 makes operator-authorized `lite` the rule rather than the exception:
 
 A run without `lite` authorization, and any high-risk spec, resolves exactly as in revision 3.
 
+Measured on 2026-11-28 (`results/lite-d5a68f2ae6d9-*`, three valid runs, medians), revision-4 `lite` took 9.7 min with 4 `Agent` dispatches, against 17.2 min and 9 for revision-3 `lite` and 26.6 min and 23 for `full` over the four-arm runs. It caught 4 of 4 seeded defects at implement in every run, passed 98.2% of the hidden edge checks (as did plain Claude Code), and scored 9.00 overall in the blind judge (plain and `full` also scored 9.00; `results/judge-2026-11-28T03-11-38-983Z.json`). Tasks 1–5 ran inline at about 20 s each, close to plain's pace. What remains of the gap to plain is mostly by design: the sensitive-path task at `quick` (about 4 min), the tripwire task's `quick` review (about 1 min), and the final review and quality gates (about 1.5 min).
+
 ## Invocation Modes
 
 The ladder is resolved **per task**, so one plan can mix levels. Every review loop below is capped at `implement.max_review_cycles` in `manifest.yaml`, overridable per run with `--review-cycles`. Both must be an integer ≥ 1 with no upper bound, and the default is 3. An illegal manifest value fails with the existing `INVALID_MAX_REVIEW_CYCLES`, and an illegal flag value with the existing `INVALID_REVIEW_CYCLES`. BEH-15 states what happens at the cap.
