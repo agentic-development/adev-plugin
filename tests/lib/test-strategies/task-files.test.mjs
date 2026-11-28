@@ -164,3 +164,18 @@ test("a heading-shaped line inside a fenced code block does not prematurely clos
     await cleanupTempDir(dir);
   }
 });
+
+test("a bare or `Task <n>` id resolves the same region as t<n>", async () => {
+  const dir = await createTempDir();
+  try {
+    await writeFixture(dir, "plan.md", PLAN);
+    const viaT = await readTaskFiles(`${dir}/plan.md`, "t1");
+    for (const id of ["1", "Task 1"]) {
+      const { targetPaths, available } = await readTaskFiles(`${dir}/plan.md`, id);
+      assert.deepEqual(targetPaths, viaT.targetPaths, id);
+      assert.equal(available, viaT.available, id);
+    }
+  } finally {
+    await cleanupTempDir(dir);
+  }
+});

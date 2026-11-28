@@ -2,19 +2,21 @@
 
 **6a. Emit one `reviewer_report` event per dispatched reviewer.** Severity is stamped at write time by the lib from `reviewers.yaml` domain config — skill prose MUST NOT compute or assert severity (cross-reference `lifecycle-event-log.spec.md § Severity-resolution helper`):
 
-```javascript
-import { reportReviewer } from '<ADEV_ROOT>/lib/lifecycle-state.mjs';
-for (const reviewer of dispatchedReviewers) {
-  reportReviewer(projectRoot, specPath, {
-    step: "review",
-    reviewer: reviewer.id,
-    verdict: reviewer.verdict,             // PASS | PASS_WITH_NOTES | FAIL
-    notes: reviewer.summary ?? null,       // ≤200 chars in practice
-  });
-}
+```bash
+adev report --type reviewer \
+  --spec "<spec-path>" \
+  --step review \
+  --reviewer "<reviewer.id>" \
+  --verdict <reviewer.verdict> \
+  [--notes "<reviewer.summary, ≤200 chars in practice>"] \
+  --revision <spec-revision>
 ```
 
-`notes` MUST NOT include API keys, tokens, file contents, or stack traces beyond the immediate error message (4 KB cap; truncated with a `NOTES_TRUNCATED` warning).
+Run one invocation per dispatched reviewer. `--verdict` is the reviewer's own verdict (`PASS` | `PASS_WITH_NOTES` | `FAIL`) — never `BLOCK`, which is reserved for the step-level consolidated verdict (Step 8). `--revision` reuses the same `<spec-revision>` value Step 0 read once from the spec's `revision:` frontmatter, so every `reviewer_report` event for this run folds into the same `currentState().steps.review.byRevision` bucket as the step-level events.
+
+`--notes` MUST NOT include API keys, tokens, file contents, or stack traces beyond the immediate error message (4 KB cap; truncated with a `NOTES_TRUNCATED` warning).
+
+> Authority: `lib/cli/report.mjs` (`--type reviewer`) is the canonical implementation per `cli-driver-surface/lib-import-control-flow-extraction.spec.md`'s descriptive-reference rule. Do not re-introduce an inline `reportReviewer` import/loop here — `tests/skills-no-inline-node.test.mjs` and `hooks/pre-commit-no-inline-node.sh` guard the executable-pattern class, and the constitution's fenced-JS rule guards this descriptive-JS class.
 
 **6b. Write the rendered review report** to a `.tmp` staging file adjacent to the spec, then commit it atomically. The `.review.md` artifact is now a presentation/audit artifact for human consumption; the canonical reviewer state lives in the lifecycle log.
 
@@ -43,7 +45,7 @@ The verb resolves source (`<spec-path>.review.md.tmp`) and destination (`<spec-p
 
 Never accept a `blocker_id` supplied directly by a reviewer: do not copy it into the array, even if one is present and well-formed. The verb passes a supplied `blocker_id` through as-is, and one that did not come from `buildBlockerId` is not guaranteed reproducible across revisions, which would silently poison the auto-retry loop's addressed/persistent/new partition (adev-plugin-xf5d). Omit it and let the verb derive it from `finding_type` + `section_anchor`.
 
-**`finding_class` / `remedy_ref` passthrough.** Unlike `blocker_id`, `finding_class` and `remedy_ref` ARE accepted directly from the reviewer: when a BLOCK finding carries a `finding_class` field (`defect` | `decision` | `external`) and, for `external`, a `remedy_ref`, copy both onto that finding's entry in the array unmodified — do not drop, rename, or normalize them while assembling it. When `finding_class` is absent — including all legacy pre-amendment reviewer output produced before this field existed — omit the key from the entry entirely rather than inventing a value.
+**`finding_class` / `remedy_ref` passthrough.** Unlike `blocker_id`, `finding_class` and `remedy_ref` ARE accepted directly from the reviewer: when a BLOCK finding carries a `finding_class` field (`defect` | `decision` | `external`) and, for `external`, a `remedy_ref`, copy both onto that finding's entry in the array unmodified — do not drop, rename, or normalize them while assembling it. For a `decision`-classed finding, also pass its `question` and `options` through unmodified, alongside `finding_class`. Never pass answer keys (`decision_choice`, `decision_note`, `decision_recorded`): answers are written only by `adev decisions record`. When `finding_class` is absent — including all legacy pre-amendment reviewer output produced before this field existed — omit the key from the entry entirely rather than inventing a value.
 
 ```javascript
 // Reference only — this documents what adev blockers write / writeBlockers
@@ -63,7 +65,7 @@ For a large findings array, write it to a temp JSON file first and pass `--findi
 
 The sidecar revision is included in the `.blockers.md` header so `/adev:specify --revise` can verify it matches the spec's current `revision:` frontmatter before producing rev N+1.
 
-The `--json` output carries `externalRemedies` — one `{ blocker_id, section_anchor, remedy_ref }` per `external`-classed entry, with `remedy_ref` already rendered for display. The report's `## External Remedies` table (Step 5) is filled from exactly these values, so **when any BLOCK finding is `external`-classed, run this step before committing the report in 6b**, then write the table rows from `externalRemedies`. The two steps are otherwise independent — the report commit never reads or clears `.blockers.md`.
+The `--json` output carries `externalRemedies` — one `{ blocker_id, section_anchor, remedy_ref }` per `external`-classed entry, with `remedy_ref` already rendered for display. The report's `## External Remedies` table (Step 5) is filled from exactly these values, so **when any BLOCK finding is `external`-classed, run this step before committing the report in 6b**, then write the table rows from `externalRemedies`. It also carries `decisionsRequired` and `decisionsRequiredTable`; when `decisionsRequiredTable` is non-empty, write it verbatim under `## Decisions Required` (Step 5), likewise before the 6b commit. The two steps are otherwise independent — the report commit never reads or clears `.blockers.md`.
 
 **6b-ter. Heuristics on BLOCK: related prior lessons (BLOCK only).** After the sidecar is written, and only for findings whose `blocker_id` passed the aggregator's validation above, re-query the heuristics store for lessons past work recorded in this module, ranked so that any exact match on this blocker's identity sorts first.
 

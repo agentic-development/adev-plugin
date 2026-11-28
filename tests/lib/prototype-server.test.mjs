@@ -14,11 +14,50 @@ import { createServer } from 'node:net';
 import { createTempDir, cleanupTempDir } from '../helpers.mjs';
 import { startServer, ensureGitignore, validateModuleName } from '../../lib/prototype-server.mjs';
 
+const PORT_ATTEMPTS = 10;
+
+// Bind a TCP listener on 127.0.0.1:<port>, rejecting instead of waiting forever
+// when the port is taken.
+function listenOn(port) {
+  return new Promise((resolve, reject) => {
+    const s = createServer();
+    s.once('error', reject);
+    s.listen(port, '127.0.0.1', () => resolve(s));
+  });
+}
+
+const closeAll = (servers) => Promise.all(servers.map((s) => new Promise((r) => s.close(() => r()))));
+
+// A start port whose whole ten-port range is free right now. The tests never use
+// the default range 3210-3219: another suite or a dev server on this machine may
+// hold it, and a test that blocks those ports itself would collide with it.
+async function freePortRange() {
+  for (let tries = 0; tries < 20; tries++) {
+    const probe = await listenOn(0);
+    const base = probe.address().port;
+    await closeAll([probe]);
+    if (base + PORT_ATTEMPTS - 1 > 65535) continue;
+    const held = [];
+    try {
+      for (let i = 0; i < PORT_ATTEMPTS; i++) held.push(await listenOn(base + i));
+      return base;
+    } catch {
+      // part of the range is taken; try another
+    } finally {
+      await closeAll(held);
+    }
+  }
+  throw new Error('no free range of ten consecutive ports on 127.0.0.1');
+}
+
 describe('prototype-server', () => {
   let tmpDir;
   let server;
 
-  before(() => {
+  let base;
+
+  before(async () => {
+    base = await freePortRange();
     tmpDir = createTempDir();
     writeFileSync(join(tmpDir, 'index.html'), '<h1>Test</h1>');
     writeFileSync(join(tmpDir, 'style.css'), 'body { color: red; }');
@@ -42,9 +81,9 @@ describe('prototype-server', () => {
   });
 
   it('starts server and serves index.html as default document', async () => {
-    server = await startServer(tmpDir);
+    server = await startServer(tmpDir, { startPort: base });
     assert.ok(server, 'server should start');
-    assert.ok(server.port >= 3210 && server.port <= 3219, `port ${server.port} in range`);
+    assert.ok(server.port >= base && server.port < base + PORT_ATTEMPTS, `port ${server.port} in range`);
     const res = await fetch(`http://127.0.0.1:${server.port}/`);
     assert.equal(res.status, 200);
     assert.equal(res.headers.get('content-type'), 'text/html');
@@ -146,7 +185,7 @@ describe('prototype-server', () => {
 });
 
 describe('prototype-server port scanning', () => {
-  let blockerServer;
+  let blockers = [];
   let tmpDir;
 
   before(() => {
@@ -155,44 +194,38 @@ describe('prototype-server port scanning', () => {
   });
 
   after(async () => {
-    if (blockerServer) blockerServer.close();
+    await closeAll(blockers);
     cleanupTempDir(tmpDir);
   });
 
   it('retries on next port when current is in use', async () => {
-    // Block port 3210
-    blockerServer = createServer();
-    await new Promise((resolve) => {
-      blockerServer.listen(3210, '127.0.0.1', resolve);
-    });
+    const base = await freePortRange();
+    blockers = [await listenOn(base)];
 
-    const server = await startServer(tmpDir);
+    const server = await startServer(tmpDir, { startPort: base });
     assert.ok(server, 'server should start on alternate port');
-    assert.ok(server.port > 3210, `port ${server.port} should be above 3210`);
+    assert.equal(server.port, base + 1);
 
     await server.close();
-    blockerServer.close();
-    blockerServer = null;
+    await closeAll(blockers);
+    blockers = [];
   });
 
   it('returns null when all 10 ports are exhausted', async () => {
-    const blockers = [];
-    // Block all ports 3210-3219
-    for (let i = 0; i < 10; i++) {
-      const s = createServer();
-      await new Promise((resolve) => {
-        s.listen(3210 + i, '127.0.0.1', resolve);
-      });
-      blockers.push(s);
-    }
+    const base = await freePortRange();
+    for (let i = 0; i < PORT_ATTEMPTS; i++) blockers.push(await listenOn(base + i));
 
-    const server = await startServer(tmpDir);
+    const server = await startServer(tmpDir, { startPort: base });
     assert.equal(server, null, 'should return null when all ports exhausted');
 
-    // Cleanup
-    for (const s of blockers) {
-      s.close();
-    }
+    await closeAll(blockers);
+    blockers = [];
+  });
+
+  it('returns null for a start port whose range does not fit', async () => {
+    assert.equal(await startServer(tmpDir, { startPort: 65530 }), null);
+    assert.equal(await startServer(tmpDir, { startPort: 0 }), null);
+    assert.equal(await startServer(tmpDir, { startPort: 3210.5 }), null);
   });
 });
 
@@ -219,8 +252,8 @@ describe('prototype-server symlink handling', () => {
   });
 
   it('rejects symlinks that resolve outside serve root with 403', async () => {
-    const server = await startServer(tmpDir);
-    if (!server) return; // Skip if server can't start (ports busy)
+    const server = await startServer(tmpDir, { startPort: await freePortRange() });
+    assert.ok(server, 'server should start');
 
     const res = await fetch(`http://127.0.0.1:${server.port}/link.txt`);
     assert.equal(res.status, 403, 'symlink outside root should be rejected');

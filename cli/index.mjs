@@ -2147,6 +2147,8 @@ const VERB_REGISTRY = new Map([
   ["report",          () => import("../lib/cli/report.mjs")],
   ["manifest",        () => import("../lib/cli/manifest.mjs")],
   ["blockers",        () => import("../lib/cli/blockers.mjs")],
+  ["review-notes",    () => import("../lib/cli/review-notes.mjs")],
+  ["decisions",       () => import("../lib/cli/decisions.mjs")],
   ["source-manifest", () => import("../lib/cli/source-manifest.mjs")],
   ["domain",          () => import("../lib/cli/domain.mjs")],
   // Registered so /adev:init can run the picker. The module always exported a

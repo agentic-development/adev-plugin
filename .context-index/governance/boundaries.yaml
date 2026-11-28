@@ -61,6 +61,11 @@ boundaries:
       # class as tests/fixtures/governance/** above: the check has to name the
       # pattern to check it.
       - 'tests/lib/evals/skill-regression-hermeticity.test.mjs'
+      # Embeds a fake `br` binary's own source as a quoted string, so the test
+      # can put it on PATH as a real subprocess exercising the exact
+      # anti-shrink-guard condition this file's tests cover — the string is
+      # the fake binary's CommonJS body, not this test file's own code.
+      - 'tests/lib/issues-beads-adapter.test.mjs'
 
   # Constitution Anti-Pattern — no inline Node in SKILL.md. Same three shapes the
   # bespoke git hook `hooks/pre-commit-no-inline-node.sh` already rejects, and the

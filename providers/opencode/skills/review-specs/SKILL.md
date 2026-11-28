@@ -1,7 +1,7 @@
 ---
 name: adev:review-specs
 description: "Run parallel specialist reviews (structural, security, consistency) on Live Specs before planning. Use for architecture review and expert evaluation. In OpenCode, invoke with skill({ name: 'adev:review-specs' })"
-allowed-tools: [Read, Glob, Grep, Agent]
+allowed-tools: [Read, Glob, Grep, Agent, AskUserQuestion]
 ---
 
 # Review Specs
@@ -14,7 +14,7 @@ Run an architecture review on one or more Live Specs using parallel specialist s
 
 **Never end your turn to wait for a dispatched subagent.** A synchronous dispatch (`run_in_background: false`) returns its final result directly in the tool call — there is nothing to wait for. If a dispatch ever returns a task ID instead of a result, that is a bug in the dispatch (the rule above was violated, or the harness backgrounded it anyway): fix the dispatch and re-run it synchronously. Do not end the turn hoping a completion notification will resume you — in a nested subagent context it will not. If this skill is itself running as a dispatched subagent (e.g., a build pipeline step), your own caller is waiting on a result contract — for build pipeline steps this is the `STEP_RESULT` format defined in `skills/build/SKILL.md`. Ending your turn without that result to report is a protocol violation, not a valid pause point.
 
-**Quick tier branch (Step 2.5).** If the resolved rigor tier is `quick`, **skip the registry loop below** and dispatch exactly one subagent — the synthesized reviewer — using the bundled prompt `plugin:review-specs/quick-synthesized-reviewer-prompt.md` under the `reviewer-capable` profile, with the same rendered context pack and target spec appended. Pass `run_in_background: false` on this dispatch, exactly as the full-tier reviewers do (see the parallel-dispatch note below): the harness backgrounds Agent dispatches by default, and review-specs frequently runs as a build-step subagent where a backgrounded dispatch never re-invokes the caller and stalls the review. It returns `SA-`/`SEC-`/`CON-` findings in the standard format plus a consolidated verdict. Apply the same severity cap, `blocker_id` validation, and parse-failure fallback as any other reviewer, then proceed to Step 5. Do not dispatch the registry's reviewer set in `quick` mode. If the bundled prompt file is missing, fail loud (do not silently fall back to a weaker or empty review). Otherwise (tier `full`, the default), dispatch the registry reviewers as described next.
+**Quick tier branch (Step 2.5).** If the resolved rigor tier is `quick`, Step 4 builds the plan with `adev governance dispatch --tier quick`, which plans exactly one subagent, the synthesized reviewer (bundled `plugin:review-specs/quick-synthesized-reviewer-prompt.md`, `reviewer-capable` profile), instead of the registry's reviewer set. Dispatch it with `run_in_background: false`, exactly as the full-tier reviewers are dispatched: the harness backgrounds Agent dispatches by default, and review-specs frequently runs as a build-step subagent where a backgrounded dispatch never re-invokes the caller and stalls the review. It returns `SA-`/`SEC-`/`CON-` findings in the standard format plus a consolidated verdict. Apply the same severity cap, `blocker_id` validation, and parse-failure fallback as any other reviewer, then proceed to Step 5. If the bundled prompt file is missing, the verb fails loud with `QUICK_PROMPT_MISSING`; do not fall back to a weaker or empty review. Otherwise (tier `full`, the default), dispatch the registry reviewers the verb plans.
 
 ---
 
@@ -36,6 +36,7 @@ If the output is not `__NONE__`, incorporate it as additional standing instructi
 - `--spec <path>`: review a specific spec file
 - `--charter <module>`: review all specs under a feature charter
 - `--tier <full|quick>`: rigor tier (graduated-rigor-tiers spec). `full` (default) dispatches whatever reviewer set `adev governance reviewers` resolves for the project (never a fixed count or named trio — the registry is project-configurable); `quick` dispatches a single synthesized reviewer instead. Overrides any routing/risk-policy signal. Invalid value → `INVALID_TIER`.
+- `--defer-decisions`: never ask. List pending decisions in the BLOCK summary and return. Required for every non-interactive caller (build passes it on every dispatch).
 
 ## Step 0: Specify-step gate (FIRST action)
 
@@ -55,6 +56,24 @@ Determine which specs need review:
    - `hasDrift(specPath)` from `<ADEV_ROOT>/lib/spec-drift.mjs` returns `true` (content hash mismatch).
 
 If no specs need review, report that and exit.
+
+**Re-review advisory (explicit `--spec` only).** Before reviewing a spec named with `--spec`, run:
+
+```bash
+adev review-notes show --spec <path> --json
+```
+
+If `verdict` is `PASS` or `PASS_WITH_NOTES` and `unchangedSinceReview` is `true`, print this advisory, then continue with the review the user asked for (it does not block):
+
+```
+Advisory: <spec-slug> already passed review (<verdict>) and is unchanged since
+(file-sha matches). Re-reviewing an unchanged spec rarely helps: each round
+surfaces new non-blocking warnings and can regress to BLOCK. Recommended:
+/adev:plan --spec <path> (open warnings carry forward into the plan).
+Continuing with the re-review as requested.
+```
+
+Print nothing when `unchangedSinceReview` is `false` or `null`, or the verdict is anything else.
 
 ## Step 2: Load Context for Each Spec
 
@@ -78,7 +97,7 @@ For each `depends-on` entry that matches the `@repo-slug/spec-slug` pattern:
 3. If resolved successfully, read the referenced spec's `status` frontmatter field:
    - If `status: draft`, flag a **warning**: `"Cross-repo dependency '@repo-slug/spec-slug' is in draft status"`
    - If `status: superseded`, flag a **warning**: `"Cross-repo dependency '@repo-slug/spec-slug' is superseded"`
-4. Include all cross-repo reference warnings in the context package passed to reviewer subagents (Step 4), so the Structural Architect can factor them into the review.
+4. Pass each cross-repo reference warning to `adev governance dispatch` as a `--note` (Step 4), so every reviewer receives it and can factor it into the review.
 
 **If cross-repo references are present but no workspace detected:**
 
@@ -127,7 +146,7 @@ dispatched reviewers is a visible, deliberate state, not itself a failure that a
 
 ## Step 4: Dispatch Reviewers
 
-Dispatches the registry reviewers (or the single quick-tier reviewer) with the rendered context pack.
+Builds the dispatch plan with `adev governance dispatch` and dispatches each planned reviewer (or the single quick-tier reviewer) with its prompt and model unchanged.
 
 > **Conditional loading:** Read `<ADEV_ROOT>/skills/review-specs/references/steps/step-4-dispatch-reviewers.md` for the full instructions. Do not act on this section from the summary above.
 
@@ -216,8 +235,14 @@ Review complete. Specs passed with notes.
   - SEC-1: [brief description]
 
 Review the full report at <path to .review.md>.
-You can proceed to /adev:plan or address the warnings first.
+Next: /adev:plan --spec <path>. The warnings carry forward into the plan
+(its Review Notes section), each assigned to the task that touches its section.
+Another revise-and-review round is not recommended: warning counts do not
+converge to zero under re-review, and edits made to clear a warning can
+regress the spec to BLOCK.
 ```
+
+Do not present fixing the warnings before planning as a co-equal next step. The plan is where PASS_WITH_NOTES warnings get resolved; `/adev:plan` reads them with `adev review-notes show` and records each one against a task.
 
 **If BLOCK:**
 ```
@@ -233,6 +258,10 @@ These issues must be resolved before planning can begin.
 Review the full report at <path to .review.md>.
 Run /adev:specify to revise the spec, then /adev:review-specs to re-review.
 ```
+
+**BLOCK with pending decisions.** When `adev decisions pending` lists any item, `--defer-decisions` lists every pending question and its options in the summary and asks nothing; without the flag, one bounded ask round runs with an attending operator, records the answers, and lists the rest.
+
+> **Conditional loading:** Read `<ADEV_ROOT>/skills/review-specs/references/steps/step-8-decision-ask-round.md` on every BLOCK verdict; it runs `adev decisions pending` and routes the rest. Do not act on this section from the summary above.
 
 ## Gate Behavior
 
@@ -271,7 +300,7 @@ Library functions this skill wraps, for reference when reading its CLI verbs.
 ## Next Step in the Lifecycle
 
 Review complete. The next step depends on the verdict:
-- **PASS / PASS_WITH_NOTES** → **`/adev:plan`**
+- **PASS / PASS_WITH_NOTES** → **`/adev:plan`** (PASS_WITH_NOTES warnings carry forward into the plan's `## Review Notes`)
 - **BLOCK** → **`/adev:specify --revise`** to address the blockers, then re-review.
 
 If invoked via `/adev:work`, offer to continue to the appropriate next step. The user can stop here.

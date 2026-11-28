@@ -27,6 +27,7 @@ import { mkdtempSync, writeFileSync, mkdirSync, readFileSync, existsSync, rmSync
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { isTreeSitterAvailable } from "../../lib/repomap/check-deps.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SCRIPT_PATH = join(__dirname, "..", "..", "lib", "repomap", "index.mjs");
@@ -121,6 +122,13 @@ function makeFixture() {
   return tmp;
 }
 
+// web-tree-sitter is a package dependency, so these tests need `npm install`. Without it
+// the pipeline falls back to regex mode and writes no dependency graph, which would
+// otherwise surface as an ENOENT far from the cause.
+function requireTreeSitter() {
+  assert.ok(isTreeSitterAvailable(), "web-tree-sitter is not installed: run `npm install` before these tests");
+}
+
 function cleanup(p) {
   try {
     rmSync(p, { recursive: true, force: true });
@@ -128,6 +136,7 @@ function cleanup(p) {
 }
 
 test("tree-sitter mode: doc-reference edges + public-api-entry tag emitted", () => {
+  requireTreeSitter();
   const root = makeFixture();
   try {
     execFileSync("node", [SCRIPT_PATH, "--root", root], {
@@ -170,6 +179,7 @@ test("tree-sitter mode: doc-reference edges + public-api-entry tag emitted", () 
 });
 
 test("PageRank scores sum to ≤ 1.0 (charter invariant preserved)", () => {
+  requireTreeSitter();
   const root = makeFixture();
   try {
     execFileSync("node", [SCRIPT_PATH, "--root", root], {
@@ -223,6 +233,7 @@ test("regex mode: three new sections render; no JSON artifacts", () => {
 });
 
 test("false-positive candidates (test-strategies, governance, cli) are NOT zero-inbound", () => {
+  requireTreeSitter();
   const root = makeFixture();
   try {
     execFileSync("node", [SCRIPT_PATH, "--root", root], {
@@ -265,6 +276,7 @@ test("false-positive candidates (test-strategies, governance, cli) are NOT zero-
 });
 
 test("doc-reference edge schema: type, from, to, symbols, count", () => {
+  requireTreeSitter();
   const root = makeFixture();
   try {
     execFileSync("node", [SCRIPT_PATH, "--root", root], {
@@ -295,6 +307,7 @@ test("doc-reference edge schema: type, from, to, symbols, count", () => {
 });
 
 test("symbol-ranks referenceSources includes package-exports for public-api symbols", () => {
+  requireTreeSitter();
   const root = makeFixture();
   try {
     execFileSync("node", [SCRIPT_PATH, "--root", root], {

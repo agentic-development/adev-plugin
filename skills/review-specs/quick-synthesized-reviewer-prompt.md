@@ -40,6 +40,18 @@ For every BLOCK finding, also emit:
   pointer to where the fix belongs (a repo-relative path, a spec path, an ADR id, or an issue id).
   Plain text only: no newlines, quotes, `#`, brackets/braces, or commas, no colon followed by a
   space, and not a bare `true`/`false`/`null`/number.
+- **`question`:** optional, but supply it for every `decision` finding — one sentence the operator
+  answers, ending in `?`.
+- **`options`:** optional, but supply it for every `decision` finding — 2-4 entries, each
+  `{ label, implications }`: `label` (at most 60 characters) names the choice; `implications`
+  (at most 300 characters, including any follow-on decision it opens) states what that answer
+  forces in the spec. Both are optional, but supply them for every `decision` finding. Use plain
+  text in `question`, `label`, and `implications`: no markdown emphasis, HTML comments, code fences,
+  or line breaks, because they are refused at persistence.
+
+A follow-on decision that arises whichever option is chosen is raised now, as its own `decision` finding in the same round, rather than left for the next round.
+
+An entry in the spec's `## Decisions of Record` section is settled. Do not re-raise that choice. Raise a `defect` where the spec text contradicts it. Raise a new `decision` only for a different choice, including one a decided entry opened.
 
 The aggregator constructs and validates `blocker_id` from your `finding_type` + `section_anchor`; a malformed `finding_type` falls through to the `LEGACY_REVIEWER_OUTPUT` path.
 
@@ -49,6 +61,8 @@ End with a one-line consolidated verdict: `PASS` (no findings or only suggestion
 
 ## Rules
 
+- A `blocker` that cites a context-pack file shown only in part (its section ends with an `…[adev: truncated …]` marker) or named in a `role="truncation-notice"` section MUST first be verified by reading the full file, and MUST quote the conflicting text from it. The `## Truncated Context` section, when present, has the details.
+- Findings in a `## Prior-Round Review` section, when present, come from the previous round: do not re-raise one the current spec resolves, and if you do re-raise one, state why the spec's resolution does not hold.
 - Be precise; reference specific sections. Do not suggest implementation approaches.
 - This is the quick tier: prioritize the few findings that matter over exhaustiveness. If the work is genuinely low-risk and the spec is clear, a fast PASS is the correct outcome.
 - Do not invent problems where the spec is clear.

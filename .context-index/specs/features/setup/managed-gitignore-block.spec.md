@@ -124,6 +124,7 @@ The list lives in `lib/gitignore-paths.mjs`. The block writer emits an optional 
 .context-index/tasks/tasks.json.lock          # issue-board CAS lock
 .context-index/tasks/tasks.json.*.tmp         # issue-board atomic-write temp
 .context-index/tasks/.migrate-state.json      # backend-migration resume state
+.context-index/tasks/.migrate-unanchored.json # github migration unanchored-issue record
 *.partial                                     # incremental artifact write (per cross-cutting/incremental-artifact-writes)
 *.partial.lock                                # incremental artifact lock
 .adev/                                        # prototype workspace

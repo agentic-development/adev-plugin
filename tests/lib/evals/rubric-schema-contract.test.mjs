@@ -9,6 +9,10 @@ import {
   REQUIRED_CRITERION_FIELDS,
   BUDGET_KEY_PATTERN,
   RUBRIC_ERROR_CODES,
+  LIST_TYPED_KEYS,
+  ID_FIELD,
+  VERDICT_FIELD,
+  WEIGHT_FIELD,
 } from "../../../lib/evals/rubric-schema.mjs";
 
 test("verdict enums differ: elements never take unknown, criteria never take not_applicable", () => {
@@ -47,4 +51,26 @@ test("per-entry required-field lists match the charter domain model", () => {
     [...REQUIRED_CRITERION_FIELDS].sort(),
     ["criterion", "id", "met_when", "not_met_when", "reference", "unknown_when"],
   );
+});
+
+test("RUBRIC_INVALID_LIST_SHAPE (BEH-9) is declared alongside the other error codes", () => {
+  assert.ok(RUBRIC_ERROR_CODES.includes("RUBRIC_INVALID_LIST_SHAPE"));
+});
+
+test("the two list-typed keys are exactly required_elements and quality_dimensions", () => {
+  assert.deepEqual([...LIST_TYPED_KEYS].sort(), ["quality_dimensions", "required_elements"]);
+});
+
+test("ID_FIELD, VERDICT_FIELD and WEIGHT_FIELD document the entry-level field names the loader checks", () => {
+  // Reading this module alone is enough to learn that `verdict:` is a legal
+  // optional entry field and `weight:` is a forbidden (legacy-scale) one —
+  // the design-consistency gap this test guards against.
+  assert.equal(ID_FIELD, "id");
+  assert.equal(VERDICT_FIELD, "verdict");
+  assert.equal(WEIGHT_FIELD, "weight");
+  assert.ok(REQUIRED_ELEMENT_FIELDS.includes(ID_FIELD));
+  assert.ok(REQUIRED_CRITERION_FIELDS.includes(ID_FIELD));
+  assert.ok(!REQUIRED_ELEMENT_FIELDS.includes(VERDICT_FIELD));
+  assert.ok(!REQUIRED_CRITERION_FIELDS.includes(VERDICT_FIELD));
+  assert.ok(!REQUIRED_CRITERION_FIELDS.includes(WEIGHT_FIELD));
 });

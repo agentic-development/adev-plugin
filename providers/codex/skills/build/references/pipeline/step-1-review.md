@@ -9,13 +9,13 @@ Stop the build. Do not proceed to plan.
 
 **Rigor tier propagation:** If `--tier <t>` was passed to `/adev:build`, append `--tier <t>` to the dispatched args so `/adev:review-specs` receives the explicit override at its own Step 2.5 tier resolution. If `--tier` was not passed to `/adev:build`, dispatch without it — `/adev:review-specs` resolves its own rigor tier from the routing signal, risk policy, or default `full`.
 
-**Subagent dispatch:**
+**Subagent dispatch:** every review dispatch carries `--defer-decisions` (plus `--tier <t>` when propagated), interactive and `--auto` alike, because the review subagent has no operator: it lists pending decisions in its BLOCK summary and the build loop owns the ask round.
 
 ```
 Agent({
   description: "Build Step 1: Review <spec-name>",
   run_in_background: false,
-  prompt: <subagent prompt template with skill="adev:review-specs" args="--spec <path>">
+  prompt: <subagent prompt template with skill="adev:review-specs" args="--spec <path> --defer-decisions">
 })
 ```
 

@@ -69,7 +69,7 @@ the result.
 | Worktree | An adev-managed linked working tree for one unit of parallel work | `slug`, `path` (`<mainRoot>/.adev/worktrees/<slug>`), `branch` (`adev/<slug>`), `head` |
 | ParallelizationGroup | A file-disjoint set of plan tasks (or specs) eligible to run concurrently | `groupId`, `members` (task ids / spec refs), `fileSet` |
 | MergeResult | The outcome of merging a worktree branch back into the orchestrator branch | `slug`, `merged` (bool), `conflicts[]` |
-| NestingStatus | Whether a working directory sits inside a worktree | `nested` (bool), `kind` (`harness` \| `adev` \| null) |
+| NestingStatus | Whether a working directory sits inside a worktree | `nested` (bool), `kind` (`harness` \| `adev` \| null), `parallel` (bool; false only inside an adev worktree) |
 
 ### Relationships
 

@@ -59,7 +59,11 @@ describe("lib/worktree", () => {
 
   describe("detectNesting", () => {
     it("reports not-nested at the main repo root", () => {
-      assert.deepEqual(detectNesting(repo), { nested: false, kind: null });
+      assert.deepEqual(detectNesting(repo), { nested: false, kind: null, parallel: true });
+    });
+    it("allows parallel groups from a harness worktree but not from an adev worktree", () => {
+      assert.equal(detectNesting(join(repo, ".claude", "worktrees", "agent-x")).parallel, true);
+      assert.equal(detectNesting(join(repo, ".adev", "worktrees", "feat-a")).parallel, false);
     });
     it("detects a harness worktree path", () => {
       const r = detectNesting(join(repo, ".claude", "worktrees", "agent-x", "src"));
@@ -178,6 +182,28 @@ describe("lib/worktree", () => {
       assert.equal(git(["status", "--porcelain"], repo), "");
 
       remove({ slug: "conflict", cwd: repo, force: true, deleteBranch: true });
+    });
+  });
+
+  describe("merge from a harness worktree", () => {
+    it("merges the group branch into the harness worktree's branch, not the main checkout's", () => {
+      const harness = join(repo, ".claude", "worktrees", "session-h");
+      git(["worktree", "add", "-q", "-b", "harness-branch", harness], repo);
+      const mainHead = git(["rev-parse", "HEAD"], repo);
+      const g = add({ slug: "harness-group", cwd: harness });
+      writeFileSync(join(g.path, "group.txt"), "group\n");
+      git(["add", "."], g.path);
+      git(["commit", "-qm", "group work"], g.path);
+
+      const res = merge({ slug: "harness-group", cwd: harness });
+      assert.equal(res.merged, true);
+      assert.ok(existsSync(join(harness, "group.txt")), "group work must land in the harness worktree");
+      assert.equal(existsSync(join(repo, "group.txt")), false, "the main checkout must be untouched");
+      assert.equal(git(["rev-parse", "HEAD"], repo), mainHead);
+
+      remove({ slug: "harness-group", cwd: harness, force: true, deleteBranch: true });
+      git(["worktree", "remove", "--force", harness], repo);
+      git(["branch", "-D", "harness-branch"], repo);
     });
   });
 

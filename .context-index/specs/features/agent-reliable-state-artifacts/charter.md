@@ -1,7 +1,7 @@
 ---
 status: approved
-revision: 8
-updated: 2026-05-19
+revision: 9
+updated: 2026-11-26
 ---
 
 # Feature Charter: agent-reliable-state-artifacts
@@ -312,6 +312,24 @@ Post-migration invariant: no `planRef` or `planTask` field on issues. Plan tasks
   "updated": "..."
 }
 ```
+
+### Read-only board sentinel document schema *(rev 9)*
+
+A board retired by `adev issues migrate --to github` is marked read-only by a separate sentinel file in the source board's storage root (`resolveStorageRoot()`). The sentinel is never folded into an existing board file, so creating it never read-modify-writes board state. Consumer: `task-management` (`github-board-backend.spec.md` BEH-32/BEH-33).
+
+| Source backend | Sentinel path | Commit rule |
+|---|---|---|
+| `json`, `file` | `.context-index/tasks/board-read-only.json` | Committed on the branch that carries the board, like `tasks.json`. |
+| `beads` | `.beads/adev-read-only.json` | Committed on the `beads-board` branch in the same sync that retires the board, so every clone that syncs the board sees it read-only. Never left local-only. |
+
+```json
+{ "schema": 1, "reason": "migrated", "target": "github", "project": "<Projects v2 URL>", "migrated_at": "<ISO 8601>" }
+```
+
+- Written by atomic temp-file + rename; the resolved path must lie inside the storage root, and a symlink at the sentinel path is refused with `SENTINEL_PATH_UNSAFE`.
+- The five keys above are the complete content. `reason` is the closed set `{ "migrated" }`; `target` is the closed set `{ "github" }`. Fail-closed: a sentinel that is present but unparseable, has an unknown `schema`, or carries unknown values still blocks writes.
+- A present sentinel makes every write through the json and beads adapters throw `BOARD_READ_ONLY_MIGRATED` naming the target project before touching storage; reads are unaffected. The markdown `file` adapter is not changed: it is already read-only and keeps throwing `BACKEND_READ_ONLY_DEPRECATED`.
+- Removing the sentinel is a manual operator action (un-retiring a board); no adev verb deletes it.
 
 ### `milestones.json` document schema
 

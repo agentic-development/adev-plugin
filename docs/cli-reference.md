@@ -2,7 +2,7 @@
 
 # CLI Reference
 
-> Last updated: 2026-08-19
+> Last updated: 2026-11-19
 
 Reference for the `adev` command-line verbs. There are two audiences:
 
@@ -34,9 +34,10 @@ This file is the CLI counterpart to [`skill-reference.md`](skill-reference.md) (
 |------|---------|----------------|
 | `gate` | Evaluate a lifecycle gate; diagnose whether quality gates can run; compare a transition against recorded gate outcomes | `lib/cli/gate.mjs` |
 | `boundaries` | Evaluate the boundary registry against a set of changed files | `lib/cli/boundaries.mjs` |
-| `governance` | Materialize a registry's effective set; audit registry drift | `lib/cli/governance.mjs` |
+| `governance` | Materialize a registry's effective set; audit registry drift; build the reviewer dispatch plan | `lib/cli/governance.mjs` |
 | `report` | Append a lifecycle event to the per-spec event log | `lib/cli/report.mjs` |
 | `diagnose` | Run registered write-time diagnostics over artifacts | `lib/cli/diagnose.mjs` |
+| `review-notes` | Report a spec's latest review verdict, whether it is unchanged since, and its open PASS_WITH_NOTES warnings | `lib/cli/review-notes.mjs` |
 | `capability-map` | Monotonic writer for a charter's Capability Map `Status` column | `lib/cli/capability-map.mjs` |
 | `source-manifest` | Verify or compute a spec's source-file manifest | `lib/cli/source-manifest.mjs` |
 | `verify` | Reality-check whether spec/issue work exists in code | `lib/cli/verify.mjs` |
@@ -50,6 +51,7 @@ This file is the CLI counterpart to [`skill-reference.md`](skill-reference.md) (
 | `route` | Emit/render the plan routing sidecar | `lib/cli/route.mjs` |
 | `implement` | Read a task's routing entry from the sidecar | `lib/cli/implement.mjs` |
 | `specify` | Revise a BLOCKED spec (revision N → N+1) | `lib/cli/specify.mjs` |
+| `decisions` | List open operator decisions on a spec's blockers sidecar and record the answers | `lib/cli/decisions.mjs` |
 | `prototype` | Prototype helpers (charter discovery, preview server) | `lib/cli/prototype.mjs` |
 | `issues` | Issue-board subcommands (board, create, epic, update, close, dep, list, ready, milestone, migrate, claim, release, stale, set-modules, next, record-attempt, show) | `lib/cli/issues.mjs` |
 | `coordination` | Scan open PRs, remote branches, and issues owned elsewhere | `lib/cli/coordination.mjs` |
@@ -301,6 +303,7 @@ governance materialize --registry <review|diagnostics|gates> [--dry-run] [--json
 governance drift [--registry <validate|review|diagnostics|gates>] [--json]
 governance migrate-gates [--dry-run] [--json]
 governance scaffold --registry <review|validate> --entries <json|@path>
+governance dispatch --spec <path> [--tier <full|quick>] [--harness <claude-code|opencode>] [--module <slug>] [--note <text>]... [--json]
 ```
 
 `validate.yaml` and `boundaries.yaml` are **exempt** (DDR-1): both are already explicit single-source registries, so naming either is refused. See [Governance](governance.md#materialized-registries-and-the-materialized_at-marker).
@@ -320,15 +323,26 @@ Materialization is **write-once**: a second run preserves the original stamp ver
 
 `governance drift` is Hygiene Audit Pass 19 — read-only, advisory, always exit 0 on a scan. It reports `hygiene/unadopted-upgrade` (info), `hygiene/project-addition` (info), `hygiene/disabled-bundled-entry` (WARN), `hygiene/non-project-execution-field` (info) and `hygiene/entry-field-drift` (WARN — a `bundled`/`domain:*`-sourced entry's `context_pack`, `profile`, `severity_cap` or `dispatch` no longer matches the source named in its own `source:` field). The execution-field finding prints field **names** only, never values; the field-drift finding prints both values, since they are short enum-like config and the finding is not actionable without them. An unmaterialized marked registry is reported rather than read.
 
+`governance dispatch` emits the Agent-ready reviewer dispatch plan for one spec, so `/adev:review-specs` Step 4 never assembles a reviewer prompt itself. It loads the materialized `review.yaml` (failing closed with `REGISTRY_NOT_MATERIALIZED`), applies `shouldDispatch` and the BEH-8 diff-scope decision (the same one `governance diff-scope` reports), and builds each selected reviewer with `buildReviewerDispatches`. With `--tier quick` it plans only the synthesized reviewer, failing with `QUICK_PROMPT_MISSING` when the bundled prompt is absent. Every prompt carries the provenance preamble, the rendered context pack and the fenced target spec. Some sections are added only when they apply: `--module` heuristics, `--note` orchestrator notes, the `## Truncated Context` verification rule when the pack truncated or omitted a file, and the previous round's `.review.md` as `## Prior-Round Review`. The `--json` envelope has these keys:
+
+- `reviewers`: every selection decision, with its `reason`.
+- `diff_scope` and `prior_review`.
+- `heuristics`: `{module, count}`, or `null`.
+- `dispatches`: one entry per Agent call, with `description`, `prompt`, `model`, `allowed_tools`, `env_keys` and `append_runner_output`. Env values are never printed. A package-mode reviewer yields a `runner` entry and then an `adapter` entry, and the adapter expects the runner's output appended to its prompt.
+- `warnings` and `errors`.
+
+It exits 1 on an argument error, an invalid spec path, a loader refusal or any plan error, and 0 otherwise.
+
 `governance migrate-gates` rewrites legacy shell-string `command:` values in `governance/gates.yaml` to argv lists — the pre-v0.25.0 form that `mergeGates` (SEC-2) silently drops at load (`INVALID_GATE`). `adev upgrade` already runs this repair, but only when a project takes the `adev upgrade` path; a plugin-cache version bump never calls it. This verb is the same repair, reachable on its own. Exit 0 always (no file, nothing to migrate, or migrated); a command containing shell metacharacters is reported as `skipped`, never rewritten.
 
 **Example:**
 ```
 adev governance materialize --registry gates --dry-run
 adev governance migrate-gates --dry-run --json
+adev governance dispatch --spec .context-index/specs/features/billing/invoices.spec.md --module billing --json
 ```
 
-**Implementation:** `lib/cli/governance.mjs`. **Called by:** `/adev:init` (diagnostic mode's Gate Liveness check), `adev upgrade` (`cli/index.mjs::migrateLegacyGateCommands`, its own separate call site), `/adev:hygiene` (Audit Pass 19).
+**Implementation:** `lib/cli/governance.mjs` (`dispatch` → `lib/governance/dispatch-plan.mjs`). **Called by:** `/adev:review-specs` Step 4 (`dispatch`), `/adev:init` (diagnostic mode's Gate Liveness check), `adev upgrade` (`cli/index.mjs::migrateLegacyGateCommands`, its own separate call site), `/adev:hygiene` (Audit Pass 19).
 
 ### `report`
 
@@ -374,7 +388,46 @@ adev manifest lint --json
 adev blockers write --spec <p> --findings @findings.json --revision 3 --json
 ```
 
+**JSON result additions (decision-classed findings):**
+- `decisionsRequired`: one `{ blocker_id, section_anchor, question, options: [{ label, implications }] }` per decision-classed entry written (`[]` when none).
+- `decisionsRequiredTable`: the same data as a markdown table (`''` when none).
+- Advisories (never fail the write): `DECISION_TEXT_REJECTED` (a `question` or option text failed the unsafe-text gate and was not stored; `field` is `question` or `options`), `OPTIONS_REJECTED` (`options` was not an array of 2-4 entries each with a non-empty `label`), and `DECISION_FIELDS_IGNORED` (decision-only fields supplied on a non-decision finding).
+
 **Implementation:** `lib/cli/blockers.mjs` (wraps `lib/blockers-writer.mjs::writeBlockers`). **Called by:** `/adev:review-specs` Step 6b-bis.
+
+### `review-notes`
+
+**Purpose:** Report a spec's latest architecture review for carry-forward: the verdict (from the lifecycle log), whether the spec is byte-identical to what was reviewed (sha256 of the spec against the `.review.md` `file-sha`), and the open warning-severity findings parsed from `.review.md` (`{ id, reviewer, section, summary }`; struck-through, resolved, and fenced findings are skipped). `warnings` is always empty when the verdict is PASS. The parse is best-effort because reviewer prose has no fixed finding grammar.
+
+**Signature:** `review-notes show --spec <path> [--json]`
+
+**Example:**
+```
+adev review-notes show --spec .context-index/specs/features/auth/login.spec.md --json
+```
+
+**Implementation:** `lib/cli/review-notes.mjs` (wraps `lib/review-notes.mjs::readReviewNotes`). **Called by:** `/adev:plan` Step 1 (warnings for the plan's `## Review Notes`), `/adev:review-specs` Step 1 (re-review advisory).
+
+### `decisions`
+
+**Purpose:** List and record operator answers to decision-classed review blockers on a spec's `.blockers.md` sidecar.
+
+**Signature:** `decisions pending --spec <path> [--json]` / `decisions record --spec <path> --answers <json-or-@path> [--json]`
+
+**`pending --json` shape:** `{ spec, pending, answered, decided, ask_round, advisories }`.
+- `pending`: open decision blockers in spec section order. Each item: `blocker_id`, `section_anchor`, `question`, `options` (`[{ label, implications }]`), `header` (short label derived from the section heading), `structured` (true when there are 2-4 options), `ask` (whether its group falls inside the ask round), and `duplicate_of` (the first blocker id with the same anchor and normalized question, present only on duplicates).
+- `answered`: decision blockers already answered on the sidecar: `{ blocker_id, section_anchor, decision_choice, decision_note, decision_recorded }`.
+- `decided`: entries already in the spec's `## Decisions of Record`: `{ dec, blocker_ids }`.
+- `ask_round`: `{ limit, asked, overflow }`. Duplicates collapse into one group; `limit` is 16 groups, and groups beyond it count as `overflow` and are not asked this round.
+- `advisories`: `QUESTION_DERIVED` (no stored question, so one was derived from the finding prose), `DECISION_TEXT_REJECTED` (stored question or options failed the unsafe-text gate), plus advisories from parsing `## Decisions of Record`.
+
+**`record`:** `--answers` is a JSON array of `{ blocker_ids: string[], choice: string, note?: string }`, given inline or as `@<path>`. The `@path` file must resolve inside the project root, and the input is capped at 64 KiB either way. A blocker id may appear in only one entry. All answers are validated before anything is written, then applied in one write. `--json` returns `{ recorded: [blocker_id, ...], advisories }`.
+
+**Exit codes:** 0 on success. 1 on an argument error or a coded error printed as `<CODE>: <message>` (messages never echo file or answer content): `INVALID_SPEC_PATH`, `NO_REVIEW_SIDECARS` (`record` only; no `.blockers.md` yet, whereas `pending` tolerates a missing sidecar), `BLOCKERS_REVISION_MISMATCH` (`record` only; sidecar written for a different spec revision; re-run review), `INVALID_DECISION_ANSWERS` (bad shape, bad JSON, over 64 KiB, or `@path` outside the project), `UNKNOWN_DECISION_BLOCKER`, `NOT_A_DECISION_BLOCKER`, `UNSAFE_DECISION_TEXT` (answer text over its length bound or failing the unsafe-text gate; refused, never truncated).
+
+**Review and storage:** `.blockers.md` is a committed file. Answer text is redacted before storage, so a pasted secret does not reach the sidecar or, through `specify revise`, the spec. The review point for an operator's decisions is the pull-request diff of the spec's `## Decisions of Record` section.
+
+**Implementation:** `lib/cli/decisions.mjs` (wraps `lib/decisions.mjs`). **Called by:** `/adev:review-specs` (decision ask round), `/adev:build` (review auto-retry loop).
 
 ### `diagnose`
 
@@ -459,9 +512,17 @@ adev state current --spec .context-index/specs/features/auth/login.spec.md
 
 **Purpose:** Read/write/clear `.context-index/.execution-state.json` — the live snapshot of current work in progress (drives the lifecycle gate's active/idle/standalone modes).
 
-**Signature:** `execution-state read` · `execution-state write --status <idle|active|blocked|standalone> [flags]` · `execution-state clear`
+**Signature:** `execution-state read` · `execution-state write --status <idle|active|blocked|standalone> [flags] [--force]` · `execution-state clear [--force]`
 
 `active` additionally requires `--plan-ref` and `--current-task`.
+
+The file is shared by every worktree of the repository, so `write` and `clear` refuse to replace another build's live state. They exit `2` with `EXECUTION_STATE_CONFLICT` on stderr, followed by a JSON line `{"owner":{status,sourceBranch,planRef,currentTask,updated}}`, and write nothing when:
+
+- the state is `blocked` and was written from a different branch (at any age), or
+- the state is `active`, written from a different branch, and updated within `tasks.claim_ttl_minutes` (default 240; `0` means it never lapses), or
+- the state is `active` on the same branch (or an unknown one), updated within that window, and names a different `--plan-ref` than this write.
+
+`--force` overwrites anyway; use it only when the owning build is abandoned. Exit `1` remains usage, validation, and path errors.
 
 **Example:**
 ```
@@ -562,6 +623,8 @@ Exit codes: `0` success (entry JSON on stdout), `1` argument error / `INVALID_PL
 
 Prints `{ batches, solo, advisories }` as JSON to stdout. `--no-batch` forces every task solo and is rejected with `CONFLICTING_BATCH_FLAGS` when combined with `--parallel`. `--max-batch <n>` overrides `implement.max_batch_size` for this run; an invalid value is rejected with `INVALID_MAX_BATCH_SIZE`.
 
+Task ids are matched by key, not spelling: the sidecar's `t1` (as `/adev:route` writes it), the plan's `Task 1`, and a bare `1` all name the same task. Output `taskIds` keep the plan's spelling (`"1"`), and `read-routing`, `resolve-depth`, and `test-policy` accept either `t1` or `1` as `--task-id`.
+
 **Example:**
 ```
 adev implement batches --plan <p> --max-batch 4
@@ -616,6 +679,12 @@ Exit codes: `0` success — tree id on stdout; `1` `SNAPSHOT_FAILED` (not a git 
 adev specify revise --spec <p>
 ```
 
+**`revise` result additions:** `decisions_written` lists the answered decision blockers written into the spec's `## Decisions of Record` section in the same atomic write as the revised sections.
+- `SPLICE_VALIDATION_FAILED` has two severities. As a per-anchor advisory (in `advisories`, with `anchor` and `reason`) it means one authored section was rejected and left unchanged while the rest of the revise proceeds. As a fatal error it means the post-compose byte-identity check failed on the whole result: the revise aborts (exit 1) and nothing is written.
+- `UNSAFE_DECISION_TEXT` (exit 1): an answered decision failed the unsafe-text re-check at revise time; nothing is written.
+
+**`group-blockers`:** `specify group-blockers --spec <path>` returns `{ spec_path, anchors, anchors_not_found, anchors_remapped, decision_blocker_ids, external_blockers, advisories }`. Each `anchors[a]` carries `blocker_ids`, `current_text` and `decisions` (the answered decisions to author under that anchor). `decision_blocker_ids` lists only unanswered decisions; an answered one appears under its anchor instead. A recorded answer that fails the decision-text gate counts as unanswered and is reported in `advisories` as `DECISION_TEXT_REJECTED` with `blocker_id`, `field` and `reason`.
+
 **Implementation:** `lib/cli/specify.mjs`. **Called by:** `/adev:specify`, `/adev:build` (BLOCK→revise loop).
 
 ### `prototype`
@@ -664,8 +733,8 @@ adev coordination scan --json --owner "$USER/local"
 | `list [--status <s>] [--epic <id>] [--milestone <name>] [--json]` | List issues as a table, priority ascending (0 first). `--milestone` selects the epics carrying that milestone and their child issues. Read-only |
 | `ready [--json]` | List exactly the issues that are open **and** have every dependency closed, priority ascending. The unblocked filter lives in the verb, not in prose. A dependency id that resolves to nothing is treated as non-blocking and reported on stderr. Read-only, never refused |
 | `milestone <create\|list\|ship\|defer> [args]` | Milestone CRUD over `.context-index/milestones.json` — see the sub-table below |
-| `migrate` | Convert the board to a different backend |
-| `claim <id> --owner <name> [--branch <b>] [--pr <ref>] [--json]` | Take ownership via an atomic check-and-set. Exit `2` = refused (held by a live owner, or closed); exit `1` = usage error or `CLAIM_UNSUPPORTED_BACKEND` |
+| `migrate --to <backend> [--from <backend>] [--include-closed] [--dry-run] [--yes]` | Convert the board to a different backend — see [`issues migrate`](#issues-migrate) |
+| `claim <id> --owner <name> [--branch <b>] [--pr <ref>] [--json]` | Take ownership as a lease: an atomic check-and-set on json and beads, a write-and-re-read lease on github (see the [capability matrix](#backend-capability-matrix)). Exit `2` = refused (held by a live owner, closed, or a lost race); exit `1` = usage error, or `CLAIM_UNSUPPORTED_BACKEND` on the read-only `file` backend |
 | `release <id> --owner <name> [--force] [--json]` | Give up ownership. `branch`/`pr` are kept as the record of where the work went; `--force` releases another owner's claim |
 | `stale [--json]` | Report claims past their TTL, plus `unexpirable` rows (an owner with no `claimed_at`, which can never expire on their own). Read-only |
 | `board migrate [--dry-run]` | One-shot, resumable migration of `.beads/issues.jsonl` off `main`'s git history onto a dedicated `beads-board` orphan branch, checked out as a linked worktree at `.beads/` |
@@ -679,6 +748,43 @@ adev coordination scan --json --owner "$USER/local"
 | `milestone ship <name> [--yes] [--gate-timeout <ms>]` | Evaluate the ship criteria and, if all pass, mark the milestone shipped, close its epic, and perform the release action its strategy names. `--gate-timeout` is a per-gate wall-clock budget (default `300000`) |
 | `milestone defer <name> --reason "<text>"` | Mark a milestone deferred, record why, and defer its linked epic. A shipped milestone cannot be deferred (`ALREADY_SHIPPED`, exit 1) |
 
+#### `issues github setup`
+
+**Signature:** `issues github setup [--check] [--dry-run] [--yes] [--json]`
+
+Checks or prepares the Projects v2 board named by `tasks.github`.
+
+| Flag | Meaning |
+|---|---|
+| `--check` | Read-only. Reports every required field and option as `ok`, `missing` or `wrong type`, plus drift: open items in a `closed`-mapped column, items in unmapped columns, sub-issues off the project, owners without `claimed_at`, values adev refuses, and unknown `module:` labels. Exits 0 when every field and option is present with the right type (drift alone is a warning), 1 otherwise |
+| `--dry-run` | Print the write set and exit 0 without writing |
+| `--yes` | Apply the write set without the interactive prompt. Required when stdin is not a terminal (`SETUP_CONFIRMATION_REQUIRED` otherwise). Read from argv only, never from configuration, and not implied by `--auto` |
+| `--json` | Emit the report, the write set or the apply result as one JSON object on stdout |
+
+Setup creates missing text fields, the Status field and the `P0`–`P4` Priority field, and never deletes, renames or clears a field, an option or an item's value. Adding an option to an existing single-select field means replacing the field's whole option list, which can clear the values items hold, so setup skips that change and prints it as a manual step. In practice this always applies to Status: GitHub creates every new project with a Status field holding `Todo`, `In Progress` and `Done`, so after `setup --yes` you add the remaining options of your `status_map` (for the default map: `Backlog`, `Ready`, `In Review`, `Deferred`) on the board by hand, and `setup --check` passes once you have. Setup does not create issue types or change the board's workflows; see [`tasks.github`](configuration.md#tasksgithub).
+
+#### `issues migrate`
+
+**Signature:** `issues migrate --to <backend> [--from <backend>] [--include-closed] [--dry-run] [--yes]`
+
+Copies every in-scope item of the configured board (or `--from`) into another backend. Resumable: a re-run skips what the target already holds.
+
+| Flag | Meaning |
+|---|---|
+| `--to <backend>` | Target backend. One of `SUPPORTED_BACKENDS`: json, file, beads, github. Required (`MIGRATE_MISSING_TARGET` without it). `file` is refused with `MIGRATE_TARGET_READONLY` |
+| `--from <backend>` | Source backend; defaults to manifest `tasks.backend`. A `github` source is refused with `MIGRATE_GITHUB_UNAVAILABLE`: migrating out of a GitHub board is not supported |
+| `--include-closed` | Include closed items in scope (default excludes them) |
+| `--dry-run` | Print the planned actions as JSON; write nothing, and never ask for confirmation |
+| `--yes` | Confirm a github migration's write set without prompting. Read from argv only, never from the manifest, the environment or the state file, and not implied by `--auto`. No effect on json or beads targets |
+
+An unknown `--to` or `--from` exits 1 with `MIGRATE_UNKNOWN_BACKEND`, whose message lists every supported backend: `Supported: json, file, beads, github`. Source and target the same exits 1 with `MIGRATE_NOOP`.
+
+**`--to github`** runs preflight and `adev issues github setup --check` against the target, checks every `Legacy ID` already on the target, then prints the write set to stderr and asks for confirmation. A run that is not interactive (stdin or stderr not a TTY, or `--auto`) needs `--yes`, else it exits 1 with `MIGRATE_CONFIRMATION_REQUIRED` before any write. It copies items one at a time, paced, writing each item's `Legacy ID` first, then replays parents and dependencies once every item exists, and finally writes the read-only sentinel on the source board (committing it on `beads-board` for a beads source). The target board's `Legacy ID` values decide what a re-run skips; `.context-index/tasks/.migrate-state.json` only feeds the resume-argument checks and the `resuming: N of M` line. `manifest.yaml` is never changed: the run suggests the `tasks.backend: github` edit for you to make.
+
+**Abort envelope:** a failure after the run started writing exits 1 with `MIGRATE_PARTIAL_FAILURE`, one `MIGRATE_PARTIAL_FAILURE:` stderr line, and the JSON report's `errors[]`. On a github target each entry is `{ source_id, code, message }`, with the message redacted of tokens. A `GITHUB_PARTIAL_CREATE` entry adds `target_id` (the issue that was created) and `unwritten_fields`; a rate-limited entry adds `reset_at`. An error with no code of its own is reported as `MIGRATE_WRITE_FAILED`. On json and beads targets the envelope is unchanged.
+
+Every code, with its remedy, is in [Troubleshooting](troubleshooting.md#read-only-boards-and-migration).
+
 #### Exit codes
 
 Uniform across every `issues` subcommand, so callers branch on the code and never on the message:
@@ -686,7 +792,7 @@ Uniform across every `issues` subcommand, so callers branch on the code and neve
 | Code | Meaning |
 |---|---|
 | `0` | Success. Read-only verbs (`board`, `list`, `ready`, `stale`, `milestone list`) exit 0 even when the result is empty — "nothing matched" is an answer, not a failure |
-| `1` | Usage error or adapter failure. Includes an unknown id, `create --milestone`, `update --status closed`, `MILESTONE_NOT_FOUND`, `BROKEN_EPIC`, `UNKNOWN_STRATEGY`, `CLAIM_UNSUPPORTED_BACKEND` |
+| `1` | Usage error or adapter failure. Includes an unknown id, `create --milestone`, `update --status closed`, `MILESTONE_NOT_FOUND`, `BROKEN_EPIC`, `UNKNOWN_STRATEGY`, `CLAIM_UNSUPPORTED_BACKEND` (`claim`/`release` on the `file` backend) |
 | `2` | **Refused by a guard, and nothing was written.** `close` with an open dependency or an unclosed child; `dep` that would close a direct or transitive cycle; `claim` on an issue held by a live owner or already closed; `milestone ship` when an auto-check failed, a quality gate failed or timed out, or a manual confirmation is unanswered |
 
 Exit 2 always names what refused, on stderr: the blocking issue ids, the cycle, the live claim holder, or the pending ship criteria. Without `--yes`, every manual confirmation on `milestone ship` counts as unanswered, so the pending items are listed for you to put to the user; re-run with `--yes` once they have confirmed.
@@ -724,24 +830,24 @@ One trade-off worth knowing: ids no longer imply creation order. Sort by the `cr
 
 #### Backend capability matrix
 
-Set with `tasks.backend` in `manifest.yaml`. Verified against `br` 0.2.22.
+Set with `tasks.backend` in `manifest.yaml`. Verified against `br` 0.2.22. The `github` backend is configured by [`tasks.github`](configuration.md#tasksgithub).
 
-| Capability | `json` (default) | `beads` | `file` |
-|---|---|---|---|
-| create / list / get / update / close | ✅ | ✅ | 🔍 read-only |
-| epics (create, list, update, walk) | ✅ | ✅ native `br` issues of type `epic` | 🔍 read-only |
-| dependencies | ✅ | ✅ | 🔍 read-only |
-| `claim` / `release` | ✅ atomic (CAS) | ✅ atomic, via `br update --claim` | ❌ `CLAIM_UNSUPPORTED_BACKEND` |
-| refusal codes + CLI exit codes | ✅ | ✅ identical — callers never branch on backend | ❌ |
-| lease TTL + `issues stale` | ✅ | ✅ | ❌ |
-| **stale-lease takeover** | ✅ atomic | ⚠️ **not atomic** — two calls | ❌ |
-| `branch` / `pr` / `claimed_at` / `spec_ref` | ✅ native columns | ✅ br `agent_context` (JSON, under the `adev` key) | 🔍 |
-| `affected_modules` (`issues set-modules`) | ✅ native column | ✅ br `agent_context`, same as above | 🔍 |
-| adev ids (`issue-N` / `epic-N`) | ✅ native | ✅ br `external_ref` — br enforces uniqueness | 🔍 |
-| claim holder | ✅ native | ✅ br `assignee`, and nowhere else | ❌ |
-| dependency edges on `list()` | ✅ | ⚠️ always `[]` — `br list` returns counts, not edges | 🔍 |
-| id minting under concurrency | ✅ atomic (CAS) | ⚠️ not atomic, but **fails loudly** — see below | 🔍 |
-| shared across git worktrees | ✅ | ✅ | ✅ |
+| Capability | `json` (default) | `beads` | `github` | `file` |
+|---|---|---|---|---|
+| create / list / get / update / close | ✅ | ✅ | ✅ | 🔍 read-only |
+| epics (create, list, update, walk) | ✅ | ✅ native `br` issues of type `epic` | ✅ issue type `Epic` (or the `epic` label); walk follows sub-issues | 🔍 read-only |
+| dependencies | ✅ | ✅ | ✅ GitHub blocked-by links | 🔍 read-only |
+| `claim` / `release` | ✅ atomic (CAS) | ✅ atomic, via `br update --claim` | ⚠️ not atomic: a write-and-re-read lease. One request writes `claimed_at` then `owner`; the item is re-read, re-read again after `claim_settle_ms`, and only then are `branch` / `pr` written. A re-read showing another owner refuses with `ISSUE_ALREADY_CLAIMED` and writes nothing further (rollback by abstention). See [the claim window](concepts.md#the-claim-window) | ❌ `CLAIM_UNSUPPORTED_BACKEND` |
+| refusal codes + CLI exit codes | ✅ | ✅ identical — callers never branch on backend | ✅ identical, plus `GITHUB_*` codes | ❌ |
+| lease TTL + `issues stale` | ✅ | ✅ | ✅ | ❌ |
+| **stale-lease takeover** | ✅ atomic | ⚠️ **not atomic** — two calls | ⚠️ not atomic — same write-and-re-read as a claim | ❌ |
+| `branch` / `pr` / `claimed_at` / `spec_ref` | ✅ native columns | ✅ br `agent_context` (JSON, under the `adev` key) | ✅ project text fields (`Branch`, `PR`, `Claimed At`, `Spec`) | 🔍 |
+| `affected_modules` (`issues set-modules`) | ✅ native column | ✅ br `agent_context`, same as above | ✅ `module:<slug>` labels | 🔍 |
+| adev ids (`issue-N` / `epic-N`) | ✅ native | ✅ br `external_ref` — br enforces uniqueness | `gh-<n>` (home repo) or `gh-<owner>.<repo>.<n>`; old ids resolve through the `Legacy ID` field | 🔍 |
+| claim holder | ✅ native | ✅ br `assignee`, and nowhere else | ✅ the `Owner` project field (never an assignee) | ❌ |
+| dependency edges on `list()` | ✅ | ⚠️ always `[]` — `br list` returns counts, not edges | ✅ | 🔍 |
+| id minting under concurrency | ✅ atomic (CAS) | ⚠️ not atomic, but **fails loudly** — see below | ✅ GitHub assigns the issue number | 🔍 |
+| shared across git worktrees | ✅ | ✅ | ✅ every clone and CI job, with no git operation | ✅ |
 
 **On beads, beads is the whole board.** There is no `.beads-map.json` sidecar and no local epic store: the adev id is br's `external_ref`, the claim holder is br's `assignee`, epics are `br` issues of type `epic`, and everything else adev tracks lives in br's `agent_context` under an `adev` key. `br list` shows you the real board, and a human running `br update --claim` is seen by adev immediately. A project still carrying the old sidecar is migrated into beads automatically on first use, and the retired files are renamed rather than deleted.
 
@@ -979,7 +1085,7 @@ adev cost summary --spec .context-index/specs/features/auth/login.spec.md --form
 
 **Purpose:** Manage adev-managed git worktrees used for parallel isolated execution. Worktrees are anchored to the main repo root (via `git rev-parse --git-common-dir`) so they never nest, and live under `.adev/worktrees/` (git-ignored).
 
-**Signature:** `worktree <add|list|merge|remove|guard> [flags]` — e.g. `worktree add --slug <slug> [--base <ref>]`, `worktree merge --slug <slug>`, `worktree remove --slug <slug> [--delete-branch] [--force]`, `worktree guard` (reports whether the current cwd is nested inside a worktree).
+**Signature:** `worktree <add|list|merge|remove|guard> [flags]` — e.g. `worktree add --slug <slug> [--base <ref>]`, `worktree merge --slug <slug>`, `worktree remove --slug <slug> [--delete-branch] [--force]`, `worktree guard` (reports `{ nested, kind, parallel }` for the current cwd; `parallel` is false only inside an adev worktree). `worktree merge` merges into the current branch of the checkout it is run from, so from a harness worktree the group lands on the harness branch.
 
 **Example:**
 ```
@@ -1241,7 +1347,7 @@ adev repomap generate --mode regex
 
 **Purpose:** Manage adev-managed git worktrees used for parallel isolated execution. Worktrees are anchored to the main repo root (via `git rev-parse --git-common-dir`) so they never nest, and live under `.adev/worktrees/` (git-ignored).
 
-**Signature:** `worktree <add|list|merge|remove|guard> [flags]` — e.g. `worktree add --slug <slug> [--base <ref>]`, `worktree merge --slug <slug>`, `worktree remove --slug <slug> [--delete-branch] [--force]`, `worktree guard` (reports whether the current cwd is nested inside a worktree).
+**Signature:** `worktree <add|list|merge|remove|guard> [flags]` — e.g. `worktree add --slug <slug> [--base <ref>]`, `worktree merge --slug <slug>`, `worktree remove --slug <slug> [--delete-branch] [--force]`, `worktree guard` (reports `{ nested, kind, parallel }` for the current cwd; `parallel` is false only inside an adev worktree). `worktree merge` merges into the current branch of the checkout it is run from, so from a harness worktree the group lands on the harness branch.
 
 **Example:**
 ```

@@ -1,0 +1,339 @@
+---
+partial_schema: spec@1
+charter: task-management
+kind: behavioral
+status: implemented
+risk_level: high
+milestone: 6
+revision: 6
+charter-revision: 10
+created: 2026-11-25
+updated: 2026-11-27
+tracker-ref: agentic-development/adev-plugin#441
+infra_requirements:
+  systems:
+    - name: "GitHub GraphQL API (Issues + Projects v2)"
+      env_vars: []
+      cli_tools:
+        - gh
+      probe: "gh auth status"
+      check_level: presence-only
+      notes: "Unit and conformance tests replay recorded GraphQL fixtures and need neither gh nor a token. Only the optional live fixture recorder and smoke test need a throwaway Projects v2 board; token scopes repo + project, nothing broader. GH_TOKEN is optional when gh is already authenticated."
+  ci_tag: "integration"
+source-manifest:
+  sha: "41b00bf"
+  files:
+    - .context-index/specs/features/task-management/charter.md
+    - docs/cli-reference.md
+    - docs/concepts.md
+    - docs/configuration.md
+    - docs/troubleshooting.md
+    - lib/cli/issues-board.mjs
+    - lib/cli/issues-create.mjs
+    - lib/cli/issues-github.mjs
+    - lib/cli/issues-migrate.mjs
+    - lib/cli/issues-show.mjs
+    - lib/cli/issues.mjs
+    - lib/gitignore-paths.mjs
+    - lib/issues/github-adapter.mjs
+    - lib/issues/github/board-read.mjs
+    - lib/issues/github/config.mjs
+    - lib/issues/github/decode.mjs
+    - lib/issues/github/errors.mjs
+    - lib/issues/github/migrate.mjs
+    - lib/issues/github/mutations.mjs
+    - lib/issues/github/preflight.mjs
+    - lib/issues/github/queries.mjs
+    - lib/issues/github/setup.mjs
+    - lib/issues/github/transport.mjs
+    - lib/issues/github/untrusted-text.mjs
+    - lib/issues/id-utils.mjs
+    - lib/issues/interface.mjs
+    - lib/issues/json-adapter.mjs
+    - lib/issues/read-only-sentinel.mjs
+    - lib/issues/registry.mjs
+    - lib/reality-check.mjs
+    - lib/retro/issue-id-validation.mjs
+    - lib/session-capture.mjs
+    - scripts/record-github-fixtures.mjs
+    - skills/issues/SKILL.md
+    - skills/plan/references/feature-mode.md
+    - skills/sync/SKILL.md
+    - templates/constitution-template.md
+    - tests/docs/github-backend-docs.test.mjs
+    - tests/issues/conformance/contract-cases.mjs
+    - tests/issues/conformance/fixtures/adddependency-records-the-blocker-on-the-dependent-issue-only-and-repeating-it-is-a-no-op.json
+    - tests/issues/conformance/fixtures/adddependency-refuses-a-dependent-id-that-is-not-on-the-board-with-not-found.json
+    - tests/issues/conformance/fixtures/adddependency-refuses-a-self-dependency-and-a-cycle-with-circular-dependency.json
+    - tests/issues/conformance/fixtures/claim-and-release-refuse-an-id-that-is-not-on-the-board-with-not-found.json
+    - tests/issues/conformance/fixtures/claim-by-another-owner-inside-a-live-lease-is-refused-with-issue-already-claimed-naming-the-holder.json
+    - tests/issues/conformance/fixtures/claim-records-branch-and-pr-and-release-clears-owner-and-claimed-at-but-keeps-them.json
+    - tests/issues/conformance/fixtures/claim-refuses-a-blank-owner-with-missing-owner-and-leaves-the-issue-unclaimed.json
+    - tests/issues/conformance/fixtures/claim-refuses-a-closed-issue-with-issue-closed.json
+    - tests/issues/conformance/fixtures/claim-sets-owner-and-an-iso-claimed-at-and-a-re-claim-by-the-same-owner-keeps-claimed-at.json
+    - tests/issues/conformance/fixtures/close-marks-the-issue-closed-and-a-closed-issue-refuses-update-with-issue-closed.json
+    - tests/issues/conformance/fixtures/close-refuses-an-id-that-is-not-on-the-board-with-not-found.json
+    - tests/issues/conformance/fixtures/close-refuses-an-issue-with-an-open-blocker-with-blocked-by-dependencies-and-succeeds-once-it-is-closed.json
+    - tests/issues/conformance/fixtures/create-refuses-a-missing-or-blank-title-with-missing-required-field-and-writes-nothing.json
+    - tests/issues/conformance/fixtures/create-refuses-plantask-with-board-granularity-violation.json
+    - tests/issues/conformance/fixtures/create-returns-the-issue-with-the-given-fields-and-get-reads-it-back.json
+    - tests/issues/conformance/fixtures/create-stores-a-non-default-status.json
+    - tests/issues/conformance/fixtures/get-returns-null-for-an-id-that-is-not-on-the-board.json
+    - tests/issues/conformance/fixtures/github-a-claim-past-the-lease-ttl-takes-over-and-reports-the-previous-holder.json
+    - tests/issues/conformance/fixtures/github-a-claim-taken-over-during-its-settle-wait-reports-the-winner-and-writes-no-branch-or-pr.json
+    - tests/issues/conformance/fixtures/github-a-migration-interrupted-after-its-first-item-and-re-run-without-its-state-file-creates-no-duplicates.json
+    - tests/issues/conformance/fixtures/github-an-epic-is-created-listed-apart-from-issues-updated-and-walks-to-its-sub-issues.json
+    - tests/issues/conformance/fixtures/github-closing-a-parent-with-an-open-sub-issue-is-refused-with-cascade-blocked-and-succeeds-once-it-is-closed.json
+    - tests/issues/conformance/fixtures/github-migrate-from-json-recreates-the-epic-sub-issues-and-dependency-and-old-ids-resolve-at-once.json
+    - tests/issues/conformance/fixtures/github-setup-yes-on-a-project-github-has-just-created-adds-every-adev-field-and-leaves-the-missing-status-options-to-the-operator.json
+    - tests/issues/conformance/fixtures/github-walktree-returns-a-three-level-sub-issue-tree-and-another-agent-reads-the-parent-links-at-once.json
+    - tests/issues/conformance/fixtures/list-orders-issues-by-priority-and-filters-by-status.json
+    - tests/issues/conformance/fixtures/release-by-a-non-holder-is-refused-with-claim-owner-mismatch-unless-forced.json
+    - tests/issues/conformance/fixtures/release-of-an-unclaimed-issue-is-a-no-op.json
+    - tests/issues/conformance/fixtures/update-folds-a-description-alias-into-notes.json
+    - tests/issues/conformance/fixtures/update-refuses-an-id-that-is-not-on-the-board-with-not-found.json
+    - tests/issues/conformance/fixtures/update-refuses-status-closed-with-use-close-method-and-leaves-the-issue-open.json
+    - tests/issues/conformance/fixtures/update-writes-the-changed-fields-and-get-reads-them-back.json
+    - tests/issues/conformance/fixtures/walktree-returns-an-empty-array-for-an-issue-with-no-children-and-for-an-id-not-on-the-board.json
+    - tests/issues/conformance/github-live-cases.mjs
+    - tests/issues/conformance/json.conformance.test.mjs
+    - tests/issues/github/eventual-consistency.test.mjs
+    - tests/issues/github/fixtures/board.mjs
+    - tests/issues/github/fixtures/claims.mjs
+    - tests/issues/github/fixtures/items.mjs
+    - tests/issues/github/fixtures/migrate.mjs
+    - tests/issues/github/fixtures/preflight.mjs
+    - tests/issues/github/fixtures/setup.mjs
+    - tests/issues/github/fixtures/writes.mjs
+    - tests/issues/github/replay-transport.mjs
+    - tests/sync/github-backend-block.test.mjs
+  computed-at: "2026-11-27T21:06:08.117Z"
+---
+
+# Live Spec: GitHub Board Backend
+
+<!-- Live Spec within the task-management charter (revision 10).
+     Parent Charter: .context-index/specs/features/task-management/charter.md
+     Bridge coexistence (inbound no-op, label gate, home-repo-only selection,
+     relaxed "never changes GitHub state" invariant) is specified separately as
+     an amendment of autonomous-bugfix-loop/tracker-provider-bridge.spec.md. -->
+
+## Behavioral Contract
+
+This spec defines `tasks.backend: github`: a `GithubAdapter` that implements the unchanged `IssueManager` contract (`lib/issues/interface.mjs`) against GitHub Issues plus a Projects v2 board, so the GitHub project *is* the adev issue board. It covers configuration and fail-fast preflight, GitHub canonical IDs, field placement with maintainer-only write authority, batched reads, the write path, write + re-read claim leases, the `adev issues github setup` verb with its recommended default board, migration to GitHub via `adev issues migrate --to github`, and a conformance suite that runs against recorded GraphQL fixtures. Transport is the `gh` CLI invoked with one fixed argv (`gh api graphql --input -`, never a shell string), with every value carried as a GraphQL variable in a JSON body on stdin, the same posture as the beads adapter's use of `br` and the existing `lib/provider/tracker-providers/github-tracker-adapter.mjs`. Plan-task state stays in the lifecycle log; nothing about the json, file, or beads backends changes except that a board migrated to GitHub refuses further writes.
+
+## System Constitution Reference
+
+- **Principle 1 — "Minimize external dependencies — prefer Node.js built-ins."** Applies because the adapter talks to GitHub only through the optional `gh` CLI via `node:child_process.execFileSync` with an injectable exec; no npm package (no Octokit, no GraphQL client) is added. `gh` is already a runtime dependency of the bugfix-loop bridge, so no new-dependency ADR is needed.
+- **Principle 3 — "Pure ESM."** Applies because every new module (`lib/issues/github-adapter.mjs`, `lib/issues/github/*.mjs`, `lib/cli/issues-github.mjs`) is `.mjs` ESM.
+- **Principle 2 — "Skills are primarily markdown."** Applies because no skill gains logic: skills keep calling `adev issues …` verbs and `getIssueManager()`; only reference prose that hard-codes dotted ID examples is reworded to be backend-neutral.
+- **Architecture Boundary — "Adding external dependencies" requires human approval.** Applies as a check, not an exception: `gh` is an optional external CLI already in use, required only when `tasks.backend: github` is configured.
+
+## Actionable Task Map
+
+| Task | Description | Estimated Complexity |
+|------|-------------|---------------------|
+| 1. Canonical ID recognition | `parseId()` classifies `gh-` IDs before the legacy grammar; encode/decode helpers; widen the retro (`lib/retro/issue-id-validation.mjs`) and session-capture (`lib/session-capture.mjs`) validators for the gh charset and length; display-form and URL normalization with the host check | small |
+| 2. GitHub transport | `lib/issues/github/transport.mjs`: the fixed `gh api graphql --input -` argv with a JSON body on stdin, constant GraphQL documents, variables-only value channel, argv-shape assertion, bounded cursor pagination, aliased multi-mutation requests, error mapping (auth, scopes, permission, rate limit, unreachable) | medium |
+| 3. Config + preflight | Complete `tasks.github` key set validation (sync, construct time) and lazy network preflight (CLI, auth, scopes, project, repo, fields, options, visibility), cached per process | medium |
+| 4. Read path + field validation | `list`, `listEpics`, `walkTree` from paged project-item queries; `get` and every gh-ID resolution from a direct issue lookup with write-through (BEH-42); status read mapping; field decoding with per-field refusal predicates; legacy-ID resolution with ambiguity refusal; `legacy_id` / `affected_modules` added to the `Issue` typedef and `validateIssue()` | large |
+| 5. Write path | `create`, `update` (shared `validateStatusTransition()` rules), `close`, `addDependency`, `createEpic`, `updateEpic`; closure guards; type/priority/module labels; Epic milestone; partial-create reporting and its consumers | large |
+| 6. Claim lease | `claim`/`release` with write order, settle re-read, rollback-by-abstention, `takeover` return shape, TTL via `requireClaimable` | medium |
+| 7. Registry wiring | Add `github` to `SUPPORTED_BACKENDS` (which also opens `migrate --to github`); no JSON fallback; adapter exposes `name` and `claimTtlMinutes` | small |
+| 8. Setup verb | `lib/cli/issues-github.mjs` and its `github` branch in the `lib/cli/issues.mjs` dispatcher; `setup [--check] [--dry-run] [--yes]`; recommended default board; drift report | medium |
+| 9. Migration to GitHub | github path in `lib/cli/issues-migrate.mjs`: preflight + `setup --check` gate, confirmation with visibility disclosure, ordered sequential copy with `legacy_id`, replay after all items exist, stop-on-item-failure, paced and bounded rate-limit waits, read-only sentinel write, manifest suggestion only | large |
+| 10. Read-only guard | json and beads adapters refuse writes when their storage root holds the read-only sentinel (`BOARD_READ_ONLY_MIGRATED`); the `file` adapter keeps `BACKEND_READ_ONLY_DEPRECATED` | small |
+| 11. Untrusted-text rendering | `adev issues show/board/next/list/stale` fence github bodies (`fenceBlock`) and neutralize titles | small |
+| 12. Conformance suite + fixtures | Shared contract cases against json and github (replay), github-difference cases, contained fixture recorder script, fixture-lint test | large |
+| 13. Docs + coverage test | `docs/configuration.md`, `docs/troubleshooting.md`, `docs/concepts.md`; backend-neutral ID wording in skill references; test that every key and error code is documented | small |
+| 14. Companion spec amendments | Before `/adev:plan`: amend `backend-migration.spec.md` (`--to github` accepted, github resume semantics per BEH-30, confirmation per BEH-41, sentinel per BEH-32) and `tracker-provider-bridge.spec.md` (bridge coexistence per charter revision 10); confirm the sentinel file format with `agent-reliable-state-artifacts` | small |
+
+## Visual Expectations
+
+Not a UI feature. The only operator-facing output with a fixed shape is the `adev issues github setup` report: one line per required field or option (`ok` / `missing` / `wrong type`), followed by a drift section (one line per item, canonical ID first), followed by the planned changes when run without `--check`. Every `--json` variant emits the same information as a single JSON object.
+
+## Acceptance Criteria
+
+- [ ] `tasks.backend: github` returns a `GithubAdapter`; no code path returns a `JsonAdapter` when github is configured (BEH-1, BEH-3).
+- [ ] Invalid `tasks.github` config — including `status_field`, `type_source`, `fields`, and `claim_settle_ms` — throws `GITHUB_INVALID_CONFIG` at construction without any network call (BEH-2).
+- [ ] Each preflight failure surfaces its named code with a remedy line, and the token never appears in any message or log (BEH-3, BEH-4).
+- [ ] Every request uses exactly `gh api graphql --input -` with a JSON body; a title, note, or field value of `@/etc/passwd`, `$(id)`, or a GraphQL fragment reaches the recorded request body literally as a variable, and no request argv ever contains a caller-supplied value (BEH-40).
+- [ ] `parseId()` classifies home and cross-repo gh IDs before the legacy grammar; encode → decode round-trips for owner/repo names containing `-`, `.`, `_` and mixed case; URLs on other hosts are refused; the retro and session-capture validators accept canonical gh IDs and reject display forms (BEH-5, BEH-6, BEH-7).
+- [ ] Field decoding matches the placement table; a body containing a forged metadata block or `spec_ref:` text changes no decoded field; each per-field predicate refuses its listed bad values with `GITHUB_INVALID_FIELD_VALUE`; unknown `module:` slugs are excluded from `affected_modules` (BEH-8, BEH-20, BEH-39).
+- [ ] `list()` and `walkTree()` over a recorded 250-item board issue exactly `ceil(250/100)` item-page requests (plus sub-issue continuation pages only for items with more children than one page holds); a repeated cursor raises `GITHUB_PAGINATION_INVALID` with no partial result; and a response sequence that keeps raising `totalCount` while returning fresh cursors stops at the first page's bound with `GITHUB_PAGINATION_INVALID` (BEH-10, BEH-11).
+- [ ] `walkTree()` over a fixture whose sub-issue links form a cycle throws `GITHUB_SUBISSUE_CYCLE` naming the root and the revisited ID, with no partial result; an unknown `parentId` returns `[]` (BEH-11).
+- [ ] Status read mapping: closed issue → `closed`; empty status → `open`; alias option → its status; `closed`-mapped option on an open issue → `open`; unmapped option → `GITHUB_UNMAPPED_STATUS` naming every offending ID, with no partial result (BEH-12).
+- [ ] `create`/`close`/`addDependency` produce the recorded mutation sequence; `update()` on a closed item throws `ISSUE_CLOSED` and `update({status: "closed"})` throws `USE_CLOSE_METHOD`, identically to json; closure guards raise `BLOCKED_BY_DEPENDENCIES` / `CASCADE_BLOCKED`; `planTask` raises `BOARD_GRANULARITY_VIOLATION`; no mutation ever touches assignees (BEH-13 – BEH-19).
+- [ ] A mid-create failure in `create()` or `createEpic()` raises `GITHUB_PARTIAL_CREATE`; `adev issues create` and `adev issues epic` print the ID and unwritten fields and exit 1 (BEH-14).
+- [ ] On the migration path `Legacy ID` is the first aliased mutation of the first field-write request after add-to-project. A fixture failing after the `Legacy ID` write stops the run, and the next run, with or without `.migrate-state.json`, finds the item by `legacy_id` and completes it with no second `CreateIssue` (BEH-13, BEH-14, BEH-30).
+- [ ] A fixture failing in add-to-project writes `.migrate-unanchored.json`; the next run completes that exact issue with no `CreateIssue` for its source ID and removes the file; a recorded issue that is closed or carries a different `Legacy ID` makes the run exit 1 with `MIGRATE_UNANCHORED_ITEM` before any mutation, on every re-run (BEH-30).
+- [ ] The feature, epic and release modes of `/adev:plan` (`skills/plan/references/feature-mode.md`, `epic-mode.md`, `release-mode.md`) state that `GITHUB_PARTIAL_CREATE` stops the mode, reports the code, the ID and the unwritten fields, and creates no further items; `/adev:specify`'s Step 5.6 catch-log-continue is unchanged (BEH-14).
+- [ ] A `spec_ref` or `planRef` that resolves through a symlink to a path outside the repository is refused by every consumer that opens one, including `lib/reality-check.mjs`; the fixture recorder and the sentinel use the same realpath containment (BEH-32, BEH-37, BEH-39).
+- [ ] Claim race fixtures: (a) sequential competing claims → second gets `ISSUE_ALREADY_CLAIMED`; (b) the other claimant's owner lands before our first re-read → we throw and write nothing further; (c) it lands after our first re-read but within `claim_settle_ms` → we throw; (d) owner write fails after `claimed_at` write → item reads unclaimed and `claim` throws `GITHUB_WRITE_FAILED`; (e) stale lease → takeover succeeds and returns the `takeover` object (BEH-21 – BEH-25).
+- [ ] `setup --check` and `setup --dry-run` never issue a mutation; `setup` without `--yes` in a non-interactive context exits 1 with `SETUP_CONFIRMATION_REQUIRED`; `setup --yes` on a project GitHub has just created (whose Status field already holds Todo, In Progress and Done) creates every missing adev field, creates no Status field, and prints the missing Status options as the manual step of BEH-27, after which `setup --check` passes once the operator adds them; on a project with existing options it adds only missing ones and never deletes, renames, or clears; the verb is reachable through the `adev issues` dispatcher (BEH-26 – BEH-28).
+- [ ] Migration json → github and beads → github through the real `adev issues migrate` entry point: hierarchy and dependencies recreated after all items exist; `legacy_id` set on every migrated item; re-run after an interruption at any item — with or without `.migrate-state.json` — creates no duplicates; `--dry-run` issues no mutation and prints visibility and publish counts; non-interactive without `--yes` exits with `MIGRATE_CONFIRMATION_REQUIRED` before any write; `manifest.yaml` is byte-identical afterwards (BEH-29 – BEH-32, BEH-41).
+- [ ] After migration the source board's storage root holds the sentinel, existing board files are byte-identical, json and beads writes throw `BOARD_READ_ONLY_MIGRATED` while reads still work, and `file` adapter writes still throw `BACKEND_READ_ONLY_DEPRECATED` (BEH-32, BEH-33).
+- [ ] gh-ID resolution with a listing that omits or shows stale a just-written item: `create` then `get`/`update`/`claim`/`addDependency` on the new ID succeed through the direct lookup; `list()` in the same instance shows the created and updated values, also after a fresh listing that still omits or shows them stale; an issue on another project only, and a number with no issue, are `NOT_FOUND`; the lookup's `projectItems` connection obeys the BEH-10 bound and repeated-cursor rule (BEH-42).
+- [ ] Old-ID resolution: one match resolves, two matches throw `GITHUB_AMBIGUOUS_LEGACY_ID`, no match makes `get()` return `null` and mutations throw `NOT_FOUND` (BEH-34).
+- [ ] Rate-limit and network fixtures map to `GITHUB_RATE_LIMITED` / `GITHUB_UNREACHABLE` with no partial result and no local fallback; migration paces at ≤ 1 mutation/second and stops after 5 waits or 15 cumulative minutes (BEH-35, BEH-36).
+- [ ] The conformance suite runs the same contract cases against json and github (replay), fails on any github request without a recorded response, needs no network or token in CI, and the fixture-lint test passes (BEH-37).
+- [ ] `adev issues show/board/next/list/stale` fence github bodies and neutralize titles (BEH-20).
+- [ ] The docs-coverage test passes: every `tasks.github` key and every error code in the Error Cases table is documented (BEH-38).
+- [ ] All quality gates pass (`npm test`); no constitutional violations; no new npm dependency.
+
+## Preconditions
+
+- `tasks.backend: github` and a `tasks.github` block are present in `.context-index/manifest.yaml`.
+- The `gh` CLI is installed and authenticated (or `GH_TOKEN` is set) with the `repo` and `project` scopes, or an equivalent fine-grained / GitHub App token with issue read/write on `repo` and project read/write.
+- The configured Projects v2 board exists and the home `repo` exists. Changing `tasks.github.repo` on a board that already has adev-managed items is unsupported: it would re-point every `gh-<n>` ID at a different repository's issues.
+- For migration: the source board is readable and the target project passes `adev issues github setup --check` (including the `Legacy ID` field). The verb's own confirmation (BEH-41) is part of the behavior, not a precondition.
+- Before implementation: the companion amendments of `backend-migration.spec.md` and `tracker-provider-bridge.spec.md` (task 14) are review-passed, and `agent-reliable-state-artifacts` has confirmed the read-only sentinel format in BEH-32. **Satisfied (2026-11-26):**
+  - backend-migration amendment: `.context-index/specs/features/task-management/backend-migration-rev-3-github-target.spec.md` (revision 2, review-passed, PASS_WITH_NOTES, commit e43a5831);
+  - tracker-provider-bridge amendment: `.context-index/specs/features/autonomous-bugfix-loop/tracker-provider-bridge-rev-12-github-board-coexistence.spec.md` (review-passed, PASS_WITH_NOTES, commit 40284a89);
+  - sentinel format: `.context-index/specs/features/agent-reliable-state-artifacts/charter.md` revision 9, section "Read-only board sentinel document schema" (commit 983e01ad).
+
+## Behaviors
+
+<!-- retired-behavior-ids: (none) -->
+
+### Configuration, registry, and preflight
+
+- **BEH-1** — **When** `manifest.tasks.backend` is `"github"` **then** `getIssueManager()` returns a `GithubAdapter` whose `name` is `"github"`, and no failure on this backend — at construction or at first use — ever returns or delegates to a `JsonAdapter`; every failure surfaces as a thrown error with a named `code`.
+- **BEH-2** — **When** the adapter is constructed **then** it validates `tasks.github` synchronously, without any network call, and throws `GITHUB_INVALID_CONFIG` naming the offending key if: `project` is not a Projects v2 URL of the form `https://github.com/orgs/<org>/projects/<n>` or `https://github.com/users/<user>/projects/<n>`; `repo` is not `<owner>/<repo>`; `status_field` (default `"Status"`) is not a non-empty string; `status_map` (when present) does not cover all four adev statuses, or lists one option under two statuses; `priority_field` (optional) is not a non-empty string; `type_source` is not one of `auto` (default: issue types where the owner has them, else labels), `issue_types`, `labels`; a `fields` override maps an unknown adev field or maps two adev fields to the same project field name; `claim_settle_ms` is not an integer from 0 to 10000 (default 1500). `status_map` values are a string or a non-empty list: the first entry is the option adev **writes** for that status, every entry is **read** as that status. When `status_map` is absent the recommended default board mapping applies: `open: [Backlog, Ready]`, `in_progress: [In Progress, In Review]`, `deferred: [Deferred]`, `closed: [Done]`. These keys are the complete `tasks.github` set.
+- **BEH-3** — **When** the first board operation of a process runs **then** the adapter performs network preflight once and caches the result for the process: `gh` on `PATH` (`GITHUB_CLI_MISSING`), authenticated (`GITHUB_AUTH_REQUIRED`), token scopes include `repo` and `project` when `gh` reports scopes (`GITHUB_SCOPE_MISSING` naming each missing scope; tokens that report no scopes, such as fine-grained or App tokens, skip this check and permission failures surface later as `GITHUB_PERMISSION_DENIED`), the project resolves (`GITHUB_PROJECT_NOT_FOUND`), the home repo resolves (`GITHUB_REPO_NOT_FOUND`), the `status_field` and every other required field exist with the expected type (`GITHUB_FIELD_MISSING` naming the field and expected type), and every option named in `status_map` exists on the `status_field` (`GITHUB_STATUS_OPTION_MISSING`). Preflight also records the repository's and project's visibility (public or private) for BEH-41. Every preflight error message ends with the remedy, pointing at `adev issues github setup` where it applies.
+- **BEH-4** — **When** the adapter authenticates **then** it relies solely on `gh`'s own credential resolution (including `GH_TOKEN`), never reads, stores, logs, or echoes a token, and records as `owner` only the identity the caller passes to `claim()` — never the authenticated `gh` login.
+- **BEH-40** — **When** the adapter or any verb sends a request to GitHub **then** it invokes `execFileSync("gh", ["api", "graphql", "--input", "-"])` — that exact argv, `shell: false`, with `GH_PROMPT_DISABLED=1` in the environment — and writes a JSON body `{ "query": <document>, "variables": { … } }` to stdin. Every GraphQL document is a module-level constant; titles, bodies, comments, field values, IDs, and every other caller- or board-supplied value travel only as GraphQL variables, never as an argv token, never through `-F`/`--field` (which reads `@<path>` values as local files), and never interpolated into a document. The transport asserts the fixed argv shape and refuses any other with an internal error. A value beginning with `@`, or containing shell metacharacters, newlines, or GraphQL syntax, reaches GitHub byte-for-byte as data.
+
+### Canonical IDs
+
+- **BEH-5** — **When** an issue in the home `repo` is surfaced **then** its canonical ID is `gh-<n>`; **when** an issue from any other repository on the project is surfaced **then** its canonical ID is `gh-<owner>.<repo>.<n>`, with owner and repo lowercased (GitHub names are case-insensitive, so lowercasing loses no identity). The encoding is lossless because owner names cannot contain `.` and the number cannot either: decoding takes the owner before the first `.`, the number after the last `.`, and the repo as everything between (repo names may contain `.`, `-`, `_`). `parseId()` classifies any ID beginning `gh-` before consulting the legacy or tiered grammar, so a repo named `issue`, `epic`, or `bd` cannot produce a legacy-shaped ID, and `org1/api#3` and `org2/api#3` get distinct IDs. Adding a repository to the project never changes an existing ID.
+- **BEH-6** — **When** an `IssueManager` method or `adev issues` verb receives `#<n>`, `<n>`, `<owner>/<repo>#<n>`, or a GitHub issue URL **then** it normalizes the input to the canonical ID before use. A URL is accepted only when its scheme is `https`, its host is exactly `github.com`, and its path is `/<owner>/<repo>/issues/<n>`; any other URL throws `GITHUB_INVALID_ID`. Every ID the adapter **returns** is canonical, and `#<n>` / `<owner>/<repo>#<n>` appear only in human-facing rendering.
+- **BEH-7** — **When** `lib/retro/issue-id-validation.mjs` or `lib/session-capture.mjs` validates an ID **then** canonical gh IDs (charset `[a-z0-9._-]`, up to 160 characters, `gh-` prefix) are accepted and display forms containing `#` or `/` are rejected, so session frontmatter and file names never carry a YAML comment marker or a path separator.
+
+### Field placement and the read path
+
+- **BEH-8** — **When** an item is read **then** fields decode from maintainer-only storage exactly as follows, and from nowhere else; every decoded value then passes BEH-39 before it is returned:
+
+  | `Issue` field | GitHub source |
+  |---|---|
+  | `id` | canonical ID (BEH-5) |
+  | `title`, `notes` | issue title and body (untrusted text, BEH-20) |
+  | `status` | issue state + `status_field` (BEH-12) |
+  | `priority` | Priority single-select (`P0`–`P4`) or a number field named by `priority_field`; else a `priority:<0-4>` label; else `2` |
+  | `type` | per `type_source`: issue type name, lowercased; or a `type:<x>` label; else `"task"` |
+  | Epic membership | issue type `Epic`, or the `epic` label under label-based typing |
+  | `parent_id` | canonical ID of the sub-issue parent |
+  | `dependencies` | canonical IDs of blocked-by issues |
+  | `owner`, `claimed_at`, `next_action`, `spec_ref`, `planRef`, `branch`, `pr`, `legacy_id` | Project text fields, default names `Owner`, `Claimed At`, `Next Action`, `Spec`, `Plan`, `Branch`, `PR`, `Legacy ID`, overridable per field via `fields` |
+  | `affected_modules` | `module:<slug>` labels, including the reserved safety tags |
+  | Epic `milestone` | the issue's repository milestone title |
+  | `created`, `updated` | issue `createdAt`, `updatedAt` |
+
+  `legacy_id` and `affected_modules` are added to the `Issue` typedef and to `validateIssue()`'s returned field set in `lib/issues/interface.mjs`, so neither is silently dropped.
+- **BEH-39** — **When** a field value is decoded from GitHub **then** it is validated by a per-field predicate and either accepted unchanged or refused — never trimmed, escaped, or repaired: `owner` passes `normalizeOwner()`; `claimed_at` parses as an ISO 8601 timestamp; `next_action` is one line, free of control characters, at most 500 characters; `branch` satisfies git's ref-name rules (no whitespace, control characters, `..`, `~`, `^`, `:`, `?`, `*`, `[`, `\`, no leading `-`, no trailing `.lock`); `pr` is a number, `#<n>`, or a `https://github.com/<owner>/<repo>/pull/<n>` URL; `spec_ref` and `planRef` are repository-relative POSIX paths with no `..` segment, no leading `/`, and no control characters, and any consumer that opens one checks containment on the realpath: the repository root and the candidate are both resolved with realpath and the candidate must lie inside the root, equivalent to `assertContained` in `lib/extensions/exec-payload.mjs`, and a candidate that does not resolve, or resolves outside the root, is refused. The lexical `resolveContained()` from `lib/path-safety.mjs` alone is not sufficient, because these fields are writable by anyone with project write and a symlink inside the repository passes a lexical check; `legacy_id` parses as a non-gh ID under `parseId()`. A refused value makes `get()` throw `GITHUB_INVALID_FIELD_VALUE` naming the ID and field, and makes `list()` / `walkTree()` throw the same code naming every offending item — never a partial result. A `module:<slug>` label whose slug is neither a manifest `modules[].slug` nor a reserved safety tag is excluded from `affected_modules` (which keeps bugfix-loop eligibility fail-closed) and reported as drift by `setup --check`.
+- **BEH-9** — **When** `listEpics()` is called **then** it returns the items whose Epic membership (BEH-8) holds, and `list()` excludes them exactly as the json adapter separates epics from issues.
+- **BEH-10** — **When** `list(filters)` is called **then** the adapter reads the project's items with one paginated GraphQL query (100 items per page) that returns every field BEH-8 needs, so the number of requests grows with pages, not items; sub-issue and blocked-by connections longer than the first page are continued only for the items that need it. Draft issues and pull requests on the project are ignored. Filters are applied to the decoded items with the same semantics as the json adapter. Pagination is bounded: if a response repeats a cursor already seen in this read, or the page count exceeds `ceil(totalCount / 100) + 1` (with `totalCount` taken from the first page's response and fixed for the rest of the read, so later responses cannot raise the bound), the read throws `GITHUB_PAGINATION_INVALID` with no partial result. Each sub-issue or blocked-by connection that is continued is bounded on its own, and its pages never count toward the item-page bound: its bound is `ceil(totalCount / 100) + 1` with `totalCount` taken from that connection's first page (the one embedded in the item page, which counts as page 1) and fixed for the rest of that connection; a cursor repeated within the connection, or a page count above that bound, throws `GITHUB_PAGINATION_INVALID` with no partial result. GitHub's items listing is eventually consistent (an item added or changed seconds ago can be absent from it or carry its old values), so it is never used to resolve a gh ID (BEH-42), and a `list()` can lag another process's write by a few seconds.
+- **BEH-42** — **When** a github-backend method receives a home-repo `gh-<n>` ID (or a display form or URL that normalizes to one) **then** it resolves the ID by one direct, strongly consistent query of that issue and its non-archived project items (`IssueProjectItems`: `repository.issue(number).projectItems`, each node in the items-listing shape plus its project's id), never through the items listing, and operates on the item whose project is the configured one. The `projectItems` connection is continued from its endCursor under the BEH-10 continuation rules (bound `ceil(totalCount / 100) + 1` fixed by the first page, no repeated cursor, else `GITHUB_PAGINATION_INVALID`). The item decodes through the same path as a listing item (BEH-8, BEH-12, BEH-39), with `type_source: auto` decided by the issue's own repository. A number that names no issue (GitHub answers `NOT_FOUND` at `repository.issue`, including for a pull request's number), or an issue with no item on the configured project, resolves to nothing: `get()` returns `null` and mutating methods throw `NOT_FOUND` / `PARENT_NOT_FOUND` as before; any other GitHub error is thrown. Cross-repo `gh-<owner>.<repo>.<n>` IDs and old IDs (BEH-34) still resolve through the paged board read. **Write-through:** every item an adapter instance writes (`create`, `createEpic`, `update`, `updateEpic`, `close`, `claim`, `release`, `addDependency`, and the migration's create, complete and close) is merged into that instance's cached board as last read back, or as last written where the write has no read-back (`close`, `addDependency`), and overrides the listing's row for the same canonical ID in that board and in every later listing the instance reads, so a lagging listing cannot drop or regress it within the instance's lifetime; a write that fails part-way drops the instance's record of that item and its cached board, and the next listing decides. A `list()`, `listEpics()` or `walkTree()` in another process can still omit or show stale an item written seconds ago; that lag is documented, not an error.
+- **BEH-11** — **When** `walkTree(parentId)` is called with any github ID **then** it returns every transitive sub-issue of that item that is on the project, sorted by canonical ID, computed from the paged item data of BEH-10 rather than per-item requests. The walk is breadth-first over the items' `parent_id` links in that one board read and keeps a visited set of canonical IDs, seeded with the root, so each item is visited at most once and the walk is bounded by the number of items the read returned. Reaching an ID that is already in the visited set is a sub-issue cycle: the walk throws `GITHUB_SUBISSUE_CYCLE` naming the root and the revisited ID (the error also carries that ID as `id`), and returns no partial result. A non-gh `parentId` resolves through `legacy_id` as in BEH-34; a `parentId` that resolves to no item returns `[]`. Sub-issues that are not on the project are not returned; `setup --check` reports them as drift (BEH-26).
+- **BEH-12** — **When** an item's status is decoded **then**: a closed GitHub issue is `closed` regardless of its status option; an open issue with no status option is `open`; an open issue whose option is listed in `status_map` reads as that status, except that an option mapped to `closed` reads as `open` (issue state wins in both directions) and is reported as drift; an open issue whose option is not in `status_map` makes `get()` throw `GITHUB_UNMAPPED_STATUS` naming the ID and option, and makes `list()` / `walkTree()` throw the same code naming every offending ID — never a partial result.
+
+### Write path
+
+- **BEH-13** — **When** `create(item)` is called **then** the adapter creates the issue in the home `repo` (title, body = `notes`), adds it to the project, and sets the `status_field` to the write option for the requested status (default `open`), Priority, `next_action`, `spec_ref`, `planRef`, `branch`, `pr`, type (issue type or `type:` label, per `type_source`), `module:` labels for `affected_modules`, the sub-issue parent for `parent_id`, blocked-by links for `dependencies`, and the milestone for an Epic's `milestone`; every value is validated by BEH-39's predicate for its field before any request is sent, and travels only through BEH-40's variable channel. When `legacy_id` is set (the migration path), it is written in the first field-write request, immediately after the issue is added to the project and before every other field: it is that request's first aliased mutation, and GitHub executes a request's top-level mutation fields in order. It returns the item as read back after the writes. A `parent_id` or dependency that does not resolve to an item on the project throws `PARENT_NOT_FOUND` / `NOT_FOUND` before the issue is created.
+- **BEH-14** — **When** any step of `create()` or `createEpic()` fails after the GitHub issue exists **then** the adapter does not delete or close the issue; it throws `GITHUB_PARTIAL_CREATE` carrying the new canonical ID (`id`) and the list of fields not yet written (`unwritten`). No consumer retries. The consumers:
+  - `adev issues create` and `adev issues epic` print the ID and the unwritten fields and exit 1.
+  - The migration verb stops resumably (BEH-29). Because BEH-13 writes `legacy_id` first, a failure after that write leaves an item the next run finds by `legacy_id` and finishes (BEH-30). **Residual window:** a failure after the issue is created but before the `Legacy ID` write lands (in add-to-project, or in the first field-write request itself) leaves an issue the board cannot identify, and `unwritten` then includes `legacy_id`. BEH-30 states how the migration handles that case.
+  - `/adev:specify` calls `getIssueManager(manifest).create()` in-process (Step 5.6 of `skills/specify/references/modes/standard-mode.md`) and keeps its existing catch-log-continue: the spec is already written, so it logs the code, the ID and the unwritten fields to its summary and does not block.
+  - `/adev:plan` calls `create()` in-process in its feature, epic and release modes (`skills/plan/references/feature-mode.md`, `epic-mode.md`, `release-mode.md`) and never catches and continues: on `GITHUB_PARTIAL_CREATE` the mode stops, reports the code, the new canonical ID and the unwritten fields, creates no further items, and tells the operator to finish that item and re-run. Its Step 7 call to `adev issues epic` already exits 1 the same way.
+- **BEH-15** — **When** `create()` or `update()` receives `planTask` **then** it throws `BOARD_GRANULARITY_VIOLATION` (the same code as the json adapter): plan-task state belongs to the lifecycle log, and the github backend has no field for it.
+- **BEH-16** — **When** `update(id, changes)` is called **then** it applies the shared `validateStatusTransition()` rules unchanged: an update to a closed item throws `ISSUE_CLOSED`, and `status: "closed"` throws `USE_CLOSE_METHOD` — `close()` is the only way to close, and adev never reopens an issue (a person may reopen it in the GitHub UI; the adapter then reads it as open per BEH-12). Otherwise only the changed fields are written, one Project field mutation per changed field, batched as aliased mutations in a single request where possible.
+- **BEH-17** — **When** `close(id, reason)` is called **then** the adapter refuses with `BLOCKED_BY_DEPENDENCIES` if any blocked-by issue is open, and with `CASCADE_BLOCKED` if any sub-issue on the project is open (the cascade guard applies to every github ID, unlike legacy flat IDs); otherwise it writes the `closed` status option, closes the issue with state reason `COMPLETED`, and posts `reason`, when non-empty, as an issue comment. A person closing the issue in the GitHub UI bypasses these guards; the adapter reports the state it reads.
+- **BEH-18** — **When** `addDependency(issueId, dependsOnId)` is called **then** it adds a GitHub blocked-by link (`issueId` blocked by `dependsOnId`); adding an existing link is a no-op, and a link GitHub rejects surfaces as `GITHUB_WRITE_FAILED` with GitHub's reason.
+- **BEH-19** — **When** any adapter or verb writes to GitHub **then** it never reads or writes assignees, never edits the issue body unless the caller changed `notes`, and writes labels only in the adapter-owned families `type:`, `priority:` (fallback mode only), `epic` (label-based typing only), and `module:`; labels outside those families are never added or removed.
+- **BEH-20** — **When** an item's title or body is read **then** no adev field is ever derived from either (a body containing a fenced metadata block or `spec_ref:` text changes nothing in BEH-8's decoding); **and when** `adev issues show`, `board`, `next`, `list`, or `stale` renders a github item **then** the body is wrapped with `fenceBlock` from `lib/governance/context-pack.mjs` and the title is rendered on one line with control characters stripped and capped at 200 characters, because both are editable by whoever filed the issue. These five verbs are the complete set of renderers this spec owns; `/adev:bugfix-loop`'s prompt assembly is covered by the tracker-provider-bridge amendment.
+
+### Claims
+
+- **BEH-21** — **When** `claim(id, owner, opts)` is called **then** the adapter re-reads the item, applies `requireClaimable()` with `ttlMs` derived from the adapter's `claimTtlMinutes` (refusing with `ISSUE_CLOSED` / `ISSUE_ALREADY_CLAIMED` exactly as the json adapter does), then writes `claimed_at` (a fresh timestamp, or the existing one on an idempotent re-claim inside a live lease) and then `owner`, as two aliased mutations in that order in one request. On a takeover of a stale lease it returns the item with the same `takeover: { previous_owner, previous_claimed_at, ttl_minutes }` object the json adapter returns, so `adev issues claim` and `/adev:implement` report takeovers unchanged.
+- **BEH-22** — **When** the claim writes complete **then** the adapter re-reads `owner`; if it is not the claimant, the adapter writes nothing further and throws `ISSUE_ALREADY_CLAIMED` carrying the winner's `owner` and `claimed_at`. If it is the claimant, the adapter waits `claim_settle_ms` and re-reads once more; if `owner` changed, it throws `ISSUE_ALREADY_CLAIMED` as above and writes nothing further. Only after the second re-read confirms the claim does it write `branch` / `pr` from `opts` — unlike the json adapter, which writes them in the same atomic write as `owner`; this and the residual window are documented github differences. The residual window — two claimants both confirmed — requires one claimant's precondition read to land before the other's write and its write to land after the other's settle re-read; it is documented in `docs/concepts.md`, and callers that need a strict lock are told to use one.
+- **BEH-23** — **When** the `owner` write fails after the `claimed_at` write succeeded **then** the item reads as unclaimed (a `claimed_at` without `owner` grants nothing) and `claim()` throws `GITHUB_WRITE_FAILED`; by construction adev never leaves an `owner` without a `claimed_at`, which `isClaimUnexpirable()` would treat as a lease that never expires.
+- **BEH-24** — **When** `release(id, owner, opts)` is called **then** it applies `requireReleasable()` (honouring `opts.force`) and clears `owner` first, then `claimed_at`, so an interruption leaves the item unclaimed; `branch` and `pr` are left in place, as on the json backend.
+- **BEH-25** — **When** a claim or release completes **then** the status field is unchanged — the github backend follows the json adapter, where callers move status explicitly via `update()` — and the stale-claim lease rules (`tasks.claim_ttl_minutes`, `adev issues stale`) apply unchanged on top of `claimed_at`.
+
+### Project setup
+
+- **BEH-26** — **When** `adev issues github setup --check` runs **then** it issues no mutation, prints each required field and option as `ok` / `missing` / `wrong type`, and prints drift: open issues in a `closed`-mapped column, open issues in unmapped columns, sub-issues of board items that are not on the project, items with `owner` but no `claimed_at`, field values BEH-39 refuses, and `module:` labels with unknown slugs. It exits 0 when every required field and option is present with the right type (drift alone is a warning) and 1 otherwise; `--json` emits the same report as one object. The verb is reached through a `github` branch registered in the `lib/cli/issues.mjs` dispatcher.
+- **BEH-27** — **When** `adev issues github setup` runs without `--check` **then** it prints its complete write set once — missing text fields, the status options and Priority options `P0`–`P4` of the recommended default board — before any write, and applies it only after interactive confirmation or `--yes`; with `--dry-run` it prints the plan and exits 0 without writing; in a non-interactive context without `--yes` it exits 1 with `SETUP_CONFIRMATION_REQUIRED`. `--yes` is never read from configuration or carried over from a prior run, and `--auto` does not imply it. It never deletes or renames a field or option and never clears an item's value; where adding an option to an existing single-select field cannot be done without replacing that field's option set in a way that could clear item values, it skips that change and prints the manual step instead. Suggested views are printed as documentation, not created.
+- **BEH-28** — **When** setup cannot reach the project or lacks permission **then** it fails with the same preflight codes as BEH-3 and writes nothing.
+
+### Migration to GitHub
+
+- **BEH-29** — **When** `adev issues migrate --to github` runs from a `json`, `beads`, or read-only `file` source **then** `github` is accepted because the verb's `--to` validation reads `SUPPORTED_BACKENDS`, and the verb dispatches to the github migration path; that path first requires preflight and `setup --check` to pass on the target (exit 1 with `GITHUB_FIELD_MISSING` naming `Legacy ID` or any other missing field), then obtains confirmation (BEH-41), then creates every in-scope item in the home repo parents-before-children, sequentially, writing every field BEH-13 writes plus `Legacy ID` = the source ID. Only after every item exists does it replay sub-issue parents and dependencies, mapping source IDs to new canonical IDs through `legacy_id`. With `--include-closed`, closed items are created and then closed (`closed` status option, state reason `COMPLETED`) without posting a close comment. Any per-item write failure — `GITHUB_WRITE_FAILED`, `GITHUB_PARTIAL_CREATE`, `GITHUB_INVALID_FIELD_VALUE` — stops the run with exit 1 and the failing source ID; no item is skipped.
+- **BEH-30** — **When** the verb is re-run, including after an interruption at any item **then** it reads `legacy_id` from the target board first and skips every source item already present, and skips every parent or dependency link already present, so no item or link is ever duplicated; the target board is the idempotency source of truth, and title matching is never used for a github target. `.context-index/tasks/.migrate-state.json` is still written; its readers are the resume-argument checks and the `resuming: N of M` progress line (`backend-migration-rev-3-github-target.spec.md` BEH-4), and correctness never depends on it: deleting it changes nothing a re-run does. The one case `legacy_id` cannot cover is BEH-14's residual window, and it has its own record. When `GITHUB_PARTIAL_CREATE` lists `legacy_id` among the unwritten fields, the verb writes `{ source_id, target_id }` by atomic temp-rename to `.context-index/tasks/.migrate-unanchored.json` under the storage root (`resolveStorageRoot()`, as for the sentinel) before it stops, and its stderr line names the issue and says not to delete that file. A later run reads that file after the target-board read and before any write:
+  - when `target_id` is an open issue in the home `repo` whose `Legacy ID` is empty or equals `source_id`, the run completes that exact issue (adds it to the project if it is missing, writes `Legacy ID` first, then the unwritten fields), never creates a new issue for `source_id`, and removes the file once the item is complete;
+  - otherwise (the issue no longer exists, is closed, is in another repository, or carries a different `Legacy ID`) the run exits 1 with `MIGRATE_UNANCHORED_ITEM` naming `source_id` and `target_id` before any write, and refuses on every re-run until the operator resolves it: set `Legacy ID` = `source_id` on that issue by hand, or close it and delete the file.
+  The guarantee holds only while that file exists: if the operator deletes it while the issue is still unanchored, the next run cannot find the issue and creates `source_id` again. `--dry-run` reads the file and reports the entry but never writes or removes it.
+
+- **BEH-31** — **When** `--dry-run` is passed **then** the verb prints the items it would create, the items already migrated, the links it would replay, the repository and project visibility with the number of titles and notes that would be published, and an estimate of API requests, and issues no mutation.
+- **BEH-41** — **When** the github migration path is about to make its first write **then** it prints its complete write set once — target project and repository with their visibility, item counts, and how many local titles and notes will be published to GitHub — and proceeds only after interactive confirmation or `--yes`; in a non-interactive context without `--yes` it exits 1 with `MIGRATE_CONFIRMATION_REQUIRED` before any write. `--yes` is never read from configuration or carried over from a prior run, and `--auto` does not imply it. Creating the read-only sentinel (BEH-32) counts as a write: it retires the source board, so it needs the same consent as a GitHub mutation. A re-run that has nothing left to create or link therefore needs no confirmation **only when** the sentinel already exists and names this project; when the sentinel is absent, the run still prints its write set (zero items, zero links, and the sentinel it will create) and needs interactive confirmation or `--yes`, and a non-interactive run without `--yes` exits 1 with `MIGRATE_CONFIRMATION_REQUIRED` and writes nothing. The verb-level rules (what counts as interactive, the sentinel line in the write set) are `backend-migration-rev-3-github-target.spec.md` BEH-3.
+- **BEH-32** — **When** a migration completes without errors **then** the verb writes the read-only sentinel for the source board and prints the old-ID → new-ID summary followed by the existing `manifestUpdateSuggestion("github")` text. It never writes `manifest.yaml`, with or without `--auto` — the operator makes that change, exactly as for every other migration target. The sentinel's format is owned by `agent-reliable-state-artifacts` charter revision 9, section "Read-only board sentinel document schema" (path, the five-key content, atomic temp-rename write, containment check, `SENTINEL_PATH_UNSAFE` refusal, fail-closed reading, and commit rule); this spec restates it only for convenience and the charter governs on any difference. The sentinel is a separate file in the source board's storage root (`resolveStorageRoot()`): `.context-index/tasks/board-read-only.json` for a json or file source, `.beads/adev-read-only.json` for a beads source, containing `{ "schema": 1, "reason": "migrated", "target": "github", "project": <project URL>, "migrated_at": <ISO 8601> }`. It is written by atomic temp-rename; containment is checked on the realpath of the storage root and of the sentinel's parent directory (as in BEH-39), a symlink at the sentinel path is refused with `SENTINEL_PATH_UNSAFE` on write and on read, and no existing board file is read-modify-written to create it. For a beads source the verb commits exactly that one file on the `beads-board` checkout (pathspec-limited, never pushed; pushing stays part of the operator's board sync); when `.beads/` is not a linked worktree on `beads-board` (for example `.beads/` is still tracked on `main` because `adev issues board migrate` has not run), there is no `beads-board` checkout, so the commit refuses with `MIGRATE_SENTINEL_COMMIT_FAILED` naming the board topology it found and the remedy (run `adev issues board migrate`, or commit that one file by hand on the branch that carries the board), and it never commits on `main` or any other branch; for a json or file source it makes no commit and the operator commits the file on the branch that carries the board. The commit mechanism and its failure code (`MIGRATE_SENTINEL_COMMIT_FAILED`) are `backend-migration-rev-3-github-target.spec.md` BEH-8.
+- **BEH-33** — **When** a write is attempted through the json or beads adapter on a board whose storage root contains the read-only sentinel **then** it throws `BOARD_READ_ONLY_MIGRATED` naming the target project before touching board storage; a sentinel that is present but unparseable or carries an unknown `schema` still blocks writes (fail-closed, charter revision 9). Reads are unaffected, and re-running `migrate --to github` against the same source is still allowed because it only reads the source. The markdown `file` adapter is unchanged: it is already read-only and keeps throwing `BACKEND_READ_ONLY_DEPRECATED` on every write, sentinel or not.
+- **BEH-34** — **When** a github-backend method receives an ID that is not a gh ID (a legacy flat, tiered, or beads ID) **then** the adapter resolves it through the `legacy_id` values of the paged board read (cached for the process): exactly one match → it operates on that item and returns it with its canonical ID and `legacy_id`; more than one match → it throws `GITHUB_AMBIGUOUS_LEGACY_ID` naming the matching items; no match → `get()` returns `null`, as the `IssueManager` contract specifies, and every mutating method throws `NOT_FOUND`.
+
+### Rate limits and network
+
+- **BEH-35** — **When** GitHub answers with a primary or secondary rate limit **then** `get`, `list`, `walkTree`, and every write throw `GITHUB_RATE_LIMITED` carrying the reset time, with no partial result and no automatic retry. The migration verb alone paces itself — at most one mutation request per second, never concurrent — and on a rate limit waits for the reset when it is at most 5 minutes away, up to 5 waits and 15 minutes of cumulative waiting per run; beyond any of those bounds it stops with exit 1 and `GITHUB_RATE_LIMITED`, leaving a state the next run resumes via BEH-30. `--auto` uses the same bounds.
+- **BEH-36** — **When** `gh` times out or GitHub is unreachable **then** the operation throws `GITHUB_UNREACHABLE`; nothing falls back to a local board and nothing is queued for later.
+
+### Conformance and docs
+
+- **BEH-37** — **When** the test suite runs **then** a shared conformance suite under `tests/issues/conformance/` runs the same `IssueManager` contract cases against the json adapter and the github adapter, the latter through a replay transport injected in place of `execFileSync` that serves recorded GraphQL responses keyed by query and variables; any github request without a recorded response fails the test, so CI needs no network or token. github-only differences (ID shape, sub-issue `walkTree`, status read mapping, UI-bypassable closure guards, non-linearizable claims with the delayed `branch`/`pr` write) are asserted in a separate case set. Fixtures are recorded by a manual script under `scripts/` against a throwaway project; the github-only cases run against it live as well (sub-issue trees, the closure cascade guard, epics, the claim settle-window race, TTL takeover, migration from json and its re-run after an interruption, and setup on a new project), and a case that migrates or runs setup creates its own scratch project and deletes it afterwards, because migration never merges two boards into one project; the script writes only beneath `tests/issues/conformance/fixtures/`, with containment checked on the realpath as in BEH-39. A fixture-lint test fails if any committed fixture contains a token pattern (`ghp_`, `gho_`, `ghu_`, `ghs_`, `ghr_`, `github_pat_`) or a GitHub login outside a fixed allowlist of test identities.
+- **BEH-38** — **When** the feature ships **then** `docs/configuration.md` documents every `tasks.github` key from BEH-2 with its default, `docs/troubleshooting.md` documents every error code in the Error Cases table with its remedy, and `docs/concepts.md` documents the backend differences, the claim window, the cross-process `list()` lag of BEH-42, and that GitHub Projects' built-in workflows which set Status (notably the default-enabled "Item added to project" and "Auto-add sub-issues to project") overwrite adev's Status writes and must be disabled on a board adev manages, which `docs/configuration.md` repeats beside the setup instructions and the fixture-recording steps of `docs/troubleshooting.md` repeat for the fixture board; skill reference prose that uses dotted IDs as the only example is reworded to be backend-neutral. A test extracts every error code from this spec's Error Cases table and every key from BEH-2 and fails if any is missing from the corresponding docs file.
+## Postconditions
+
+- On `tasks.backend: github`, every gh-ID read and every write reflects the GitHub project's current state, and every write is visible to every clone, worktree, and CI job without a git operation; a whole-board read (`list`, `listEpics`, `walkTree`) reflects it as GitHub's eventually consistent items listing does, plus every write of the same adapter instance (BEH-42).
+- adev has written no assignee, no label outside its own families, no body text the caller did not supply, and no request whose argv carried a caller-supplied value.
+- After a confirmed claim, the item carries `owner` and `claimed_at`; after release, it carries neither; no adev operation leaves `owner` without `claimed_at`.
+- After a successful migration, every in-scope source item exists exactly once on the project with `legacy_id` set, hierarchy and dependencies are recreated, the source board's storage root holds the read-only sentinel, existing board files are unchanged, and `manifest.yaml` is unchanged — the operator flips `tasks.backend` themselves.
+- The json, file, and beads backends behave exactly as before, apart from the json and beads adapters refusing writes to a board whose storage root holds the read-only sentinel (the `file` adapter is already read-only).
+
+## Error Cases
+
+| Condition | Expected Behavior | Error Code |
+|-----------|-------------------|------------|
+| `tasks.github` key missing or malformed (URL, repo, `status_field`, `status_map`, `priority_field`, `type_source`, `fields`, `claim_settle_ms`) | Throw at construction, naming the key; no network call | `GITHUB_INVALID_CONFIG` |
+| `gh` not on `PATH` | Throw on first operation; remedy names the install page | `GITHUB_CLI_MISSING` |
+| `gh` not authenticated and no `GH_TOKEN` | Throw; remedy `gh auth login` / set `GH_TOKEN` | `GITHUB_AUTH_REQUIRED` |
+| Token reports scopes and lacks `repo` or `project` | Throw naming each missing scope; remedy `gh auth refresh -s project` | `GITHUB_SCOPE_MISSING` |
+| GitHub refuses an operation for lack of permission | Throw with the operation and GitHub's message, token redacted | `GITHUB_PERMISSION_DENIED` |
+| Project URL does not resolve | Throw naming the URL | `GITHUB_PROJECT_NOT_FOUND` |
+| Home repo does not resolve | Throw naming `owner/repo` | `GITHUB_REPO_NOT_FOUND` |
+| Required project field absent or of the wrong type | Throw naming field and expected type; remedy `adev issues github setup` | `GITHUB_FIELD_MISSING` |
+| `status_map` names an option the status field lacks | Throw naming the option; remedy `adev issues github setup` | `GITHUB_STATUS_OPTION_MISSING` |
+| Open issue on a status option not in `status_map` | `get` throws naming ID and option; `list`/`walkTree` throw naming every offending ID; no partial result | `GITHUB_UNMAPPED_STATUS` |
+| Decoded field value fails its predicate (BEH-39) | `get` throws naming ID and field; `list`/`walkTree` throw naming every offending item; no partial result | `GITHUB_INVALID_FIELD_VALUE` |
+| Pagination repeats a cursor or exceeds its page bound | Throw; no partial result | `GITHUB_PAGINATION_INVALID` |
+| ID input that is neither canonical, an accepted display form or URL, nor a resolvable old ID | Throw naming the input | `GITHUB_INVALID_ID` |
+| `walkTree` reaches an item already visited (sub-issue cycle) | Throw naming the root and the revisited ID; no partial result | `GITHUB_SUBISSUE_CYCLE` |
+| Old ID matched by more than one item's `legacy_id` | Throw naming the matching items; no operation | `GITHUB_AMBIGUOUS_LEGACY_ID` |
+| ID or old ID not on the project (for a home-repo gh ID: no such issue, or none of its items is on the configured project, by the direct lookup of BEH-42) | `get` returns `null`; mutating methods throw | `NOT_FOUND` |
+| `parent_id` not on the project | Throw before creating anything | `PARENT_NOT_FOUND` |
+| `planTask` passed to `create`/`update` | Throw | `BOARD_GRANULARITY_VIOLATION` |
+| `update()` on a closed item | Throw; no write | `ISSUE_CLOSED` |
+| `update()` setting `status: "closed"` | Throw; no write — use `close()` | `USE_CLOSE_METHOD` |
+| Write step fails after the issue was created | Keep the issue; throw with the new ID and unwritten fields | `GITHUB_PARTIAL_CREATE` |
+| Any other GitHub mutation rejected (including the `owner` write of a claim) | Throw with GitHub's reason | `GITHUB_WRITE_FAILED` |
+| `close` with an open blocked-by issue | Refuse; no write | `BLOCKED_BY_DEPENDENCIES` |
+| `close` with an open sub-issue on the project | Refuse; no write | `CASCADE_BLOCKED` |
+| `claim` on a closed issue | Refuse; no write | `ISSUE_CLOSED` |
+| `claim` on a live lease held by another owner, or a lost claim race | Refuse; carry winner's `owner` and `claimed_at`; nothing further written | `ISSUE_ALREADY_CLAIMED` |
+| `release` by a non-holder without `force` | Refuse; no write | `CLAIM_OWNER_MISMATCH` |
+| Primary or secondary rate limit | Throw with reset time; no partial result (migration: paced, waits ≤ 5 min each, ≤ 5 waits, ≤ 15 min total, else stop resumably) | `GITHUB_RATE_LIMITED` |
+| `gh` timeout or network failure | Throw; no local fallback, nothing queued | `GITHUB_UNREACHABLE` |
+| `setup` applying changes non-interactively without `--yes` | Exit 1 before any write | `SETUP_CONFIRMATION_REQUIRED` |
+| Migration re-run finds a recorded unanchored issue (BEH-30) that is gone, closed, in another repository, or carries a different `Legacy ID` | Exit 1 before any write, naming the source ID and the issue; refuse until the operator sets `Legacy ID` by hand or closes the issue and deletes `.migrate-unanchored.json` | `MIGRATE_UNANCHORED_ITEM` |
+| Migration writing non-interactively without `--yes` | Exit 1 before any write | `MIGRATE_CONFIRMATION_REQUIRED` |
+| Sentinel path is a symlink, or its realpath (or its parent directory's) lies outside the storage root, on write or read (BEH-32) | Refuse before writing or trusting the file; no board write | `SENTINEL_PATH_UNSAFE` |
+| Beads source: the sentinel commit on `beads-board` fails, including `.beads/` not being a linked worktree on `beads-board` (BEH-32) | Exit 1 naming the sentinel's absolute path, the branch, and the topology found; never commit on any other branch; sentinel kept, re-run retries the commit | `MIGRATE_SENTINEL_COMMIT_FAILED` |
+| Write through the markdown `file` adapter, sentinel present or not (BEH-33) | Throw; the file adapter is unchanged and already read-only | `BACKEND_READ_ONLY_DEPRECATED` |
+| Write to a json/beads board whose storage root holds the read-only sentinel | Throw naming the target project; reads unaffected (the `file` adapter keeps `BACKEND_READ_ONLY_DEPRECATED`) | `BOARD_READ_ONLY_MIGRATED` |

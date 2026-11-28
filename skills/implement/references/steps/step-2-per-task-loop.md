@@ -196,7 +196,10 @@ adev execution-state write \
   --progress-json '<json-array-of-progress-items>'
 ```
 
-The verb wraps `lib/execution-state.mjs::writeExecutionState`. If the CLI call exits non-zero, log a warning and continue — do not block implementation.
+The verb wraps `lib/execution-state.mjs::writeExecutionState`. The state file is shared by every worktree of the repository, so the exit code matters:
+
+- **`2` (`EXECUTION_STATE_CONFLICT`)** — another build owns the live state (stderr names its branch, plan, and `updated` time); nothing was written. Surface the owner to the user, then continue implementation without execution state for this run. Do **not** pass `--force` autonomously — that is another session's resume point. Remember the refusal: Step 4 must then skip `adev execution-state clear`.
+- **`1`** — log a warning and continue — do not block implementation.
 
 #### 2d. Dispatch and Handle Status
 
@@ -231,6 +234,7 @@ Handle the returned status:
     --blockers "<blocker description>" \
     --next-action "<recommended resolution>"
   ```
+  Skip this write if an earlier write in this run exited `2`; the state belongs to another build.
 - The user can: provide guidance (re-dispatch with new info), modify the spec (back to `/adev:specify`), or skip the task.
 - Never force a retry without changing something. If the subagent said it is stuck, something needs to change.
 

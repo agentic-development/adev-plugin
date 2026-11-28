@@ -46,6 +46,8 @@ drift_detected: true
 
 8. **When** `writeExecutionState` is called with `status: "active"` or `"blocked"` **then** `sourceBranch` is set to the git branch checked out at the caller's `projectRoot` (empty string when not inside a git worktree, detached HEAD, or `git` is unavailable) — recorded so a reader can tell which worktree/branch last claimed the binding, since storage is shared across every worktree of a repo (Behavior 9-adjacent: this does not change who can read the file, only what a reader can additionally infer about it). For `status: "idle"` or `"standalone"`, `sourceBranch` is cleared to `""` along with the other binding fields.
 
+9. **When** `writeExecutionState` or `clearExecutionState` would replace an `active` or `blocked` state owned by another build (a different `sourceBranch`, or on the same branch a fresh `active` state for a different `planRef`) **then** it throws `EXECUTION_STATE_CONFLICT` and leaves the file untouched, unless called with `{ force: true }`. The full rules, including the `tasks.claim_ttl_minutes` lease on `active` states, are in `agent-reliable-state-artifacts/execution-state-migration.spec.md` § Concurrent Writers.
+
 ### Postconditions
 
 - After `writeExecutionState`: file exists at `<projectRoot>/.context-index/.execution-state.md` with valid YAML frontmatter, `updated` timestamp reflects write time
@@ -65,6 +67,7 @@ drift_detected: true
 | File system permission error on write | Throws with original error (callers handle) | `EACCES` |
 | Malformed YAML frontmatter on read | Returns `null` | (no error) |
 | File missing on read | Returns `null` | (no error) |
+| Write or clear would replace another build's live state (Behavior 9) without `force` | Throws; file unchanged; `err.owner` names the holder | `EXECUTION_STATE_CONFLICT` |
 | Atomic rename fails (e.g., cross-device) | Throws with original error, temp file cleaned up | `EXDEV` |
 
 ## File Format
@@ -122,7 +125,7 @@ import { readExecutionState, writeExecutionState } from '../lib/execution-state.
 
 Primary consumers:
 - **`session-start.sh` hook** — calls `readExecutionState` to inject resume context at session start
-- **`adev-implement` skill logic** — calls `writeExecutionState` at task boundaries to persist progress
+- **`adev-implement` skill logic** — calls `writeExecutionState` at task boundaries to persist progress (via `adev execution-state write`; on exit `2` / `EXECUTION_STATE_CONFLICT` it surfaces the owner, continues without state, and skips its completion clear)
 - **Issue reminder hook** — calls `readExecutionState` to include current task in reminder context
 - **`lib/session-capture.mjs`** (`runToolUseCapture`, `resolveExecutionStateBinding`) — calls `readExecutionState` to stamp `issue`/`epic` onto `.session-tracking.jsonl` entries, which the `prepare-commit-msg` hook turns into the commit's `Issue:` trailer. Because storage is shared across worktrees, this consumer additionally calls `getCurrentBranch()` and compares it against `state.sourceBranch` before trusting `issueBinding` — an active binding whose `sourceBranch` disagrees with the committing worktree's own branch belongs to a different, concurrently-active session and is never attributed to this one (omitted, not substituted).
 

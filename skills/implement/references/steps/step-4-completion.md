@@ -8,7 +8,7 @@ Clear `.context-index/hygiene/.active-plan` (scope guard deactivates).
 adev execution-state clear
 ```
 
-This resets the state to `idle` so the next session starts fresh. If the CLI call exits non-zero, log a warning — implementation is still considered complete.
+This resets the state to `idle` so the next session starts fresh. Skip it when any execution-state write in this run exited `2` (`EXECUTION_STATE_CONFLICT`): the live state belongs to another build, and the clear would be refused anyway. If the CLI call exits non-zero, log a warning — implementation is still considered complete. Never retry with `--force`.
 
 **Release the epic claim** so the next session is not blocked by a lease this one no longer needs:
 
