@@ -65,3 +65,4 @@
 {"event":"code_drift_detected","drift_source":"tests/helpers.mjs","drift_at":"2026-08-21T18:48:44.534Z","ts":"2026-08-21T18:48:44.535Z"}
 {"event":"debug_intervention","kind":"debug","note":"Tier B findings had no durable fallback when the board is unreachable, only markdown prose nothing re-read. Added adev eval findings queue/list/file, a JSONL queue.","ts":"2026-09-07T18:57:10.344Z"}
 {"event":"code_drift_detected","drift_source":"tests/helpers.mjs","drift_at":"2026-08-23T12:26:43.771Z","ts":"2026-08-23T12:26:43.771Z"}
+{"event":"spec_amended","amendment_slug":"rubric-schema-and-loader-rev-2-required-elements-shape-validation","amendment_path":".context-index/specs/features/eval-harness/rubric-schema-and-loader-rev-2-required-elements-shape-validation.spec.md","target_revision":2,"ts":"2026-11-15T07:01:54.725Z"}
