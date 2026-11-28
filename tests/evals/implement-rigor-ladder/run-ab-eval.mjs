@@ -1600,8 +1600,8 @@ async function runCompare(opts) {
     resultsByArm[id] = armResults(opts.resultsDir, id).filter((r) => refSha === null || r.ref === refSha);
   }
   const judge = await import('./judge-runs.mjs');
-  const judgeFile = judge.latestJudgeFile(opts.resultsDir);
-  const judgeByArm = judgeFile ? judge.judgeOverallByArm(JSON.parse(readFileSync(judgeFile, 'utf8'))) : {};
+  const judgeFile = judge.latestJudgeFile(opts.resultsDir, { ref: refSha });
+  const judgeByArm = judgeFile ? judge.judgeOverallByArm(JSON.parse(readFileSync(judgeFile, 'utf8')), { ref: refSha }) : {};
   const rows = compareArms(resultsByArm, { judgeByArm });
   if (opts.json) {
     console.log(JSON.stringify({ ref: refSha, judge_file: judgeFile && relative(opts.resultsDir, judgeFile), rows }, null, 2));

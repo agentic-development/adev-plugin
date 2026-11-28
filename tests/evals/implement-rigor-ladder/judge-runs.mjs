@@ -313,11 +313,16 @@ export function judgeEntries({ entries, rubric, spec, runner, seed, trials = 2, 
   };
 }
 
-/** Per-arm mean of each patch's mean overall score, for run-ab-eval --compare. */
-export function judgeOverallByArm(doc) {
+/**
+ * Per-arm mean of each patch's mean overall score, for run-ab-eval --compare. With `ref`, only patches
+ * recorded at that commit count: one judge file can hold runs from several refs, and an arm's score
+ * must describe the runs the compare table shows.
+ */
+export function judgeOverallByArm(doc, { ref = null } = {}) {
   const byArm = {};
   for (const r of Object.values(doc?.results ?? {})) {
     if (typeof r?.mean?.overall !== 'number') continue;
+    if (ref !== null && r.ref !== ref) continue;
     (byArm[r.arm] ??= []).push(r.mean.overall);
   }
   return Object.fromEntries(Object.entries(byArm).map(([arm, xs]) => [arm, { overall: mean(xs), patches: xs.length }]));
@@ -351,10 +356,22 @@ export function renderSummary(summary) {
   return lines.join('\n');
 }
 
-export function latestJudgeFile(resultsDir) {
+/** The newest judge file, or with `ref` the newest one that scored a patch recorded at that commit. */
+export function latestJudgeFile(resultsDir, { ref = null } = {}) {
   if (!existsSync(resultsDir)) return null;
-  const files = readdirSync(resultsDir).filter((f) => JUDGE_FILE.test(f)).sort();
-  return files.length ? join(resultsDir, files.at(-1)) : null;
+  const files = readdirSync(resultsDir).filter((f) => JUDGE_FILE.test(f)).sort().reverse();
+  for (const f of files) {
+    const path = join(resultsDir, f);
+    if (ref === null) return path;
+    let doc;
+    try {
+      doc = JSON.parse(readFileSync(path, 'utf8'));
+    } catch {
+      continue;
+    }
+    if (Object.values(doc?.results ?? {}).some((r) => r?.ref === ref)) return path;
+  }
+  return null;
 }
 
 /** The judge's claude argv: the plain arm's plugin isolation, no tools, no skills, nothing persisted. */

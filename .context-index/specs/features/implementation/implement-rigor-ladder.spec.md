@@ -62,16 +62,16 @@ The remaining `full` share comes from sensitive-path tasks (49 outside high-risk
 
 ### Revision 4: why the grant and the floors changed
 
-EV-1's four-arm runs of 2026-11-27 (`results/*-c90fa324e18f-*`) added a plain Claude Code arm with adev disabled. On the same fixture:
+EV-1's four-arm runs of 2026-11-27 (`results/*-c90fa324e18f-*`) added a plain Claude Code arm with adev disabled. On the same fixture, as medians over three valid runs per arm (`--compare --ref c90fa324e18f`; blind judge in `results/judge-2026-11-28T02-21-31-021Z.json`):
 
-| Arm | Wall clock | `Agent` dispatches | Seeded defects caught at implement | Hidden edge checks passed |
-|---|---|---|---|---|
-| plain Claude Code | 2.0–2.5 min | 0 | 4 of 4 | 53 of 54 |
-| `full` | 25.6 min | 23 | 4 of 4 | 53 of 54 |
-| `quick` | 24.2 min | 14 | 4 of 4 | 51 of 54 |
-| `lite` (revision 3) | 18.9 min | 10 | 4 of 4 | 53 of 54 |
+| Arm | Wall clock | `Agent` dispatches | Seeded defects caught at implement | Hidden edge checks passed | Judge overall |
+|---|---|---|---|---|---|
+| plain Claude Code | 2.2 min | 0 | 4 of 4 | 98.2% | 9.00 |
+| `full` | 26.6 min | 23 | 4 of 4 | 96.9% | 9.00 |
+| `quick` | 23.3 min | 15 | 4 of 4 | 94.4% | 8.83 |
+| `lite` (revision 3) | 17.2 min | 9 | 4 of 4 | 98.2% | 8.83 |
 
-In the `lite` run the three inline tasks took about 30 s each, against plain's ~17 s per task. The other 75% of the run went to the four tasks the revision-3 rules kept out of `lite`, 43% of it on the one sensitive-path task at `full`. About 3 min more was fixed overhead: reference reads, per-task bookkeeping calls and completion.
+In one revision-3 `lite` run the three inline tasks took about 30 s each, against plain's ~17 s per task. The other 75% of the run went to the four tasks the revision-3 rules kept out of `lite`, 43% of it on the one sensitive-path task at `full`. About 3 min more was fixed overhead: reference reads, per-task bookkeeping calls and completion.
 
 Revision 4 makes operator-authorized `lite` the rule rather than the exception:
 
@@ -81,7 +81,7 @@ Revision 4 makes operator-authorized `lite` the rule rather than the exception:
 
 A run without `lite` authorization, and any high-risk spec, resolves exactly as in revision 3.
 
-Measured on 2026-11-28 (`results/lite-d5a68f2ae6d9-*`, three valid runs, medians), revision-4 `lite` took 9.7 min with 4 `Agent` dispatches, against 17.2 min and 9 for revision-3 `lite` and 26.6 min and 23 for `full` over the four-arm runs. It caught 4 of 4 seeded defects at implement in every run, passed 98.2% of the hidden edge checks (as did plain Claude Code), and scored 9.00 overall in the blind judge (plain and `full` also scored 9.00; `results/judge-2026-11-28T03-11-38-983Z.json`). Tasks 1–5 ran inline at about 20 s each, close to plain's pace. What remains of the gap to plain is mostly by design: the sensitive-path task at `quick` (about 4 min), the tripwire task's `quick` review (about 1 min), and the final review and quality gates (about 1.5 min).
+Measured on 2026-11-28 (`results/lite-d5a68f2ae6d9-*`, three valid runs, medians), revision-4 `lite` took 9.7 min with 4 `Agent` dispatches, against 17.2 min and 9 for revision-3 `lite` and 26.6 min and 23 for `full` in the table above. It caught 4 of 4 seeded defects at implement in every run, passed 98.2% of the hidden edge checks (as did plain Claude Code), and scored 9.00 overall in the blind judge (`results/judge-2026-11-28T03-11-38-983Z.json`; plain and `full` scored 9.00 in the four-arm judge file above). In one run, tasks 1–5 ran inline at about 20 s each, close to plain's pace, and what remained of the gap to plain was mostly by design: the sensitive-path task at `quick` (about 4 min), the tripwire task (about 1 min, including its `quick` review), and the final review and quality gates (about 1.5 min).
 
 ## Invocation Modes
 

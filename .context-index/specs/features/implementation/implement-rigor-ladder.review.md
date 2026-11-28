@@ -3,7 +3,7 @@ spec: .context-index/specs/features/implementation/implement-rigor-ladder.spec.m
 verdict: PASS
 rigor-tier: quick
 last-reviewed-revision: 4
-file-sha: 59646bbd93dda0a2a0479b41a44e0f67b93a33a6377b55073fed1338ee697e1a
+file-sha: 65dce1b30b640674b93875e9d693191b3e63123265c2b438fd5422c6ee84d4ef
 reviewed: 2026-11-27
 ---
 
@@ -17,7 +17,7 @@ reviewed: 2026-11-27
 > **Round:** re-review of revision 4 (fixes applied in place). Prior round: revision 4, BLOCK (SA-1).
 > **Diff scope:** diff-scoped (13 changed anchors). The reviewer also read the full spec, ADR 0020 and the first-round report.
 > **Operator framing:** the revision 4 policy change is approved and was not re-litigated. The frontmatter `risk_level` is a deliberate uncommitted working-tree override for routing and is not part of revision 4 (SA-6 out of scope). CON-3's amendment-spec text is planned work (plan Task 25).
-> **Post-review edits (2026-11-27 and 2026-11-28, re-stamped):** after this review the orchestrator filled the Target distribution Revision 4 row from EV-5 (lite 62.3%, quick 29.9%, full 7.9%), reworded BEH-7's escalation bound to match BEH-4 (Task 23 review cq-3), and stated in BEH-17 that a non-`lite` task from `task-begin` runs the rest of Step 2a and that batch members are not started with `task-begin` (Task 24 implementer note). On 2026-11-28 it added the measured revision-4 EV-1 `lite` results to the Revision 4 subsection (Task 25). `file-sha` hashes the committed text, whose `risk_level` is `high`; the working tree carries an uncommitted `medium` override.
+> **Post-review edits (2026-11-27 and 2026-11-28, re-stamped):** after this review the orchestrator filled the Target distribution Revision 4 row from EV-5 (lite 62.3%, quick 29.9%, full 7.9%), reworded BEH-7's escalation bound to match BEH-4 (Task 23 review cq-3), and stated in BEH-17 that a non-`lite` task from `task-begin` runs the rest of Step 2a and that batch members are not started with `task-begin` (Task 24 implementer note). On 2026-11-28 it added the measured revision-4 EV-1 `lite` results to the Revision 4 subsection and restated its table as three-run medians (Task 25). `file-sha` hashes the committed text, whose `risk_level` is `high`; the working tree carries an uncommitted `medium` override.
 >
 > **Verdict note:** the reviewer's own closing line read PASS_WITH_NOTES, but it emitted no warning-severity findings (2 suggestions only). The consolidated verdict follows the verdict rules: suggestions only, so PASS.
 > **Dispatch note:** the prompt was assembled by `adev governance dispatch --tier quick` (170 KB) and given to the reviewer as a file reference.

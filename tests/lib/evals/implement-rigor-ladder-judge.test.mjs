@@ -293,3 +293,25 @@ test('judge-runs without patches refuses to call the model, and --summary reads 
     cleanupTempDir(dir);
   }
 });
+
+test('a ref-scoped compare reads the newest judge file that scored that ref, and only its patches', () => {
+  const dir = createTempDir();
+  try {
+    const score = (arm, ref, overall) => ({ arm, ref, ok_trials: 2, mean: { overall }, spread: { overall: 0 } });
+    const older = { results: { 'full-a.patch': score('full', 'a'.repeat(40), 9), 'lite-a.patch': score('lite', 'a'.repeat(40), 8) } };
+    const newer = { results: { 'lite-b.patch': score('lite', 'b'.repeat(40), 7) } };
+    writeFileSync(join(dir, 'judge-2026-11-27T00-00-00-000Z.json'), JSON.stringify(older));
+    writeFileSync(join(dir, 'judge-2026-11-28T00-00-00-000Z.json'), JSON.stringify(newer));
+    const file = latestJudgeFile(dir, { ref: 'a'.repeat(40) });
+    assert.match(file, /2026-11-27/);
+    assert.deepEqual(judgeOverallByArm(JSON.parse(readFileSync(file, 'utf8')), { ref: 'a'.repeat(40) }), {
+      full: { overall: 9, patches: 1 },
+      lite: { overall: 8, patches: 1 },
+    });
+    assert.deepEqual(judgeOverallByArm(newer, { ref: 'a'.repeat(40) }), {});
+    assert.equal(latestJudgeFile(dir, { ref: 'c'.repeat(40) }), null);
+    assert.match(latestJudgeFile(dir), /2026-11-28/);
+  } finally {
+    cleanupTempDir(dir);
+  }
+});
