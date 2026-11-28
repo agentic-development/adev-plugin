@@ -301,8 +301,8 @@ test("Step 2 opens with the plan-order rule, not dependency order", () => {
   assert.match(opening, /plan order/);
 });
 
-test("parallel group prompt forwards the operator's --tier to resolve-depth", () => {
-  assert.match(readRef("parallel-mode.md"), /--run-base <run_base> --parallel \[--tier <t>\][^;]*as the operator passed it/);
+test("parallel group prompt forwards the operator's --tier and --lite to resolve-depth", () => {
+  assert.match(readRef("parallel-mode.md"), /--run-base <run_base> --parallel \[--tier <t>\] \[--lite\][^;]*as the operator passed them/);
 });
 
 test("visibility relays (WR-7)", () => {
@@ -490,8 +490,8 @@ test("depth contract: quick reviewer context carries the implementation mode, ag
 });
 
 test("Step 2's Required reading anchor still resolves to the depth contract", () => {
-  const m = /> \*\*Required reading:\*\* `([^`]+)`/.exec(loop);
-  assert.ok(m, "step-2-per-task-loop.md lost its Required reading anchor");
+  const m = /> \*\*Required reading:\*\* `<ADEV_ROOT>\/([^`]+)`/.exec(loop);
+  assert.ok(m, "step-2-per-task-loop.md lost its <ADEV_ROOT>-anchored Required reading pointer");
   assert.ok(existsSync(join(PLUGIN_ROOT, m[1])), `${m[1]} does not exist`);
   assert.match(m[1], /graduated-review-depth\.md$/);
 });

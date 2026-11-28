@@ -12,20 +12,21 @@
 # .context-index/specs/cross-cutting/graduated-rigor-tiers.spec.md.
 #
 # implement_mode sets /adev:implement's per-task review depth: full | quick,
-# or lite — which authorizes inline, unreviewed execution only for
-# route-eligible tasks on non-high-risk specs with no floor leg and no
-# --parallel; any other task resolves quick or full. A lite task is re-checked
-# after it runs: an undeclared path outside tests/, docs/, test files,
-# READMEs and exact provider-mirror regenerations of a skill file the task
-# declared or touched (never `*.spec.md`, `.context-index/` or symlinks)
-# raises it to quick, and a sensitive or boundary path (gitignored files it
-# wrote and provider mirrors included) raises it to full. Absent → quick.
+# or lite — which authorizes inline, unreviewed execution for every task
+# routed auto-agent or assisted-agent on a non-high-risk spec with no floor
+# leg and no --parallel; any other task resolves quick or full. A lite task is
+# re-checked after it runs: an undeclared path outside tests/, docs/, test
+# files, READMEs and exact provider-mirror regenerations of a skill file the
+# task declared or touched (never `*.spec.md`, `.context-index/` or symlinks),
+# or a sensitive or boundary path (gitignored files it wrote and provider
+# mirrors included), raises it to quick. Absent → quick.
 # `quick` is a baseline, not a guarantee: it runs one synthesized reviewer
 # per task; the floor pass still raises a task to full (two-stage review) when
-# the spec is high-risk and the task is not routed auto-agent, when it touches a
-# boundary or sensitive path, when it is routed human-only, or on a Critical
-# finding. `lite` is never valid for high, and is set only by an operator's
-# choice (/adev:init's implement-rigor prompt, or by hand). See
+# the spec is high-risk and the task is not routed auto-agent, when it is
+# routed human-only, or on a Critical finding. A boundary or sensitive path
+# raises it to full too, except under lite on a non-high-risk spec, where it
+# gives quick (the lite cap). `lite` is never valid for high, and is set only
+# by an operator's choice (/adev:init's implement-rigor prompt, or by hand). See
 # .context-index/specs/features/implementation/implement-rigor-ladder.spec.md.
 
 policies:

@@ -304,7 +304,7 @@ Do not proceed. Do not skip. Do not fall back to code-only review for UI tasks.
 
 #### 2f-pre. Final Review Depth
 
-> **Required reading:** `skills/implement/graduated-review-depth.md`.
+> **Required reading:** `<ADEV_ROOT>/skills/implement/graduated-review-depth.md`.
 
 Immediately before 2f's dispatch — once the implementer has reported, against the real diff — run `adev implement resolve-depth --spec <spec> --plan <plan> --task-id <id> --run-base <run_base> [--tier <t>] [--lite] [--parallel] [--review-cycles <n>] [--had-critical-finding] --base-sha <captured-base> --pass final`, with `--lite` and `--tier` exactly as the operator passed them to this invocation. The lite cap is evaluated on each pass, so a final pass without them would drop it. Echo its `REVIEW_DEPTH_FLOOR_APPLIED` warning (naming its legs) to the operator-facing transcript, by code, not only to the persisted `review_depth_resolved` event (`graduated-review-depth.md` §5). A `ROUTING_SIDECAR_MISSING` warning here repeats the one Step 2a or the `batches` advisory already handled; do not echo it. Then branch on the resolved `depth`.
 

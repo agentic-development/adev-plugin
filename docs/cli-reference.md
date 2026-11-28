@@ -682,7 +682,7 @@ Prints `{ batches, solo, advisories }` as JSON to stdout. `--no-batch` forces ev
 
 With `--run-base` (the `run_base` printed by `check-flags`), each task is checked for the `lite` grant against governance committed at that commit:
 
-- A granted task never joins a batch. It is listed in `solo` with `reason: "lite"`, and it splits its group: each run of non-`lite` tasks around it is gated and sized on its own, and each batch carries a 1-based `segment`.
+- A granted task never joins a batch. It is listed in `solo` with `reason: "lite"`, except where every member of its group goes solo anyway: under `--no-batch` or `implement.batch_mode: off`, in an `independent` group (`reason: null` for both), and in a group with a prior failure (`reason: "prior-failure"`). The reason never decides depth; `task-begin` does. A granted task splits its group: each run of non-`lite` tasks around it is gated and sized on its own, and each batch carries a 1-based `segment`.
 - Authorization is `--lite` (or `--tier lite`), or, with no `--tier`, a policy `implement_mode: lite`. `--tier quick` or `--tier full` opts out. The skill passes `--lite` and `--tier` only as the operator passed them.
 - When the plan's spec cannot be resolved, authorization is assumed: eligible tasks go solo with `reason: "lite-assumed"`, and the advisories carry `LITE_AUTHORIZATION_ASSUMED`. `resolve-depth` still decides their depth.
 - When the routing sidecar is not committed at `run_base`, the advisories carry `ROUTING_SIDECAR_MISSING` naming the run base, and no task is granted `lite`.
@@ -696,7 +696,7 @@ Task ids are matched by key, not spelling: the sidecar's `t1` (as `/adev:route` 
 adev implement batches --plan <p> --max-batch 4 --run-base <run_base>
 ```
 
-Exit codes: `0` success; `1` argument error (including `lite` authorized without `--run-base`) / `CONFLICTING_BATCH_FLAGS` / `CONFLICTING_TIER_FLAGS` / `INVALID_MAX_BATCH_SIZE` / `INVALID_COMMIT_ID` / `INVALID_TIER` / `LITE_NOT_ALLOWED_FOR_HIGH` / `RUN_BASE_READ_FAILED` / `INVALID_PLAN_PATH`; `2` `ROUTING_SIDECAR_MISSING`.
+Exit codes: `0` success; `1` argument error (including `lite` authorized without `--run-base`) / `CONFLICTING_BATCH_FLAGS` / `CONFLICTING_TIER_FLAGS` / `INVALID_MAX_BATCH_SIZE` / `INVALID_COMMIT_ID` / `INVALID_TIER` / `LITE_NOT_ALLOWED_FOR_HIGH` / `RUN_BASE_READ_FAILED` / `INVALID_PLAN_PATH` / `INVALID_SIDECAR_JSON`; `2` `ROUTING_SIDECAR_MISSING`.
 
 **Implementation:** `lib/cli/implement.mjs` → `lib/implement/batching.mjs`. **Called by:** `/adev:implement` only — `/adev:route` does not call `batches`.
 
