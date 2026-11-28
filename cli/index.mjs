@@ -2114,6 +2114,12 @@ const VERB_REGISTRY = new Map([
                             await mod.run({ projectRoot, argv: process.argv.slice(5), manifest: null });
                             return;
                           }
+                          if (sub === "prompt" && process.argv[4] === "implement-rigor") {
+                            const mod = await import("../lib/cli/init-prompt-implement-rigor.mjs");
+                            const projectRoot = process.cwd();
+                            await mod.run({ projectRoot, argv: process.argv.slice(5), manifest: null });
+                            return;
+                          }
                           if (sub === "ensure-gitignore") {
                             const mod = await import("../lib/cli/init-ensure-gitignore.mjs");
                             const projectRoot = process.cwd();

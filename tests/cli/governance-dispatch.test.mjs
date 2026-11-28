@@ -162,6 +162,31 @@ test("--tier quick dispatches only the synthesized reviewer with the bundled pro
   assert.match(d.prompt, /## Prior-Round Review/);
 });
 
+test("--tier lite plans the quick reviewer set and prints the mapping line on stderr only", () => {
+  const root = project({ prior: true });
+  const r = dispatch(root, ["--spec", SPEC, "--tier", "lite", "--json"]);
+  assert.equal(r.status, 0, `stderr: ${r.stderr}`);
+  const p = JSON.parse(r.stdout);
+  assert.equal(p.tier, "quick");
+  assert.deepEqual(p.dispatches.map((d) => [d.reviewer_id, d.stage]), [["quick-synthesized-reviewer", "subagent"]]);
+  assert.deepEqual(r.stderr.split("\n").filter(Boolean), ["--tier lite runs as quick for review-specs"]);
+  assert.equal(r.stdout.includes("--tier lite runs as quick"), false);
+});
+
+test("--tier lite without --json reports tier quick in the header", () => {
+  const r = dispatch(project(), ["--spec", SPEC, "--tier", "lite"]);
+  assert.equal(r.status, 0, `stderr: ${r.stderr}`);
+  assert.match(r.stdout, /\(tier: quick, harness: claude-code\)/);
+  assert.match(r.stderr, /^--tier lite runs as quick for review-specs$/m);
+});
+
+test("an unknown --tier names all three legal values", () => {
+  const r = dispatch(project(), ["--spec", SPEC, "--tier", "Lite", "--json"]);
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /^INVALID_TIER: --tier must be one of: full, quick, lite \(got "Lite"\)$/m);
+  assert.equal(r.stdout, "");
+});
+
 test("argument and path errors exit 1", () => {
   const root = project();
   assert.equal(dispatch(root, ["--json"]).status, 1);

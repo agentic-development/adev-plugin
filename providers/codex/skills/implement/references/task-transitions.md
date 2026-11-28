@@ -8,7 +8,7 @@ reportPlanTask(projectRoot, specPath, {
   plan: planFilePath, task_id, status: 'in_progress', notes: null,
 });
 
-// At task done (after implementation, both reviews and the post-task gates pass):
+// At task done (after implementation, the review its resolved depth requires, and the post-task gates pass):
 reportPlanTask(projectRoot, specPath, {
   plan: planFilePath, task_id, status: 'done',
   notes: '<optional ≤200-char summary or null>',

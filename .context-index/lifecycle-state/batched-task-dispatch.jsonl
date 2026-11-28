@@ -50,3 +50,4 @@
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-08-18T22:30:56.888Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"docs/cli-reference.md","drift_at":"2026-08-20T16:28:59.323Z","ts":"2026-08-20T16:28:59.323Z","diagnostic_warnings":["adev/frontmatter-present"]}
 {"event":"code_drift_detected","drift_source":"docs/cli-reference.md","drift_at":"2026-08-19T11:45:28.582Z","ts":"2026-08-19T11:45:28.583Z","diagnostic_warnings":["adev/frontmatter-present"]}
+{"event":"spec_amended","amendment_slug":"batched-task-dispatch-rev-2-resolved-depth","amendment_path":".context-index/specs/features/implementation/batched-task-dispatch-rev-2-resolved-depth.spec.md","target_revision":2,"ts":"2026-11-26T21:32:45.311Z"}

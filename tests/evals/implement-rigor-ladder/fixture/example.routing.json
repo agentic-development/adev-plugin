@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "1",
+      "selected_agent": "auto-agent",
+      "scores": { "spec_completeness": 0.9, "pattern_coverage": 0.8, "blast_radius": 0.8, "novelty": 0.7 },
+      "rationale": "Fixture task 1: one module, fully specified, existing pattern."
+    },
+    {
+      "task_id": "2",
+      "selected_agent": "auto-agent",
+      "scores": { "spec_completeness": 0.9, "pattern_coverage": 0.8, "blast_radius": 0.8, "novelty": 0.7 },
+      "rationale": "Fixture task 2: one function, every error case enumerated in the spec."
+    },
+    {
+      "task_id": "3",
+      "selected_agent": "auto-agent",
+      "scores": { "spec_completeness": 0.9, "pattern_coverage": 0.9, "blast_radius": 0.9, "novelty": 0.8 },
+      "rationale": "Fixture task 3: new leaf module, no dependents yet."
+    },
+    {
+      "task_id": "4",
+      "selected_agent": "assisted-agent",
+      "scores": { "spec_completeness": 0.7, "pattern_coverage": 0.6, "blast_radius": 0.7, "novelty": 0.6 },
+      "rationale": "Fixture task 4: pricing logic, routed for a human checkpoint."
+    },
+    {
+      "task_id": "5",
+      "selected_agent": "auto-agent",
+      "scores": { "spec_completeness": 0.8, "pattern_coverage": 0.4, "blast_radius": 0.8, "novelty": 0.7 },
+      "rationale": "Fixture task 5: output-shape change with no nested-shape precedent in the seed."
+    },
+    {
+      "task_id": "6",
+      "selected_agent": "auto-agent",
+      "scores": { "spec_completeness": 0.9, "pattern_coverage": 0.8, "blast_radius": 0.7, "novelty": 0.7 },
+      "rationale": "Fixture task 6: well-specified, but writes under src/auth/."
+    },
+    {
+      "task_id": "7",
+      "selected_agent": "auto-agent",
+      "scores": { "spec_completeness": 0.8, "pattern_coverage": 0.7, "blast_radius": 0.6, "novelty": 0.7 },
+      "rationale": "Fixture task 7: new handler composed from existing modules."
+    }
+  ]
+}

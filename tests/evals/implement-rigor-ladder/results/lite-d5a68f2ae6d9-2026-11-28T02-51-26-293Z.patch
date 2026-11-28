@@ -1,0 +1,598 @@
+diff --git a/src/auth/token.mjs b/src/auth/token.mjs
+new file mode 100644
+index 0000000..0f339ee
+--- /dev/null
++++ b/src/auth/token.mjs
+@@ -0,0 +1,28 @@
++import { createHmac, timingSafeEqual } from 'node:crypto';
++
++const BASE64URL = /^[A-Za-z0-9_-]+$/;
++
++function sign(body, secret) {
++  return createHmac('sha256', secret).update(body).digest('base64url');
++}
++
++export function signToken(payload, secret) {
++  const body = Buffer.from(JSON.stringify(payload), 'utf8').toString('base64url');
++  return `${body}.${sign(body, secret)}`;
++}
++
++export function verifyToken(token, secret) {
++  try {
++    if (typeof token !== 'string') return null;
++    const parts = token.split('.');
++    if (parts.length !== 2) return null;
++    const [body, signature] = parts;
++    if (!BASE64URL.test(body) || !BASE64URL.test(signature)) return null;
++    const actual = Buffer.from(signature, 'utf8');
++    const expected = Buffer.from(sign(body, secret), 'utf8');
++    if (actual.length !== expected.length || !timingSafeEqual(actual, expected)) return null;
++    return JSON.parse(Buffer.from(body, 'base64url').toString('utf8'));
++  } catch {
++    return null;
++  }
++}
+diff --git a/src/config.mjs b/src/config.mjs
+index f026f76..7f25bb7 100644
+--- a/src/config.mjs
++++ b/src/config.mjs
+@@ -6,6 +6,12 @@ function invalid(reason) {
+   return err;
+ }
+ 
++function isPlainObject(value) {
++  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false;
++  const proto = Object.getPrototypeOf(value);
++  return proto === Object.prototype || proto === null;
++}
++
+ export function parseConfig(text) {
+   let doc;
+   try {
+@@ -13,7 +19,10 @@ export function parseConfig(text) {
+   } catch {
+     throw invalid('not valid JSON');
+   }
+-  if (typeof doc !== 'object') throw invalid('not an object');
++  if (!isPlainObject(doc)) throw invalid('not a plain object');
++  if (doc.pageSize !== undefined && !(Number.isInteger(doc.pageSize) && doc.pageSize > 0)) {
++    throw invalid('pageSize must be a positive integer');
++  }
+   return {
+     pageSize: doc.pageSize ?? DEFAULTS.pageSize,
+     currency: doc.currency ?? DEFAULTS.currency,
+diff --git a/src/discount.mjs b/src/discount.mjs
+index 9e6c851..08fc5fd 100644
+--- a/src/discount.mjs
++++ b/src/discount.mjs
+@@ -1,8 +1,15 @@
++function invalidCoupon(kind) {
++  const err = new Error(`COUPON_INVALID: unknown coupon kind ${JSON.stringify(kind)}`);
++  err.code = 'COUPON_INVALID';
++  return err;
++}
++
+ export function applyDiscount(priceCents, coupon, now) {
++  let off;
++  if (coupon.kind === 'fixed') off = coupon.amount;
++  else if (coupon.kind === 'percent') off = Math.floor((priceCents * coupon.amount) / 100);
++  else throw invalidCoupon(coupon.kind);
++
+   if (coupon.expiresAt <= now) return priceCents;
+-  if (coupon.kind === 'fixed') {
+-    const discounted = priceCents - coupon.amount;
+-    return discounted < 0 ? priceCents : discounted;
+-  }
+-  return priceCents;
++  return Math.max(0, priceCents - off);
+ }
+diff --git a/src/format.mjs b/src/format.mjs
+index 4dd3b03..987febb 100644
+--- a/src/format.mjs
++++ b/src/format.mjs
+@@ -1,3 +1,10 @@
+-export function formatItem(item) {
+-  return { id: item.id, label: item.label, priceCents: item.priceCents };
++import { slugify } from './slug.mjs';
++
++export function formatItem(item, currency) {
++  return {
++    id: item.id,
++    label: item.label,
++    slug: slugify(item.label),
++    price: { cents: item.priceCents, currency },
++  };
+ }
+diff --git a/src/handlers/list.mjs b/src/handlers/list.mjs
+new file mode 100644
+index 0000000..9fb7f6e
+--- /dev/null
++++ b/src/handlers/list.mjs
+@@ -0,0 +1,15 @@
++import { paginate } from '../pagination.mjs';
++import { formatItem } from '../format.mjs';
++
++export function listHandler({ page, pageSize }, { items, currency }) {
++  const result = paginate(items, { page, pageSize });
++  return {
++    status: 200,
++    body: {
++      items: result.items.map((item) => formatItem(item, currency)),
++      page: result.page,
++      pageCount: result.pageCount,
++      total: result.total,
++    },
++  };
++}
+diff --git a/src/pagination.mjs b/src/pagination.mjs
+index 60fe6c0..810af5e 100644
+--- a/src/pagination.mjs
++++ b/src/pagination.mjs
+@@ -1,3 +1,18 @@
+ export function pageCount(total, pageSize) {
+-  return Math.floor(total / pageSize) + 1;
++  if (total === 0) return 0;
++  return Math.ceil(total / pageSize);
++}
++
++export function paginate(items, { page, pageSize }) {
++  const total = items.length;
++  const pages = pageCount(total, pageSize);
++  const inRange = Number.isInteger(page) && page >= 1 && page <= pages;
++  const start = (page - 1) * pageSize;
++  return {
++    items: inRange ? items.slice(start, start + pageSize) : [],
++    page,
++    pageSize,
++    pageCount: pages,
++    total,
++  };
+ }
+diff --git a/src/registry.mjs b/src/registry.mjs
+index e4276d1..12d4be6 100644
+--- a/src/registry.mjs
++++ b/src/registry.mjs
+@@ -1,9 +1,12 @@
++import { listHandler } from './handlers/list.mjs';
++
+ function healthHandler() {
+   return { status: 200, body: { ok: true } };
+ }
+ 
+ export const handlers = {
+   health: healthHandler,
++  list: listHandler,
+ };
+ 
+ export function dispatch(name, ...args) {
+diff --git a/src/slug.mjs b/src/slug.mjs
+new file mode 100644
+index 0000000..cc1ae24
+--- /dev/null
++++ b/src/slug.mjs
+@@ -0,0 +1,6 @@
++export function slugify(label) {
++  return label
++    .toLowerCase()
++    .replace(/[^a-z0-9]+/g, '-')
++    .replace(/^-+|-+$/g, '');
++}
+diff --git a/tests/auth/token.test.mjs b/tests/auth/token.test.mjs
+new file mode 100644
+index 0000000..8b72342
+--- /dev/null
++++ b/tests/auth/token.test.mjs
+@@ -0,0 +1,144 @@
++import { test } from 'node:test';
++import assert from 'node:assert/strict';
++import { createHmac } from 'node:crypto';
++import { signToken, verifyToken } from '../../src/auth/token.mjs';
++
++const SECRET = 'test-secret';
++const PAYLOAD = { sub: 'user-1', role: 'admin', n: 42 };
++
++function expectedToken(payload, secret) {
++  const body = Buffer.from(JSON.stringify(payload), 'utf8').toString('base64url');
++  const sig = createHmac('sha256', secret).update(body).digest('base64url');
++  return `${body}.${sig}`;
++}
++
++test('signToken returns base64url(JSON payload).base64url(HMAC-SHA256 of first part)', () => {
++  assert.equal(signToken(PAYLOAD, SECRET), expectedToken(PAYLOAD, SECRET));
++});
++
++test('signToken matches an independently derived literal', () => {
++  assert.equal(
++    signToken({ a: 1 }, 'k'),
++    'eyJhIjoxfQ.cd0Z_LfRVHSakSL51JoV0R2QpxIV236jKfi-S1Elq0g',
++  );
++});
++
++test('verifyToken returns the payload for a valid token', () => {
++  assert.deepEqual(verifyToken(signToken(PAYLOAD, SECRET), SECRET), { sub: 'user-1', role: 'admin', n: 42 });
++});
++
++test('verifyToken returns the payload for an independently built token', () => {
++  assert.deepEqual(verifyToken('eyJhIjoxfQ.cd0Z_LfRVHSakSL51JoV0R2QpxIV236jKfi-S1Elq0g', 'k'), { a: 1 });
++});
++
++test('unicode payload round-trips exactly', () => {
++  const payload = { name: 'Zoë 東京 🚀', tags: ['café', 'naïve'] };
++  const token = signToken(payload, SECRET);
++  assert.equal(token, expectedToken(payload, SECRET));
++  assert.deepEqual(verifyToken(token, SECRET), { name: 'Zoë 東京 🚀', tags: ['café', 'naïve'] });
++});
++
++for (const [label, input] of [
++  ['undefined', undefined],
++  ['null', null],
++  ['a number', 42],
++  ['an object', { token: 'x' }],
++  ['an array', ['a', 'b']],
++  ['a boolean', true],
++]) {
++  test(`verifyToken returns null for ${label} instead of throwing`, () => {
++    assert.equal(verifyToken(input, SECRET), null);
++  });
++}
++
++test('verifyToken returns null for an empty string', () => {
++  assert.equal(verifyToken('', SECRET), null);
++});
++
++test('verifyToken returns null for a token with no separator', () => {
++  const [body] = signToken(PAYLOAD, SECRET).split('.');
++  assert.equal(verifyToken(body, SECRET), null);
++});
++
++test('verifyToken returns null for a token with an extra segment', () => {
++  assert.equal(verifyToken(`${signToken(PAYLOAD, SECRET)}.extra`, SECRET), null);
++});
++
++test('verifyToken returns null for a token with a trailing empty segment', () => {
++  assert.equal(verifyToken(`${signToken(PAYLOAD, SECRET)}.`, SECRET), null);
++});
++
++test('verifyToken returns null for an empty payload segment', () => {
++  const [, sig] = signToken(PAYLOAD, SECRET).split('.');
++  assert.equal(verifyToken(`.${sig}`, SECRET), null);
++});
++
++test('verifyToken returns null for an empty payload segment even with its matching signature', () => {
++  const sig = createHmac('sha256', SECRET).update('').digest('base64url');
++  assert.equal(verifyToken(`.${sig}`, SECRET), null);
++});
++
++test('verifyToken returns null for an empty signature segment', () => {
++  const [body] = signToken(PAYLOAD, SECRET).split('.');
++  assert.equal(verifyToken(`${body}.`, SECRET), null);
++});
++
++test('verifyToken returns null for a lone separator', () => {
++  assert.equal(verifyToken('.', SECRET), null);
++});
++
++test('verifyToken returns null for invalid JSON under a valid signature', () => {
++  const body = Buffer.from('{not json', 'utf8').toString('base64url');
++  const sig = createHmac('sha256', SECRET).update(body).digest('base64url');
++  assert.equal(verifyToken(`${body}.${sig}`, SECRET), null);
++});
++
++// Each body leniently decodes to '{}' in Buffer.from(..., 'base64url'), so only strict validation rejects it.
++for (const body of ['e30=', 'e3 0', 'e30*']) {
++  test(`verifyToken returns null for non-base64url payload segment ${JSON.stringify(body)} under a valid signature`, () => {
++    const sig = createHmac('sha256', SECRET).update(body).digest('base64url');
++    assert.equal(verifyToken(`${body}.${sig}`, SECRET), null);
++  });
++}
++
++test('verifyToken returns null for invalid base64url characters in the signature', () => {
++  const [body, sig] = signToken(PAYLOAD, SECRET).split('.');
++  assert.equal(verifyToken(`${body}.${sig.slice(0, -1)}+`, SECRET), null);
++});
++
++test('verifyToken returns null for the wrong secret', () => {
++  assert.equal(verifyToken(signToken(PAYLOAD, SECRET), 'other-secret'), null);
++});
++
++test('verifyToken returns null for a tampered payload segment', () => {
++  const [, sig] = signToken(PAYLOAD, SECRET).split('.');
++  const forged = Buffer.from(JSON.stringify({ ...PAYLOAD, role: 'root' }), 'utf8').toString('base64url');
++  assert.equal(verifyToken(`${forged}.${sig}`, SECRET), null);
++});
++
++test('verifyToken returns null for a tampered signature of the same length', () => {
++  const [body, sig] = signToken(PAYLOAD, SECRET).split('.');
++  const flipped = (sig[0] === 'A' ? 'B' : 'A') + sig.slice(1);
++  assert.equal(flipped.length, sig.length);
++  assert.equal(verifyToken(`${body}.${flipped}`, SECRET), null);
++});
++
++test('verifyToken returns null for a signature of a shorter length', () => {
++  const [body, sig] = signToken(PAYLOAD, SECRET).split('.');
++  assert.equal(verifyToken(`${body}.${sig.slice(0, -1)}`, SECRET), null);
++});
++
++test('verifyToken returns null for a signature of a longer length', () => {
++  const [body, sig] = signToken(PAYLOAD, SECRET).split('.');
++  assert.equal(verifyToken(`${body}.${sig}A`, SECRET), null);
++});
++
++test('verifyToken returns null for a signature taken from a different token', () => {
++  const [body] = signToken(PAYLOAD, SECRET).split('.');
++  const [, otherSig] = signToken({ sub: 'user-2' }, SECRET).split('.');
++  assert.equal(verifyToken(`${body}.${otherSig}`, SECRET), null);
++});
++
++test('verifyToken returns null instead of throwing when the secret is missing', () => {
++  assert.equal(verifyToken(signToken(PAYLOAD, SECRET), undefined), null);
++});
+diff --git a/tests/config.test.mjs b/tests/config.test.mjs
+index 42e8cec..9d8081a 100644
+--- a/tests/config.test.mjs
++++ b/tests/config.test.mjs
+@@ -6,6 +6,22 @@ test('parseConfig applies defaults', () => {
+   assert.deepEqual(parseConfig('{}'), { pageSize: 20, currency: 'USD' });
+ });
+ 
++test('parseConfig keeps provided values', () => {
++  assert.deepEqual(parseConfig('{"pageSize":5,"currency":"EUR"}'), { pageSize: 5, currency: 'EUR' });
++});
++
+ test('parseConfig rejects invalid JSON with CONFIG_INVALID', () => {
+   assert.throws(() => parseConfig('{'), { code: 'CONFIG_INVALID' });
+ });
++
++for (const text of ['null', '[]', '[1,2]', '42', '"str"', 'true']) {
++  test(`parseConfig rejects non-object JSON ${text} with CONFIG_INVALID`, () => {
++    assert.throws(() => parseConfig(text), { code: 'CONFIG_INVALID' });
++  });
++}
++
++for (const pageSize of ['0', '-1', '1.5', '"10"', 'null', 'true', '[]']) {
++  test(`parseConfig rejects pageSize ${pageSize} with CONFIG_INVALID`, () => {
++    assert.throws(() => parseConfig(`{"pageSize":${pageSize}}`), { code: 'CONFIG_INVALID' });
++  });
++}
+diff --git a/tests/discount.test.mjs b/tests/discount.test.mjs
+index 1bfc471..adaeaf9 100644
+--- a/tests/discount.test.mjs
++++ b/tests/discount.test.mjs
+@@ -11,3 +11,36 @@ test('a fixed coupon subtracts its amount', () => {
+ test('an expired coupon leaves the price unchanged', () => {
+   assert.equal(applyDiscount(2000, { kind: 'fixed', amount: 500, expiresAt: 500 }, NOW), 2000);
+ });
++
++test('a coupon expiring exactly now leaves the price unchanged', () => {
++  assert.equal(applyDiscount(2000, { kind: 'fixed', amount: 500, expiresAt: NOW }, NOW), 2000);
++  assert.equal(applyDiscount(2000, { kind: 'percent', amount: 50, expiresAt: NOW }, NOW), 2000);
++});
++
++test('a fixed coupon larger than the price floors the result at 0', () => {
++  assert.equal(applyDiscount(300, { kind: 'fixed', amount: 500, expiresAt: 2_000 }, NOW), 0);
++});
++
++test('a percent coupon subtracts the floored percentage', () => {
++  // 999 * 15 / 100 = 149.85 -> 149 off
++  assert.equal(applyDiscount(999, { kind: 'percent', amount: 15, expiresAt: 2_000 }, NOW), 850);
++});
++
++test('a percent coupon of 25 on 2000 gives 1500', () => {
++  assert.equal(applyDiscount(2000, { kind: 'percent', amount: 25, expiresAt: 2_000 }, NOW), 1500);
++});
++
++test('a percent coupon over 100 floors the result at 0', () => {
++  assert.equal(applyDiscount(2000, { kind: 'percent', amount: 150, expiresAt: 2_000 }, NOW), 0);
++});
++
++test('an expired percent coupon leaves the price unchanged', () => {
++  assert.equal(applyDiscount(2000, { kind: 'percent', amount: 25, expiresAt: 500 }, NOW), 2000);
++});
++
++test('an unknown coupon kind throws COUPON_INVALID', () => {
++  assert.throws(
++    () => applyDiscount(2000, { kind: 'bogus', amount: 5, expiresAt: 2_000 }, NOW),
++    { code: 'COUPON_INVALID' },
++  );
++});
+diff --git a/tests/format.test.mjs b/tests/format.test.mjs
+index 0a566e1..58ca827 100644
+--- a/tests/format.test.mjs
++++ b/tests/format.test.mjs
+@@ -3,7 +3,26 @@ import assert from 'node:assert/strict';
+ import { formatItem } from '../src/format.mjs';
+ 
+ test('formatItem carries the id and label', () => {
+-  const out = formatItem({ id: 'a1', label: 'Blue Mug', priceCents: 1299 });
++  const out = formatItem({ id: 'a1', label: 'Blue Mug', priceCents: 1299 }, 'USD');
+   assert.equal(out.id, 'a1');
+   assert.equal(out.label, 'Blue Mug');
+ });
++
++test('formatItem returns exactly id, label, slug and price', () => {
++  assert.deepEqual(formatItem({ id: 'a1', label: 'Blue Mug', priceCents: 1299 }, 'EUR'), {
++    id: 'a1',
++    label: 'Blue Mug',
++    slug: 'blue-mug',
++    price: { cents: 1299, currency: 'EUR' },
++  });
++});
++
++test('formatItem drops keys outside the output shape', () => {
++  const out = formatItem({ id: 'b2', label: 'Tea Set!', priceCents: 0, stock: 4 }, 'USD');
++  assert.deepEqual(out, {
++    id: 'b2',
++    label: 'Tea Set!',
++    slug: 'tea-set',
++    price: { cents: 0, currency: 'USD' },
++  });
++});
+diff --git a/tests/handlers/list.test.mjs b/tests/handlers/list.test.mjs
+new file mode 100644
+index 0000000..73196b2
+--- /dev/null
++++ b/tests/handlers/list.test.mjs
+@@ -0,0 +1,62 @@
++import { test } from 'node:test';
++import assert from 'node:assert/strict';
++import { listHandler } from '../../src/handlers/list.mjs';
++import { dispatch, handlers } from '../../src/registry.mjs';
++
++const CATALOG = {
++  currency: 'EUR',
++  items: [
++    { id: 'a1', label: 'Blue Mug', priceCents: 1299 },
++    { id: 'b2', label: 'Tea Set!', priceCents: 4500 },
++    { id: 'c3', label: 'Coffee Beans 1kg', priceCents: 1800 },
++  ],
++};
++
++test('listHandler returns the formatted items of the requested page', () => {
++  assert.deepEqual(listHandler({ page: 1, pageSize: 2 }, CATALOG), {
++    status: 200,
++    body: {
++      items: [
++        { id: 'a1', label: 'Blue Mug', slug: 'blue-mug', price: { cents: 1299, currency: 'EUR' } },
++        { id: 'b2', label: 'Tea Set!', slug: 'tea-set', price: { cents: 4500, currency: 'EUR' } },
++      ],
++      page: 1,
++      pageCount: 2,
++      total: 3,
++    },
++  });
++});
++
++test('listHandler returns a partial last page', () => {
++  assert.deepEqual(listHandler({ page: 2, pageSize: 2 }, CATALOG), {
++    status: 200,
++    body: {
++      items: [
++        { id: 'c3', label: 'Coffee Beans 1kg', slug: 'coffee-beans-1kg', price: { cents: 1800, currency: 'EUR' } },
++      ],
++      page: 2,
++      pageCount: 2,
++      total: 3,
++    },
++  });
++});
++
++test('listHandler past the last page returns no items with status 200', () => {
++  assert.deepEqual(listHandler({ page: 5, pageSize: 2 }, CATALOG), {
++    status: 200,
++    body: { items: [], page: 5, pageCount: 2, total: 3 },
++  });
++});
++
++test('listHandler is registered under list', () => {
++  assert.equal(handlers.list, listHandler);
++});
++
++test('dispatch("list", ...) reaches listHandler', () => {
++  assert.deepEqual(dispatch('list', { page: 2, pageSize: 2 }, CATALOG), listHandler({ page: 2, pageSize: 2 }, CATALOG));
++  assert.deepEqual(dispatch('list', { page: 2, pageSize: 2 }, CATALOG).body.items.map((i) => i.id), ['c3']);
++});
++
++test('dispatch of an unregistered name is still a 404', () => {
++  assert.deepEqual(dispatch('lists', { page: 1, pageSize: 2 }, CATALOG), { status: 404 });
++});
+diff --git a/tests/pagination.test.mjs b/tests/pagination.test.mjs
+index ef3c9f5..2caa892 100644
+--- a/tests/pagination.test.mjs
++++ b/tests/pagination.test.mjs
+@@ -1,7 +1,62 @@
+ import { test } from 'node:test';
+ import assert from 'node:assert/strict';
+-import { pageCount } from '../src/pagination.mjs';
++import { pageCount, paginate } from '../src/pagination.mjs';
+ 
+ test('pageCount rounds a partial page up', () => {
+   assert.equal(pageCount(7, 5), 2);
+ });
++
++test('pageCount of an exact multiple does not add a page', () => {
++  assert.equal(pageCount(10, 5), 2);
++});
++
++test('pageCount of zero items is zero', () => {
++  assert.equal(pageCount(0, 5), 0);
++});
++
++const ITEMS = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
++
++test('paginate returns the first page', () => {
++  assert.deepEqual(paginate(ITEMS, { page: 1, pageSize: 3 }), {
++    items: ['a', 'b', 'c'],
++    page: 1,
++    pageSize: 3,
++    pageCount: 3,
++    total: 7,
++  });
++});
++
++test('paginate returns a partial last page', () => {
++  assert.deepEqual(paginate(ITEMS, { page: 3, pageSize: 3 }), {
++    items: ['g'],
++    page: 3,
++    pageSize: 3,
++    pageCount: 3,
++    total: 7,
++  });
++});
++
++test('paginate past the last page returns no items', () => {
++  assert.deepEqual(paginate(ITEMS, { page: 4, pageSize: 3 }), {
++    items: [],
++    page: 4,
++    pageSize: 3,
++    pageCount: 3,
++    total: 7,
++  });
++});
++
++test('paginate below page 1 returns no items', () => {
++  assert.deepEqual(paginate(ITEMS, { page: 0, pageSize: 3 }).items, []);
++  assert.deepEqual(paginate(ITEMS, { page: -1, pageSize: 3 }).items, []);
++});
++
++test('paginate of an empty list has zero pages and no items', () => {
++  assert.deepEqual(paginate([], { page: 1, pageSize: 3 }), {
++    items: [],
++    page: 1,
++    pageSize: 3,
++    pageCount: 0,
++    total: 0,
++  });
++});
+diff --git a/tests/slug.test.mjs b/tests/slug.test.mjs
+new file mode 100644
+index 0000000..c07679d
+--- /dev/null
++++ b/tests/slug.test.mjs
+@@ -0,0 +1,27 @@
++import { test } from 'node:test';
++import assert from 'node:assert/strict';
++import { slugify } from '../src/slug.mjs';
++
++test('slugify lowercases and joins words with a dash', () => {
++  assert.equal(slugify('Blue Mug'), 'blue-mug');
++});
++
++test('slugify collapses a run of non-alphanumerics into one dash', () => {
++  assert.equal(slugify('Tea  &  Coffee -- Set'), 'tea-coffee-set');
++});
++
++test('slugify trims leading and trailing dashes', () => {
++  assert.equal(slugify('  --Hello, World!--  '), 'hello-world');
++});
++
++test('slugify keeps digits', () => {
++  assert.equal(slugify('Mug 2000 XL'), 'mug-2000-xl');
++});
++
++test('slugify replaces non-ASCII letters', () => {
++  assert.equal(slugify('Café Crème'), 'caf-cr-me');
++});
++
++test('slugify of only separators is empty', () => {
++  assert.equal(slugify('!!!'), '');
++});

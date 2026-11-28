@@ -53,3 +53,29 @@ test("step4-tier-propagation.md documents the conditional-append behavior naming
   assert.match(md, /dispatch without it/);
   assert.match(md, /\/adev:implement/);
 });
+
+test("step4-tier-propagation.md forwards an operator-typed --lite or --tier lite to /adev:implement as --lite", () => {
+  const md = readFileSync(STEP4_COMPANION_PATH, "utf8");
+  assert.match(md, /If `--lite` or `--tier lite` was passed to `\/adev:build`, append `--lite`/);
+  assert.match(md, /Steps 1 and 5 forward `--tier lite` unchanged/);
+  assert.match(md, /Never add either flag on your own/);
+});
+
+test("step4-tier-propagation.md keeps an explicit --tier full|quick typed beside --lite so check-flags can refuse the pair", () => {
+  const md = readFileSync(STEP4_COMPANION_PATH, "utf8");
+  assert.match(
+    md,
+    /If the operator also passed an explicit `--tier full` or `--tier quick`, append that `--tier <t>` too and never drop it/,
+  );
+  assert.match(md, /`check-flags` raises `CONFLICTING_TIER_FLAGS`/);
+});
+
+test("step4-tier-propagation.md never forwards --tier lite itself to /adev:implement", () => {
+  const md = readFileSync(STEP4_COMPANION_PATH, "utf8");
+  assert.doesNotMatch(md, /append `--tier lite`/);
+  assert.match(md, /`--tier lite` itself is never forwarded to `\/adev:implement`\./);
+  assert.match(
+    md,
+    /Otherwise \(neither `--lite` nor `--tier lite` was passed\), if `--tier <t>` was passed to `\/adev:build`, append `--tier <t>`/,
+  );
+});

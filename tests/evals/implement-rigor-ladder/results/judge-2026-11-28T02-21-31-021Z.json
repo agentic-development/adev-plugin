@@ -1,0 +1,1878 @@
+{
+  "judged_at": "2026-11-28T02:21:31.021Z",
+  "model": "session default",
+  "seed": 1001745879,
+  "trials_per_patch": 2,
+  "rubric": "judge-rubric.md",
+  "rubric_sha256": "bedc42c1d92e547c29758056b712835129e850536f28f45dd265a2a0f775aa63",
+  "spec_sha256": "ce30e8d18d296db46e87fce97b1f4e9f9c35e66fb8a2c144bc2e1a9a60b34a1e",
+  "order": [
+    {
+      "key": "full-c90fa324e18f-2026-11-27T20-39-21-190Z.json",
+      "trial": 2
+    },
+    {
+      "key": "lite-c90fa324e18f-2026-11-28T02-06-43-357Z.json",
+      "trial": 1
+    },
+    {
+      "key": "quick-c90fa324e18f-2026-11-27T22-31-14-989Z.json",
+      "trial": 2
+    },
+    {
+      "key": "lite-c90fa324e18f-2026-11-27T21-41-17-324Z.json",
+      "trial": 2
+    },
+    {
+      "key": "quick-c90fa324e18f-2026-11-27T23-46-21-068Z.json",
+      "trial": 2
+    },
+    {
+      "key": "quick-c90fa324e18f-2026-11-27T21-22-15-233Z.json",
+      "trial": 1
+    },
+    {
+      "key": "plain-c90fa324e18f-2026-11-27T20-13-40-275Z.json",
+      "trial": 2
+    },
+    {
+      "key": "plain-c90fa324e18f-2026-11-27T21-43-49-386Z.json",
+      "trial": 1
+    },
+    {
+      "key": "quick-c90fa324e18f-2026-11-27T23-46-21-068Z.json",
+      "trial": 1
+    },
+    {
+      "key": "quick-c90fa324e18f-2026-11-27T22-31-14-989Z.json",
+      "trial": 1
+    },
+    {
+      "key": "full-c90fa324e18f-2026-11-27T20-39-21-190Z.json",
+      "trial": 1
+    },
+    {
+      "key": "full-c90fa324e18f-2026-11-27T22-10-28-575Z.json",
+      "trial": 2
+    },
+    {
+      "key": "plain-c90fa324e18f-2026-11-27T20-13-40-275Z.json",
+      "trial": 1
+    },
+    {
+      "key": "lite-c90fa324e18f-2026-11-28T02-06-43-357Z.json",
+      "trial": 2
+    },
+    {
+      "key": "plain-c90fa324e18f-2026-11-27T22-50-46-725Z.json",
+      "trial": 2
+    },
+    {
+      "key": "full-c90fa324e18f-2026-11-27T23-22-58-428Z.json",
+      "trial": 2
+    },
+    {
+      "key": "plain-c90fa324e18f-2026-11-27T22-50-46-725Z.json",
+      "trial": 1
+    },
+    {
+      "key": "full-c90fa324e18f-2026-11-27T22-10-28-575Z.json",
+      "trial": 1
+    },
+    {
+      "key": "lite-c90fa324e18f-2026-11-27T22-48-32-938Z.json",
+      "trial": 1
+    },
+    {
+      "key": "full-c90fa324e18f-2026-11-27T23-22-58-428Z.json",
+      "trial": 1
+    },
+    {
+      "key": "lite-c90fa324e18f-2026-11-27T22-48-32-938Z.json",
+      "trial": 2
+    },
+    {
+      "key": "lite-c90fa324e18f-2026-11-27T21-41-17-324Z.json",
+      "trial": 1
+    },
+    {
+      "key": "quick-c90fa324e18f-2026-11-27T21-22-15-233Z.json",
+      "trial": 2
+    },
+    {
+      "key": "plain-c90fa324e18f-2026-11-27T21-43-49-386Z.json",
+      "trial": 2
+    }
+  ],
+  "results": {
+    "full-c90fa324e18f-2026-11-27T20-39-21-190Z.json": {
+      "arm": "full",
+      "ref": "c90fa324e18fb61def9445b24f3e91ca89598e12",
+      "patch": "full-c90fa324e18f-2026-11-27T20-39-21-190Z.patch",
+      "patch_bytes": 28103,
+      "anonymized_bytes": 28103,
+      "dropped_files": [],
+      "trials": [
+        {
+          "trial": 1,
+          "position": 10,
+          "exit_code": 0,
+          "cost_usd": 0.0831026,
+          "ok": true,
+          "scores": {
+            "spec_compliance": {
+              "score": 10,
+              "evidence": [
+                "BEH-1: src/pagination.mjs fixes the seed's `Math.floor(total / pageSize) + 1` to `if (total === 0) return 0; return Math.ceil(total / pageSize);`. The new `paginate` returns `{ items, page, pageSize, pageCount: count, total }` and returns `items: []` unless `page >= 1 && page <= count`.",
+                "BEH-2: src/config.mjs replaces the seed's `typeof doc !== 'object'` check, which let null and arrays through, with `typeof doc !== 'object' || doc === null || Array.isArray(doc)`. It also adds `'pageSize' in doc && !(Number.isInteger(doc.pageSize) && doc.pageSize > 0)`, which throws CONFIG_INVALID.",
+                "BEH-3: src/slug.mjs does `.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')`, which matches the rule word for word.",
+                "BEH-4: src/discount.mjs adds the missing percent branch `Math.floor((priceCents * coupon.amount) / 100)`. It replaces the seed's wrong clamp (`discounted < 0 ? priceCents : discounted`) with `Math.max(0, priceCents - discount)`, keeps `expiresAt <= now`, and throws `err.code = 'COUPON_INVALID'` for any other kind.",
+                "BEH-5: src/format.mjs now returns exactly `{ id, label, slug: slugify(item.label), price: { cents: item.priceCents, currency } }`. The seed's stray `priceCents` key is gone.",
+                "BEH-6: src/auth/token.mjs signs `${body}.${sign(body, secret)}` using base64url HMAC-SHA256. It compares signatures with `timingSafeEqual` after a length check, and every failure path returns null, including a try/catch around HMAC and JSON.parse.",
+                "BEH-7: src/handlers/list.mjs returns `{ status: 200, body: { items: formatted, page, pageCount, total } }`. src/registry.mjs registers `list: listHandler`, and the 404 for unknown names is kept and tested in `dispatch(\"health\") still works and unregistered names are still a 404`."
+              ]
+            },
+            "correctness_robustness": {
+              "score": 9,
+              "evidence": [
+                "token.mjs `signatureMatches` checks `actual.length === expected.length` before `timingSafeEqual`, so a length mismatch can't throw. It compares the base64url strings rather than decoded bytes, so non-canonical encodings are rejected (test 'non-canonical signature that decodes to the same bytes').",
+                "token.mjs wraps `signatureMatches` and `JSON.parse` in try/catch, so a bad secret (`verifyToken(token, undefined)`) or a validly signed non-JSON body returns null instead of throwing. Non-string tokens are rejected by `typeof token !== 'string'`.",
+                "pagination.mjs `Number.isInteger(page)` keeps a fractional page like 1.5 from producing a bad slice. If pageSize is 0 or missing, `pageCount` gives Infinity or NaN; it doesn't throw, but the metadata is meaningless. The spec doesn't cover this, so it's a minor gap.",
+                "discount.mjs and token.mjs don't guard a few inputs the spec doesn't mention: `signToken(undefined, s)` throws because `Buffer.from(undefined)` throws, a `null` coupon throws a TypeError, and a negative `fixed` amount would raise the price."
+              ]
+            },
+            "test_quality": {
+              "score": 9,
+              "evidence": [
+                "tests/auth/token.test.mjs pins the exact token format against an independent `createHmac` digest and checks the URL-safe alphabet with no padding (`eyJkIjoiPz8_Pz8-In0`). It covers tampered payloads, swapped signatures, a one-character flip, truncated and extended signatures, 0, 1 and 3+ dots, empty parts, non-string tokens, a valid signature over non-JSON, and a bad secret.",
+                "tests/discount.test.mjs pins boundaries: floor rounding (`999 at 10%` → 900), equal and greater-than amounts clamping to 0, `expiresAt: NOW` vs `NOW + 1`, a missing or unknown kind, and an unknown kind on an expired coupon.",
+                "tests/pagination.test.mjs covers an exact multiple, total 0, first, middle and partial-last pages, and pages 0, -1, 4 and 1.5, all with full `deepEqual`. tests/config.test.mjs checks null, arrays, primitives and pageSize values of 0, -5, 2.5, \"10\", null and true. Each would fail against the seed.",
+                "tests/format.test.mjs asserts `Object.keys(out)` equals `['id','label','slug','price']`, which enforces the 'no other keys' rule.",
+                "There is some redundancy: tests/handlers/list.test.mjs repeats near-identical listHandler and dispatch cases. A few tests are speculative, such as `pageCount(0, -5)`."
+              ]
+            },
+            "code_clarity": {
+              "score": 9,
+              "evidence": [
+                "token.mjs splits the work into small, well-named helpers (`sign`, `signatureMatches`). Its only comment states a real constraint: `// timingSafeEqual throws on length mismatch, so check length first.`",
+                "discount.mjs's `invalid(reason)` helper mirrors the pattern config.mjs already uses. Computing `discount` before the expiry check is deliberate, so an invalid kind always throws, but a reader could find the ordering odd at first.",
+                "list.mjs, format.mjs and slug.mjs are minimal idiomatic ESM, with no dead code or extra layers."
+              ]
+            },
+            "scope_discipline": {
+              "score": 9,
+              "evidence": [
+                "Every changed source file maps to a BEH: pagination (1), config (2), slug (3), discount (4), format (5), auth/token (6), handlers/list and registry (7). The patch adds no dependencies and touches no unrelated files.",
+                "One small addition goes beyond the spec: `Number.isInteger(page)` in paginate, which treats fractional pages as out of range. It's defensive rather than a new feature.",
+                "Some tests go past the spec, such as `pageCount(0, 0)` and `pageCount(0, -5)`, but they don't change behavior."
+              ]
+            }
+          },
+          "overall": {
+            "score": 9,
+            "rationale": "The patch fixes every seed defect (pageCount off-by-one, the null/array config hole, the wrong fixed-coupon clamp, the missing percent branch, formatItem's shape) and adds the slug, token and list-handler modules that were missing. It implements BEH-1..BEH-7 as written, and the HMAC verification is safe and never throws. The tests are thorough and precise at the boundaries. The only weaknesses are minor: input outside the spec, such as pageSize 0 or an undefined payload to signToken, produces meaningless results or throws, and some test cases are redundant."
+          }
+        },
+        {
+          "trial": 2,
+          "position": 0,
+          "exit_code": 0,
+          "cost_usd": 0.321152,
+          "ok": true,
+          "scores": {
+            "spec_compliance": {
+              "score": 10,
+              "evidence": [
+                "BEH-1: src/pagination.mjs fixes the seed's wrong `Math.floor(total / pageSize) + 1` to `if (total === 0) return 0; return Math.ceil(total / pageSize);`. The new `paginate` returns `{ items, page, pageSize, pageCount, total }` and returns `items: []` whenever `page` is not in `1..count`. It only slices, so it never throws.",
+                "BEH-2: src/config.mjs fixes the seed's `typeof doc !== 'object'` check, which let `null` and arrays through, to `typeof doc !== 'object' || doc === null || Array.isArray(doc)`. It adds a `CONFIG_INVALID` error when `'pageSize' in doc && !(Number.isInteger(doc.pageSize) && doc.pageSize > 0)`. The defaults `?? DEFAULTS.*` are kept.",
+                "BEH-3: src/slug.mjs `slugify` does `.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')`, which matches the rule exactly.",
+                "BEH-4: src/discount.mjs adds `percent` as `Math.floor((priceCents * coupon.amount) / 100)` and keeps the expiry check `coupon.expiresAt <= now`. It replaces the seed's `discounted < 0 ? priceCents : discounted`, which returned the full price instead of 0, with `Math.max(0, priceCents - discount)`. Any other kind throws `err.code = 'COUPON_INVALID'`.",
+                "BEH-5: src/format.mjs `formatItem(item, currency)` returns exactly `{ id, label, slug: slugify(item.label), price: { cents: item.priceCents, currency } }`. This replaces the seed's `{ id, label, priceCents }`.",
+                "BEH-6: src/auth/token.mjs `signToken` produces `base64url(JSON).base64url(HMAC-SHA256(body))`. `verifyToken` compares with `timingSafeEqual` and returns `null` for non-strings, the wrong number of parts, empty parts, a bad signature and invalid JSON. Everything after that sits inside try/catch, so it never throws.",
+                "BEH-7: src/handlers/list.mjs `listHandler` returns `{ status: 200, body: { items: formatted, page, pageCount, total } }`. src/registry.mjs registers it as `list: listHandler`. The existing 404 path of `dispatch` is covered by the test 'dispatch(\"health\") still works and unregistered names are still a 404'."
+              ]
+            },
+            "correctness_robustness": {
+              "score": 8,
+              "evidence": [
+                "Constant-time comparison is safe: `signatureMatches` checks `actual.length === expected.length && timingSafeEqual(actual, expected)`, so a length mismatch never throws. It compares the raw signature string bytes rather than decoded bytes, so non-canonical base64url variants are rejected, as the test 'non-canonical signature that decodes to the same bytes' shows.",
+                "verifyToken wraps HMAC creation in try/catch, so an invalid secret (`undefined`, `null`, `123`) returns `null` instead of throwing, as the test 'returns null instead of throwing when the secret is not a valid key' shows.",
+                "paginate guards `Number.isInteger(page)`, so a fractional page such as 1.5 does not produce an odd slice offset.",
+                "Minor edge: `pageCount(7, 0)` gives `Infinity`, so `paginate` reports `pageCount: Infinity` with `items: []`. It does not throw, but the metadata is odd. `pageSize` is not validated in paginate.",
+                "Minor edge: `signToken(undefined, s)` throws because `Buffer.from(JSON.stringify(undefined))` is `Buffer.from(undefined)`. A token signed over `null` verifies to `null`, which looks the same as a failed verification. The spec says nothing about either case."
+              ]
+            },
+            "test_quality": {
+              "score": 9,
+              "evidence": [
+                "tests/pagination.test.mjs pins the exact-multiple case `pageCount(10, 5) === 2`, `pageCount(0, 5) === 0`, and full `deepEqual` results for first, middle, partial-last, page 0, negative, above-range, empty-list and non-integer pages. A plausible off-by-one or floor+1 implementation would fail these.",
+                "tests/config.test.mjs `assertConfigInvalid` checks both `err instanceof Error` and `err.code === 'CONFIG_INVALID'` for `null`, `[]`, primitives, and `pageSize` values of 0, -5, 2.5, \"10\", null and true. Explicit and default values are also checked.",
+                "tests/discount.test.mjs covers the floor case ('999 at 10%: discount 99, not 100' expects 900), clamping for both kinds, `expiresAt: NOW` against `NOW + 1` at the boundary, and COUPON_INVALID for unknown, missing and expired-unknown kinds.",
+                "tests/format.test.mjs asserts `Object.keys(out)` equals `['id','label','slug','price']` and `Object.keys(out.price)` equals `['cents','currency']`, which pins the 'No other keys' rule.",
+                "tests/auth/token.test.mjs builds the expected token from an independent `createHmac`. It covers URL-safe alphabet and padding, tampering, a one-character flip, truncated and extended signatures, malformed tokens, non-JSON bodies and non-string tokens.",
+                "tests/handlers/list.test.mjs pins exact bodies through both `listHandler` and `dispatch('list', ...)`, checks `handlers.list === listHandler`, and checks the 404 path.",
+                "Small weakness: the token test asserts `sig.at(-1) === 'w'` as a precondition, which ties it to one fixed secret and payload. It is deterministic but brittle."
+              ]
+            },
+            "code_clarity": {
+              "score": 9,
+              "evidence": [
+                "The modules are small and idiomatic ESM: `sign`, `signatureMatches`, `signToken` and `verifyToken` in src/auth/token.mjs each have one job.",
+                "The only comment, `// timingSafeEqual throws on length mismatch, so check length first.`, states a constraint, which the rubric asks for.",
+                "src/discount.mjs mirrors the `invalid(reason)` helper pattern from config.mjs and reads as a flat `if / else if / else throw` chain followed by the expiry check and the clamp.",
+                "Minor: in src/pagination.mjs, `start` is computed even when `inRange` is false. It is harmless but slightly wasteful."
+              ]
+            },
+            "scope_discipline": {
+              "score": 9,
+              "evidence": [
+                "Every source change maps to a BEH: pagination (BEH-1), config (BEH-2), slug (BEH-3), discount (BEH-4), format (BEH-5), auth/token (BEH-6), and handlers/list plus registry (BEH-7). No package.json changes and no new dependencies; only `node:crypto` is used.",
+                "The registry change is limited to the import and `list: listHandler`. `healthHandler` and `dispatch` are untouched.",
+                "Slight extras: tests such as `pageCount(0, 0)` and `pageCount(0, -5)`, and the 'non-string tokens' and 'invalid secret' cases, go a little beyond the spec, but they are defensive tests rather than features."
+              ]
+            }
+          },
+          "overall": {
+            "score": 9,
+            "rationale": "The patch fixes every seed defect (pageCount floor+1, null/array config, fixed-coupon clamp, missing percent coupons, formatItem shape) and adds the missing slug, token and list-handler modules exactly as BEH-1 to BEH-7 state. The token verification is safe: it checks length before timingSafeEqual and catches all errors, so it never throws. The tests are extensive, use exact deepEqual and error-code assertions, and cover the boundaries that matter. The remaining issues are minor and outside the spec: paginate does not validate pageSize (pageSize 0 gives pageCount Infinity), signToken(undefined) throws, and one brittle test precondition."
+          }
+        }
+      ],
+      "ok_trials": 2,
+      "mean": {
+        "spec_compliance": 10,
+        "correctness_robustness": 8.5,
+        "test_quality": 9,
+        "code_clarity": 9,
+        "scope_discipline": 9,
+        "overall": 9
+      },
+      "spread": {
+        "spec_compliance": 0,
+        "correctness_robustness": 1,
+        "test_quality": 0,
+        "code_clarity": 0,
+        "scope_discipline": 0,
+        "overall": 0
+      }
+    },
+    "full-c90fa324e18f-2026-11-27T22-10-28-575Z.json": {
+      "arm": "full",
+      "ref": "c90fa324e18fb61def9445b24f3e91ca89598e12",
+      "patch": "full-c90fa324e18f-2026-11-27T22-10-28-575Z.patch",
+      "patch_bytes": 23357,
+      "anonymized_bytes": 23357,
+      "dropped_files": [],
+      "trials": [
+        {
+          "trial": 1,
+          "position": 17,
+          "exit_code": 0,
+          "cost_usd": 0.0800052,
+          "ok": true,
+          "scores": {
+            "spec_compliance": {
+              "score": 9,
+              "evidence": [
+                "BEH-1: src/pagination.mjs changes the seed's `Math.floor(total / pageSize) + 1` to `Math.ceil(total / pageSize)`, which also gives 0 when total is 0. `paginate` returns `{ items, page, pageSize, pageCount: count, total }` and uses `inRange = page >= 1 && page <= count` to return `[]` without throwing.",
+                "BEH-2: src/config.mjs fixes the seed's `typeof doc !== 'object'` check, which let null and arrays through. It now uses `typeof doc !== 'object' || doc === null || Array.isArray(doc)` and adds `Object.hasOwn(doc, 'pageSize') && !(Number.isInteger(doc.pageSize) && doc.pageSize > 0)`.",
+                "BEH-3: src/slug.mjs uses `.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')`, which matches the rule word for word.",
+                "BEH-4: src/discount.mjs adds the `percent` kind with `Math.floor(priceCents * coupon.amount / 100)`. It replaces the seed's wrong fixed-overflow rule (`discounted < 0 ? priceCents`) with `Math.max(0, priceCents - discount)`, keeps `expiresAt <= now`, and makes unknown kinds throw `COUPON_INVALID`.",
+                "BEH-5: src/format.mjs returns exactly `{ id, label, slug: slugify(item.label), price: { cents: item.priceCents, currency } }`. The seed returned the wrong shape (`priceCents`).",
+                "BEH-6: src/auth/token.mjs signs `base64url(JSON).base64url(HMAC-SHA256(body))`. verifyToken uses `timingSafeEqual`, returns null on non-strings and malformed tokens, and wraps the work in try/catch.",
+                "BEH-7: src/handlers/list.mjs returns `{ status: 200, body: { items, page, pageCount, total } }` with formatted items. src/registry.mjs adds `list: listHandler`. `dispatch`'s 404 path is left as the seed had it and is not visible in the patch, so I cannot confirm from the diff alone that it returns `{ status: 404 }`."
+              ]
+            },
+            "correctness_robustness": {
+              "score": 9,
+              "evidence": [
+                "verifyToken checks lengths before the constant-time compare (`actual.length !== expected.length || !timingSafeEqual(...)`), so `timingSafeEqual` cannot throw on a length mismatch (BEH-6).",
+                "verifyToken calls `sign(body, secret)` inside the try, so a missing or non-string secret becomes null rather than an exception. It parses JSON only after the signature check (`// Parse only after the signature has been verified.`).",
+                "`TOKEN_PATTERN = /^([A-Za-z0-9_-]+)\\.([A-Za-z0-9_-]+)$/` rejects empty parts, extra dots, padding characters and whitespace before any crypto runs.",
+                "Minor gap: `paginate` does not check that `page` is an integer. `page: 1.5` passes `inRange` and slices at a fractional offset (BEH-1 boundary). It never throws, but the result is odd.",
+                "Minor gap: `applyDiscount` does not validate `amount`, so a negative fixed amount raises the price. The spec does not cover this."
+              ]
+            },
+            "test_quality": {
+              "score": 8,
+              "evidence": [
+                "tests/pagination.test.mjs covers `pageCount(0, 5) === 0`, an exact division, and pages 0, -1 and 4 (past the last page). Each case checks the full object with deepEqual (BEH-1).",
+                "tests/config.test.mjs covers `null`, `[]`, every primitive, and pageSize values `0`, `-5`, `2.5`, `\"10\"`, `null`, `true` and `[10]`. The helper checks both `err instanceof Error` and `code` (BEH-2).",
+                "tests/discount.test.mjs covers rounding down (`999 @10% -> 900`), clamping to zero for fixed and >100% coupons, `expiresAt: NOW` exactly, and unknown kinds whether expired or not (BEH-4).",
+                "tests/auth/token.test.mjs is very thorough. It has a known-answer vector, truncated and extended signatures, hex and base64 encodings of the signature, a `t.mock.method(crypto, 'timingSafeEqual')` spy with `syncBuiltinESMExports`, and a test that JSON.parse is not called on forged tokens (BEH-6).",
+                "Gap: tests/handlers/list.test.mjs does not test that `dispatch` of an unregistered name returns `{ status: 404 }`, which BEH-7 requires. It also has no slugify test for a non-ASCII-only edge beyond `'***'`."
+              ]
+            },
+            "code_clarity": {
+              "score": 9,
+              "evidence": [
+                "The modules are small, ESM-only and clearly named: `couponInvalid`, `TOKEN_PATTERN`, `sign`, `inRange`.",
+                "The comments state constraints, for example `// timingSafeEqual throws on length mismatch, so guard lengths first.` and `// Parse only after the signature has been verified.`",
+                "Small redundancy: src/discount.mjs computes `discount` before the expiry check. This is intentional so that an invalid kind throws even when the coupon has expired, but nothing in the code says so."
+              ]
+            },
+            "scope_discipline": {
+              "score": 9,
+              "evidence": [
+                "Every changed source file maps to a BEH. Adding `list: listHandler` to src/registry.mjs is required by BEH-7. No dependencies were added and no unrelated files were touched.",
+                "The new tests go somewhat beyond the spec, for example `verifyToken round-trips non-object JSON payloads` and the unicode round-trip. This is defensible as hardening, not feature creep."
+              ]
+            }
+          },
+          "overall": {
+            "score": 9,
+            "rationale": "The patch fixes every incorrect seed module: pagination off-by-one, the config null/array/pageSize checks, discount clamping and percent coupons, and the formatItem shape. It also implements slugs, tokens and the list handler faithfully. The token code handles crypto carefully and cannot throw. The tests are precise and cover boundaries well. The main deduction is that no test covers BEH-7's `dispatch` 404 path, and the patch does not show that path. There are also small unvalidated edges: a fractional page and negative coupon amounts."
+          }
+        },
+        {
+          "trial": 2,
+          "position": 11,
+          "exit_code": 0,
+          "cost_usd": 0.201801,
+          "ok": true,
+          "scores": {
+            "spec_compliance": {
+              "score": 9,
+              "evidence": [
+                "BEH-1: src/pagination.mjs replaces the seed's `Math.floor(total / pageSize) + 1` with `Math.ceil(total / pageSize)`, which also gives 0 for total 0. `paginate` returns `{ items, page, pageSize, pageCount, total }` and uses `inRange = page >= 1 && page <= count` to return `[]` for out-of-range pages.",
+                "BEH-2: src/config.mjs fixes the seed's `typeof doc !== 'object'` check, which let null and arrays through, by adding `|| doc === null || Array.isArray(doc)`. It also adds `Object.hasOwn(doc, 'pageSize') && !(Number.isInteger(doc.pageSize) && doc.pageSize > 0)`, which throws CONFIG_INVALID through the existing `invalid` helper.",
+                "BEH-3: src/slug.mjs uses `.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')`, which matches the rule exactly.",
+                "BEH-4: src/discount.mjs adds the missing `percent` branch with `Math.floor(priceCents * coupon.amount / 100)`. It fixes the seed's wrong clamp (`discounted < 0 ? priceCents`) to `Math.max(0, priceCents - discount)`, keeps `expiresAt <= now` as unchanged, and throws `code = 'COUPON_INVALID'` for any other kind.",
+                "BEH-5: src/format.mjs now returns exactly `{ id, label, slug: slugify(item.label), price: { cents: item.priceCents, currency } }`. The seed returned `priceCents` and had no slug or currency.",
+                "BEH-6: src/auth/token.mjs signs `base64url(JSON).base64url(HMAC-SHA256(body))`, compares with `timingSafeEqual` after a length guard, and returns null on any failure inside try/catch.",
+                "BEH-7: src/handlers/list.mjs returns `{ status: 200, body: { items, page, pageCount, total } }` with formatted page items. src/registry.mjs adds `list: listHandler`. The `dispatch` 404 path comes from the seed and the patch does not show it, so it could not be confirmed from the diff (the one reason this is not a 10)."
+              ]
+            },
+            "correctness_robustness": {
+              "score": 8,
+              "evidence": [
+                "verifyToken checks lengths before calling timingSafeEqual (`actual.length !== expected.length || !timingSafeEqual(...)`), so a length mismatch cannot throw. `sign(body, secret)` runs inside the try, so an invalid secret such as `undefined` returns null instead of throwing.",
+                "verifyToken parses the payload only after the signature is verified, and `TOKEN_PATTERN` rejects empty parts, extra dots and characters outside base64url before any HMAC work.",
+                "parseConfig treats an explicit `\"pageSize\": null` as present and invalid, which is a strict but defensible reading of BEH-2.",
+                "Minor gap: `paginate` does not guard against a non-integer `page` (for example 1.5 passes `inRange` and gives a fractional slice start) or a `pageSize` of 0 or less (`pageCount` becomes NaN or negative). It does not throw in these cases, but the results are odd.",
+                "Minor gap: applyDiscount does not validate `amount`, so a negative or non-numeric amount can raise the price or return NaN. The spec does not require this."
+              ]
+            },
+            "test_quality": {
+              "score": 8,
+              "evidence": [
+                "tests/pagination.test.mjs covers the exact-division page count, `pageCount(0, 5) === 0`, page 0, page -1, page beyond the last, a partial last page and an empty list, all with full `deepEqual` checks of the result shape.",
+                "tests/config.test.mjs: `assertConfigInvalid` checks both `instanceof Error` and `code === 'CONFIG_INVALID'` for null, arrays, primitives, and pageSize values of 0, -5, 2.5, \"10\", null, true and [10].",
+                "tests/discount.test.mjs covers flooring (`999 @ 10% -> 900`), clamping for both fixed and percent coupons, the `expiresAt: NOW` boundary, and an unknown kind both when valid and when expired.",
+                "tests/auth/token.test.mjs has a hardcoded known-answer vector, tampered payloads and signatures, truncated or extended signatures, non-string tokens and secrets, invalid JSON or UTF-8 behind a valid signature, a `timingSafeEqual` spy (via `syncBuiltinESMExports`) and a JSON.parse-not-called check.",
+                "Gap: no added test calls `dispatch` with an unregistered name to assert `{ status: 404 }` (BEH-7 error case). The list tests also do not cover `page: 0` through the handler."
+              ]
+            },
+            "code_clarity": {
+              "score": 9,
+              "evidence": [
+                "Modules are small and idiomatic ESM with clear names (`couponInvalid`, `inRange`, `TOKEN_PATTERN`, `sign`).",
+                "Comments state constraints only: `// timingSafeEqual throws on length mismatch, so guard lengths first.` and `// Parse only after the signature has been verified.`",
+                "In src/discount.mjs the discount is computed before the expiry check so that invalid kinds always throw. This is intentional but reads slightly indirectly without a comment."
+              ]
+            },
+            "scope_discipline": {
+              "score": 9,
+              "evidence": [
+                "Every source change maps to a behavior: pagination (BEH-1), config (BEH-2), slug (BEH-3), discount (BEH-4), format (BEH-5), auth/token (BEH-6), and handlers/list plus registry (BEH-7).",
+                "There are no new dependencies (only `node:crypto`) and no unrelated files. Test helpers such as `hmacB64url` and `b64urlJson` are local to the test files.",
+                "The token test suite is very extensive (172 lines), somewhat beyond what the spec asks, but it all bears on BEH-6's 'never throws' and timingSafeEqual requirements."
+              ]
+            }
+          },
+          "overall": {
+            "score": 9,
+            "rationale": "The patch fixes every seed defect the spec addresses: the pageCount formula, the null and array config checks, the pageSize validation, the discount clamp and missing percent branch, the formatItem shape and the missing modules. It implements all seven behaviors faithfully, and the token verification is careful and safe. The tests are precise and cover boundaries thoroughly. The main shortfalls are that no test covers dispatch's 404 path for an unregistered name, and that paginate does not guard against odd page or pageSize values."
+          }
+        }
+      ],
+      "ok_trials": 2,
+      "mean": {
+        "spec_compliance": 9,
+        "correctness_robustness": 8.5,
+        "test_quality": 8,
+        "code_clarity": 9,
+        "scope_discipline": 9,
+        "overall": 9
+      },
+      "spread": {
+        "spec_compliance": 0,
+        "correctness_robustness": 1,
+        "test_quality": 0,
+        "code_clarity": 0,
+        "scope_discipline": 0,
+        "overall": 0
+      }
+    },
+    "full-c90fa324e18f-2026-11-27T23-22-58-428Z.json": {
+      "arm": "full",
+      "ref": "c90fa324e18fb61def9445b24f3e91ca89598e12",
+      "patch": "full-c90fa324e18f-2026-11-27T23-22-58-428Z.patch",
+      "patch_bytes": 25846,
+      "anonymized_bytes": 25846,
+      "dropped_files": [],
+      "trials": [
+        {
+          "trial": 1,
+          "position": 19,
+          "exit_code": 0,
+          "cost_usd": 0.07607219999999999,
+          "ok": true,
+          "scores": {
+            "spec_compliance": {
+              "score": 9,
+              "evidence": [
+                "BEH-1: src/pagination.mjs fixes the seed's `Math.floor(total / pageSize) + 1` to `total === 0 ? 0 : Math.ceil(total / pageSize)`. The new `paginate` returns `{ items, page, pageSize, pageCount: count, total }` and returns `items: []` when `!inRange`, where `inRange = Number.isInteger(page) && page >= 1 && page <= count`.",
+                "BEH-2: src/config.mjs adds the missing `doc === null || Array.isArray(doc)` rejection and `Object.hasOwn(doc, 'pageSize') && !(Number.isInteger(doc.pageSize) && doc.pageSize > 0)`. Both throw `invalid(...)`, which keeps the CONFIG_INVALID code (tests confirm `err.code === 'CONFIG_INVALID'`).",
+                "BEH-3: src/slug.mjs: `.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')` follows the spec rule exactly.",
+                "BEH-4: src/discount.mjs replaces the seed's wrong fixed-coupon behaviour (`discounted < 0 ? priceCents : discounted`) with `Math.max(0, ...)`. It adds the percent branch using `Math.floor(priceCents * coupon.amount / 100)` and throws an Error with `err.code = 'COUPON_INVALID'` for other kinds. One debatable point: the expiry check runs before the kind check, so an expired coupon with an invalid kind returns the price instead of throwing. The spec does not order these rules.",
+                "BEH-5: src/format.mjs returns exactly `{ id, label, slug: slugify(item.label), price: { cents: item.priceCents, currency } }`. The seed's `priceCents` key is removed.",
+                "BEH-6: src/auth/token.mjs `signToken` builds `${body}.${sign(body, secret)}` with base64url JSON and an HMAC-SHA256 base64url digest over the first part. `verifyToken` uses `timingSafeEqual`, returns null for non-string, wrong part count, non-base64url, bad-secret and bad-JSON tokens, and does not throw.",
+                "BEH-7: src/handlers/list.mjs returns `{ status: 200, body: { items: formatted, page, pageCount, total } }`, and src/registry.mjs registers `list: listHandler` in `handlers`. The 404 path for unregistered names comes from the seed's `dispatch`, which the patch leaves unchanged and which is not visible in the diff."
+              ]
+            },
+            "correctness_robustness": {
+              "score": 9,
+              "evidence": [
+                "token.mjs checks lengths before comparing: `actual.length !== expected.length || !timingSafeEqual(actual, expected)`. This avoids the RangeError timingSafeEqual throws on buffers of different lengths.",
+                "token.mjs wraps `sign(body, secret)` in try/catch and returns null when node:crypto rejects the secret. The test 'verifyToken returns null (never throws) for an invalid secret' covers undefined, null, 42 and {}.",
+                "token.mjs compares the canonical encoded signature string rather than decoded bytes, so non-canonical encodings of the same digest are rejected. The test 'non-canonical signature encoding of the same bytes' covers this.",
+                "pagination.mjs `Number.isInteger(page)` keeps non-integer and NaN pages from producing fractional slice offsets (test 'paginate returns items: [] for a non-integer page').",
+                "Minor gaps: `paginate` does not guard against `pageSize` 0 or negative values (with pageSize 0, `pageCount` is Infinity and the page yields an empty slice). `applyDiscount` does not guard against a null coupon or a negative `amount`. `slugify` throws on non-string labels. The spec covers none of these."
+              ]
+            },
+            "test_quality": {
+              "score": 8,
+              "evidence": [
+                "tests/auth/token.test.mjs pins the output with literal vectors ('signToken matches a precomputed literal token' and the nested-unicode literal). It covers tampered payloads, tampered signatures of the same length, truncated and over-long signatures, extra or missing dots, empty parts, non-base64url parts, non-JSON payloads with a valid HMAC, and invalid secrets.",
+                "token.test.mjs 'verifyToken decides the signature match with crypto.timingSafeEqual' spies on `crypto.timingSafeEqual` via `mock.method` plus `syncBuiltinESMExports`. Forcing the spy to return false makes a valid token fail, which shows the result depends on timingSafeEqual.",
+                "tests/pagination.test.mjs covers exact multiples, `pageCount(0, 5) === 0`, page 0, negative pages, pages past `pageCount`, an empty list and non-integer pages. Each case asserts the full object with deepEqual.",
+                "tests/config.test.mjs checks `err instanceof Error` and the code for null, arrays, primitives, and pageSize values 0, -3, 2.5, \"10\", true, [10] and null. tests/discount.test.mjs covers `expiresAt: NOW` (the boundary), clamping for both kinds, the floor in `999 * 15 / 100` and COUPON_INVALID.",
+                "Gaps: no test calls `dispatch` with an unregistered name to check the BEH-7 `{ status: 404 }` rule. There is no percent-kind expiry test and no test for a slug that is all symbols or empty. tests/slug.test.mjs has only 3 cases."
+              ]
+            },
+            "code_clarity": {
+              "score": 9,
+              "evidence": [
+                "src/slug.mjs, src/format.mjs and src/handlers/list.mjs are minimal, idiomatic ESM with clear names.",
+                "The comments in token.mjs state real constraints: 'lengths are checked first because timingSafeEqual throws on unequal-length buffers' and 'Compare the canonical encoded signature'.",
+                "discount.mjs reads as a flat sequence of guard and return steps. config.mjs puts the new checks on two readable lines.",
+                "Minor: token.test.mjs defines the `signRawBody` helper in the middle of the file and builds its unicode payload twice. pagination.mjs computes `start` even when the page is out of range (harmless)."
+              ]
+            },
+            "scope_discipline": {
+              "score": 9,
+              "evidence": [
+                "Every changed source file corresponds to a BEH item: pagination, config, slug, discount, format, auth/token, handlers/list and registry. No new dependencies; only `node:crypto` is imported.",
+                "registry.mjs gains only an import and `list: listHandler`. The existing `healthHandler` and `dispatch` are untouched.",
+                "Slight extras: JSDoc `@throws` notes on `signToken`, and the test 'pageCount returns exactly 0 when total is 0 regardless of pageSize sign' checks behaviour beyond the spec."
+              ]
+            }
+          },
+          "overall": {
+            "score": 9,
+            "rationale": "The patch fixes every seed defect in the diff: pageCount's floor+1, config accepting null and arrays, the fixed-discount clamp, the missing percent branch, and formatItem's shape. It adds correct slug, token and list-handler modules. Token verification is careful: lengths are checked before timingSafeEqual, secret errors are caught, and only canonical encodings are accepted. Tests are precise and mostly cover boundaries. The main gap is that no test checks that dispatch returns 404 for an unregistered name. Smaller points are that an expired coupon with an invalid kind returns the price instead of throwing, and a few minor edge-case tests are missing."
+          }
+        },
+        {
+          "trial": 2,
+          "position": 15,
+          "exit_code": 0,
+          "cost_usd": 0.20880100000000001,
+          "ok": true,
+          "scores": {
+            "spec_compliance": {
+              "score": 9,
+              "evidence": [
+                "BEH-1: src/pagination.mjs `pageCount` now returns `total === 0 ? 0 : Math.ceil(total / pageSize)`, which fixes the seed's `Math.floor(total / pageSize) + 1`. `paginate` returns `{ items, page, pageSize, pageCount, total }` and gives `items: []` when `!inRange`.",
+                "BEH-2: src/config.mjs adds `doc === null || Array.isArray(doc)` to the not-an-object check, which the seed was missing. It also adds `Object.hasOwn(doc, 'pageSize') && !(Number.isInteger(doc.pageSize) && doc.pageSize > 0)`, so a present but non-positive-integer pageSize throws CONFIG_INVALID.",
+                "BEH-3: src/slug.mjs `.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')` is the stated rule exactly.",
+                "BEH-4: src/discount.mjs replaces the seed's wrong clamp (`discounted < 0 ? priceCents : discounted`) with `Math.max(0, ...)`. It adds the percent branch with `Math.floor(priceCents * coupon.amount / 100)` and throws an Error with `code = 'COUPON_INVALID'` for any other kind. One ambiguity: `expiresAt <= now` is checked before `kind`, so an expired coupon with an invalid kind returns the price instead of throwing.",
+                "BEH-5: src/format.mjs returns exactly `{ id, label, slug: slugify(item.label), price: { cents: item.priceCents, currency } }`. The seed's `priceCents` key is gone.",
+                "BEH-6: src/auth/token.mjs `signToken` builds the base64url of the JSON, then the base64url HMAC-SHA256 over that body. `verifyToken` returns null for non-strings, wrong part counts, non-base64url parts, a bad secret (try/catch around `sign`), a length mismatch and bad JSON. It compares with `timingSafeEqual`.",
+                "BEH-7: src/handlers/list.mjs returns `{ status: 200, body: { items, page, pageCount, total } }` with items mapped through `formatItem`. It is registered as `list: listHandler` in src/registry.mjs. The patch does not change `dispatch`, so its 404 path for unregistered names cannot be seen in the patch."
+              ]
+            },
+            "correctness_robustness": {
+              "score": 9,
+              "evidence": [
+                "BEH-6: verifyToken checks lengths before calling the comparison (`actual.length !== expected.length || !timingSafeEqual(actual, expected)`), so the comparison cannot throw on a length mismatch. `sign` and `JSON.parse` are both wrapped in try/catch, so the never-throws rule holds even for secrets like `undefined`, `42` or `{}`.",
+                "BEH-6: it compares the canonical encoded signature, so non-canonical encodings of the same digest are rejected. The comment says why: 'so non-canonical encodings of the same digest bytes are rejected'.",
+                "BEH-1: paginate's `Number.isInteger(page) && page >= 1 && page <= count` means NaN, undefined or fractional pages give `[]` and never throw. pageCount(0, x) returns 0 whatever pageSize is.",
+                "BEH-2: `Object.hasOwn` correctly treats an explicit `\"pageSize\": null` as present and invalid.",
+                "Minor: slugify and formatItem throw on a non-string label, which the spec does not address. applyDiscount checks expiry before validating `kind`, so a bad kind on an expired coupon is not reported."
+              ]
+            },
+            "test_quality": {
+              "score": 8,
+              "evidence": [
+                "BEH-1: tests/pagination.test.mjs covers an exact multiple (`pageCount(10, 5)`), total 0, page 0, a negative page, a page past pageCount, an empty list and a non-integer page. Every check is a full `deepEqual` of the result object.",
+                "BEH-2: tests/config.test.mjs checks null, `[]`, primitives, pageSize values `0`, `-3`, `2.5`, `\"10\"`, `true`, `[10]` and `null`, and partial defaults. `isConfigInvalidError` asserts both `instanceof Error` and the code.",
+                "BEH-4: tests/discount.test.mjs covers the `expiresAt: NOW` boundary, the fixed clamp to 0, flooring (`999 * 15%` → 850), a percent over 100% clamping to 0, and an unknown kind throwing COUPON_INVALID.",
+                "BEH-6: tests/auth/token.test.mjs pins literal token vectors and covers tampered body and signature, truncated and over-long signatures, extra dots, empty parts, non-base64url parts, non-canonical encodings, invalid JSON and invalid secrets. A `mock.method(crypto, 'timingSafeEqual')` spy proves that the comparison's verdict decides the result.",
+                "Gap (BEH-7): no test checks that `dispatch` of an unregistered name returns `{ status: 404 }`. tests/handlers/list.test.mjs only covers dispatch('list').",
+                "Gap (BEH-3): tests/slug.test.mjs has three happy-path cases. It does not cover an empty string, an all-symbol label (→ ''), or digits and non-ASCII letters."
+              ]
+            },
+            "code_clarity": {
+              "score": 9,
+              "evidence": [
+                "src/discount.mjs, src/format.mjs, src/slug.mjs and src/handlers/list.mjs are short and direct, with clear names.",
+                "src/auth/token.mjs factors out a small `sign(body, secret)` helper. Its comments state real constraints, such as 'timingSafeEqual throws on unequal-length buffers'.",
+                "Minor clutter in tests/auth/token.test.mjs: `signRawBody` is defined partway through the file. The test file is long, and its spy test relies on a fairly intricate `syncBuiltinESMExports` plus `?timing-spy` re-import."
+              ]
+            },
+            "scope_discipline": {
+              "score": 9,
+              "evidence": [
+                "Every changed source file maps to a BEH: pagination (1), config (2), slug (3), discount (4), format (5), auth/token (6), and handlers/list plus registry (7). No dependencies were added and no unrelated files were touched.",
+                "The registry change is limited to importing and registering `list: listHandler`. The health handler and `dispatch` are left alone.",
+                "Slightly beyond the letter of the spec: verifyToken rejects non-canonical base64url, and the JSDoc `@throws` notes on signToken. Both are defensive and low-cost."
+              ]
+            }
+          },
+          "overall": {
+            "score": 9,
+            "rationale": "The patch fixes every seed defect: pageCount's off-by-one, the missing null and array checks in config, the wrong fixed-coupon clamp and missing percent and invalid-kind handling, and the old formatItem shape. It also implements slugs, tokens and the list handler as specified. Token verification is sturdy: it cannot throw, checks lengths before the constant-time comparison, and rejects non-canonical encodings. Tests are precise and cover boundaries for most behaviors. The remaining weaknesses are small: no test for dispatch's 404 path, thin slug edge cases, and an unaddressed ordering question between the expiry check and invalid-kind validation in applyDiscount."
+          }
+        }
+      ],
+      "ok_trials": 2,
+      "mean": {
+        "spec_compliance": 9,
+        "correctness_robustness": 9,
+        "test_quality": 8,
+        "code_clarity": 9,
+        "scope_discipline": 9,
+        "overall": 9
+      },
+      "spread": {
+        "spec_compliance": 0,
+        "correctness_robustness": 0,
+        "test_quality": 0,
+        "code_clarity": 0,
+        "scope_discipline": 0,
+        "overall": 0
+      }
+    },
+    "lite-c90fa324e18f-2026-11-27T21-41-17-324Z.json": {
+      "arm": "lite",
+      "ref": "c90fa324e18fb61def9445b24f3e91ca89598e12",
+      "patch": "lite-c90fa324e18f-2026-11-27T21-41-17-324Z.patch",
+      "patch_bytes": 25012,
+      "anonymized_bytes": 25012,
+      "dropped_files": [],
+      "trials": [
+        {
+          "trial": 1,
+          "position": 21,
+          "exit_code": 0,
+          "cost_usd": 0.09593220000000001,
+          "ok": true,
+          "scores": {
+            "spec_compliance": {
+              "score": 9,
+              "evidence": [
+                "BEH-1: src/pagination.mjs replaces the seed's `Math.floor(total / pageSize) + 1` with `if (total === 0) return 0; return Math.ceil(total / pageSize);`. The new `paginate` returns `{ items, page, pageSize, pageCount, total }`. It uses `inRange = Number.isInteger(page) && page >= 1 && page <= count` and returns `[]` when the page is out of range, without throwing.",
+                "BEH-2: src/config.mjs adds the missing `doc === null || Array.isArray(doc)` checks to the seed's `typeof doc !== 'object'` check. It also adds `Object.hasOwn(doc, 'pageSize') && !(Number.isInteger(doc.pageSize) && doc.pageSize > 0)`, so a pageSize that is present but invalid, including `null`, throws CONFIG_INVALID.",
+                "BEH-3: src/slug.mjs `slugify` uses `.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')`, which follows the rule word for word.",
+                "BEH-4: src/discount.mjs adds the `percent` branch with `Math.floor(priceCents * coupon.amount / 100)` and throws `err.code = 'COUPON_INVALID'` for any other kind. `Math.max(0, priceCents - discount)` replaces the seed's wrong `discounted < 0 ? priceCents : discounted`. `expiresAt <= now` returns the price unchanged.",
+                "BEH-5: src/format.mjs `formatItem(item, currency)` returns exactly `{ id, label, slug: slugify(item.label), price: { cents: item.priceCents, currency } }`. The seed's stray `priceCents` key is gone.",
+                "BEH-6: src/auth/token.mjs signs `base64url(JSON)` and then HMACs the first part with `digest('base64url')`. `verifyToken` uses `timingSafeEqual` and returns null when the token is not a string, has the wrong shape, uses a bad secret, has a bad signature or holds bad JSON.",
+                "BEH-7: src/handlers/list.mjs returns `{ status: 200, body: { items, page, pageCount, total } }` with formatted items, and src/registry.mjs adds `list: listHandler`. The patch does not touch `dispatch` (it only appears as context). Nothing in the patch shows or proves the unregistered-name `{ status: 404 }` rule, so compliance there depends on the seed being correct."
+              ]
+            },
+            "correctness_robustness": {
+              "score": 9,
+              "evidence": [
+                "BEH-6 crypto: `if (given.length !== expected.length || !timingSafeEqual(given, expected)) return null;` checks the lengths first, so `timingSafeEqual` cannot throw RangeError on a length mismatch.",
+                "BEH-6: `sign(body, secret)` is wrapped in try/catch, so secrets that createHmac rejects (undefined, null, number, object) return null instead of throwing. The test 'verifyToken returns null for a secret createHmac cannot use' covers this.",
+                "BEH-6: the strict `TOKEN_SHAPE` regex runs before decoding. That avoids Node's lenient base64url decoder, which would accept 'e30*' or 'e30=', and it rejects non-canonical signatures because it compares the canonical encoded strings.",
+                "BEH-1: `Number.isInteger(page)` keeps fractional, NaN and undefined pages out of range instead of slicing at odd offsets. pageSize 0 gives `pageCount` Infinity and `slice(0,0)`, which returns an empty page without throwing.",
+                "BEH-4: src/discount.mjs checks the coupon kind before the expiry check, so an expired coupon with an unknown kind still throws. That is a defensible reading of 'Any other kind throws'. There is no guard against a negative `amount` raising the price, but the spec does not cover that case."
+              ]
+            },
+            "test_quality": {
+              "score": 8,
+              "evidence": [
+                "BEH-1: tests/pagination.test.mjs covers an exact multiple (`pageCount(10, 5) === 2`), zero total, a partial last page, page past the end, page 0 and -1, and an empty list, all with full deepEqual results.",
+                "BEH-2: tests/config.test.mjs loops over `null`, `[]`, `42`, `\"hello\"` and `true`. It also checks pageSize values `0`, `-3`, `2.5`, `\"10\"` and `null`, each against `{ code: 'CONFIG_INVALID' }`.",
+                "BEH-4: tests/discount.test.mjs covers expiry exactly at `NOW` for both kinds, clamping to 0 for fixed and for percent over 100, and flooring (`999 * 15 / 100 -> 850`). Unknown kinds are checked with `err instanceof Error && err.code === 'COUPON_INVALID'`.",
+                "BEH-5: 'formatItem drops extra input fields and emits no other keys' uses deepEqual on the exact shape, so it would catch the seed's extra key.",
+                "BEH-6: tests/auth/token.test.mjs pins literal tokens. It covers a tampered body and signature, signatures that are too short or too long, a non-canonical signature, non-string tokens, many malformed shapes and invalid-secret types.",
+                "Gap, BEH-7: tests/handlers/list.test.mjs tests `handlers.list === listHandler` and `dispatch('list', ...)`, but nothing tests that `dispatch` of an unregistered name returns `{ status: 404 }`. That stated error case has no test.",
+                "Minor: the token tests go well past the spec (Buffer secrets, empty-secret round trips) and make the file 212 lines long. No test passes a fractional `page` to `paginate`."
+              ]
+            },
+            "code_clarity": {
+              "score": 9,
+              "evidence": [
+                "The src/ modules are short, idiomatic ESM with descriptive names (`TOKEN_SHAPE`, `inRange`, `invalid(reason)` in discount.mjs, which matches the seed's config helper).",
+                "src/handlers/list.mjs maps `result.items` through `formatItem` and spells out the body keys, with no indirection.",
+                "src/discount.mjs works out `discount` before the expiry check so the kind is validated first. That order is deliberate, but no comment explains it.",
+                "tests/auth/token.test.mjs has provenance comments such as '// Cross-checked with: openssl dgst ...' that do not state a constraint, which is minor clutter."
+              ]
+            },
+            "scope_discipline": {
+              "score": 9,
+              "evidence": [
+                "Every changed source file maps to a BEH: pagination (BEH-1), config (BEH-2), slug (BEH-3), discount (BEH-4), format (BEH-5), auth/token (BEH-6), and handlers/list plus registry (BEH-7). The patch adds no dependencies, and it uses only `node:crypto`.",
+                "The patch adds no unrelated files or speculative features in src/. In src/registry.mjs it only adds the import and `list: listHandler`.",
+                "Slight overreach in tests: Buffer-secret and empty-secret cases in tests/auth/token.test.mjs pin behavior the spec does not define."
+              ]
+            }
+          },
+          "overall": {
+            "score": 8,
+            "rationale": "This is a strong, correct implementation. It fixes every seed defect the patch shows (the pageCount formula, missing null/array/pageSize validation, the wrong discount clamp, the extra formatItem key) and adds the missing modules cleanly. Token verification is handled safely: a strict shape check, a length check before timingSafeEqual, and a catch for bad secrets. Tests are precise and cover most boundaries and error cases. The main gap is BEH-7's 404 rule for an unregistered name: there is no test for it, and the patch leaves `dispatch` untouched, so its correctness rests on unseen seed code. The token tests are also heavier than the spec needs."
+          }
+        },
+        {
+          "trial": 2,
+          "position": 3,
+          "exit_code": 0,
+          "cost_usd": 0.212061,
+          "ok": true,
+          "scores": {
+            "spec_compliance": {
+              "score": 9,
+              "evidence": [
+                "BEH-1: src/pagination.mjs fixes the seed's `Math.floor(total / pageSize) + 1` to `if (total === 0) return 0; return Math.ceil(total / pageSize);`. `paginate` returns `{ items, page, pageSize, pageCount, total }` and uses `inRange = Number.isInteger(page) && page >= 1 && page <= count` to return `items: []` instead of throwing.",
+                "BEH-2: src/config.mjs replaces the seed's `typeof doc !== 'object'` check, which let `null` and arrays through, with `typeof doc !== 'object' || doc === null || Array.isArray(doc)`. It adds `Object.hasOwn(doc, 'pageSize') && !(Number.isInteger(doc.pageSize) && doc.pageSize > 0)`, which correctly rejects an explicit `pageSize: null`.",
+                "BEH-3: src/slug.mjs does `.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')`, which matches the stated rule exactly.",
+                "BEH-4: src/discount.mjs adds the missing `percent` kind with `Math.floor(priceCents * coupon.amount / 100)`. It replaces the seed's wrong clamp (`discounted < 0 ? priceCents : discounted`) with `Math.max(0, priceCents - discount)`. It throws `code = 'COUPON_INVALID'` for any other kind and treats `expiresAt <= now` as expired.",
+                "BEH-5: src/format.mjs returns exactly `{ id, label, slug: slugify(item.label), price: { cents: item.priceCents, currency } }`. The seed's stray `priceCents` key is gone.",
+                "BEH-6: src/auth/token.mjs builds `${body}.${sign(body, secret)}` with base64url HMAC-SHA256. It compares with `timingSafeEqual` behind a length guard and returns `null` for a malformed shape, a bad signature or a payload that fails to parse.",
+                "BEH-7: src/handlers/list.mjs returns `{ status: 200, body: { items, page, pageCount, total } }` with the items passed through `formatItem`. src/registry.mjs adds `list: listHandler` to `handlers`.",
+                "BEH-7 gap: the 404 path of `dispatch` for an unregistered name is untouched seed code, and the diff context does not show its body, so I cannot confirm it from the patch."
+              ]
+            },
+            "correctness_robustness": {
+              "score": 9,
+              "evidence": [
+                "verifyToken checks `given.length !== expected.length` before calling `timingSafeEqual`, so a length mismatch cannot make it throw (BEH-6).",
+                "verifyToken wraps `sign(body, secret)` in try/catch, so an unusable secret (undefined, null, a number, a plain object) returns `null` rather than throwing. The `JSON.parse` of the decoded body is also guarded.",
+                "`TOKEN_SHAPE = /^([A-Za-z0-9_-]+)\\.([A-Za-z0-9_-]+)$/` rejects padding, characters outside the alphabet and extra separators. Comparing the base64url strings rather than decoded bytes also rejects non-canonical signature encodings (test 'non-canonical signature that decodes to the same bytes').",
+                "applyDiscount works out the coupon kind before the expiry check, so an expired coupon of unknown kind still throws COUPON_INVALID. This is consistent and is tested.",
+                "Minor: paginate does not guard against `pageSize <= 0`, where `pageCount` becomes Infinity or NaN. signToken throws for an `undefined` payload because `JSON.stringify` returns undefined. The spec covers neither case."
+              ]
+            },
+            "test_quality": {
+              "score": 8,
+              "evidence": [
+                "tests/pagination.test.mjs covers the exact multiple `pageCount(10, 5) === 2`, `pageCount(0, 5) === 0`, a partial last page, page 4 past the end, page 0 and negative pages, and an empty list, using full `deepEqual` objects (BEH-1).",
+                "tests/config.test.mjs tests each non-object JSON value (`null`, `[]`, `42`, `\"hello\"`, `true`) and each bad pageSize (`0`, `-3`, `2.5`, `\"10\"`, `null`) for `code: 'CONFIG_INVALID'` (BEH-2).",
+                "tests/discount.test.mjs covers the `expiresAt: NOW` boundary for both kinds, clamping to 0 for both kinds, flooring (`999 * 15 / 100` → 850) and an unknown kind, both expired and not (BEH-4).",
+                "tests/format.test.mjs 'drops extra input fields and emits no other keys' pins BEH-5's 'no other keys' rule with `deepEqual`.",
+                "tests/auth/token.test.mjs pins a literal token. It covers a tampered payload, a tampered signature of the same length, signatures that are too short or too long, non-canonical encodings, non-string tokens and many malformed shapes (BEH-6).",
+                "Gaps: no test calls `dispatch` with an unregistered name to expect `{ status: 404 }` (BEH-7), and no test passes a non-integer `page` to paginate. The token suite, at about 212 lines with Buffer-secret and empty-secret cases, goes well beyond what the spec needs."
+              ]
+            },
+            "code_clarity": {
+              "score": 9,
+              "evidence": [
+                "The source modules are short, idiomatic ESM with clear names: `sign`, `TOKEN_SHAPE`, `inRange` and `invalid(reason)`. The `invalid` helper in src/discount.mjs follows the same error-construction pattern as config.",
+                "src/handlers/list.mjs maps the paginate result directly with no extra layers. Test comments are limited to facts such as '999 * 15 / 100 = 149.85 -> floor 149'.",
+                "Minor: verifyToken has two separate try/catch blocks and wraps the expected signature in a `let expected` declaration. This is readable but slightly awkward."
+              ]
+            },
+            "scope_discipline": {
+              "score": 9,
+              "evidence": [
+                "Every changed file maps to a BEH-n: pagination, config, slug, discount, format, auth/token, handlers/list and registry, plus their tests. There are no new dependencies and no unrelated files.",
+                "The registry change is the single line `list: listHandler` plus its import. The existing `healthHandler` is left alone.",
+                "Slight over-reach in tests only: Buffer-secret and empty-secret round-trip cases in tests/auth/token.test.mjs test behavior the spec does not mention."
+              ]
+            }
+          },
+          "overall": {
+            "score": 9,
+            "rationale": "This is a strong, focused patch. It fixes every seed defect the diff shows: the pageCount off-by-one, null and array configs being accepted, the wrong fixed-coupon clamp, the missing percent kind and the wrong formatItem shape. It also adds the slug, token and list-handler modules as specified. Token verification is careful: the length guard comes before timingSafeEqual, the strict shape regex runs first, and every throwing step is wrapped so it returns null. The tests are precise and cover boundaries well. The main shortfalls are that no test covers dispatch's 404 path (and the patch doesn't show that code), paginate has no guard for a non-positive pageSize, and the token tests are somewhat over-built."
+          }
+        }
+      ],
+      "ok_trials": 2,
+      "mean": {
+        "spec_compliance": 9,
+        "correctness_robustness": 9,
+        "test_quality": 8,
+        "code_clarity": 9,
+        "scope_discipline": 9,
+        "overall": 8.5
+      },
+      "spread": {
+        "spec_compliance": 0,
+        "correctness_robustness": 0,
+        "test_quality": 0,
+        "code_clarity": 0,
+        "scope_discipline": 0,
+        "overall": 1
+      }
+    },
+    "lite-c90fa324e18f-2026-11-27T22-48-32-938Z.json": {
+      "arm": "lite",
+      "ref": "c90fa324e18fb61def9445b24f3e91ca89598e12",
+      "patch": "lite-c90fa324e18f-2026-11-27T22-48-32-938Z.patch",
+      "patch_bytes": 21043,
+      "anonymized_bytes": 21043,
+      "dropped_files": [],
+      "trials": [
+        {
+          "trial": 1,
+          "position": 18,
+          "exit_code": 0,
+          "cost_usd": 0.195585,
+          "ok": true,
+          "scores": {
+            "spec_compliance": {
+              "score": 9,
+              "evidence": [
+                "BEH-1: src/pagination.mjs replaces the seed's wrong `Math.floor(total / pageSize) + 1` with `if (total === 0) return 0; return Math.ceil(total / pageSize);`. `paginate` returns `{ items, page, pageSize, pageCount: pages, total }`, and `inRange = Number.isInteger(page) && page >= 1 && page <= pages` gives `items: []` without throwing.",
+                "BEH-2: src/config.mjs fixes the seed's check, which let null and arrays through. It now reads `doc === null || typeof doc !== 'object' || Array.isArray(doc)`, and adds `Object.hasOwn(doc, 'pageSize') && !(Number.isInteger(doc.pageSize) && doc.pageSize > 0)`, which throws through the `invalid()` CONFIG_INVALID helper.",
+                "BEH-3: src/slug.mjs does `.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')`, exactly as stated.",
+                "BEH-4: src/discount.mjs adds the missing `percent` branch with `Math.floor(priceCents * coupon.amount / 100)`. It fixes the seed's wrong clamp (`discounted < 0 ? priceCents`) to `Math.max(0, priceCents - discount)` and throws `err.code = 'COUPON_INVALID'` for any other kind. `expiresAt <= now` keeps the price unchanged.",
+                "BEH-4 nuance: the expiry check runs before the kind check, so an expired coupon with an unknown kind returns the price instead of throwing COUPON_INVALID. The spec's wording ('Any other kind throws') arguably means it should always throw.",
+                "BEH-5: src/format.mjs returns exactly `{ id, label, slug: slugify(item.label), price: { cents: item.priceCents, currency } }`. The seed leaked `priceCents` and had no currency parameter.",
+                "BEH-6: src/auth/token.mjs signs `${encoded}.${sign(encoded, secret)}` with base64url HMAC-SHA256. verifyToken uses `timingSafeEqual` behind a length check, and its try/catch returns null for malformed input.",
+                "BEH-7: src/handlers/list.mjs returns `{ status: 200, body: { items, page, pageCount, total } }` with formatted items, and src/registry.mjs registers `list: listHandler`. The 404 path for unregistered names comes from the seed and is unchanged."
+              ]
+            },
+            "correctness_robustness": {
+              "score": 8,
+              "evidence": [
+                "verifyToken checks `expected.length !== actual.length` before `timingSafeEqual`, so a length mismatch cannot throw. The whole comparison and the JSON.parse sit inside try/catch, and the test 'verifyToken returns null when the secret is not a usable HMAC key' shows a bad secret does not throw either.",
+                "The `BASE64URL = /^[A-Za-z0-9_-]+$/` guard rejects empty parts and padded or standard base64. Node's lenient base64url decoder would otherwise accept a non-canonical payload part.",
+                "paginate treats a non-integer `page` as out of range (`Number.isInteger(page)`), which avoids slicing at fractional offsets.",
+                "paginate does not validate `pageSize`. `pageCount(5, 0)` gives `Infinity`, which comes back as `pageCount: Infinity`. A negative pageSize gives a negative pageCount. Neither throws, but both values are nonsensical.",
+                "applyDiscount does not reject a negative `amount`, so a fixed coupon of -500 raises the price. A null coupon throws a TypeError rather than COUPON_INVALID. The spec does not cover either case."
+              ]
+            },
+            "test_quality": {
+              "score": 8,
+              "evidence": [
+                "tests/pagination.test.mjs pins exact multiples (`pageCount(10, 5)` → 2), zero (`pageCount(0, 5)` → 0), a partial last page, page 4 of 3, pages 0 and -2, and an empty list, each with full deepEqual results.",
+                "tests/config.test.mjs covers `null`, `[]`, `42`/`\"text\"`/`true`, and pageSize values `0`, `-5`, `2.5`, `\"20\"`, `null`, `true`, `[]` and `{}`, all with `{ code: 'CONFIG_INVALID' }`.",
+                "tests/discount.test.mjs covers the `expiresAt: NOW` boundary, the percent floor (`999 @ 15%` → 850), clamping for both fixed and percent, and an unknown kind with `{ name: 'Error', code: 'COUPON_INVALID' }`.",
+                "tests/format.test.mjs asserts `Object.keys(out)` equals `['id','label','slug','price']`, which pins 'No other keys'.",
+                "tests/auth/token.test.mjs builds the expected token independently with node:crypto. It covers a wrong secret, a tampered payload, a same-length wrong signature, shorter and longer signatures, an extra or trailing dot, empty parts, non-string inputs and invalid JSON.",
+                "Gap: no test asserts that `dispatch` of an unregistered name returns `{ status: 404 }`, although BEH-7 states it as an explicit error case. tests/handlers/list.test.mjs only tests `dispatch('list', ...)`.",
+                "Minor gaps: no test for a non-integer page such as 1.5 in paginate, and none for an expired coupon with an invalid kind."
+              ]
+            },
+            "code_clarity": {
+              "score": 9,
+              "evidence": [
+                "src/auth/token.mjs keeps the HMAC call in one small helper, `sign(data, secret)`, and its early-return guards read clearly.",
+                "src/discount.mjs is laid out as one computed `discount` followed by a single `Math.max(0, priceCents - discount)`. The `let discount;` with an if/else chain is slightly less tidy than a lookup, but it reads fine.",
+                "src/handlers/list.mjs and src/format.mjs are minimal and idiomatic ESM with no dead code or comments.",
+                "In src/pagination.mjs the local name `pages` avoids shadowing `pageCount`, though it reads a little differently from the output key it feeds."
+              ]
+            },
+            "scope_discipline": {
+              "score": 9,
+              "evidence": [
+                "Every source change maps to a BEH: pagination.mjs (BEH-1), config.mjs (BEH-2), slug.mjs (BEH-3), discount.mjs (BEH-4), format.mjs (BEH-5), auth/token.mjs (BEH-6), handlers/list.mjs and registry.mjs (BEH-7).",
+                "No new dependencies and no unrelated files. Only `node:crypto` is used.",
+                "The token test file is 141 lines and partly goes beyond the spec, e.g. the non-usable-secret and padded-base64 cases. These still support the 'never throws' and 'malformed token' rules, so the extra breadth is defensible."
+              ]
+            }
+          },
+          "overall": {
+            "score": 9,
+            "rationale": "The patch fixes every seed defect (pageCount off-by-one, config null/array/pageSize checks, discount clamp and missing percent branch, formatItem shape) and adds the missing modules (slug, token, list handler and its registration). The token verification is careful: constant-time comparison behind a length check, a strict base64url guard and a catch-all that returns null. The tests are precise and boundary-focused. The main weaknesses: no test for the BEH-7 404 case, an expiry-before-kind ordering that silently accepts invalid expired coupons, and no guard on degenerate pageSize values in paginate."
+          }
+        },
+        {
+          "trial": 2,
+          "position": 20,
+          "exit_code": 0,
+          "cost_usd": 0.0856578,
+          "ok": true,
+          "scores": {
+            "spec_compliance": {
+              "score": 9,
+              "evidence": [
+                "BEH-1: src/pagination.mjs fixes the seed's `Math.floor(total / pageSize) + 1` to `if (total === 0) return 0; return Math.ceil(total / pageSize);`. `paginate` returns `{ items, page, pageSize, pageCount, total }` and uses `inRange = Number.isInteger(page) && page >= 1 && page <= pages`, so a page outside 1..pageCount returns `[]` without throwing.",
+                "BEH-2: src/config.mjs replaces the seed's `typeof doc !== 'object'` check, which let `null` and arrays through, with `doc === null || typeof doc !== 'object' || Array.isArray(doc)`. It adds `Object.hasOwn(doc, 'pageSize') && !(Number.isInteger(doc.pageSize) && doc.pageSize > 0)`, which raises CONFIG_INVALID through the existing `invalid()` helper.",
+                "BEH-3: src/slug.mjs uses `.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')`, which matches the rule exactly.",
+                "BEH-4: src/discount.mjs drops the seed's wrong clamp (`discounted < 0 ? priceCents : discounted`) for `Math.max(0, priceCents - discount)`. It adds `percent` with `Math.floor(priceCents * coupon.amount / 100)` and throws `err.code = 'COUPON_INVALID'` for any other kind. One small ambiguity: the expiry check runs first, so an expired coupon with an unknown kind returns the price instead of throwing.",
+                "BEH-5: src/format.mjs now returns exactly `{ id, label, slug: slugify(item.label), price: { cents: item.priceCents, currency } }`. The seed returned `priceCents` and had no slug or currency.",
+                "BEH-6: src/auth/token.mjs `signToken` builds `${encoded}.${sign(encoded, secret)}` with base64url HMAC-SHA256. `verifyToken` uses `timingSafeEqual`, checks lengths first and returns null on every failure path inside try/catch.",
+                "BEH-7: src/handlers/list.mjs returns `{ status: 200, body: { items, page, pageCount, total } }` with the page's items run through formatItem. src/registry.mjs adds `list: listHandler` to `handlers`. The patch does not touch `dispatch` and adds no 404 test, so the unregistered-name rule depends on seed code that the diff doesn't show."
+              ]
+            },
+            "correctness_robustness": {
+              "score": 9,
+              "evidence": [
+                "verifyToken: `if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) return null;` means timingSafeEqual can never throw on a length mismatch. The whole crypto and parse path sits inside `try { ... } catch { return null; }`, so a bad secret (test 'secret is not a usable HMAC key') or bad JSON returns null.",
+                "verifyToken rejects input before any crypto runs: non-strings (`typeof token !== 'string'`), the wrong number of parts (`parts.length !== 2`), and empty or non-base64url parts (`BASE64URL = /^[A-Za-z0-9_-]+$/`).",
+                "paginate guards `Number.isInteger(page)`, so `undefined`, `NaN` or fractional pages return `[]` and don't produce bad slice offsets. With `pageSize: 0`, `pageCount` is Infinity but `slice(0, 0)` still returns `[]` without throwing.",
+                "applyDiscount: a coupon with no `expiresAt` gives `undefined <= now`, which is false, so the discount is applied. That is defensible. The expiry check also runs before kind validation, which is a minor ordering choice.",
+                "parseConfig treats an explicit `\"pageSize\": null` as present-and-invalid. That is a reasonable reading of 'present and not a positive integer'."
+              ]
+            },
+            "test_quality": {
+              "score": 8,
+              "evidence": [
+                "tests/pagination.test.mjs covers an exact multiple (`pageCount(10, 5)` is 2), zero (`pageCount(0, 5)` is 0), a partial last page, page 4 past the end, pages 0 and -2, and an empty list, all with full deepEqual shapes. It has no non-integer page case.",
+                "tests/config.test.mjs covers `null`, `[]`, `42`/`\"text\"`/`true`, and pageSize values `0`, `-5`, `2.5`, `\"20\"`, `null`, `true`, `[]` and `{}`, each asserting `{ code: 'CONFIG_INVALID' }`.",
+                "tests/discount.test.mjs covers the boundary 'a coupon expiring exactly at now', percent flooring (999 at 15% gives 850), clamping to 0 for fixed and for percent over 100, and an unknown kind throwing `{ name: 'Error', code: 'COUPON_INVALID' }`.",
+                "tests/format.test.mjs checks exact keys with `Object.keys(out)` equal to `['id','label','slug','price']` and confirms that extra input fields don't leak.",
+                "tests/auth/token.test.mjs builds the expected token independently with node:crypto. It covers a same-length wrong signature, shorter and longer signatures, an extra or trailing dot, empty parts, non-string tokens, padded standard base64, and bad secrets.",
+                "Gaps: tests/handlers/list.test.mjs never calls `dispatch` with an unregistered name to assert `{ status: 404 }`, which is BEH-7's stated error case. No test checks how an expired coupon with an invalid kind is handled."
+              ]
+            },
+            "code_clarity": {
+              "score": 9,
+              "evidence": [
+                "src/discount.mjs uses a single `let discount` with one `return Math.max(0, priceCents - discount)`, which reads more clearly than the seed's early-return branches.",
+                "src/auth/token.mjs is short and readable, with a small `sign(data, secret)` helper shared by signing and verification and a named `BASE64URL` constant.",
+                "src/handlers/list.mjs is a direct mapping with no indirection. src/slug.mjs is a three-step chain.",
+                "Minor: in src/pagination.mjs, `paginate` computes `start` even when `inRange` is false. That is harmless but slightly loose."
+              ]
+            },
+            "scope_discipline": {
+              "score": 10,
+              "evidence": [
+                "Every new file matches a spec module: src/slug.mjs (BEH-3), src/auth/token.mjs (BEH-6) and src/handlers/list.mjs (BEH-7). Each has a matching test file under tests/.",
+                "src/registry.mjs changes only the `listHandler` import and the `list: listHandler` entry. The `healthHandler` and `dispatch` code is left alone.",
+                "No package.json changes, no new dependencies, and no features beyond BEH-1..BEH-7. `currency` in parseConfig is left without validation, as the spec specifies none."
+              ]
+            }
+          },
+          "overall": {
+            "score": 9,
+            "rationale": "A strong, focused patch. It fixes every seed defect the diff shows: pageCount off-by-one, parseConfig accepting null and arrays, the wrong discount clamp, and formatItem's shape. It also implements slugs, tokens and the list handler faithfully. Token verification is robust: lengths are checked before timingSafeEqual, all failures fall back to null, and inputs are validated before any crypto runs. Tests are precise and cover the boundaries well. The main shortfalls are no test for dispatch returning 404 on an unregistered name, the patch relying on unshown seed code for that rule, and a small ordering ambiguity between the expiry check and kind validation in applyDiscount."
+          }
+        }
+      ],
+      "ok_trials": 2,
+      "mean": {
+        "spec_compliance": 9,
+        "correctness_robustness": 8.5,
+        "test_quality": 8,
+        "code_clarity": 9,
+        "scope_discipline": 9.5,
+        "overall": 9
+      },
+      "spread": {
+        "spec_compliance": 0,
+        "correctness_robustness": 1,
+        "test_quality": 0,
+        "code_clarity": 0,
+        "scope_discipline": 1,
+        "overall": 0
+      }
+    },
+    "lite-c90fa324e18f-2026-11-28T02-06-43-357Z.json": {
+      "arm": "lite",
+      "ref": "c90fa324e18fb61def9445b24f3e91ca89598e12",
+      "patch": "lite-c90fa324e18f-2026-11-28T02-06-43-357Z.patch",
+      "patch_bytes": 20154,
+      "anonymized_bytes": 20154,
+      "dropped_files": [],
+      "trials": [
+        {
+          "trial": 1,
+          "position": 1,
+          "exit_code": 0,
+          "cost_usd": 0.183505,
+          "ok": true,
+          "scores": {
+            "spec_compliance": {
+              "score": 9,
+              "evidence": [
+                "BEH-1: src/pagination.mjs changes the seed's `Math.floor(total / pageSize) + 1` to `Math.ceil(total / pageSize)`, which gives 0 when total is 0. The new `paginate` returns `{ items, page, pageSize, pageCount: pages, total }`, and `inRange = Number.isInteger(page) && page >= 1 && page <= pages` makes an out-of-range page return `items: []` without throwing.",
+                "BEH-2: src/config.mjs adds `doc === null || Array.isArray(doc)` to the seed's bare `typeof doc !== 'object'`. It also adds `Object.hasOwn(doc, 'pageSize') && !(Number.isInteger(doc.pageSize) && doc.pageSize > 0)`, which throws CONFIG_INVALID. Every listed error case is covered, including an explicit `pageSize: null`.",
+                "BEH-3: src/slug.mjs uses `.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')`, which matches the rule exactly.",
+                "BEH-4: src/discount.mjs `discountFor` handles 'fixed' and 'percent' (`Math.floor((priceCents * coupon.amount) / 100)`) and throws `invalid(...)` with `code = 'COUPON_INVALID'` for any other kind. `Math.max(0, ...)` replaces the seed's wrong fallback (`discounted < 0 ? priceCents`). One ambiguity: because the expiry check runs first, an expired coupon with an unknown kind returns the price instead of throwing, even though the spec says any other kind throws.",
+                "BEH-5: src/format.mjs returns exactly `{ id, label, slug: slugify(item.label), price: { cents: item.priceCents, currency } }`. This replaces the seed's `{ id, label, priceCents }`.",
+                "BEH-6: src/auth/token.mjs `signToken` produces `${head}.${sign(head, secret)}` using base64url HMAC-SHA256. `verifyToken` checks lengths, compares with `timingSafeEqual`, and wraps the work in try/catch so it returns null instead of throwing.",
+                "BEH-7: src/handlers/list.mjs returns `{ status: 200, body: { items: formatted, page, pageCount, total } }`, and src/registry.mjs adds `list: listHandler` to `handlers`. The patch does not touch `dispatch`, so nothing shown confirms that an unregistered name returns `{ status: 404 }`."
+              ]
+            },
+            "correctness_robustness": {
+              "score": 8,
+              "evidence": [
+                "verifyToken checks `actual.length !== expected.length` before calling `timingSafeEqual`, so a length mismatch cannot throw. A non-string token, an empty part, a bad secret (`createHmac` with an undefined secret) and a JSON.parse failure all return null through the guards and the catch.",
+                "The signature is compared as the base64url string of the HMAC rather than the decoded bytes. That rules out non-canonical base64url encodings slipping through: the test 'verifyToken returns null for a one-byte signature' exercises this, and `${KNOWN_SIG}A` is rejected.",
+                "paginate rejects non-integer pages through `Number.isInteger(page)`. However, `pageSize` of 0 or less is not guarded: `pageCount` becomes Infinity or negative, and the slice gives odd results. The spec does not cover this, but it is a plausible input.",
+                "applyDiscount does not validate `amount` (a negative amount raises the price). An expired coupon with an invalid kind skips the COUPON_INVALID check.",
+                "A verified payload can be any JSON value, such as a number or string. The spec allows this but does not say so."
+              ]
+            },
+            "test_quality": {
+              "score": 8,
+              "evidence": [
+                "tests/pagination.test.mjs covers rounding a partial page up, an exact multiple (`pageCount(10, 5) === 2`), a total of 0, the first page, a partial last page, a page past the last, page 0 and -1, and an empty list, all with deepEqual on the full shape.",
+                "tests/config.test.mjs covers null, `[]`, primitives, and pageSize values `0`, `-1`, `2.5`, `\"10\"`, `null` and `true`, each asserting `{ code: 'CONFIG_INVALID' }`.",
+                "tests/discount.test.mjs covers the `expiresAt: NOW` boundary, clamping a fixed coupon to 0, flooring a percent discount (1999 at 15% gives 1700), a percent over 100 clamping to 0, and an unknown kind throwing COUPON_INVALID.",
+                "tests/auth/token.test.mjs uses a known vector, `'eyJhIjoxfQ.cd0Z_...'`, and checks tampered payloads and signatures, shorter, longer and one-byte signatures, a table of malformed tokens, non-string inputs and bad secrets, each with doesNotThrow plus `null`.",
+                "tests/format.test.mjs 'does not leak extra input keys' uses deepEqual to pin the exact output keys.",
+                "Gaps: no test calls `dispatch` with an unregistered name and expects `{ status: 404 }` (BEH-7). No test checks an expired coupon with an unknown kind, or a non-integer page in paginate."
+              ]
+            },
+            "code_clarity": {
+              "score": 9,
+              "evidence": [
+                "src/discount.mjs splits the logic into `discountFor` plus `Math.max(0, priceCents - discountFor(...))`, which is short and readable.",
+                "src/auth/token.mjs has a small `sign` helper and early-return guards. The code is clear, though `head`/`sig` naming is a little terse.",
+                "src/pagination.mjs computes `start` even when `inRange` is false. This is harmless but slightly untidy.",
+                "There is one inline comment, in discount.test.mjs, explaining the floor arithmetic. There is no dead code."
+              ]
+            },
+            "scope_discipline": {
+              "score": 9,
+              "evidence": [
+                "Every source change maps to a behavior: pagination.mjs (BEH-1), config.mjs (BEH-2), slug.mjs (BEH-3), discount.mjs (BEH-4), format.mjs (BEH-5), auth/token.mjs (BEH-6), and handlers/list.mjs plus registry.mjs (BEH-7).",
+                "The patch adds no dependencies and touches no unrelated files. It uses only `node:crypto` and `node:test`.",
+                "The token test file is long (133 lines) but stays within BEH-6. The rejection of non-integer pages in paginate is a small, defensible extra."
+              ]
+            }
+          },
+          "overall": {
+            "score": 9,
+            "rationale": "A strong, focused patch. It fixes the seed's wrong pagination, config, discount and format logic, and adds slugs, tokens and the list handler, all closely matching the spec. Token verification is safe: a length check before timingSafeEqual and a catch-all that returns null. The tests are precise and cover boundaries. The main weaknesses: there is no test (and no visible confirmation) that dispatch of an unregistered name returns 404; an expired coupon with an unknown kind skips COUPON_INVALID; and pageSize is not guarded in paginate."
+          }
+        },
+        {
+          "trial": 2,
+          "position": 13,
+          "exit_code": 0,
+          "cost_usd": 0.08005679999999998,
+          "ok": true,
+          "scores": {
+            "spec_compliance": {
+              "score": 9,
+              "evidence": [
+                "BEH-1: src/pagination.mjs changes the seed's `Math.floor(total / pageSize) + 1` to `Math.ceil(total / pageSize)`, which also gives 0 for total 0. The new `paginate` returns `{ items, page, pageSize, pageCount, total }`, and `inRange = Number.isInteger(page) && page >= 1 && page <= pages` returns `items: []` without throwing.",
+                "BEH-2: src/config.mjs now also rejects `doc === null || Array.isArray(doc)`. It adds `Object.hasOwn(doc, 'pageSize') && !(Number.isInteger(doc.pageSize) && doc.pageSize > 0)`, which throws CONFIG_INVALID. This fixes the seed's bare `typeof doc !== 'object'` check, which let null and arrays through.",
+                "BEH-3: src/slug.mjs `.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')` matches the rule exactly.",
+                "BEH-4: src/discount.mjs `discountFor` handles fixed, and percent with `Math.floor((priceCents * coupon.amount) / 100)`. Any other kind throws an error with `err.code = 'COUPON_INVALID'`, and `Math.max(0, ...)` clamps the result. This replaces the seed's wrong clamp (`discounted < 0 ? priceCents`) and its silent pass-through for other kinds. One arguable gap: `if (coupon.expiresAt <= now) return priceCents;` runs before kind validation, so an expired coupon with an unknown kind returns the price instead of throwing as 'Any other kind throws' suggests.",
+                "BEH-5: src/format.mjs returns exactly `{ id, label, slug: slugify(item.label), price: { cents: item.priceCents, currency } }`, replacing the seed's `priceCents` key.",
+                "BEH-6: src/auth/token.mjs `signToken` builds base64url(JSON).base64url(HMAC-SHA256(head)). `verifyToken` uses `timingSafeEqual` behind a length check, and a try/catch returns null for every failure.",
+                "BEH-7: src/handlers/list.mjs returns `{ status: 200, body: { items, page, pageCount, total } }` with the items formatted. src/registry.mjs adds `list: listHandler`. The patch does not touch `dispatch`, so the 404 for an unregistered name depends on the seed and the patch does not show it."
+              ]
+            },
+            "correctness_robustness": {
+              "score": 8,
+              "evidence": [
+                "verifyToken: `actual.length !== expected.length ||` short-circuits before `timingSafeEqual`, so a length mismatch cannot throw. The try/catch covers a bad secret type in `createHmac` and `JSON.parse` failures on a non-JSON or non-base64url head.",
+                "verifyToken rejects a non-string token, a part count other than 2 and empty parts before doing any crypto work.",
+                "applyDiscount checks expiry before validating the kind, so `{ kind: 'bogo', expiresAt: past }` is accepted silently instead of being reported as invalid.",
+                "paginate does not guard pageSize ≤ 0 or a non-integer pageSize: `pageCount(n, 0)` gives Infinity or NaN. The spec does not cover this, but it is an unhandled boundary.",
+                "applyDiscount dereferences `coupon.expiresAt` with no guard, so a null or undefined coupon throws a TypeError rather than COUPON_INVALID."
+              ]
+            },
+            "test_quality": {
+              "score": 8,
+              "evidence": [
+                "tests/pagination.test.mjs covers the exact multiple `pageCount(10, 5) === 2`, `pageCount(0, 5) === 0`, a partial last page, page 4 past the end, pages 0 and -1, and an empty list, all with full deepEqual. A non-integer page is not tested.",
+                "tests/config.test.mjs covers null, `[]`, the primitives `42`, `\"text\"` and `true`, and the pageSize values `0`, `-1`, `2.5`, `\"10\"`, `null` and `true`, all asserting `{ code: 'CONFIG_INVALID' }`.",
+                "tests/discount.test.mjs covers the `expiresAt: NOW` boundary, the fixed-coupon clamp to 0, the floor case `1999 * 15 / 100 -> 1700`, a percent over 100, and an unknown kind throwing COUPON_INVALID. It has no test for an expired coupon with an unknown kind.",
+                "tests/auth/token.test.mjs checks a known vector, a wrong secret, a tampered head, a same-length tampered signature, shorter and longer signatures, nine malformed tokens, non-JSON heads, non-string tokens and bad secrets, each asserting null and doesNotThrow.",
+                "tests/format.test.mjs 'does not leak extra input keys' uses deepEqual on input that includes stray `slug` and `price` keys, which pins the 'No other keys' rule.",
+                "tests/handlers/list.test.mjs tests `handlers.list === listHandler` and `dispatch('list', ...)`. No test checks that `dispatch` of an unregistered name returns `{ status: 404 }`, so that BEH-7 error case is untested."
+              ]
+            },
+            "code_clarity": {
+              "score": 9,
+              "evidence": [
+                "src/discount.mjs splits the work into `invalid(reason)` and `discountFor(priceCents, coupon)`, which makes `applyDiscount` a two-line function.",
+                "src/handlers/list.mjs and src/format.mjs are minimal and direct.",
+                "src/auth/token.mjs keeps a small private `sign` helper and an early-return validation chain, which is easy to follow.",
+                "Minor: `paginate` computes `start` even when the page is out of range, which is harmless but slightly redundant."
+              ]
+            },
+            "scope_discipline": {
+              "score": 10,
+              "evidence": [
+                "Each changed source file maps to a BEH: pagination.mjs (BEH-1), config.mjs (BEH-2), slug.mjs (BEH-3), discount.mjs (BEH-4), format.mjs (BEH-5), auth/token.mjs (BEH-6), handlers/list.mjs and registry.mjs (BEH-7).",
+                "There are no package.json changes and no new dependencies: only `node:crypto` and `node:test` are imported.",
+                "The existing `healthHandler` and `dispatch` in registry.mjs are left as they were, and no speculative features are added."
+              ]
+            }
+          },
+          "overall": {
+            "score": 9,
+            "rationale": "The patch fixes every seed defect it touches: the pageCount off-by-one, the missing null and array config check, the wrong discount clamp and missing kinds, and the formatItem output shape. It also implements slugs, tokens and the list handler correctly, with careful crypto handling. The tests are precise and cover boundaries thoroughly. The main gaps: no test for dispatch returning 404 on an unregistered name (and the patch does not show that behavior), expiry being checked before kind validation in applyDiscount, and no guards on a degenerate pageSize. There are no scope problems."
+          }
+        }
+      ],
+      "ok_trials": 2,
+      "mean": {
+        "spec_compliance": 9,
+        "correctness_robustness": 8,
+        "test_quality": 8,
+        "code_clarity": 9,
+        "scope_discipline": 9.5,
+        "overall": 9
+      },
+      "spread": {
+        "spec_compliance": 0,
+        "correctness_robustness": 0,
+        "test_quality": 0,
+        "code_clarity": 0,
+        "scope_discipline": 1,
+        "overall": 0
+      }
+    },
+    "plain-c90fa324e18f-2026-11-27T20-13-40-275Z.json": {
+      "arm": "plain",
+      "ref": "c90fa324e18fb61def9445b24f3e91ca89598e12",
+      "patch": "plain-c90fa324e18f-2026-11-27T20-13-40-275Z.patch",
+      "patch_bytes": 17367,
+      "anonymized_bytes": 17367,
+      "dropped_files": [],
+      "trials": [
+        {
+          "trial": 1,
+          "position": 12,
+          "exit_code": 0,
+          "cost_usd": 0.0787586,
+          "ok": true,
+          "scores": {
+            "spec_compliance": {
+              "score": 10,
+              "evidence": [
+                "BEH-1: src/pagination.mjs fixes the seed's `Math.floor(total / pageSize) + 1` to `if (total === 0) return 0; return Math.ceil(total / pageSize);`. `paginate` returns `{ items, page, pageSize, pageCount, total }` and uses `inRange = Number.isInteger(page) && page >= 1 && page <= count` to return `items: []` without throwing.",
+                "BEH-2: src/config.mjs changes the seed's bare `typeof doc !== 'object'` check to also reject `doc === null || Array.isArray(doc)`. It adds `Object.hasOwn(doc, 'pageSize') && !(Number.isInteger(doc.pageSize) && doc.pageSize > 0)`, which throws CONFIG_INVALID. The defaults are kept.",
+                "BEH-3: src/slug.mjs `.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')` matches the rule exactly.",
+                "BEH-4: src/discount.mjs `discountFor` handles 'fixed' (subtracts amount) and 'percent' (`Math.floor((priceCents * coupon.amount) / 100)`). Any other kind throws an error with `code = 'COUPON_INVALID'`. `coupon.expiresAt <= now` returns the price unchanged, and `Math.max(0, priceCents - discount)` replaces the seed's wrong behaviour of returning the full price when a discount went below zero.",
+                "BEH-5: src/format.mjs returns exactly `{ id, label, slug: slugify(item.label), price: { cents: item.priceCents, currency } }`.",
+                "BEH-6: src/auth/token.mjs signs `${body}.${sign(body, secret)}` with base64url HMAC-SHA256. `verifyToken` uses `timingSafeEqual` after a length check, wraps everything in try/catch and returns null for malformed input.",
+                "BEH-7: src/handlers/list.mjs returns `{ status: 200, body: { items: formatted, page, pageCount, total } }`. src/registry.mjs adds `list: listHandler` to `handlers`, and the test 'the health handler and 404 still work' checks `dispatch('nope')` deep-equals `{ status: 404 }`."
+              ]
+            },
+            "correctness_robustness": {
+              "score": 9,
+              "evidence": [
+                "BEH-6: `if (actual.length !== expected.length) return null;` runs before `timingSafeEqual`, so a length mismatch cannot throw. It compares canonical base64url strings, so a non-canonical signature encoding cannot pass (the code comment states this). An undefined secret makes `createHmac` throw, and the outer `try { ... } catch { return null; }` turns that into null.",
+                "BEH-1: `Number.isInteger(page)` keeps non-integer or NaN pages from slicing odd ranges. The total=0 case gives pageCount 0 and an empty page.",
+                "Minor gap: `paginate` does not guard `pageSize <= 0`. `pageCount(5, 0)` returns Infinity, so page 1 counts as in range and slices `(0, 0)`. It does not throw, but the pageCount it reports is nonsensical. The spec does not cover this input.",
+                "Minor gap: in src/discount.mjs a non-numeric `amount` gives `Math.max(0, NaN)` = NaN, and a negative fixed amount raises the price. The spec does not cover these inputs.",
+                "BEH-4 ordering: `discountFor` runs before the expiry check, so an unknown kind throws even on an expired coupon. This is a defensible reading of 'Any other kind throws', and a test pins it."
+              ]
+            },
+            "test_quality": {
+              "score": 9,
+              "evidence": [
+                "tests/pagination.test.mjs covers an exact multiple (`pageCount(10, 5)` → 2), zero items (`pageCount(0, 5)` → 0), a partial last page, past-last (page 4), below-first (pages 0 and -2) and an empty list, all with full `deepEqual` shapes.",
+                "tests/config.test.mjs loops over non-object JSON values `['null', '[]', '[1, 2]', '\"str\"', '42', 'true']` and invalid pageSize values `['0', '-1', '1.5', '\"10\"', 'null', 'true', '{}', '[]']`, asserting `{ code: 'CONFIG_INVALID' }`. It also has 'parseConfig keeps provided values'.",
+                "tests/discount.test.mjs covers the `expiresAt: NOW` boundary for both kinds, flooring ('999 * 15 / 100 = 149.85 -> 149 off' → 850), the clamp to 0 for fixed and for percent over 100, and an unknown kind checked with `err instanceof Error && err.code === 'COUPON_INVALID'`.",
+                "tests/auth/token.test.mjs rebuilds the expected token independently with `createHmac`. It covers a tampered payload, tampered/truncated/extended signatures, a validly signed non-JSON body, eight malformed inputs (non-string, null, '.', 'a.b.c') and an undefined secret.",
+                "tests/format.test.mjs asserts `Object.keys(out)` equals `['id', 'label', 'slug', 'price']` and that extra input keys are dropped. tests/handlers/list.test.mjs checks the registry identity `handlers.list === listHandler` and the 404 response.",
+                "Small gaps: no test for a non-integer page (e.g. 1.5) in `paginate`, and no test that `currency` defaults when only `pageSize` is given."
+              ]
+            },
+            "code_clarity": {
+              "score": 9,
+              "evidence": [
+                "src/discount.mjs splits the logic into a clear `discountFor` switch and an `invalid(reason)` helper that mirrors the config module's pattern.",
+                "src/auth/token.mjs has a small `sign` helper. Its only comment explains a security constraint: 'Compare the canonical base64url strings so lenient base64 decoding cannot let a non-canonical signature through.'",
+                "src/handlers/list.mjs and src/format.mjs are short, direct ESM with descriptive names.",
+                "Nit: in `verifyToken` the `typeof token !== 'string'` guard sits inside the try block, which is slightly redundant given the catch-all, but harmless."
+              ]
+            },
+            "scope_discipline": {
+              "score": 10,
+              "evidence": [
+                "Every touched source file maps to a BEH: pagination (1), config (2), slug (3), discount (4), format (5), auth/token (6), and handlers/list plus registry (7).",
+                "No new dependencies. Only `node:crypto` is imported, and only Node built-ins are used.",
+                "The existing seed tests are kept. The only edit is passing `'USD'` to `formatItem` in 'formatItem carries the id and label', which the new BEH-5 signature requires.",
+                "No speculative features. The registry change is limited to the import and `list: listHandler`."
+              ]
+            }
+          },
+          "overall": {
+            "score": 9,
+            "rationale": "The patch implements all seven behaviors as written and fixes every seed defect visible in the diff: the off-by-one pageCount, the missing null/array/pageSize checks in config, and the wrong clamping and missing percent kind in discount. The token verification is careful: it checks lengths before timingSafeEqual, compares canonical strings and never throws. The tests are precise and boundary-focused, and they would catch plausible wrong implementations. The only remaining weaknesses are unspecified edge inputs (pageSize ≤ 0, non-numeric coupon amounts) and a couple of small test gaps."
+          }
+        },
+        {
+          "trial": 2,
+          "position": 6,
+          "exit_code": 0,
+          "cost_usd": 0.181477,
+          "ok": true,
+          "scores": {
+            "spec_compliance": {
+              "score": 10,
+              "evidence": [
+                "BEH-1: src/pagination.mjs fixes the seed's `Math.floor(total / pageSize) + 1` to `if (total === 0) return 0; return Math.ceil(total / pageSize);`. The new `paginate` returns `{ items, page, pageSize, pageCount: count, total }`. Its guard `Number.isInteger(page) && page >= 1 && page <= count` returns `[]` for any page outside the range and never throws.",
+                "BEH-2: src/config.mjs replaces the seed's bare `typeof doc !== 'object'` check, which let `null` and arrays through, with `typeof doc !== 'object' || doc === null || Array.isArray(doc)`. It adds `Object.hasOwn(doc, 'pageSize') && !(Number.isInteger(doc.pageSize) && doc.pageSize > 0)`, so `pageSize` must be a positive integer only when it is present. Defaults are kept.",
+                "BEH-3: src/slug.mjs is `.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')`, which follows the rule exactly.",
+                "BEH-4: src/discount.mjs `discountFor` handles 'fixed' (`coupon.amount`) and 'percent' (`Math.floor((priceCents * coupon.amount) / 100)`), and its default throws an Error with `code = 'COUPON_INVALID'`. `coupon.expiresAt <= now` returns the price unchanged. `Math.max(0, priceCents - discount)` replaces the seed's wrong rule, which restored the full price on overflow (`discounted < 0 ? priceCents : discounted`).",
+                "BEH-5: src/format.mjs now returns exactly `{ id, label, slug: slugify(item.label), price: { cents: item.priceCents, currency } }`. The seed returned `priceCents` with no slug or currency.",
+                "BEH-6: src/auth/token.mjs `signToken` builds `${body}.${sign(body, secret)}` using base64url JSON and a base64url HMAC-SHA256 of the body. `verifyToken` checks the length, then calls `timingSafeEqual`, and wraps everything in `try { ... } catch { return null; }`, so it returns null for bad or malformed tokens and never throws.",
+                "BEH-7: src/handlers/list.mjs returns `{ status: 200, body: { items: result.items.map(formatItem…), page, pageCount, total } }`. src/registry.mjs adds `list: listHandler` to `handlers`. tests/handlers/list.test.mjs confirms that `dispatch('nope')` returns `{ status: 404 }`."
+              ]
+            },
+            "correctness_robustness": {
+              "score": 9,
+              "evidence": [
+                "BEH-6: verifyToken checks `if (actual.length !== expected.length) return null;` before `timingSafeEqual`, so a length mismatch cannot throw. It compares canonical base64url strings, which the comment explains (\"lenient base64 decoding cannot let a non-canonical signature through\"). Non-string tokens, a bad secret (`createHmac` with undefined) and non-JSON bodies all fall into the catch and return null.",
+                "BEH-1: paginate rejects non-integer pages (`Number.isInteger(page)`), so `slice` is never called with a fractional or negative start. The empty list gives `pageCount: 0` and `items: []`.",
+                "BEH-4: discountFor runs before the expiry check, so an unknown kind throws COUPON_INVALID even on an expired coupon. This is a defensible reading, and tests pin it.",
+                "Minor gaps the spec does not cover: in applyDiscount a non-numeric `amount` yields `Math.max(0, NaN)`, which is NaN; a null coupon throws a TypeError rather than COUPON_INVALID; paginate with `pageSize: 0` reports `pageCount: Infinity` (src/pagination.mjs)."
+              ]
+            },
+            "test_quality": {
+              "score": 9,
+              "evidence": [
+                "BEH-1, tests/pagination.test.mjs: covers an exact multiple (`pageCount(10, 5)` is 2), zero (`pageCount(0, 5)` is 0), the full first page, the partial last page, page 4 past the end, page 0 and page -2, and an empty list, with deepEqual on the whole result.",
+                "BEH-2, tests/config.test.mjs: parameterised rejections cover `'null', '[]', '[1, 2]', '\"str\"', '42', 'true'` and pageSize values `'0', '-1', '1.5', '\"10\"', 'null', 'true', '{}', '[]'`, each asserting `{ code: 'CONFIG_INVALID' }`. A 'keeps provided values' test was also added.",
+                "BEH-4, tests/discount.test.mjs: covers the boundary `expiresAt: NOW` for both kinds, the floor at 0 for fixed and for percent over 100, the floored percentage (`999 * 15 / 100 = 149.85 -> 149 off`), and the unknown kind both live and expired.",
+                "BEH-5, tests/format.test.mjs: exact key sets are checked with `Object.keys(out)` and `Object.keys(out.price)`, and extra input keys (`secret`, `stock`) are dropped.",
+                "BEH-6, tests/auth/token.test.mjs: rebuilds the expected token independently with `createHmac`, then tests a tampered payload, a flipped, truncated or extended signature, a signed non-JSON body, 8 malformed inputs and an undefined secret.",
+                "BEH-7, tests/handlers/list.test.mjs: does deepEqual on full handler output for a full page, a partial page and an out-of-range page, checks registration with `handlers.list === listHandler`, and covers dispatch and 404.",
+                "Small gaps: nothing would catch a non-constant-time comparison (hard to test), and no test checks currency defaulting alone or the percent kind at exactly 0 or 100."
+              ]
+            },
+            "code_clarity": {
+              "score": 9,
+              "evidence": [
+                "Modules are small and named for what they do: `discountFor` uses a `switch` over kinds, and `sign` is a helper in src/auth/token.mjs.",
+                "The only comment, in verifyToken, states a real constraint (canonical-string comparison).",
+                "There is a slight subtlety in src/discount.mjs: `const discount = discountFor(...)` runs before the expiry check on purpose, so invalid kinds throw even when expired, but nothing in the code explains that ordering."
+              ]
+            },
+            "scope_discipline": {
+              "score": 10,
+              "evidence": [
+                "Every changed file maps to a behavior: pagination (BEH-1), config (BEH-2), slug (BEH-3), discount (BEH-4), format (BEH-5), auth/token (BEH-6), handlers/list and the registry entry (BEH-7), plus their tests.",
+                "There are no new dependencies (`node:crypto` and `node:test` only), no package.json churn and no speculative features. The existing `healthHandler` and `dispatch` are left as they were."
+              ]
+            }
+          },
+          "overall": {
+            "score": 9,
+            "rationale": "The patch fixes every seed defect (pageCount off-by-one, null and array configs, the discount overflow rule, the formatItem shape) and correctly implements every rule and error case in BEH-1..BEH-7. verifyToken is careful: it checks length before timingSafeEqual and cannot throw. The tests are thorough and exact, cover boundaries and error cases, and would catch plausible wrong implementations. The remaining issues are minor robustness gaps on inputs the spec does not mention (NaN amounts, a pageSize of 0 in paginate) and one ordering choice in applyDiscount that the code does not explain."
+          }
+        }
+      ],
+      "ok_trials": 2,
+      "mean": {
+        "spec_compliance": 10,
+        "correctness_robustness": 9,
+        "test_quality": 9,
+        "code_clarity": 9,
+        "scope_discipline": 10,
+        "overall": 9
+      },
+      "spread": {
+        "spec_compliance": 0,
+        "correctness_robustness": 0,
+        "test_quality": 0,
+        "code_clarity": 0,
+        "scope_discipline": 0,
+        "overall": 0
+      }
+    },
+    "plain-c90fa324e18f-2026-11-27T21-43-49-386Z.json": {
+      "arm": "plain",
+      "ref": "c90fa324e18fb61def9445b24f3e91ca89598e12",
+      "patch": "plain-c90fa324e18f-2026-11-27T21-43-49-386Z.patch",
+      "patch_bytes": 17944,
+      "anonymized_bytes": 17944,
+      "dropped_files": [],
+      "trials": [
+        {
+          "trial": 1,
+          "position": 7,
+          "exit_code": 0,
+          "cost_usd": 0.183477,
+          "ok": false,
+          "error": "no JSON object in the reply",
+          "raw": "```json\n{\n  \"dimensions\": {\n    \"spec_compliance\": {\n      \"score\": 10,\n      \"evidence\": [\n        \"BEH-1: src/pagination.mjs `pageCount` now returns `if (total === 0) return 0; return Math.ceil(total / pageSize);`, which fixes the seed's `Math.floor(total / pageSize) + 1`. `paginate` returns `{ items, page, pageSize, pageCount: count, total }` and uses `inRange = Number.isInteger(page) && page >= 1 && page <= count` to return `[]` without throwing.\",\n        \"BEH-2: src/config.mjs adds `doc === null || Array.isArray(doc)` to the seed's `typeof doc !== 'object'` check, which fixes null and arrays being accepted. It also adds `Object.hasOwn(doc, 'pageSize')` with `!Number.isInteger(doc.pageSize) || doc.pageSize <= 0`, so a present but invalid pageSize (including null) throws CONFIG_INVALID.\",\n        \"BEH-3: src/slug.mjs does `.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')`, exactly as the spec states.\",\n        \"BEH-4: src/discount.mjs `discountFor` handles 'fixed' and 'percent' (`Math.floor((priceCents * coupon.amount) / 100)`) and throws for any other kind with `err.code = 'COUPON_INVALID'`. `coupon.expiresAt <= now` leaves the price unchanged, and `Math.max(0, priceCents - discount)` fixes the seed bug where an over-large fixed coupon returned the full price (`discounted < 0 ? priceCents : discounted`).\",\n        \"BEH-5: src/format.mjs returns exactly `{ id, label, slug: slugify(item.label), price: { cents: item.priceCents, currency } }`. The seed returned `priceCents` with no slug.\",\n        \"BEH-6: src/auth/token.mjs `signToken` builds `${body}.${sign(body, secret)}` with base64url JSON and an HMAC-SHA256 base64url digest. `verifyToken` uses `timingSafeEqual` after a length check, and the whole body is wrapped in try/catch so it returns null instead of throwing.\",\n        \"BEH-7: src/handlers/list.mjs returns `{ status: 200, body: { items: result.items.map(formatItem…), page, pageCount, total } }`. src/registry.mjs registers `list: listHandler`, and the existing 404 path of `dispatch` is kept and tested.\"\n      ]\n    },\n    \"correctness_robustness\": {\n      \"score\": 9,\n      \"evidence\": [\n        \"verifyToken: `if (actual.length !== expected.length || !timingSafeEqual(actual, expected)) return null;` means timingSafeEqual cannot throw on a length mismatch. A `typeof token !== 'string'` guard, a BASE64URL regex and the outer try/catch cover non-string tokens, wrong part counts, a non-JSON body and an undefined secret (createHmac throwing is caught).\",\n        \"paginate rejects non-integer pages (`Number.isInteger(page)`), so `page: 1.5` returns `[]` rather than a fractional slice. With an empty list, `count` is 0, so page 1 is out of range.\",\n        \"applyDiscount computes `discountFor` before the expiry check, so an unknown kind throws even on an expired coupon. That reading is consistent and is tested ('throws COUPON_INVALID even when expired').\",\n        \"Minor: `paginate`/`listHandler` do not validate `pageSize`. A non-integer or zero pageSize gives Infinity or a fractional slice, but nothing throws, and the spec does not specify this case. `verifyToken` of a signed `null` payload returns `null`, which looks the same as a failure. This is an inherent ambiguity, not a defect.\"\n      ]\n    },\n    \"test_quality\": {\n      \"score\": 9,\n      \"evidence\": [\n        \"tests/pagination.test.mjs covers an exact multiple (`pageCount(10, 5)` → 2), zero (`pageCount(0, 5)` → 0), a partial last page, page past the end, page 0 and -1, an empty list, and a non-integer page, all with exact `deepEqual` on the full shape.\",\n        \"tests/config.test.mjs loops over non-object JSON (`'null', '[]', '[1,2]', '42', '\"str\"', 'true'`) and invalid pageSize values (`'0', '-1', '1.5', '\"20\"', 'null', 'true', '[]', '{}'`), each asserting `{ code: 'CONFIG_INVALID' }`, plus an `instanceof Error` check.\",\n        \"tests/discount.test.mjs covers expiry exactly at now, a fixed coupon larger than the price, a percent coupon with a fra"
+        },
+        {
+          "trial": 2,
+          "position": 23,
+          "exit_code": 0,
+          "cost_usd": 0.07983459999999999,
+          "ok": true,
+          "scores": {
+            "spec_compliance": {
+              "score": 10,
+              "evidence": [
+                "BEH-1: src/pagination.mjs fixes the seed's `Math.floor(total / pageSize) + 1` to `if (total === 0) return 0; return Math.ceil(total / pageSize);`. The new `paginate` returns `{ items, page, pageSize, pageCount, total }`, and the `inRange = Number.isInteger(page) && page >= 1 && page <= count` guard returns `items: []` instead of throwing.",
+                "BEH-2: src/config.mjs replaces the seed's `typeof doc !== 'object'` check, which let `null` and arrays through, with `typeof doc !== 'object' || doc === null || Array.isArray(doc)`. It adds a check for `pageSize` when present: `!Number.isInteger(doc.pageSize) || doc.pageSize <= 0` throws `CONFIG_INVALID`.",
+                "BEH-3: src/slug.mjs runs `.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')`, which matches the spec rule exactly.",
+                "BEH-4: src/discount.mjs `discountFor` handles 'fixed' (subtract `amount`) and 'percent' (`Math.floor((priceCents * coupon.amount) / 100)`), and the default branch throws an Error with `code = 'COUPON_INVALID'`. The expiry check is `coupon.expiresAt <= now`. The seed returned the full price when the discount went below zero; the patch replaces that with `Math.max(0, priceCents - discount)`, which clamps at 0.",
+                "BEH-5: src/format.mjs returns exactly `{ id, label, slug: slugify(item.label), price: { cents: item.priceCents, currency } }`. The seed returned `priceCents` and had no slug, currency or price object.",
+                "BEH-6: in src/auth/token.mjs, `signToken` builds base64url(JSON) + '.' + base64url(HMAC-SHA256 of the body). `verifyToken` uses `timingSafeEqual` behind a length check, returns null for malformed input, and wraps everything in try/catch so it never throws.",
+                "BEH-7: src/handlers/list.mjs returns `{ status: 200, body: { items: formatted, page, pageCount, total } }`. src/registry.mjs adds `list: listHandler` to `handlers`. The 404 path in `dispatch` is unchanged, and a test confirms it still holds."
+              ]
+            },
+            "correctness_robustness": {
+              "score": 9,
+              "evidence": [
+                "verifyToken checks `actual.length !== expected.length` before calling `timingSafeEqual`, so a length mismatch cannot throw. Bad input stays inside the null contract: non-string tokens, a part count other than 2, non-base64url characters (`BASE64URL` regex, which also rejects empty parts), a non-JSON body, and an undefined secret (createHmac throws, the catch handles it).",
+                "paginate treats non-integer pages (`1.5`), zero and negative pages as out of range. `start` may be NaN for an undefined page, but it is only used when `inRange` is true.",
+                "parseConfig uses `Object.hasOwn(doc, 'pageSize')`, so an explicit `\"pageSize\": null` is rejected rather than silently replaced by the default.",
+                "Minor: `paginate` does not validate `pageSize`. With `pageSize: 0`, `pageCount` becomes Infinity and page 1 counts as in range, though it still returns `[]` without throwing; the spec does not cover this case. `discountFor` computes the discount before the expiry check, so an expired coupon with an unknown kind still throws. That is defensible, but it is an ordering choice the spec does not state."
+              ]
+            },
+            "test_quality": {
+              "score": 9,
+              "evidence": [
+                "tests/pagination.test.mjs covers the exact multiple (`pageCount(10, 5)` → 2), zero total → 0, the 1-based first page, a partial last page, the page just past the end (4 of 3), pages 0 and -1, an empty list, and a non-integer page. Each case uses an exact `deepEqual`, and these tests would fail on the seed's floor+1 formula.",
+                "tests/config.test.mjs runs table-driven rejections for the non-object values `null`, `[]`, `[1,2]`, `42`, `\"str\"` and `true`, and for the pageSize values `0`, `-1`, `1.5`, `\"20\"`, `null`, `true`, `[]` and `{}`, all asserting `code: 'CONFIG_INVALID'`.",
+                "tests/discount.test.mjs covers the boundary `expiresAt: NOW`, a fixed amount larger than the price → 0, percent flooring (`999 * 15%` → 850), 100% and 150% → 0, and an unknown kind throwing `COUPON_INVALID`.",
+                "tests/auth/token.test.mjs checks the exact token format against an independently computed HMAC. It also covers a tampered payload, a tampered signature, truncated and extended signatures, a list of malformed tokens checked with `doesNotThrow` plus null, a signed body that is not JSON, and an undefined secret.",
+                "tests/handlers/list.test.mjs and tests/format.test.mjs use exact `deepEqual` on whole response objects, assert the key set to enforce 'no other keys', check `handlers.list === listHandler`, and test the dispatch 404.",
+                "Small gap: no test can show that `timingSafeEqual` (rather than `===`) is used, and no test covers a fixed discount exactly equal to the price."
+              ]
+            },
+            "code_clarity": {
+              "score": 9,
+              "evidence": [
+                "The modules are small and idiomatic ESM with descriptive names (`discountFor`, `couponInvalid`, `inRange`, `sign`).",
+                "The comments state real constraints: `// timingSafeEqual throws on unequal lengths, so check length first.` and `// JSON.parse only yields plain objects, arrays, or primitives.`",
+                "Minor: the error message `COUPON_INVALID: unknown coupon kind ...` repeats the code inside the message. listHandler copies `page`, `pageCount` and `total` from `result` one field at a time, which is explicit but a little verbose."
+              ]
+            },
+            "scope_discipline": {
+              "score": 10,
+              "evidence": [
+                "Every new file is required by the spec: src/slug.mjs (BEH-3), src/auth/token.mjs (BEH-6), src/handlers/list.mjs (BEH-7), plus their tests.",
+                "No package.json change and no new dependencies. The only imports are `node:crypto` and `node:test`/`node:assert`.",
+                "The registry change is limited to importing and registering `list`. `healthHandler` and the `dispatch` logic are untouched."
+              ]
+            }
+          },
+          "overall": {
+            "score": 9,
+            "rationale": "The patch fixes every seed defect the spec exposes: the pageCount formula, null and array config values, the missing pageSize validation, the wrong clamping on large fixed discounts, the missing percent coupon and unknown-kind error, and the wrong formatItem shape. It also implements all missing modules so that each BEH-1..BEH-7 rule holds. The token verification is safe: the length check comes before timingSafeEqual and a full try/catch keeps it from throwing. The tests are precise, cover boundaries, and would catch plausible wrong implementations. The only nitpicks are small: pageSize is not validated in paginate, the coupon kind is checked before expiry without saying why, and one error message repeats its code."
+          }
+        }
+      ],
+      "ok_trials": 1,
+      "mean": {
+        "spec_compliance": 10,
+        "correctness_robustness": 9,
+        "test_quality": 9,
+        "code_clarity": 9,
+        "scope_discipline": 10,
+        "overall": 9
+      },
+      "spread": {
+        "spec_compliance": null,
+        "correctness_robustness": null,
+        "test_quality": null,
+        "code_clarity": null,
+        "scope_discipline": null,
+        "overall": null
+      }
+    },
+    "plain-c90fa324e18f-2026-11-27T22-50-46-725Z.json": {
+      "arm": "plain",
+      "ref": "c90fa324e18fb61def9445b24f3e91ca89598e12",
+      "patch": "plain-c90fa324e18f-2026-11-27T22-50-46-725Z.patch",
+      "patch_bytes": 18447,
+      "anonymized_bytes": 18447,
+      "dropped_files": [],
+      "trials": [
+        {
+          "trial": 1,
+          "position": 16,
+          "exit_code": 0,
+          "cost_usd": 0.08817760000000001,
+          "ok": true,
+          "scores": {
+            "spec_compliance": {
+              "score": 10,
+              "evidence": [
+                "BEH-1: src/pagination.mjs fixes the seed's `Math.floor(total / pageSize) + 1` to `if (total === 0) return 0; return Math.ceil(total / pageSize);`. The new `paginate` returns `{ items, page, pageSize, pageCount, total }` and uses `inRange = Number.isInteger(page) && page >= 1 && page <= pages` so an out-of-range page gives `items: []` without throwing.",
+                "BEH-2: src/config.mjs replaces the seed's `typeof doc !== 'object'` check, which let null and arrays through, with `isPlainObject(doc)`. It adds `Object.hasOwn(doc, 'pageSize') && !(Number.isInteger(doc.pageSize) && doc.pageSize > 0)`, which throws CONFIG_INVALID through the existing `invalid()` helper. Defaults stay 20 and 'USD'.",
+                "BEH-3: src/slug.mjs `slugify` does `.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')`, which matches the spec exactly.",
+                "BEH-4: src/discount.mjs `discountCents` handles 'fixed' (amount) and 'percent' (`Math.floor((priceCents * coupon.amount) / 100)`) and throws `couponInvalid` with `err.code = 'COUPON_INVALID'` for any other kind. `coupon.expiresAt <= now` returns the price unchanged. `Math.max(0, priceCents - off)` replaces the seed's wrong `discounted < 0 ? priceCents : discounted`.",
+                "BEH-5: src/format.mjs `formatItem(item, currency)` returns exactly `{ id, label, slug: slugify(item.label), price: { cents: item.priceCents, currency } }`. The seed's `priceCents` key is gone.",
+                "BEH-6: src/auth/token.mjs `signToken` builds `${head}.${sign(head, secret)}` with base64url HMAC-SHA256. `verifyToken` checks the shape, checks length before `timingSafeEqual`, and wraps everything in try/catch that returns null.",
+                "BEH-7: src/handlers/list.mjs `listHandler` returns `{ status: 200, body: { items, page, pageCount, total } }` with items mapped through `formatItem`. src/registry.mjs registers it as `list: listHandler`. The seed's `dispatch` is unchanged, and its 404 path is checked by `dispatch of an unregistered name is still a 404`."
+              ]
+            },
+            "correctness_robustness": {
+              "score": 9,
+              "evidence": [
+                "src/auth/token.mjs checks `if (actual.length !== expected.length) return null;` before `timingSafeEqual`, so a length mismatch cannot throw RangeError. Comparing canonical base64url strings also rejects non-canonical encodings of the same signature bytes.",
+                "src/auth/token.mjs: the try/catch around the whole `verifyToken` body covers a non-JSON signed payload, a non-string token (`typeof token !== 'string'`) and an undefined secret (createHmac throws, and the catch returns null).",
+                "src/pagination.mjs: `Number.isInteger(page)` keeps fractional, NaN and undefined pages from producing odd slices. With pageSize 0 the code returns Infinity pages and an empty slice rather than throwing.",
+                "src/discount.mjs: `Math.max(0, priceCents - off)` returns NaN when `coupon.amount` is not a number. The spec doesn't cover this, so it's a minor gap.",
+                "src/discount.mjs calls `discountCents` before the expiry check, so an unknown kind throws even when the coupon is expired. That is consistent with 'any other kind throws' and is pinned by a test.",
+                "src/registry.mjs: the seed `dispatch` lookup is not shown in the patch, so I can't tell whether names inherited from the prototype, such as 'toString', are guarded. The patch neither adds nor fixes such a guard."
+              ]
+            },
+            "test_quality": {
+              "score": 9,
+              "evidence": [
+                "tests/pagination.test.mjs covers an exact multiple (`pageCount(10, 5)` gives 2), zero items, a partial last page, page 4 past the end, pages 0 and -1, an empty list and a non-integer page, all with full `deepEqual` shapes.",
+                "tests/config.test.mjs covers null, `[]`, primitives ('1', '\"x\"', 'true') and pageSize values '0', '-1', '1.5', '\"10\"', 'null', 'true', '[]', '{}', each asserting `{ code: 'CONFIG_INVALID' }`.",
+                "tests/discount.test.mjs covers the `expiresAt: NOW` boundary for both kinds, a floor-rounding case (`999 * 15 / 100` gives 850), the floor at 0 for fixed and for percent over 100, and an unknown kind both live and expired.",
+                "tests/format.test.mjs checks the exact shape with `deepEqual` and checks `Object.keys(out).sort()` after passing extra input keys (`secret`, `stock`).",
+                "tests/auth/token.test.mjs covers a known vector, a tampered payload, a tampered signature of the same length, wrong-length signatures, a signed head that isn't JSON, non-string inputs and an undefined secret.",
+                "tests/handlers/list.test.mjs checks full response bodies for the first, partial, out-of-range and empty pages, plus `handlers.list === listHandler`, dispatch equivalence and the 404 path.",
+                "Gaps: nothing checks that `timingSafeEqual` is actually used, which is hard to observe. Nothing checks a fixed coupon equal to the price. `CONFIG_INVALID errors are Error instances` adds little."
+              ]
+            },
+            "code_clarity": {
+              "score": 9,
+              "evidence": [
+                "src/discount.mjs splits the work into `couponInvalid` and a `discountCents` switch, which makes `applyDiscount` three readable lines.",
+                "src/auth/token.mjs: the one comment ('Compare the canonical base64url signature strings, so non-canonical encodings of the same bytes are rejected') states a real constraint.",
+                "src/config.mjs `isPlainObject` accepts `proto === null`, but JSON.parse never produces a null-prototype object, so that branch is slightly speculative.",
+                "src/pagination.mjs computes `start` even when `inRange` is false. This is harmless but a little untidy."
+              ]
+            },
+            "scope_discipline": {
+              "score": 9,
+              "evidence": [
+                "Every new file (src/slug.mjs, src/auth/token.mjs, src/handlers/list.mjs) and every modified file maps directly to BEH-1..BEH-7. No package.json or dependency changes.",
+                "src/registry.mjs: the only change is the `listHandler` import and the `list: listHandler` entry. `healthHandler` and `dispatch` are untouched.",
+                "tests/format.test.mjs: the existing test only gains the `'USD'` argument that the new signature requires.",
+                "Small extra: the null-prototype acceptance in `isPlainObject` goes beyond what the spec needs."
+              ]
+            }
+          },
+          "overall": {
+            "score": 9,
+            "rationale": "The patch implements all seven behaviors as written and corrects each seed defect: the pageCount formula, the null/array config check, the inverted fixed-coupon floor, the missing percent and unknown-kind handling, and the old formatItem shape. Token verification is safe: it checks length before timingSafeEqual and never throws. The tests are precise and cover boundaries and error cases for every behavior. The deductions are minor: one speculative branch in isPlainObject, NaN not guarded for non-numeric coupon amounts, and no evidence about prototype-key safety in the seed dispatch."
+          }
+        },
+        {
+          "trial": 2,
+          "position": 14,
+          "exit_code": 0,
+          "cost_usd": 0.18327699999999997,
+          "ok": true,
+          "scores": {
+            "spec_compliance": {
+              "score": 10,
+              "evidence": [
+                "BEH-1: src/pagination.mjs replaces the seed's wrong `Math.floor(total / pageSize) + 1` with `if (total === 0) return 0; return Math.ceil(total / pageSize);`. `paginate` returns `{ items, page, pageSize, pageCount, total }` and uses `inRange = Number.isInteger(page) && page >= 1 && page <= pages` to return `[]` for any page outside 1..pageCount without throwing.",
+                "BEH-2: src/config.mjs replaces the seed's `typeof doc !== 'object'` check, which let `null` and arrays through, with `isPlainObject` (rejects null, arrays and primitives). It adds `Object.hasOwn(doc, 'pageSize') && !(Number.isInteger(doc.pageSize) && doc.pageSize > 0)`, so a pageSize that is present but not a positive integer, including `null`, throws CONFIG_INVALID. The defaults 20 and 'USD' are kept.",
+                "BEH-3: src/slug.mjs `.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')` matches the rule exactly.",
+                "BEH-4: src/discount.mjs fixes the seed's bugs. A fixed amount larger than the price used to return the full `priceCents`; percent coupons were ignored; unknown kinds passed silently. The patch adds `Math.floor((priceCents * coupon.amount) / 100)` for percent, `Math.max(0, priceCents - off)` for the floor, `coupon.expiresAt <= now` for the at-or-before expiry rule, and `default: throw couponInvalid(...)` with `err.code = 'COUPON_INVALID'`.",
+                "BEH-5: src/format.mjs now returns exactly `{ id, label, slug: slugify(item.label), price: { cents: item.priceCents, currency } }`. The seed returned `priceCents` and no slug.",
+                "BEH-6: src/auth/token.mjs signs as `${head}.${sign(head, secret)}` using base64url HMAC-SHA256 of the head. `verifyToken` uses `timingSafeEqual` after an explicit length check, returns null for wrong part counts and empty parts, and wraps everything in try/catch so it never throws.",
+                "BEH-7: src/handlers/list.mjs returns `{ status: 200, body: { items, page, pageCount, total } }` with the items passed through `formatItem`. src/registry.mjs adds `list: listHandler` to `handlers`. The unregistered-name 404 is confirmed by the test `dispatch of an unregistered name is still a 404`."
+              ]
+            },
+            "correctness_robustness": {
+              "score": 9,
+              "evidence": [
+                "verifyToken checks `if (actual.length !== expected.length) return null;` before `timingSafeEqual`, so the comparison cannot throw on a length mismatch. The outer `try { ... } catch { return null; }` also covers a non-JSON head and a bad secret (`verifyToken(token, undefined)`).",
+                "Comparing the canonical base64url strings rejects non-canonical encodings of the same bytes. The comment in token.mjs states this constraint.",
+                "paginate treats a non-integer page as out of range (`Number.isInteger(page)`), so `page: 1.5` returns `[]` instead of a fractional slice.",
+                "Minor gap: nothing guards `pageSize <= 0` in paginate. `pageCount(5, 0)` gives `Infinity` and the slice result is odd, though it does not throw. The spec does not cover this case.",
+                "Minor gap: a fixed coupon with a negative `amount` would raise the price (`priceCents - off`). The spec does not address this, but it is an open edge."
+              ]
+            },
+            "test_quality": {
+              "score": 9,
+              "evidence": [
+                "tests/pagination.test.mjs covers ceil rounding (`pageCount(7, 5)`), the exact-multiple boundary (`pageCount(10, 5) === 2`), zero items, the first page, a partial last page, the page just past the end (4 of 3), page 0 and -1, an empty list and a non-integer page. All use deepEqual on the full result shape.",
+                "tests/config.test.mjs rejects `null`, `[]`, the primitives `'1'`, `'\"x\"'` and `'true'`, and pageSize values `0, -1, 1.5, \"10\", null, true, [], {}`, each asserted with `{ code: 'CONFIG_INVALID' }`.",
+                "tests/discount.test.mjs pins the expiry boundary with `expiresAt: NOW` for both kinds and the percent floor with `999 * 15 / 100 → 850`. It also tests floor-at-0 for fixed and for percent over 100, and COUPON_INVALID with an `instanceof Error` check.",
+                "tests/auth/token.test.mjs covers the exact signature shape, round-trip, wrong secret, a tampered payload, a tampered signature of the same length, signatures of the wrong length, a validly signed non-JSON head, and a broad list of malformed inputs.",
+                "Weakness: `signToken output matches a known vector` computes the expected signature with `createHmac` instead of using a hard-coded literal, so it partly duplicates the implementation. No test can observe that `timingSafeEqual` is actually used."
+              ]
+            },
+            "code_clarity": {
+              "score": 9,
+              "evidence": [
+                "The modules are small and well named: `discountCents`, `couponInvalid`, `isPlainObject`, `sign`, `inRange`.",
+                "The `switch` in discount.mjs reads more clearly than the seed's nested ifs, and `Math.max(0, priceCents - off)` states the floor rule directly.",
+                "Slight awkwardness: discount.mjs computes `const off = discountCents(...)` before the expiry check. This is deliberate, so unknown kinds throw even when the coupon has expired, but no comment explains it.",
+                "The prototype check in `isPlainObject` (`proto === Object.prototype || proto === null`) can never matter for `JSON.parse` output, so it adds a little unnecessary code."
+              ]
+            },
+            "scope_discipline": {
+              "score": 9,
+              "evidence": [
+                "Every touched file corresponds to a BEH: src/auth/token.mjs (BEH-6), src/config.mjs (BEH-2), src/discount.mjs (BEH-4), src/format.mjs (BEH-5), src/handlers/list.mjs and src/registry.mjs (BEH-7), src/pagination.mjs (BEH-1) and src/slug.mjs (BEH-3), plus matching tests under tests/.",
+                "No new dependencies: only `node:crypto`, `node:test` and `node:assert/strict` are imported.",
+                "Small extras: the unspecified prototype check in isPlainObject, and choosing to throw COUPON_INVALID on expired coupons (`an unknown kind throws even when the coupon is expired`). Both are defensible readings rather than new features."
+              ]
+            }
+          },
+          "overall": {
+            "score": 9,
+            "rationale": "The patch fixes every seed defect (pageCount off-by-one, null and array configs accepted, missing percent and unknown-kind handling, wrong discount floor, wrong formatItem shape) and adds the missing slug, token and list-handler modules, registered in the handlers map. verifyToken is careful: it checks length before timingSafeEqual and catches everything, so it never throws. The tests are precise and boundary-aware for every behavior. The deductions are small: pageSize <= 0 in paginate and negative coupon amounts are unguarded, one token test is partly circular, and the discount computation runs before the expiry check without a comment saying why."
+          }
+        }
+      ],
+      "ok_trials": 2,
+      "mean": {
+        "spec_compliance": 10,
+        "correctness_robustness": 9,
+        "test_quality": 9,
+        "code_clarity": 9,
+        "scope_discipline": 9,
+        "overall": 9
+      },
+      "spread": {
+        "spec_compliance": 0,
+        "correctness_robustness": 0,
+        "test_quality": 0,
+        "code_clarity": 0,
+        "scope_discipline": 0,
+        "overall": 0
+      }
+    },
+    "quick-c90fa324e18f-2026-11-27T21-22-15-233Z.json": {
+      "arm": "quick",
+      "ref": "c90fa324e18fb61def9445b24f3e91ca89598e12",
+      "patch": "quick-c90fa324e18f-2026-11-27T21-22-15-233Z.patch",
+      "patch_bytes": 22384,
+      "anonymized_bytes": 22384,
+      "dropped_files": [],
+      "trials": [
+        {
+          "trial": 1,
+          "position": 5,
+          "exit_code": 0,
+          "cost_usd": 0.197849,
+          "ok": true,
+          "scores": {
+            "spec_compliance": {
+              "score": 9,
+              "evidence": [
+                "BEH-1: src/pagination.mjs replaces the seed's `Math.floor(total / pageSize) + 1` with `Math.ceil(total / pageSize)`, so pageCount(0, n) is 0. `paginate` returns `{ items, page, pageSize, pageCount: count, total }` and uses `inRange = page >= 1 && page <= count` to return `[]` without throwing.",
+                "BEH-2: src/config.mjs adds `doc === null || Array.isArray(doc)` to the seed's `typeof doc !== 'object'` check, and adds `Object.hasOwn(doc, 'pageSize') && !(Number.isInteger(doc.pageSize) && doc.pageSize > 0)`. Both throw through the existing `invalid()` helper, which sets CONFIG_INVALID.",
+                "BEH-3: src/slug.mjs runs `.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')`. This matches the spec's lowercase, collapse-runs and trim rules exactly.",
+                "BEH-4: src/discount.mjs adds the missing `percent` branch with `Math.floor(priceCents * coupon.amount / 100)`. It replaces the seed's wrong clamp (`discounted < 0 ? priceCents : discounted`) with `Math.max(0, priceCents - discount)`, and throws `couponInvalid` (code COUPON_INVALID) for any other kind. One gap: the expiry check `if (coupon.expiresAt <= now) return priceCents;` runs before the kind check, so an expired coupon with an invalid kind returns the price instead of throwing. That is arguably against 'Any other kind throws'.",
+                "BEH-5: src/format.mjs now returns exactly `{ id, label, slug: slugify(item.label), price: { cents: item.priceCents, currency } }`. The seed's stray `priceCents` key is gone.",
+                "BEH-6: src/auth/token.mjs builds `${body}.${sign(body, secret)}` with base64url HMAC-SHA256. verifyToken compares with `timingSafeEqual` after a length check, returns null for malformed tokens (`TOKEN_SHAPE` regex, non-strings) and wraps everything in try/catch so it never throws.",
+                "BEH-7: src/handlers/list.mjs returns `{ status: 200, body: { items: formatted, page, pageCount, total } }`. src/registry.mjs registers `list: listHandler`. The 404 path for unregistered names is the seed's and is still tested."
+              ]
+            },
+            "correctness_robustness": {
+              "score": 8,
+              "evidence": [
+                "verifyToken is hardened well. It checks `actual.length !== expected.length` before `timingSafeEqual`, so a length mismatch cannot throw. `sign(body, secret)` sits inside the try, so bad secrets (undefined, null, 42, {}) return null. The regex rejects extra dots, empty parts and non-base64url characters.",
+                "parseConfig correctly rejects edge values: `1e400` (Infinity), `2.5`, `\"10\"`, `null` and `true` for pageSize, and arrays and primitives at the top level.",
+                "paginate accepts a non-integer page without complaint. For example, page 1.5 passes `inRange`, and `slice(0.5, ...)` truncates the start to 0, so it silently returns page-1 items. pageSize 0 or a non-positive value is unguarded: `pageCount(0, 0)` is `NaN`, not the 0 the spec says total 0 should give.",
+                "In applyDiscount, the expiry check runs before kind validation, so a malformed but expired coupon is silently accepted. slugify throws on a non-string label. The spec is silent on that, so it is minor."
+              ]
+            },
+            "test_quality": {
+              "score": 9,
+              "evidence": [
+                "tests/pagination.test.mjs pins exact deepEqual results for the first page, a partial last page, page 0, page -1, page past pageCount and an empty list (`pageCount: 0`). It also tests both pageCount(10,5) and pageCount(0,5). Any of these would fail against the seed's floor+1.",
+                "tests/discount.test.mjs picks values where floor and round differ ('1999 * 15 / 100 = 299.85 -> floor 299 -> 1700 (rounding would give 1699)'). It tests `expiresAt: NOW` for both kinds, clamps to 0 for both kinds, and unknown and missing kind with `code: 'COUPON_INVALID'`.",
+                "tests/auth/token.test.mjs checks the exact token format against an independently computed HMAC. It covers tampered payload and signature (same length), truncated and extended signatures, non-string tokens, empty parts, extra dot-separated parts, a validly signed non-JSON payload and unusable secrets.",
+                "tests/config.test.mjs lists nine invalid pageSize values plus null, arrays and primitives. tests/format.test.mjs uses deepEqual to pin 'No other keys'. tests/registry.test.mjs asserts `handlers.list === listHandler`.",
+                "Gaps: tests/slug.test.mjs has only three cases, with no digits-only or empty-string case. No test covers an expired coupon with an invalid kind. The tests do not show that timingSafeEqual is used, though that is hard to test."
+              ]
+            },
+            "code_clarity": {
+              "score": 9,
+              "evidence": [
+                "Modules are small and idiomatic ESM with clear names: `TOKEN_SHAPE`, `sign`, `couponInvalid`, `inRange`, `count`.",
+                "In src/discount.mjs, computing `discount` across branches and then returning a single `Math.max(0, priceCents - discount)` reads cleanly and avoids repeating the clamp.",
+                "The `couponInvalid` helper mirrors the existing `invalid()` pattern in config.mjs, so the two modules stay consistent.",
+                "One small clutter point: the precondition assertion in token.test.mjs (`assert.match(Buffer.from(...).toString('base64'), /\\+.*\\/.*==$/)`) is clever but needs a moment's thought to see why it is there."
+              ]
+            },
+            "scope_discipline": {
+              "score": 10,
+              "evidence": [
+                "Each new source file maps to a behavior: src/slug.mjs (BEH-3), src/auth/token.mjs (BEH-6), src/handlers/list.mjs (BEH-7).",
+                "Each modified file fixes a seed defect or adds a missing spec piece: pagination.mjs, config.mjs, discount.mjs, format.mjs, and the one-line `list: listHandler` in registry.mjs.",
+                "No new dependencies (only `node:crypto`), no package.json changes and no unrelated files. healthHandler and dispatch are left as they were."
+              ]
+            }
+          },
+          "overall": {
+            "score": 9,
+            "rationale": "This is a strong, focused patch. It fixes every seed defect (pageCount off-by-one, config null and array handling, the missing pageSize check, the missing percent branch and the wrong discount clamp, formatItem's extra key) and adds the missing slug, token and list-handler modules, each matching the spec. The token verification is carefully hardened against throws and length mismatches. The tests are precise and pick values that tell correct implementations apart from plausible wrong ones. Remaining issues are small: an expired coupon with an invalid kind returns the price instead of throwing COUPON_INVALID, paginate does not guard non-integer pages or pageSize, and the slug tests are thin."
+          }
+        },
+        {
+          "trial": 2,
+          "position": 22,
+          "exit_code": 0,
+          "cost_usd": 0.0851364,
+          "ok": true,
+          "scores": {
+            "spec_compliance": {
+              "score": 9,
+              "evidence": [
+                "BEH-1: src/pagination.mjs replaces the seed's wrong `Math.floor(total / pageSize) + 1` with `Math.ceil(total / pageSize)`, so pageCount(0, n) is 0. `paginate` returns `{ items, page, pageSize, pageCount: count, total }` and uses `inRange = page >= 1 && page <= count` to return `[]` outside 1..pageCount.",
+                "BEH-2: src/config.mjs fixes the seed's `typeof doc !== 'object'` check, which let null and arrays through. It now adds `doc === null || Array.isArray(doc)` and rejects a present pageSize that is not a positive integer via `Object.hasOwn(doc, 'pageSize') && !(Number.isInteger(doc.pageSize) && doc.pageSize > 0)`. Defaults go through `??`.",
+                "BEH-3: src/slug.mjs `.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')` matches the rule as written.",
+                "BEH-4: src/discount.mjs fixes the seed's wrong clamp (`discounted < 0 ? priceCents : discounted` returned the full price). It now uses `Math.max(0, priceCents - discount)`, adds `percent` with `Math.floor(priceCents * coupon.amount / 100)`, and throws `couponInvalid` (code 'COUPON_INVALID') for other kinds. One open point: the expiry check runs before the kind check, so an expired coupon with an unknown kind returns the price instead of throwing. The spec's 'Any other kind throws' doesn't settle which should win.",
+                "BEH-5: src/format.mjs returns exactly `{ id, label, slug: slugify(item.label), price: { cents: item.priceCents, currency } }`. The seed's stray `priceCents` key is gone.",
+                "BEH-6: src/auth/token.mjs signs `${body}.${sign(body, secret)}` with base64url HMAC-SHA256. `verifyToken` checks the token's shape, compares with `timingSafeEqual` after a length check, and wraps everything that can throw in try/catch, returning null.",
+                "BEH-7: src/handlers/list.mjs returns `{ status: 200, body: { items, page, pageCount, total } }` with the items formatted and pageSize correctly left out. src/registry.mjs adds `list: listHandler` to `handlers`."
+              ]
+            },
+            "correctness_robustness": {
+              "score": 8,
+              "evidence": [
+                "verifyToken: `actual.length !== expected.length ||` runs before `timingSafeEqual`, so a length mismatch cannot throw. `sign(body, secret)` sits inside the try, so a bad secret (undefined, null, 42, {}) returns null. `TOKEN_SHAPE = /^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$/` rejects empty parts, extra dots and non-base64url characters before any decoding.",
+                "parseConfig rejects `1e400` (parsed as Infinity) because `Number.isInteger` is false for it. It also rejects `{\"pageSize\":null}` as present but invalid.",
+                "paginate does not check that `page` is an integer: `page: 1.5` passes `inRange` and slices from index `(0.5 * pageSize)`, which truncates to a surprising window. The spec doesn't cover this, but it is a boundary gap.",
+                "applyDiscount dereferences `coupon.expiresAt` before checking anything, so a null or undefined coupon throws a TypeError instead of COUPON_INVALID. Separately, an expired coupon with an invalid kind never reaches the kind check.",
+                "slugify and formatItem call `label.toLowerCase()` with no guard, so a non-string label throws. The spec doesn't require handling this."
+              ]
+            },
+            "test_quality": {
+              "score": 9,
+              "evidence": [
+                "tests/pagination.test.mjs pins the exact-quotient case `pageCount(10, 5) === 2`, `pageCount(0, 5) === 0`, page 0, page -1, page past pageCount, a partial last page and an empty list, each with a full deepEqual of the result shape.",
+                "tests/config.test.mjs covers null, `[]`, primitives, and a pageSize of 0, -5, 2.5, \"10\", null, true, [10], {} and 1e400. It also checks that valid values pass through with `deepEqual`.",
+                "tests/discount.test.mjs uses inputs that tell flooring from rounding ('1999 * 15 / 100 = 299.85 -> floor 299 -> 1700 (rounding would give 1699)'). It covers expiry exactly at `now` for both kinds and clamping for fixed and for percent over 100, and checks `err.code === 'COUPON_INVALID'` and `err.name === 'Error'`.",
+                "tests/auth/token.test.mjs builds the expected token independently with `createHmac` and checks tampered payload, same-length tampered signature, truncated and extended signatures, an extra dot, empty parts, non-string tokens, a signed non-JSON body and unusable secrets. All of these would fail against a version that throws on a length mismatch.",
+                "tests/format.test.mjs uses `deepEqual` on the full object, which enforces 'No other keys'. tests/registry.test.mjs asserts `handlers.list === listHandler`, and dispatch('list') is tested end to end.",
+                "Gaps: tests/slug.test.mjs has only three cases, with no empty-string, all-punctuation or non-ASCII input. Nothing tests the expired-but-invalid-kind ordering, and nothing can detect whether `timingSafeEqual` is actually used rather than `===`."
+              ]
+            },
+            "code_clarity": {
+              "score": 9,
+              "evidence": [
+                "src/discount.mjs uses a single `let discount` with a branch per kind and one `Math.max(0, priceCents - discount)` return, which reads cleanly.",
+                "src/auth/token.mjs pulls the HMAC into a small `sign` helper and names the shape check `TOKEN_SHAPE`. It's minimal, with no dead code.",
+                "src/pagination.mjs names its intermediates `count`, `inRange` and `start`. src/handlers/list.mjs maps the paginated items through `formatItem` directly.",
+                "A minor nit: tests/handlers/list.test.mjs and tests/registry.test.mjs both test dispatch('list'), which is light duplication."
+              ]
+            },
+            "scope_discipline": {
+              "score": 10,
+              "evidence": [
+                "Every new file is one the spec requires: src/slug.mjs, src/auth/token.mjs, src/handlers/list.mjs and the matching tests under tests/.",
+                "The changes to the seed are limited to the spec-violating lines in config.mjs, discount.mjs, format.mjs, pagination.mjs and registry.mjs (the `list` registration). The patch adds no dependencies, touches no package.json and adds no speculative features."
+              ]
+            }
+          },
+          "overall": {
+            "score": 9,
+            "rationale": "The patch fixes each seed defect (pageCount off by one, null and array configs accepted, missing pageSize validation, wrong fixed-coupon clamp, missing percent kind and COUPON_INVALID, extra formatItem key) and implements slugs, tokens and the list handler to the spec. The token verifier is safe: a length check comes before timingSafeEqual and everything that can throw is inside try/catch. The tests are precise, use full-shape deepEqual assertions with boundary inputs that would catch plausible wrong implementations, and stay within scope. Remaining weak spots: the expiry check runs before the kind check, paginate accepts non-integer pages, and the slug tests are thin."
+          }
+        }
+      ],
+      "ok_trials": 2,
+      "mean": {
+        "spec_compliance": 9,
+        "correctness_robustness": 8,
+        "test_quality": 9,
+        "code_clarity": 9,
+        "scope_discipline": 10,
+        "overall": 9
+      },
+      "spread": {
+        "spec_compliance": 0,
+        "correctness_robustness": 0,
+        "test_quality": 0,
+        "code_clarity": 0,
+        "scope_discipline": 0,
+        "overall": 0
+      }
+    },
+    "quick-c90fa324e18f-2026-11-27T22-31-14-989Z.json": {
+      "arm": "quick",
+      "ref": "c90fa324e18fb61def9445b24f3e91ca89598e12",
+      "patch": "quick-c90fa324e18f-2026-11-27T22-31-14-989Z.patch",
+      "patch_bytes": 25403,
+      "anonymized_bytes": 25403,
+      "dropped_files": [],
+      "trials": [
+        {
+          "trial": 1,
+          "position": 9,
+          "exit_code": 0,
+          "cost_usd": 0.0731672,
+          "ok": true,
+          "scores": {
+            "spec_compliance": {
+              "score": 9,
+              "evidence": [
+                "BEH-1: src/pagination.mjs changes the seed's wrong `Math.floor(total / pageSize) + 1` to `Math.ceil(total / pageSize)`, so pageCount(0, n) is 0. The new `paginate` returns `{ items, page, pageSize, pageCount, total }` and uses `inRange = page >= 1 && page <= pages` to return `[]` without throwing.",
+                "BEH-2: src/config.mjs adds the missing checks for `doc === null || Array.isArray(doc)`, and for `Object.hasOwn(doc, 'pageSize') && !(Number.isInteger(doc.pageSize) && doc.pageSize > 0)`. Both throw through the existing CONFIG_INVALID helper. Defaults stay at 20 and USD.",
+                "BEH-3: src/slug.mjs does `.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')`, which is the stated rule exactly.",
+                "BEH-4: src/discount.mjs `discountFor` covers 'fixed' (subtract amount) and 'percent' (`Math.floor((priceCents * coupon.amount) / 100)`). Any other kind throws `err.code = 'COUPON_INVALID'`. Expiry uses `coupon.expiresAt <= now`. `Math.max(0, priceCents - discount)` replaces the seed's wrong `discounted < 0 ? priceCents : discounted`.",
+                "BEH-5: src/format.mjs returns exactly `{ id, label, slug: slugify(item.label), price: { cents: item.priceCents, currency } }`. The seed returned `priceCents` and had no slug or currency.",
+                "BEH-6: src/auth/token.mjs signs `base64url(JSON)` + '.' + HMAC-SHA256 base64url of the first part. verifyToken compares with `timingSafeEqual` and returns null for malformed or bad tokens.",
+                "BEH-7: src/handlers/list.mjs returns `{ status: 200, body: { items, page, pageCount, total } }` with formatted items. src/registry.mjs adds `list: listHandler`. The body of `dispatch` is not in the diff, so its 404 for an unregistered name depends on unchanged seed code that I cannot see."
+              ]
+            },
+            "correctness_robustness": {
+              "score": 9,
+              "evidence": [
+                "verifyToken checks `typeof token !== 'string'`, `parts.length !== 2` and a `BASE64URL` regex that rejects empty parts. It compares `actual.length !== expected.length` before `timingSafeEqual`, and the whole HMAC and parse step sits in try/catch, so a bad secret (undefined, null, 42) or bad JSON returns null instead of throwing.",
+                "applyDiscount computes `discountFor` before the expiry check, so an unknown kind throws COUPON_INVALID even when the coupon has expired. That is a consistent reading of 'Any other kind throws'.",
+                "Minor: paginate does not reject a non-integer `page` (e.g. 1.5 gives `slice(0.5, 5.5)`). It does not throw, but the result is ill-defined.",
+                "pageSize 0 makes pageCount NaN or Infinity; paginate then returns `[]` and does not throw. This input is outside the spec."
+              ]
+            },
+            "test_quality": {
+              "score": 8,
+              "evidence": [
+                "tests/pagination.test.mjs covers an exact multiple, total 0 giving pageCount 0, a partial last page, page 0, a page past the end, a negative page and an empty list, each with a full `deepEqual` on the returned shape.",
+                "tests/config.test.mjs covers null, arrays, primitives, pageSize 0, -5, 2.5, 1e400, \"10\", true, [10] and null, and checks that valid values pass through. Every rejection asserts `{ code: 'CONFIG_INVALID' }`.",
+                "tests/discount.test.mjs covers the floor case ('999 x 15% subtracts 149'), expiry exactly at now for both kinds, a fixed amount equal to or larger than the price, percent amounts of 100 and 150, and unknown or undefined kinds through `assertCouponInvalid`.",
+                "tests/auth/token.test.mjs pins `KNOWN_TOKEN` and covers truncated and extended signatures (the length-mismatch path), three or more parts, empty parts, non-base64url characters, a correctly signed non-JSON body, and non-string tokens and secrets.",
+                "Gap: tests/handlers/list.test.mjs never asserts that dispatching an unregistered name returns `{ status: 404 }`, although BEH-7 states that error case."
+              ]
+            },
+            "code_clarity": {
+              "score": 9,
+              "evidence": [
+                "Every module is small, idiomatic ESM with descriptive names (`discountFor`, `inRange`, `BASE64URL`, `sign`).",
+                "The only comment in the source states a real constraint: `// timingSafeEqual throws on length mismatch, so guard it first.`",
+                "src/discount.mjs uses a switch with a default throw, which is clear. Its `invalid` helper mirrors the existing one in config.mjs, so there is slight duplication."
+              ]
+            },
+            "scope_discipline": {
+              "score": 10,
+              "evidence": [
+                "Every new file is required by the spec: src/slug.mjs (BEH-3), src/auth/token.mjs (BEH-6), src/handlers/list.mjs (BEH-7).",
+                "The only registry change is the one-line `list: listHandler` registration. `healthHandler` is untouched.",
+                "The patch adds no dependencies (it imports only `node:crypto`) and changes no unrelated files."
+              ]
+            }
+          },
+          "overall": {
+            "score": 9,
+            "rationale": "The patch fixes every seed defect I can see (pageCount rounding, the null/array config check, the discount floor and missing percent kind, the formatItem shape) and correctly adds the missing modules. Token verification is robust and never throws, and it guards timingSafeEqual by length first. The tests are thorough and precise, with good boundary coverage. The one notable gap is that nothing tests dispatch's 404 for an unregistered name; that behavior rests on seed code not shown in the diff. Small edge cases such as a non-integer page are left alone."
+          }
+        },
+        {
+          "trial": 2,
+          "position": 2,
+          "exit_code": 0,
+          "cost_usd": 0.206961,
+          "ok": true,
+          "scores": {
+            "spec_compliance": {
+              "score": 9,
+              "evidence": [
+                "BEH-1: src/pagination.mjs replaces the seed's wrong `Math.floor(total / pageSize) + 1` with `Math.ceil(total / pageSize)`, so `pageCount(0, n)` is 0. `paginate` returns `{ items, page, pageSize, pageCount, total }` and uses `inRange = page >= 1 && page <= pages` to return `[]` without throwing.",
+                "BEH-2: src/config.mjs fixes the seed's `typeof doc !== 'object'` check, which let null and arrays through, with `doc === null || Array.isArray(doc)`. It adds `Object.hasOwn(doc, 'pageSize') && !(Number.isInteger(doc.pageSize) && doc.pageSize > 0)`, so a pageSize that is present (including null) and not a positive integer throws CONFIG_INVALID.",
+                "BEH-3: src/slug.mjs does `.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')`, exactly as stated.",
+                "BEH-4: src/discount.mjs adds percent via `Math.floor((priceCents * coupon.amount) / 100)` and clamps with `Math.max(0, priceCents - discount)`. This fixes the seed's `discounted < 0 ? priceCents : discounted`, which returned the full price instead of 0. Expiry uses `<= now`, and the `default:` branch throws an Error with code COUPON_INVALID.",
+                "BEH-5: src/format.mjs returns exactly `{ id, label, slug: slugify(item.label), price: { cents: item.priceCents, currency } }`. The seed's `priceCents` key is gone.",
+                "BEH-6: src/auth/token.mjs signs `base64url(JSON).base64url(HMAC-SHA256(body))`. It verifies with `timingSafeEqual` after a length guard and returns null for malformed tokens.",
+                "BEH-7: src/handlers/list.mjs returns `{ status: 200, body: { items, page, pageCount, total } }` with formatted items, and src/registry.mjs registers `list: listHandler`. The 404 path for unregistered names depends on the seed's `dispatch` body, which the patch neither shows nor touches, so I cannot confirm it from the patch."
+              ]
+            },
+            "correctness_robustness": {
+              "score": 8,
+              "evidence": [
+                "verifyToken cannot throw. It checks `typeof token !== 'string'`, `parts.length !== 2` and the `BASE64URL` regex (which rejects empty parts), guards `actual.length !== expected.length` before `timingSafeEqual`, and wraps everything in try/catch so a bad secret (createHmac throws) or bad JSON returns null.",
+                "applyDiscount calls `discountFor` before the expiry check, so an unknown kind throws even on an expired coupon. That reading is consistent and is tested.",
+                "parseConfig rejects `1e400` (Infinity), strings, booleans, arrays and null for pageSize because of `Number.isInteger`.",
+                "pagination.mjs: a non-integer page such as 1.5 passes `inRange`, and `items.slice(0.5, 5.5)` truncates, so it returns page-1 items instead of `[]`.",
+                "pagination.mjs: pageSize is not guarded, so `pageCount(0, 0)` returns NaN and `pageCount(n, 0)` returns Infinity. Both are minor, unspecified edge cases."
+              ]
+            },
+            "test_quality": {
+              "score": 8,
+              "evidence": [
+                "tests/auth/token.test.mjs pins a known token (`KNOWN_TOKEN`) and recomputes it independently with createHmac. It covers tampered payloads, single-character signature changes, truncated and extended signatures (length mismatch), 0, 1 and 3+ parts, empty parts, non-base64url characters, signed non-JSON bodies, non-string tokens and invalid secrets.",
+                "tests/discount.test.mjs covers the floor boundary (`999 x 15% subtracts 149` → 850), expiry exactly at now for both kinds, fixed amounts equal to and above the price, 100% and 150% coupons, and undefined or unknown kinds. `assertCouponInvalid` checks both `instanceof Error` and the code.",
+                "tests/pagination.test.mjs covers exact multiples, `pageCount(0, 5) === 0`, page 0, a negative page, a page beyond pageCount and an empty list, all with full deepEqual results.",
+                "tests/config.test.mjs covers null, arrays, primitives, and pageSize values 0, -5, 2.5, 1e400, \"10\", true, [10] and null.",
+                "tests/format.test.mjs and tests/handlers/list.test.mjs use exact deepEqual to pin 'No other keys', and check `handlers.list === listHandler` and that dispatch reaches the handler.",
+                "Gap: no test asserts that `dispatch` of an unregistered name returns `{ status: 404 }`, which is BEH-7's error case. The acceptance criteria require every behavior to be tested.",
+                "Gap: no test covers a non-integer page in paginate."
+              ]
+            },
+            "code_clarity": {
+              "score": 9,
+              "evidence": [
+                "Modules are small ESM files with descriptive names: `discountFor`, `invalid`, `sign` and `BASE64URL`.",
+                "The only comment states a constraint: `// timingSafeEqual throws on length mismatch, so guard it first.`",
+                "The `switch` in `discountFor` reads cleanly. Splitting it out is a slight indirection but it keeps `applyDiscount` short.",
+                "The long condition in config.mjs, `Object.hasOwn(doc, 'pageSize') && !(Number.isInteger(doc.pageSize) && doc.pageSize > 0)`, is dense but readable."
+              ]
+            },
+            "scope_discipline": {
+              "score": 10,
+              "evidence": [
+                "Every touched file maps to a BEH: pagination (1), config (2), slug (3), discount (4), format (5), auth/token (6), handlers/list and registry (7), plus the matching tests.",
+                "There are no new dependencies (only `node:crypto`) and no unrelated files or speculative features. registry.mjs changes only by importing and registering `list`."
+              ]
+            }
+          },
+          "overall": {
+            "score": 9,
+            "rationale": "The patch fixes every seed defect visible in the diff: the floor+1 pageCount, the null/array config hole, fixed coupons clamping to the full price instead of 0, and the wrong formatItem shape. It implements slugs, tokens and the list handler faithfully, and the token verification is careful and cannot throw. The tests are precise and boundary-heavy. The main shortfalls are that the BEH-7 404 dispatch case has no test and can't be confirmed from the patch, and two small unguarded pagination edges (non-integer page, pageSize 0)."
+          }
+        }
+      ],
+      "ok_trials": 2,
+      "mean": {
+        "spec_compliance": 9,
+        "correctness_robustness": 8.5,
+        "test_quality": 8,
+        "code_clarity": 9,
+        "scope_discipline": 10,
+        "overall": 9
+      },
+      "spread": {
+        "spec_compliance": 0,
+        "correctness_robustness": 1,
+        "test_quality": 0,
+        "code_clarity": 0,
+        "scope_discipline": 0,
+        "overall": 0
+      }
+    },
+    "quick-c90fa324e18f-2026-11-27T23-46-21-068Z.json": {
+      "arm": "quick",
+      "ref": "c90fa324e18fb61def9445b24f3e91ca89598e12",
+      "patch": "quick-c90fa324e18f-2026-11-27T23-46-21-068Z.patch",
+      "patch_bytes": 25233,
+      "anonymized_bytes": 25233,
+      "dropped_files": [],
+      "trials": [
+        {
+          "trial": 1,
+          "position": 8,
+          "exit_code": 0,
+          "cost_usd": 0.0910666,
+          "ok": true,
+          "scores": {
+            "spec_compliance": {
+              "score": 9,
+              "evidence": [
+                "BEH-1: src/pagination.mjs replaces the seed's `Math.floor(total / pageSize) + 1` with `Math.ceil(total / pageSize)`, so `pageCount(0, n)` is now 0. The new `paginate` returns `{ items, page, pageSize, pageCount, total }` and gives `items: []` when `page` is outside `1..count`, using `const inRange = page >= 1 && page <= count`.",
+                "BEH-2: src/config.mjs fixes the seed's `typeof doc !== 'object'` check, which let `null` and arrays through. It now adds `doc === null || Array.isArray(doc)` and rejects any present `pageSize` that is not a positive integer, using `'pageSize' in doc && !(Number.isInteger(doc.pageSize) && doc.pageSize > 0)`.",
+                "BEH-3: src/slug.mjs does exactly what the spec says: `.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')`.",
+                "BEH-4: src/discount.mjs drops the seed's wrong clamp (`discounted < 0 ? priceCents : discounted`) in favour of `Math.max(0, priceCents - discount)`. It adds `percent` with `Math.floor(priceCents * coupon.amount / 100)`, throws `COUPON_INVALID` for unknown kinds, and keeps `expiresAt <= now` returning the price unchanged.",
+                "BEH-5: src/format.mjs now returns exactly `{ id, label, slug: slugify(item.label), price: { cents: item.priceCents, currency } }`. The seed instead returned top-level `priceCents` and had no slug or currency.",
+                "BEH-6: src/auth/token.mjs builds `${head}.${sign(head, secret)}` using base64url and HMAC-SHA256. It compares with `timingSafeEqual` behind a length check and returns null on malformed input. One deviation: `isUsableSecret` makes `verifyToken` return null for an empty-string secret even when `signToken(payload, '')` produced a matching signature. The spec says to return the payload whenever the signature matches.",
+                "BEH-7: src/handlers/list.mjs returns `{ status: 200, body: { items, page, pageCount, total } }` with formatted items, and src/registry.mjs registers it as `list: listHandler`. The patch does not touch `dispatch`, so whether unregistered names return `{ status: 404 }` depends on seed code that the diff does not show."
+              ]
+            },
+            "correctness_robustness": {
+              "score": 8,
+              "evidence": [
+                "verifyToken cannot throw on a length mismatch: `expected.length !== actual.length || !timingSafeEqual(expected, actual)` short-circuits before `timingSafeEqual` runs. Non-string tokens, extra segments and invalid JSON (wrapped in `try { JSON.parse(...) } catch { return null; }`) all return null.",
+                "verifyToken compares the canonical base64url strings rather than decoded bytes. Together with the `BASE64URL_PART` regex, this rejects non-canonical encodings that would decode to the same bytes, as the test 'non-canonical signature encoding that decodes to the same bytes' shows.",
+                "applyDiscount checks the kind before the expiry check, so a bad kind fails loudly even on an expired coupon ('unknown coupon kind throws COUPON_INVALID even when expired').",
+                "paginate does not check that `page` is an integer. With `page: 1.5, pageSize: 3`, `inRange` is true and `items.slice(1.5, 4.5)` returns a shifted window instead of a real page. The spec does not cover this, but it is a wrong result rather than an empty one.",
+                "isUsableSecret accepts only a string or a Buffer, so other valid HMAC keys (TypedArray, KeyObject) are silently rejected by verifyToken even though signToken accepts them. The sign and verify paths are inconsistent."
+              ]
+            },
+            "test_quality": {
+              "score": 8,
+              "evidence": [
+                "tests/pagination.test.mjs covers the exact-multiple case `pageCount(10, 5) === 2`, `pageCount(0, 5) === 0`, a partial last page, page 4 past the end, page 0, page -1 and an empty list. Every case uses full `deepEqual` on the returned shape.",
+                "tests/config.test.mjs covers `null`, `[]`, primitives, and `pageSize` values of 0, -5, 2.5, \"10\" and null, each asserting `{ code: 'CONFIG_INVALID' }`.",
+                "tests/discount.test.mjs pins the boundary where `expiresAt` equals `NOW` for both kinds, the floor in `999 * 15 / 100 -> 850`, clamping to 0 for fixed and for over-100 percent, and an unknown kind.",
+                "tests/auth/token.test.mjs checks signToken against a hard-coded known vector and an independent HMAC reference. It also covers a tampered payload or signature, the wrong secret, truncated, over-long and non-canonical signatures, and empty or extra segments.",
+                "tests/format.test.mjs asserts `Object.keys(out)` equals `['id', 'label', 'slug', 'price']`, which pins the 'no other keys' rule.",
+                "Gap: no test asserts that `dispatch` of an unregistered name returns `{ status: 404 }`, although BEH-7 states that error case explicitly. No test covers a non-integer `page`."
+              ]
+            },
+            "code_clarity": {
+              "score": 9,
+              "evidence": [
+                "Each module is short, idiomatic ESM with clear names, for example `inRange`, `discount` and `BASE64URL_PART`.",
+                "The only comment in src/auth/token.mjs states a real constraint: 'Node's decoder ignores invalid characters and unused trailing bits, which would let non-canonical signature encodings verify.'",
+                "src/handlers/list.mjs maps `result.items` through `formatItem` and picks the body fields explicitly, with no indirection.",
+                "Small nit: in src/discount.mjs, `let discount;` followed by an if/else chain is a little clunkier than an early expiry return or a lookup, but it stays readable."
+              ]
+            },
+            "scope_discipline": {
+              "score": 8,
+              "evidence": [
+                "Every changed source file maps to a BEH item. There are no new dependencies and no unrelated files.",
+                "`isUsableSecret`, with Buffer support and empty-secret rejection, is a speculative policy the spec does not ask for. It has its own tests: 'verifyToken accepts a non-empty Buffer secret...' and the empty-secret cases.",
+                "tests/auth/token.test.mjs runs to 164 lines and is somewhat out of proportion to the rest of the suite, though most of it bears directly on BEH-6's 'never throws' and 'malformed token' rules."
+              ]
+            }
+          },
+          "overall": {
+            "score": 9,
+            "rationale": "A strong, focused patch. It fixes every seed defect the diff exposes (pageCount off-by-one, the null/array config check, the inverted discount clamp, the wrong formatItem shape) and adds the missing slug, token and list-handler modules in clean, minimal code. The token verification is handled carefully: the length-guarded timingSafeEqual comparison cannot throw, and non-canonical encodings are rejected. Tests are precise and boundary-heavy. Points are lost for three things. First, the untested and unverified `dispatch` 404 error case. Second, an unrequested secret-validation policy that makes verifyToken reject tokens signed with an empty secret despite a matching signature. Third, a minor non-integer-page edge in paginate."
+          }
+        },
+        {
+          "trial": 2,
+          "position": 4,
+          "exit_code": 0,
+          "cost_usd": 0.207957,
+          "ok": true,
+          "scores": {
+            "spec_compliance": {
+              "score": 9,
+              "evidence": [
+                "BEH-1: src/pagination.mjs changes the seed's `Math.floor(total / pageSize) + 1` to `Math.ceil(total / pageSize)`, which gives 0 when total is 0. The new `paginate` returns `{ items, page, pageSize, pageCount, total }` and uses `inRange = page >= 1 && page <= count` to return `[]` without throwing.",
+                "BEH-2: src/config.mjs adds `doc === null || Array.isArray(doc)` to the seed's `typeof doc !== 'object'` check. It also adds `'pageSize' in doc && !(Number.isInteger(doc.pageSize) && doc.pageSize > 0)` with code CONFIG_INVALID.",
+                "BEH-3: src/slug.mjs implements `.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')` exactly as the spec states.",
+                "BEH-4: src/discount.mjs fixes two seed bugs. The seed returned the full price when the discount went below zero (`discounted < 0 ? priceCents : discounted`); the patch uses `Math.max(0, priceCents - discount)`. The seed also had no percent kind and no COUPON_INVALID; the patch adds `Math.floor(priceCents * coupon.amount / 100)` and throws `err.code = 'COUPON_INVALID'`. Expiry uses `expiresAt <= now`.",
+                "BEH-5: src/format.mjs now returns exactly `{ id, label, slug: slugify(item.label), price: { cents: item.priceCents, currency } }`. The seed version exposed `priceCents` and had no slug.",
+                "BEH-6: src/auth/token.mjs builds `${head}.${sign(head, secret)}` with base64url HMAC-SHA256. It compares with `timingSafeEqual` behind a length guard and returns null on every malformed path.",
+                "BEH-7: src/handlers/list.mjs returns `{ status: 200, body: { items, page, pageCount, total } }` with formatted items, and src/registry.mjs registers `list: listHandler`. The body of `dispatch`, which is where the 404 for unregistered names lives, is not in the diff. Nothing in the patch adds or checks that path, so the 404 rule can't be confirmed from the patch."
+              ]
+            },
+            "correctness_robustness": {
+              "score": 8,
+              "evidence": [
+                "BEH-6 crypto: `if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) return null;` stops timingSafeEqual from throwing on a length mismatch. `BASE64URL_PART` plus comparing canonical strings rejects non-canonical encodings and invalid characters, which Node's decoder would otherwise ignore. The JSON.parse is wrapped in try/catch, so verifyToken cannot throw.",
+                "verifyToken guards `typeof token !== 'string'` and an unusable secret, so non-string input returns null rather than throwing.",
+                "BEH-1 edge case: a non-integer page such as 1.5 passes `inRange` and gives `start = 0.5`. `slice` then truncates it silently instead of treating the page as out of range. Behavior for `pageSize` 0 or a negative value is also undefined (pageCount comes out as NaN or Infinity), though the spec doesn't cover it.",
+                "`isUsableSecret` rejects valid key types such as Uint8Array and KeyObject. It also rejects an empty-string secret, so a token signed with '' can never verify, which goes beyond the spec.",
+                "BEH-4: the kind check runs before the expiry check, so an unknown kind throws even when the coupon is expired. That is a reasonable reading of 'any other kind throws', and the patch tests it."
+              ]
+            },
+            "test_quality": {
+              "score": 8,
+              "evidence": [
+                "tests/pagination.test.mjs covers an exact multiple (`pageCount(10, 5)` → 2), total 0, a partial last page, page 4 past the end, page 0, a negative page, and an empty list. Each uses a full `deepEqual` on the result shape.",
+                "tests/config.test.mjs covers null, arrays, primitives, and pageSize values of 0, -5, 2.5, \"10\" and null, all expecting CONFIG_INVALID, plus a valid round-trip.",
+                "tests/discount.test.mjs covers expiry exactly at now for both kinds, clamping to 0 for fixed and for percent over 100, flooring (`999 * 15 / 100` → 850), and COUPON_INVALID both live and expired. These would catch the seed's return-full-price-on-negative bug.",
+                "tests/auth/token.test.mjs pins a known vector, checks the base64url alphabet and lack of padding, and covers tampered payloads and signatures, truncated and extended signatures, non-canonical trailing bits, extra or missing segments, non-string tokens, and a validly signed head that isn't JSON.",
+                "tests/format.test.mjs asserts `Object.keys(out)` equals `['id', 'label', 'slug', 'price']`, which pins the 'no other keys' rule.",
+                "Gaps: no test checks that `dispatch` of an unregistered name returns `{ status: 404 }` (BEH-7). Nothing tests a non-integer page or a list handler over an empty item list. The token suite is much larger than the rest, and several of its cases (Buffer secrets, empty secrets) test behavior the spec doesn't require."
+              ]
+            },
+            "code_clarity": {
+              "score": 9,
+              "evidence": [
+                "The modules are small idiomatic ESM with clear names (`sign`, `isUsableSecret`, `BASE64URL_PART`, `inRange`, `discount`).",
+                "The one comment in token.mjs, 'Compare the canonical base64url strings, not decoded bytes...', states a real constraint.",
+                "listHandler in src/handlers/list.mjs is a direct mapping with no needless indirection.",
+                "One small issue: discount.mjs computes `discount` and only then checks expiry. The order exists so invalid kinds always throw, but no comment says so."
+              ]
+            },
+            "scope_discipline": {
+              "score": 8,
+              "evidence": [
+                "Every new file (slug.mjs, auth/token.mjs, handlers/list.mjs) and every changed file maps to a BEH-n. No dependencies were added and no unrelated files were touched.",
+                "Unrequested behavior: `isUsableSecret` adds secret-type and empty-secret policy that the spec doesn't define, and tests pin it ('verifyToken returns null for a missing, non-string, or empty secret', 'accepts a non-empty Buffer secret').",
+                "registry.mjs changes only the import and the `list: listHandler` entry."
+              ]
+            }
+          },
+          "overall": {
+            "score": 8,
+            "rationale": "A strong patch. It fixes every seed defect visible in the diff (the pageCount formula, null and array configs, pageSize validation, fixed-coupon clamping, percent coupons, COUPON_INVALID, and formatItem's shape). It implements slugs, tokens and the list handler to the letter, and its token verification is robust and can't throw. Precise tests pin most boundaries. The main weaknesses: the BEH-7 404 path for unregistered names is neither shown nor tested, non-integer pages aren't handled, and the secret-validation policy goes beyond the spec."
+          }
+        }
+      ],
+      "ok_trials": 2,
+      "mean": {
+        "spec_compliance": 9,
+        "correctness_robustness": 8,
+        "test_quality": 8,
+        "code_clarity": 9,
+        "scope_discipline": 8,
+        "overall": 8.5
+      },
+      "spread": {
+        "spec_compliance": 0,
+        "correctness_robustness": 0,
+        "test_quality": 0,
+        "code_clarity": 0,
+        "scope_discipline": 0,
+        "overall": 1
+      }
+    }
+  }
+}

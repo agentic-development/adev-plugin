@@ -35,7 +35,7 @@ If the output is not `__NONE__`, incorporate it as additional standing instructi
 - No arguments: review all unreviewed specs (specs without a `.review.md` file, or where the spec is newer than the review)
 - `--spec <path>`: review a specific spec file
 - `--charter <module>`: review all specs under a feature charter
-- `--tier <full|quick>`: rigor tier (graduated-rigor-tiers spec). `full` (default) dispatches whatever reviewer set `adev governance reviewers` resolves for the project (never a fixed count or named trio — the registry is project-configurable); `quick` dispatches a single synthesized reviewer instead. Overrides any routing/risk-policy signal. Invalid value → `INVALID_TIER`.
+- `--tier <full|quick|lite>`: rigor tier (graduated-rigor-tiers spec). `full` (default) dispatches whatever reviewer set `adev governance reviewers` resolves for the project (never a fixed count or named trio — the registry is project-configurable); `quick` dispatches a single synthesized reviewer instead; `lite` runs exactly as `quick` and prints `--tier lite runs as quick here` once. Overrides any routing/risk-policy signal. Invalid value → `INVALID_TIER`.
 - `--defer-decisions`: never ask. List pending decisions in the BLOCK summary and return. Required for every non-interactive caller (build passes it on every dispatch).
 
 ## Step 0: Specify-step gate (FIRST action)
@@ -110,11 +110,11 @@ Do not treat missing workspace as a blocking error; proceed with the rest of the
 
 ## Step 2.5: Resolve Rigor Tier
 
-Resolve the **rigor tier** (`full` | `quick`) that governs how this spec is reviewed. Per `graduated-rigor-tiers.spec.md`, `quick` never skips the gate — it dispatches a single synthesized reviewer instead of the registry's reviewer set, still producing the `.review.md` and the `review` lifecycle event.
+Resolve the **rigor tier** (`full` | `quick`) that governs how this spec is reviewed; an explicit `--tier lite` resolves to `quick`. Per `graduated-rigor-tiers.spec.md`, `quick` never skips the gate — it dispatches a single synthesized reviewer instead of the registry's reviewer set, still producing the `.review.md` and the `review` lifecycle event.
 
 Resolution precedence (highest first) — this is the `resolveRigorMode(...)` contract in `lib/governance/rigor-mode.mjs`:
 
-1. **Explicit `--tier <full|quick>`** on invocation. Reject any other value with `INVALID_TIER`.
+1. **Explicit `--tier <full|quick|lite>`** on invocation; `lite` runs exactly as `quick` (print `--tier lite runs as quick here`). Reject any other value with `INVALID_TIER`.
 2. **Routing signal** — if the caller (`/adev:route`, `/adev:work`, or `/adev:build`) passed `--tier quick` because the work is "easy" (low blast-radius, high pattern coverage).
 3. **Risk policy** — read `.context-index/governance/risk-policies.yaml`; map the spec's `risk_level` frontmatter (default `medium`) to `policies.<level>.review_mode`.
 4. **Default** — `full`.

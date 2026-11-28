@@ -218,7 +218,7 @@ can be any tier.
 | Tier | Every risk level gets | Reviewer/check registry effect |
 |---|---|---|
 | `prototype` | `require_hitl_approval: false`, `review_mode`/`validate_mode`/`implement_mode: quick`, `test_depth: minimal` (review is never skipped — just fast) | Bundled reviewers softened to `severity_cap: warning`; `validate.check-11-visual-verification` disabled; spec/constitution compliance downgraded to `warning` |
-| `standard` (default) | Framework defaults, unchanged since before tiers existed | No overlay — the bundled domain default runs exactly as documented above |
+| `standard` (default) | The framework defaults: `review_mode`/`validate_mode: full` for `high` and `medium` and `quick` for `low`; `implement_mode: quick` at every level (the `risk-level` floor still gives a high-risk task not routed `auto-agent` the `full` review); `test_depth` `thorough`/`standard`/`minimal`; `require_hitl_approval` only for `high` | No overlay — the bundled domain default runs exactly as documented above |
 | `strict` | `require_hitl_approval: true`, `review_mode`/`validate_mode`/`implement_mode: full`, `test_depth: thorough` | `structural-architect`/`security-reviewer` re-enabled (off by default in the bundled `software` domain); three checks escalated to `error`; a `project.strict-compliance` stub check appended |
 
 The choice is written to `manifest.yaml` as a top-level `risk_tier: <name>` key (a project with no

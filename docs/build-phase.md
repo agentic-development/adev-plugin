@@ -72,7 +72,7 @@ See the [Skill Reference](skill-reference.md) for full details on invocation mod
 
 **Skill:** `/adev:implement`
 
-**What it does:** Executes an implementation plan by dispatching a fresh subagent per task, routing to domain specialists when applicable, applying the test discipline of the project's [`implementation_mode`](configuration.md#implementation_mode) (TDD by default), and running 2-stage review (spec compliance then code quality) after each task. Supports resuming interrupted implementations and single-task re-runs.
+**What it does:** Executes an implementation plan by dispatching a fresh subagent per task, routing to domain specialists when applicable, applying the test discipline of the project's [`implementation_mode`](configuration.md#implementation_mode) (TDD by default), and reviewing each task at its resolved depth: one synthesized reviewer under `quick` (the default), spec compliance then code quality under `full`, or, for an operator-authorized `lite` task, no per-task reviewer behind a post-task tripwire (see [Core Concepts → Graduated Rigor Tiers](concepts.md#graduated-rigor-tiers)). Supports resuming interrupted implementations and single-task re-runs.
 
 **When to use it:** After planning (and optionally routing). This is the core execution engine — it turns plan tasks into working, tested, reviewed code.
 

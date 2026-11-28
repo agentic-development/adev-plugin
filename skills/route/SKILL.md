@@ -115,7 +115,9 @@ For each task, sum the four dimension scores to get a total (range: 4-20).
 
 ### Rigor Tier Signal (graduated-rigor-tiers)
 
-Alongside the routing mode, emit a **rigor tier** recommendation that the gate skills consume (`graduated-rigor-tiers.spec.md`). A task is "easy" — eligible for `tier: quick` — when it routes `auto-agent` (total ≥ 16) AND no dimension scores below 3 (low blast radius, high pattern coverage). Otherwise recommend `tier: full`. `quick` narrows review/validation breadth but never skips a gate; when in doubt, recommend `full`. The consuming skills (`/adev:review-specs`, `/adev:validate`, `/adev:build`) receive this as `--tier quick`; the spec's declarative `risk_level` remains the fallback when routing has not run.
+Alongside the routing mode, emit a **rigor tier** recommendation that the gate skills consume (`graduated-rigor-tiers.spec.md`). A task is "easy" — eligible for `tier: quick` — exactly when `quickTierSignal(entry)` in `<ADEV_ROOT>/lib/implement/review-depth.mjs` is true: it routes `auto-agent` and no dimension scores below 3 of 5 (each sidecar score ≥ 0.6). Otherwise recommend `tier: full`. `quick` narrows review/validation breadth but never skips a gate; when in doubt, recommend `full`. The consuming skills (`/adev:review-specs`, `/adev:validate`, `/adev:build`) receive this as `--tier quick`; the spec's declarative `risk_level` remains the fallback when routing has not run.
+
+A different predicate, `liteEligible(entry)` in the same module, is the routing condition of `/adev:implement`'s `lite` grant: it routes `auto-agent` or `assisted-agent`, and the dimension scores are not consulted. `adev route emit-sidecar` reports the count. Route's output is an eligibility signal, never an authorization: `lite` comes only from operator input, so route never passes `--lite` and never recommends it.
 
 ## Step 4: Write Routing Sidecar
 
@@ -220,9 +222,12 @@ Task Routing Summary for <plan file>
 | 3 | Payment flow | human-only | 7/20 | 2 | 1 | 2 | 2 |
 
 Route distribution: 5 auto-agent, 3 assisted-agent, 1 human-only
+lite-eligible: <count> of <total>
 
 Routing sidecar written to <plan-stem>.routing.json (plan file unchanged).
 ```
+
+Fill the `lite-eligible:` line from the `lite_eligible` `{ count, total }` field of the `emit-sidecar` output. Under `--dry-run` the verb is not called, so omit the line.
 
 If any tasks are marked `human-only`, highlight them with specific guidance:
 
@@ -239,7 +244,7 @@ Task 7: Custom analytics engine (score: 6/20)
   Suggestion: Break into smaller subtasks or implement manually
 ```
 
-**Terse form:** Renders the per-task routing table (task, route, score, and the four dimension scores), the route-distribution count line, and the sidecar path `<plan-stem>.routing.json`, written alongside the plan; the plan file itself is unchanged. Substitutes the human-only guidance block with a count of human-only tasks and a pointer to that same sidecar path, which already carries each task's scores and rationale.
+**Terse form:** Renders the per-task routing table (task, route, score, and the four dimension scores), the route-distribution count line, the `lite-eligible: <count> of <total>` line, and the sidecar path `<plan-stem>.routing.json`, written alongside the plan; the plan file itself is unchanged. Substitutes the human-only guidance block with a count of human-only tasks and a pointer to that same sidecar path, which already carries each task's scores and rationale.
 
 ## Integration with /adev:implement
 

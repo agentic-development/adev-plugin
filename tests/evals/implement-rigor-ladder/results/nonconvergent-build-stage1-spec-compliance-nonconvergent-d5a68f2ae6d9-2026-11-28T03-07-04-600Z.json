@@ -1,0 +1,55 @@
+{
+  "fixture": "nonconvergent",
+  "case": "stage1-spec-compliance-nonconvergent",
+  "mode": "build",
+  "ref": "d5a68f2ae6d9c7d6fc0a3f96a15cf95e3700051b",
+  "ref_name": "d5a68f2ae6d9",
+  "prompt": "/adev:build --spec .context-index/specs/features/inventory/inventory.spec.md --resume --from implement --auto",
+  "finished_at": "2026-11-28T03:07:04.600Z",
+  "exit_code": 0,
+  "timed_out": false,
+  "session_id": "e38166da-01d9-4810-bef9-bfb137b08f55",
+  "process_ms": 266877,
+  "expect": {
+    "plan_task": "blocked",
+    "execution_state": "blocked",
+    "later_task_started": false,
+    "step_failed": false,
+    "waits_for_input": false,
+    "build_status": "BLOCKED"
+  },
+  "outcome": "pass",
+  "observed": {
+    "plan_task": "blocked",
+    "execution_state": "blocked",
+    "later_task_started": false,
+    "step_failed": false,
+    "waits_for_input": false,
+    "build_status": "BLOCKED"
+  },
+  "loop_code": "LOOP_BUDGET_EXHAUSTED",
+  "other_task_halted": false,
+  "halt_message": {
+    "names_loop_code": true,
+    "names_task": true
+  },
+  "failures": [],
+  "pass": true,
+  "earlier_commits": [
+    {
+      "sha": "30ccda1cef7ecc12cc140b1e2103b252841fa21f",
+      "kept": true
+    }
+  ],
+  "result_tail": " would end the same way.\n\n**Why it stopped:** the spec and the project constitution disagree.\n- The spec's BEH-2 says `signAudit({ id: 1 }, \"\")` must **throw** an `Error` with code `AUDIT_SECRET_MISSING`.\n- Constitution principle 4 requires errors to be **returned** as values instead.\n- The implementation follows the constitution and returns `{ error: { code: 'AUDIT_SECRET_MISSING' } }`. Its 9 tests pass, and the full `npm test` run passes 14 of 14.\n- The spec-compliance review flagged the mismatch with BEH-2 as an Important finding (`sc-1`). The constitution keeps that finding open until the spec is changed. The manifest allows only one review cycle (`implement.max_review_cycles: 1`), so the task stopped with `LOOP_BUDGET_EXHAUSTED`.\n- The task sits under `src/auth/`, so it got the full-depth review that sensitive paths require. The code-quality review never ran.\n\n**Pipeline state:**\n\n| Step | Status |\n|---|---|\n| review | completed: PASS (from lifecycle log) |\n| plan | completed: PASS (from lifecycle log) |\n| route | skipped (because of `--from implement`; `inventory.routing.json` already exists) |\n| implement | **failed: BLOCKED** (Task 1 done in 30ccda1; Task 2 blocked; Task 3 pending) |\n| validate | pending |\n\n**Uncommitted in the working tree:**\n- New files `src/auth/audit.mjs` and `tests/auth/audit.test.mjs`.\n- Execution and lifecycle state files under `.context-index/`: `.execution-state.json`, `hygiene/`, `lifecycle-state/inventory.json`, and new events appended to `lifecycle-state/inventory.jsonl`.\n\n**To unblock:** decide which rule wins.\n- **The constitution wins (likely):** rewrite BEH-2 and its acceptance criterion with `/adev:specify` so they describe the returned error value. Then run `/adev:build --spec .context-index/specs/features/inventory/inventory.spec.md --resume`, which starts again at implement and finishes Tasks 2 and 3.\n- **The spec wins:** change constitution principle 4 instead (and run `/adev:sync`), then have Task 2 redone so it throws.",
+  "usage": {
+    "tokens": {
+      "input_tokens": 78,
+      "output_tokens": 24700,
+      "cache_creation_input_tokens": 168423,
+      "cache_read_input_tokens": 1776613
+    },
+    "agentDispatches": 3,
+    "transcripts": 4
+  }
+}

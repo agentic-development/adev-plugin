@@ -20,7 +20,7 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 | `/adev:prototype` | Design | Rapidly sketch UI screens and flows from charters | Feature Charter exists |
 | `/adev:plan` | Build | Decompose reviewed specs into ordered implementation tasks | Reviewed spec exists |
 | `/adev:route` | Build | Score tasks for auto/assisted/human execution routing | Plan exists |
-| `/adev:implement` | Build | Execute plans under the project's test discipline (TDD by default), specialist routing, and 2-stage review | Reviewed plan exists |
+| `/adev:implement` | Build | Execute plans under the project's test discipline (TDD by default), specialist routing, and per-task review at a resolved depth (`quick` by default) | Reviewed plan exists |
 | `/adev:write-test` | Build | TDD test authoring (RED phase) with gaming detection | Spec or source file exists |
 | `/adev:build` | Build | End-to-end pipeline chaining review through validate | Spec exists |
 | `/adev:validate` | Validation | Post-implementation validation with 13 ordered checks | Implementation complete |
@@ -66,6 +66,8 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 ```
 
 **Expected Output:** A `.context-index/` directory containing `constitution.md`, `manifest.yaml`, `platform-context.yaml`, and the directory structure for specs, ADRs, and other artifacts.
+
+**Implement rigor (Step 8c):** init asks how much per-task review `/adev:implement` gives (`lite`, `quick` or `full`) and records the operator's typed answer as `implement_mode` in `risk-policies.yaml` through `adev init prompt implement-rigor`. It never chooses `lite` for you: a headless run writes the preset's non-`lite` default and leaves an existing value alone. See [Configuration → implement_mode](configuration.md#governancerisk-policiesyaml-implement_mode).
 
 **Related Guides:** [Installation & Setup](installation.md), [Getting Started Tutorial](getting-started.md)
 
@@ -212,7 +214,7 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 - No arguments: review all unreviewed specs
 - `--spec <path>`: review a specific spec file
 - `--charter <module>`: review all specs under a feature charter
-- `--tier <full|quick>`: rigor tier (see [Core Concepts → Graduated Rigor Tiers](concepts.md#graduated-rigor-tiers)). `full` (default) dispatches the three parallel specialists; `quick` dispatches a single synthesized reviewer. `quick` never skips the gate — it still produces the `.review.md` and the review lifecycle event. Overrides any routing or risk-policy signal.
+- `--tier <full|quick|lite>`: rigor tier (see [Core Concepts → Graduated Rigor Tiers](concepts.md#graduated-rigor-tiers)). `full` (default) dispatches the project's registry reviewer set; `quick` dispatches a single synthesized reviewer. `quick` never skips the gate — it still produces the `.review.md` and the review lifecycle event. `lite` runs as `quick` here and prints one line saying so; `lite` is an implement level. Overrides any routing or risk-policy signal.
 
 - `--defer-decisions`: skip the interactive decision ask round. Decision-classed blockers are written to the `.blockers.md` sidecar and reported in a Decisions Required table for the caller to answer (used by `/adev:build`).
 
@@ -312,13 +314,21 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 
 **Expected Output:** A routing table showing each task's scores and recommended execution mode, with the decisions written to the sibling `<plan-stem>.routing.json` sidecar. The plan file is not modified. Inspect the sidecar as a markdown table with `adev route render-sidecar --plan <path>`.
 
+The summary also prints `lite-eligible: <count> of <total>`: the tasks that meet `/adev:implement`'s routing condition for `lite` (routed `auto-agent` or `assisted-agent`; scores are not consulted), computed by `liteEligible` in `lib/implement/review-depth.mjs`. It is an eligibility signal, never an authorization: route never passes or recommends `lite`. Commit the sidecar before an implement run that uses `lite`, because implement reads it from the run's base commit.
+
 **Related Guides:** [Build Phase](build-phase.md)
 
 ---
 
 ### `/adev:implement`
 
-**Purpose:** Execute implementation plans by dispatching a fresh subagent per task, routing to domain specialists when applicable, applying the test discipline of the project's `implementation_mode` (TDD by default), and running 2-stage review (spec compliance then code quality) after each task. This is the core build skill.
+**Purpose:** Execute implementation plans by dispatching a fresh subagent per task, routing to domain specialists when applicable, applying the test discipline of the project's `implementation_mode` (TDD by default), and reviewing each task at the depth the rigor ladder resolves for it. This is the core build skill.
+
+**Review depth per task:** `quick` (the default) dispatches one synthesized reviewer. `full` runs Stage 1 spec compliance, then Stage 2 code quality; a task reaches it through `--tier full` or a floor leg (a sensitive path, a governance boundary, `human-only` routing, a high-risk spec on a task not routed `auto-agent`, or a Critical finding), except that under the lite cap (`lite` authorized, spec not high-risk) a sensitive path or governance boundary gives `quick`. `lite` runs the task inline in the orchestrator with no per-task reviewer, behind a post-task tripwire that can escalate it to `quick` or `full`. It needs operator authorization, and it is granted only to route-eligible tasks on a spec that is not high-risk. Every review loop is capped at `implement.max_review_cycles`; a loop that does not converge blocks the task and stops the run without waiting for input. See [Core Concepts → Graduated Rigor Tiers](concepts.md#graduated-rigor-tiers).
+
+**First action:** `adev implement check-flags`, before the plan gate and any lifecycle event. It refuses conflicting tier flags (`CONFLICTING_TIER_FLAGS`), malformed risk policies (`INVALID_TIER`) and `high.implement_mode: lite` (`LITE_NOT_ALLOWED_FOR_HIGH`), and captures the run base every later depth call reads governance from.
+
+**No self-selection:** the agent never adds `--lite` or `--tier lite` on its own judgment. `lite` comes only from a flag the operator typed or from `implement_mode: lite` in `risk-policies.yaml`, and a run authorized by the policy prints `lite authorized via policy`. A `/adev:route` `lite-eligible` count is a signal, not an authorization.
 
 **Prerequisites:** A reviewed plan must exist. The current branch must not be main or master.
 
@@ -330,8 +340,8 @@ This page documents every skill in the plugin. Skills are organized by lifecycle
 - `--fresh`: with `--parallel`, on a re-run collision auto-remove the retained worktree and continue instead of aborting with `RERUN_COLLISION`. No effect without `--parallel`.
 - `--no-batch`: force solo dispatch for every task, restoring today's strict one-subagent-per-task behavior. Rejected with `CONFLICTING_BATCH_FLAGS` when combined with `--parallel`.
 - `--max-batch <n>`: per-run override of `implement.max_batch_size` (default 4). `1` is equivalent to `--no-batch`.
-- `--tier full`: absolute — forces `full` review depth for every task in the run, no exceptions.
-- `--tier quick`: not absolute — authorizes evaluating the quick-grant predicate for this run even when the policy baseline is `full`; each task still must independently satisfy every quick-grant condition to actually resolve `quick`. A task failing any condition resolves `full`. Still subject to the floor pass.
+- `--lite`: operator authorization for `lite` review depth, the same as `--tier lite`. Each task is still granted `lite` only when it is routed `auto-agent` or `assisted-agent` (scores are not consulted), the spec is not high-risk, no floor leg holds and the run is not `--parallel`. Under that authorization, on a spec that is not high-risk, a sensitive-path or boundary floor leg gives `quick` instead of `full` (the lite cap). Refused with `CONFLICTING_TIER_FLAGS` together with `--tier full` or `--tier quick`.
+- `--tier <full|quick|lite>`: per-run review-depth tier. `full` is absolute: every task gets both review stages, no floor leg is consulted and no `lite` is granted. `quick` is the baseline: a floor leg can still raise a task to `full`, and no `lite` is granted even when `risk-policies.yaml` authorizes it, so it is the per-run opt-out. `lite` is the same as `--lite`. Without `--tier`, the baseline is the spec's risk-level `implement_mode`, else `quick`.
 - `--review-cycles <n>`: per-run override of `implement.max_review_cycles`. Must be an integer `>= 1`; `0` is rejected with `INVALID_REVIEW_CYCLES`. Precedence: `--review-cycles` (highest) → `implement.max_review_cycles` (manifest) → `3` (default).
 - `--no-infra`: skip infrastructure preflight checks (user-only)
 - `--verbose`: enable step-by-step narration for debugging
@@ -344,9 +354,10 @@ Batching and `--parallel` operate at different scopes: batching groups cohesive,
 /adev:implement .context-index/specs/features/auth/login.plan.md --task 3
 /adev:implement --dry-run .context-index/specs/features/auth/login.plan.md
 /adev:implement --parallel .context-index/specs/features/auth/login.plan.md
+/adev:implement --lite .context-index/specs/features/auth/login.plan.md
 ```
 
-**Expected Output:** Implemented code for each task, with tests per the `implementation_mode` (written first under `tdd`), spec compliance verified, and code quality reviewed. Commits created per task with Spec and Plan-task trailers.
+**Expected Output:** Implemented code for each task, with tests per the `implementation_mode` (written first under `tdd`) and each task reviewed at its resolved depth. Commits created per task with Spec and Plan-task trailers (a `lite` task's commit carries no `Review-round:` trailer; its two `review_depth_resolved` events are its review provenance). After a run with any `lite` task, the constitution's quality gates run once over the whole run, and a failure stops it with `QUALITY_GATES_FAILED`.
 
 **Domain-aware:** Loads `gates`, `gate-config`, and `test-config` overlays from the resolved domain profile to configure quality gates and test strategies per domain. See [Domain Profiles](configuration.md#domain-profiles).
 
@@ -395,7 +406,8 @@ Batching and `--parallel` operate at different scopes: batching groups cohesive,
 - `--dry-run`: show pipeline plan without executing
 - `--no-route`: skip the route step
 - `--full`: run the Full Pipeline (specify through validate)
-- `--tier <full|quick>`: rigor tier (see [Core Concepts → Graduated Rigor Tiers](concepts.md#graduated-rigor-tiers)), propagated to the `/adev:review-specs` and `/adev:validate` dispatches in the pipeline. When omitted, each of those steps resolves its own rigor tier via routing signal / risk policy / default `full`. Distinct from the gate tiers (`fast`/`integration`/`e2e`) used by validate's quality-gate check.
+- `--tier <full|quick|lite>`: rigor tier (see [Core Concepts → Graduated Rigor Tiers](concepts.md#graduated-rigor-tiers)), propagated to the `/adev:review-specs`, `/adev:implement` and `/adev:validate` dispatches in the pipeline. `--tier lite` reaches implement as `--lite` and reaches review-specs and validate unchanged, where it runs as `quick`. When omitted, each of those steps resolves its own rigor tier via routing signal / risk policy / default. Distinct from the gate tiers (`fast`/`integration`/`e2e`) used by validate's quality-gate check.
+- `--lite`: operator authorization for the `lite` implement level, forwarded to `/adev:implement` only and only when the operator typed it; build never adds it on its own. An explicit `--tier full|quick` typed with it is forwarded too, so implement refuses the pair with `CONFLICTING_TIER_FLAGS`.
 
 **Example:**
 ```
@@ -426,7 +438,7 @@ The loop checks its retry budget first in any mode, so `--auto` with no retries 
 - `--spec <path>`: validate against a specific Live Spec (required)
 - `--plan <path>`: cross-reference the implementation plan (optional)
 - `--fix`: attempt to auto-fix minor issues before reporting
-- `--tier <full|quick>`: rigor tier (see [Core Concepts → Graduated Rigor Tiers](concepts.md#graduated-rigor-tiers)). `full` (default) runs the complete check suite; `quick` runs a narrowed set while still enforcing the fail-fast quality gate and emitting the validate lifecycle event. Overrides any routing or risk-policy signal.
+- `--tier <full|quick|lite>`: rigor tier (see [Core Concepts → Graduated Rigor Tiers](concepts.md#graduated-rigor-tiers)). `full` (default) runs the complete check suite; `quick` runs a narrowed set while still enforcing the fail-fast quality gate and emitting the validate lifecycle event. `lite` runs as `quick` here and prints one line saying so. Overrides any routing or risk-policy signal.
 - `--no-infra`: skip infrastructure preflight checks (user-only)
 
 **Example:**
@@ -436,6 +448,8 @@ The loop checks its retry budget first in any mode, so `--auto` with no retries 
 ```
 
 **Expected Output:** A structured validation report with PASS/FAIL per check, specific file references for failures, and overall verdict.
+
+**Tasks implemented without per-task review:** every run calls `adev implement lite-report` first. When the latest implement run had `lite` tasks, the report carries the advisory `implemented without per-task review: <count> (<task_ids>)`, and the spec-compliance check covers those tasks' commits. Validation itself is never skipped and its tier is unchanged.
 
 **Domain-aware:** Loads `verification` overlay from the resolved domain profile to configure domain-specific validation rules. See [Domain Profiles](configuration.md#domain-profiles).
 

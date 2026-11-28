@@ -32,7 +32,7 @@ If the output is not `__NONE__`, incorporate it as additional standing instructi
 - `--plan <path>`: cross-reference the implementation plan (optional, improves traceability)
 - `--fix`: attempt to auto-fix minor issues (lint errors, formatting) before reporting
 - `--no-infra`: skip infrastructure preflight checks (user-only — the agent must never set this flag)
-- `--tier <full|quick>`: rigor tier (graduated-rigor-tiers spec). `full` (default) runs the whole check set; `quick` runs Check 1 (quality gates, fail-fast) plus a single synthesized spec+constitution compliance check, and skips the remaining checks. Overrides any routing/risk-policy signal. Invalid value → `INVALID_TIER`.
+- `--tier <full|quick|lite>`: rigor tier (graduated-rigor-tiers spec). `full` (default) runs the whole check set; `quick` runs Check 1 (quality gates, fail-fast) plus a single synthesized spec+constitution compliance check, and skips the remaining checks; `lite` runs exactly as `quick` and prints `--tier lite runs as quick here` once. Overrides any routing/risk-policy signal. Invalid value → `INVALID_TIER`.
 
 ## Prerequisites
 
@@ -79,6 +79,19 @@ Abort paths in this skill that MUST emit it:
 The Prerequisites block (missing `.context-index/`, missing spec, missing implementation files) runs *before* the `--status started` event and therefore strands nothing — do not emit for those.
 
 **Known gap (not this skill's to fix):** `adev report --type step` accepts no `--error` flag, so the abort's error code cannot be carried on the event even though the `step_failed` schema has an `error` field. Name the code in operator-facing output; widening the CLI surface is a follow-up.
+
+### Step 0b: Lite-task report (every run)
+
+Right after Step 0a, on every validate run and under either tier, run:
+
+```bash
+adev implement lite-report --spec <spec-path> --json
+```
+
+- **Exit 0:** it prints `{count, task_ids, since, capped}` for the latest implement run. Keep `count`, `task_ids` and `capped`. When `count > 0`, the report carries the advisory `implemented without per-task review: <count> (<task_ids>)` and those tasks' commits join the spec-compliance scope (Check 2). When `count` is 0 there is no advisory and the scope is unchanged. When `capped` is non-empty, the report also carries `one reviewer under the lite cap: <n> (<capped>)`, with `<n>` the number of ids in `capped`: those tasks had one synthesized reviewer where a sensitive-path or boundary floor would otherwise have run both stages. It does not change the scope.
+- **Non-zero exit:** keep its stderr. The advisory reads `implemented without per-task review: unknown (lite-report failed: <stderr>)`, and the spec-compliance scope widens to every commit whose `Spec:` trailer names this spec. This is not an abort, so Step 0a-fail's event is not emitted.
+
+The advisory is emitted whenever `count` is non-zero or the call failed, including when Check 1 fails fast and when Check 2 is disabled. Validation is never skipped for `lite` tasks, and validate's own tier is unchanged by them.
 
 ## Workspace-Aware Validation Mode
 
@@ -150,6 +163,8 @@ Advisory only: warns when code has drifted from the spec since implementation.
 
 Subagent review of implementation against the spec, including the scope-expansion sub-finding.
 
+**Tasks implemented without per-task review.** Step 0b's `lite-report` result sets part of this check's scope, here and in the quick tier's synthesized compliance check. When `count > 0`, the diff of each commit whose `Spec:` and `Plan-task:` trailer match this spec and an id in `task_ids` goes into the subagent's prompt. The reference below holds the selection rules: the anchored greps, id normalization, the PARTIAL for an unmatched id, and the widened scope when `lite-report` failed. Validation is never skipped for `lite` tasks.
+
 > **Conditional loading:** Read `<ADEV_ROOT>/skills/validate/references/checks-orchestration/check-2-spec-compliance.md` for the full instructions. Do not act on this section from the summary above.
 
 ### Check 4: Constitution Compliance
@@ -184,7 +199,7 @@ Which lifecycle events each check emits, and their payloads.
 
 ## Report Format
 
-The exact structure of the PASS/FAIL report, including the migration-orientation footer.
+The exact structure of the PASS/FAIL report, including the migration-orientation footer. It carries Step 0b's advisory row `implemented without per-task review: <count> (<task_ids>)` only when `count` is non-zero, or its `unknown` form when `lite-report` failed.
 
 > **Conditional loading:** Read `<ADEV_ROOT>/skills/validate/references/report-format.md` for the full instructions. Do not act on this section from the summary above.
 

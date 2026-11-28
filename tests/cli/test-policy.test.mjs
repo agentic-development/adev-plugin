@@ -12,9 +12,10 @@ import { existsSync, readFileSync } from "node:fs";
 import { join, dirname, resolve as resolvePath } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { run } from "../../lib/cli/test-policy.mjs";
+import { run, boundaryCrossingFor, boundaryMatcherFor, loadConfiguredSensitivePaths } from "../../lib/cli/test-policy.mjs";
 import { createTempDir, cleanupTempDir, writeFixture } from "../helpers.mjs";
 import { writeRoutingSidecar } from "../../lib/plan-routing-sidecar.mjs";
+import { readEvents } from "../../lib/lifecycle-state.mjs";
 
 // Real-subprocess invocation of the CLI, mirroring the pattern established in
 // tests/cli/verify.test.mjs — asserts against actual process stdout/exit code rather than the
@@ -429,6 +430,158 @@ test("set rejects an out-of-enumeration --granularity with INVALID_TEST_GRANULAR
 
     const after = readFileSync(manifestPath, "utf8");
     assert.strictEqual(after, before, "manifest.yaml must be byte-identical after a rejected set");
+  } finally {
+    await cleanupTempDir(dir);
+  }
+});
+
+// ── malformed rigor policy values propagate from loadRigorPolicies ──────────────────────────
+
+const MALFORMED_POLICIES = [
+  { label: "an out-of-set implement_mode", body: "policies:\n  medium:\n    implement_mode: bogus\n", code: "INVALID_TIER" },
+  { label: "an unparseable file", body: "policies:\n  medium:\n    review_mode: full\n  : bad\n", code: "INVALID_TIER" },
+  { label: "high.implement_mode: lite", body: "policies:\n  high:\n    implement_mode: lite\n", code: "LITE_NOT_ALLOWED_FOR_HIGH" },
+];
+
+test("test-policy resolve fails with INVALID_TIER on a malformed implement_mode", async () => {
+  const dir = await createTempDir();
+  try {
+    const specRel = ".context-index/specs/features/demo/x.spec.md";
+    await seedPlanWithSpec(dir, {
+      specRel,
+      planBody: "## Task Structure\n\n### Task 1: X [specialist: none]\n**Files:**\n- Create: `src/x.ts`\n",
+    });
+    await writeFixture(dir, ".context-index/governance/risk-policies.yaml", "policies:\n  medium:\n    implement_mode: bogus\n");
+    const r = spawnSync(
+      "node",
+      [CLI, "test-policy", "resolve", "--plan", "plan.plan.md", "--task-id", "t1"],
+      { encoding: "utf8", cwd: dir },
+    );
+    assert.strictEqual(r.status, 1, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    assert.match(r.stderr, /INVALID_TIER/);
+    assert.match(r.stderr, /medium\.implement_mode/);
+    assert.equal(r.stdout.trim(), "", "no assignment may be printed on a policy failure");
+    assert.deepEqual(readEvents(dir, specRel), [], "no test_depth_assigned event may be written");
+  } finally {
+    await cleanupTempDir(dir);
+  }
+});
+
+for (const { label, body, code } of MALFORMED_POLICIES) {
+  test(`resolve rejects ${label} with ${code} before any append`, async () => {
+    const dir = await createTempDir();
+    try {
+      const specRel = ".context-index/specs/features/demo/x.spec.md";
+      await seedPlanWithSpec(dir, {
+        specRel,
+        planBody: "## Task Structure\n\n### Task 1: X [specialist: none]\n**Files:**\n- Create: `src/x.ts`\n",
+      });
+      await writeFixture(dir, ".context-index/governance/risk-policies.yaml", body);
+      await assert.rejects(
+        run({ projectRoot: dir, argv: ["resolve", "--plan", "plan.plan.md", "--task-id", "t1"] }),
+        (err) => err.code === code && /risk-policies\.yaml/.test(err.message),
+      );
+      assert.deepEqual(readEvents(dir, specRel), []);
+    } finally {
+      await cleanupTempDir(dir);
+    }
+  });
+}
+
+// The run-base reader passes text committed at `run_base` through these two
+// functions. A `{ text }` override must parse exactly as the on-disk file would,
+// degrade the same way, and never fall back to reading the working tree.
+const BOUNDARIES_DB = "boundaries:\n  - id: no-db\n    severity: error\n    pattern: 'src/db/'\n    exclude: []\n";
+const BOUNDARIES_UI = "boundaries:\n  - id: no-ui\n    severity: error\n    pattern: 'src/ui/'\n    exclude: []\n";
+const BOUNDARY_CASES = [
+  { label: "a matching rule", text: BOUNDARIES_DB, expected: true },
+  { label: "an invalid regex", text: "boundaries:\n  - id: bad\n    pattern: '('\n", expected: false },
+  { label: "an unparseable document", text: "boundaries:\n  - id: x\n  : bad\n", expected: false },
+  { label: "an empty document", text: "", expected: false },
+];
+
+for (const { label, text, expected } of BOUNDARY_CASES) {
+  test(`boundaryCrossingFor with { text } matches the on-disk result for ${label}`, async () => {
+    const dir = await createTempDir();
+    try {
+      await writeFixture(dir, ".context-index/governance/boundaries.yaml", text);
+      const paths = ["src/db/query.ts", "src/ui/view.ts"];
+      const fromDisk = boundaryCrossingFor(dir, paths);
+      await writeFixture(dir, ".context-index/governance/boundaries.yaml", BOUNDARIES_UI);
+      assert.equal(fromDisk, expected);
+      assert.equal(boundaryCrossingFor(dir, paths, { text }), fromDisk);
+    } finally {
+      await cleanupTempDir(dir);
+    }
+  });
+}
+
+test("boundaryCrossingFor with { text } ignores the on-disk boundaries.yaml", async () => {
+  const dir = await createTempDir();
+  try {
+    await writeFixture(dir, ".context-index/governance/boundaries.yaml", BOUNDARIES_UI);
+    assert.equal(boundaryCrossingFor(dir, ["src/ui/view.ts"]), true);
+    assert.equal(boundaryCrossingFor(dir, ["src/ui/view.ts"], { text: BOUNDARIES_DB }), false);
+    assert.equal(boundaryCrossingFor(dir, ["src/db/query.ts"], { text: BOUNDARIES_DB }), true);
+  } finally {
+    await cleanupTempDir(dir);
+  }
+});
+
+test("boundaryMatcherFor reads boundaries.yaml once, at bind time, and answers as boundaryCrossingFor does", async () => {
+  const dir = await createTempDir();
+  try {
+    await writeFixture(dir, ".context-index/governance/boundaries.yaml", BOUNDARIES_DB);
+    const matcher = boundaryMatcherFor(dir);
+    await writeFixture(dir, ".context-index/governance/boundaries.yaml", BOUNDARIES_UI);
+    assert.equal(matcher(["src/db/query.ts"]), true, "the rules bound before the edit still apply");
+    assert.equal(matcher(["src/ui/view.ts"]), false);
+    for (const { text, expected } of BOUNDARY_CASES) {
+      const bound = boundaryMatcherFor(dir, { text });
+      assert.equal(bound(["src/db/query.ts", "src/ui/view.ts"]), expected, JSON.stringify(text));
+      assert.equal(bound(["src/db/query.ts"]), expected, "a second call answers the same");
+    }
+    assert.equal(boundaryMatcherFor(dir, { text: null })(["src/ui/view.ts"]), false);
+  } finally {
+    await cleanupTempDir(dir);
+  }
+});
+
+test("boundaryCrossingFor with { text: null } degrades like an absent file, even when one exists on disk", async () => {
+  const dir = await createTempDir();
+  try {
+    await writeFixture(dir, ".context-index/governance/boundaries.yaml", BOUNDARIES_DB);
+    assert.equal(boundaryCrossingFor(dir, ["src/db/query.ts"], { text: null }), false);
+  } finally {
+    await cleanupTempDir(dir);
+  }
+});
+
+const SENSITIVE_CASES = [
+  { label: "a configured list", text: "sensitive_paths:\n  - src/payments/**\n" },
+  { label: "an unparseable document", text: "sensitive_paths:\n  - a\n  : bad\n" },
+  { label: "a document with no sensitive_paths key", text: "other: 1\n" },
+];
+
+for (const { label, text } of SENSITIVE_CASES) {
+  test(`loadConfiguredSensitivePaths with { text } matches the on-disk result for ${label}`, async () => {
+    const dir = await createTempDir();
+    try {
+      await writeFixture(dir, ".context-index/governance/sensitive-paths.yaml", text);
+      const fromDisk = loadConfiguredSensitivePaths(dir);
+      await writeFixture(dir, ".context-index/governance/sensitive-paths.yaml", "sensitive_paths:\n  - src/other/**\n");
+      assert.deepEqual(loadConfiguredSensitivePaths(dir, { text }), fromDisk);
+    } finally {
+      await cleanupTempDir(dir);
+    }
+  });
+}
+
+test("loadConfiguredSensitivePaths with { text: null } degrades like an absent file, even when one exists on disk", async () => {
+  const dir = await createTempDir();
+  try {
+    await writeFixture(dir, ".context-index/governance/sensitive-paths.yaml", "sensitive_paths:\n  - src/payments/**\n");
+    assert.equal(loadConfiguredSensitivePaths(dir, { text: null }), undefined);
   } finally {
     await cleanupTempDir(dir);
   }

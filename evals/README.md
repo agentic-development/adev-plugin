@@ -21,6 +21,16 @@ Without `--scaffold`, the three scaffolded cases still run, just against an
 empty workspace instead of the seeded fixture — they won't error, but they
 also won't be testing what they're meant to.
 
+The four implement-rigor-ladder cases (`implement-no-self-selected-lite`,
+`implement-lite-refused-high-risk`, `init-offers-implement-rigor`,
+`init-writes-typed-implement-rigor`) also need
+`--scaffold`, plus `--allow-tools Bash Edit Write Agent`, because the skills
+call `adev` verbs. Their `fixture.sh` refuses to scaffold unless the `adev` on
+`PATH` has `implement check-flags`, so put a shim that runs this checkout's
+`cli/index.mjs` first on `PATH`. Run with `SHELL=/bin/bash` so a shell-rc
+`adev` function does not shadow the shim. Only the plugin arm can pass them,
+so run them with `--ablation none`.
+
 Every real run makes real model calls against your account (`llm` graders and
 the no-plugin baseline both count). Run `claude plugin eval . --ablation none
 --case <name>` while iterating on one case.

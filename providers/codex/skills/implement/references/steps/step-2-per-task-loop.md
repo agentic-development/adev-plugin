@@ -1,8 +1,12 @@
 ### Step 2: Per-Task Execution Loop
 
-For each task in dependency order:
+For each task in plan order, with batches, solo tasks and inline `lite` tasks interleaved as described below:
 
-Before the loop begins, `adev implement batches --plan <plan-path> [--max-batch <n>] [--no-batch]` resolves which tasks form a batch and which dispatch solo.
+Before the loop begins, `adev implement batches --plan <plan-path> --run-base <run_base> [--lite] [--tier <t>] [--max-batch <n>] [--no-batch]` resolves which tasks form a batch and which dispatch solo. `<run_base>` is the value `check-flags` printed (Prerequisites 1), the same for every call in the run. If `batches` already ran this invocation, as it does first in a `lite`-authorized run, do not run it again; keep its result. Pass `--lite` only when the operator typed it, and `--tier` only as the operator passed it. A policy authorization (`implement_mode: lite`) is read by the verb itself. Tasks the verb grants `lite` come back in `solo` with reason `lite`.
+
+Batches, solo tasks and inline `lite` tasks run interleaved in plan order. A batch dispatches when its first member comes up, and one `(sequential)` group can yield more than one batch, because the verb splits a group at its `lite` members (each batch carries a `segment`).
+
+**Task ids.** Pass each task's bare plan number `<n>` as `--task-id` (`3` for `### Task 3`) and use the same spelling for its `task_id` in every event. The `adev implement` verbs normalize ids, so `t<n>`, `task-<n>` and `<n>` all reach the same task, but the lifecycle log records whatever spelling it is given.
 
 > **Conditional loading:** Read `<ADEV_ROOT>/skills/implement/references/batched-mode.md` for the full Batched Task Dispatch instructions.
 > Load it only when at least one batch forms; a plan with no eligible `(sequential)` group runs the loop below exactly as written, per task.
@@ -65,7 +69,9 @@ Before routing or dispatching, assemble the task's context packet:
   - `test-required` and `agent-default`: dispatch normally. When the implementer reports DONE or DONE_WITH_CONCERNS (2d), present the diff and any tests it added, and wait for approval before 2e and the reviews. These modes have no tests-before-code point, so this is the earliest checkpoint where there is work to review.
 - `human-only`: generate scaffolding only (type stubs, file structure, test shells), present as a manual task checklist, emit `reportPlanTask(projectRoot, specPath, { plan: planFilePath, task_id, status: "skipped", notes: "MANUAL — requires human implementation" })`, skip to next task
 
-**Provisional review depth.** Alongside the routing-tag check, before dispatch: `adev implement resolve-depth --spec <spec> --plan <plan> --task-id <id> [--tier <t>] [--review-cycles <n>] [--in-batch] --pass provisional`. It briefs the implementer and reports `review_depth_resolved`; the final pass (2f-pre) decides which reviewer(s) dispatch. Contract: `graduated-review-depth.md`.
+**Provisional review depth.** Alongside the routing-tag check, before dispatch: `adev implement resolve-depth --spec <spec> --plan <plan> --task-id <id> --run-base <run_base> [--tier <t>] [--lite] [--parallel] [--review-cycles <n>] --pass provisional`. Pass `--lite`, `--tier` and `--parallel` exactly as the operator passed them to this invocation. It briefs the implementer and reports `review_depth_resolved`; the final pass (2f-pre) decides which reviewer(s) dispatch. Echo its `REVIEW_DEPTH_FLOOR_APPLIED` warning to the operator-facing transcript, by code. Relay `ROUTING_SIDECAR_MISSING`, with the instruction to commit the routing sidecar before using `lite` again, only when `check-flags` printed `lite_authorized: true`, and once: on the first provisional `resolve-depth` call of this invocation, or on the `batches` advisory when `batches` runs, whichever comes first. Every later call repeats it for the same `run_base`; do not echo it again. When `check-flags` printed `lite_authorized: true`, this provisional call is `adev implement task-begin` with the same flags (`lite-mode.md` §2), which writes the same event and prints the same JSON. A task that resolved `quick` or `full` there runs the rest of 2a (the context packet and the routing-tag check) and continues to 2b: do not repeat the provisional `resolve-depth` call. Contract: `graduated-review-depth.md` §3.
+
+On `depth: lite`, follow `<ADEV_ROOT>/skills/implement/references/lite-mode.md` instead of 2b-2g for this task: it runs inline, with no implementer dispatch. When the response's `lite_denied` is a value other than `not-authorized` or `null`, keep it for the run summary.
 
 #### 2b. Specialist Routing
 
@@ -213,7 +219,7 @@ Dispatch the subagent with `Agent({description, prompt, run_in_background: false
 
 Handle the returned status:
 
-**DONE.** Proceed to visual verification (step 2e) then 2-stage review (steps 2f-2g). For an `assisted-agent` task under `test-required` or `agent-default`, hold the human checkpoint from 2a first.
+**DONE.** Proceed to visual verification (step 2e), then the review the task's final-pass depth requires (steps 2f-pre to 2g). For an `assisted-agent` task under `test-required` or `agent-default`, hold the human checkpoint from 2a first.
 
 **DONE_WITH_CONCERNS.** Read the concerns carefully.
 - Observational concerns (e.g., "this file is getting large", "naming could be improved"): note them and proceed to review. Pass them to the code quality reviewer.
@@ -298,9 +304,11 @@ Do not proceed. Do not skip. Do not fall back to code-only review for UI tasks.
 
 #### 2f-pre. Final Review Depth
 
-> **Required reading:** `skills/implement/graduated-review-depth.md`.
+> **Required reading:** `<ADEV_ROOT>/skills/implement/graduated-review-depth.md`.
 
-Immediately before 2f's dispatch — once the implementer has reported, against the real diff — run the provisional call again with `[--had-critical-finding] --base-sha <captured-base> --pass final`. Echo `REVIEW_DEPTH_FLOOR_APPLIED` (naming `floor_legs`) and any `ROUTING_SCORE_OUT_OF_RANGE` warning to the operator-facing transcript, not only to the persisted `review_depth_resolved` event. Then branch on the resolved `depth`:
+Immediately before 2f's dispatch — once the implementer has reported, against the real diff — run `adev implement resolve-depth --spec <spec> --plan <plan> --task-id <id> --run-base <run_base> [--tier <t>] [--lite] [--parallel] [--review-cycles <n>] [--had-critical-finding] --base-sha <captured-base> --pass final`, with `--lite` and `--tier` exactly as the operator passed them to this invocation. The lite cap is evaluated on each pass, so a final pass without them would drop it. Echo its `REVIEW_DEPTH_FLOOR_APPLIED` warning (naming its legs) to the operator-facing transcript, by code, not only to the persisted `review_depth_resolved` event (`graduated-review-depth.md` §5). A `ROUTING_SIDECAR_MISSING` warning here repeats the one Step 2a or the `batches` advisory already handled; do not echo it. Then branch on the resolved `depth`.
+
+An escalated `lite` task enters at the depth branch below, coming from `lite-mode.md`. Do not run a second final pass for it: its tripwire call was its final pass, and `lite-mode.md` §3 has already echoed its `LITE_TRIPWIRE_ESCALATED` warning to the transcript.
 
 - **`full`** — run 2f then 2g below exactly as written.
 - **`quick`** — skip both stages; dispatch one synthesized reviewer carrying `synthesized-reviewer-prompt.md` and the union of both stages' context, under the same `cq-<n>` / `evaluateStopCondition` discipline, capped at the returned `review_cycles`. Record `stage: "synthesized"` provenance (`Review-round: synthesized=<n>`) instead of the two stage records.
@@ -319,7 +327,9 @@ The spec reviewer verifies by reading code, not by trusting the report:
 - **Extra work:** Was anything built that was not requested?
 - **Misunderstandings:** Were requirements interpreted correctly?
 
-**If the reviewer finds issues:** The implementer subagent (same one) fixes them. The spec reviewer reviews again. Maximum `implement.max_review_cycles` review cycles per task (default 3), or the effective `review_cycles` returned by this task's last `adev implement resolve-depth` call when `--review-cycles` was passed. After the last cycle, escalate to the user.
+**If the reviewer finds issues:** The implementer subagent (same one) fixes them. The spec reviewer reviews again. Maximum `implement.max_review_cycles` review cycles per task (default 3), or the effective `review_cycles` returned by this task's last `adev implement resolve-depth` call when `--review-cycles` was passed.
+
+After the last cycle, Stage 1 has not passed: apply the Step 2g terminal handling. Emit `plan_task` `blocked` with `LOOP_BUDGET_EXHAUSTED`, write execution state with `status: "blocked"`, start no later task, and print a halt message naming the code, the task id and the outstanding findings. The halt never waits for input. Use the 2g message shape, with "spec-compliance review did not converge" in place of "code-quality review did not converge".
 
 **Only proceed to Stage 2 after Stage 1 passes.**
 
@@ -333,7 +343,7 @@ Dispatch a fresh code quality reviewer subagent with:
 - The Coding Standards section from the constitution
 - Any concerns from the implementer (if DONE_WITH_CONCERNS)
 - Secondary specialist matches from step 2a (so the reviewer checks those domains)
-- `Implementation mode: <mode>` (resolved in Step 1), so the reviewer applies the checklist's test criterion for that mode rather than assuming TDD
+- `Implementation mode: <mode>` (resolved in Step 1; `agent-default` for a task escalated from `lite` — see `lite-mode.md` §3), so the reviewer applies the checklist's test criterion for that mode rather than assuming TDD
 - Instructions to tag every Critical or Important finding with a stable short id (for example `cq-1`, `cq-2`) and to reuse the same id across cycles for the same underlying finding. The ids are what make the convergence check below meaningful — without them, "the same three issues came back" is indistinguishable from "three different issues".
 
 The code quality reviewer checks the items in `<ADEV_ROOT>/skills/implement/references/code-quality-checklist.md`.
@@ -366,9 +376,11 @@ if the fix loop is stuck.
 
 Use the same message shape for `LOOP_NO_PROGRESS` and `LOOP_REGRESSED`, substituting the verdict and (for `LOOP_REGRESSED`) noting which findings are newly introduced.
 
+This halt applies to every run, whoever invoked it: interactive, headless, scheduled, or a `/adev:build` step. It records its terminal state and returns without waiting for input, and when implement runs as a build step, the halt message is its `STEP_RESULT` with `status: BLOCKED`.
+
 #### 2h. Mark Task Complete
 
-After both reviews pass, if `governance/gates.yaml` exists:
+After the review the task's depth requires passes (a task that stayed `lite` has none and arrives here from `lite-mode.md`), if `governance/gates.yaml` exists:
 1. Read gates where `triggers` includes "post-task". A gate whose `triggers` include `post-implement` but not `post-task` is not a per-task gate: it runs once, after the last task, in Step 2-post. Running it here would run it once per task.
 2. A gate that declares `paths` runs only when this task changed a matching file. When any selected gate declares `paths`, run `adev domain load-gates --module <module-slug> --changed-since <captured-base>` (the base captured before this task's dispatch) and log a gate with `applies: false` as "Skipped: <skip_reason>" instead of running it.
 3. For each remaining deterministic gate with a non-empty argv `command`, run it. A gate that omits `kind` is `deterministic`, which is the documented default, so never require a literal `kind: deterministic`. A gate that omits `required` is `required: true`. If a required gate fails, the task fails. If a gate with `required: false` fails, log a warning.
@@ -381,8 +393,9 @@ Then, once the gates above pass (or there are none), finish the task in this ord
 2. **Commit-per-task is MANDATORY.** Per `incremental-artifact-writes.spec.md` Integration Point 2, every plan task MUST produce exactly one git commit before the orchestrator moves on. The commit IS the checkpoint — if a later task fails or a session crashes mid-pipeline, the prior task's work is preserved in git history. Multi-task implementations with a single combined commit are forbidden; they defeat the recovery guarantee.
 3. Emit a `plan_task` `done` event, AFTER the commit above (never before — the commit is the durable checkpoint): `reportPlanTask(projectRoot, specPath, { plan: planFilePath, task_id, status: "done", notes: <optional 1-line summary or null> })`. This is the **only** task-completion signal — the plan file itself is not modified.
 4. **Record review-round provenance on both channels** (`review-provenance.spec.md`
-   Output Contract A and B). For each review stage that ran on this task — always at least `spec-compliance` and
-   `code-quality`, since 2h is reached only after both pass:
+   Output Contract A and B). For each review stage that ran on this task — `spec-compliance` and
+   `code-quality` under `full`, `synthesized` under `quick`, and none for a task that stayed `lite`, whose
+   commit carries no `Review-round:` trailer:
    - **Trailer.** Add one `Review-round: <stage>=<cycles>` line to this task's single
      commit, built by `buildReviewRoundTrailer(stage, cycles)` in
      `lib/lifecycle-state.mjs`. That helper is the **only** sanctioned producer of the

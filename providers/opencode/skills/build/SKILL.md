@@ -33,6 +33,8 @@ If the output is not `__NONE__`, incorporate it as additional standing instructi
 
 Full argument reference for every pipeline mode.
 
+- `--lite`: forwarded to `/adev:implement` only, and only when the operator passed it; never add it on your own.
+
 > **Conditional loading:** Read `<ADEV_ROOT>/skills/build/references/arguments.md` for the full instructions. Do not act on this section from the summary above.
 
 ## Prerequisites
@@ -138,7 +140,7 @@ Dispatches /adev:implement to execute the routed plan.
 
 > **Conditional loading:** Read `<ADEV_ROOT>/skills/build/references/pipeline/step-4-implement.md` for the full instructions. Do not act on this section from the summary above.
 
-**Rigor tier propagation:** Read `skills/build/step4-tier-propagation.md` for the `--tier` handoff to `/adev:implement`.
+**Rigor tier propagation:** Read `<ADEV_ROOT>/skills/build/step4-tier-propagation.md` for the `--tier` and `--lite` handoff to `/adev:implement`.
 
 ### Step 5: Validate
 
