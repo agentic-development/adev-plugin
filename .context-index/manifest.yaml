@@ -443,6 +443,10 @@ hygiene:
       # exempt_commits rationale above). Rewrite-durable form -- this branch
       # merges to a protected main, so the SHA will not survive.
       - "da2d2cf8f31c82cba4a10c6886e68f78d5130b4d"
+      # implement-rigor-ladder: spec revision 4 (operator-approved 2026-11-27)
+      # appended Tasks 23-25 to the plan mid-run; Tasks 1-22 are unchanged.
+      # NEW EXEMPTION (2026-11-28), operator-approved; no exempt_commits sibling.
+      - "5645cbf220d37eb0c537e2786276be590afaf84c"
 
 domain: software
 
