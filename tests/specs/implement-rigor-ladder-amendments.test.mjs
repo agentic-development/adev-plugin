@@ -138,8 +138,9 @@ test('graduated-review-depth amendment supersedes B, E, the full fallback, batch
   const score = superseded.find((b) => b.startsWith('**Score validation (D).**'));
   assert.ok(score, 'D is in the superseded list');
   assert.match(score, /`ROUTING_SCORE_OUT_OF_RANGE`/);
-  assert.match(score, /BEH-5 \(b\)/);
-  assert.match(score, /no longer resolves `full`/);
+  assert.match(score, /`quickTierSignal\(entry\)`/, 'scores gate only route\'s rigor-tier recommendation');
+  assert.match(score, /does not gate `lite`/, 'revision 4: scores no longer deny lite');
+  assert.match(score, /never resolves `full`/);
   const verb = superseded.find((b) => b.startsWith('**The verb signature (A).**'));
   assert.ok(verb, 'A\'s verb signature is in the superseded list');
   for (const re of [/`--tier full\|quick\|lite`/, /`--lite`/, /`--parallel`/, /`--run-base <sha>`[^\n]*required/, /`--in-batch`[^\n]*ignored/, /`lite_denied`/, /`lite_source`/, /`escalated_from`/, /`depth: 'full'\|'quick'\|'lite'`/]) {
