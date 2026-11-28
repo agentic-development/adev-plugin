@@ -1,0 +1,281 @@
+{
+  "version": 1,
+  "_generated_by": "/adev:route — do not hand-edit; re-run instead.",
+  "entries": [
+    {
+      "task_id": "t1",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 0.6
+      },
+      "rationale": "EV-1 harness modeled on batched-task-dispatch run-ab-eval; includes a live baseline step. Spec risk_level high forces assisted-agent minimum. Operator override 2026-11-26: auto-agent (was assisted-agent) to drop per-task checkpoints; Tasks 15 and 19 keep assisted-agent for human approval."
+    },
+    {
+      "task_id": "t10",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Event-window counting verb over raw lifecycle events; precise BEH-10 window, high-risk spec forces assisted-agent. Operator override 2026-11-26: auto-agent (was assisted-agent) to drop per-task checkpoints; Tasks 15 and 19 keep assisted-agent for human approval."
+    },
+    {
+      "task_id": "t11",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Implement SKILL.md body edits under size-cap and byte-identical CON-1 constraints; high-risk spec forces assisted-agent. Operator override 2026-11-26: auto-agent (was assisted-agent) to drop per-task checkpoints; Tasks 15 and 19 keep assisted-agent for human approval."
+    },
+    {
+      "task_id": "t12",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.8,
+        "novelty": 0.4
+      },
+      "rationale": "New inline lite execution mode and WR-8 Stage 1 halt rerouting in the per-task loop; orchestration design judgment needed. Operator override 2026-11-26: auto-agent (was assisted-agent) to drop per-task checkpoints; Tasks 15 and 19 keep assisted-agent for human approval."
+    },
+    {
+      "task_id": "t13",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 0.8
+      },
+      "rationale": "Five implement reference docs rewritten to the ladder contract within one skill; high-risk spec forces assisted-agent. Operator override 2026-11-26: auto-agent (was assisted-agent) to drop per-task checkpoints; Tasks 15 and 19 keep assisted-agent for human approval."
+    },
+    {
+      "task_id": "t14",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.6,
+        "novelty": 0.8
+      },
+      "rationale": "Mirrors init-prompt-implementation-mode verb closely but edits cli/index.mjs dispatch and the init reference; high-risk spec. Operator override 2026-11-26: auto-agent (was assisted-agent) to drop per-task checkpoints; Tasks 15 and 19 keep assisted-agent for human approval."
+    },
+    {
+      "task_id": "t15",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.2,
+        "novelty": 1
+      },
+      "rationale": "Trivial value edits, but they lower default review rigor for every project and touch .context-index/governance/**; REQUIRES HUMAN APPROVAL."
+    },
+    {
+      "task_id": "t16",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 1
+      },
+      "rationale": "Adds lite_eligible count to emit-sidecar and route summary line citing liteEligible; high-risk spec forces assisted-agent. Operator override 2026-11-26: auto-agent (was assisted-agent) to drop per-task checkpoints; Tasks 15 and 19 keep assisted-agent for human approval."
+    },
+    {
+      "task_id": "t17",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.4,
+        "novelty": 0.8
+      },
+      "rationale": "Tier forwarding across governance CLI and four skills (build, work, review-specs); wide blast radius, BEH-13 no-self-selection risk. Operator override 2026-11-26: auto-agent (was assisted-agent) to drop per-task checkpoints; Tasks 15 and 19 keep assisted-agent for human approval."
+    },
+    {
+      "task_id": "t18",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 1
+      },
+      "rationale": "Validate skill text accepts --tier lite and calls lite-report; mechanical, but high-risk spec forces assisted-agent. Operator override 2026-11-26: auto-agent (was assisted-agent) to drop per-task checkpoints; Tasks 15 and 19 keep assisted-agent for human approval."
+    },
+    {
+      "task_id": "t19",
+      "selected_agent": "assisted-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.6,
+        "novelty": 0.6
+      },
+      "rationale": "Four cross-spec amendments via adev specify amend plus ADR 0020 acceptance; amendment wording needs judgment; REQUIRES HUMAN APPROVAL."
+    },
+    {
+      "task_id": "t2",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.4,
+        "novelty": 0.8
+      },
+      "rationale": "Well-specified rigor-mode change, but lib/governance/rigor-mode.mjs is a configured sensitive path and tier resolution is shared by every gate skill. Operator override 2026-11-26: auto-agent (was assisted-agent) to drop per-task checkpoints; Tasks 15 and 19 keep assisted-agent for human approval."
+    },
+    {
+      "task_id": "t20",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.4,
+        "novelty": 0.8
+      },
+      "rationale": "Docs across four files plus generated provider mirrors for every skill; must run last, BEH-13 grep must stay clean. Operator override 2026-11-26: auto-agent (was assisted-agent) to drop per-task checkpoints; Tasks 15 and 19 keep assisted-agent for human approval."
+    },
+    {
+      "task_id": "t21",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.8,
+        "novelty": 0.4
+      },
+      "rationale": "Live quick/lite eval arms, BEH-15 non-convergent fixture and deterministic EV-5 replay; fixture design and threshold evaluation are novel. Operator override 2026-11-26: auto-agent (was assisted-agent) to drop per-task checkpoints; Tasks 15 and 19 keep assisted-agent for human approval."
+    },
+    {
+      "task_id": "t22",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.6,
+        "novelty": 0.6
+      },
+      "rationale": "EV-2 comparison arms and three EV-3 plugin eval cases following evals/lifecycle-gate-respected; live model runs under operator control. Operator override 2026-11-26: auto-agent (was assisted-agent) to drop per-task checkpoints; Tasks 15 and 19 keep assisted-agent for human approval."
+    },
+    {
+      "task_id": "t3",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.4,
+        "novelty": 0.6
+      },
+      "rationale": "Grant inversion rewrites core resolver semantics and retired-behavior tests; touches sensitive lib/lifecycle-events.mjs (comment only). Operator override 2026-11-26: auto-agent (was assisted-agent) to drop per-task checkpoints; Tasks 15 and 19 keep assisted-agent for human approval."
+    },
+    {
+      "task_id": "t4",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.6,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "Truth-table predicate in one module with EV-4 parity oracle; would score auto-agent but spec risk_level high forces assisted-agent. Operator override 2026-11-26: auto-agent (was assisted-agent) to drop per-task checkpoints; Tasks 15 and 19 keep assisted-agent for human approval."
+    },
+    {
+      "task_id": "t5",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.4,
+        "blast_radius": 0.8,
+        "novelty": 0.4
+      },
+      "rationale": "Tripwire needs new diff-tree --raw mode parsing, gitignored mtime enumeration and RI-8 ordering; little precedent and security-relevant. Operator override 2026-11-26: auto-agent (was assisted-agent) to drop per-task checkpoints; Tasks 15 and 19 keep assisted-agent for human approval."
+    },
+    {
+      "task_id": "t6",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.6,
+        "blast_radius": 0.6,
+        "novelty": 0.6
+      },
+      "rationale": "New run-base reader spanning lib/implement, lib/cli/test-policy and plan-routing-sidecar; commit-id validation and repo-relative guards are security-relevant. Operator override 2026-11-26: auto-agent (was assisted-agent) to drop per-task checkpoints; Tasks 15 and 19 keep assisted-agent for human approval."
+    },
+    {
+      "task_id": "t7",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.8
+      },
+      "rationale": "New implement subverb following existing cmd patterns with BEH-16 exit table; high-risk spec forces assisted-agent. Operator override 2026-11-26: auto-agent (was assisted-agent) to drop per-task checkpoints; Tasks 15 and 19 keep assisted-agent for human approval."
+    },
+    {
+      "task_id": "t8",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 1,
+        "novelty": 0.6
+      },
+      "rationale": "Extends cmdResolveDepth with four flags and two-pass run-base wiring; well specified, high-risk spec forces assisted-agent. Operator override 2026-11-26: auto-agent (was assisted-agent) to drop per-task checkpoints; Tasks 15 and 19 keep assisted-agent for human approval."
+    },
+    {
+      "task_id": "t9",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 1,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 0.8
+      },
+      "rationale": "Small batching extension (liteGranted set, solo reason lite) over existing tests; high-risk spec forces assisted-agent. Operator override 2026-11-26: auto-agent (was assisted-agent) to drop per-task checkpoints; Tasks 15 and 19 keep assisted-agent for human approval."
+    },
+    {
+      "task_id": "t23",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 0.8
+      },
+      "rationale": "Revision 4 task. Resolver revision 4: grant and lite cap in an existing, well-tested module. Operator routing override 2026-11-26 applies: auto-agent, quick review."
+    },
+    {
+      "task_id": "t24",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 0.8
+      },
+      "rationale": "Revision 4 task. New implement verb over existing resolve-depth and snapshot code, plus lite-mode.md rewrite. Operator routing override 2026-11-26 applies: auto-agent, quick review."
+    },
+    {
+      "task_id": "t25",
+      "selected_agent": "auto-agent",
+      "scores": {
+        "spec_completeness": 0.8,
+        "pattern_coverage": 0.8,
+        "blast_radius": 0.8,
+        "novelty": 0.8
+      },
+      "rationale": "Revision 4 task. Eval re-runs and amendment-spec text. Operator routing override 2026-11-26 applies: auto-agent, quick review."
+    }
+  ]
+}

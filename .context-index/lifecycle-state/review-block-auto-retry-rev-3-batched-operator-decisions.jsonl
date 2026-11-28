@@ -140,3 +140,4 @@
 {"event":"validator_report","step":"validate","validator":"validate.check-4-constitution","severity":"error","verdict":"PASS_WITH_NOTES","notes":"No violations. Notes: ADR-0012 self-amendment rule; review-specs adds AskUserQuestion; ESM import cycle decisions<->specify-revise","ts":"2026-11-22T23:10:28.555Z"}
 {"event":"validator_report","step":"validate","validator":"validate.check-2-spec-compliance","severity":"error","verdict":"PASS_WITH_NOTES","notes":"20/20 AC pass. Notes: group-blockers passes choice/note ungated (BEH-2); interactive revise NOTHING_TO_REVISE scope (BEH-6); 16-group cap unspecified; 2 scope expansions","ts":"2026-11-22T23:13:56.140Z"}
 {"event":"step_completed","step":"validate","verdict":"PASS_WITH_NOTES","ts":"2026-11-22T23:15:14.072Z"}
+{"event":"code_drift_detected","drift_source":"tests/governance/context-pack-consistency-glob.test.mjs","drift_at":"2026-11-27T01:14:31.669Z","ts":"2026-11-27T01:14:31.670Z"}
